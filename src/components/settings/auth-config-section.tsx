@@ -22,7 +22,7 @@ interface AuthSettings {
 
 export function AuthConfigSection() {
   const [settings, setSettings] = useState<AuthSettings>({
-    method: "api_key",
+    method: "oauth",
     hasKey: false,
     apiKeySource: "unknown",
   });
@@ -70,8 +70,9 @@ export function AuthConfigSection() {
     const res = await fetch("/api/settings/test", { method: "POST" });
     const data = await res.json();
     setConnected(data.connected);
-    if (data.connected && data.apiKeySource) {
-      setSettings((prev) => ({ ...prev, apiKeySource: data.apiKeySource }));
+    if (data.connected) {
+      const source = settings.method === "oauth" ? "oauth" : (data.apiKeySource || "unknown");
+      setSettings((prev) => ({ ...prev, apiKeySource: source as ApiKeySource }));
     }
     return data;
   }
@@ -119,7 +120,7 @@ export function AuthConfigSection() {
               </p>
               <button
                 onClick={handleTestConnection}
-                className="text-sm text-primary hover:underline"
+                className="text-sm text-primary hover:underline cursor-pointer"
               >
                 Test OAuth connection
               </button>

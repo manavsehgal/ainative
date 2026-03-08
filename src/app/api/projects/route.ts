@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { projects, tasks } from "@/lib/db/schema";
-import { eq, sql, count } from "drizzle-orm";
+import { eq, count } from "drizzle-orm";
 import { createProjectSchema } from "@/lib/validators/project";
 
 export async function GET() {
@@ -13,9 +13,11 @@ export async function GET() {
       status: projects.status,
       createdAt: projects.createdAt,
       updatedAt: projects.updatedAt,
-      taskCount: sql<number>`(SELECT COUNT(*) FROM tasks WHERE tasks.project_id = ${projects.id})`.as("task_count"),
+      taskCount: count(tasks.id),
     })
     .from(projects)
+    .leftJoin(tasks, eq(tasks.projectId, projects.id))
+    .groupBy(projects.id)
     .orderBy(projects.createdAt);
 
   return NextResponse.json(result);

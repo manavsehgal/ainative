@@ -44,7 +44,7 @@ describe("auth settings", () => {
   it("getAuthSettings returns defaults when no settings exist", async () => {
     const { getAuthSettings } = await import("../auth");
     const result = await getAuthSettings();
-    expect(result.method).toBe("api_key");
+    expect(result.method).toBe("oauth");
     expect(result.hasKey).toBe(false);
   });
 

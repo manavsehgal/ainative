@@ -2,7 +2,9 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Shield, MessageCircle, CheckCircle, XCircle } from "lucide-react";
+import { Shield, MessageCircle, CheckCircle, XCircle, Eye, EyeOff } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
 import { PermissionAction } from "./permission-action";
 import { MessageResponse, type Question } from "./message-response";
 import { FailureAction } from "./failure-action";
@@ -83,6 +85,7 @@ function formatToolInput(toolName: string | null, input: Record<string, unknown>
 }
 
 export function NotificationItem({ notification, onUpdated }: NotificationItemProps) {
+  const [toggling, setToggling] = useState(false);
   const isUnread = !notification.read;
   const hasResponse = !!notification.response;
   let parsedToolInput: Record<string, unknown> | null = null;
@@ -93,6 +96,20 @@ export function NotificationItem({ notification, onUpdated }: NotificationItemPr
     }
   } catch {
     // Invalid JSON
+  }
+
+  async function toggleRead() {
+    setToggling(true);
+    try {
+      await fetch(`/api/notifications/${notification.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ read: !notification.read }),
+      });
+      onUpdated();
+    } finally {
+      setToggling(false);
+    }
   }
 
   return (
@@ -187,6 +204,16 @@ export function NotificationItem({ notification, onUpdated }: NotificationItemPr
             )}
           </p>
         </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 shrink-0"
+          onClick={toggleRead}
+          disabled={toggling}
+          aria-label={isUnread ? "Mark as read" : "Mark as unread"}
+        >
+          {isUnread ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        </Button>
       </div>
     </Card>
   );

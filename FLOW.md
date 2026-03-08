@@ -13,10 +13,10 @@ Vibe coding high-quality products with Claude Code — from idea to shipped feat
 
 | Phase | Skill(s) | Recommended Gate |
 |-------|----------|-----------------|
-| **Ideate** | Manual brainstorming → `ideas/` | Ideas refined to epic-level spec |
+| **Ideate** | `/capture` + brainstorming → `ideas/` | Ideas refined to epic-level spec |
 | **Specify** | `/product-manager` | Feature spec with acceptance criteria in `features/` |
 | **Design** | `/frontend-designer` | UX criteria + interaction specs added to feature |
-| **Build** | `/frontend-design` + `/taste` | Feature renders without errors, guardrails pass |
+| **Build** | `/frontend-design` + `/taste` + `/refer` | Feature renders without errors, guardrails pass |
 | **Verify** | `/quality-manager` + `/code-review` | Tests pass, coverage meets tier thresholds |
 | **Evaluate** | `/quality-manager` (browser mode) | Acceptance criteria verified in running app |
 | **Ship** | `/product-manager` + `/commit` | Changelog + roadmap updated, commit pushed |
@@ -35,6 +35,8 @@ Key handoff patterns between skills:
 - **frontend-design + taste**: Co-trigger on builds — creative direction + engineering guardrails
 - **quality-manager → code-review**: QM orchestrates, delegates code review as a sub-workflow
 - **quality-manager ↔ product-manager**: Test gaps surface new specs; acceptance criteria become test cases
+- **capture → ideas/**: Scraped articles and research feed Ideate with YAML frontmatter metadata
+- **capture → refer**: Doc-site captures in `.claude/reference/` become searchable via `/refer` during Build/Design
 
 Each skill's `SKILL.md` has a Role Boundaries table showing exactly when to use it vs. another.
 
@@ -47,13 +49,15 @@ For non-trivial features (multi-file, new architecture, cross-cutting concerns):
 3. **Plan** — Enter plan mode, write implementation steps
 4. **Build** — Execute the plan, phase by phase
 
-## Support Skills
+## Reference & Meta Skills
 
-| Skill | Purpose |
-|-------|---------|
-| `/capture` + `/refer` | Scrape and look up external docs during Build |
-| `/skill-creator` | Create or improve skills — evolve the lifecycle itself |
-| `/code-review` | Standalone reviews (usually delegated by `/quality-manager`) |
+| Skill | When | What it produces |
+|-------|------|-----------------|
+| `/capture <url>` | Ideate: scrape ideas | `ideas/<article>.md` with YAML frontmatter |
+| `/capture <url>` | Any: build reference library | `.claude/reference/<lib>/` with search-index.md |
+| `/refer` | Build/Design: look up docs | Surgical answers from captured references |
+| `/skill-creator` | Meta: evolve the lifecycle | New or improved skill definitions |
+| `/code-review` | Verify: standalone reviews | Usually delegated by `/quality-manager` |
 
 ## Feedback Loops
 
@@ -68,7 +72,7 @@ Evaluate findings route back into earlier phases:
 
 | Directory | Purpose |
 |-----------|---------|
-| `ideas/` | Raw product ideas, research, vision docs |
+| `ideas/` | Raw ideas + `/capture`d articles with frontmatter |
 | `features/` | Structured feature specs + `roadmap.md` + `changelog.md` |
 | `.claude/skills/` | All skill definitions (12 skills) |
-| `.claude/reference/` | Captured external documentation |
+| `.claude/reference/` | Captured docs — populate via `/capture`, look up via `/refer` |

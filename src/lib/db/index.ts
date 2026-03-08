@@ -13,4 +13,11 @@ const sqlite = new Database(dbPath);
 sqlite.pragma("journal_mode = WAL");
 sqlite.pragma("foreign_keys = ON");
 
+// Ensure settings table exists (migration 0003 may not have been applied)
+sqlite.exec(`CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at INTEGER NOT NULL
+)`);
+
 export const db = drizzle(sqlite, { schema });

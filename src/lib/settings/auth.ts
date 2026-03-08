@@ -35,7 +35,7 @@ async function setSetting(key: string, value: string): Promise<void> {
  * Get current auth settings. Never returns the raw API key.
  */
 export async function getAuthSettings(): Promise<AuthSettings> {
-  const method = ((await getSetting(SETTINGS_KEYS.AUTH_METHOD)) as AuthMethod) ?? "api_key";
+  const method = ((await getSetting(SETTINGS_KEYS.AUTH_METHOD)) as AuthMethod) ?? "oauth";
   const encryptedKey = await getSetting(SETTINGS_KEYS.AUTH_API_KEY);
   const storedSource = (await getSetting(SETTINGS_KEYS.AUTH_API_KEY_SOURCE)) as ApiKeySource | null;
 
@@ -87,7 +87,7 @@ export async function setAuthSettings(input: UpdateAuthSettingsInput): Promise<v
  * Priority: DB-stored key > process.env > undefined (SDK falls back to OAuth).
  */
 export async function getAuthEnv(): Promise<Record<string, string> | undefined> {
-  const method = ((await getSetting(SETTINGS_KEYS.AUTH_METHOD)) as AuthMethod) ?? "api_key";
+  const method = ((await getSetting(SETTINGS_KEYS.AUTH_METHOD)) as AuthMethod) ?? "oauth";
 
   // If OAuth is selected, don't inject any key — let SDK handle it
   if (method === "oauth") {

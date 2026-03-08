@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { projects, tasks } from "@/lib/db/schema";
-import { sql } from "drizzle-orm";
+import { eq, count } from "drizzle-orm";
 import { ProjectList } from "@/components/projects/project-list";
 
 export const dynamic = "force-dynamic";
@@ -14,9 +14,11 @@ export default async function ProjectsPage() {
       status: projects.status,
       createdAt: projects.createdAt,
       updatedAt: projects.updatedAt,
-      taskCount: sql<number>`(SELECT COUNT(*) FROM tasks WHERE tasks.project_id = ${projects.id})`.as("task_count"),
+      taskCount: count(tasks.id),
     })
     .from(projects)
+    .leftJoin(tasks, eq(tasks.projectId, projects.id))
+    .groupBy(projects.id)
     .orderBy(projects.createdAt);
 
   return (
