@@ -25,10 +25,15 @@ import { toast } from "sonner";
 interface TaskCreateDialogProps {
   projects: { id: string; name: string }[];
   onCreated: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function TaskCreateDialog({ projects, onCreated }: TaskCreateDialogProps) {
-  const [open, setOpen] = useState(false);
+export function TaskCreateDialog({ projects, onCreated, open: controlledOpen, onOpenChange }: TaskCreateDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = isControlled ? (onOpenChange ?? (() => {})) : setInternalOpen;
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [projectId, setProjectId] = useState<string>("");
@@ -74,12 +79,14 @@ export function TaskCreateDialog({ projects, onCreated }: TaskCreateDialogProps)
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          New Task
-        </Button>
-      </DialogTrigger>
+      {!isControlled && (
+        <DialogTrigger asChild>
+          <Button>
+            <Plus className="h-4 w-4 mr-2" />
+            New Task
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Create Task</DialogTitle>

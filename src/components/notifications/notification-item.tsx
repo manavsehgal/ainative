@@ -2,7 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Shield, MessageCircle, CheckCircle, XCircle, Eye, EyeOff } from "lucide-react";
+import { Shield, MessageCircle, CheckCircle, XCircle, Eye, EyeOff, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { PermissionAction } from "./permission-action";
@@ -86,6 +86,7 @@ function formatToolInput(toolName: string | null, input: Record<string, unknown>
 
 export function NotificationItem({ notification, onUpdated }: NotificationItemProps) {
   const [toggling, setToggling] = useState(false);
+  const [dismissing, setDismissing] = useState(false);
   const isUnread = !notification.read;
   const hasResponse = !!notification.response;
   let parsedToolInput: Record<string, unknown> | null = null;
@@ -109,6 +110,18 @@ export function NotificationItem({ notification, onUpdated }: NotificationItemPr
       onUpdated();
     } finally {
       setToggling(false);
+    }
+  }
+
+  async function dismiss() {
+    setDismissing(true);
+    try {
+      await fetch(`/api/notifications/${notification.id}`, {
+        method: "DELETE",
+      });
+      onUpdated();
+    } finally {
+      setDismissing(false);
     }
   }
 
@@ -204,16 +217,28 @@ export function NotificationItem({ notification, onUpdated }: NotificationItemPr
             )}
           </p>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 shrink-0"
-          onClick={toggleRead}
-          disabled={toggling}
-          aria-label={isUnread ? "Mark as read" : "Mark as unread"}
-        >
-          {isUnread ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-        </Button>
+        <div className="flex flex-col gap-1 shrink-0">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={toggleRead}
+            disabled={toggling}
+            aria-label={isUnread ? "Mark as read" : "Mark as unread"}
+          >
+            {isUnread ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-muted-foreground hover:text-destructive"
+            onClick={dismiss}
+            disabled={dismissing}
+            aria-label="Dismiss notification"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </Card>
   );

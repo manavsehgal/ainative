@@ -40,6 +40,8 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
   const [detailTask, setDetailTask] = useState<TaskItem | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [projectFilter, setProjectFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [inlineCreateOpen, setInlineCreateOpen] = useState(false);
 
   // I5: Scroll indicators
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -74,10 +76,12 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
     }
   }, [searchParams, tasks]);
 
-  // Filter tasks by project
-  const filteredTasks = projectFilter === "all"
-    ? tasks
-    : tasks.filter((t) => t.projectId === projectFilter);
+  // Filter tasks by project and status
+  const filteredTasks = tasks.filter((t) => {
+    if (projectFilter !== "all" && t.projectId !== projectFilter) return false;
+    if (statusFilter !== "all" && t.status !== statusFilter) return false;
+    return true;
+  });
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -138,18 +142,33 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
     {} as Record<TaskStatus, TaskItem[]>
   );
 
-  const filterBar = projects.length > 0 && (
-    <Select value={projectFilter} onValueChange={setProjectFilter}>
-      <SelectTrigger className="w-[180px]">
-        <SelectValue placeholder="All projects" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="all">All projects</SelectItem>
-        {projects.map((p) => (
-          <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+  const filterBar = (
+    <div className="flex items-center gap-2">
+      {projects.length > 0 && (
+        <Select value={projectFilter} onValueChange={setProjectFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="All projects" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All projects</SelectItem>
+            {projects.map((p) => (
+              <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+      <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <SelectTrigger className="w-[150px]">
+          <SelectValue placeholder="All statuses" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All statuses</SelectItem>
+          {COLUMN_ORDER.map((s) => (
+            <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 
   if (tasks.length === 0) {
@@ -202,6 +221,7 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
                 status={status}
                 tasks={groupedTasks[status]}
                 onTaskClick={handleTaskClick}
+                onAddTask={status === "planned" ? () => setInlineCreateOpen(true) : undefined}
               />
             ))}
           </div>
@@ -219,6 +239,12 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
         open={detailOpen}
         onOpenChange={setDetailOpen}
         onUpdated={refresh}
+      />
+      <TaskCreateDialog
+        projects={projects}
+        onCreated={refresh}
+        open={inlineCreateOpen}
+        onOpenChange={setInlineCreateOpen}
       />
     </div>
   );

@@ -3,7 +3,8 @@
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Badge } from "@/components/ui/badge";
-import { Inbox } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Inbox, Plus } from "lucide-react";
 import { TaskCard, type TaskItem } from "./task-card";
 import type { TaskStatus } from "@/lib/constants/task-status";
 
@@ -19,10 +20,12 @@ export function KanbanColumn({
   status,
   tasks,
   onTaskClick,
+  onAddTask,
 }: {
   status: TaskStatus;
   tasks: TaskItem[];
   onTaskClick: (task: TaskItem) => void;
+  onAddTask?: () => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
   const label = columnLabels[status] ?? status;
@@ -56,6 +59,16 @@ export function KanbanColumn({
             )}
           </div>
         </SortableContext>
+        {onAddTask && (
+          <Button
+            variant="ghost"
+            className="w-full mt-2 border border-dashed text-muted-foreground hover:text-foreground"
+            onClick={onAddTask}
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            Add task
+          </Button>
+        )}
       </div>
     </div>
   );

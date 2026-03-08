@@ -19,7 +19,7 @@ Vibe coding high-quality products with Claude Code — from idea to shipped feat
 | **Build** | `/frontend-design` + `/taste` + `/refer` | Feature renders without errors, guardrails pass |
 | **Verify** | `/quality-manager` + `/code-review` | Tests pass, coverage meets tier thresholds |
 | **Evaluate** | `/quality-manager` (browser mode) | Acceptance criteria verified in running app |
-| **Ship** | `/product-manager` + `/commit` | Changelog + roadmap updated, commit pushed |
+| **Ship** | `/product-manager` (ship verify) + `/commit` | AC verified, frontmatter synced, changelog updated, commit pushed |
 
 ### Gate Philosophy
 

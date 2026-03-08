@@ -86,6 +86,14 @@ npm run test:coverage # Coverage report
 
 See `FLOW.md` for the full lifecycle reference card — 7 phases from Ideate to Ship with skill coordination and feedback loops.
 
+### Ship Checklist (per feature)
+Before marking a feature `completed` in roadmap:
+- [ ] Every acceptance criterion verified (code exists and works)
+- [ ] Technical approach items reconciled (built or explicitly deferred)
+- [ ] Feature spec frontmatter `status:` updated to match roadmap
+- [ ] Changelog entry added with key deliverables
+- [ ] Browser evaluation passed (user-facing features, via `/quality-manager`)
+
 ### Key Skills
 - `/product-manager` — Feature specs, roadmap, changelog
 - `/frontend-designer` — UX strategy, design review
