@@ -1,15 +1,25 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useId, useState, useCallback, useRef, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   DndContext,
   DragEndEvent,
   DragOverlay,
   DragStartEvent,
+  KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
+import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { KanbanColumn } from "./kanban-column";
 import { TaskCard, type TaskItem } from "./task-card";
 import { TaskDetailPanel } from "./task-detail-panel";
@@ -23,13 +33,55 @@ interface KanbanBoardProps {
 }
 
 export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
+  const dndId = useId();
+  const searchParams = useSearchParams();
   const [tasks, setTasks] = useState<TaskItem[]>(initialTasks);
   const [activeTask, setActiveTask] = useState<TaskItem | null>(null);
   const [detailTask, setDetailTask] = useState<TaskItem | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [projectFilter, setProjectFilter] = useState("all");
+
+  // I5: Scroll indicators
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const updateScrollIndicators = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 0);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+  }, []);
+
+  useEffect(() => {
+    updateScrollIndicators();
+    const el = scrollRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(updateScrollIndicators);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [updateScrollIndicators, tasks]);
+
+  // I4: Deep link from monitor — open task detail panel
+  useEffect(() => {
+    const taskId = searchParams.get("task");
+    if (taskId) {
+      const task = tasks.find((t) => t.id === taskId);
+      if (task) {
+        setDetailTask(task);
+        setDetailOpen(true);
+      }
+    }
+  }, [searchParams, tasks]);
+
+  // Filter tasks by project
+  const filteredTasks = projectFilter === "all"
+    ? tasks
+    : tasks.filter((t) => t.projectId === projectFilter);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
   const refresh = useCallback(async () => {
@@ -80,10 +132,24 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
 
   const groupedTasks = COLUMN_ORDER.reduce(
     (acc, status) => {
-      acc[status] = tasks.filter((t) => t.status === status);
+      acc[status] = filteredTasks.filter((t) => t.status === status);
       return acc;
     },
     {} as Record<TaskStatus, TaskItem[]>
+  );
+
+  const filterBar = projects.length > 0 && (
+    <Select value={projectFilter} onValueChange={setProjectFilter}>
+      <SelectTrigger className="w-[180px]">
+        <SelectValue placeholder="All projects" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">All projects</SelectItem>
+        {projects.map((p) => (
+          <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 
   if (tasks.length === 0) {
@@ -91,7 +157,10 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
       <div>
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">Dashboard</h1>
-          <TaskCreateDialog projects={projects} onCreated={refresh} />
+          <div className="flex items-center gap-3">
+            {filterBar}
+            <TaskCreateDialog projects={projects} onCreated={refresh} />
+          </div>
         </div>
         <EmptyBoard />
       </div>
@@ -102,22 +171,40 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Dashboard</h1>
-        <TaskCreateDialog projects={projects} onCreated={refresh} />
+        <div className="flex items-center gap-3">
+          {filterBar}
+          <TaskCreateDialog projects={projects} onCreated={refresh} />
+        </div>
       </div>
       <DndContext
+        id={dndId}
         sensors={sensors}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex gap-4 overflow-x-auto pb-4">
-          {COLUMN_ORDER.map((status) => (
-            <KanbanColumn
-              key={status}
-              status={status}
-              tasks={groupedTasks[status]}
-              onTaskClick={handleTaskClick}
-            />
-          ))}
+        <div className="relative">
+          {canScrollLeft && (
+            <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
+          )}
+          {canScrollRight && (
+            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
+          )}
+          <div
+            ref={scrollRef}
+            onScroll={updateScrollIndicators}
+            className="flex gap-4 overflow-x-auto pb-4"
+            role="region"
+            aria-label="Kanban board"
+          >
+            {COLUMN_ORDER.map((status) => (
+              <KanbanColumn
+                key={status}
+                status={status}
+                tasks={groupedTasks[status]}
+                onTaskClick={handleTaskClick}
+              />
+            ))}
+          </div>
         </div>
         <DragOverlay>
           {activeTask ? (

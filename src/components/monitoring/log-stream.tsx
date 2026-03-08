@@ -93,7 +93,7 @@ export function LogStream({ tasks }: LogStreamProps) {
   }
 
   return (
-    <Card className="relative">
+    <Card className="relative flex flex-col">
       <div className="flex items-center justify-between p-4 border-b">
         <h3 className="text-sm font-medium">Log Stream</h3>
         <div className="flex items-center gap-4">
@@ -116,14 +116,19 @@ export function LogStream({ tasks }: LogStreamProps) {
       <div
         ref={containerRef}
         onScroll={handleScroll}
-        className="h-[500px] overflow-auto p-2"
+        className="flex-1 min-h-[300px] max-h-[calc(100vh-20rem)] overflow-auto p-2"
       >
         {entries.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+          <div className="flex items-center justify-center h-full min-h-[200px] text-sm text-muted-foreground">
             Waiting for agent activity...
           </div>
         ) : (
-          entries.map((entry) => <LogEntry key={entry.id} entry={entry} />)
+          entries.map((entry) => {
+            const taskName = entry.taskId
+              ? tasks.find((t) => t.id === entry.taskId)?.title
+              : undefined;
+            return <LogEntry key={entry.id} entry={entry} taskName={taskName} />;
+          })
         )}
       </div>
       {!isAutoScrolling && (

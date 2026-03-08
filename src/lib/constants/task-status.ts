@@ -23,8 +23,8 @@ export const VALID_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
   queued: ["running", "planned", "cancelled"],
   running: ["completed", "failed", "cancelled"],
   completed: ["planned"],
-  failed: ["planned", "queued"],
-  cancelled: ["planned"],
+  failed: ["planned", "queued", "running"],
+  cancelled: ["planned", "running"],
 };
 
 // Transitions a user can trigger via drag-and-drop
@@ -44,3 +44,6 @@ export function isValidTransition(from: TaskStatus, to: TaskStatus): boolean {
 export function isValidDragTransition(from: TaskStatus, to: TaskStatus): boolean {
   return USER_DRAG_TRANSITIONS[from]?.includes(to) ?? false;
 }
+
+/** Maximum number of times a task can be resumed before requiring a fresh start */
+export const MAX_RESUME_COUNT = 3;

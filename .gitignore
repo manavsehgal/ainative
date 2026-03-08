@@ -19,3 +19,9 @@ dist/
 
 # next.js
 next-env.d.ts
+
+# build artifacts
+tsconfig.tsbuildinfo
+
+# test coverage
+coverage/

@@ -3,22 +3,139 @@ import { db } from "@/lib/db";
 import { tasks, agentLogs, notifications } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { setExecution, removeExecution } from "./execution-manager";
+import { MAX_RESUME_COUNT } from "@/lib/constants/task-status";
+
+/** Typed representation of messages from the Agent SDK stream */
+interface AgentStreamMessage {
+  type?: string;
+  subtype?: string;
+  session_id?: string;
+  event?: Record<string, unknown>;
+  message?: {
+    content?: Array<{ type: string; name?: string; input?: unknown }>;
+  };
+  result?: unknown;
+}
+
+/**
+ * Process the async message stream from the Agent SDK.
+ * Shared between executeClaudeTask and resumeClaudeTask to avoid duplication.
+ */
+async function processAgentStream(
+  taskId: string,
+  taskTitle: string,
+  response: AsyncIterable<Record<string, unknown>>,
+  abortController: AbortController
+): Promise<void> {
+  let sessionId: string | null = null;
+
+  for await (const raw of response) {
+    const message = raw as AgentStreamMessage;
+
+    // Capture session ID from init message
+    if (
+      message.type === "system" &&
+      message.subtype === "init" &&
+      message.session_id
+    ) {
+      sessionId = message.session_id;
+      await db
+        .update(tasks)
+        .set({ sessionId, updatedAt: new Date() })
+        .where(eq(tasks.id, taskId));
+
+      // Update execution manager with sessionId
+      setExecution(taskId, {
+        abortController,
+        sessionId,
+        taskId,
+        startedAt: new Date(),
+      });
+    }
+
+    // Log meaningful stream events
+    if (message.type === "stream_event" && message.event) {
+      const event = message.event;
+      const eventType = event.type as string;
+
+      if (
+        eventType === "content_block_start" ||
+        eventType === "content_block_delta" ||
+        eventType === "message_start"
+      ) {
+        await db.insert(agentLogs).values({
+          id: crypto.randomUUID(),
+          taskId,
+          agentType: "claude-code",
+          event: eventType,
+          payload: JSON.stringify(event),
+          timestamp: new Date(),
+        });
+      }
+    }
+
+    // Handle assistant messages (tool use starts)
+    if (message.type === "assistant" && message.message?.content) {
+      for (const block of message.message.content) {
+        if (block.type === "tool_use") {
+          await db.insert(agentLogs).values({
+            id: crypto.randomUUID(),
+            taskId,
+            agentType: "claude-code",
+            event: "tool_start",
+            payload: JSON.stringify({
+              tool: block.name,
+              input: block.input,
+            }),
+            timestamp: new Date(),
+          });
+        }
+      }
+    }
+
+    // Handle result
+    if (message.type === "result" && "result" in raw) {
+      const resultText =
+        typeof message.result === "string"
+          ? message.result
+          : JSON.stringify(message.result);
+
+      await db
+        .update(tasks)
+        .set({
+          status: "completed",
+          result: resultText,
+          updatedAt: new Date(),
+        })
+        .where(eq(tasks.id, taskId));
+
+      await db.insert(notifications).values({
+        id: crypto.randomUUID(),
+        taskId,
+        type: "task_completed",
+        title: `Task completed: ${taskTitle}`,
+        body: resultText.slice(0, 500),
+        createdAt: new Date(),
+      });
+
+      await db.insert(agentLogs).values({
+        id: crypto.randomUUID(),
+        taskId,
+        agentType: "claude-code",
+        event: "completed",
+        payload: JSON.stringify({ result: resultText.slice(0, 1000) }),
+        timestamp: new Date(),
+      });
+    }
+  }
+}
 
 export async function executeClaudeTask(taskId: string): Promise<void> {
-  // Fetch the task
   const [task] = await db.select().from(tasks).where(eq(tasks.id, taskId));
   if (!task) throw new Error(`Task ${taskId} not found`);
 
-  // Update status to running
-  await db
-    .update(tasks)
-    .set({ status: "running", updatedAt: new Date() })
-    .where(eq(tasks.id, taskId));
-
   const abortController = new AbortController();
-  let sessionId: string | null = null;
 
-  // Register in execution manager
   setExecution(taskId, {
     abortController,
     sessionId: null,
@@ -34,159 +151,175 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
         abortController,
         includePartialMessages: true,
         cwd: process.cwd(),
-        canUseTool: async (toolName: string, input: Record<string, unknown>) => {
+        // @ts-expect-error Agent SDK canUseTool types are incomplete — our async handler is compatible at runtime
+        canUseTool: async (
+          toolName: string,
+          input: Record<string, unknown>
+        ) => {
           return handleToolPermission(taskId, toolName, input);
         },
       },
     });
 
-    for await (const message of response) {
-      // Capture session ID from init message
-      if (
-        message.type === "system" &&
-        "subtype" in message &&
-        message.subtype === "init" &&
-        "session_id" in message
-      ) {
-        sessionId = message.session_id as string;
-        await db
-          .update(tasks)
-          .set({ sessionId, updatedAt: new Date() })
-          .where(eq(tasks.id, taskId));
+    await processAgentStream(
+      taskId,
+      task.title,
+      response as AsyncIterable<Record<string, unknown>>,
+      abortController
+    );
+  } catch (error: unknown) {
+    await handleExecutionError(taskId, task.title, error, abortController);
+  } finally {
+    removeExecution(taskId);
+  }
+}
 
-        // Update execution manager with sessionId
-        setExecution(taskId, {
-          abortController,
-          sessionId,
-          taskId,
-          startedAt: new Date(),
-        });
-      }
+export async function resumeClaudeTask(taskId: string): Promise<void> {
+  const [task] = await db.select().from(tasks).where(eq(tasks.id, taskId));
+  if (!task) throw new Error(`Task ${taskId} not found`);
 
-      // Log meaningful stream events
-      if (message.type === "stream_event" && "event" in message) {
-        const event = message.event as Record<string, unknown>;
-        const eventType = event.type as string;
+  if (!task.sessionId) {
+    throw new Error("No session to resume — use Retry instead");
+  }
 
-        // Filter to meaningful events
-        if (
-          eventType === "content_block_start" ||
-          eventType === "content_block_delta" ||
-          eventType === "message_start"
-        ) {
-          await db.insert(agentLogs).values({
-            id: crypto.randomUUID(),
-            taskId,
-            agentType: "claude-code",
-            event: eventType,
-            payload: JSON.stringify(event),
-            timestamp: new Date(),
-          });
-        }
-      }
+  if (task.resumeCount >= MAX_RESUME_COUNT) {
+    throw new Error("Resume limit reached. Re-queue for fresh start.");
+  }
 
-      // Handle assistant messages (tool use starts)
-      if (message.type === "assistant" && "message" in message) {
-        const msg = message.message as { content?: Array<{ type: string; name?: string; input?: unknown }> };
-        if (msg.content) {
-          for (const block of msg.content) {
-            if (block.type === "tool_use") {
-              await db.insert(agentLogs).values({
-                id: crypto.randomUUID(),
-                taskId,
-                agentType: "claude-code",
-                event: "tool_start",
-                payload: JSON.stringify({
-                  tool: block.name,
-                  input: block.input,
-                }),
-                timestamp: new Date(),
-              });
-            }
-          }
-        }
-      }
+  // Increment resume count
+  await db
+    .update(tasks)
+    .set({ resumeCount: task.resumeCount + 1, updatedAt: new Date() })
+    .where(eq(tasks.id, taskId));
 
-      // Handle result
-      if ("result" in message && message.type === "result") {
-        const resultText =
-          typeof message.result === "string"
-            ? message.result
-            : JSON.stringify(message.result);
+  const abortController = new AbortController();
 
-        await db
-          .update(tasks)
-          .set({
-            status: "completed",
-            result: resultText,
-            updatedAt: new Date(),
-          })
-          .where(eq(tasks.id, taskId));
+  setExecution(taskId, {
+    abortController,
+    sessionId: task.sessionId,
+    taskId,
+    startedAt: new Date(),
+  });
 
-        // Create completion notification
-        await db.insert(notifications).values({
-          id: crypto.randomUUID(),
-          taskId,
-          type: "task_completed",
-          title: `Task completed: ${task.title}`,
-          body: resultText.slice(0, 500),
-          createdAt: new Date(),
-        });
+  await db.insert(agentLogs).values({
+    id: crypto.randomUUID(),
+    taskId,
+    agentType: "claude-code",
+    event: "session_resumed",
+    payload: JSON.stringify({
+      sessionId: task.sessionId,
+      resumeCount: task.resumeCount + 1,
+    }),
+    timestamp: new Date(),
+  });
 
-        await db.insert(agentLogs).values({
-          id: crypto.randomUUID(),
-          taskId,
-          agentType: "claude-code",
-          event: "completed",
-          payload: JSON.stringify({ result: resultText.slice(0, 1000) }),
-          timestamp: new Date(),
-        });
-      }
-    }
+  try {
+    const prompt = task.description || task.title;
+    const response = query({
+      prompt,
+      options: {
+        resume: task.sessionId,
+        abortController,
+        includePartialMessages: true,
+        cwd: process.cwd(),
+        // @ts-expect-error Agent SDK canUseTool types are incomplete — our async handler is compatible at runtime
+        canUseTool: async (
+          toolName: string,
+          input: Record<string, unknown>
+        ) => {
+          return handleToolPermission(taskId, toolName, input);
+        },
+      },
+    });
+
+    await processAgentStream(
+      taskId,
+      task.title,
+      response as AsyncIterable<Record<string, unknown>>,
+      abortController
+    );
   } catch (error: unknown) {
     const errorMessage =
       error instanceof Error ? error.message : String(error);
 
-    // Check if it was an abort
-    if (abortController.signal.aborted) {
+    // Detect session expiry from the SDK
+    if (
+      errorMessage.includes("session") &&
+      (errorMessage.includes("expired") || errorMessage.includes("not found"))
+    ) {
       await db
         .update(tasks)
-        .set({ status: "cancelled", updatedAt: new Date() })
+        .set({
+          status: "failed",
+          result: "Session expired — re-queue for fresh start",
+          sessionId: null,
+          updatedAt: new Date(),
+        })
         .where(eq(tasks.id, taskId));
+
+      await db.insert(notifications).values({
+        id: crypto.randomUUID(),
+        taskId,
+        type: "task_failed",
+        title: `Session expired: ${task.title}`,
+        body: "The agent session has expired. Re-queue this task for a fresh start.",
+        createdAt: new Date(),
+      });
       return;
     }
 
-    // Update task as failed
-    await db
-      .update(tasks)
-      .set({
-        status: "failed",
-        result: errorMessage,
-        updatedAt: new Date(),
-      })
-      .where(eq(tasks.id, taskId));
-
-    // Create failure notification
-    await db.insert(notifications).values({
-      id: crypto.randomUUID(),
-      taskId,
-      type: "task_failed",
-      title: `Task failed: ${task.title}`,
-      body: errorMessage.slice(0, 500),
-      createdAt: new Date(),
-    });
-
-    await db.insert(agentLogs).values({
-      id: crypto.randomUUID(),
-      taskId,
-      agentType: "claude-code",
-      event: "error",
-      payload: JSON.stringify({ error: errorMessage }),
-      timestamp: new Date(),
-    });
+    await handleExecutionError(taskId, task.title, error, abortController);
   } finally {
     removeExecution(taskId);
   }
+}
+
+/**
+ * Shared error handler for both execute and resume paths.
+ */
+async function handleExecutionError(
+  taskId: string,
+  taskTitle: string,
+  error: unknown,
+  abortController: AbortController
+): Promise<void> {
+  const errorMessage =
+    error instanceof Error ? error.message : String(error);
+
+  if (abortController.signal.aborted) {
+    await db
+      .update(tasks)
+      .set({ status: "cancelled", updatedAt: new Date() })
+      .where(eq(tasks.id, taskId));
+    return;
+  }
+
+  await db
+    .update(tasks)
+    .set({
+      status: "failed",
+      result: errorMessage,
+      updatedAt: new Date(),
+    })
+    .where(eq(tasks.id, taskId));
+
+  await db.insert(notifications).values({
+    id: crypto.randomUUID(),
+    taskId,
+    type: "task_failed",
+    title: `Task failed: ${taskTitle}`,
+    body: errorMessage.slice(0, 500),
+    createdAt: new Date(),
+  });
+
+  await db.insert(agentLogs).values({
+    id: crypto.randomUUID(),
+    taskId,
+    agentType: "claude-code",
+    event: "error",
+    payload: JSON.stringify({ error: errorMessage }),
+    timestamp: new Date(),
+  });
 }
 
 /**
@@ -197,11 +330,14 @@ async function handleToolPermission(
   taskId: string,
   toolName: string,
   input: Record<string, unknown>
-): Promise<{ behavior: "allow" | "deny"; updatedInput?: unknown; message?: string }> {
+): Promise<{
+  behavior: "allow" | "deny";
+  updatedInput?: unknown;
+  message?: string;
+}> {
   const isQuestion = toolName === "AskUserQuestion";
   const notificationId = crypto.randomUUID();
 
-  // Create notification
   await db.insert(notifications).values({
     id: notificationId,
     taskId,

@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { formatTime } from "@/lib/utils/format-timestamp";
 
-interface LogEntryData {
+export interface LogEntryData {
   id: string;
   taskId: string | null;
   agentType: string;
@@ -12,23 +14,18 @@ interface LogEntryData {
 }
 
 const eventColors: Record<string, string> = {
-  tool_start: "text-blue-500",
-  content_block_start: "text-blue-500",
-  message_start: "text-blue-500",
+  tool_start: "text-primary",
+  content_block_start: "text-primary",
+  message_start: "text-primary",
   content_block_delta: "text-muted-foreground",
-  error: "text-red-500",
-  completed: "text-green-500",
+  error: "text-destructive",
+  completed: "text-chart-2",
 };
 
-export function LogEntry({ entry }: { entry: LogEntryData }) {
+export function LogEntry({ entry, taskName }: { entry: LogEntryData; taskName?: string }) {
   const [expanded, setExpanded] = useState(false);
 
-  const time = new Date(entry.timestamp).toLocaleTimeString("en-US", {
-    hour12: false,
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
+  const time = formatTime(entry.timestamp);
 
   let preview = "";
   try {
@@ -51,11 +48,25 @@ export function LogEntry({ entry }: { entry: LogEntryData }) {
   const color = eventColors[entry.event] ?? "text-muted-foreground";
 
   return (
-    <div
-      className="font-mono text-sm py-0.5 hover:bg-muted/50 px-2 rounded cursor-pointer"
+    <button
+      type="button"
+      className="w-full text-left font-mono text-sm py-0.5 hover:bg-muted/50 px-2 rounded cursor-pointer"
       onClick={() => setExpanded(!expanded)}
+      aria-expanded={expanded}
+      aria-label={`Log entry: ${entry.event} at ${time}`}
     >
       <span className="text-muted-foreground">[{time}]</span>{" "}
+      {taskName && entry.taskId && (
+        <>
+          <Link
+            href={`/dashboard?task=${entry.taskId}`}
+            className="text-primary hover:underline"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {taskName}
+          </Link>{" "}
+        </>
+      )}
       <span className={color}>[{entry.event}]</span>{" "}
       <span className="text-foreground">{preview}</span>
       {expanded && entry.payload && (
@@ -63,6 +74,6 @@ export function LogEntry({ entry }: { entry: LogEntryData }) {
           {JSON.stringify(JSON.parse(entry.payload), null, 2)}
         </pre>
       )}
-    </div>
+    </button>
   );
 }

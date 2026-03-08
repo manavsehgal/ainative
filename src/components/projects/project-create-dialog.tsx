@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Plus } from "lucide-react";
+import { toast } from "sonner";
 
 interface ProjectCreateDialogProps {
   onCreated: () => void;
@@ -23,11 +24,13 @@ export function ProjectCreateDialog({ onCreated }: ProjectCreateDialogProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) return;
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch("/api/projects", {
         method: "POST",
@@ -38,8 +41,15 @@ export function ProjectCreateDialog({ onCreated }: ProjectCreateDialogProps) {
         setName("");
         setDescription("");
         setOpen(false);
+        toast.success("Project created");
         onCreated();
+      } else {
+        const data = await res.json().catch(() => null);
+        setError(data?.error ?? `Failed to create project (${res.status})`);
       }
+    } catch (err) {
+      setError("Network error — could not reach server");
+      console.error("Project creation failed:", err);
     } finally {
       setLoading(false);
     }
@@ -78,6 +88,9 @@ export function ProjectCreateDialog({ onCreated }: ProjectCreateDialogProps) {
               rows={3}
             />
           </div>
+          {error && (
+            <p className="text-sm text-destructive">{error}</p>
+          )}
           <Button type="submit" disabled={loading || !name.trim()} className="w-full">
             {loading ? "Creating..." : "Create Project"}
           </Button>

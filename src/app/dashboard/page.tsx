@@ -4,6 +4,7 @@ import { tasks, projects } from "@/lib/db/schema";
 import { desc } from "drizzle-orm";
 import { KanbanBoard } from "@/components/tasks/kanban-board";
 import { SkeletonBoard } from "@/components/tasks/skeleton-board";
+import type { TaskItem } from "@/components/tasks/task-card";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,18 @@ async function BoardContent() {
     .from(projects)
     .orderBy(projects.name);
 
-  return <KanbanBoard initialTasks={allTasks as any} projects={allProjects} />;
+  // Build project name lookup for task cards
+  const projectMap = new Map(allProjects.map((p) => [p.id, p.name]));
+
+  // Serialize Date objects for client component consumption
+  const serializedTasks: TaskItem[] = allTasks.map((t) => ({
+    ...t,
+    projectName: t.projectId ? projectMap.get(t.projectId) ?? undefined : undefined,
+    createdAt: t.createdAt.toISOString(),
+    updatedAt: t.updatedAt.toISOString(),
+  }));
+
+  return <KanbanBoard initialTasks={serializedTasks} projects={allProjects} />;
 }
 
 export default function DashboardPage() {

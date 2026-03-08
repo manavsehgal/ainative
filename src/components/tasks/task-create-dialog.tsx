@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus } from "lucide-react";
+import { toast } from "sonner";
 
 interface TaskCreateDialogProps {
   projects: { id: string; name: string }[];
@@ -33,11 +34,13 @@ export function TaskCreateDialog({ projects, onCreated }: TaskCreateDialogProps)
   const [projectId, setProjectId] = useState<string>("");
   const [priority, setPriority] = useState("2");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) return;
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch("/api/tasks", {
         method: "POST",
@@ -55,8 +58,15 @@ export function TaskCreateDialog({ projects, onCreated }: TaskCreateDialogProps)
         setProjectId("");
         setPriority("2");
         setOpen(false);
+        toast.success("Task created");
         onCreated();
+      } else {
+        const data = await res.json().catch(() => null);
+        setError(data?.error ?? `Failed to create task (${res.status})`);
       }
+    } catch (err) {
+      setError("Network error — could not reach server");
+      console.error("Task creation failed:", err);
     } finally {
       setLoading(false);
     }
@@ -127,6 +137,9 @@ export function TaskCreateDialog({ projects, onCreated }: TaskCreateDialogProps)
               </Select>
             </div>
           </div>
+          {error && (
+            <p className="text-sm text-destructive">{error}</p>
+          )}
           <Button type="submit" disabled={loading || !title.trim()} className="w-full">
             {loading ? "Creating..." : "Create Task"}
           </Button>

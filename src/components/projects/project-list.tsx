@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
+import { FolderKanban } from "lucide-react";
 import { ProjectCard } from "./project-card";
 import { ProjectCreateDialog } from "./project-create-dialog";
 import { ProjectEditDialog } from "./project-edit-dialog";
+import { EmptyState } from "@/components/shared/empty-state";
 
 interface Project {
   id: string;
@@ -38,10 +40,11 @@ export function ProjectList({ initialProjects }: { initialProjects: Project[] })
         <ProjectCreateDialog onCreated={refresh} />
       </div>
       {projects.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          <p className="text-lg mb-2">No projects yet</p>
-          <p>Create your first project to get started.</p>
-        </div>
+        <EmptyState
+          icon={FolderKanban}
+          heading="No projects yet"
+          description="Create your first project to organize your tasks."
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {projects.map((project) => (

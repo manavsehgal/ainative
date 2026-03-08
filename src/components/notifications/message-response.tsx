@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Send } from "lucide-react";
 
-interface Question {
+export interface Question {
   question: string;
   header: string;
   options: { label: string; description: string }[];

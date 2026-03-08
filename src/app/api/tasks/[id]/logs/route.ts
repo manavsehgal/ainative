@@ -44,8 +44,12 @@ export async function GET(
                 lastTimestamp = log.timestamp;
               }
             }
-          } catch {
-            // DB error — keep polling
+          } catch (err) {
+            console.error(`[SSE /tasks/${taskId}/logs] DB poll error:`, err);
+            send(JSON.stringify({ type: "error", message: "Database query failed" }));
+            // Back off on error before retrying
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+            continue;
           }
 
           await new Promise((resolve) => setTimeout(resolve, 500));

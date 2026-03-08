@@ -20,14 +20,15 @@ export function UnreadBadge() {
     }
 
     fetchCount();
-    const interval = setInterval(fetchCount, 5000);
+    // Aligned with InboxList polling at 10s to reduce duplicate requests
+    const interval = setInterval(fetchCount, 10_000);
     return () => clearInterval(interval);
   }, []);
 
   if (count === 0) return null;
 
   return (
-    <Badge variant="destructive" className="ml-auto text-xs h-5 min-w-5 px-1.5">
+    <Badge variant="destructive" className="ml-auto text-xs h-5 min-w-5 px-1.5" aria-label={`${count} unread notifications`}>
       {count > 99 ? "99+" : count}
     </Badge>
   );

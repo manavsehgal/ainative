@@ -47,7 +47,7 @@ export function AppSidebar() {
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton asChild isActive={pathname === item.href}>
                     <Link href={item.href}>
-                      <item.icon className="h-4 w-4" />
+                      <item.icon className="h-4 w-4" aria-hidden="true" />
                       <span>{item.title}</span>
                       {item.badge && <UnreadBadge />}
                     </Link>
@@ -58,8 +58,13 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-2">
-        <ThemeToggle />
+      <SidebarFooter className="px-4 py-3">
+        <div className="flex items-center justify-between">
+          <kbd className="text-xs text-muted-foreground border rounded px-1.5 py-0.5">
+            <span className="text-xs">&#8984;</span>K
+          </kbd>
+          <ThemeToggle />
+        </div>
       </SidebarFooter>
     </Sidebar>
   );

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { tasks } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { executeTaskWithAgent } from "@/lib/agents/router";
 
 export async function POST(
@@ -9,20 +9,30 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const [task] = await db.select().from(tasks).where(eq(tasks.id, id));
 
-  if (!task) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
+  // Atomic check-and-claim: only one request can transition queued → running
+  const claimed = db
+    .update(tasks)
+    .set({ status: "running", updatedAt: new Date() })
+    .where(and(eq(tasks.id, id), eq(tasks.status, "queued")))
+    .returning()
+    .all();
 
-  if (task.status !== "queued") {
+  if (claimed.length === 0) {
+    // Either not found or not in queued status
+    const [task] = await db.select().from(tasks).where(eq(tasks.id, id));
+    if (!task) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
     return NextResponse.json(
       { error: `Task must be queued to execute, current status: ${task.status}` },
       { status: 400 }
     );
   }
 
-  // Fire-and-forget
+  const task = claimed[0];
+
+  // Fire-and-forget — task already marked as running
   executeTaskWithAgent(id, task.assignedAgent ?? "claude-code").catch(
     (err) => console.error(`Task ${id} execution error:`, err)
   );

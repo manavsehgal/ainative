@@ -3,8 +3,10 @@
 import { useEffect, useState, useCallback } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { CheckCheck } from "lucide-react";
+import { CheckCheck, Inbox, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 import { NotificationItem } from "./notification-item";
+import { EmptyState } from "@/components/shared/empty-state";
 
 interface Notification {
   id: string;
@@ -34,14 +36,15 @@ export function InboxList({
     if (res.ok) setNotifications(await res.json());
   }, []);
 
-  // Poll every 3 seconds
+  // Poll every 10 seconds (consolidated from 3s inbox + 5s badge)
   useEffect(() => {
-    const interval = setInterval(refresh, 3000);
+    const interval = setInterval(refresh, 10_000);
     return () => clearInterval(interval);
   }, [refresh]);
 
   async function markAllRead() {
     await fetch("/api/notifications/mark-all-read", { method: "PATCH" });
+    toast.success("All notifications marked as read");
     refresh();
   }
 
@@ -69,19 +72,26 @@ export function InboxList({
             <TabsTrigger value="messages">Messages</TabsTrigger>
           </TabsList>
         </Tabs>
-        {unreadCount > 0 && (
-          <Button variant="ghost" size="sm" onClick={markAllRead}>
-            <CheckCheck className="h-4 w-4 mr-1" />
-            Mark all read
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={refresh} aria-label="Refresh notifications">
+            <RefreshCw className="h-4 w-4" />
           </Button>
-        )}
+          {unreadCount > 0 && (
+            <Button variant="ghost" size="sm" onClick={markAllRead}>
+              <CheckCheck className="h-4 w-4 mr-1" />
+              Mark all read
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="space-y-3">
         {filtered.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            <p>No notifications</p>
-          </div>
+          <EmptyState
+            icon={Inbox}
+            heading="No notifications"
+            description={tab === "all" ? "You're all caught up." : `No ${tab} notifications to show.`}
+          />
         ) : (
           filtered.map((n) => (
             <NotificationItem

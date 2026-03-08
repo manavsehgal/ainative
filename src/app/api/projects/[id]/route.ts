@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { projects } from "@/lib/db/schema";
+import { projects, tasks } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { updateProjectSchema } from "@/lib/validators/project";
 
@@ -60,6 +60,12 @@ export async function DELETE(
   if (!existing) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+
+  // Disassociate tasks before deleting project (avoids FK constraint failure)
+  await db
+    .update(tasks)
+    .set({ projectId: null, updatedAt: new Date() })
+    .where(eq(tasks.projectId, id));
 
   await db.delete(projects).where(eq(projects.id, id));
   return NextResponse.json({ success: true });

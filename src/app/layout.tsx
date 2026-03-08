@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppSidebar } from "@/components/shared/app-sidebar";
+import { CommandPalette } from "@/components/shared/command-palette";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -41,6 +43,8 @@ export default function RootLayout({
             <AppSidebar />
             <SidebarInset>{children}</SidebarInset>
           </SidebarProvider>
+          <CommandPalette />
+          <Toaster />
         </TooltipProvider>
       </body>
     </html>
