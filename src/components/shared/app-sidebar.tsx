@@ -7,6 +7,7 @@ import {
   Inbox,
   Activity,
   FolderKanban,
+  Settings,
 } from "lucide-react";
 import {
   Sidebar,
@@ -21,12 +22,14 @@ import {
 } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { UnreadBadge } from "@/components/notifications/unread-badge";
+import { AuthStatusDot } from "@/components/settings/auth-status-dot";
 
 const navItems = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard, badge: false },
   { title: "Inbox", href: "/inbox", icon: Inbox, badge: true },
   { title: "Monitor", href: "/monitor", icon: Activity, badge: false },
   { title: "Projects", href: "/projects", icon: FolderKanban, badge: false },
+  { title: "Settings", href: "/settings", icon: Settings, badge: false },
 ];
 
 export function AppSidebar() {
@@ -60,9 +63,12 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter className="px-4 py-3">
         <div className="flex items-center justify-between">
-          <kbd className="text-xs text-muted-foreground border rounded px-1.5 py-0.5">
-            <span className="text-xs">&#8984;</span>K
-          </kbd>
+          <div className="flex items-center gap-2">
+            <kbd className="text-xs text-muted-foreground border rounded px-1.5 py-0.5">
+              <span className="text-xs">&#8984;</span>K
+            </kbd>
+            <AuthStatusDot />
+          </div>
           <ThemeToggle />
         </div>
       </SidebarFooter>

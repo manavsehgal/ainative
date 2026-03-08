@@ -4,12 +4,14 @@ import { tasks, agentLogs, notifications } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { setExecution, removeExecution } from "./execution-manager";
 import { MAX_RESUME_COUNT } from "@/lib/constants/task-status";
+import { getAuthEnv, updateAuthStatus } from "@/lib/settings/auth";
 
 /** Typed representation of messages from the Agent SDK stream */
 interface AgentStreamMessage {
   type?: string;
   subtype?: string;
   session_id?: string;
+  api_key_source?: string;
   event?: Record<string, unknown>;
   message?: {
     content?: Array<{ type: string; name?: string; input?: unknown }>;
@@ -43,6 +45,11 @@ async function processAgentStream(
         .update(tasks)
         .set({ sessionId, updatedAt: new Date() })
         .where(eq(tasks.id, taskId));
+
+      // Capture auth source from init message
+      if (message.api_key_source) {
+        updateAuthStatus(message.api_key_source as "db" | "env" | "oauth" | "unknown");
+      }
 
       // Update execution manager with sessionId
       setExecution(taskId, {
@@ -145,12 +152,14 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
 
   try {
     const prompt = task.description || task.title;
+    const authEnv = await getAuthEnv();
     const response = query({
       prompt,
       options: {
         abortController,
         includePartialMessages: true,
         cwd: process.cwd(),
+        ...(authEnv && { env: { ...process.env, ...authEnv } }),
         // @ts-expect-error Agent SDK canUseTool types are incomplete — our async handler is compatible at runtime
         canUseTool: async (
           toolName: string,
@@ -215,6 +224,7 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
 
   try {
     const prompt = task.description || task.title;
+    const authEnv = await getAuthEnv();
     const response = query({
       prompt,
       options: {
@@ -222,6 +232,7 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
         abortController,
         includePartialMessages: true,
         cwd: process.cwd(),
+        ...(authEnv && { env: { ...process.env, ...authEnv } }),
         // @ts-expect-error Agent SDK canUseTool types are incomplete — our async handler is compatible at runtime
         canUseTool: async (
           toolName: string,

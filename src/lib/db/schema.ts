@@ -96,9 +96,16 @@ export const notifications = sqliteTable(
   ]
 );
 
+export const settings = sqliteTable("settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+});
+
 // Shared types derived from schema — use these in components instead of `as any`
 export type ProjectRow = InferSelectModel<typeof projects>;
 export type TaskRow = InferSelectModel<typeof tasks>;
 export type WorkflowRow = InferSelectModel<typeof workflows>;
 export type AgentLogRow = InferSelectModel<typeof agentLogs>;
 export type NotificationRow = InferSelectModel<typeof notifications>;
+export type SettingsRow = InferSelectModel<typeof settings>;
