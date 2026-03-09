@@ -23,7 +23,7 @@ import {
 import { KanbanColumn } from "./kanban-column";
 import { TaskCard, type TaskItem } from "./task-card";
 import { TaskDetailPanel } from "./task-detail-panel";
-import { TaskCreateDialog } from "./task-create-dialog";
+import { TaskCreatePanel } from "./task-create-panel";
 import { EmptyBoard } from "./empty-board";
 import { COLUMN_ORDER, isValidDragTransition, type TaskStatus } from "@/lib/constants/task-status";
 
@@ -178,7 +178,7 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
           <h1 className="text-2xl font-bold">Dashboard</h1>
           <div className="flex items-center gap-3">
             {filterBar}
-            <TaskCreateDialog projects={projects} onCreated={refresh} />
+            <TaskCreatePanel projects={projects} onCreated={refresh} />
           </div>
         </div>
         <EmptyBoard />
@@ -192,7 +192,7 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
         <h1 className="text-2xl font-bold">Dashboard</h1>
         <div className="flex items-center gap-3">
           {filterBar}
-          <TaskCreateDialog projects={projects} onCreated={refresh} />
+          <TaskCreatePanel projects={projects} onCreated={refresh} />
         </div>
       </div>
       <DndContext
@@ -240,7 +240,7 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
         onOpenChange={setDetailOpen}
         onUpdated={refresh}
       />
-      <TaskCreateDialog
+      <TaskCreatePanel
         projects={projects}
         onCreated={refresh}
         open={inlineCreateOpen}

@@ -25,6 +25,7 @@ interface AIAssistPanelProps {
   description: string;
   onApplyDescription: (description: string) => void;
   onCreateSubtasks: (subtasks: TaskSuggestion[]) => void;
+  onResultChange?: (hasResult: boolean) => void;
 }
 
 const patternLabels: Record<string, string> = {
@@ -45,6 +46,7 @@ export function AIAssistPanel({
   description,
   onApplyDescription,
   onCreateSubtasks,
+  onResultChange,
 }: AIAssistPanelProps) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AssistResult | null>(null);
@@ -71,7 +73,9 @@ export function AIAssistPanel({
         return;
       }
 
-      setResult(await res.json());
+      const data = await res.json();
+      setResult(data);
+      onResultChange?.(true);
     } catch {
       setError("Network error");
     } finally {
@@ -81,7 +85,7 @@ export function AIAssistPanel({
 
   if (!result) {
     return (
-      <div className="border-t pt-3 mt-3">
+      <div className="pt-2">
         <Button
           type="button"
           variant="outline"
@@ -98,13 +102,17 @@ export function AIAssistPanel({
           {loading ? "Analyzing..." : "AI Assist"}
         </Button>
         {error && <p className="text-xs text-destructive mt-1">{error}</p>}
+        <p className="text-xs text-muted-foreground text-center mt-1.5">
+          Suggests improved descriptions, sub-task breakdowns, and workflow patterns
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="border-t pt-3 mt-3 space-y-3">
-      <div className="flex items-center gap-2">
+    <div className="pt-2 space-y-3">
+      {/* Header row — full width */}
+      <div className="flex items-center gap-2 flex-wrap">
         <Sparkles className="h-4 w-4 text-primary" />
         <span className="text-sm font-medium">AI Suggestions</span>
         <Badge variant="outline" className="text-xs">
@@ -118,73 +126,79 @@ export function AIAssistPanel({
         )}
       </div>
 
-      {/* Improved description */}
-      <Card>
-        <CardContent className="p-3">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-medium text-muted-foreground">
-              Improved Description
-            </span>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-6 text-xs"
-              onClick={() => {
-                onApplyDescription(result.improvedDescription);
-                setDescriptionApplied(true);
-              }}
-              disabled={descriptionApplied}
-            >
-              {descriptionApplied ? (
-                <><Check className="h-3 w-3 mr-1" /> Applied</>
-              ) : (
-                "Apply"
-              )}
-            </Button>
-          </div>
-          <p className="text-sm">{result.improvedDescription}</p>
-        </CardContent>
-      </Card>
-
-      {/* Task breakdown */}
-      {result.breakdown.length > 0 && (
+      {/* Two-column grid for cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {/* Improved description */}
         <Card>
           <CardContent className="p-3">
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-1">
               <span className="text-xs font-medium text-muted-foreground">
-                Suggested Breakdown ({result.breakdown.length} sub-tasks)
+                Improved Description
               </span>
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
                 className="h-6 text-xs"
-                onClick={() => onCreateSubtasks(result.breakdown)}
+                onClick={() => {
+                  onApplyDescription(result.improvedDescription);
+                  setDescriptionApplied(true);
+                }}
+                disabled={descriptionApplied}
               >
-                Create All
+                {descriptionApplied ? (
+                  <><Check className="h-3 w-3 mr-1" /> Applied</>
+                ) : (
+                  "Apply"
+                )}
               </Button>
             </div>
-            <div className="space-y-1.5">
-              {result.breakdown.map((sub, i) => (
-                <div key={i} className="text-sm">
-                  <span className="font-medium">{sub.title}</span>
-                  <p className="text-xs text-muted-foreground">{sub.description}</p>
-                </div>
-              ))}
-            </div>
+            <p className="text-sm">{result.improvedDescription}</p>
           </CardContent>
         </Card>
-      )}
 
-      {/* Reasoning */}
+        {/* Task breakdown */}
+        {result.breakdown.length > 0 && (
+          <Card>
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-muted-foreground">
+                  Suggested Breakdown ({result.breakdown.length} sub-tasks)
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 text-xs"
+                  onClick={() => onCreateSubtasks(result.breakdown)}
+                >
+                  Create All
+                </Button>
+              </div>
+              <div className="max-h-60 overflow-y-auto space-y-1.5">
+                {result.breakdown.map((sub, i) => (
+                  <div key={i} className="text-sm">
+                    <span className="font-medium">{sub.title}</span>
+                    <p className="text-xs text-muted-foreground">{sub.description}</p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Reasoning + Dismiss — full width */}
       <p className="text-xs text-muted-foreground">{result.reasoning}</p>
 
       <Button
         type="button"
         variant="ghost"
         size="sm"
-        onClick={() => setResult(null)}
+        onClick={() => {
+          setResult(null);
+          onResultChange?.(false);
+        }}
         className="w-full"
       >
         <X className="h-3 w-3 mr-1" /> Dismiss
