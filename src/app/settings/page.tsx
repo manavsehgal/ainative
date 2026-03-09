@@ -1,4 +1,5 @@
 import { AuthConfigSection } from "@/components/settings/auth-config-section";
+import { DataManagementSection } from "@/components/settings/data-management-section";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,7 @@ export default function SettingsPage() {
         </p>
       </div>
       <AuthConfigSection />
+      <DataManagementSection />
     </div>
   );
 }

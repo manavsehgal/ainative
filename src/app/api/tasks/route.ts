@@ -3,11 +3,7 @@ import { db } from "@/lib/db";
 import { tasks, documents } from "@/lib/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { createTaskSchema } from "@/lib/validators/task";
-import { readdir, stat } from "fs/promises";
-import { join } from "path";
-import { homedir } from "os";
-
-const UPLOAD_DIR = join(homedir(), ".stagent", "uploads");
+import { processDocument } from "@/lib/documents/processor";
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
@@ -49,31 +45,21 @@ export async function POST(req: NextRequest) {
     updatedAt: now,
   });
 
-  // Link uploaded files to the task
+  // Link already-uploaded documents to this task
   if (parsed.data.fileIds && parsed.data.fileIds.length > 0) {
     try {
-      const files = await readdir(UPLOAD_DIR);
       for (const fileId of parsed.data.fileIds) {
-        const match = files.find((f) => f.startsWith(fileId));
-        if (!match) continue;
-        const filepath = join(UPLOAD_DIR, match);
-        const fileStat = await stat(filepath);
-        const ext = match.split(".").pop()?.toLowerCase() ?? "";
-        const mimeType = ext ? getMimeType(ext) : "application/octet-stream";
-        await db.insert(documents).values({
-          id: fileId,
-          taskId: id,
-          projectId: parsed.data.projectId ?? null,
-          filename: match,
-          originalName: match,
-          mimeType,
-          size: fileStat.size,
-          storagePath: filepath,
-          direction: "input",
-          status: "uploaded",
-          createdAt: now,
-          updatedAt: now,
-        });
+        // Update existing document record (created by /api/uploads) to link to this task
+        await db.update(documents)
+          .set({
+            taskId: id,
+            projectId: parsed.data.projectId ?? null,
+            updatedAt: now,
+          })
+          .where(eq(documents.id, fileId));
+
+        // Trigger processing if not already done (fire-and-forget)
+        processDocument(fileId).catch(() => {});
       }
     } catch {
       // File association is best-effort — don't fail task creation
@@ -82,25 +68,4 @@ export async function POST(req: NextRequest) {
 
   const [task] = await db.select().from(tasks).where(eq(tasks.id, id));
   return NextResponse.json(task, { status: 201 });
-}
-
-const MIME_TYPES: Record<string, string> = {
-  txt: "text/plain",
-  md: "text/markdown",
-  json: "application/json",
-  js: "text/javascript",
-  ts: "text/typescript",
-  py: "text/x-python",
-  html: "text/html",
-  css: "text/css",
-  png: "image/png",
-  jpg: "image/jpeg",
-  jpeg: "image/jpeg",
-  gif: "image/gif",
-  svg: "image/svg+xml",
-  pdf: "application/pdf",
-};
-
-function getMimeType(ext: string): string {
-  return MIME_TYPES[ext] ?? "application/octet-stream";
 }
