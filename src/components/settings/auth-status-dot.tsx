@@ -30,8 +30,8 @@ export function AuthStatusDot() {
   }, []);
 
   const colors = {
-    connected: "bg-green-500",
-    disconnected: "bg-red-500",
+    connected: "bg-success",
+    disconnected: "bg-status-failed",
     loading: "bg-muted-foreground/40",
   };
 

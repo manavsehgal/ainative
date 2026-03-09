@@ -5,9 +5,10 @@ interface EmptyStateProps {
   icon: LucideIcon;
   heading: string;
   description: string;
+  action?: React.ReactNode;
 }
 
-export function EmptyState({ icon: Icon, heading, description }: EmptyStateProps) {
+export function EmptyState({ icon: Icon, heading, description, action }: EmptyStateProps) {
   return (
     <Card className="border-dashed">
       <CardContent className="flex flex-col items-center justify-center py-12">
@@ -16,6 +17,7 @@ export function EmptyState({ icon: Icon, heading, description }: EmptyStateProps
         <p className="text-sm text-muted-foreground text-center max-w-sm">
           {description}
         </p>
+        {action && <div className="mt-4">{action}</div>}
       </CardContent>
     </Card>
   );

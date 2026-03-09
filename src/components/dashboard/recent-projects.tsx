@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { FolderPlus } from "lucide-react";
+import { SectionHeading } from "@/components/shared/section-heading";
 
 export interface RecentProject {
   id: string;
@@ -21,9 +22,7 @@ export function RecentProjects({ projects }: RecentProjectsProps) {
   if (projects.length === 0) {
     return (
       <div>
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3">
-          Recent Projects
-        </h3>
+        <SectionHeading>Recent Projects</SectionHeading>
         <Card className="p-6 text-center">
           <FolderPlus className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
           <p className="text-sm text-muted-foreground mb-3">No active projects yet.</p>
@@ -38,9 +37,7 @@ export function RecentProjects({ projects }: RecentProjectsProps) {
   return (
     <div>
       <div className="flex items-baseline justify-between mb-3">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Recent Projects
-        </h3>
+        <SectionHeading className="mb-0">Recent Projects</SectionHeading>
         <Link href="/projects" className="text-xs text-muted-foreground underline hover:text-foreground">
           View all
         </Link>
@@ -52,7 +49,7 @@ export function RecentProjects({ projects }: RecentProjectsProps) {
             : 0;
           return (
             <Link key={project.id} href={`/projects/${project.id}`}>
-              <Card className="cursor-pointer transition-colors hover:bg-accent/50">
+              <Card className="cursor-pointer transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base font-medium">{project.name}</CardTitle>
                 </CardHeader>

@@ -37,6 +37,24 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  /* Semantic status colors */
+  --color-status-running: var(--status-running);
+  --color-status-completed: var(--status-completed);
+  --color-status-failed: var(--status-failed);
+  --color-status-warning: var(--status-warning);
+  /* Semantic priority colors */
+  --color-priority-critical: var(--priority-critical);
+  --color-priority-high: var(--priority-high);
+  --color-priority-medium: var(--priority-medium);
+  --color-priority-low: var(--priority-low);
+  /* Semantic connection/auth colors */
+  --color-success: var(--status-completed);
+  --color-warning: var(--status-warning);
+  --color-info: var(--status-running);
+  /* Complexity colors */
+  --color-complexity-simple: var(--complexity-simple);
+  --color-complexity-moderate: var(--complexity-moderate);
+  --color-complexity-complex: var(--complexity-complex);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --radius-sm: calc(var(--radius) - 4px);
@@ -89,6 +107,10 @@
   --priority-high: oklch(0.7 0.15 55);
   --priority-medium: oklch(0.55 0.18 250);
   --priority-low: oklch(0.6 0.02 250);
+  /* Complexity tokens */
+  --complexity-simple: oklch(0.6 0.15 170);
+  --complexity-moderate: oklch(0.7 0.15 75);
+  --complexity-complex: oklch(0.55 0.2 25);
 }
 
 .dark {
@@ -134,4 +156,8 @@
   --priority-high: oklch(0.75 0.15 55);
   --priority-medium: oklch(0.65 0.18 250);
   --priority-low: oklch(0.6 0.02 250);
+  /* Complexity tokens */
+  --complexity-simple: oklch(0.65 0.15 170);
+  --complexity-moderate: oklch(0.75 0.15 75);
+  --complexity-complex: oklch(0.65 0.2 25);
 }

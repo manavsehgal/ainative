@@ -36,9 +36,9 @@ const patternLabels: Record<string, string> = {
 };
 
 const complexityColors: Record<string, string> = {
-  simple: "text-green-500",
-  moderate: "text-amber-500",
-  complex: "text-red-500",
+  simple: "text-complexity-simple",
+  moderate: "text-complexity-moderate",
+  complex: "text-complexity-complex",
 };
 
 export function AIAssistPanel({

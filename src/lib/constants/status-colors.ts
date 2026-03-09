@@ -3,11 +3,11 @@
  * Single source of truth — consumed by every component that renders status badges.
  */
 
-export const taskStatusVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+export const taskStatusVariant: Record<string, "default" | "secondary" | "destructive" | "outline" | "success"> = {
   planned: "outline",
   queued: "secondary",
   running: "default",
-  completed: "default",
+  completed: "success",
   failed: "destructive",
   cancelled: "secondary",
 };

@@ -31,7 +31,7 @@ export function KanbanColumn({
   const label = columnLabels[status] ?? status;
 
   return (
-    <div className="flex flex-col w-64 shrink-0" role="group" aria-label={`${label} column, ${tasks.length} tasks`}>
+    <div className="flex flex-col min-w-60 max-w-72 flex-1 shrink-0" role="group" aria-label={`${label} column, ${tasks.length} tasks`}>
       <div className="flex items-center gap-2 mb-3 px-1">
         <h3 className="text-sm font-medium">{label}</h3>
         <Badge variant="secondary" className="text-xs">

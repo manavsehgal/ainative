@@ -25,7 +25,7 @@ export function StatsCards({
       value: runningCount,
       subtitle: "Currently active",
       icon: Activity,
-      color: "text-blue-500",
+      color: "text-status-running",
       href: "/monitor",
     },
     {
@@ -33,7 +33,7 @@ export function StatsCards({
       value: completedToday,
       subtitle: `All-time: ${completedAllTime}`,
       icon: CheckCircle,
-      color: "text-green-500",
+      color: "text-status-completed",
       href: "/dashboard",
     },
     {
@@ -41,7 +41,7 @@ export function StatsCards({
       value: awaitingReview,
       subtitle: "Human-loop pending",
       icon: MessageSquare,
-      color: "text-amber-500",
+      color: "text-status-warning",
       href: "/inbox",
     },
     {
@@ -49,7 +49,7 @@ export function StatsCards({
       value: activeProjects,
       subtitle: "In progress",
       icon: FolderKanban,
-      color: "text-purple-500",
+      color: "text-primary",
       href: "/projects",
     },
   ];
@@ -58,7 +58,7 @@ export function StatsCards({
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       {stats.map((s) => (
         <Link key={s.title} href={s.href}>
-          <Card className="cursor-pointer transition-colors hover:bg-accent/50">
+          <Card className="cursor-pointer transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 {s.title}

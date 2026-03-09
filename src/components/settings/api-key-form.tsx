@@ -104,13 +104,13 @@ export function ApiKeyForm({ hasKey, onSave, onTest }: ApiKeyFormProps) {
           <span className="flex items-center gap-1.5 text-sm">
             {testResult.connected ? (
               <>
-                <CheckCircle2 className="h-4 w-4 text-green-500" />
-                <span className="text-green-600 dark:text-green-400">Connected</span>
+                <CheckCircle2 className="h-4 w-4 text-success" />
+                <span className="text-success">Connected</span>
               </>
             ) : (
               <>
-                <XCircle className="h-4 w-4 text-red-500" />
-                <span className="text-red-600 dark:text-red-400">
+                <XCircle className="h-4 w-4 text-status-failed" />
+                <span className="text-status-failed">
                   {testResult.error || "Connection failed"}
                 </span>
               </>

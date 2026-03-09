@@ -37,10 +37,10 @@ interface WorkflowStatusViewProps {
 
 const stepStatusIcons: Record<string, React.ReactNode> = {
   pending: <Circle className="h-4 w-4 text-muted-foreground" />,
-  running: <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />,
-  completed: <CheckCircle className="h-4 w-4 text-green-500" />,
+  running: <Loader2 className="h-4 w-4 text-status-running animate-spin" />,
+  completed: <CheckCircle className="h-4 w-4 text-status-completed" />,
   failed: <XCircle className="h-4 w-4 text-destructive" />,
-  waiting_approval: <ShieldQuestion className="h-4 w-4 text-amber-500" />,
+  waiting_approval: <ShieldQuestion className="h-4 w-4 text-status-warning" />,
 };
 
 

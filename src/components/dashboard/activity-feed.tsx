@@ -18,11 +18,11 @@ interface ActivityFeedProps {
 }
 
 const eventColors: Record<string, string> = {
-  tool_start: "bg-blue-500",
-  content_start: "bg-green-500",
-  content_delta: "bg-green-400",
-  completed: "bg-emerald-500",
-  error: "bg-red-500",
+  tool_start: "bg-status-running",
+  content_start: "bg-status-completed",
+  content_delta: "bg-status-completed/70",
+  completed: "bg-status-completed",
+  error: "bg-status-failed",
 };
 
 export function ActivityFeed({ entries }: ActivityFeedProps) {

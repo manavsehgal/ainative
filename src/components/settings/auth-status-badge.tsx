@@ -18,7 +18,7 @@ const sourceLabels: Record<ApiKeySource, string> = {
 export function AuthStatusBadge({ connected, apiKeySource }: AuthStatusBadgeProps) {
   if (!connected && apiKeySource === "unknown") {
     return (
-      <Badge variant="outline" className="border-amber-500/50 text-amber-600 dark:text-amber-400">
+      <Badge variant="outline" className="border-warning/50 text-warning">
         Not configured
       </Badge>
     );
@@ -26,14 +26,14 @@ export function AuthStatusBadge({ connected, apiKeySource }: AuthStatusBadgeProp
 
   if (!connected) {
     return (
-      <Badge variant="outline" className="border-red-500/50 text-red-600 dark:text-red-400">
+      <Badge variant="outline" className="border-status-failed/50 text-status-failed">
         Disconnected
       </Badge>
     );
   }
 
   return (
-    <Badge variant="outline" className="border-green-500/50 text-green-600 dark:text-green-400">
+    <Badge variant="outline" className="border-success/50 text-success">
       Connected via {sourceLabels[apiKeySource]}
     </Badge>
   );

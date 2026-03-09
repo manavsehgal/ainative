@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus, FolderPlus, Inbox, Activity } from "lucide-react";
 import { TaskCreatePanel } from "@/components/tasks/task-create-panel";
+import { SectionHeading } from "@/components/shared/section-heading";
 
 interface QuickActionsProps {
   projects: { id: string; name: string }[];
@@ -43,15 +44,15 @@ export function QuickActions({ projects }: QuickActionsProps) {
 
   return (
     <div className="mb-6">
-      <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3">
-        Quick Actions
-      </h3>
+      <SectionHeading>Quick Actions</SectionHeading>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {actions.map((action) => (
           <Card
             key={action.label}
-            className="cursor-pointer transition-colors hover:bg-accent/50"
+            tabIndex={0}
+            className="cursor-pointer transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl"
             onClick={action.onClick}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); action.onClick(); } }}
           >
             <CardContent className="flex flex-col items-center justify-center py-5 gap-2">
               <action.icon className="h-8 w-8 text-muted-foreground" />

@@ -19,7 +19,9 @@ interface ProjectCardProps {
 export function ProjectCard({ project, onEdit }: ProjectCardProps) {
   return (
     <Card
-      className="cursor-pointer transition-colors hover:bg-accent/50"
+      tabIndex={0}
+      className="cursor-pointer transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl"
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onEdit(project.id); } }}
       onClick={() => onEdit(project.id)}
     >
       <CardHeader className="flex flex-row items-center justify-between pb-2">

@@ -114,7 +114,7 @@ export function DocumentUploadDialog({
           <div className="space-y-1">
             {uploaded.map((name, i) => (
               <div key={i} className="flex items-center gap-2 text-sm">
-                <CheckCircle className="h-3.5 w-3.5 text-green-600 shrink-0" />
+                <CheckCircle className="h-3.5 w-3.5 text-success shrink-0" />
                 <span className="truncate">{name}</span>
               </div>
             ))}

@@ -27,13 +27,13 @@ export function formatSize(bytes: number): string {
 export function getStatusColor(status: string): string {
   switch (status) {
     case "ready":
-      return "text-green-600 border-green-600/30";
+      return "text-status-completed border-status-completed/30";
     case "processing":
-      return "text-blue-600 border-blue-600/30";
+      return "text-status-running border-status-running/30";
     case "error":
-      return "text-red-600 border-red-600/30";
+      return "text-status-failed border-status-failed/30";
     case "uploaded":
-      return "text-yellow-600 border-yellow-600/30";
+      return "text-status-warning border-status-warning/30";
     default:
       return "";
   }

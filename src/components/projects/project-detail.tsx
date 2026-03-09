@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ClipboardList } from "lucide-react";
 import { taskStatusVariant } from "@/lib/constants/status-colors";
+import { SectionHeading } from "@/components/shared/section-heading";
 
 interface Task {
   id: string;
@@ -37,13 +38,11 @@ export function ProjectDetailClient({ tasks }: ProjectDetailClientProps) {
 
   return (
     <div>
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3">
-        Tasks ({tasks.length})
-      </h2>
+      <SectionHeading>Tasks ({tasks.length})</SectionHeading>
       <div className="space-y-2">
         {tasks.map((task) => (
           <Link key={task.id} href={`/dashboard?task=${task.id}`}>
-            <Card className="p-3 cursor-pointer transition-colors hover:bg-accent/50">
+            <Card className="p-3 cursor-pointer transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl">
               <div className="flex items-center gap-3">
                 <span className="text-xs font-mono text-muted-foreground w-6">
                   {priorityLabels[task.priority] ?? "P3"}

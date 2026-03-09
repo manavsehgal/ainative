@@ -46,19 +46,19 @@ export async function MonitorOverview() {
       title: "Active Agents",
       value: activeResult.count,
       icon: Activity,
-      color: "text-blue-500",
+      color: "text-status-running",
     },
     {
       title: "Tasks Today",
       value: todayResult.count,
       icon: Zap,
-      color: "text-amber-500",
+      color: "text-status-warning",
     },
     {
       title: "Success Rate",
       value: `${successRate}%`,
       icon: CheckCircle,
-      color: "text-green-500",
+      color: "text-status-completed",
     },
     {
       title: "Last Activity",

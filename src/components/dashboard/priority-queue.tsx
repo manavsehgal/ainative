@@ -24,7 +24,7 @@ const statusIcon: Record<string, typeof AlertTriangle> = {
   running: Clock,
 };
 
-const priorityColors = ["text-red-500", "text-orange-500", "text-yellow-500", "text-muted-foreground"];
+const priorityColors = ["text-priority-critical", "text-priority-high", "text-status-warning", "text-muted-foreground"];
 
 export function PriorityQueue({ tasks }: PriorityQueueProps) {
   return (

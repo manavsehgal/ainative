@@ -95,8 +95,10 @@ export function WorkflowList({ projects }: WorkflowListProps) {
             return (
               <Card
                 key={wf.id}
-                className="cursor-pointer transition-colors hover:bg-accent/50"
+                tabIndex={0}
+                className="cursor-pointer transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl"
                 onClick={() => router.push(`/workflows/${wf.id}`)}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); router.push(`/workflows/${wf.id}`); } }}
               >
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
