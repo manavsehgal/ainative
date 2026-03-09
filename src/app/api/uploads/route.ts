@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { homedir } from "os";
+import { db } from "@/lib/db";
+import { documents } from "@/lib/db/schema";
+import { processDocument } from "@/lib/documents/processor";
 
 const UPLOAD_DIR = join(homedir(), ".stagent", "uploads");
 
@@ -27,6 +30,27 @@ export async function POST(req: NextRequest) {
 
   const bytes = new Uint8Array(await file.arrayBuffer());
   await writeFile(filepath, bytes);
+
+  // Create document record in DB
+  await db.insert(documents).values({
+    id,
+    taskId: taskId ?? null,
+    projectId: null,
+    filename,
+    originalName: file.name,
+    mimeType: file.type || "application/octet-stream",
+    size: file.size,
+    storagePath: filepath,
+    direction: "input",
+    status: "uploaded",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+
+  // Fire-and-forget: trigger async document processing
+  processDocument(id).catch((err) =>
+    console.error(`[upload] Processing failed for ${id}:`, err)
+  );
 
   return NextResponse.json(
     {

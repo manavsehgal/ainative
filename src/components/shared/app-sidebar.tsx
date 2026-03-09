@@ -9,6 +9,7 @@ import {
   Activity,
   FolderKanban,
   GitBranch,
+  FileText,
   Settings,
 } from "lucide-react";
 import {
@@ -33,6 +34,7 @@ const navItems = [
   { title: "Monitor", href: "/monitor", icon: Activity, badge: false },
   { title: "Projects", href: "/projects", icon: FolderKanban, badge: false },
   { title: "Workflows", href: "/workflows", icon: GitBranch, badge: false },
+  { title: "Documents", href: "/documents", icon: FileText, badge: false },
   { title: "Settings", href: "/settings", icon: Settings, badge: false },
 ];
 

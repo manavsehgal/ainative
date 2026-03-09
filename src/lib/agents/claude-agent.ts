@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { setExecution, removeExecution } from "./execution-manager";
 import { MAX_RESUME_COUNT } from "@/lib/constants/task-status";
 import { getAuthEnv, updateAuthStatus } from "@/lib/settings/auth";
+import { buildDocumentContext } from "@/lib/documents/context-builder";
 
 /** Typed representation of messages from the Agent SDK stream */
 interface AgentStreamMessage {
@@ -151,7 +152,10 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
   });
 
   try {
-    const prompt = task.description || task.title;
+    const basePrompt = task.description || task.title;
+    const docContext = await buildDocumentContext(taskId);
+    const prompt = docContext ? `${docContext}\n\n${basePrompt}` : basePrompt;
+
     const authEnv = await getAuthEnv();
     const response = query({
       prompt,
@@ -223,7 +227,10 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
   });
 
   try {
-    const prompt = task.description || task.title;
+    const basePrompt = task.description || task.title;
+    const docContext = await buildDocumentContext(taskId);
+    const prompt = docContext ? `${docContext}\n\n${basePrompt}` : basePrompt;
+
     const authEnv = await getAuthEnv();
     const response = query({
       prompt,

@@ -116,6 +116,9 @@ export const documents = sqliteTable(
     })
       .default("uploaded")
       .notNull(),
+    extractedText: text("extracted_text"),
+    processedPath: text("processed_path"),
+    processingError: text("processing_error"),
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
   },

@@ -1,20 +1,56 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { documents } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { documents, tasks, projects } from "@/lib/db/schema";
+import { eq, and, like, or, desc, sql } from "drizzle-orm";
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const taskId = url.searchParams.get("taskId");
+  const projectId = url.searchParams.get("projectId");
+  const status = url.searchParams.get("status");
+  const search = url.searchParams.get("search");
 
-  if (!taskId) {
-    return NextResponse.json({ error: "taskId is required" }, { status: 400 });
+  const conditions = [];
+
+  if (taskId) conditions.push(eq(documents.taskId, taskId));
+  if (projectId) conditions.push(eq(documents.projectId, projectId));
+  if (status) conditions.push(eq(documents.status, status as "uploaded" | "processing" | "ready" | "error"));
+
+  if (search) {
+    conditions.push(
+      or(
+        like(documents.originalName, `%${search}%`),
+        like(documents.extractedText, `%${search}%`)
+      )
+    );
   }
 
   const result = await db
-    .select()
+    .select({
+      id: documents.id,
+      taskId: documents.taskId,
+      projectId: documents.projectId,
+      filename: documents.filename,
+      originalName: documents.originalName,
+      mimeType: documents.mimeType,
+      size: documents.size,
+      storagePath: documents.storagePath,
+      direction: documents.direction,
+      category: documents.category,
+      status: documents.status,
+      extractedText: documents.extractedText,
+      processedPath: documents.processedPath,
+      processingError: documents.processingError,
+      createdAt: documents.createdAt,
+      updatedAt: documents.updatedAt,
+      taskTitle: tasks.title,
+      projectName: projects.name,
+    })
     .from(documents)
-    .where(eq(documents.taskId, taskId));
+    .leftJoin(tasks, eq(documents.taskId, tasks.id))
+    .leftJoin(projects, eq(documents.projectId, projects.id))
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(desc(documents.createdAt));
 
   return NextResponse.json(result);
 }
