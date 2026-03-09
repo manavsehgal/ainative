@@ -21,6 +21,16 @@ import {
 } from "@/components/ui/select";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
+import { AIAssistPanel } from "./ai-assist-panel";
+import { FileUpload } from "./file-upload";
+
+interface UploadedFile {
+  id: string;
+  filename: string;
+  originalName: string;
+  size: number;
+  type: string;
+}
 
 interface TaskCreateDialogProps {
   projects: { id: string; name: string }[];
@@ -38,6 +48,7 @@ export function TaskCreateDialog({ projects, onCreated, open: controlledOpen, on
   const [description, setDescription] = useState("");
   const [projectId, setProjectId] = useState<string>("");
   const [priority, setPriority] = useState("2");
+  const [uploads, setUploads] = useState<UploadedFile[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,6 +66,7 @@ export function TaskCreateDialog({ projects, onCreated, open: controlledOpen, on
           description: description.trim() || undefined,
           projectId: projectId || undefined,
           priority: parseInt(priority, 10),
+          fileIds: uploads.length > 0 ? uploads.map((f) => f.id) : undefined,
         }),
       });
       if (res.ok) {
@@ -62,6 +74,7 @@ export function TaskCreateDialog({ projects, onCreated, open: controlledOpen, on
         setDescription("");
         setProjectId("");
         setPriority("2");
+        setUploads([]);
         setOpen(false);
         toast.success("Task created");
         onCreated();
@@ -144,12 +157,58 @@ export function TaskCreateDialog({ projects, onCreated, open: controlledOpen, on
               </Select>
             </div>
           </div>
+          <div className="space-y-2">
+            <Label>Attachments</Label>
+            <FileUpload
+              uploads={uploads}
+              onUploaded={(f) => setUploads((prev) => [...prev, f])}
+              onRemove={(id) => setUploads((prev) => prev.filter((f) => f.id !== id))}
+            />
+          </div>
           {error && (
             <p className="text-sm text-destructive">{error}</p>
           )}
           <Button type="submit" disabled={loading || !title.trim()} className="w-full">
             {loading ? "Creating..." : "Create Task"}
           </Button>
+          <AIAssistPanel
+            title={title}
+            description={description}
+            onApplyDescription={(d) => setDescription(d)}
+            onCreateSubtasks={async (subtasks) => {
+              let created = 0;
+              const failures: string[] = [];
+              for (const sub of subtasks) {
+                toast.info(`Creating sub-task ${created + 1}/${subtasks.length}...`);
+                try {
+                  const res = await fetch("/api/tasks", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      title: sub.title,
+                      description: sub.description,
+                      projectId: projectId || undefined,
+                      priority: parseInt(priority, 10),
+                    }),
+                  });
+                  if (res.ok) {
+                    created++;
+                  } else {
+                    failures.push(sub.title);
+                  }
+                } catch {
+                  failures.push(sub.title);
+                }
+              }
+              if (failures.length > 0) {
+                toast.error(`Failed to create ${failures.length} sub-task(s): ${failures.join(", ")}`);
+              }
+              if (created > 0) {
+                toast.success(`Created ${created} sub-task(s)`);
+              }
+              onCreated();
+            }}
+          />
         </form>
       </DialogContent>
     </Dialog>

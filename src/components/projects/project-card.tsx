@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { FolderKanban } from "lucide-react";
+import { projectStatusVariant } from "@/lib/constants/status-colors";
 
 interface ProjectCardProps {
   project: {
@@ -15,12 +16,6 @@ interface ProjectCardProps {
   onEdit: (id: string) => void;
 }
 
-const statusVariant: Record<string, "default" | "secondary" | "outline"> = {
-  active: "default",
-  paused: "secondary",
-  completed: "outline",
-};
-
 export function ProjectCard({ project, onEdit }: ProjectCardProps) {
   return (
     <Card
@@ -29,7 +24,7 @@ export function ProjectCard({ project, onEdit }: ProjectCardProps) {
     >
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-base font-medium">{project.name}</CardTitle>
-        <Badge variant={statusVariant[project.status] ?? "secondary"}>
+        <Badge variant={projectStatusVariant[project.status] ?? "secondary"}>
           {project.status}
         </Badge>
       </CardHeader>

@@ -13,8 +13,10 @@ import { Separator } from "@/components/ui/separator";
 import { Play, Square, RotateCcw, ArrowRight, FastForward } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { ContentPreview } from "./content-preview";
 import { formatTimestamp } from "@/lib/utils/format-timestamp";
 import { MAX_RESUME_COUNT } from "@/lib/constants/task-status";
+import { taskStatusVariant } from "@/lib/constants/status-colors";
 import type { TaskItem } from "./task-card";
 
 interface TaskDetailPanelProps {
@@ -24,14 +26,14 @@ interface TaskDetailPanelProps {
   onUpdated: () => void;
 }
 
-const statusColors: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  planned: "secondary",
-  queued: "outline",
-  running: "default",
-  completed: "default",
-  failed: "destructive",
-  cancelled: "secondary",
-};
+function detectContentType(content: string): "text" | "markdown" | "code" | "json" | "unknown" {
+  if (content.startsWith("{") || content.startsWith("[")) {
+    try { JSON.parse(content); return "json"; } catch { /* not json */ }
+  }
+  if (content.includes("```") || content.includes("# ") || content.includes("**")) return "markdown";
+  if (content.includes("function ") || content.includes("const ") || content.includes("import ")) return "code";
+  return "text";
+}
 
 const priorityLabels: Record<number, string> = {
   0: "P0 - Critical",
@@ -152,7 +154,7 @@ export function TaskDetailPanel({
           </SheetHeader>
           <div className="px-6 pb-6 space-y-4 overflow-y-auto">
             <div className="flex items-center gap-2">
-              <Badge variant={statusColors[task.status] ?? "secondary"}>
+              <Badge variant={taskStatusVariant[task.status] ?? "secondary"}>
                 {task.status}
               </Badge>
               <span className="text-sm text-muted-foreground">
@@ -233,14 +235,16 @@ export function TaskDetailPanel({
             {task.result && (
               <>
                 <Separator />
-                <div>
-                  <h4 className="text-sm font-medium mb-1">
-                    {task.status === "failed" ? "Error" : "Result"}
-                  </h4>
-                  <pre className="text-xs text-muted-foreground bg-muted p-3 rounded-md overflow-auto max-h-60 whitespace-pre-wrap">
-                    {task.result}
-                  </pre>
-                </div>
+                {task.status === "failed" ? (
+                  <div>
+                    <h4 className="text-sm font-medium mb-1">Error</h4>
+                    <pre className="text-xs text-muted-foreground bg-muted p-3 rounded-md overflow-auto max-h-60 whitespace-pre-wrap">
+                      {task.result}
+                    </pre>
+                  </div>
+                ) : (
+                  <ContentPreview content={task.result} contentType={detectContentType(task.result)} />
+                )}
               </>
             )}
 

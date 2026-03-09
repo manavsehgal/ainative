@@ -50,6 +50,8 @@
     "react": "^19",
     "react-dom": "^19",
     "react-hook-form": "^7.71.2",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3",
     "tw-animate-css": "^1",

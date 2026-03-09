@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Home,
   LayoutDashboard,
   Inbox,
   Activity,
   FolderKanban,
+  GitBranch,
   Settings,
 } from "lucide-react";
 import {
@@ -25,10 +27,12 @@ import { UnreadBadge } from "@/components/notifications/unread-badge";
 import { AuthStatusDot } from "@/components/settings/auth-status-dot";
 
 const navItems = [
+  { title: "Home", href: "/", icon: Home, badge: false },
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard, badge: false },
   { title: "Inbox", href: "/inbox", icon: Inbox, badge: true },
   { title: "Monitor", href: "/monitor", icon: Activity, badge: false },
   { title: "Projects", href: "/projects", icon: FolderKanban, badge: false },
+  { title: "Workflows", href: "/workflows", icon: GitBranch, badge: false },
   { title: "Settings", href: "/settings", icon: Settings, badge: false },
 ];
 
@@ -38,7 +42,7 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader className="px-4 py-3">
-        <Link href="/dashboard" className="flex items-center gap-2">
+        <Link href="/" className="flex items-center gap-2">
           <span className="text-lg font-bold tracking-tight">Stagent</span>
         </Link>
       </SidebarHeader>
@@ -64,9 +68,6 @@ export function AppSidebar() {
       <SidebarFooter className="px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <kbd className="text-xs text-muted-foreground border rounded px-1.5 py-0.5">
-              <span className="text-xs">&#8984;</span>K
-            </kbd>
             <AuthStatusDot />
           </div>
           <ThemeToggle />
