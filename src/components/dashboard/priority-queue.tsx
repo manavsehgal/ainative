@@ -46,7 +46,7 @@ export function PriorityQueue({ tasks }: PriorityQueueProps) {
               return (
                 <div
                   key={task.id}
-                  className="flex items-center gap-3 py-2.5 border-b last:border-b-0"
+                  className="flex items-center gap-3 py-2.5 border-b border-border/50 last:border-b-0"
                 >
                   <Icon className={`h-4 w-4 flex-shrink-0 ${priorityColors[task.priority] ?? priorityColors[3]}`} />
                   <div className="flex-1 min-w-0">

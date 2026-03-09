@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Activity, CheckCircle, MessageSquare, FolderKanban } from "lucide-react";
+import { Sparkline } from "@/components/charts/sparkline";
 
 interface StatsCardsProps {
   runningCount: number;
@@ -10,6 +11,11 @@ interface StatsCardsProps {
   completedAllTime: number;
   awaitingReview: number;
   activeProjects: number;
+  sparklines?: {
+    completions: number[];
+    creations: number[];
+    notifications: number[];
+  };
 }
 
 export function StatsCards({
@@ -18,6 +24,7 @@ export function StatsCards({
   completedAllTime,
   awaitingReview,
   activeProjects,
+  sparklines,
 }: StatsCardsProps) {
   const stats = [
     {
@@ -26,7 +33,9 @@ export function StatsCards({
       subtitle: "Currently active",
       icon: Activity,
       color: "text-status-running",
+      chartColor: "var(--chart-1)",
       href: "/monitor",
+      sparklineData: sparklines?.creations,
     },
     {
       title: "Completed Today",
@@ -34,7 +43,9 @@ export function StatsCards({
       subtitle: `All-time: ${completedAllTime}`,
       icon: CheckCircle,
       color: "text-status-completed",
+      chartColor: "var(--chart-2)",
       href: "/dashboard",
+      sparklineData: sparklines?.completions,
     },
     {
       title: "Awaiting Review",
@@ -42,7 +53,9 @@ export function StatsCards({
       subtitle: "Human-loop pending",
       icon: MessageSquare,
       color: "text-status-warning",
+      chartColor: "var(--chart-3)",
       href: "/inbox",
+      sparklineData: sparklines?.notifications,
     },
     {
       title: "Active Projects",
@@ -50,7 +63,9 @@ export function StatsCards({
       subtitle: "In progress",
       icon: FolderKanban,
       color: "text-primary",
+      chartColor: "var(--chart-4)",
       href: "/projects",
+      sparklineData: undefined,
     },
   ];
 
@@ -58,7 +73,7 @@ export function StatsCards({
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       {stats.map((s) => (
         <Link key={s.title} href={s.href}>
-          <Card className="cursor-pointer transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl">
+          <Card className="glass-shimmer cursor-pointer transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 {s.title}
@@ -67,6 +82,18 @@ export function StatsCards({
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{s.value}</div>
+              {s.sparklineData && (
+                <div className="hidden sm:block mt-1">
+                  <Sparkline
+                    data={s.sparklineData}
+                    width={100}
+                    height={24}
+                    color={s.chartColor}
+                    label={`${s.title} 7-day trend`}
+                    className="w-full"
+                  />
+                </div>
+              )}
               <p className="text-xs text-muted-foreground mt-1">{s.subtitle}</p>
             </CardContent>
           </Card>

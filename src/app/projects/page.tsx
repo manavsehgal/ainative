@@ -22,7 +22,7 @@ export default async function ProjectsPage() {
     .orderBy(projects.createdAt);
 
   return (
-    <div className="p-6">
+    <div className="gradient-ocean-mist min-h-screen p-6">
       <ProjectList initialProjects={result} />
     </div>
   );

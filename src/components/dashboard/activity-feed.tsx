@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { MiniBar } from "@/components/charts/mini-bar";
 
 export interface ActivityEntry {
   id: string;
@@ -15,6 +16,7 @@ export interface ActivityEntry {
 
 interface ActivityFeedProps {
   entries: ActivityEntry[];
+  hourlyActivity?: number[];
 }
 
 const eventColors: Record<string, string> = {
@@ -25,7 +27,7 @@ const eventColors: Record<string, string> = {
   error: "bg-status-failed",
 };
 
-export function ActivityFeed({ entries }: ActivityFeedProps) {
+export function ActivityFeed({ entries, hourlyActivity }: ActivityFeedProps) {
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -34,6 +36,19 @@ export function ActivityFeed({ entries }: ActivityFeedProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
+        {hourlyActivity && hourlyActivity.some((v) => v > 0) && (
+          <div className="mb-3 pb-3 border-b border-border/50">
+            <p className="text-[10px] text-muted-foreground mb-1.5">24h activity</p>
+            <MiniBar
+              data={hourlyActivity.map((value) => ({ value }))}
+              width={200}
+              height={28}
+              defaultColor="var(--chart-1)"
+              label="Agent activity over last 24 hours"
+              className="w-full"
+            />
+          </div>
+        )}
         {entries.length === 0 ? (
           <p className="text-sm text-muted-foreground py-4 text-center">
             No recent agent activity.
@@ -43,7 +58,7 @@ export function ActivityFeed({ entries }: ActivityFeedProps) {
             {entries.map((entry) => (
               <div
                 key={entry.id}
-                className="flex items-start gap-3 py-2.5 border-b last:border-b-0"
+                className="flex items-start gap-3 py-2.5 border-b border-border/50 last:border-b-0"
               >
                 <div
                   className={`h-2 w-2 rounded-full mt-1.5 flex-shrink-0 ${eventColors[entry.event] ?? "bg-muted-foreground"}`}

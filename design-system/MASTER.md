@@ -139,11 +139,97 @@ All clickable cards must include:
 | Loading spinner | `animate-spin` | Loader2 icon |
 | Loading placeholder | `animate-pulse` | Skeleton component |
 | Focus ring | `focus-visible:ring-2` | Keyboard navigation |
+| Glass shimmer | `glass-shimmer` | Hover shimmer on glass cards (stats, feature cards) |
+| Card hover | `[data-slot="card"]:hover` | Auto glass enhancement (bg + shadow boost) |
+
+## Glassmorphism System
+
+### Glass Tokens
+
+Defined in `globals.css` with light/dark variants.
+
+| Token | Light | Dark | Usage |
+|-------|-------|------|-------|
+| `--glass-bg` | `rgba(255,255,255,0.6)` | `oklch(0.18 0.025 280/0.25)` | Standard glass surface |
+| `--glass-bg-heavy` | `rgba(255,255,255,0.75)` | `oklch(0.20 0.03 280/0.35)` | Sidebar, modals, popovers |
+| `--glass-bg-light` | `rgba(255,255,255,0.4)` | `oklch(0.16 0.02 280/0.15)` | Nested glass, inputs |
+| `--glass-bg-subtle` | `rgba(255,255,255,0.25)` | `oklch(0.14 0.015 280/0.1)` | Decorative overlays |
+| `--glass-border` | `oklch(0.8 0.02 250/0.25)` | `oklch(0.4 0.04 280/0.2)` | Standard glass edge (violet-tinted) |
+| `--glass-border-strong` | `oklch(0.75 0.03 250/0.35)` | `oklch(0.45 0.05 270/0.3)` | Emphasized edges (violet-tinted) |
+| `--glass-border-subtle` | `oklch(0.85 0.015 250/0.15)` | `oklch(0.35 0.03 285/0.12)` | Inputs, nested glass (violet-tinted) |
+| `--glass-shadow` | `0 8px 32px oklch(0.55 0.05 250/0.1)` | `... oklch(0.05 0.03 280/0.5)` | Standard colored shadow |
+| `--glass-shadow-lg` | `0 12px 48px ...` | `... oklch(0.05 0.03 280/0.6)` | Hover/modal elevation |
+| `--glass-shadow-sm` | `0 4px 16px ...` | `... oklch(0.05 0.03 280/0.35)` | Subtle depth |
+| `--glass-bg-modal` | `oklch(0.97 0.008 250/0.65)` | `oklch(0.12 0.03 285/0.75)` | Sheet/dialog glass |
+| `--glass-inner-glow` | `inset 0 1px 0 0 rgba(255,255,255,0.4)` | `... oklch(0.5 0.04 270/0.1)` | Top-edge highlight (violet) |
+| `--blur-glass-sm/md/lg/xl` | `8/16/24/40px` | (same) | Backdrop-filter blur levels |
+
+### Glass Utility Classes
+
+| Class | Background | Blur | Border | Shadow | Usage |
+|-------|-----------|------|--------|--------|-------|
+| `.glass-card` | `--glass-bg` | md (16px) | standard | standard + glow | Default card surfaces |
+| `.glass-card-heavy` | `--glass-bg-heavy` | lg (24px) | strong | large + glow | Sidebar, primary panels |
+| `.glass-card-light` | `--glass-bg-light` | sm (8px) | subtle | small + subtle glow | Nested glass inside glass |
+| `.glass-sidebar` | `--glass-bg-heavy` | lg (24px) | right-side | — | Sidebar panel |
+| `.glass-input` | `--glass-bg-light` | sm (8px) | subtle | — | Form inputs |
+
+### Data-Slot Auto-Glass
+
+shadcn/ui components get glass treatment automatically via `[data-slot]` selectors:
+- `[data-slot="card"]` → glass-card treatment + hover enhancement
+- `[data-sidebar="sidebar"]` → backdrop blur
+- `[data-slot="badge"]` → subtle backdrop blur
+- `[data-slot="input"]`, `[data-slot="textarea"]`, `[data-slot="select-trigger"]` → glass input
+- `[data-slot="popover-content"]`, `[data-slot="dropdown-menu-content"]`, `[data-slot="select-content"]` → heavy glass
+- `[data-slot="sheet-content"]`, `[data-slot="dialog-content"]` → modal glass (`--glass-bg-modal`) + XL blur
+- `[data-slot="sheet-overlay"]`, `[data-slot="dialog-overlay"]` → hue-250 tinted overlay + 4px blur
+- `[data-slot="separator"]` → 2px 3D groove gradient (light/dark variants)
+- `[data-slot="button"][data-variant="default"]` → translucent primary CTA with inner glow
+- `[data-slot="button"][data-variant="outline"]` → glass fill + blur
+- `[data-slot="button"][data-variant="secondary"]` → subtle glass
+- `[data-slot="button"][data-variant="destructive"]` → translucent red with glow
+
+### Pastel Gradient Presets
+
+| Preset | Pages | Light identity | Dark identity |
+|--------|-------|---------------|---------------|
+| `--gradient-morning-sky` | Home, Dashboard | Golden sunrise → warm amber → soft peach | Deep black → midnight blue |
+| `--gradient-ocean-mist` | Projects, Workflows | Cyan → seafoam → mint | Deep blue → blue-violet |
+| `--gradient-forest-dawn` | Monitor | Mint → sage → soft green | Black → deep violet |
+| `--gradient-sunset-glow` | Inbox | Peach → coral → rose | Velvet → warm violet |
+| `--gradient-twilight` | Documents | Violet → indigo-mist → periwinkle | Deep violet → indigo |
+| `--gradient-neutral` | Settings | Warm cream with soft golden tint | Neutral black with velvet warmth |
+
+Applied via utility classes: `.gradient-morning-sky`, `.gradient-ocean-mist`, etc.
+Dark variants use the black/velvet/blue/violet palette at lightness 0.09-0.12, chroma 0.02-0.05, with each gradient having a distinct hue identity (250-320).
+
+### Dark Palette Families
+
+The dark theme uses four distinct color families to create visual depth:
+
+| Family | Hue | Lightness | Role |
+|--------|-----|-----------|------|
+| **Black** | 280 | 0.09 | Deepest surfaces — `--background`, gradient bases |
+| **Velvet** | 310-320 | 0.14-0.18 | Rich accent surfaces — `--secondary`, sidebar accent, sunset gradient |
+| **Blue** | 250 | 0.55-0.65 | Primary interactive — `--primary`, buttons, rings |
+| **Violet** | 280-290 | 0.15-0.22 | Bridge surfaces — `--muted`, `--accent`, glass overlays, gradient midpoints |
+
+### Glass Forbidden Patterns
+
+- **Never** use `backdrop-blur` without a semi-transparent `background` — invisible without it
+- **Never** nest `.glass-card` inside `.glass-card-heavy` — use `.glass-card-light` for nested glass
+- **Never** stack more than 2 blur layers — performance degrades significantly
+- **Always** include `-webkit-backdrop-filter` alongside `backdrop-filter` for Safari
+- **Never** use glass on scrollable lists with 50+ items — repaints are expensive
+- **Never** use solid `bg-*` colors on elements that should be glass — breaks the transparency
+- **Never** use bare `border-b` for list dividers — use `border-b border-border/50` for softened separators
+- **Never** use solid opaque `bg-primary` on buttons in glass UI — buttons get auto-glass via data-slot selectors
 
 ## Design Metrics (Target Range)
 
 | Metric | Target | Context |
 |--------|--------|---------|
-| DESIGN_VARIANCE | 4-6 | Functional task management, not ornate |
-| MOTION_INTENSITY | 4-5 | Subtle transitions, not flashy |
-| VISUAL_DENSITY | 5-7 | Data-rich but breathable |
+| DESIGN_VARIANCE | 6-7 | Glassmorphism + gradients add visual richness |
+| MOTION_INTENSITY | 5-6 | Shimmer animations, hover transitions |
+| VISUAL_DENSITY | 5-6 | Glass creates depth and breathing room |

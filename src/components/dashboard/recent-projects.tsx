@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { FolderPlus } from "lucide-react";
 import { SectionHeading } from "@/components/shared/section-heading";
+import { DonutRing } from "@/components/charts/donut-ring";
 
 export interface RecentProject {
   id: string;
@@ -51,7 +52,16 @@ export function RecentProjects({ projects }: RecentProjectsProps) {
             <Link key={project.id} href={`/projects/${project.id}`}>
               <Card className="cursor-pointer transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base font-medium">{project.name}</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <DonutRing
+                      value={pct}
+                      size={28}
+                      strokeWidth={3}
+                      color="var(--chart-2)"
+                      label={`${project.name}: ${pct}% complete`}
+                    />
+                    <CardTitle className="text-base font-medium">{project.name}</CardTitle>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <Progress value={pct} className="h-1.5 mb-2" />

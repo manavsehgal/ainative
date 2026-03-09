@@ -11,7 +11,7 @@ export default async function WorkflowsPage() {
     .orderBy(projects.name);
 
   return (
-    <div className="p-6">
+    <div className="gradient-ocean-mist min-h-screen p-6">
       <WorkflowList projects={allProjects} />
     </div>
   );

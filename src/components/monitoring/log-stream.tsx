@@ -94,7 +94,7 @@ export function LogStream({ tasks }: LogStreamProps) {
 
   return (
     <Card className="relative flex flex-col">
-      <div className="flex items-center justify-between p-4 border-b">
+      <div className="flex items-center justify-between p-4 border-b border-border/60">
         <h3 className="text-sm font-medium">Log Stream</h3>
         <div className="flex items-center gap-4">
           <LogFilters

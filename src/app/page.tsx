@@ -10,6 +10,12 @@ import type { ActivityEntry } from "@/components/dashboard/activity-feed";
 import { QuickActions } from "@/components/dashboard/quick-actions";
 import { RecentProjects } from "@/components/dashboard/recent-projects";
 import type { RecentProject } from "@/components/dashboard/recent-projects";
+import {
+  getCompletionsByDay,
+  getTaskCreationsByDay,
+  getAgentActivityByHour,
+  getNotificationsByDay,
+} from "@/lib/queries/chart-data";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +35,10 @@ export default async function HomePage() {
     recentLogs,
     allProjects,
     recentActiveProjects,
+    completionsByDay,
+    taskCreationsByDay,
+    agentActivityByHour,
+    notificationsByDay,
   ] = await Promise.all([
     db.select({ count: count() }).from(tasks).where(eq(tasks.status, "running")),
     db.select({ count: count() }).from(tasks).where(eq(tasks.status, "failed")),
@@ -59,6 +69,11 @@ export default async function HomePage() {
       .where(eq(projects.status, "active"))
       .orderBy(desc(projects.updatedAt))
       .limit(3),
+    // Chart data queries
+    getCompletionsByDay(7),
+    getTaskCreationsByDay(7),
+    getAgentActivityByHour(),
+    getNotificationsByDay(7),
   ]);
 
   // Build project name lookup for priority tasks
@@ -104,7 +119,7 @@ export default async function HomePage() {
   );
 
   return (
-    <div className="p-6">
+    <div className="gradient-morning-sky min-h-screen p-6">
       <Greeting
         runningCount={runningResult.count}
         awaitingCount={awaitingResult.count}
@@ -116,13 +131,18 @@ export default async function HomePage() {
         completedAllTime={completedAllTimeResult.count}
         awaitingReview={awaitingResult.count}
         activeProjects={activeProjectsResult.count}
+        sparklines={{
+          completions: completionsByDay,
+          creations: taskCreationsByDay,
+          notifications: notificationsByDay,
+        }}
       />
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
         <div className="lg:col-span-3">
           <PriorityQueue tasks={serializedPriorityTasks} />
         </div>
         <div className="lg:col-span-2">
-          <ActivityFeed entries={serializedLogs} />
+          <ActivityFeed entries={serializedLogs} hourlyActivity={agentActivityByHour} />
         </div>
       </div>
       <QuickActions projects={allProjects} />

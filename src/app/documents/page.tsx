@@ -37,7 +37,7 @@ export default async function DocumentsPage() {
     .from(projects);
 
   return (
-    <div className="flex flex-col gap-4 p-4 md:p-6">
+    <div className="gradient-forest-dawn min-h-screen flex flex-col gap-4 p-4 md:p-6">
       <DocumentBrowser initialDocuments={docs} projects={projectList} />
     </div>
   );

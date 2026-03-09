@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { COLUMN_ORDER } from "@/lib/constants/task-status";
 import { ProjectDetailClient } from "@/components/projects/project-detail";
+import { Sparkline } from "@/components/charts/sparkline";
+import { getProjectCompletionTrend } from "@/lib/queries/chart-data";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +40,9 @@ export default async function ProjectDetailPage({
     statusCounts[status] = projectTasks.filter((t) => t.status === status).length;
   }
 
+  const completionTrend = await getProjectCompletionTrend(id, 14);
+  const totalTasks = projectTasks.length;
+
   const serializedTasks = projectTasks.map((t) => ({
     ...t,
     createdAt: t.createdAt.toISOString(),
@@ -51,7 +56,7 @@ export default async function ProjectDetailPage({
   };
 
   return (
-    <div className="p-6">
+    <div className="gradient-ocean-mist min-h-screen p-6">
       <div className="mb-6">
         <Link href="/projects">
           <Button variant="ghost" size="sm" className="mb-2">
@@ -85,6 +90,43 @@ export default async function ProjectDetailPage({
           </Card>
         ))}
       </div>
+
+      {/* Stacked status bar + completion sparkline */}
+      {totalTasks > 0 && (
+        <div className="mb-6 space-y-3">
+          <div className="flex h-1.5 rounded-full overflow-hidden" role="img" aria-label="Task status distribution">
+            {COLUMN_ORDER.map((status) => {
+              const pct = (statusCounts[status] / totalTasks) * 100;
+              if (pct === 0) return null;
+              const statusColors: Record<string, string> = {
+                planned: "var(--muted-foreground)",
+                queued: "var(--chart-4)",
+                running: "var(--chart-1)",
+                completed: "var(--chart-2)",
+                failed: "var(--destructive)",
+              };
+              return (
+                <div
+                  key={status}
+                  style={{ width: `${pct}%`, backgroundColor: statusColors[status] ?? "var(--muted)" }}
+                  title={`${status}: ${statusCounts[status]}`}
+                />
+              );
+            })}
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-muted-foreground shrink-0">14-day completions</span>
+            <Sparkline
+              data={completionTrend}
+              width={200}
+              height={24}
+              color="var(--chart-2)"
+              label="14-day completion trend"
+              className="flex-1"
+            />
+          </div>
+        </div>
+      )}
 
       <ProjectDetailClient tasks={serializedTasks} projectId={id} />
     </div>
