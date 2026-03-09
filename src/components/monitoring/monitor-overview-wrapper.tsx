@@ -19,8 +19,18 @@ export function MonitorRefreshButton() {
     });
   }, [router, startTransition]);
 
+  // Pause auto-refresh when tab is not visible
+  const [visible, setVisible] = useState(true);
   useEffect(() => {
-    if (autoRefresh) {
+    function onVisibilityChange() {
+      setVisible(document.visibilityState === "visible");
+    }
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
+  }, []);
+
+  useEffect(() => {
+    if (autoRefresh && visible) {
       intervalRef.current = setInterval(handleRefresh, AUTO_REFRESH_INTERVAL);
       return () => {
         if (intervalRef.current) clearInterval(intervalRef.current);
@@ -28,7 +38,7 @@ export function MonitorRefreshButton() {
     } else {
       if (intervalRef.current) clearInterval(intervalRef.current);
     }
-  }, [autoRefresh, handleRefresh]);
+  }, [autoRefresh, visible, handleRefresh]);
 
   return (
     <div className="flex items-center gap-2">

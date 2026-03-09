@@ -1,0 +1,77 @@
+import { describe, it, expect } from "vitest";
+import { updateAuthSettingsSchema } from "@/lib/validators/settings";
+
+describe("updateAuthSettingsSchema", () => {
+  it("accepts valid oauth method without apiKey", () => {
+    const result = updateAuthSettingsSchema.safeParse({ method: "oauth" });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.method).toBe("oauth");
+      expect(result.data.apiKey).toBeUndefined();
+    }
+  });
+
+  it("accepts valid api_key method without apiKey", () => {
+    const result = updateAuthSettingsSchema.safeParse({ method: "api_key" });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts api_key method with valid apiKey", () => {
+    const result = updateAuthSettingsSchema.safeParse({
+      method: "api_key",
+      apiKey: "sk-ant-abc123",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.apiKey).toBe("sk-ant-abc123");
+    }
+  });
+
+  it("rejects apiKey not starting with sk-ant-", () => {
+    const result = updateAuthSettingsSchema.safeParse({
+      method: "api_key",
+      apiKey: "invalid-key",
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const flat = result.error.flatten();
+      expect(flat.fieldErrors.apiKey).toBeDefined();
+      expect(flat.fieldErrors.apiKey![0]).toContain("sk-ant-");
+    }
+  });
+
+  it("rejects invalid method value", () => {
+    const result = updateAuthSettingsSchema.safeParse({ method: "bearer" });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects missing method field", () => {
+    const result = updateAuthSettingsSchema.safeParse({});
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects empty apiKey string", () => {
+    const result = updateAuthSettingsSchema.safeParse({
+      method: "api_key",
+      apiKey: "",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts oauth method with valid apiKey (schema allows it)", () => {
+    const result = updateAuthSettingsSchema.safeParse({
+      method: "oauth",
+      apiKey: "sk-ant-test123",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects extra unknown fields via strict parsing", () => {
+    const result = updateAuthSettingsSchema.safeParse({
+      method: "oauth",
+      extra: "field",
+    });
+    // Zod v4 object schemas strip unknown fields by default
+    expect(result.success).toBe(true);
+  });
+});

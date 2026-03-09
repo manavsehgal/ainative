@@ -25,3 +25,4 @@ tsconfig.tsbuildinfo
 
 # test coverage
 coverage/
+.playwright-mcp/

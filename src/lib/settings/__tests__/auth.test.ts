@@ -6,7 +6,7 @@ const mockFrom = vi.fn();
 const mockWhere = vi.fn();
 const mockInsert = vi.fn();
 const mockUpdate = vi.fn();
-const mockDelete = vi.fn();
+const mockDeleteWhere = vi.fn();
 const mockSet = vi.fn();
 const mockValues = vi.fn();
 const mockRun = vi.fn();
@@ -16,7 +16,7 @@ vi.mock("@/lib/db", () => ({
     select: () => ({ from: mockFrom }),
     insert: () => ({ values: mockValues }),
     update: () => ({ set: mockSet }),
-    delete: () => ({ where: vi.fn().mockReturnValue({ run: mockRun }) }),
+    delete: () => ({ where: mockDeleteWhere }),
   },
 }));
 
@@ -34,43 +34,187 @@ mockFrom.mockReturnValue({ where: mockWhere });
 mockWhere.mockReturnValue([]);
 mockValues.mockReturnValue({ run: mockRun });
 mockSet.mockReturnValue({ where: vi.fn().mockReturnValue({ run: mockRun }) });
+mockDeleteWhere.mockReturnValue({ run: mockRun });
+
+// Track getSetting calls by key
+let settingsStore: Record<string, string> = {};
+
+function setupSettingsStore(store: Record<string, string>) {
+  settingsStore = store;
+  mockWhere.mockImplementation(() => {
+    // The where clause is called with eq(settings.key, key)
+    // We can't easily inspect the key, so we use call order
+    // Instead, return based on the mock call args
+    return [];
+  });
+}
+
+// Helper to mock getSetting responses in sequence
+function mockGetSettingSequence(values: (string | null)[]) {
+  let callIndex = 0;
+  mockWhere.mockImplementation(() => {
+    const val = values[callIndex] ?? null;
+    callIndex++;
+    return val !== null ? [{ value: val }] : [];
+  });
+}
 
 describe("auth settings", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.resetModules();
     mockWhere.mockReturnValue([]);
-  });
-
-  it("getAuthSettings returns defaults when no settings exist", async () => {
-    const { getAuthSettings } = await import("../auth");
-    const result = await getAuthSettings();
-    expect(result.method).toBe("oauth");
-    expect(result.hasKey).toBe(false);
-  });
-
-  it("getAuthSettings detects env key", async () => {
-    vi.stubEnv("ANTHROPIC_API_KEY", "sk-ant-test");
-    const { getAuthSettings } = await import("../auth");
-    const result = await getAuthSettings();
-    expect(result.hasKey).toBe(true);
-    expect(result.apiKeySource).toBe("env");
     vi.unstubAllEnvs();
   });
 
-  it("setAuthSettings encrypts and stores API key", async () => {
-    const { setAuthSettings } = await import("../auth");
-    await setAuthSettings({ method: "api_key", apiKey: "sk-ant-test-key" });
-    // Should call insert/update for method, apiKey, and source
-    expect(mockValues).toHaveBeenCalled();
+  describe("getAuthSettings", () => {
+    it("returns defaults when no settings exist", async () => {
+      const { getAuthSettings } = await import("../auth");
+      const result = await getAuthSettings();
+      expect(result.method).toBe("oauth");
+      expect(result.hasKey).toBe(false);
+    });
+
+    it("detects env key and sets source to env", async () => {
+      vi.stubEnv("ANTHROPIC_API_KEY", "sk-ant-test");
+      const { getAuthSettings } = await import("../auth");
+      const result = await getAuthSettings();
+      expect(result.hasKey).toBe(true);
+      expect(result.apiKeySource).toBe("env");
+    });
+
+    it("uses stored source when present", async () => {
+      // getSetting calls: method, apiKey, apiKeySource
+      mockGetSettingSequence(["api_key", null, "db"]);
+      const { getAuthSettings } = await import("../auth");
+      const result = await getAuthSettings();
+      expect(result.method).toBe("api_key");
+      expect(result.apiKeySource).toBe("db");
+    });
+
+    it("detects db key source when no stored source", async () => {
+      // method=api_key, apiKey=encrypted value, no stored source
+      mockGetSettingSequence(["api_key", "encrypted:sk-ant-key", null]);
+      const { getAuthSettings } = await import("../auth");
+      const result = await getAuthSettings();
+      expect(result.hasKey).toBe(true);
+      expect(result.apiKeySource).toBe("db");
+    });
+
+    it("returns apiKeySource=oauth when method is oauth and no keys", async () => {
+      // method=oauth, no apiKey, no stored source
+      mockGetSettingSequence(["oauth", null, null]);
+      const { getAuthSettings } = await import("../auth");
+      const result = await getAuthSettings();
+      expect(result.apiKeySource).toBe("oauth");
+    });
+
+    it("returns apiKeySource=unknown when api_key method with no keys", async () => {
+      // method=api_key, no apiKey in DB, no stored source, no env key
+      mockGetSettingSequence(["api_key", null, null]);
+      delete process.env.ANTHROPIC_API_KEY;
+      const { getAuthSettings } = await import("../auth");
+      const result = await getAuthSettings();
+      expect(result.apiKeySource).toBe("unknown");
+      expect(result.hasKey).toBe(false);
+    });
   });
 
-  it("getAuthEnv returns undefined for oauth method", async () => {
-    // Mock getSetting to return "oauth" for auth.method
-    mockWhere.mockImplementation(() => {
-      return [{ value: "oauth" }];
+  describe("setAuthSettings", () => {
+    it("encrypts and stores API key", async () => {
+      const { setAuthSettings } = await import("../auth");
+      await setAuthSettings({ method: "api_key", apiKey: "sk-ant-test-key" });
+      expect(mockValues).toHaveBeenCalled();
     });
-    const { getAuthEnv } = await import("../auth");
-    const result = await getAuthEnv();
-    expect(result).toBeUndefined();
+
+    it("clears stored key when switching to OAuth with existing key", async () => {
+      // Flow: setSetting(method,"oauth") calls getSetting(method) [call 1]
+      //       then the oauth branch: getSetting(AUTH_API_KEY) [call 2] → returns key
+      //       → db.delete().where()
+      //       then setSetting(AUTH_API_KEY_SOURCE,"oauth") calls getSetting(source) [call 3]
+      let callIndex = 0;
+      mockWhere.mockImplementation(() => {
+        callIndex++;
+        if (callIndex === 2) {
+          return [{ value: "encrypted:old-key" }];
+        }
+        return [];
+      });
+
+      const { setAuthSettings } = await import("../auth");
+      await setAuthSettings({ method: "oauth" });
+      expect(mockDeleteWhere).toHaveBeenCalled();
+    });
+
+    it("sets oauth source when switching to OAuth without existing key", async () => {
+      // All getSetting calls return empty
+      mockWhere.mockReturnValue([]);
+      const { setAuthSettings } = await import("../auth");
+      await setAuthSettings({ method: "oauth" });
+      // Should still set the source to "oauth"
+      expect(mockValues).toHaveBeenCalled();
+    });
+  });
+
+  describe("getAuthEnv", () => {
+    it("returns undefined for oauth method", async () => {
+      mockWhere.mockImplementation(() => {
+        return [{ value: "oauth" }];
+      });
+      const { getAuthEnv } = await import("../auth");
+      const result = await getAuthEnv();
+      expect(result).toBeUndefined();
+    });
+
+    it("returns decrypted key from DB for api_key method", async () => {
+      let callIndex = 0;
+      mockWhere.mockImplementation(() => {
+        callIndex++;
+        if (callIndex === 1) return [{ value: "api_key" }]; // method
+        if (callIndex === 2) return [{ value: "encrypted:sk-ant-real-key" }]; // apiKey
+        return [];
+      });
+      const { getAuthEnv } = await import("../auth");
+      const result = await getAuthEnv();
+      expect(result).toEqual({ ANTHROPIC_API_KEY: "sk-ant-real-key" });
+    });
+
+    it("returns undefined when api_key method but no stored key", async () => {
+      let callIndex = 0;
+      mockWhere.mockImplementation(() => {
+        callIndex++;
+        if (callIndex === 1) return [{ value: "api_key" }]; // method
+        return []; // no stored key
+      });
+      const { getAuthEnv } = await import("../auth");
+      const result = await getAuthEnv();
+      expect(result).toBeUndefined();
+    });
+
+    it("returns undefined when decryption fails", async () => {
+      const { decrypt } = await import("@/lib/utils/crypto");
+      vi.mocked(decrypt).mockImplementationOnce(() => {
+        throw new Error("decryption failed");
+      });
+
+      let callIndex = 0;
+      mockWhere.mockImplementation(() => {
+        callIndex++;
+        if (callIndex === 1) return [{ value: "api_key" }]; // method
+        if (callIndex === 2) return [{ value: "corrupted-data" }]; // apiKey
+        return [];
+      });
+      const { getAuthEnv } = await import("../auth");
+      const result = await getAuthEnv();
+      expect(result).toBeUndefined();
+    });
+  });
+
+  describe("updateAuthStatus", () => {
+    it("updates the api key source setting", async () => {
+      const { updateAuthStatus } = await import("../auth");
+      await updateAuthStatus("db");
+      expect(mockValues).toHaveBeenCalled();
+    });
   });
 });

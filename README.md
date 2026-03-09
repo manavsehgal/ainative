@@ -10,23 +10,25 @@ Stagent is a **control plane for AI agent tasks**. It gives you a dashboard to c
 
 ## Key Features
 
-### Completed
+📋 **Project Management** — Create and organize projects as containers for related tasks. Server-rendered project dashboard with real-time task counts and detail view.
 
-📋 **Project Management** — Create and organize projects as containers for related tasks. Server-rendered project dashboard with real-time task counts.
-
-📌 **Task Board** — Kanban-style board with drag-and-drop task management. Tasks flow through `planned → queued → running → completed/failed/cancelled` with validated status transitions.
+📌 **Task Board** — Kanban-style board with drag-and-drop task management. Tasks flow through `planned → queued → running → completed/failed/cancelled` with validated status transitions and status filters.
 
 🤖 **Agent Integration** — Fire-and-forget task execution via the Claude Agent SDK. Tasks are dispatched with `POST /api/tasks/{id}/execute` (returns 202) and run asynchronously with full logging.
 
-📥 **Inbox Notifications** — Human-in-the-loop notification system. When an agent needs approval or input, it creates a notification via the `canUseTool` polling pattern. Respond directly from the inbox.
+📥 **Inbox Notifications** — Human-in-the-loop notification system. When an agent needs approval or input, it creates a notification via the `canUseTool` polling pattern. Respond directly from the inbox with bulk dismiss.
 
-📊 **Monitoring Dashboard** — Real-time agent log streaming via Server-Sent Events. Watch agent reasoning, tool calls, and decisions as they happen.
+📊 **Monitoring Dashboard** — Real-time agent log streaming via Server-Sent Events. Watch agent reasoning, tool calls, and decisions as they happen. Auto-pauses when tab is hidden.
 
 🔄 **Session Management** — Resume failed or cancelled agent tasks. Tracks retry counts, detects expired sessions, and provides a one-click resume button.
 
-⚙️ **Settings & Auth** — Configure authentication method (OAuth / API key) with encrypted key storage. Manage platform settings from a dedicated page.
+🏠 **Homepage Dashboard** — Five-zone landing page with time-of-day greeting, stat cards, priority task queue, live activity feed, quick actions, and recent projects with progress bars.
 
-### Foundation
+🔀 **Workflow Engine** — Multi-step task orchestration with three patterns: Sequence, Planner→Executor, and Human-in-the-Loop Checkpoint. State machine engine with step-level retry.
+
+🧠 **Task Definition AI** — AI-assisted task creation with description suggestions, sub-task breakdown, pattern recommendation, and complexity estimation via the Agent SDK.
+
+📎 **Content Handling** — File upload with drag-and-drop, type-aware content preview (text, markdown, code, JSON via react-markdown), copy-to-clipboard, and download-as-file actions.
 
 🖥️ **CLI Bootstrap** — `npx stagent` launches the Next.js dev server and opens the dashboard. Built with Commander, compiled via tsup.
 
@@ -39,7 +41,7 @@ Stagent is a **control plane for AI agent tasks**. It gives you a dashboard to c
 ```
 ┌─────────────────────────────────────────────────────┐
 │                   Browser (React 19)                │
-│  Dashboard · Task Board · Inbox · Monitor · Settings│
+│  Dashboard · Task Board · Inbox · Monitor · Workflows│
 └──────────────┬──────────────────────┬───────────────┘
                │ Server Components    │ API Routes
                │ (direct DB queries)  │ (mutations)
@@ -76,6 +78,7 @@ Stagent is a **control plane for AI agent tasks**. It gives you a dashboard to c
 | AI Agent | Claude Agent SDK (`@anthropic-ai/claude-agent-sdk`) |
 | CLI | Commander + tsup |
 | Testing | Vitest + Testing Library |
+| Content | react-markdown + remark-gfm |
 | Validation | Zod v4 |
 
 ## Quick Start
@@ -101,24 +104,21 @@ Open [http://localhost:3000/dashboard](http://localhost:3000/dashboard) to get s
 
 ## Roadmap
 
-### MVP — Foundation & Core ✅
+### MVP ✅ Complete
 
-All foundation and core features are complete:
-- Project management, task board, agent integration
-- Human-in-the-loop inbox, monitoring dashboard
-- Session management for agent task resume
-
-### MVP — Polish (In Progress)
-
-- **Task Definition AI** — AI-assisted task creation and refinement
-- **Workflow Engine** — Multi-step task orchestration
-- **Content Handling** — Rich content in task descriptions and agent outputs
+All 14 features shipped across Foundation, Core, and Polish layers:
+- Foundation: CLI bootstrap, database schema, app shell
+- Core: Project management, task board, agent integration, inbox notifications, monitoring dashboard
+- Polish: Homepage dashboard, UX gap fixes, workflow engine, task definition AI, content handling, session management
 
 ### Post-MVP (Planned)
 
+- **Autonomous Loop Execution** — Agent loop pattern with stop conditions and iteration tracking
+- **Multi-Agent Swarm** — Multi-agent orchestration with Mayor/Workers/Refinery roles
+- **Agent Self-Improvement** — Agents learn patterns and update own context with human approval
 - **Multi-Agent Routing** — Route tasks to specialized agent configurations
-- **Tauri Desktop** — Native desktop app packaging
 - **Parallel Workflows** — Concurrent multi-step task execution
+- **Tauri Desktop** — Native desktop app packaging
 
 ## Project Structure
 
@@ -127,11 +127,15 @@ src/
 ├── app/                  # Next.js App Router pages
 │   ├── dashboard/        # Project overview
 │   ├── projects/         # Project management
+│   ├── projects/[id]/    # Project detail view
+│   ├── workflows/        # Workflow management
 │   ├── inbox/            # Human-in-the-loop notifications
 │   └── monitor/          # Agent log streaming
 ├── components/
+│   ├── dashboard/        # Homepage dashboard components
 │   ├── tasks/            # Task board, detail panels
 │   ├── projects/         # Project cards, forms
+│   ├── workflows/        # Workflow UI components
 │   ├── monitoring/       # Log viewer, stream display
 │   ├── notifications/    # Inbox items, response forms
 │   ├── shared/           # App shell, sidebar, nav
@@ -139,6 +143,7 @@ src/
 └── lib/
     ├── agents/           # Claude Agent SDK integration
     ├── db/               # Schema, migrations, queries
+    ├── workflows/        # Workflow engine
     ├── constants/        # Status transitions, config
     ├── validators/       # Zod schemas
     └── utils/            # Shared utilities
