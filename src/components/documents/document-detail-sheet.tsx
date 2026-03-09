@@ -103,14 +103,14 @@ export function DocumentDetailSheet({
   return (
     <Sheet open={!!doc} onOpenChange={(open) => !open && onClose()}>
       <SheetContent className="sm:max-w-lg overflow-y-auto">
-        <SheetHeader>
+        <SheetHeader className="px-6 pt-6 pb-0">
           <SheetTitle className="flex items-center gap-2">
             <Icon className="h-5 w-5 text-muted-foreground shrink-0" />
             <span className="truncate">{doc.originalName}</span>
           </SheetTitle>
         </SheetHeader>
 
-        <div className="space-y-4 mt-4">
+        <div className="px-6 pb-6 space-y-4 overflow-y-auto">
           {/* Preview */}
           <DocumentPreview document={doc} />
 
