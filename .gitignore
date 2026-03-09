@@ -26,3 +26,11 @@ tsconfig.tsbuildinfo
 # test coverage
 coverage/
 .playwright-mcp/
+
+# project management (local only)
+ideas/
+features/
+wireframes/
+
+# claude code config
+.claude/
