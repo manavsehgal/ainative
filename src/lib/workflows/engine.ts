@@ -2,8 +2,9 @@ import { db } from "@/lib/db";
 import { workflows, tasks, agentLogs, notifications } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { executeClaudeTask } from "@/lib/agents/claude-agent";
-import type { WorkflowDefinition, WorkflowState, StepState } from "./types";
+import type { WorkflowDefinition, WorkflowState, StepState, LoopState } from "./types";
 import { createInitialState } from "./types";
+import { executeLoop } from "./loop-executor";
 
 /**
  * Execute a workflow by advancing through its steps according to the pattern.
@@ -30,6 +31,35 @@ export async function executeWorkflow(workflowId: string): Promise<void> {
     payload: JSON.stringify({ workflowId, pattern: definition.pattern }),
     timestamp: new Date(),
   });
+
+  // Loop pattern manages its own lifecycle — delegate fully
+  if (definition.pattern === "loop") {
+    try {
+      await executeLoop(workflowId, definition);
+
+      await db.insert(agentLogs).values({
+        id: crypto.randomUUID(),
+        taskId: null,
+        agentType: "workflow-engine",
+        event: "workflow_completed",
+        payload: JSON.stringify({ workflowId }),
+        timestamp: new Date(),
+      });
+    } catch (error) {
+      await db.insert(agentLogs).values({
+        id: crypto.randomUUID(),
+        taskId: null,
+        agentType: "workflow-engine",
+        event: "workflow_failed",
+        payload: JSON.stringify({
+          workflowId,
+          error: error instanceof Error ? error.message : String(error),
+        }),
+        timestamp: new Date(),
+      });
+    }
+    return;
+  }
 
   try {
     switch (definition.pattern) {
@@ -187,6 +217,60 @@ async function executeCheckpoint(
 }
 
 /**
+ * Create and execute a child task, returning its result.
+ * Shared by step-based patterns and the loop executor.
+ */
+export async function executeChildTask(
+  workflowId: string,
+  name: string,
+  prompt: string,
+  agentProfile?: string
+): Promise<{ taskId: string; status: string; result?: string; error?: string }> {
+  const [workflow] = await db
+    .select()
+    .from(workflows)
+    .where(eq(workflows.id, workflowId));
+
+  const taskId = crypto.randomUUID();
+  await db.insert(tasks).values({
+    id: taskId,
+    projectId: workflow?.projectId ?? null,
+    title: `[Workflow] ${name}`,
+    description: prompt,
+    status: "queued",
+    priority: 1,
+    agentProfile: agentProfile ?? null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+
+  await db
+    .update(tasks)
+    .set({ status: "running", updatedAt: new Date() })
+    .where(eq(tasks.id, taskId));
+
+  try {
+    await executeClaudeTask(taskId);
+  } catch {
+    // executeClaudeTask handles its own error logging
+  }
+
+  const [completedTask] = await db
+    .select()
+    .from(tasks)
+    .where(eq(tasks.id, taskId));
+
+  if (completedTask?.status === "completed") {
+    return { taskId, status: "completed", result: completedTask.result ?? "" };
+  }
+  return {
+    taskId,
+    status: "failed",
+    error: completedTask?.result ?? "Task did not complete successfully",
+  };
+}
+
+/**
  * Execute a single workflow step by creating a task and waiting for completion.
  */
 async function executeStep(
@@ -200,56 +284,20 @@ async function executeStep(
   const stepState = state.stepStates.find((s) => s.stepId === stepId);
   if (!stepState) throw new Error(`Step ${stepId} not found in state`);
 
-  // Get the workflow to find its projectId
-  const [workflow] = await db
-    .select()
-    .from(workflows)
-    .where(eq(workflows.id, workflowId));
-
-  // Create a child task for this step
-  const taskId = crypto.randomUUID();
-  await db.insert(tasks).values({
-    id: taskId,
-    projectId: workflow?.projectId ?? null,
-    title: `[Workflow] ${stepName}`,
-    description: prompt,
-    status: "queued",
-    priority: 1,
-    agentProfile: agentProfile ?? null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  });
-
   stepState.status = "running";
-  stepState.taskId = taskId;
   stepState.startedAt = new Date().toISOString();
   await updateWorkflowState(workflowId, state, "active");
 
-  // Execute the task and wait for completion
-  await db
-    .update(tasks)
-    .set({ status: "running", updatedAt: new Date() })
-    .where(eq(tasks.id, taskId));
+  const result = await executeChildTask(workflowId, stepName, prompt, agentProfile);
 
-  try {
-    await executeClaudeTask(taskId);
-  } catch {
-    // executeClaudeTask handles its own error logging
-  }
-
-  // Check final task status
-  const [completedTask] = await db
-    .select()
-    .from(tasks)
-    .where(eq(tasks.id, taskId));
-
-  if (completedTask?.status === "completed") {
+  stepState.taskId = result.taskId;
+  if (result.status === "completed") {
     stepState.status = "completed";
-    stepState.result = completedTask.result ?? "";
+    stepState.result = result.result ?? "";
     stepState.completedAt = new Date().toISOString();
   } else {
     stepState.status = "failed";
-    stepState.error = completedTask?.result ?? "Task did not complete successfully";
+    stepState.error = result.error ?? "Task did not complete successfully";
   }
 
   await updateWorkflowState(workflowId, state, "active");
@@ -305,7 +353,7 @@ async function waitForApproval(
 /**
  * Update workflow state in the database.
  */
-async function updateWorkflowState(
+export async function updateWorkflowState(
   workflowId: string,
   state: WorkflowState,
   status: "draft" | "active" | "paused" | "completed"
@@ -336,10 +384,10 @@ async function updateWorkflowState(
  */
 export function parseWorkflowState(
   definitionJson: string
-): { definition: WorkflowDefinition; state: WorkflowState | null } {
+): { definition: WorkflowDefinition; state: WorkflowState | null; loopState: LoopState | null } {
   const parsed = JSON.parse(definitionJson);
-  const { _state, ...definition } = parsed;
-  return { definition, state: _state ?? null };
+  const { _state, _loopState, ...definition } = parsed;
+  return { definition, state: _state ?? null, loopState: _loopState ?? null };
 }
 
 /**

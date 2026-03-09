@@ -30,4 +30,5 @@ export const patternLabels: Record<string, string> = {
   sequence: "Sequence",
   "planner-executor": "Planner → Executor",
   checkpoint: "Human-in-the-Loop",
+  loop: "Autonomous Loop",
 };

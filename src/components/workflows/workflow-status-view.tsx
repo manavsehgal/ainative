@@ -8,6 +8,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { CheckCircle, Circle, Loader2, XCircle, ShieldQuestion, Play } from "lucide-react";
 import { toast } from "sonner";
 import { workflowStatusVariant, patternLabels } from "@/lib/constants/status-colors";
+import { LoopStatusView } from "./loop-status-view";
+import type { LoopState, LoopConfig } from "@/lib/workflows/types";
 
 interface StepWithState {
   id: string;
@@ -29,6 +31,8 @@ interface WorkflowStatusData {
   status: string;
   pattern: string;
   steps: StepWithState[];
+  loopConfig?: LoopConfig;
+  loopState?: LoopState;
 }
 
 interface WorkflowStatusViewProps {
@@ -131,7 +135,7 @@ export function WorkflowStatusView({ workflowId }: WorkflowStatusViewProps) {
             <Badge variant={workflowStatusVariant[data.status] ?? "secondary"}>
               {data.status}
             </Badge>
-            {(data.status === "draft" || data.status === "paused") && (
+            {data.pattern !== "loop" && (data.status === "draft" || data.status === "paused") && (
               <Button size="sm" onClick={startExecution} disabled={executing}>
                 <Play className="h-3 w-3 mr-1" />
                 {executing ? "Starting..." : "Execute"}
@@ -141,6 +145,15 @@ export function WorkflowStatusView({ workflowId }: WorkflowStatusViewProps) {
         </div>
       </CardHeader>
       <CardContent>
+        {data.pattern === "loop" && data.loopConfig ? (
+          <LoopStatusView
+            workflowId={workflowId}
+            workflowStatus={data.status}
+            loopConfig={data.loopConfig}
+            loopState={data.loopState ?? null}
+            onRefresh={fetchStatus}
+          />
+        ) : (
         <div className="space-y-3" aria-live="polite">
           {data.steps.map((step, index) => (
             <div key={step.id} className="flex items-start gap-3">
@@ -172,6 +185,7 @@ export function WorkflowStatusView({ workflowId }: WorkflowStatusViewProps) {
             </div>
           ))}
         </div>
+        )}
       </CardContent>
     </Card>
   );

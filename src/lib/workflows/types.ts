@@ -7,9 +7,55 @@ export interface WorkflowStep {
   agentProfile?: string;
 }
 
+export interface LoopConfig {
+  maxIterations: number;
+  timeBudgetMs?: number;
+  agentProfile?: string;
+  completionSignals?: string[];
+}
+
 export interface WorkflowDefinition {
-  pattern: "sequence" | "planner-executor" | "checkpoint";
+  pattern: "sequence" | "planner-executor" | "checkpoint" | "loop";
   steps: WorkflowStep[];
+  loopConfig?: LoopConfig;
+}
+
+export type LoopStopReason =
+  | "max_iterations"
+  | "time_budget"
+  | "agent_signaled"
+  | "human_cancel"
+  | "human_pause"
+  | "error";
+
+export interface IterationState {
+  iteration: number;
+  taskId: string;
+  status: "pending" | "running" | "completed" | "failed";
+  result?: string;
+  error?: string;
+  startedAt?: string;
+  completedAt?: string;
+  durationMs?: number;
+}
+
+export interface LoopState {
+  currentIteration: number;
+  iterations: IterationState[];
+  status: "running" | "completed" | "paused" | "failed";
+  stopReason?: LoopStopReason;
+  startedAt: string;
+  completedAt?: string;
+  totalDurationMs?: number;
+}
+
+export function createInitialLoopState(): LoopState {
+  return {
+    currentIteration: 0,
+    iterations: [],
+    status: "running",
+    startedAt: new Date().toISOString(),
+  };
 }
 
 export interface StepState {

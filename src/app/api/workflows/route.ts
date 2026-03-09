@@ -31,12 +31,23 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const validPatterns = ["sequence", "planner-executor", "checkpoint"];
+  const validPatterns = ["sequence", "planner-executor", "checkpoint", "loop"];
   if (!validPatterns.includes(definition.pattern)) {
     return NextResponse.json(
       { error: `Pattern must be one of: ${validPatterns.join(", ")}` },
       { status: 400 }
     );
+  }
+
+  // Loop pattern requires loopConfig with maxIterations
+  if (definition.pattern === "loop") {
+    const loopConfig = (definition as { loopConfig?: { maxIterations?: number } }).loopConfig;
+    if (!loopConfig || typeof loopConfig.maxIterations !== "number" || loopConfig.maxIterations < 1) {
+      return NextResponse.json(
+        { error: "Loop pattern requires loopConfig with maxIterations >= 1" },
+        { status: 400 }
+      );
+    }
   }
 
   const id = crypto.randomUUID();
