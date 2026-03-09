@@ -96,6 +96,35 @@ export const notifications = sqliteTable(
   ]
 );
 
+export const documents = sqliteTable(
+  "documents",
+  {
+    id: text("id").primaryKey(),
+    taskId: text("task_id").references(() => tasks.id),
+    projectId: text("project_id").references(() => projects.id),
+    filename: text("filename").notNull(),
+    originalName: text("original_name").notNull(),
+    mimeType: text("mime_type").notNull(),
+    size: integer("size").notNull(),
+    storagePath: text("storage_path").notNull(),
+    direction: text("direction", { enum: ["input", "output"] })
+      .default("input")
+      .notNull(),
+    category: text("category"),
+    status: text("status", {
+      enum: ["uploaded", "processing", "ready", "error"],
+    })
+      .default("uploaded")
+      .notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_documents_task_id").on(table.taskId),
+    index("idx_documents_project_id").on(table.projectId),
+  ]
+);
+
 export const settings = sqliteTable("settings", {
   key: text("key").primaryKey(),
   value: text("value").notNull(),
@@ -108,4 +137,5 @@ export type TaskRow = InferSelectModel<typeof tasks>;
 export type WorkflowRow = InferSelectModel<typeof workflows>;
 export type AgentLogRow = InferSelectModel<typeof agentLogs>;
 export type NotificationRow = InferSelectModel<typeof notifications>;
+export type DocumentRow = InferSelectModel<typeof documents>;
 export type SettingsRow = InferSelectModel<typeof settings>;

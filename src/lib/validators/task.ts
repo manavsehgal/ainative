@@ -6,6 +6,7 @@ export const createTaskSchema = z.object({
   projectId: z.string().optional(),
   priority: z.number().min(0).max(3).default(2),
   assignedAgent: z.string().optional(),
+  fileIds: z.array(z.string()).optional(),
 });
 
 export const updateTaskSchema = z.object({

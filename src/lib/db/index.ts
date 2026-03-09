@@ -87,8 +87,28 @@ sqlite.exec(`
   CREATE INDEX IF NOT EXISTS idx_tasks_project_id ON tasks(project_id);
   CREATE INDEX IF NOT EXISTS idx_agent_logs_task_id ON agent_logs(task_id);
   CREATE INDEX IF NOT EXISTS idx_agent_logs_timestamp ON agent_logs(timestamp);
+  CREATE TABLE IF NOT EXISTS documents (
+    id TEXT PRIMARY KEY NOT NULL,
+    task_id TEXT,
+    project_id TEXT,
+    filename TEXT NOT NULL,
+    original_name TEXT NOT NULL,
+    mime_type TEXT NOT NULL,
+    size INTEGER NOT NULL,
+    storage_path TEXT NOT NULL,
+    direction TEXT DEFAULT 'input' NOT NULL,
+    category TEXT,
+    status TEXT DEFAULT 'uploaded' NOT NULL,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    FOREIGN KEY (task_id) REFERENCES tasks(id) ON UPDATE NO ACTION ON DELETE NO ACTION,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON UPDATE NO ACTION ON DELETE NO ACTION
+  );
+
   CREATE INDEX IF NOT EXISTS idx_notifications_task_id ON notifications(task_id);
   CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(read);
+  CREATE INDEX IF NOT EXISTS idx_documents_task_id ON documents(task_id);
+  CREATE INDEX IF NOT EXISTS idx_documents_project_id ON documents(project_id);
 `);
 
 export const db = drizzle(sqlite, { schema });

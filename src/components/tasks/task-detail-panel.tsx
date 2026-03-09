@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Sheet,
   SheetContent,
@@ -14,10 +14,12 @@ import { Play, Square, RotateCcw, ArrowRight, FastForward } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { ContentPreview } from "./content-preview";
+import { TaskAttachments } from "./task-attachments";
 import { formatTimestamp } from "@/lib/utils/format-timestamp";
 import { MAX_RESUME_COUNT } from "@/lib/constants/task-status";
 import { taskStatusVariant } from "@/lib/constants/status-colors";
 import type { TaskItem } from "./task-card";
+import type { DocumentRow } from "@/lib/db/schema";
 
 interface TaskDetailPanelProps {
   task: TaskItem | null;
@@ -51,6 +53,26 @@ export function TaskDetailPanel({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [docs, setDocs] = useState<DocumentRow[]>([]);
+
+  const fetchDocs = useCallback(async (taskId: string) => {
+    try {
+      const res = await fetch(`/api/documents?taskId=${taskId}`);
+      if (res.ok) {
+        setDocs(await res.json());
+      }
+    } catch {
+      // silent — attachments are supplementary
+    }
+  }, []);
+
+  useEffect(() => {
+    if (task && open) {
+      fetchDocs(task.id);
+    } else {
+      setDocs([]);
+    }
+  }, [task?.id, open, fetchDocs]);
 
   if (!task) return null;
 
@@ -179,6 +201,16 @@ export function TaskDetailPanel({
                 <h4 className="text-sm font-medium mb-1">Agent</h4>
                 <p className="text-sm text-muted-foreground">{task.assignedAgent}</p>
               </div>
+            )}
+
+            {docs.length > 0 && (
+              <>
+                <Separator />
+                <TaskAttachments
+                  documents={docs}
+                  onDeleted={() => fetchDocs(task!.id)}
+                />
+              </>
             )}
 
             <Separator />

@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readFile, readdir } from "fs/promises";
+import { readFile, readdir, unlink } from "fs/promises";
 import { join } from "path";
 import { homedir } from "os";
+import { db } from "@/lib/db";
+import { documents } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 
 const UPLOAD_DIR = join(homedir(), ".stagent", "uploads");
 
@@ -48,5 +51,28 @@ export async function GET(
     });
   } catch {
     return NextResponse.json({ error: "File not found" }, { status: 404 });
+  }
+}
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+
+  try {
+    const files = await readdir(UPLOAD_DIR);
+    const match = files.find((f) => f.startsWith(id));
+    if (!match) {
+      return NextResponse.json({ error: "File not found" }, { status: 404 });
+    }
+
+    const filepath = join(UPLOAD_DIR, match);
+    await unlink(filepath);
+    await db.delete(documents).where(eq(documents.id, id));
+
+    return new NextResponse(null, { status: 204 });
+  } catch {
+    return NextResponse.json({ error: "Failed to delete file" }, { status: 500 });
   }
 }

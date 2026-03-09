@@ -55,6 +55,41 @@ describe("createTaskSchema", () => {
       expect(result.success).toBe(true);
     }
   });
+
+  it("accepts fileIds as optional array of strings", () => {
+    const result = createTaskSchema.safeParse({
+      title: "Test",
+      fileIds: ["abc-123", "def-456"],
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.fileIds).toEqual(["abc-123", "def-456"]);
+    }
+  });
+
+  it("accepts task without fileIds", () => {
+    const result = createTaskSchema.safeParse({ title: "Test" });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.fileIds).toBeUndefined();
+    }
+  });
+
+  it("accepts empty fileIds array", () => {
+    const result = createTaskSchema.safeParse({ title: "Test", fileIds: [] });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.fileIds).toEqual([]);
+    }
+  });
+
+  it("rejects fileIds with non-string elements", () => {
+    const result = createTaskSchema.safeParse({
+      title: "Test",
+      fileIds: [123, true],
+    });
+    expect(result.success).toBe(false);
+  });
 });
 
 describe("updateTaskSchema", () => {
