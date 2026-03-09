@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Sheet,
   SheetContent,
@@ -19,11 +19,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus } from "lucide-react";
+import { Plus, Bot } from "lucide-react";
 import { toast } from "sonner";
 import { AIAssistPanel } from "./ai-assist-panel";
 import { FileUpload } from "./file-upload";
 import { cn } from "@/lib/utils";
+
+interface ProfileOption {
+  id: string;
+  name: string;
+  description: string;
+}
 
 interface UploadedFile {
   id: string;
@@ -49,10 +55,19 @@ export function TaskCreatePanel({ projects, onCreated, open: controlledOpen, onO
   const [description, setDescription] = useState("");
   const [projectId, setProjectId] = useState<string>("");
   const [priority, setPriority] = useState("2");
+  const [agentProfile, setAgentProfile] = useState<string>("");
+  const [profiles, setProfiles] = useState<ProfileOption[]>([]);
   const [uploads, setUploads] = useState<UploadedFile[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasAIResult, setHasAIResult] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/profiles")
+      .then((r) => r.json())
+      .then((data: ProfileOption[]) => setProfiles(data))
+      .catch(() => {});
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -68,6 +83,7 @@ export function TaskCreatePanel({ projects, onCreated, open: controlledOpen, onO
           description: description.trim() || undefined,
           projectId: projectId || undefined,
           priority: parseInt(priority, 10),
+          agentProfile: agentProfile || undefined,
           fileIds: uploads.length > 0 ? uploads.map((f) => f.id) : undefined,
         }),
       });
@@ -76,6 +92,7 @@ export function TaskCreatePanel({ projects, onCreated, open: controlledOpen, onO
         setDescription("");
         setProjectId("");
         setPriority("2");
+        setAgentProfile("");
         setUploads([]);
         setOpen(false);
         toast.success("Task created");
@@ -165,6 +182,27 @@ export function TaskCreatePanel({ projects, onCreated, open: controlledOpen, onO
                 </Select>
               </div>
             </div>
+            {profiles.length > 0 && (
+              <div className="space-y-2">
+                <Label>Agent Profile</Label>
+                <Select value={agentProfile} onValueChange={setAgentProfile}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Auto-detect" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">Auto-detect</SelectItem>
+                    {profiles.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        <span className="flex items-center gap-1.5">
+                          <Bot className="h-3 w-3" />
+                          {p.name}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-2">
               <Label>Attachments</Label>
               <FileUpload

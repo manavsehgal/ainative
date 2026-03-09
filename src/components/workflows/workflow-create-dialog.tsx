@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +24,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import type { WorkflowStep } from "@/lib/workflows/types";
 
+interface ProfileOption {
+  id: string;
+  name: string;
+}
+
 interface WorkflowCreateDialogProps {
   projects: { id: string; name: string }[];
   onCreated: () => void;
@@ -44,8 +49,16 @@ export function WorkflowCreateDialog({ projects, onCreated }: WorkflowCreateDial
   const [pattern, setPattern] = useState<string>("sequence");
   const [projectId, setProjectId] = useState("");
   const [steps, setSteps] = useState<WorkflowStep[]>([createEmptyStep()]);
+  const [profiles, setProfiles] = useState<ProfileOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/profiles")
+      .then((r) => r.json())
+      .then((data: ProfileOption[]) => setProfiles(data))
+      .catch(() => {});
+  }, []);
 
   function addStep() {
     setSteps((prev) => [...prev, createEmptyStep()]);
@@ -198,6 +211,22 @@ export function WorkflowCreateDialog({ projects, onCreated }: WorkflowCreateDial
                   placeholder="Agent prompt for this step"
                   rows={2}
                 />
+                {profiles.length > 0 && (
+                  <Select
+                    value={step.agentProfile ?? ""}
+                    onValueChange={(v) => updateStep(index, { agentProfile: v || undefined })}
+                  >
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="Profile: Auto-detect" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="auto">Auto-detect</SelectItem>
+                      {profiles.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
                 {pattern === "checkpoint" && (
                   <div className="flex items-center gap-2">
                     <Checkbox

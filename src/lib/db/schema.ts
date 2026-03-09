@@ -25,6 +25,7 @@ export const tasks = sqliteTable(
       .default("planned")
       .notNull(),
     assignedAgent: text("assigned_agent"),
+    agentProfile: text("agent_profile"),
     priority: integer("priority").default(2).notNull(),
     result: text("result"),
     sessionId: text("session_id"),
@@ -35,6 +36,7 @@ export const tasks = sqliteTable(
   (table) => [
     index("idx_tasks_status").on(table.status),
     index("idx_tasks_project_id").on(table.projectId),
+    index("idx_tasks_agent_profile").on(table.agentProfile),
   ]
 );
 

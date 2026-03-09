@@ -69,6 +69,17 @@ vi.mock("@/lib/settings/auth", () => ({
   getAuthEnv: mockGetAuthEnv,
   updateAuthStatus: mockUpdateAuthStatus,
 }));
+vi.mock("@/lib/agents/profiles/registry", () => ({
+  getProfile: vi.fn().mockReturnValue({
+    id: "general",
+    name: "General",
+    systemPrompt: "",
+    allowedTools: undefined,
+  }),
+}));
+vi.mock("@/lib/documents/context-builder", () => ({
+  buildDocumentContext: vi.fn().mockResolvedValue(""),
+}));
 
 // Static imports (works because vi.mock is hoisted)
 import { query } from "@anthropic-ai/claude-agent-sdk";

@@ -4,6 +4,7 @@ export interface WorkflowStep {
   prompt: string;
   requiresApproval?: boolean;
   dependsOn?: string[];
+  agentProfile?: string;
 }
 
 export interface WorkflowDefinition {

@@ -93,7 +93,7 @@ async function executeSequence(
       ? `Previous step output:\n${previousOutput}\n\n---\n\n${step.prompt}`
       : step.prompt;
 
-    const result = await executeStep(workflowId, step.id, step.name, contextPrompt, state);
+    const result = await executeStep(workflowId, step.id, step.name, contextPrompt, state, step.agentProfile);
 
     if (result.status === "failed") {
       throw new Error(`Step "${step.name}" failed: ${result.error}`);
@@ -123,7 +123,8 @@ async function executePlannerExecutor(
     plannerStep.id,
     plannerStep.name,
     plannerStep.prompt,
-    state
+    state,
+    plannerStep.agentProfile
   );
 
   if (planResult.status === "failed") {
@@ -136,7 +137,7 @@ async function executePlannerExecutor(
     state.currentStepIndex = i;
 
     const contextPrompt = `Plan from planner:\n${planResult.result}\n\n---\n\n${step.prompt}`;
-    const result = await executeStep(workflowId, step.id, step.name, contextPrompt, state);
+    const result = await executeStep(workflowId, step.id, step.name, contextPrompt, state, step.agentProfile);
 
     if (result.status === "failed") {
       throw new Error(`Executor step "${step.name}" failed: ${result.error}`);
@@ -175,7 +176,7 @@ async function executeCheckpoint(
       ? `Previous step output:\n${previousOutput}\n\n---\n\n${step.prompt}`
       : step.prompt;
 
-    const result = await executeStep(workflowId, step.id, step.name, contextPrompt, state);
+    const result = await executeStep(workflowId, step.id, step.name, contextPrompt, state, step.agentProfile);
 
     if (result.status === "failed") {
       throw new Error(`Step "${step.name}" failed: ${result.error}`);
@@ -193,7 +194,8 @@ async function executeStep(
   stepId: string,
   stepName: string,
   prompt: string,
-  state: WorkflowState
+  state: WorkflowState,
+  agentProfile?: string
 ): Promise<StepState> {
   const stepState = state.stepStates.find((s) => s.stepId === stepId);
   if (!stepState) throw new Error(`Step ${stepId} not found in state`);
@@ -213,6 +215,7 @@ async function executeStep(
     description: prompt,
     status: "queued",
     priority: 1,
+    agentProfile: agentProfile ?? null,
     createdAt: new Date(),
     updatedAt: new Date(),
   });
@@ -374,7 +377,7 @@ export async function retryWorkflowStep(
 
   // Re-execute from this step
   const step = definition.steps[stepIndex];
-  const result = await executeStep(workflowId, step.id, step.name, step.prompt, state);
+  const result = await executeStep(workflowId, step.id, step.name, step.prompt, state, step.agentProfile);
 
   if (result.status === "completed") {
     // Continue with remaining steps if this was a sequence
@@ -384,7 +387,7 @@ export async function retryWorkflowStep(
         const nextStep = definition.steps[i];
         state.currentStepIndex = i;
         const contextPrompt = `Previous step output:\n${previousOutput}\n\n---\n\n${nextStep.prompt}`;
-        const nextResult = await executeStep(workflowId, nextStep.id, nextStep.name, contextPrompt, state);
+        const nextResult = await executeStep(workflowId, nextStep.id, nextStep.name, contextPrompt, state, nextStep.agentProfile);
         if (nextResult.status === "failed") break;
         previousOutput = nextResult.result ?? "";
       }

@@ -14,6 +14,7 @@ export interface TaskItem {
   status: string;
   priority: number;
   assignedAgent: string | null;
+  agentProfile: string | null;
   projectId: string | null;
   projectName?: string;
   result: string | null;
@@ -73,6 +74,12 @@ export function TaskCard({
             <p className="text-xs text-muted-foreground mt-0.5 truncate">{task.projectName}</p>
           )}
           <div className="flex items-center gap-2 mt-2">
+            {task.agentProfile && (
+              <Badge variant="outline" className="text-xs gap-1">
+                <Bot className="h-3 w-3" aria-hidden="true" />
+                {task.agentProfile}
+              </Badge>
+            )}
             {task.assignedAgent && (
               <Badge variant="secondary" className="text-xs gap-1">
                 <Bot className="h-3 w-3" aria-hidden="true" />

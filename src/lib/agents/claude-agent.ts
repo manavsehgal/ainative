@@ -6,6 +6,7 @@ import { setExecution, removeExecution } from "./execution-manager";
 import { MAX_RESUME_COUNT } from "@/lib/constants/task-status";
 import { getAuthEnv, updateAuthStatus } from "@/lib/settings/auth";
 import { buildDocumentContext } from "@/lib/documents/context-builder";
+import { getProfile } from "./profiles/registry";
 
 /** Typed representation of messages from the Agent SDK stream */
 interface AgentStreamMessage {
@@ -28,7 +29,8 @@ async function processAgentStream(
   taskId: string,
   taskTitle: string,
   response: AsyncIterable<Record<string, unknown>>,
-  abortController: AbortController
+  abortController: AbortController,
+  agentProfileId = "general"
 ): Promise<void> {
   let sessionId: string | null = null;
 
@@ -74,7 +76,7 @@ async function processAgentStream(
         await db.insert(agentLogs).values({
           id: crypto.randomUUID(),
           taskId,
-          agentType: "claude-code",
+          agentType: agentProfileId,
           event: eventType,
           payload: JSON.stringify(event),
           timestamp: new Date(),
@@ -89,7 +91,7 @@ async function processAgentStream(
           await db.insert(agentLogs).values({
             id: crypto.randomUUID(),
             taskId,
-            agentType: "claude-code",
+            agentType: agentProfileId,
             event: "tool_start",
             payload: JSON.stringify({
               tool: block.name,
@@ -129,7 +131,7 @@ async function processAgentStream(
       await db.insert(agentLogs).values({
         id: crypto.randomUUID(),
         taskId,
-        agentType: "claude-code",
+        agentType: agentProfileId,
         event: "completed",
         payload: JSON.stringify({ result: resultText.slice(0, 1000) }),
         timestamp: new Date(),
@@ -152,9 +154,11 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
   });
 
   try {
+    const profile = getProfile(task.agentProfile ?? "general");
+    const systemPrompt = profile?.systemPrompt ?? "";
     const basePrompt = task.description || task.title;
     const docContext = await buildDocumentContext(taskId);
-    const prompt = docContext ? `${docContext}\n\n${basePrompt}` : basePrompt;
+    const prompt = [systemPrompt, docContext, basePrompt].filter(Boolean).join("\n\n");
 
     const authEnv = await getAuthEnv();
     const response = query({
@@ -164,6 +168,7 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
         includePartialMessages: true,
         cwd: process.cwd(),
         ...(authEnv && { env: { ...process.env, ...authEnv } }),
+        ...(profile?.allowedTools && { allowedTools: profile.allowedTools }),
         // @ts-expect-error Agent SDK canUseTool types are incomplete — our async handler is compatible at runtime
         canUseTool: async (
           toolName: string,
@@ -178,10 +183,11 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
       taskId,
       task.title,
       response as AsyncIterable<Record<string, unknown>>,
-      abortController
+      abortController,
+      task.agentProfile ?? "general"
     );
   } catch (error: unknown) {
-    await handleExecutionError(taskId, task.title, error, abortController);
+    await handleExecutionError(taskId, task.title, error, abortController, task.agentProfile ?? "general");
   } finally {
     removeExecution(taskId);
   }
@@ -214,22 +220,27 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
     startedAt: new Date(),
   });
 
+  const profileId = task.agentProfile ?? "general";
+
   await db.insert(agentLogs).values({
     id: crypto.randomUUID(),
     taskId,
-    agentType: "claude-code",
+    agentType: profileId,
     event: "session_resumed",
     payload: JSON.stringify({
       sessionId: task.sessionId,
       resumeCount: task.resumeCount + 1,
+      profile: profileId,
     }),
     timestamp: new Date(),
   });
 
   try {
+    const profile = getProfile(profileId);
+    const systemPrompt = profile?.systemPrompt ?? "";
     const basePrompt = task.description || task.title;
     const docContext = await buildDocumentContext(taskId);
-    const prompt = docContext ? `${docContext}\n\n${basePrompt}` : basePrompt;
+    const prompt = [systemPrompt, docContext, basePrompt].filter(Boolean).join("\n\n");
 
     const authEnv = await getAuthEnv();
     const response = query({
@@ -240,6 +251,7 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
         includePartialMessages: true,
         cwd: process.cwd(),
         ...(authEnv && { env: { ...process.env, ...authEnv } }),
+        ...(profile?.allowedTools && { allowedTools: profile.allowedTools }),
         // @ts-expect-error Agent SDK canUseTool types are incomplete — our async handler is compatible at runtime
         canUseTool: async (
           toolName: string,
@@ -254,7 +266,8 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
       taskId,
       task.title,
       response as AsyncIterable<Record<string, unknown>>,
-      abortController
+      abortController,
+      profileId
     );
   } catch (error: unknown) {
     const errorMessage =
@@ -286,7 +299,7 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
       return;
     }
 
-    await handleExecutionError(taskId, task.title, error, abortController);
+    await handleExecutionError(taskId, task.title, error, abortController, profileId);
   } finally {
     removeExecution(taskId);
   }
@@ -299,7 +312,8 @@ async function handleExecutionError(
   taskId: string,
   taskTitle: string,
   error: unknown,
-  abortController: AbortController
+  abortController: AbortController,
+  agentProfileId = "general"
 ): Promise<void> {
   const errorMessage =
     error instanceof Error ? error.message : String(error);
@@ -333,7 +347,7 @@ async function handleExecutionError(
   await db.insert(agentLogs).values({
     id: crypto.randomUUID(),
     taskId,
-    agentType: "claude-code",
+    agentType: agentProfileId,
     event: "error",
     payload: JSON.stringify({ error: errorMessage }),
     timestamp: new Date(),

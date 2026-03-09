@@ -196,10 +196,17 @@ export function TaskDetailPanel({
               </>
             )}
 
-            {task.assignedAgent && (
+            {(task.assignedAgent || task.agentProfile) && (
               <div>
                 <h4 className="text-sm font-medium mb-1">Agent</h4>
-                <p className="text-sm text-muted-foreground">{task.assignedAgent}</p>
+                {task.assignedAgent && (
+                  <p className="text-sm text-muted-foreground">{task.assignedAgent}</p>
+                )}
+                {task.agentProfile && (
+                  <p className="text-sm text-muted-foreground">
+                    Profile: {task.agentProfile}
+                  </p>
+                )}
               </div>
             )}
 

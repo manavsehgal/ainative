@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
     projectId: parsed.data.projectId ?? null,
     priority: parsed.data.priority,
     assignedAgent: parsed.data.assignedAgent ?? null,
+    agentProfile: parsed.data.agentProfile ?? null,
     status: "planned",
     createdAt: now,
     updatedAt: now,

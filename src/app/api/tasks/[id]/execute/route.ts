@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { tasks } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
-import { executeTaskWithAgent } from "@/lib/agents/router";
+import { executeTaskWithAgent, classifyTaskProfile } from "@/lib/agents/router";
 
 export async function POST(
   _req: NextRequest,
@@ -31,6 +31,15 @@ export async function POST(
   }
 
   const task = claimed[0];
+
+  // Auto-classify profile if none was set
+  if (!task.agentProfile) {
+    const autoProfile = classifyTaskProfile(task.title, task.description);
+    db.update(tasks)
+      .set({ agentProfile: autoProfile, updatedAt: new Date() })
+      .where(eq(tasks.id, id))
+      .run();
+  }
 
   // Fire-and-forget — task already marked as running
   executeTaskWithAgent(id, task.assignedAgent ?? "claude-code").catch(

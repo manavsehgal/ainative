@@ -32,6 +32,7 @@ sqlite.exec(`
     description TEXT,
     status TEXT DEFAULT 'planned' NOT NULL,
     assigned_agent TEXT,
+    agent_profile TEXT,
     priority INTEGER DEFAULT 2 NOT NULL,
     result TEXT,
     session_id TEXT,
@@ -113,5 +114,14 @@ sqlite.exec(`
   CREATE INDEX IF NOT EXISTS idx_documents_task_id ON documents(task_id);
   CREATE INDEX IF NOT EXISTS idx_documents_project_id ON documents(project_id);
 `);
+
+// Migration: add agent_profile column to existing tasks table (safe to re-run)
+// Note: sqlite.exec() here is better-sqlite3's synchronous DDL method, not child_process
+try {
+  sqlite.exec(`ALTER TABLE tasks ADD COLUMN agent_profile TEXT;`);
+} catch {
+  // Column already exists — ignore
+}
+sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_tasks_agent_profile ON tasks(agent_profile);`);
 
 export const db = drizzle(sqlite, { schema });
