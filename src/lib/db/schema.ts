@@ -5,6 +5,7 @@ export const projects = sqliteTable("projects", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description"),
+  workingDirectory: text("working_directory"),
   status: text("status", { enum: ["active", "paused", "completed"] })
     .default("active")
     .notNull(),
@@ -46,7 +47,7 @@ export const workflows = sqliteTable("workflows", {
   name: text("name").notNull(),
   definition: text("definition").notNull(),
   status: text("status", {
-    enum: ["draft", "active", "paused", "completed"],
+    enum: ["draft", "active", "paused", "completed", "failed"],
   })
     .default("draft")
     .notNull(),
@@ -130,6 +131,36 @@ export const documents = sqliteTable(
   ]
 );
 
+export const schedules = sqliteTable(
+  "schedules",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id").references(() => projects.id),
+    name: text("name").notNull(),
+    prompt: text("prompt").notNull(),
+    cronExpression: text("cron_expression").notNull(),
+    agentProfile: text("agent_profile"),
+    recurs: integer("recurs", { mode: "boolean" }).default(true).notNull(),
+    status: text("status", {
+      enum: ["active", "paused", "completed", "expired"],
+    })
+      .default("active")
+      .notNull(),
+    maxFirings: integer("max_firings"),
+    firingCount: integer("firing_count").default(0).notNull(),
+    expiresAt: integer("expires_at", { mode: "timestamp" }),
+    lastFiredAt: integer("last_fired_at", { mode: "timestamp" }),
+    nextFireAt: integer("next_fire_at", { mode: "timestamp" }),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_schedules_status").on(table.status),
+    index("idx_schedules_next_fire_at").on(table.nextFireAt),
+    index("idx_schedules_project_id").on(table.projectId),
+  ]
+);
+
 export const settings = sqliteTable("settings", {
   key: text("key").primaryKey(),
   value: text("value").notNull(),
@@ -143,4 +174,5 @@ export type WorkflowRow = InferSelectModel<typeof workflows>;
 export type AgentLogRow = InferSelectModel<typeof agentLogs>;
 export type NotificationRow = InferSelectModel<typeof notifications>;
 export type DocumentRow = InferSelectModel<typeof documents>;
+export type ScheduleRow = InferSelectModel<typeof schedules>;
 export type SettingsRow = InferSelectModel<typeof settings>;

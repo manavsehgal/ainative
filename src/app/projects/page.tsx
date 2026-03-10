@@ -11,6 +11,7 @@ export default async function ProjectsPage() {
       id: projects.id,
       name: projects.name,
       description: projects.description,
+      workingDirectory: projects.workingDirectory,
       status: projects.status,
       createdAt: projects.createdAt,
       updatedAt: projects.updatedAt,

@@ -1,0 +1,235 @@
+"use client";
+
+import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { ScheduleCreateDialog } from "./schedule-create-dialog";
+import { ScheduleStatusBadge } from "./schedule-status-badge";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { EmptyState } from "@/components/shared/empty-state";
+import { describeCron } from "@/lib/schedules/interval-parser";
+import { Clock, Pause, Play, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+
+interface Schedule {
+  id: string;
+  name: string;
+  prompt: string;
+  cronExpression: string;
+  agentProfile: string | null;
+  recurs: boolean;
+  status: string;
+  maxFirings: number | null;
+  firingCount: number;
+  lastFiredAt: string | null;
+  nextFireAt: string | null;
+  createdAt: string;
+}
+
+interface ScheduleListProps {
+  projects: { id: string; name: string }[];
+}
+
+export function ScheduleList({ projects }: ScheduleListProps) {
+  const router = useRouter();
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  const refresh = useCallback(async () => {
+    const res = await fetch("/api/schedules");
+    if (res.ok) setSchedules(await res.json());
+    setLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  async function handlePauseResume(id: string, currentStatus: string) {
+    const newStatus = currentStatus === "active" ? "paused" : "active";
+    const res = await fetch(`/api/schedules/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus }),
+    });
+    if (res.ok) {
+      toast.success(
+        newStatus === "paused" ? "Schedule paused" : "Schedule resumed"
+      );
+      refresh();
+    } else {
+      const data = await res.json().catch(() => null);
+      toast.error(data?.error ?? "Failed to update schedule");
+    }
+  }
+
+  async function handleDelete(id: string) {
+    setConfirmDeleteId(null);
+    const res = await fetch(`/api/schedules/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      toast.success("Schedule deleted");
+      refresh();
+    } else {
+      const data = await res.json().catch(() => null);
+      toast.error(data?.error ?? "Failed to delete schedule");
+    }
+  }
+
+  function formatRelative(dateStr: string | null): string {
+    if (!dateStr) return "—";
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = date.getTime() - now.getTime();
+    const absDiff = Math.abs(diffMs);
+
+    if (absDiff < 60_000) return diffMs > 0 ? "in <1m" : "<1m ago";
+    if (absDiff < 3_600_000) {
+      const mins = Math.round(absDiff / 60_000);
+      return diffMs > 0 ? `in ${mins}m` : `${mins}m ago`;
+    }
+    if (absDiff < 86_400_000) {
+      const hrs = Math.round(absDiff / 3_600_000);
+      return diffMs > 0 ? `in ${hrs}h` : `${hrs}h ago`;
+    }
+    return date.toLocaleDateString();
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">Schedules</h1>
+        <ScheduleCreateDialog projects={projects} onCreated={refresh} />
+      </div>
+
+      {!loaded ? (
+        <div
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+          aria-live="polite"
+        >
+          {[1, 2, 3].map((i) => (
+            <Card key={i}>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-5 w-32" />
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-3 w-24" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : schedules.length === 0 ? (
+        <EmptyState
+          icon={Clock}
+          heading="No schedules yet"
+          description="Create a schedule to run agent tasks on a recurring interval or one-time delay."
+        />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {schedules.map((sched) => (
+            <Card
+              key={sched.id}
+              tabIndex={0}
+              className="cursor-pointer transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl"
+              onClick={() => router.push(`/schedules/${sched.id}`)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  router.push(`/schedules/${sched.id}`);
+                }
+              }}
+            >
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base font-medium">
+                    {sched.name}
+                  </CardTitle>
+                  <ScheduleStatusBadge status={sched.status} />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <span>{describeCron(sched.cronExpression)}</span>
+                  <span>·</span>
+                  <span>
+                    {sched.firingCount} firing
+                    {sched.firingCount !== 1 ? "s" : ""}
+                  </span>
+                  {!sched.recurs && (
+                    <>
+                      <span>·</span>
+                      <span>One-shot</span>
+                    </>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground line-clamp-2 mt-1.5">
+                  {sched.prompt.length > 80
+                    ? sched.prompt.slice(0, 80) + "..."
+                    : sched.prompt}
+                </p>
+                {sched.status === "active" && sched.nextFireAt && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Next: {formatRelative(sched.nextFireAt)}
+                  </p>
+                )}
+                <div className="flex items-center gap-1 mt-3">
+                  {(sched.status === "active" || sched.status === "paused") && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      aria-label={
+                        sched.status === "active"
+                          ? "Pause schedule"
+                          : "Resume schedule"
+                      }
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePauseResume(sched.id, sched.status);
+                      }}
+                    >
+                      {sched.status === "active" ? (
+                        <Pause className="h-3.5 w-3.5" />
+                      ) : (
+                        <Play className="h-3.5 w-3.5" />
+                      )}
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-destructive"
+                    aria-label="Delete schedule"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setConfirmDeleteId(sched.id);
+                    }}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={confirmDeleteId !== null}
+        onOpenChange={(open) => {
+          if (!open) setConfirmDeleteId(null);
+        }}
+        title="Delete Schedule"
+        description="This will permanently delete this schedule. Child tasks will be kept."
+        confirmLabel="Delete"
+        onConfirm={() => confirmDeleteId && handleDelete(confirmDeleteId)}
+        destructive
+      />
+    </div>
+  );
+}

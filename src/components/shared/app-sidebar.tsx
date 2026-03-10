@@ -10,6 +10,7 @@ import {
   FolderKanban,
   GitBranch,
   FileText,
+  Clock,
   Settings,
 } from "lucide-react";
 import {
@@ -35,6 +36,7 @@ const navItems = [
   { title: "Projects", href: "/projects", icon: FolderKanban, badge: false },
   { title: "Workflows", href: "/workflows", icon: GitBranch, badge: false },
   { title: "Documents", href: "/documents", icon: FileText, badge: false },
+  { title: "Schedules", href: "/schedules", icon: Clock, badge: false },
   { title: "Settings", href: "/settings", icon: Settings, badge: false },
 ];
 

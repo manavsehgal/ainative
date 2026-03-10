@@ -23,6 +23,7 @@ export function ProjectCreateDialog({ onCreated }: ProjectCreateDialogProps) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [workingDirectory, setWorkingDirectory] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,11 +36,16 @@ export function ProjectCreateDialog({ onCreated }: ProjectCreateDialogProps) {
       const res = await fetch("/api/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), description: description.trim() || undefined }),
+        body: JSON.stringify({
+          name: name.trim(),
+          description: description.trim() || undefined,
+          workingDirectory: workingDirectory.trim() || undefined,
+        }),
       });
       if (res.ok) {
         setName("");
         setDescription("");
+        setWorkingDirectory("");
         setOpen(false);
         toast.success("Project created");
         onCreated();
@@ -87,6 +93,18 @@ export function ProjectCreateDialog({ onCreated }: ProjectCreateDialogProps) {
               placeholder="Optional description"
               rows={3}
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="working-dir">Working Directory</Label>
+            <Input
+              id="working-dir"
+              value={workingDirectory}
+              onChange={(e) => setWorkingDirectory(e.target.value)}
+              placeholder="/path/to/project (optional)"
+            />
+            <p className="text-xs text-muted-foreground">
+              Agent tasks will execute in this directory. Defaults to the Stagent server directory if empty.
+            </p>
           </div>
           {error && (
             <p className="text-sm text-destructive">{error}</p>

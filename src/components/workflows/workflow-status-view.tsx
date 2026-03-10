@@ -1,14 +1,28 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CheckCircle, Circle, Loader2, XCircle, ShieldQuestion, Play } from "lucide-react";
+import {
+  CheckCircle,
+  Circle,
+  Loader2,
+  XCircle,
+  ShieldQuestion,
+  Play,
+  Pencil,
+  Copy,
+  RotateCcw,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { workflowStatusVariant, patternLabels } from "@/lib/constants/status-colors";
 import { LoopStatusView } from "./loop-status-view";
+import { WorkflowCreateDialog } from "./workflow-create-dialog";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import type { LoopState, LoopConfig } from "@/lib/workflows/types";
 
 interface StepWithState {
@@ -30,6 +44,8 @@ interface WorkflowStatusData {
   name: string;
   status: string;
   pattern: string;
+  projectId?: string | null;
+  definition?: string;
   steps: StepWithState[];
   loopConfig?: LoopConfig;
   loopState?: LoopState;
@@ -37,6 +53,7 @@ interface WorkflowStatusData {
 
 interface WorkflowStatusViewProps {
   workflowId: string;
+  projects?: { id: string; name: string }[];
 }
 
 const stepStatusIcons: Record<string, React.ReactNode> = {
@@ -48,9 +65,12 @@ const stepStatusIcons: Record<string, React.ReactNode> = {
 };
 
 
-export function WorkflowStatusView({ workflowId }: WorkflowStatusViewProps) {
+export function WorkflowStatusView({ workflowId, projects = [] }: WorkflowStatusViewProps) {
+  const router = useRouter();
   const [data, setData] = useState<WorkflowStatusData | null>(null);
   const [executing, setExecuting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [dialogMode, setDialogMode] = useState<"edit" | "clone" | null>(null);
 
   const fetchStatus = useCallback(async () => {
     const res = await fetch(`/api/workflows/${workflowId}/status`);
@@ -65,7 +85,7 @@ export function WorkflowStatusView({ workflowId }: WorkflowStatusViewProps) {
 
   async function startExecution() {
     setExecuting(true);
-    // I5: Optimistic update — immediately show "active" status
+    // Optimistic update — immediately show "active" status
     if (data) {
       setData({
         ...data,
@@ -89,6 +109,36 @@ export function WorkflowStatusView({ workflowId }: WorkflowStatusViewProps) {
       }
     } finally {
       setExecuting(false);
+    }
+  }
+
+  async function handleRerun() {
+    setExecuting(true);
+    try {
+      const res = await fetch(`/api/workflows/${workflowId}/execute`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        toast.success("Workflow re-started");
+        fetchStatus();
+      } else {
+        const err = await res.json().catch(() => null);
+        toast.error(err?.error ?? "Failed to re-run workflow");
+      }
+    } finally {
+      setExecuting(false);
+    }
+  }
+
+  async function handleDelete() {
+    setConfirmDelete(false);
+    const res = await fetch(`/api/workflows/${workflowId}`, { method: "DELETE" });
+    if (res.ok) {
+      toast.success("Workflow deleted");
+      router.push("/workflows");
+    } else {
+      const err = await res.json().catch(() => null);
+      toast.error(err?.error ?? "Failed to delete workflow");
     }
   }
 
@@ -121,72 +171,167 @@ export function WorkflowStatusView({ workflowId }: WorkflowStatusViewProps) {
     );
   }
 
+  // Build workflow data for edit/clone dialog
+  const workflowForDialog = data.definition
+    ? { id: data.id, name: data.name, projectId: data.projectId ?? null, definition: data.definition }
+    : null;
+
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>{data.name}</CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              {patternLabels[data.pattern] ?? data.pattern}
-            </p>
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>{data.name}</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                {patternLabels[data.pattern] ?? data.pattern}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant={workflowStatusVariant[data.status] ?? "secondary"}>
+                {data.status}
+              </Badge>
+
+              {/* Execute button for draft/paused non-loop workflows */}
+              {data.pattern !== "loop" && (data.status === "draft" || data.status === "paused") && (
+                <Button size="sm" onClick={startExecution} disabled={executing}>
+                  <Play className="h-3 w-3 mr-1" />
+                  {executing ? "Starting..." : "Execute"}
+                </Button>
+              )}
+
+              {/* Edit — draft only */}
+              {data.status === "draft" && workflowForDialog && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  aria-label="Edit workflow"
+                  onClick={() => setDialogMode("edit")}
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+              )}
+
+              {/* Clone — always available */}
+              {workflowForDialog && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  aria-label="Clone workflow"
+                  onClick={() => setDialogMode("clone")}
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                </Button>
+              )}
+
+              {/* Re-run — completed/failed only */}
+              {(data.status === "completed" || data.status === "failed") && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  aria-label="Re-run workflow"
+                  onClick={handleRerun}
+                  disabled={executing}
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                </Button>
+              )}
+
+              {/* Delete — not active */}
+              {data.status !== "active" && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-destructive"
+                  aria-label="Delete workflow"
+                  onClick={() => setConfirmDelete(true)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge variant={workflowStatusVariant[data.status] ?? "secondary"}>
-              {data.status}
-            </Badge>
-            {data.pattern !== "loop" && (data.status === "draft" || data.status === "paused") && (
-              <Button size="sm" onClick={startExecution} disabled={executing}>
-                <Play className="h-3 w-3 mr-1" />
-                {executing ? "Starting..." : "Execute"}
-              </Button>
-            )}
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {data.pattern === "loop" && data.loopConfig ? (
-          <LoopStatusView
-            workflowId={workflowId}
-            workflowStatus={data.status}
-            loopConfig={data.loopConfig}
-            loopState={data.loopState ?? null}
-            onRefresh={fetchStatus}
-          />
-        ) : (
-        <div className="space-y-3" aria-live="polite">
-          {data.steps.map((step, index) => (
-            <div key={step.id} className="flex items-start gap-3">
-              <div className="mt-0.5 flex flex-col items-center">
-                {stepStatusIcons[step.state.status] ?? stepStatusIcons.pending}
-                {index < data.steps.length - 1 && (
-                  <div className="w-px h-6 bg-border mt-1" />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">{step.name}</span>
-                  {step.requiresApproval && (
-                    <Badge variant="outline" className="text-xs">checkpoint</Badge>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground truncate mt-0.5">
-                  {step.prompt.slice(0, 100)}{step.prompt.length > 100 ? "..." : ""}
-                </p>
-                {step.state.error && (
-                  <p className="text-xs text-destructive mt-1">{step.state.error}</p>
-                )}
-                {step.state.result && step.state.status === "completed" && (
-                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                    {step.state.result.slice(0, 200)}
-                  </p>
-                )}
+        </CardHeader>
+        <CardContent>
+          {/* Loop prompt display */}
+          {data.pattern === "loop" && data.steps[0]?.prompt && (
+            <div className="mb-4">
+              <p className="text-xs font-medium text-muted-foreground mb-1.5">Loop Prompt</p>
+              <div className="rounded-md border bg-muted/50 p-3">
+                <p className="text-sm whitespace-pre-wrap">{data.steps[0].prompt}</p>
               </div>
             </div>
-          ))}
-        </div>
-        )}
-      </CardContent>
-    </Card>
+          )}
+
+          {data.pattern === "loop" && data.loopConfig ? (
+            <LoopStatusView
+              workflowId={workflowId}
+              workflowStatus={data.status}
+              loopConfig={data.loopConfig}
+              loopState={data.loopState ?? null}
+              onRefresh={fetchStatus}
+            />
+          ) : (
+          <div className="space-y-3" aria-live="polite">
+            {data.steps.map((step, index) => (
+              <div key={step.id} className="flex items-start gap-3">
+                <div className="mt-0.5 flex flex-col items-center">
+                  {stepStatusIcons[step.state.status] ?? stepStatusIcons.pending}
+                  {index < data.steps.length - 1 && (
+                    <div className="w-px h-6 bg-border mt-1" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">{step.name}</span>
+                    {step.requiresApproval && (
+                      <Badge variant="outline" className="text-xs">checkpoint</Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground truncate mt-0.5">
+                    {step.prompt.slice(0, 100)}{step.prompt.length > 100 ? "..." : ""}
+                  </p>
+                  {step.state.error && (
+                    <p className="text-xs text-destructive mt-1">{step.state.error}</p>
+                  )}
+                  {step.state.result && step.state.status === "completed" && (
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                      {step.state.result.slice(0, 200)}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Edit/Clone dialog */}
+      {dialogMode && workflowForDialog && (
+        <WorkflowCreateDialog
+          projects={projects}
+          onCreated={() => { setDialogMode(null); fetchStatus(); }}
+          mode={dialogMode}
+          workflow={workflowForDialog}
+          open={true}
+          onOpenChange={(open) => { if (!open) setDialogMode(null); }}
+        />
+      )}
+
+      {/* Delete confirmation */}
+      <ConfirmDialog
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        title="Delete Workflow"
+        description="This will permanently delete this workflow and cannot be undone."
+        confirmLabel="Delete"
+        onConfirm={handleDelete}
+        destructive
+      />
+    </>
   );
 }

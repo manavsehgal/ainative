@@ -22,16 +22,27 @@ import {
 import { Plus, Trash2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import type { WorkflowStep } from "@/lib/workflows/types";
+import type { WorkflowStep, WorkflowDefinition } from "@/lib/workflows/types";
 
 interface ProfileOption {
   id: string;
   name: string;
 }
 
+interface WorkflowData {
+  id: string;
+  name: string;
+  projectId: string | null;
+  definition: string;
+}
+
 interface WorkflowCreateDialogProps {
   projects: { id: string; name: string }[];
   onCreated: () => void;
+  mode?: "create" | "edit" | "clone";
+  workflow?: WorkflowData;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 function createEmptyStep(): WorkflowStep {
@@ -43,8 +54,27 @@ function createEmptyStep(): WorkflowStep {
   };
 }
 
-export function WorkflowCreateDialog({ projects, onCreated }: WorkflowCreateDialogProps) {
-  const [open, setOpen] = useState(false);
+function parseDefinition(json: string): WorkflowDefinition | null {
+  try {
+    return JSON.parse(json) as WorkflowDefinition;
+  } catch {
+    return null;
+  }
+}
+
+export function WorkflowCreateDialog({
+  projects,
+  onCreated,
+  mode = "create",
+  workflow,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+}: WorkflowCreateDialogProps) {
+  const isControlled = controlledOpen !== undefined;
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = isControlled ? controlledOnOpenChange! : setInternalOpen;
+
   const [name, setName] = useState("");
   const [pattern, setPattern] = useState<string>("sequence");
   const [projectId, setProjectId] = useState("");
@@ -65,6 +95,47 @@ export function WorkflowCreateDialog({ projects, onCreated }: WorkflowCreateDial
       .then((data: ProfileOption[]) => setProfiles(data))
       .catch(() => {});
   }, []);
+
+  // Pre-populate form when opening in edit/clone mode
+  useEffect(() => {
+    if (open && workflow && (mode === "edit" || mode === "clone")) {
+      const def = parseDefinition(workflow.definition);
+      setName(mode === "clone" ? `${workflow.name} (Copy)` : workflow.name);
+      setProjectId(workflow.projectId ?? "");
+
+      if (def) {
+        setPattern(def.pattern);
+        if (def.pattern === "loop") {
+          setLoopPrompt(def.steps[0]?.prompt ?? "");
+          setMaxIterations(def.loopConfig?.maxIterations ?? 5);
+          setTimeBudgetMinutes(
+            def.loopConfig?.timeBudgetMs
+              ? def.loopConfig.timeBudgetMs / 60000
+              : ""
+          );
+          setLoopAgentProfile(def.loopConfig?.agentProfile ?? "");
+        } else {
+          setSteps(
+            mode === "clone"
+              ? def.steps.map((s) => ({ ...s, id: crypto.randomUUID() }))
+              : def.steps
+          );
+        }
+      }
+    }
+  }, [open, workflow, mode]);
+
+  function resetForm() {
+    setName("");
+    setPattern("sequence");
+    setProjectId("");
+    setSteps([createEmptyStep()]);
+    setLoopPrompt("");
+    setMaxIterations(5);
+    setTimeBudgetMinutes("");
+    setLoopAgentProfile("");
+    setError(null);
+  }
 
   function addStep() {
     setSteps((prev) => [...prev, createEmptyStep()]);
@@ -119,8 +190,14 @@ export function WorkflowCreateDialog({ projects, onCreated }: WorkflowCreateDial
           }
         : { pattern, steps };
 
-      const res = await fetch("/api/workflows", {
-        method: "POST",
+      const isEdit = mode === "edit" && workflow;
+
+      const url = isEdit
+        ? `/api/workflows/${workflow.id}`
+        : "/api/workflows";
+
+      const res = await fetch(url, {
+        method: isEdit ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: name.trim(),
@@ -130,20 +207,19 @@ export function WorkflowCreateDialog({ projects, onCreated }: WorkflowCreateDial
       });
 
       if (res.ok) {
-        setName("");
-        setPattern("sequence");
-        setProjectId("");
-        setSteps([createEmptyStep()]);
-        setLoopPrompt("");
-        setMaxIterations(5);
-        setTimeBudgetMinutes("");
-        setLoopAgentProfile("");
+        resetForm();
         setOpen(false);
-        toast.success("Workflow created");
+        toast.success(
+          mode === "edit"
+            ? "Workflow updated"
+            : mode === "clone"
+              ? "Workflow cloned"
+              : "Workflow created"
+        );
         onCreated();
       } else {
         const data = await res.json().catch(() => null);
-        setError(data?.error ?? `Failed to create workflow (${res.status})`);
+        setError(data?.error ?? `Failed to ${mode === "edit" ? "update" : "create"} workflow (${res.status})`);
       }
     } catch {
       setError("Network error — could not reach server");
@@ -152,107 +228,174 @@ export function WorkflowCreateDialog({ projects, onCreated }: WorkflowCreateDial
     }
   }
 
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          New Workflow
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Create Workflow</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+  const titles: Record<string, string> = {
+    create: "Create Workflow",
+    edit: "Edit Workflow",
+    clone: "Clone Workflow",
+  };
+
+  const submitLabels: Record<string, [string, string]> = {
+    create: ["Creating...", "Create Workflow"],
+    edit: ["Saving...", "Save Changes"],
+    clone: ["Cloning...", "Clone Workflow"],
+  };
+
+  const dialogContent = (
+    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogHeader>
+        <DialogTitle>{titles[mode]}</DialogTitle>
+      </DialogHeader>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="wf-name">Name</Label>
+            <Input
+              id="wf-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Workflow name"
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Pattern</Label>
+            <Select
+              value={pattern}
+              onValueChange={setPattern}
+              disabled={mode === "edit"}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="sequence">Sequence</SelectItem>
+                <SelectItem value="planner-executor">Planner → Executor</SelectItem>
+                <SelectItem value="checkpoint">Human-in-the-Loop Checkpoint</SelectItem>
+                <SelectItem value="loop">Autonomous Loop</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {projects.length > 0 && (
+          <div className="space-y-2">
+            <Label>Project (optional)</Label>
+            <Select value={projectId} onValueChange={setProjectId}>
+              <SelectTrigger>
+                <SelectValue placeholder="None" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                {projects.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {pattern === "loop" ? (
+          <div className="space-y-3">
             <div className="space-y-2">
-              <Label htmlFor="wf-name">Name</Label>
-              <Input
-                id="wf-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Workflow name"
+              <Label htmlFor="loop-prompt">Loop Prompt</Label>
+              <Textarea
+                id="loop-prompt"
+                value={loopPrompt}
+                onChange={(e) => setLoopPrompt(e.target.value)}
+                placeholder="The prompt the agent will iterate on. Each iteration receives the previous output as context."
+                rows={4}
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label>Pattern</Label>
-              <Select value={pattern} onValueChange={setPattern}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="sequence">Sequence</SelectItem>
-                  <SelectItem value="planner-executor">Planner → Executor</SelectItem>
-                  <SelectItem value="checkpoint">Human-in-the-Loop Checkpoint</SelectItem>
-                  <SelectItem value="loop">Autonomous Loop</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {projects.length > 0 && (
-            <div className="space-y-2">
-              <Label>Project (optional)</Label>
-              <Select value={projectId} onValueChange={setProjectId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="None" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  {projects.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {pattern === "loop" ? (
-            <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="loop-prompt">Loop Prompt</Label>
-                <Textarea
-                  id="loop-prompt"
-                  value={loopPrompt}
-                  onChange={(e) => setLoopPrompt(e.target.value)}
-                  placeholder="The prompt the agent will iterate on. Each iteration receives the previous output as context."
-                  rows={4}
+                <Label htmlFor="max-iterations">Max Iterations</Label>
+                <Input
+                  id="max-iterations"
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={maxIterations}
+                  onChange={(e) => setMaxIterations(Number(e.target.value))}
                   required
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="max-iterations">Max Iterations</Label>
-                  <Input
-                    id="max-iterations"
-                    type="number"
-                    min={1}
-                    max={100}
-                    value={maxIterations}
-                    onChange={(e) => setMaxIterations(Number(e.target.value))}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="time-budget">Time Budget (minutes, optional)</Label>
-                  <Input
-                    id="time-budget"
-                    type="number"
-                    min={1}
-                    value={timeBudgetMinutes}
-                    onChange={(e) =>
-                      setTimeBudgetMinutes(e.target.value ? Number(e.target.value) : "")
-                    }
-                    placeholder="No limit"
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="time-budget">Time Budget (minutes, optional)</Label>
+                <Input
+                  id="time-budget"
+                  type="number"
+                  min={1}
+                  value={timeBudgetMinutes}
+                  onChange={(e) =>
+                    setTimeBudgetMinutes(e.target.value ? Number(e.target.value) : "")
+                  }
+                  placeholder="No limit"
+                />
               </div>
-              {profiles.length > 0 && (
-                <div className="space-y-2">
-                  <Label>Agent Profile</Label>
-                  <Select value={loopAgentProfile} onValueChange={setLoopAgentProfile}>
+            </div>
+            {profiles.length > 0 && (
+              <div className="space-y-2">
+                <Label>Agent Profile</Label>
+                <Select value={loopAgentProfile} onValueChange={setLoopAgentProfile}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Profile: Auto-detect" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">Auto-detect</SelectItem>
+                    {profiles.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label>Steps</Label>
+              <Button type="button" variant="outline" size="sm" onClick={addStep}>
+                <Plus className="h-3 w-3 mr-1" />
+                Add Step
+              </Button>
+            </div>
+            {steps.map((step, index) => (
+              <div key={step.id} className="border rounded-lg p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono text-muted-foreground w-6">
+                    #{index + 1}
+                  </span>
+                  <Input
+                    value={step.name}
+                    onChange={(e) => updateStep(index, { name: e.target.value })}
+                    placeholder="Step name"
+                    className="flex-1"
+                  />
+                  {steps.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => removeStep(index)}
+                      aria-label={`Remove step ${index + 1}`}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+                <Textarea
+                  value={step.prompt}
+                  onChange={(e) => updateStep(index, { prompt: e.target.value })}
+                  placeholder="Agent prompt for this step"
+                  rows={2}
+                />
+                {profiles.length > 0 && (
+                  <Select
+                    value={step.agentProfile ?? ""}
+                    onValueChange={(v) => updateStep(index, { agentProfile: v || undefined })}
+                  >
                     <SelectTrigger className="h-8 text-xs">
                       <SelectValue placeholder="Profile: Auto-detect" />
                     </SelectTrigger>
@@ -263,91 +406,54 @@ export function WorkflowCreateDialog({ projects, onCreated }: WorkflowCreateDial
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label>Steps</Label>
-                <Button type="button" variant="outline" size="sm" onClick={addStep}>
-                  <Plus className="h-3 w-3 mr-1" />
-                  Add Step
-                </Button>
-              </div>
-              {steps.map((step, index) => (
-                <div key={step.id} className="border rounded-lg p-3 space-y-2">
+                )}
+                {pattern === "checkpoint" && (
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono text-muted-foreground w-6">
-                      #{index + 1}
-                    </span>
-                    <Input
-                      value={step.name}
-                      onChange={(e) => updateStep(index, { name: e.target.value })}
-                      placeholder="Step name"
-                      className="flex-1"
+                    <Checkbox
+                      id={`approval-${step.id}`}
+                      checked={step.requiresApproval ?? false}
+                      onCheckedChange={(checked) =>
+                        updateStep(index, { requiresApproval: checked === true })
+                      }
                     />
-                    {steps.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => removeStep(index)}
-                        aria-label={`Remove step ${index + 1}`}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    )}
+                    <Label htmlFor={`approval-${step.id}`} className="text-sm">
+                      Requires human approval before proceeding
+                    </Label>
                   </div>
-                  <Textarea
-                    value={step.prompt}
-                    onChange={(e) => updateStep(index, { prompt: e.target.value })}
-                    placeholder="Agent prompt for this step"
-                    rows={2}
-                  />
-                  {profiles.length > 0 && (
-                    <Select
-                      value={step.agentProfile ?? ""}
-                      onValueChange={(v) => updateStep(index, { agentProfile: v || undefined })}
-                    >
-                      <SelectTrigger className="h-8 text-xs">
-                        <SelectValue placeholder="Profile: Auto-detect" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="auto">Auto-detect</SelectItem>
-                        {profiles.map((p) => (
-                          <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                  {pattern === "checkpoint" && (
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        id={`approval-${step.id}`}
-                        checked={step.requiresApproval ?? false}
-                        onCheckedChange={(checked) =>
-                          updateStep(index, { requiresApproval: checked === true })
-                        }
-                      />
-                      <Label htmlFor={`approval-${step.id}`} className="text-sm">
-                        Requires human approval before proceeding
-                      </Label>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+                )}
+              </div>
+            ))}
+          </div>
+        )}
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
+        {error && <p className="text-sm text-destructive">{error}</p>}
 
-          <Button type="submit" disabled={loading || !name.trim()} className="w-full">
-            {loading ? "Creating..." : "Create Workflow"}
-          </Button>
-        </form>
-      </DialogContent>
+        <Button type="submit" disabled={loading || !name.trim()} className="w-full">
+          {loading ? submitLabels[mode][0] : submitLabels[mode][1]}
+        </Button>
+      </form>
+    </DialogContent>
+  );
+
+  // Controlled mode: no trigger button, parent manages visibility
+  if (isControlled) {
+    return (
+      <Dialog open={open} onOpenChange={setOpen}>
+        {dialogContent}
+      </Dialog>
+    );
+  }
+
+  // Uncontrolled mode: internal state with trigger button
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button>
+          <Plus className="h-4 w-4 mr-2" />
+          New Workflow
+        </Button>
+      </DialogTrigger>
+      {dialogContent}
     </Dialog>
   );
 }

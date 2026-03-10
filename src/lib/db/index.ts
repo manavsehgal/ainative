@@ -109,6 +109,29 @@ sqlite.exec(`
     FOREIGN KEY (project_id) REFERENCES projects(id) ON UPDATE NO ACTION ON DELETE NO ACTION
   );
 
+  CREATE TABLE IF NOT EXISTS schedules (
+    id TEXT PRIMARY KEY NOT NULL,
+    project_id TEXT,
+    name TEXT NOT NULL,
+    prompt TEXT NOT NULL,
+    cron_expression TEXT NOT NULL,
+    agent_profile TEXT,
+    recurs INTEGER DEFAULT 1 NOT NULL,
+    status TEXT DEFAULT 'active' NOT NULL,
+    max_firings INTEGER,
+    firing_count INTEGER DEFAULT 0 NOT NULL,
+    expires_at INTEGER,
+    last_fired_at INTEGER,
+    next_fire_at INTEGER,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON UPDATE NO ACTION ON DELETE NO ACTION
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_schedules_status ON schedules(status);
+  CREATE INDEX IF NOT EXISTS idx_schedules_next_fire_at ON schedules(next_fire_at);
+  CREATE INDEX IF NOT EXISTS idx_schedules_project_id ON schedules(project_id);
+
   CREATE INDEX IF NOT EXISTS idx_notifications_task_id ON notifications(task_id);
   CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(read);
   CREATE INDEX IF NOT EXISTS idx_documents_task_id ON documents(task_id);
@@ -123,5 +146,13 @@ try {
   // Column already exists — ignore
 }
 sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_tasks_agent_profile ON tasks(agent_profile);`);
+
+// Migration: add working_directory column to existing projects table (safe to re-run)
+// Note: sqlite.exec() here is better-sqlite3's synchronous DDL method, not child_process
+try {
+  sqlite.exec(`ALTER TABLE projects ADD COLUMN working_directory TEXT;`);
+} catch {
+  // Column already exists — ignore
+}
 
 export const db = drizzle(sqlite, { schema });

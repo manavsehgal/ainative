@@ -1,41 +1,37 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/db";
-import { projects, workflows } from "@/lib/db/schema";
+import { schedules } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { WorkflowStatusView } from "@/components/workflows/workflow-status-view";
+import { ScheduleDetailView } from "@/components/schedules/schedule-detail-view";
 
 export const dynamic = "force-dynamic";
 
-export default async function WorkflowDetailPage({
+export default async function ScheduleDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
 
-  const [workflow] = await db
+  const [schedule] = await db
     .select()
-    .from(workflows)
-    .where(eq(workflows.id, id));
+    .from(schedules)
+    .where(eq(schedules.id, id));
 
-  if (!workflow) notFound();
-
-  const projectRows = await db
-    .select({ id: projects.id, name: projects.name })
-    .from(projects);
+  if (!schedule) notFound();
 
   return (
     <div className="p-6">
-      <Link href="/workflows">
+      <Link href="/schedules">
         <Button variant="ghost" size="sm" className="mb-4">
           <ArrowLeft className="h-4 w-4 mr-1" />
-          Back to Workflows
+          Back to Schedules
         </Button>
       </Link>
-      <WorkflowStatusView workflowId={id} projects={projectRows} />
+      <ScheduleDetailView scheduleId={id} />
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { FolderKanban } from "lucide-react";
+import { FolderKanban, FolderOpen } from "lucide-react";
 import { projectStatusVariant } from "@/lib/constants/status-colors";
 
 interface ProjectCardProps {
@@ -10,6 +10,7 @@ interface ProjectCardProps {
     id: string;
     name: string;
     description: string | null;
+    workingDirectory: string | null;
     status: string;
     taskCount: number;
   };
@@ -40,6 +41,12 @@ export function ProjectCard({ project, onEdit }: ProjectCardProps) {
           <FolderKanban className="h-3 w-3" />
           <span>{project.taskCount} tasks</span>
         </div>
+        {project.workingDirectory && (
+          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+            <FolderOpen className="h-3 w-3" />
+            <span className="truncate">{project.workingDirectory}</span>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

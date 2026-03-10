@@ -25,6 +25,7 @@ interface Project {
   id: string;
   name: string;
   description: string | null;
+  workingDirectory: string | null;
   status: string;
 }
 
@@ -43,6 +44,7 @@ export function ProjectEditDialog({
 }: ProjectEditDialogProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [workingDirectory, setWorkingDirectory] = useState("");
   const [status, setStatus] = useState("active");
   const [loading, setLoading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -51,6 +53,7 @@ export function ProjectEditDialog({
     if (project) {
       setName(project.name);
       setDescription(project.description ?? "");
+      setWorkingDirectory(project.workingDirectory ?? "");
       setStatus(project.status);
     }
   }, [project]);
@@ -66,6 +69,7 @@ export function ProjectEditDialog({
         body: JSON.stringify({
           name: name.trim(),
           description: description.trim() || undefined,
+          workingDirectory: workingDirectory.trim() || undefined,
           status,
         }),
       });
@@ -119,6 +123,18 @@ export function ProjectEditDialog({
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-working-dir">Working Directory</Label>
+              <Input
+                id="edit-working-dir"
+                value={workingDirectory}
+                onChange={(e) => setWorkingDirectory(e.target.value)}
+                placeholder="/path/to/project (optional)"
+              />
+              <p className="text-xs text-muted-foreground">
+                Agent tasks will execute in this directory.
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-status">Status</Label>

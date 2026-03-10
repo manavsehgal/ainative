@@ -9,6 +9,8 @@ const respondSchema = z.object({
   behavior: z.enum(["allow", "deny"]),
   message: z.string().optional(),
   updatedInput: z.unknown().optional(),
+  alwaysAllow: z.boolean().optional(),
+  permissionPattern: z.string().optional(),
 });
 
 export async function POST(
@@ -26,7 +28,7 @@ export async function POST(
     );
   }
 
-  const { notificationId, behavior, message, updatedInput } = parsed.data;
+  const { notificationId, behavior, message, updatedInput, alwaysAllow, permissionPattern } = parsed.data;
 
   const [notification] = await db
     .select()
@@ -51,6 +53,12 @@ export async function POST(
       read: true,
     })
     .where(eq(notifications.id, notificationId));
+
+  // Save "Always Allow" permission if requested
+  if (behavior === "allow" && alwaysAllow && permissionPattern) {
+    const { addAllowedPermission } = await import("@/lib/settings/permissions");
+    await addAllowedPermission(permissionPattern);
+  }
 
   return NextResponse.json({ success: true });
 }

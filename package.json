@@ -42,6 +42,7 @@
     "clsx": "^2",
     "cmdk": "^1.1.1",
     "commander": "^14",
+    "cron-parser": "^5.5.0",
     "drizzle-orm": "^0.45",
     "lucide-react": "^0.474.0",
     "next": "^16",

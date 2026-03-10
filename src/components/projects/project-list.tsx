@@ -11,6 +11,7 @@ interface Project {
   id: string;
   name: string;
   description: string | null;
+  workingDirectory: string | null;
   status: string;
   taskCount: number;
 }

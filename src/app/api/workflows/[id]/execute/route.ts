@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { workflows } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { executeWorkflow } from "@/lib/workflows/engine";
+import type { WorkflowDefinition } from "@/lib/workflows/types";
 
 export async function POST(
   _req: NextRequest,
@@ -24,6 +25,32 @@ export async function POST(
       { error: "Workflow is already running" },
       { status: 409 }
     );
+  }
+
+  // Re-run: reset state for completed/failed workflows
+  if (workflow.status === "completed" || workflow.status === "failed") {
+    try {
+      const def = JSON.parse(workflow.definition) as WorkflowDefinition & {
+        _state?: unknown;
+        _loopState?: unknown;
+      };
+      delete def._state;
+      delete def._loopState;
+
+      await db
+        .update(workflows)
+        .set({
+          definition: JSON.stringify(def),
+          status: "draft",
+          updatedAt: new Date(),
+        })
+        .where(eq(workflows.id, id));
+    } catch {
+      return NextResponse.json(
+        { error: "Failed to reset workflow state" },
+        { status: 500 }
+      );
+    }
   }
 
   // Fire-and-forget execution

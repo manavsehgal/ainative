@@ -27,6 +27,8 @@ export async function GET(
       id: workflow.id,
       name: workflow.name,
       status: workflow.status,
+      projectId: workflow.projectId,
+      definition: workflow.definition,
       pattern: definition.pattern,
       loopConfig: definition.loopConfig,
       loopState,
@@ -38,6 +40,8 @@ export async function GET(
     id: workflow.id,
     name: workflow.name,
     status: workflow.status,
+    projectId: workflow.projectId,
+    definition: workflow.definition,
     pattern: definition.pattern,
     steps: definition.steps.map((step, i) => ({
       ...step,

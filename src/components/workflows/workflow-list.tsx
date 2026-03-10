@@ -4,10 +4,13 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { WorkflowCreateDialog } from "./workflow-create-dialog";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
-import { GitBranch } from "lucide-react";
+import { GitBranch, Pencil, Copy, RotateCcw, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { workflowStatusVariant, patternLabels } from "@/lib/constants/status-colors";
 
 interface Workflow {
@@ -24,11 +27,41 @@ interface WorkflowListProps {
   projects: { id: string; name: string }[];
 }
 
+function getPattern(definitionJson: string): string {
+  try {
+    const def = JSON.parse(definitionJson);
+    return def.pattern ?? "unknown";
+  } catch {
+    return "unknown";
+  }
+}
+
+function getStepCount(definitionJson: string): number {
+  try {
+    const def = JSON.parse(definitionJson);
+    return def.steps?.length ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
+function getPromptPreview(definitionJson: string): string {
+  try {
+    const def = JSON.parse(definitionJson);
+    const prompt = def.steps?.[0]?.prompt ?? "";
+    return prompt.length > 80 ? prompt.slice(0, 80) + "…" : prompt;
+  } catch {
+    return "";
+  }
+}
 
 export function WorkflowList({ projects }: WorkflowListProps) {
   const router = useRouter();
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [dialogWorkflow, setDialogWorkflow] = useState<Workflow | null>(null);
+  const [dialogMode, setDialogMode] = useState<"edit" | "clone" | null>(null);
 
   const refresh = useCallback(async () => {
     const res = await fetch("/api/workflows");
@@ -40,21 +73,26 @@ export function WorkflowList({ projects }: WorkflowListProps) {
     refresh();
   }, [refresh]);
 
-  function getPattern(definitionJson: string): string {
-    try {
-      const def = JSON.parse(definitionJson);
-      return def.pattern ?? "unknown";
-    } catch {
-      return "unknown";
+  async function handleDelete(id: string) {
+    setConfirmDeleteId(null);
+    const res = await fetch(`/api/workflows/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      toast.success("Workflow deleted");
+      refresh();
+    } else {
+      const data = await res.json().catch(() => null);
+      toast.error(data?.error ?? "Failed to delete workflow");
     }
   }
 
-  function getStepCount(definitionJson: string): number {
-    try {
-      const def = JSON.parse(definitionJson);
-      return def.steps?.length ?? 0;
-    } catch {
-      return 0;
+  async function handleRerun(id: string) {
+    const res = await fetch(`/api/workflows/${id}/execute`, { method: "POST" });
+    if (res.ok) {
+      toast.success("Workflow re-started");
+      router.push(`/workflows/${id}`);
+    } else {
+      const data = await res.json().catch(() => null);
+      toast.error(data?.error ?? "Failed to re-run workflow");
     }
   }
 
@@ -92,6 +130,7 @@ export function WorkflowList({ projects }: WorkflowListProps) {
           {workflows.map((wf) => {
             const pattern = getPattern(wf.definition);
             const stepCount = getStepCount(wf.definition);
+            const promptPreview = getPromptPreview(wf.definition);
             return (
               <Card
                 key={wf.id}
@@ -114,12 +153,84 @@ export function WorkflowList({ projects }: WorkflowListProps) {
                     <span>·</span>
                     <span>{stepCount} step{stepCount !== 1 ? "s" : ""}</span>
                   </div>
+                  {promptPreview && (
+                    <p className="text-xs text-muted-foreground line-clamp-2 mt-1.5">
+                      {promptPreview}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-1 mt-3">
+                    {wf.status === "draft" && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        aria-label="Edit workflow"
+                        onClick={(e) => { e.stopPropagation(); setDialogWorkflow(wf); setDialogMode("edit"); }}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      aria-label="Clone workflow"
+                      onClick={(e) => { e.stopPropagation(); setDialogWorkflow(wf); setDialogMode("clone"); }}
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                    </Button>
+                    {(wf.status === "completed" || wf.status === "failed") && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        aria-label="Re-run workflow"
+                        onClick={(e) => { e.stopPropagation(); handleRerun(wf.id); }}
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                    {wf.status !== "active" && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive"
+                        aria-label="Delete workflow"
+                        onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(wf.id); }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             );
           })}
         </div>
       )}
+
+      {/* Edit/Clone dialog */}
+      {dialogWorkflow && dialogMode && (
+        <WorkflowCreateDialog
+          projects={projects}
+          onCreated={() => { setDialogWorkflow(null); setDialogMode(null); refresh(); }}
+          mode={dialogMode}
+          workflow={dialogWorkflow}
+          open={true}
+          onOpenChange={(open) => { if (!open) { setDialogWorkflow(null); setDialogMode(null); } }}
+        />
+      )}
+
+      {/* Delete confirmation */}
+      <ConfirmDialog
+        open={confirmDeleteId !== null}
+        onOpenChange={(open) => { if (!open) setConfirmDeleteId(null); }}
+        title="Delete Workflow"
+        description="This will permanently delete this workflow and cannot be undone."
+        confirmLabel="Delete"
+        onConfirm={() => confirmDeleteId && handleDelete(confirmDeleteId)}
+        destructive
+      />
     </div>
   );
 }

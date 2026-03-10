@@ -23,6 +23,14 @@ export const workflowStatusVariant: Record<string, "default" | "secondary" | "de
   active: "default",
   paused: "secondary",
   completed: "default",
+  failed: "destructive",
+};
+
+export const scheduleStatusVariant: Record<string, "default" | "secondary" | "destructive" | "outline" | "success"> = {
+  active: "default",
+  paused: "secondary",
+  completed: "success",
+  expired: "outline",
 };
 
 export const patternLabels: Record<string, string> = {

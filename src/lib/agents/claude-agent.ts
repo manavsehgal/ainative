@@ -1,6 +1,6 @@
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import { db } from "@/lib/db";
-import { tasks, agentLogs, notifications } from "@/lib/db/schema";
+import { tasks, projects, agentLogs, notifications } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { setExecution, removeExecution } from "./execution-manager";
 import { MAX_RESUME_COUNT } from "@/lib/constants/task-status";
@@ -174,13 +174,25 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
     const docContext = await buildDocumentContext(taskId);
     const prompt = [systemPrompt, docContext, basePrompt].filter(Boolean).join("\n\n");
 
+    // Resolve working directory: project's workingDirectory > process.cwd()
+    let cwd = process.cwd();
+    if (task.projectId) {
+      const [project] = await db
+        .select({ workingDirectory: projects.workingDirectory })
+        .from(projects)
+        .where(eq(projects.id, task.projectId));
+      if (project?.workingDirectory) {
+        cwd = project.workingDirectory;
+      }
+    }
+
     const authEnv = await getAuthEnv();
     const response = query({
       prompt,
       options: {
         abortController,
         includePartialMessages: true,
-        cwd: process.cwd(),
+        cwd,
         env: buildSdkEnv(authEnv),
         ...(profile?.allowedTools && { allowedTools: profile.allowedTools }),
         // @ts-expect-error Agent SDK canUseTool types are incomplete — our async handler is compatible at runtime
@@ -256,6 +268,18 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
     const docContext = await buildDocumentContext(taskId);
     const prompt = [systemPrompt, docContext, basePrompt].filter(Boolean).join("\n\n");
 
+    // Resolve working directory: project's workingDirectory > process.cwd()
+    let cwd = process.cwd();
+    if (task.projectId) {
+      const [project] = await db
+        .select({ workingDirectory: projects.workingDirectory })
+        .from(projects)
+        .where(eq(projects.id, task.projectId));
+      if (project?.workingDirectory) {
+        cwd = project.workingDirectory;
+      }
+    }
+
     const authEnv = await getAuthEnv();
     const response = query({
       prompt,
@@ -263,7 +287,7 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
         resume: task.sessionId,
         abortController,
         includePartialMessages: true,
-        cwd: process.cwd(),
+        cwd,
         env: buildSdkEnv(authEnv),
         ...(profile?.allowedTools && { allowedTools: profile.allowedTools }),
         // @ts-expect-error Agent SDK canUseTool types are incomplete — our async handler is compatible at runtime
@@ -382,6 +406,15 @@ async function handleToolPermission(
   message?: string;
 }> {
   const isQuestion = toolName === "AskUserQuestion";
+
+  // Check saved permissions — skip notification for pre-approved tools
+  if (!isQuestion) {
+    const { isToolAllowed } = await import("@/lib/settings/permissions");
+    if (await isToolAllowed(toolName, input)) {
+      return { behavior: "allow" };
+    }
+  }
+
   const notificationId = crypto.randomUUID();
 
   await db.insert(notifications).values({
