@@ -30,33 +30,41 @@ Open [localhost:3000](http://localhost:3000) to get started.
 | 🤖 | **[Agent Execution](#agent-integration)** | Fire-and-forget Claude SDK tasks with real-time log streaming |
 | 📥 | **[Human-in-the-Loop](#inbox--human-in-the-loop)** | Approve tool use, answer questions, and review results from your inbox |
 | 🔀 | **[Workflows](#workflow-engine)** | Multi-step orchestration: Sequence, Planner→Executor, Checkpoints |
-| 📊 | **[Live Monitoring](#monitoring)** | SSE-powered agent activity stream with filtering and auto-scroll |
-| 🧠 | **[AI Task Assist](#ai-task-assist)** | AI-generated descriptions, sub-task breakdown, and complexity estimates |
+| 🧠 | **[Multi-Agent Routing](#multi-agent-routing)** | Profile-based routing with auto-classification and per-step profiles |
+| 📄 | **[Document Management](#document-management)** | Upload, preprocess, and inject documents into agent context |
+| 🔒 | **[Tool Permissions](#tool-permission-persistence)** | "Always Allow" patterns for trusted tools — no repeated prompts |
+| ⏰ | **[Scheduled Prompts](#scheduled-prompt-loops)** | Time-based scheduling with cron and human-friendly intervals |
 
 ---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                   Browser (React 19)                │
-│  Home · Task Board · Inbox · Monitor · Workflows    │
-└──────────────┬──────────────────────┬───────────────┘
+┌─────────────────────────────────────────────────────────┐
+│                    Browser (React 19)                    │
+│  Home · Tasks · Projects · Documents · Workflows         │
+│  Schedules · Inbox · Monitor · Settings                  │
+└──────────────┬──────────────────────┬────────────────────┘
                │ Server Components    │ API Routes
                │ (direct DB queries)  │ (mutations only)
-┌──────────────▼──────────────────────▼───────────────┐
-│                 Next.js 16 Server                    │
-│                                                      │
-│  ┌─────────────┐  ┌──────────────┐  ┌────────────┐ │
-│  │ Drizzle ORM │  │ Agent SDK    │  │ SSE Stream │ │
-│  │ (SQLite)    │  │ (Claude API) │  │ (Logs)     │ │
-│  └──────┬──────┘  └──────┬───────┘  └─────┬──────┘ │
-└─────────┼────────────────┼─────────────────┼────────┘
-          │                │                 │
-   ┌──────▼──────┐  ┌─────▼──────┐   ┌─────▼──────┐
-   │ ~/.stagent/ │  │  Anthropic │   │  Browser   │
-   │ stagent.db  │  │  API       │   │  EventSource│
-   └─────────────┘  └────────────┘   └────────────┘
+┌──────────────▼──────────────────────▼────────────────────┐
+│                  Next.js 16 Server                        │
+│                                                           │
+│  ┌─────────────┐  ┌──────────────┐  ┌────────────────┐  │
+│  │ Drizzle ORM │  │ Agent SDK    │  │ SSE Stream     │  │
+│  │ (SQLite)    │  │ (Claude API) │  │ (Logs)         │  │
+│  └──────┬──────┘  └──────┬───────┘  └─────┬──────────┘  │
+│         │                │                 │              │
+│  ┌──────┴──────┐  ┌─────┴──────┐   ┌─────┴──────────┐  │
+│  │ Scheduler   │  │ Profile    │   │ Permission     │  │
+│  │ Engine      │  │ Registry   │   │ Checker        │  │
+│  └─────────────┘  └────────────┘   └────────────────┘  │
+└──────────┬────────────────┬─────────────────┬────────────┘
+           │                │                 │
+    ┌──────▼──────┐  ┌─────▼──────┐   ┌─────▼──────┐
+    │ ~/.stagent/ │  │  Anthropic │   │  Browser   │
+    │ stagent.db  │  │  API       │   │  EventSource│
+    └─────────────┘  └────────────┘   └────────────┘
 ```
 
 **Key design decisions:**
@@ -65,6 +73,8 @@ Open [localhost:3000](http://localhost:3000) to get started.
 - **Fire-and-forget execution** — `POST /api/tasks/{id}/execute` returns 202, agent runs async
 - **Notification-as-queue** — The `notifications` table is the message bus for human-in-the-loop; agents poll it via `canUseTool`
 - **SSE for streaming** — `/api/logs/stream` pushes agent logs to the browser in real time
+- **Profile-based routing** — Agent profiles define system prompts, allowed tools, and MCP configs per task type
+- **Permission pre-check** — Saved "Always Allow" patterns bypass the notification loop for trusted tools
 
 ---
 
@@ -76,15 +86,18 @@ Open [localhost:3000](http://localhost:3000) to get started.
 Kanban-style board with five columns: Planned → Queued → Running → Completed → Failed. Drag tasks between valid states, create inline, filter by project, and click any card for a detail panel with execution history.
 
 #### Project Management
-Create and organize projects as containers for related tasks. Server-rendered project cards with task counts, status badges, and a detail view at `/projects/[id]` showing task breakdown.
+Create and organize projects as containers for related tasks. Each project can specify a working directory — agent tasks resolve `cwd` from the project's path, enabling agents to operate on external codebases. Server-rendered project cards with task counts, status badges, and a detail view at `/projects/[id]`.
 
 #### Homepage Dashboard
-Five-zone landing page: time-of-day greeting with live DB stats, priority task queue, activity feed, quick actions grid, and recent projects with progress bars.
+Five-zone landing page: time-of-day greeting with live DB stats, priority task queue, activity feed, quick actions grid, and recent projects with progress bars. Includes sparkline charts, mini bar charts, and donut rings for at-a-glance trend visualization.
 
 ### Agent
 
 #### Agent Integration
 Claude Agent SDK integration with the `canUseTool` polling pattern. Tasks are dispatched fire-and-forget and run asynchronously. Every tool call, reasoning step, and decision is logged to `agent_logs`.
+
+#### Multi-Agent Routing
+Profile-based agent routing with four starter profiles: General, Code Reviewer, Researcher, and Document Writer. Each profile defines a system prompt, allowed tools, and MCP server configuration. A task classifier auto-selects the best profile based on task content, and users can override. Workflow steps support per-step profile assignment.
 
 #### Workflow Engine
 Multi-step task orchestration with three patterns:
@@ -92,7 +105,7 @@ Multi-step task orchestration with three patterns:
 - **Planner→Executor** — One agent plans, another executes each step
 - **Human-in-the-Loop Checkpoint** — Pauses for human approval between steps
 
-State machine engine with step-level retry and real-time status visualization.
+State machine engine with step-level retry, project association, and real-time status visualization.
 
 #### AI Task Assist
 AI-powered task creation: generate improved descriptions, break tasks into sub-tasks, recommend workflow patterns, and estimate complexity — all via the Agent SDK's `query` function.
@@ -100,10 +113,35 @@ AI-powered task creation: generate improved descriptions, break tasks into sub-t
 #### Session Management
 Resume failed or cancelled agent tasks with one click. Tracks retry counts (limit: 3), detects expired sessions, and provides atomic claim to prevent duplicate runs.
 
+#### Autonomous Loop Execution *(in progress)*
+Ralph Wiggum-inspired iterative agent loop pattern. Agents can loop through tasks with configurable stop conditions, iteration tracking, and convergence detection.
+
+### Documents
+
+#### Document Management
+Full document browser at `/documents` with table and grid views. Upload files with drag-and-drop, preview images/PDFs/markdown/code inline, search by filename and extracted text, and filter by processing status or project. Bulk delete, link/unlink to projects and tasks.
+
+#### Document Preprocessing
+Automatic text extraction on upload for five file types: text, PDF (pdf-parse), images (image-size), Office documents (mammoth/jszip), and spreadsheets (xlsx). Extracted text, processed paths, and processing errors are tracked per document.
+
+#### Agent Document Context
+Documents linked to a task are automatically injected into the agent's prompt as context. The context builder aggregates extracted text from all linked documents, giving agents access to uploaded reference material without manual copy-paste.
+
+### Platform
+
+#### Tool Permission Persistence
+"Always Allow" option for agent tool permissions. When you approve a tool, you can save it as a pattern (e.g., `Bash(command:git *)`, `Read`, `mcp__server__tool`). Saved patterns are checked before creating notifications — trusted tools are auto-approved instantly. Manage patterns from the Settings page. `AskUserQuestion` always requires human input.
+
+#### Scheduled Prompt Loops *(in progress)*
+Time-based scheduling for agent tasks with human-friendly intervals (`5m`, `2h`, `1d`) and raw 5-field cron expressions. One-shot and recurring modes with pause/resume lifecycle, expiry limits, and max firings. Each firing creates a child task through the existing execution pipeline. Scheduler runs as a poll-based engine started via Next.js instrumentation hook.
+
+#### Micro-Visualizations
+Pure SVG chart primitives (Sparkline, MiniBar, DonutRing) with zero charting dependencies. Integrated into: homepage stats cards (7-day trends), activity feed (24h bar chart), project cards (completion donuts), monitor overview (success rate), and project detail (stacked status + 14-day sparkline). Full accessibility with `role="img"` and `aria-label`.
+
 ### UI & DevEx
 
 #### Inbox & Human-in-the-Loop
-When an agent needs approval or input, a notification appears in your inbox. Review tool permission requests, answer agent questions, and see task completion summaries. Supports bulk dismiss and 10s polling.
+When an agent needs approval or input, a notification appears in your inbox. Review tool permission requests with "Allow Once" / "Always Allow" / "Deny" buttons, answer agent questions, and see task completion summaries. Supports bulk dismiss and 10s polling.
 
 #### Monitoring
 Real-time agent log streaming via Server-Sent Events. Filter by task or event type, click entries to jump to task details, and auto-pause polling when the tab is hidden (Page Visibility API).
@@ -111,14 +149,17 @@ Real-time agent log streaming via Server-Sent Events. Filter by task or event ty
 #### Content Handling
 File upload with drag-and-drop in task creation. Type-aware content preview for text, markdown (via react-markdown), code, and JSON. Copy-to-clipboard and download-as-file for task outputs.
 
+#### Settings
+Configuration hub with three sections: authentication (API key or OAuth), tool permissions (saved "Always Allow" patterns with revoke), and data management.
+
 #### CLI
 `npx stagent` launches the dev server and opens the dashboard. Built with Commander, compiled via tsup to `dist/cli.js`.
 
 #### Database
-SQLite with WAL mode via better-sqlite3 + Drizzle ORM. Five tables: `projects`, `tasks`, `workflows`, `agent_logs`, `notifications`. Self-healing bootstrap — tables are created on startup if missing.
+SQLite with WAL mode via better-sqlite3 + Drizzle ORM. Eight tables: `projects`, `tasks`, `workflows`, `agent_logs`, `notifications`, `documents`, `schedules`, `settings`. Self-healing bootstrap — tables are created on startup if missing.
 
 #### App Shell
-Responsive sidebar with collapsible navigation, dark/light/system theme, and OKLCH hue 250 blue-indigo color palette. Built on shadcn/ui (New York style).
+Responsive sidebar with collapsible navigation, dark/light/system theme, and OKLCH hue 250 blue-indigo color palette. Built on shadcn/ui (New York style). Routes: Home, Projects, Documents, Workflows, Schedules, Inbox, Monitor, Settings.
 
 ---
 
@@ -135,6 +176,8 @@ Responsive sidebar with collapsible navigation, dark/light/system theme, and OKL
 | Testing | Vitest + Testing Library | Fast test runner with React component testing |
 | Content | react-markdown + remark-gfm | Full GitHub-flavored markdown rendering |
 | Validation | Zod v4 | Runtime type validation at system boundaries |
+| Documents | pdf-parse, mammoth, xlsx, image-size | Multi-format document preprocessing |
+| Scheduling | cron-parser | Cron expression parsing and next-fire-time computation |
 
 ---
 
@@ -154,22 +197,32 @@ src/
 ├── app/                  # Next.js App Router pages
 │   ├── dashboard/        # Project overview
 │   ├── projects/[id]/    # Project detail
+│   ├── documents/        # Document browser
 │   ├── workflows/        # Workflow management
+│   ├── schedules/        # Schedule management
 │   ├── inbox/            # Notifications
-│   └── monitor/          # Log streaming
+│   ├── monitor/          # Log streaming
+│   └── settings/         # Configuration
 ├── components/
-│   ├── dashboard/        # Homepage widgets
+│   ├── dashboard/        # Homepage widgets + charts
 │   ├── tasks/            # Board, cards, panels
 │   ├── workflows/        # Workflow UI
+│   ├── documents/        # Document browser + upload
+│   ├── schedules/        # Schedule management
 │   ├── monitoring/       # Log viewer
-│   ├── notifications/    # Inbox components
+│   ├── notifications/    # Inbox + permission actions
+│   ├── settings/         # Auth, permissions, data mgmt
 │   ├── shared/           # App shell, sidebar
 │   └── ui/               # shadcn/ui primitives
 └── lib/
-    ├── agents/           # Claude Agent SDK
+    ├── agents/           # Claude Agent SDK + profiles
     ├── db/               # Schema, migrations
+    ├── documents/        # Preprocessing + context builder
     ├── workflows/        # Engine + types
-    ├── constants/        # Status transitions
+    ├── schedules/        # Scheduler engine + interval parser
+    ├── settings/         # Auth, permissions, helpers
+    ├── constants/        # Status transitions, colors
+    ├── queries/          # Chart data aggregation
     ├── validators/       # Zod schemas
     └── utils/            # Shared helpers
 ```
@@ -187,13 +240,19 @@ src/
 | `/api/notifications` | GET/POST | Notification management |
 | `/api/workflows` | POST | Create workflow |
 | `/api/workflows/[id]/execute` | POST | Execute workflow |
+| `/api/documents` | GET | List documents with joins |
+| `/api/documents/[id]` | PATCH/DELETE | Document metadata + deletion |
 | `/api/uploads` | POST | File upload |
+| `/api/schedules` | GET/POST | Schedule CRUD |
+| `/api/schedules/[id]` | GET/PATCH/DELETE | Schedule detail + updates |
+| `/api/permissions` | GET/POST/DELETE | Tool permission patterns |
+| `/api/profiles` | GET | List agent profiles |
 
 ---
 
 ## Roadmap
 
-### MVP — Complete ✅
+### MVP — Complete
 
 All 14 features shipped across three layers:
 
@@ -203,15 +262,32 @@ All 14 features shipped across three layers:
 | **Core** | Project management, task board, agent integration, inbox notifications, monitoring dashboard |
 | **Polish** | Homepage dashboard, UX fixes, workflow engine, AI task assist, content handling, session management |
 
-### Next Up
+### Post-MVP — Complete
+
+| Feature | What shipped |
+|---------|-------------|
+| **Document Management** | File attachments, preprocessing (5 formats), agent document context, document browser UI |
+| **Multi-Agent Routing** | Profile registry (4 profiles), task classifier, per-step profile assignment |
+| **Micro-Visualizations** | Sparklines, mini bars, donut rings — zero-dependency SVG charts |
+| **Tool Permission Persistence** | "Always Allow" patterns, pre-check bypass, Settings management |
+
+### In Progress
+
+| Feature | Status |
+|---------|--------|
+| **Scheduled Prompt Loops** | Scheduler engine, API, and UI built — integration testing |
+| **Autonomous Loop Execution** | Iterative agent loop pattern with stop conditions |
+
+### Planned
 
 | Feature | Description |
 |---------|-------------|
-| **Document Management** | File attachments, preprocessing, agent document context, document output generation |
-| **Autonomous Loop Execution** | Agent loop pattern with stop conditions and iteration tracking |
+| **Agent Profile Catalog** | 13 domain-specific profiles (work + personal) as portable Claude Code skills |
+| **Workflow Blueprints** | Pre-configured templates with typed variables and dynamic forms |
 | **Multi-Agent Swarm** | Multi-agent orchestration with Mayor/Workers/Refinery roles |
-| **Agent Self-Improvement** | Agents learn patterns and update own context with human approval |
-| **Multi-Agent Routing** | Route tasks to specialized agent configurations |
+| **Agent Self-Improvement** | Agents learn patterns and update context with human approval |
+| **Document Output Generation** | Agent-generated documents as deliverables |
+| **Parallel Workflows** | Concurrent step execution within workflows |
 | **Tauri Desktop** | Native desktop app packaging |
 
 ---
