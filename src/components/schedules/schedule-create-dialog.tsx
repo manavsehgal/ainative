@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -141,6 +142,9 @@ export function ScheduleCreateDialog({
             <Calendar className="h-5 w-5 text-muted-foreground" />
             Create Schedule
           </DialogTitle>
+          <DialogDescription>
+            Define when the agent should run, what it should do, and which project context it should use.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -105,6 +106,9 @@ export function ProjectEditDialog({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Project</DialogTitle>
+            <DialogDescription>
+              Update the project name, status, and execution context without changing its associated tasks.
+            </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">

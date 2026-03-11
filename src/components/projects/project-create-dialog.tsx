@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -72,6 +73,9 @@ export function ProjectCreateDialog({ onCreated }: ProjectCreateDialogProps) {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Create Project</DialogTitle>
+          <DialogDescription>
+            Create a project workspace with optional context so tasks stay grouped and runnable in the right directory.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">

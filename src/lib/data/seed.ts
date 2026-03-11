@@ -6,6 +6,7 @@ import {
   documents,
   agentLogs,
   notifications,
+  schedules,
 } from "@/lib/db/schema";
 import { clearAllData } from "./clear";
 import { createProjects } from "./seed-data/projects";
@@ -14,6 +15,8 @@ import { createWorkflows } from "./seed-data/workflows";
 import { createDocuments } from "./seed-data/documents";
 import { createLogs } from "./seed-data/logs";
 import { createNotifications } from "./seed-data/notifications";
+import { createSchedules } from "./seed-data/schedules";
+import { upsertSampleProfiles } from "./seed-data/profiles";
 import { processDocument } from "@/lib/documents/processor";
 
 /**
@@ -24,14 +27,17 @@ export async function seedSampleData() {
   // 1. Clear everything first
   clearAllData();
 
-  // 2. Insert projects
+  // 2. Seed sample custom profiles used by the newer profiles/schedules flows
+  const profileCount = upsertSampleProfiles();
+
+  // 3. Insert projects
   const projectSeeds = createProjects();
   for (const p of projectSeeds) {
     db.insert(projects).values(p).run();
   }
   const projectIds = projectSeeds.map((p) => p.id);
 
-  // 3. Insert tasks
+  // 4. Insert tasks
   const taskSeeds = createTasks(projectIds);
   for (const t of taskSeeds) {
     db.insert(tasks)
@@ -50,22 +56,28 @@ export async function seedSampleData() {
   }
   const taskIds = taskSeeds.map((t) => t.id);
 
-  // 4. Insert workflows (one per project)
+  // 5. Insert workflows (one per project)
   const workflowSeeds = createWorkflows(projectIds);
   for (const w of workflowSeeds) {
     db.insert(workflows).values(w).run();
   }
 
-  // 5. Write document files + insert records
+  // 6. Insert schedules for recently added automation surfaces
+  const scheduleSeeds = createSchedules(projectIds);
+  for (const schedule of scheduleSeeds) {
+    db.insert(schedules).values(schedule).run();
+  }
+
+  // 7. Write document files + insert records
   const docSeeds = await createDocuments(projectIds, taskIds);
   for (const d of docSeeds) {
     db.insert(documents).values(d).run();
   }
 
-  // 6. Process all documents (text extraction)
+  // 8. Process all documents (text extraction)
   await Promise.all(docSeeds.map((d) => processDocument(d.id)));
 
-  // 7. Insert agent logs
+  // 9. Insert agent logs
   const completedTaskIds = taskSeeds
     .filter((t) => t.status === "completed")
     .map((t) => t.id);
@@ -85,16 +97,18 @@ export async function seedSampleData() {
     db.insert(agentLogs).values(l).run();
   }
 
-  // 8. Insert notifications
+  // 10. Insert notifications
   const notifSeeds = createNotifications(taskIds);
   for (const n of notifSeeds) {
     db.insert(notifications).values(n).run();
   }
 
   return {
+    profiles: profileCount,
     projects: projectSeeds.length,
     tasks: taskSeeds.length,
     workflows: workflowSeeds.length,
+    schedules: scheduleSeeds.length,
     documents: docSeeds.length,
     agentLogs: logSeeds.length,
     notifications: notifSeeds.length,

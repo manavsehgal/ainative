@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -68,6 +69,9 @@ export function DocumentUploadDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Upload Documents</DialogTitle>
+          <DialogDescription>
+            Add one or more files to the document library for processing and task attachment.
+          </DialogDescription>
         </DialogHeader>
 
         <div

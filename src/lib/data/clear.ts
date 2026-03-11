@@ -11,6 +11,7 @@ import {
 import { readdirSync, unlinkSync, mkdirSync } from "fs";
 import { join } from "path";
 import { homedir } from "os";
+import { clearSampleProfiles } from "./seed-data/profiles";
 
 const uploadsDir = join(
   process.env.STAGENT_DATA_DIR || join(homedir(), ".stagent"),
@@ -22,6 +23,8 @@ const uploadsDir = join(
  * Preserves the settings table (auth config).
  */
 export function clearAllData() {
+  const sampleProfilesDeleted = clearSampleProfiles();
+
   // Delete in FK-safe order: children before parents
   const logsDeleted = db.delete(agentLogs).run().changes;
   const notificationsDeleted = db.delete(notifications).run().changes;
@@ -44,6 +47,7 @@ export function clearAllData() {
   }
 
   return {
+    sampleProfiles: sampleProfilesDeleted,
     projects: projectsDeleted,
     tasks: tasksDeleted,
     workflows: workflowsDeleted,
