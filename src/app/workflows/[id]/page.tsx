@@ -24,7 +24,7 @@ export default async function WorkflowDetailPage({
   if (!workflow) notFound();
 
   return (
-    <div className="p-6">
+    <div className="gradient-ocean-mist min-h-screen p-6">
       <Link href="/workflows">
         <Button variant="ghost" size="sm" className="mb-4">
           <ArrowLeft className="h-4 w-4 mr-1" />

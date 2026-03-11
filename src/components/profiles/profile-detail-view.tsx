@@ -53,12 +53,13 @@ interface ProfileWithBuiltin extends AgentProfile {
 interface ProfileDetailViewProps {
   profileId: string;
   isBuiltin: boolean;
+  initialProfile?: AgentProfile;
 }
 
-export function ProfileDetailView({ profileId, isBuiltin }: ProfileDetailViewProps) {
+export function ProfileDetailView({ profileId, isBuiltin, initialProfile }: ProfileDetailViewProps) {
   const router = useRouter();
-  const [profile, setProfile] = useState<ProfileWithBuiltin | null>(null);
-  const [loaded, setLoaded] = useState(false);
+  const [profile, setProfile] = useState<ProfileWithBuiltin | null>(initialProfile ?? null);
+  const [loaded, setLoaded] = useState(!!initialProfile);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [testReport, setTestReport] = useState<TestReport | null>(null);
   const [runningTests, setRunningTests] = useState(false);
@@ -76,8 +77,9 @@ export function ProfileDetailView({ profileId, isBuiltin }: ProfileDetailViewPro
   }, [profileId]);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    // Skip initial fetch if server provided data — only refresh on mutations
+    if (!initialProfile) refresh();
+  }, [refresh, initialProfile]);
 
   async function handleDelete() {
     setConfirmDelete(false);

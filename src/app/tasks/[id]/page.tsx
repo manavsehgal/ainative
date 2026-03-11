@@ -23,15 +23,23 @@ export default async function TaskDetailPage({
 
   if (!task) notFound();
 
+  // Serialize Date timestamps to ISO strings for client component
+  const initialTask = {
+    ...task,
+    createdAt: task.createdAt instanceof Date ? task.createdAt.toISOString() : String(task.createdAt),
+    updatedAt: task.updatedAt instanceof Date ? task.updatedAt.toISOString() : String(task.updatedAt),
+    projectName: undefined,
+  };
+
   return (
-    <div className="p-6">
+    <div className="gradient-morning-sky min-h-screen p-6">
       <Link href="/dashboard">
         <Button variant="ghost" size="sm" className="mb-4">
           <ArrowLeft className="h-4 w-4 mr-1" />
           Back to Dashboard
         </Button>
       </Link>
-      <TaskDetailView taskId={id} />
+      <TaskDetailView taskId={id} initialTask={initialTask} />
     </div>
   );
 }

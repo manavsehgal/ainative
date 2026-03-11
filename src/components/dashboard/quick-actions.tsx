@@ -1,26 +1,19 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus, FolderPlus, Inbox, Activity } from "lucide-react";
-import { TaskCreatePanel } from "@/components/tasks/task-create-panel";
 import { SectionHeading } from "@/components/shared/section-heading";
 
-interface QuickActionsProps {
-  projects: { id: string; name: string }[];
-}
-
-export function QuickActions({ projects }: QuickActionsProps) {
+export function QuickActions() {
   const router = useRouter();
-  const [taskDialogOpen, setTaskDialogOpen] = useState(false);
 
   const actions = [
     {
       label: "New Task",
       description: "Create & queue an agent task",
       icon: Plus,
-      onClick: () => setTaskDialogOpen(true),
+      onClick: () => router.push("/tasks/new"),
     },
     {
       label: "New Project",
@@ -64,12 +57,6 @@ export function QuickActions({ projects }: QuickActionsProps) {
           </Card>
         ))}
       </div>
-      <TaskCreatePanel
-        projects={projects}
-        onCreated={() => router.refresh()}
-        open={taskDialogOpen}
-        onOpenChange={setTaskDialogOpen}
-      />
     </div>
   );
 }

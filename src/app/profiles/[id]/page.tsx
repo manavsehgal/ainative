@@ -18,14 +18,14 @@ export default async function ProfileDetailPage({
   if (!profile) notFound();
 
   return (
-    <div className="p-6">
+    <div className="gradient-ocean-mist min-h-screen p-6">
       <Link href="/profiles">
         <Button variant="ghost" size="sm" className="mb-4">
           <ArrowLeft className="h-4 w-4 mr-1" />
           Back to Profiles
         </Button>
       </Link>
-      <ProfileDetailView profileId={id} isBuiltin={isBuiltin(id)} />
+      <ProfileDetailView profileId={id} isBuiltin={isBuiltin(id)} initialProfile={profile} />
     </div>
   );
 }

@@ -31,8 +31,15 @@ import { DocumentPreview } from "./document-preview";
 import { getFileIcon, formatSize, getStatusColor, formatRelativeTime } from "./utils";
 import type { DocumentWithRelations } from "./types";
 
+/** Serialized version of DocumentWithRelations (Date fields become strings from server) */
+type SerializedDocument = Omit<DocumentWithRelations, "createdAt" | "updatedAt"> & {
+  createdAt: string | Date;
+  updatedAt: string | Date;
+};
+
 interface DocumentDetailViewProps {
   documentId: string;
+  initialDocument?: SerializedDocument;
 }
 
 function getStatusDotColor(status: string): string {
@@ -50,10 +57,12 @@ function getStatusDotColor(status: string): string {
   }
 }
 
-export function DocumentDetailView({ documentId }: DocumentDetailViewProps) {
+export function DocumentDetailView({ documentId, initialDocument }: DocumentDetailViewProps) {
   const router = useRouter();
-  const [doc, setDoc] = useState<DocumentWithRelations | null>(null);
-  const [loaded, setLoaded] = useState(false);
+  const [doc, setDoc] = useState<DocumentWithRelations | null>(
+    initialDocument ? (initialDocument as unknown as DocumentWithRelations) : null
+  );
+  const [loaded, setLoaded] = useState(!!initialDocument);
   const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
   const [deleting, setDeleting] = useState(false);
   const [linking, setLinking] = useState(false);
@@ -71,12 +80,19 @@ export function DocumentDetailView({ documentId }: DocumentDetailViewProps) {
   }, [documentId]);
 
   useEffect(() => {
-    refresh();
+    // If server provided initial data, only fetch supplementary data (projects list)
+    // and enrich with relation names in the background
+    if (!initialDocument) {
+      refresh();
+    } else {
+      // Background refresh to fill in taskTitle/projectName relation fields
+      refresh();
+    }
     fetch("/api/projects")
       .then((r) => r.ok ? r.json() : [])
       .then(setProjects)
       .catch(() => {});
-  }, [refresh]);
+  }, [refresh, initialDocument]);
 
   async function handleDelete() {
     if (!doc) return;

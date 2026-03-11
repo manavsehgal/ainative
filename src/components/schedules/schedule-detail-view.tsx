@@ -40,12 +40,13 @@ interface ScheduleDetail {
 
 interface ScheduleDetailViewProps {
   scheduleId: string;
+  initialSchedule?: ScheduleDetail;
 }
 
-export function ScheduleDetailView({ scheduleId }: ScheduleDetailViewProps) {
+export function ScheduleDetailView({ scheduleId, initialSchedule }: ScheduleDetailViewProps) {
   const router = useRouter();
-  const [schedule, setSchedule] = useState<ScheduleDetail | null>(null);
-  const [loaded, setLoaded] = useState(false);
+  const [schedule, setSchedule] = useState<ScheduleDetail | null>(initialSchedule ?? null);
+  const [loaded, setLoaded] = useState(!!initialSchedule);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const refresh = useCallback(async () => {
@@ -55,6 +56,7 @@ export function ScheduleDetailView({ scheduleId }: ScheduleDetailViewProps) {
   }, [scheduleId]);
 
   useEffect(() => {
+    // Always refresh to get enriched data (firingHistory), but don't block rendering
     refresh();
     const interval = setInterval(refresh, 10_000);
     return () => clearInterval(interval);

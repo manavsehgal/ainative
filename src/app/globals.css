@@ -365,15 +365,16 @@
 }
 
 /* --- Data-slot selectors (auto-glass shadcn components) --- */
-[data-slot="card"] {
+[data-slot="card"][data-slot="card"] {
   background: var(--glass-bg);
   -webkit-backdrop-filter: blur(var(--blur-glass-md));
   backdrop-filter: blur(var(--blur-glass-md));
   border-color: var(--glass-border);
   box-shadow: var(--glass-shadow), var(--glass-inner-glow);
+  will-change: backdrop-filter;
 }
 
-[data-slot="card"]:hover {
+[data-slot="card"][data-slot="card"]:hover {
   background: var(--glass-bg-heavy);
   box-shadow: var(--glass-shadow-lg), var(--glass-inner-glow);
   transition: background 0.3s ease, box-shadow 0.3s ease;

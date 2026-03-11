@@ -23,15 +23,25 @@ export default async function ScheduleDetailPage({
 
   if (!schedule) notFound();
 
+  // Serialize Date timestamps and add firing history placeholder for client component
+  const initialSchedule = {
+    ...schedule,
+    createdAt: schedule.createdAt instanceof Date ? schedule.createdAt.toISOString() : String(schedule.createdAt),
+    expiresAt: schedule.expiresAt instanceof Date ? schedule.expiresAt.toISOString() : schedule.expiresAt ? String(schedule.expiresAt) : null,
+    lastFiredAt: schedule.lastFiredAt instanceof Date ? schedule.lastFiredAt.toISOString() : schedule.lastFiredAt ? String(schedule.lastFiredAt) : null,
+    nextFireAt: schedule.nextFireAt instanceof Date ? schedule.nextFireAt.toISOString() : schedule.nextFireAt ? String(schedule.nextFireAt) : null,
+    firingHistory: [] as Array<{ id: string; title: string; status: string; createdAt: string; result: string | null }>,
+  };
+
   return (
-    <div className="p-6">
+    <div className="gradient-ocean-mist min-h-screen p-6">
       <Link href="/schedules">
         <Button variant="ghost" size="sm" className="mb-4">
           <ArrowLeft className="h-4 w-4 mr-1" />
           Back to Schedules
         </Button>
       </Link>
-      <ScheduleDetailView scheduleId={id} />
+      <ScheduleDetailView scheduleId={id} initialSchedule={initialSchedule} />
     </div>
   );
 }

@@ -36,12 +36,13 @@ const priorityLabels: Record<number, string> = {
 
 interface TaskDetailViewProps {
   taskId: string;
+  initialTask?: TaskItem;
 }
 
-export function TaskDetailView({ taskId }: TaskDetailViewProps) {
+export function TaskDetailView({ taskId, initialTask }: TaskDetailViewProps) {
   const router = useRouter();
-  const [task, setTask] = useState<TaskItem | null>(null);
-  const [loaded, setLoaded] = useState(false);
+  const [task, setTask] = useState<TaskItem | null>(initialTask ?? null);
+  const [loaded, setLoaded] = useState(!!initialTask);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmCancel, setConfirmCancel] = useState(false);
@@ -71,9 +72,11 @@ export function TaskDetailView({ taskId }: TaskDetailViewProps) {
   }, [taskId]);
 
   useEffect(() => {
-    refresh();
+    // If server provided initial data, only fetch supplementary data (docs)
+    // and skip the redundant task refresh
+    if (!initialTask) refresh();
     fetchDocs();
-  }, [refresh, fetchDocs]);
+  }, [refresh, fetchDocs, initialTask]);
 
   // Poll while running
   useEffect(() => {

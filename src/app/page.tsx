@@ -149,7 +149,7 @@ export default async function HomePage() {
           <ActivityFeed entries={serializedLogs} hourlyActivity={agentActivityByHour} />
         </div>
       </div>
-      <QuickActions projects={allProjects} />
+      <QuickActions />
       <RecentProjects projects={recentProjectData} />
     </div>
   );

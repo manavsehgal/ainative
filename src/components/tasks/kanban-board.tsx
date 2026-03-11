@@ -2,6 +2,7 @@
 
 import { useId, useState, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   DndContext,
   DragEndEvent,
@@ -20,10 +21,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { KanbanColumn } from "./kanban-column";
 import { TaskCard, type TaskItem } from "./task-card";
-import { TaskCreatePanel } from "./task-create-panel";
 import { EmptyBoard } from "./empty-board";
 import { COLUMN_ORDER, isValidDragTransition, type TaskStatus } from "@/lib/constants/task-status";
 
@@ -39,7 +40,6 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
   const [activeTask, setActiveTask] = useState<TaskItem | null>(null);
   const [projectFilter, setProjectFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [inlineCreateOpen, setInlineCreateOpen] = useState(false);
 
   // I5: Scroll indicators
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -156,6 +156,15 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
     </div>
   );
 
+  const newTaskButton = (
+    <Link href="/tasks/new">
+      <Button>
+        <Plus className="h-4 w-4 mr-2" />
+        New Task
+      </Button>
+    </Link>
+  );
+
   if (tasks.length === 0) {
     return (
       <div>
@@ -163,7 +172,7 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
           <h1 className="text-2xl font-bold">Dashboard</h1>
           <div className="flex items-center gap-3">
             {filterBar}
-            <TaskCreatePanel projects={projects} onCreated={refresh} />
+            {newTaskButton}
           </div>
         </div>
         <EmptyBoard />
@@ -177,7 +186,7 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
         <h1 className="text-2xl font-bold">Dashboard</h1>
         <div className="flex items-center gap-3">
           {filterBar}
-          <TaskCreatePanel projects={projects} onCreated={refresh} />
+          {newTaskButton}
         </div>
       </div>
       <DndContext
@@ -216,7 +225,7 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
                 status={status}
                 tasks={groupedTasks[status]}
                 onTaskClick={handleTaskClick}
-                onAddTask={status === "planned" ? () => setInlineCreateOpen(true) : undefined}
+                onAddTask={status === "planned" ? () => router.push("/tasks/new") : undefined}
               />
             ))}
           </div>
@@ -229,12 +238,6 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
           ) : null}
         </DragOverlay>
       </DndContext>
-      <TaskCreatePanel
-        projects={projects}
-        onCreated={refresh}
-        open={inlineCreateOpen}
-        onOpenChange={setInlineCreateOpen}
-      />
     </div>
   );
 }
