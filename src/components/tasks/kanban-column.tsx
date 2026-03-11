@@ -41,14 +41,14 @@ export function KanbanColumn({
       <div
         ref={setNodeRef}
         aria-label={`Drop zone for ${label}`}
-        className={`flex-1 rounded-lg border border-dashed p-2 min-h-[200px] transition-colors ${
-          isOver ? "bg-accent/50 border-primary" : "border-transparent"
+        className={`surface-scroll flex-1 rounded-lg border border-dashed p-2 min-h-[200px] transition-colors ${
+          isOver ? "bg-accent/50 border-primary" : "border-border/40"
         }`}
       >
         <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
           <div className="space-y-2">
             {tasks.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full min-h-[120px] text-muted-foreground border-2 border-dashed rounded-lg">
+              <div className="flex flex-col items-center justify-center h-full min-h-[120px] text-muted-foreground border-2 border-dashed border-border/50 rounded-lg bg-background/35">
                 <Inbox className="h-5 w-5 mb-1 opacity-40" />
                 <span className="text-xs">No tasks</span>
               </div>
@@ -62,7 +62,7 @@ export function KanbanColumn({
         {onAddTask && (
           <Button
             variant="ghost"
-            className="w-full mt-2 border border-dashed text-muted-foreground hover:text-foreground"
+            className="w-full mt-2 border border-dashed border-border/50 text-muted-foreground hover:text-foreground"
             onClick={onAddTask}
           >
             <Plus className="h-4 w-4 mr-1" />

@@ -4,17 +4,37 @@ import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+type ResolvedTheme = "light" | "dark";
+
+function resolveThemePreference(): ResolvedTheme {
+  const stored = localStorage.getItem("stagent-theme");
+  if (stored === "dark" || stored === "light") return stored;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+function applyTheme(theme: ResolvedTheme) {
+  const root = document.documentElement;
+  root.classList.toggle("dark", theme === "dark");
+  root.dataset.theme = theme;
+  root.style.colorScheme = theme;
+  root.style.backgroundColor =
+    theme === "dark" ? "oklch(0.09 0.02 265)" : "oklch(0.98 0.005 260)";
+  localStorage.setItem("stagent-theme", theme);
+  document.cookie = `stagent-theme=${theme};path=/;max-age=31536000;SameSite=Lax`;
+}
+
 export function ThemeToggle() {
   const [dark, setDark] = useState(false);
 
   useEffect(() => {
-    setDark(document.documentElement.classList.contains("dark"));
+    const theme = resolveThemePreference();
+    applyTheme(theme);
+    setDark(theme === "dark");
   }, []);
 
   function toggle() {
     const next = !dark;
-    document.documentElement.classList.toggle("dark", next);
-    localStorage.setItem("stagent-theme", next ? "dark" : "light");
+    applyTheme(next ? "dark" : "light");
     setDark(next);
   }
 

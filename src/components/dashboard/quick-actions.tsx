@@ -43,7 +43,7 @@ export function QuickActions() {
           <Card
             key={action.label}
             tabIndex={0}
-            className="cursor-pointer transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl"
+            className="surface-card cursor-pointer transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl"
             onClick={action.onClick}
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); action.onClick(); } }}
           >

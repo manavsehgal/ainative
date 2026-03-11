@@ -49,7 +49,7 @@ export async function MonitorOverview() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       {/* Active Agents */}
-      <Card>
+      <Card className="surface-card">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">Active Agents</CardTitle>
           <Activity className="h-4 w-4 text-status-running" />
@@ -68,7 +68,7 @@ export async function MonitorOverview() {
       </Card>
 
       {/* Tasks Today */}
-      <Card>
+      <Card className="surface-card">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">Tasks Today</CardTitle>
           <Zap className="h-4 w-4 text-status-warning" />
@@ -79,7 +79,7 @@ export async function MonitorOverview() {
       </Card>
 
       {/* Success Rate */}
-      <Card>
+      <Card className="surface-card">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">Success Rate</CardTitle>
           <CheckCircle className="h-4 w-4 text-status-completed" />
@@ -99,7 +99,7 @@ export async function MonitorOverview() {
       </Card>
 
       {/* Last Activity */}
-      <Card>
+      <Card className="surface-card">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">Last Activity</CardTitle>
           <Clock className="h-4 w-4 text-muted-foreground" />

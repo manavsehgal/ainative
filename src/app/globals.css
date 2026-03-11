@@ -77,6 +77,10 @@
   --secondary-foreground: oklch(0.25 0.03 260);
   --muted: oklch(0.94 0.008 260);
   --muted-foreground: oklch(0.45 0.03 260);
+  --surface-1: rgba(255, 255, 255, 0.92);
+  --surface-2: rgba(255, 255, 255, 0.82);
+  --surface-3: rgba(255, 255, 255, 0.72);
+  --surface-foreground: oklch(0.18 0.02 260);
   --accent: oklch(0.93 0.01 260);
   --accent-foreground: oklch(0.25 0.03 260);
   --destructive: oklch(0.55 0.2 25);
@@ -202,6 +206,10 @@
   /* Muted — navy mid-tone */
   --muted: oklch(0.18 0.03 290);
   --muted-foreground: oklch(0.6 0.03 270);
+  --surface-1: oklch(0.16 0.02 268 / 0.96);
+  --surface-2: oklch(0.14 0.018 272 / 0.9);
+  --surface-3: oklch(0.12 0.02 278 / 0.84);
+  --surface-foreground: oklch(0.93 0.015 270);
 
   /* Accent — navy, distinct from secondary velvet */
   --accent: oklch(0.20 0.04 285);
@@ -573,6 +581,59 @@
   background: var(--gradient-neutral);
 }
 
+/* --- Solid surface utilities for dense operational screens --- */
+.surface-page {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface-1) 88%, transparent),
+    color-mix(in srgb, var(--surface-2) 96%, transparent)
+  );
+}
+
+[data-slot="card"].surface-card,
+.surface-card {
+  background: var(--surface-1);
+  color: var(--surface-foreground);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border-color: color-mix(in oklab, var(--border) 92%, transparent);
+  box-shadow: 0 12px 28px oklch(0.12 0.02 260 / 0.08);
+}
+
+[data-slot="card"].surface-card-muted,
+.surface-card-muted {
+  background: var(--surface-2);
+  color: var(--surface-foreground);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border-color: color-mix(in oklab, var(--border) 80%, transparent);
+  box-shadow: 0 6px 18px oklch(0.12 0.02 260 / 0.05);
+}
+
+.surface-panel {
+  background: var(--surface-1);
+  color: var(--surface-foreground);
+  border: 1px solid color-mix(in oklab, var(--border) 92%, transparent);
+  box-shadow: 0 12px 28px oklch(0.12 0.02 260 / 0.08);
+}
+
+.surface-control {
+  background: color-mix(in srgb, var(--surface-1) 92%, transparent);
+  color: var(--surface-foreground);
+  border: 1px solid color-mix(in oklab, var(--border) 92%, transparent);
+  box-shadow: 0 6px 18px oklch(0.12 0.02 260 / 0.08);
+}
+
+.surface-scroll {
+  background:
+    linear-gradient(
+      to right,
+      color-mix(in srgb, var(--surface-1) 88%, transparent),
+      color-mix(in srgb, var(--surface-1) 72%, transparent)
+    );
+  border: 1px solid color-mix(in oklab, var(--border) 75%, transparent);
+}
+
 /* --- Glass shimmer animation --- */
 @keyframes glass-shimmer {
   0% { background-position: -200% 0; }
@@ -608,4 +669,13 @@
     transparent 100%
   );
   background-size: 200% 100%;
+}
+
+html,
+body {
+  background: var(--background);
+}
+
+body {
+  color: var(--foreground);
 }

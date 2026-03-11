@@ -28,7 +28,7 @@ const priorityColors = ["text-priority-critical", "text-priority-high", "text-st
 
 export function PriorityQueue({ tasks }: PriorityQueueProps) {
   return (
-    <Card>
+    <Card className="surface-card">
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Needs Attention

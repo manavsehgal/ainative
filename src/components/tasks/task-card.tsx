@@ -58,7 +58,7 @@ export function TaskCard({
       {...listeners}
       role="button"
       aria-label={`${task.title}, ${priority.label} priority, ${task.status}`}
-      className={`p-3 cursor-grab active:cursor-grabbing transition-shadow hover:shadow-md ${
+      className={`surface-card p-3 cursor-grab active:cursor-grabbing transition-shadow hover:shadow-md ${
         isDragging ? "opacity-50 shadow-lg" : ""
       } ${isFailed ? "border-l-4 border-l-destructive" : ""}`}
       onClick={() => onClick(task)}

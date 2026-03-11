@@ -17,7 +17,7 @@ export function FormSectionCard({
 }: FormSectionCardProps) {
   return (
     <fieldset
-      className={`rounded-lg border border-border/40 bg-card/30 backdrop-blur-sm p-4 space-y-3 ${className ?? ""}`}
+      className={`surface-card-muted rounded-lg p-4 space-y-3 ${className ?? ""}`}
     >
       <legend className="flex items-center gap-2 px-1">
         <Icon className="h-4 w-4 text-muted-foreground" />

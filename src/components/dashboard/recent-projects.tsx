@@ -24,7 +24,7 @@ export function RecentProjects({ projects }: RecentProjectsProps) {
     return (
       <div>
         <SectionHeading>Recent Projects</SectionHeading>
-        <Card className="p-6 text-center">
+        <Card className="surface-card p-6 text-center">
           <FolderPlus className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
           <p className="text-sm text-muted-foreground mb-3">No active projects yet.</p>
           <Link href="/projects">
@@ -50,7 +50,7 @@ export function RecentProjects({ projects }: RecentProjectsProps) {
             : 0;
           return (
             <Link key={project.id} href={`/projects/${project.id}`}>
-              <Card className="cursor-pointer transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl">
+              <Card className="surface-card cursor-pointer transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl">
                 <CardHeader className="pb-2">
                   <div className="flex items-center gap-2">
                     <DonutRing

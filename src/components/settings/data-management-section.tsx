@@ -62,7 +62,7 @@ export function DataManagementSection() {
 
   return (
     <>
-      <Card>
+      <Card className="surface-card">
         <CardHeader>
           <CardTitle>Data Management</CardTitle>
           <CardDescription>

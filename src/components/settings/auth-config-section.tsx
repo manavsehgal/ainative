@@ -78,7 +78,7 @@ export function AuthConfigSection() {
   }
 
   return (
-    <Card>
+    <Card className="surface-card">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>

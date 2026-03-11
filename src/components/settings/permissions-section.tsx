@@ -44,7 +44,7 @@ export function PermissionsSection() {
   }
 
   return (
-    <Card>
+    <Card className="surface-card">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <ShieldCheck className="h-5 w-5" />

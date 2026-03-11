@@ -129,8 +129,8 @@ export function NotificationItem({ notification, onUpdated }: NotificationItemPr
     <Card
       className={`p-4 ${
         isUnread
-          ? "border-l-4 border-l-primary bg-background"
-          : "bg-muted/30"
+          ? "surface-card border-l-4 border-l-primary"
+          : "surface-card-muted"
       }`}
       role="article"
       aria-label={`${typeLabels[notification.type] ?? "Notification"}: ${notification.title}${isUnread ? " (unread)" : ""}`}
@@ -158,7 +158,7 @@ export function NotificationItem({ notification, onUpdated }: NotificationItemPr
                 {notification.toolName}
               </Badge>
               {parsedToolInput && (
-                <div className="text-sm text-muted-foreground bg-muted p-2 rounded mt-1">
+                <div className="text-sm text-muted-foreground bg-muted/60 p-2 rounded mt-1">
                   {formatToolInput(notification.toolName, parsedToolInput)}
                 </div>
               )}
@@ -221,7 +221,7 @@ export function NotificationItem({ notification, onUpdated }: NotificationItemPr
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7"
+            className="h-8 w-8"
             onClick={toggleRead}
             disabled={toggling}
             aria-label={isUnread ? "Mark as read" : "Mark as unread"}
@@ -231,7 +231,7 @@ export function NotificationItem({ notification, onUpdated }: NotificationItemPr
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 text-muted-foreground hover:text-destructive"
+            className="h-8 w-8 text-muted-foreground hover:text-destructive"
             onClick={dismiss}
             disabled={dismissing}
             aria-label="Dismiss notification"

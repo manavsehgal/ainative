@@ -29,7 +29,7 @@ const eventColors: Record<string, string> = {
 
 export function ActivityFeed({ entries, hourlyActivity }: ActivityFeedProps) {
   return (
-    <Card>
+    <Card className="surface-card">
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Live Agent Activity
