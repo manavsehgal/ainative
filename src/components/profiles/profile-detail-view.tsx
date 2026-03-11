@@ -193,7 +193,7 @@ export function ProfileDetailView({ profileId, isBuiltin, initialProfile }: Prof
       {/* Bento Grid: Identity + Configuration + Tools & Policy */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Identity Card */}
-        <Card>
+        <Card className="surface-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <DomainIcon className="h-4 w-4 text-muted-foreground" />
@@ -212,7 +212,7 @@ export function ProfileDetailView({ profileId, isBuiltin, initialProfile }: Prof
               </div>
             )}
             {(profile.version || profile.author) && (
-              <div className="flex items-center gap-3 text-xs text-muted-foreground pt-1 border-t">
+              <div className="flex items-center gap-3 border-t border-border/60 pt-1 text-xs text-muted-foreground">
                 {profile.version && (
                   <span className="flex items-center gap-1">
                     <Tag className="h-3 w-3" />v{profile.version}
@@ -229,7 +229,7 @@ export function ProfileDetailView({ profileId, isBuiltin, initialProfile }: Prof
         </Card>
 
         {/* Configuration Card */}
-        <Card>
+        <Card className="surface-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Configuration</CardTitle>
           </CardHeader>
@@ -273,7 +273,7 @@ export function ProfileDetailView({ profileId, isBuiltin, initialProfile }: Prof
         </Card>
 
         {/* Tools & Policy Card */}
-        <Card className="md:col-span-2 lg:col-span-1">
+        <Card className="surface-card md:col-span-2 lg:col-span-1">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Wrench className="h-4 w-4 text-muted-foreground" />
@@ -309,7 +309,7 @@ export function ProfileDetailView({ profileId, isBuiltin, initialProfile }: Prof
                     <Badge
                       key={tool}
                       variant="outline"
-                      className="border-green-500/30 bg-green-500/10 text-xs text-green-700 dark:text-green-400"
+                      className="border-status-completed/30 bg-status-completed/10 text-xs text-status-completed"
                     >
                       {tool}
                     </Badge>
@@ -330,7 +330,7 @@ export function ProfileDetailView({ profileId, isBuiltin, initialProfile }: Prof
                     <Badge
                       key={tool}
                       variant="outline"
-                      className="border-red-500/30 bg-red-500/10 text-xs text-red-700 dark:text-red-400"
+                      className="border-status-failed/30 bg-status-failed/10 text-xs text-status-failed"
                     >
                       {tool}
                     </Badge>
@@ -351,7 +351,7 @@ export function ProfileDetailView({ profileId, isBuiltin, initialProfile }: Prof
         {/* SKILL.md — collapsible */}
         {profile.skillMd && (
           <details className="group" open>
-            <summary className="flex items-center gap-2 cursor-pointer list-none text-sm font-medium p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+            <summary className="surface-card flex cursor-pointer list-none items-center gap-2 rounded-lg p-3 text-sm font-medium transition-colors hover:bg-accent/50">
               <FileCode className="h-4 w-4 text-muted-foreground" />
               <span>SKILL.md</span>
               <Badge variant="secondary" className="text-xs ml-auto">
@@ -359,8 +359,8 @@ export function ProfileDetailView({ profileId, isBuiltin, initialProfile }: Prof
               </Badge>
               <span className="text-muted-foreground text-xs group-open:rotate-90 transition-transform">▶</span>
             </summary>
-            <div className="mt-2 rounded-lg border bg-card p-4">
-              <pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded-lg bg-muted p-4 text-xs">
+            <div className="surface-panel mt-2 rounded-lg p-4">
+              <pre className="surface-scroll max-h-64 overflow-auto whitespace-pre-wrap rounded-lg p-4 text-xs">
                 {profile.skillMd}
               </pre>
             </div>
@@ -369,7 +369,7 @@ export function ProfileDetailView({ profileId, isBuiltin, initialProfile }: Prof
 
         {/* Tests */}
         {profile.tests && profile.tests.length > 0 && (
-          <Card>
+          <Card className="surface-card">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-medium">
@@ -415,7 +415,7 @@ export function ProfileDetailView({ profileId, isBuiltin, initialProfile }: Prof
                 {profile.tests.map((test, i) => {
                   const result = testReport?.results[i];
                   return (
-                    <div key={i} className="rounded-md border p-2 text-sm">
+                    <div key={i} className="surface-card-muted rounded-md border p-2 text-sm">
                       <div className="flex items-start gap-2">
                         {result && (
                           result.passed ? (
@@ -436,9 +436,9 @@ export function ProfileDetailView({ profileId, isBuiltin, initialProfile }: Prof
                                   variant="outline"
                                   className={`text-[10px] px-1.5 py-0 ${
                                     found
-                                      ? "border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-400"
+                                      ? "border-status-completed/30 bg-status-completed/10 text-status-completed"
                                       : missing
-                                        ? "border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-400"
+                                        ? "border-status-failed/30 bg-status-failed/10 text-status-failed"
                                         : ""
                                   }`}
                                 >

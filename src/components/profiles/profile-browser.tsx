@@ -45,7 +45,12 @@ export function ProfileBrowser({ initialProfiles }: ProfileBrowserProps) {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Profiles</h1>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Profiles</h1>
+          <p className="text-sm text-muted-foreground">
+            Browse and inspect agent profiles without blur-heavy detail surfaces.
+          </p>
+        </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={() => setShowImport(true)}>
             <Download className="mr-2 h-4 w-4" />
@@ -59,14 +64,14 @@ export function ProfileBrowser({ initialProfiles }: ProfileBrowserProps) {
       </div>
 
       {/* Search + Domain Filter */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+      <div className="surface-panel flex flex-col gap-4 rounded-2xl p-4 sm:flex-row sm:items-center">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search profiles..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
+            className="surface-control pl-9"
           />
         </div>
         <Tabs
@@ -75,7 +80,7 @@ export function ProfileBrowser({ initialProfiles }: ProfileBrowserProps) {
             setDomainFilter(v as "all" | "work" | "personal")
           }
         >
-          <TabsList>
+          <TabsList className="surface-control">
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="work">Work</TabsTrigger>
             <TabsTrigger value="personal">Personal</TabsTrigger>

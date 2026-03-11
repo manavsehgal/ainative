@@ -19,6 +19,7 @@ describe("profile registry", () => {
   let listProfiles: typeof import("../registry").listProfiles;
   let getProfileTags: typeof import("../registry").getProfileTags;
   let reloadProfiles: typeof import("../registry").reloadProfiles;
+  let isBuiltin: typeof import("../registry").isBuiltin;
 
   beforeEach(async () => {
     // Reset module cache so each test gets a fresh registry
@@ -28,6 +29,7 @@ describe("profile registry", () => {
     listProfiles = mod.listProfiles;
     getProfileTags = mod.getProfileTags;
     reloadProfiles = mod.reloadProfiles;
+    isBuiltin = mod.isBuiltin;
   });
 
   afterEach(() => {
@@ -47,7 +49,7 @@ describe("profile registry", () => {
   });
 
   it("returns all 13 builtin profiles", () => {
-    const profiles = listProfiles();
+    const profiles = listProfiles().filter((p) => isBuiltin(p.id));
     const ids = profiles.map((p) => p.id);
 
     expect(ids).toContain("general");
@@ -111,8 +113,9 @@ describe("profile registry", () => {
   });
 
   it("profiles have correct domain values", () => {
-    const workProfiles = listProfiles().filter((p) => p.domain === "work");
-    const personalProfiles = listProfiles().filter(
+    const builtinProfiles = listProfiles().filter((p) => isBuiltin(p.id));
+    const workProfiles = builtinProfiles.filter((p) => p.domain === "work");
+    const personalProfiles = builtinProfiles.filter(
       (p) => p.domain === "personal"
     );
 

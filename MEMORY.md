@@ -20,13 +20,14 @@ This file captures evolving project facts, decisions, and recurring gotchas that
   - `surface-scroll`
 - Current rule of thumb:
   - glass for shell framing, popovers, dialogs, and accent surfaces
-  - solid surfaces for dense lists, cards, forms, boards, and monitoring UI
+  - solid surfaces for dense lists, cards, forms, boards, monitoring UI, and profile browser/detail content
 
 ## Recent UX Foundation Work
 
 - Theme bootstrapping was hardened so light/dark mode resolves before paint.
 - Theme state is synchronized through DOM class, `data-theme`, `color-scheme`, local storage, and cookie.
-- Dashboard, monitor, kanban, inbox, projects, and settings moved toward solid operational surfaces for better readability.
+- Dashboard, monitor, kanban, inbox, projects, profiles, and settings moved toward solid operational surfaces for better readability.
+- Profile routes now use bounded `surface-page` framing plus `surface-card` and `surface-control` primitives to avoid scroll jank and card compositing flash.
 - Settings content width was widened to improve scanability.
 
 ## Remaining UX Follow-Up

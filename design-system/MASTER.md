@@ -184,6 +184,17 @@ Defined in `globals.css` with light/dark variants.
 | `.glass-sidebar` | `--glass-bg-heavy` | lg (24px) | right-side | — | Sidebar panel |
 | `.glass-input` | `--glass-bg-light` | sm (8px) | subtle | — | Form inputs |
 
+### Solid Surface Utility Classes
+
+| Class | Usage |
+|-------|-------|
+| `.surface-page` | Bounded dense-work area inside a route-level gradient |
+| `.surface-card` | Primary cards on operational screens |
+| `.surface-card-muted` | Secondary or nested cards within dense views |
+| `.surface-panel` | Framed groups such as filter bars or expandable bodies |
+| `.surface-control` | Search, filter, and toolbar controls on dense screens |
+| `.surface-scroll` | Scrollable code/text containers that should stay visually stable |
+
 ### Data-Slot Auto-Glass
 
 shadcn/ui components get glass treatment automatically via `[data-slot]` selectors:
@@ -199,6 +210,10 @@ shadcn/ui components get glass treatment automatically via `[data-slot]` selecto
 - `[data-slot="button"][data-variant="outline"]` → glass fill + blur
 - `[data-slot="button"][data-variant="secondary"]` → subtle glass
 - `[data-slot="button"][data-variant="destructive"]` → translucent red with glow
+
+Operational rule:
+- Default `Card` still resolves through the auto-glass path.
+- On dense routes like dashboard, inbox, monitor, projects, profiles, and settings, opt out explicitly with `surface-card` or a related surface utility instead of relying on default card rendering.
 
 ### Pastel Gradient Presets
 
@@ -232,6 +247,7 @@ The dark theme uses four distinct color families to create visual depth:
 - **Never** stack more than 2 blur layers — performance degrades significantly
 - **Always** include `-webkit-backdrop-filter` alongside `backdrop-filter` for Safari
 - **Never** use glass on scrollable lists with 50+ items — repaints are expensive
+- **Never** ship primary profile list/detail surfaces on the default glass-card path — use `surface-page`, `surface-card`, and `surface-control`
 - **Never** use solid `bg-*` colors on elements that should be glass — breaks the transparency
 - **Never** use bare `border-b` for list dividers — use `border-b border-border/50` for softened separators
 - **Never** use solid opaque `bg-primary` on buttons in glass UI — buttons get auto-glass via data-slot selectors
