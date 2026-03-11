@@ -14,6 +14,7 @@ interface StatsCardsProps {
   sparklines?: {
     completions: number[];
     creations: number[];
+    projects: number[];
     notifications: number[];
   };
 }
@@ -35,6 +36,7 @@ export function StatsCards({
       color: "text-status-running",
       chartColor: "var(--chart-1)",
       href: "/monitor",
+      destination: "Monitor",
       sparklineData: sparklines?.creations,
     },
     {
@@ -45,6 +47,7 @@ export function StatsCards({
       color: "text-status-completed",
       chartColor: "var(--chart-2)",
       href: "/dashboard",
+      destination: "Dashboard",
       sparklineData: sparklines?.completions,
     },
     {
@@ -55,6 +58,7 @@ export function StatsCards({
       color: "text-status-warning",
       chartColor: "var(--chart-3)",
       href: "/inbox",
+      destination: "Inbox",
       sparklineData: sparklines?.notifications,
     },
     {
@@ -65,7 +69,8 @@ export function StatsCards({
       color: "text-primary",
       chartColor: "var(--chart-4)",
       href: "/projects",
-      sparklineData: undefined,
+      destination: "Projects",
+      sparklineData: sparklines?.projects,
     },
   ];
 
@@ -95,6 +100,11 @@ export function StatsCards({
                 </div>
               )}
               <p className="text-xs text-muted-foreground mt-1">{s.subtitle}</p>
+              {s.destination && (
+                <p className="text-[10px] text-muted-foreground/60 mt-0.5">
+                  → {s.destination}
+                </p>
+              )}
             </CardContent>
           </Card>
         </Link>

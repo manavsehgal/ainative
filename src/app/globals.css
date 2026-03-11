@@ -95,7 +95,7 @@
   --sidebar-primary-foreground: oklch(0.98 0.005 250);
   --sidebar-accent: oklch(0.93 0.01 250);
   --sidebar-accent-foreground: oklch(0.25 0.03 250);
-  --sidebar-border: var(--glass-border);
+  --sidebar-border: var(--glass-border-subtle);
   --sidebar-ring: oklch(0.55 0.18 250);
   /* Semantic status tokens */
   --status-running: oklch(0.55 0.18 250);
@@ -226,7 +226,7 @@
   --sidebar-primary-foreground: oklch(0.09 0.02 280);
   --sidebar-accent: oklch(0.20 0.04 300);
   --sidebar-accent-foreground: oklch(0.93 0.015 270);
-  --sidebar-border: var(--glass-border);
+  --sidebar-border: var(--glass-border-subtle);
   --sidebar-ring: oklch(0.65 0.18 260);
   /* Semantic status tokens */
   --status-running: oklch(0.65 0.18 250);
@@ -344,7 +344,8 @@
   background: var(--glass-bg-heavy);
   -webkit-backdrop-filter: blur(var(--blur-glass-lg));
   backdrop-filter: blur(var(--blur-glass-lg));
-  border-right: 1px solid var(--glass-border);
+  border-color: var(--glass-border-subtle) !important;
+  box-shadow: inset -1px 0 0 0 oklch(1 0 0 / 0.15), var(--glass-shadow-sm) !important;
 }
 
 .glass-input {

@@ -22,7 +22,7 @@ export function Greeting({ runningCount, awaitingCount, failedCount }: GreetingP
     : "All clear — no tasks need your attention.";
 
   return (
-    <div className="rounded-lg border bg-card p-5 mb-6">
+    <div className="glass-card rounded-xl p-5 mb-6">
       <h2 className="text-xl font-bold">{getGreeting()}</h2>
       <p className="text-sm text-muted-foreground mt-1">{summary}</p>
     </div>

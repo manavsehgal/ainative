@@ -46,7 +46,7 @@ export function AppSidebar() {
   const pathname = usePathname();
 
   return (
-    <Sidebar>
+    <Sidebar className="glass-sidebar">
       <SidebarHeader className="px-4 py-3">
         <Link href="/" className="flex items-center gap-2">
           <span className="text-lg font-bold tracking-tight">Stagent</span>
@@ -81,7 +81,24 @@ export function AppSidebar() {
           <div className="flex items-center gap-2">
             <AuthStatusDot />
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() =>
+                document.dispatchEvent(
+                  new KeyboardEvent("keydown", {
+                    key: "k",
+                    metaKey: true,
+                    bubbles: true,
+                  })
+                )
+              }
+              className="h-7 px-1.5 rounded-md border border-border/50 text-[10px] font-medium text-muted-foreground hover:bg-accent/50 transition-colors cursor-pointer"
+              aria-label="Open command palette (⌘K)"
+            >
+              <kbd>⌘K</kbd>
+            </button>
+            <ThemeToggle />
+          </div>
         </div>
       </SidebarFooter>
     </Sidebar>

@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { tasks, agentLogs, notifications } from "@/lib/db/schema";
+import { tasks, projects, agentLogs, notifications } from "@/lib/db/schema";
 import { sql, eq, and, gte } from "drizzle-orm";
 
 /** Helper: generate array of date strings (YYYY-MM-DD) for the last N days */
@@ -65,6 +65,27 @@ export async function getTaskCreationsByDay(days = 7): Promise<number[]> {
     .from(tasks)
     .where(gte(tasks.createdAt, since))
     .groupBy(sql`strftime('%Y-%m-%d', ${tasks.createdAt} , 'unixepoch')`);
+
+  return gapFill(dates, rows);
+}
+
+/**
+ * 7-day count of distinct active projects with task activity each day.
+ * Shows how many active projects had task updates per day.
+ */
+export async function getActiveProjectActivityByDay(days = 7): Promise<number[]> {
+  const dates = lastNDays(days);
+  const since = daysAgoTimestamp(days);
+
+  const rows = await db
+    .select({
+      date: sql<string>`strftime('%Y-%m-%d', ${tasks.updatedAt} , 'unixepoch')`,
+      count: sql<number>`count(distinct ${tasks.projectId})`,
+    })
+    .from(tasks)
+    .innerJoin(projects, eq(tasks.projectId, projects.id))
+    .where(and(eq(projects.status, "active"), gte(tasks.updatedAt, since)))
+    .groupBy(sql`strftime('%Y-%m-%d', ${tasks.updatedAt} , 'unixepoch')`);
 
   return gapFill(dates, rows);
 }

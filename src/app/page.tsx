@@ -13,6 +13,7 @@ import type { RecentProject } from "@/components/dashboard/recent-projects";
 import {
   getCompletionsByDay,
   getTaskCreationsByDay,
+  getActiveProjectActivityByDay,
   getAgentActivityByHour,
   getNotificationsByDay,
 } from "@/lib/queries/chart-data";
@@ -37,6 +38,7 @@ export default async function HomePage() {
     recentActiveProjects,
     completionsByDay,
     taskCreationsByDay,
+    projectCreationsByDay,
     agentActivityByHour,
     notificationsByDay,
   ] = await Promise.all([
@@ -72,6 +74,7 @@ export default async function HomePage() {
     // Chart data queries
     getCompletionsByDay(7),
     getTaskCreationsByDay(7),
+    getActiveProjectActivityByDay(7),
     getAgentActivityByHour(),
     getNotificationsByDay(7),
   ]);
@@ -134,6 +137,7 @@ export default async function HomePage() {
         sparklines={{
           completions: completionsByDay,
           creations: taskCreationsByDay,
+          projects: projectCreationsByDay,
           notifications: notificationsByDay,
         }}
       />
