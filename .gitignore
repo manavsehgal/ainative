@@ -16,6 +16,7 @@ dist/
 # IDE
 .vscode/
 .idea/
+.obsidian/
 
 # next.js
 next-env.d.ts
