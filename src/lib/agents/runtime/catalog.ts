@@ -1,4 +1,7 @@
-export const SUPPORTED_AGENT_RUNTIMES = ["claude-code"] as const;
+export const SUPPORTED_AGENT_RUNTIMES = [
+  "claude-code",
+  "openai-codex-app-server",
+] as const;
 
 export type AgentRuntimeId = (typeof SUPPORTED_AGENT_RUNTIMES)[number];
 
@@ -32,6 +35,20 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
       approvals: true,
       mcpServers: true,
       profileTests: true,
+      taskAssist: true,
+      authHealthCheck: true,
+    },
+  },
+  "openai-codex-app-server": {
+    id: "openai-codex-app-server",
+    label: "OpenAI Codex App Server",
+    description: "OpenAI Codex runtime over the app server protocol with resumable threads and inbox approvals.",
+    capabilities: {
+      resume: true,
+      cancel: true,
+      approvals: true,
+      mcpServers: true,
+      profileTests: false,
       taskAssist: true,
       authHealthCheck: true,
     },

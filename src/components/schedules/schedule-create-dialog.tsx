@@ -23,6 +23,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Plus, Calendar, Clock, Bot } from "lucide-react";
 import { toast } from "sonner";
+import { listRuntimeCatalog } from "@/lib/agents/runtime/catalog";
 
 interface ProfileOption {
   id: string;
@@ -48,12 +49,14 @@ export function ScheduleCreateDialog({
   projects,
   onCreated,
 }: ScheduleCreateDialogProps) {
+  const runtimeOptions = listRuntimeCatalog();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [prompt, setPrompt] = useState("");
   const [intervalPreset, setIntervalPreset] = useState("5m");
   const [customInterval, setCustomInterval] = useState("");
   const [projectId, setProjectId] = useState("");
+  const [assignedAgent, setAssignedAgent] = useState("");
   const [agentProfile, setAgentProfile] = useState("");
   const [recurs, setRecurs] = useState(true);
   const [maxFirings, setMaxFirings] = useState<number | "">("");
@@ -75,6 +78,7 @@ export function ScheduleCreateDialog({
     setIntervalPreset("5m");
     setCustomInterval("");
     setProjectId("");
+    setAssignedAgent("");
     setAgentProfile("");
     setRecurs(true);
     setMaxFirings("");
@@ -105,6 +109,7 @@ export function ScheduleCreateDialog({
           prompt: prompt.trim(),
           interval,
           projectId: projectId || undefined,
+          assignedAgent: assignedAgent || undefined,
           agentProfile: agentProfile || undefined,
           recurs,
           maxFirings: maxFirings || undefined,
@@ -255,11 +260,16 @@ export function ScheduleCreateDialog({
             {/* Project */}
             {projects.length > 0 && (
               <div className="space-y-2">
-                <Label>Project</Label>
-                <Select value={projectId} onValueChange={setProjectId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="None" />
-                  </SelectTrigger>
+              <Label>Project</Label>
+              <Select
+                value={projectId || "none"}
+                onValueChange={(value) =>
+                  setProjectId(value === "none" ? "" : value)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="None" />
+                </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">None</SelectItem>
                     {projects.map((p) => (
@@ -273,6 +283,34 @@ export function ScheduleCreateDialog({
               </div>
             )}
 
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <Bot className="h-3.5 w-3.5 text-muted-foreground" />
+                Runtime
+              </Label>
+              <Select
+                value={assignedAgent || "default"}
+                onValueChange={(value) =>
+                  setAssignedAgent(value === "default" ? "" : value)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Default runtime" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="default">Default runtime</SelectItem>
+                  {runtimeOptions.map((runtime) => (
+                    <SelectItem key={runtime.id} value={runtime.id}>
+                      {runtime.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Which provider runtime each firing should use
+              </p>
+            </div>
+
             {/* Agent Profile */}
             {profiles.length > 0 && (
               <div className="space-y-2">
@@ -280,7 +318,12 @@ export function ScheduleCreateDialog({
                   <Bot className="h-3.5 w-3.5 text-muted-foreground" />
                   Agent Profile
                 </Label>
-                <Select value={agentProfile} onValueChange={setAgentProfile}>
+                <Select
+                  value={agentProfile || "auto"}
+                  onValueChange={(value) =>
+                    setAgentProfile(value === "auto" ? "" : value)
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Auto-detect" />
                   </SelectTrigger>

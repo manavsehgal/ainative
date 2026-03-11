@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { AIAssistPanel } from "./ai-assist-panel";
 import { FileUpload } from "./file-upload";
 import { FormSectionCard } from "@/components/shared/form-section-card";
+import { listRuntimeCatalog } from "@/lib/agents/runtime/catalog";
 
 interface ProfileOption {
   id: string;
@@ -46,10 +47,12 @@ const PRIORITY_COLORS: Record<string, string> = {
 };
 
 export function TaskCreatePanel({ projects }: TaskCreatePanelProps) {
+  const runtimeOptions = listRuntimeCatalog();
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [projectId, setProjectId] = useState<string>("");
+  const [assignedAgent, setAssignedAgent] = useState<string>("");
   const [priority, setPriority] = useState("2");
   const [agentProfile, setAgentProfile] = useState<string>("");
   const [profiles, setProfiles] = useState<ProfileOption[]>([]);
@@ -78,6 +81,7 @@ export function TaskCreatePanel({ projects }: TaskCreatePanelProps) {
           description: description.trim() || undefined,
           projectId: projectId || undefined,
           priority: parseInt(priority, 10),
+          assignedAgent: assignedAgent || undefined,
           agentProfile: agentProfile || undefined,
           fileIds: uploads.length > 0 ? uploads.map((f) => f.id) : undefined,
         }),
@@ -138,7 +142,12 @@ export function TaskCreatePanel({ projects }: TaskCreatePanelProps) {
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
                       <Label>Project</Label>
-                      <Select value={projectId} onValueChange={setProjectId}>
+                      <Select
+                        value={projectId || "none"}
+                        onValueChange={(value) =>
+                          setProjectId(value === "none" ? "" : value)
+                        }
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="None" />
                         </SelectTrigger>
@@ -177,13 +186,45 @@ export function TaskCreatePanel({ projects }: TaskCreatePanelProps) {
                       </Select>
                     </div>
                   </div>
+                  <div className="space-y-1.5">
+                    <Label className="flex items-center gap-1.5">
+                      <Bot className="h-3.5 w-3.5 text-muted-foreground" />
+                      Runtime
+                    </Label>
+                    <Select
+                      value={assignedAgent || "default"}
+                      onValueChange={(value) =>
+                        setAssignedAgent(value === "default" ? "" : value)
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Default runtime" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="default">Default runtime</SelectItem>
+                        {runtimeOptions.map((runtime) => (
+                          <SelectItem key={runtime.id} value={runtime.id}>
+                            {runtime.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Which provider runtime should execute this task
+                    </p>
+                  </div>
                   {profiles.length > 0 && (
                     <div className="space-y-1.5">
                       <Label className="flex items-center gap-1.5">
                         <Bot className="h-3.5 w-3.5 text-muted-foreground" />
                         Agent Profile
                       </Label>
-                      <Select value={agentProfile} onValueChange={setAgentProfile}>
+                      <Select
+                        value={agentProfile || "auto"}
+                        onValueChange={(value) =>
+                          setAgentProfile(value === "auto" ? "" : value)
+                        }
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="Auto-detect" />
                         </SelectTrigger>
@@ -224,6 +265,7 @@ export function TaskCreatePanel({ projects }: TaskCreatePanelProps) {
               <AIAssistPanel
                 title={title}
                 description={description}
+                assignedAgent={assignedAgent || undefined}
                 onApplyDescription={(d) => setDescription(d)}
                 onCreateSubtasks={async (subtasks) => {
                   let created = 0;
@@ -239,6 +281,8 @@ export function TaskCreatePanel({ projects }: TaskCreatePanelProps) {
                           description: sub.description,
                           projectId: projectId || undefined,
                           priority: parseInt(priority, 10),
+                          assignedAgent: assignedAgent || undefined,
+                          agentProfile: agentProfile || undefined,
                         }),
                       });
                       if (res.ok) {

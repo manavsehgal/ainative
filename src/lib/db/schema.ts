@@ -139,6 +139,7 @@ export const schedules = sqliteTable(
     name: text("name").notNull(),
     prompt: text("prompt").notNull(),
     cronExpression: text("cron_expression").notNull(),
+    assignedAgent: text("assigned_agent"),
     agentProfile: text("agent_profile"),
     recurs: integer("recurs", { mode: "boolean" }).default(true).notNull(),
     status: text("status", {

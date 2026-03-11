@@ -3,6 +3,7 @@ import {
   DEFAULT_AGENT_RUNTIME,
   getRuntimeCapabilities,
   getRuntimeCatalogEntry,
+  listRuntimeCatalog,
   resolveAgentRuntime,
 } from "@/lib/agents/runtime/catalog";
 
@@ -18,6 +19,15 @@ describe("runtime catalog", () => {
     expect(runtime.label).toBe("Claude Code");
     expect(capabilities.resume).toBe(true);
     expect(capabilities.profileTests).toBe(true);
+  });
+
+  it("lists the OpenAI Codex runtime", () => {
+    const runtimes = listRuntimeCatalog();
+
+    expect(runtimes.some((runtime) => runtime.id === "openai-codex-app-server")).toBe(
+      true
+    );
+    expect(getRuntimeCapabilities("openai-codex-app-server").resume).toBe(true);
   });
 
   it("throws for unknown runtime ids", () => {

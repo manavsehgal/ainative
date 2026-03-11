@@ -9,3 +9,11 @@ export const updateAuthSettingsSchema = z.object({
 });
 
 export type UpdateAuthSettingsInput = z.infer<typeof updateAuthSettingsSchema>;
+
+export const updateOpenAISettingsSchema = z.object({
+  apiKey: z
+    .string()
+    .startsWith("sk-", "API key must start with sk-"),
+});
+
+export type UpdateOpenAISettingsInput = z.infer<typeof updateOpenAISettingsSchema>;

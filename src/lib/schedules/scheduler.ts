@@ -147,6 +147,7 @@ async function fireSchedule(
     title: `${schedule.name} — firing #${firingNumber}`,
     description: schedule.prompt,
     status: "queued",
+    assignedAgent: schedule.assignedAgent,
     agentProfile: schedule.agentProfile,
     priority: 2,
     createdAt: now,

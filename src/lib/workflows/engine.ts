@@ -123,7 +123,15 @@ async function executeSequence(
       ? `Previous step output:\n${previousOutput}\n\n---\n\n${step.prompt}`
       : step.prompt;
 
-    const result = await executeStep(workflowId, step.id, step.name, contextPrompt, state, step.agentProfile);
+    const result = await executeStep(
+      workflowId,
+      step.id,
+      step.name,
+      contextPrompt,
+      state,
+      step.assignedAgent,
+      step.agentProfile
+    );
 
     if (result.status === "failed") {
       throw new Error(`Step "${step.name}" failed: ${result.error}`);
@@ -154,6 +162,7 @@ async function executePlannerExecutor(
     plannerStep.name,
     plannerStep.prompt,
     state,
+    plannerStep.assignedAgent,
     plannerStep.agentProfile
   );
 
@@ -167,7 +176,15 @@ async function executePlannerExecutor(
     state.currentStepIndex = i;
 
     const contextPrompt = `Plan from planner:\n${planResult.result}\n\n---\n\n${step.prompt}`;
-    const result = await executeStep(workflowId, step.id, step.name, contextPrompt, state, step.agentProfile);
+    const result = await executeStep(
+      workflowId,
+      step.id,
+      step.name,
+      contextPrompt,
+      state,
+      step.assignedAgent,
+      step.agentProfile
+    );
 
     if (result.status === "failed") {
       throw new Error(`Executor step "${step.name}" failed: ${result.error}`);
@@ -206,7 +223,15 @@ async function executeCheckpoint(
       ? `Previous step output:\n${previousOutput}\n\n---\n\n${step.prompt}`
       : step.prompt;
 
-    const result = await executeStep(workflowId, step.id, step.name, contextPrompt, state, step.agentProfile);
+    const result = await executeStep(
+      workflowId,
+      step.id,
+      step.name,
+      contextPrompt,
+      state,
+      step.assignedAgent,
+      step.agentProfile
+    );
 
     if (result.status === "failed") {
       throw new Error(`Step "${step.name}" failed: ${result.error}`);
@@ -224,6 +249,7 @@ export async function executeChildTask(
   workflowId: string,
   name: string,
   prompt: string,
+  assignedAgent?: string,
   agentProfile?: string
 ): Promise<{ taskId: string; status: string; result?: string; error?: string }> {
   const [workflow] = await db
@@ -239,6 +265,7 @@ export async function executeChildTask(
     description: prompt,
     status: "queued",
     priority: 1,
+    assignedAgent: assignedAgent ?? null,
     agentProfile: agentProfile ?? null,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -279,6 +306,7 @@ async function executeStep(
   stepName: string,
   prompt: string,
   state: WorkflowState,
+  assignedAgent?: string,
   agentProfile?: string
 ): Promise<StepState> {
   const stepState = state.stepStates.find((s) => s.stepId === stepId);
@@ -288,7 +316,13 @@ async function executeStep(
   stepState.startedAt = new Date().toISOString();
   await updateWorkflowState(workflowId, state, "active");
 
-  const result = await executeChildTask(workflowId, stepName, prompt, agentProfile);
+  const result = await executeChildTask(
+    workflowId,
+    stepName,
+    prompt,
+    assignedAgent,
+    agentProfile
+  );
 
   stepState.taskId = result.taskId;
   if (result.status === "completed") {
@@ -425,7 +459,15 @@ export async function retryWorkflowStep(
 
   // Re-execute from this step
   const step = definition.steps[stepIndex];
-  const result = await executeStep(workflowId, step.id, step.name, step.prompt, state, step.agentProfile);
+  const result = await executeStep(
+    workflowId,
+    step.id,
+    step.name,
+    step.prompt,
+    state,
+    step.assignedAgent,
+    step.agentProfile
+  );
 
   if (result.status === "completed") {
     // Continue with remaining steps if this was a sequence
@@ -435,7 +477,15 @@ export async function retryWorkflowStep(
         const nextStep = definition.steps[i];
         state.currentStepIndex = i;
         const contextPrompt = `Previous step output:\n${previousOutput}\n\n---\n\n${nextStep.prompt}`;
-        const nextResult = await executeStep(workflowId, nextStep.id, nextStep.name, contextPrompt, state, nextStep.agentProfile);
+        const nextResult = await executeStep(
+          workflowId,
+          nextStep.id,
+          nextStep.name,
+          contextPrompt,
+          state,
+          nextStep.assignedAgent,
+          nextStep.agentProfile
+        );
         if (nextResult.status === "failed") break;
         previousOutput = nextResult.result ?? "";
       }

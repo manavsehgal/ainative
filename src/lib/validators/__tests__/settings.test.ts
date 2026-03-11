@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { updateAuthSettingsSchema } from "@/lib/validators/settings";
+import {
+  updateAuthSettingsSchema,
+  updateOpenAISettingsSchema,
+} from "@/lib/validators/settings";
 
 describe("updateAuthSettingsSchema", () => {
   it("accepts valid oauth method without apiKey", () => {
@@ -73,5 +76,23 @@ describe("updateAuthSettingsSchema", () => {
     });
     // Zod v4 object schemas strip unknown fields by default
     expect(result.success).toBe(true);
+  });
+});
+
+describe("updateOpenAISettingsSchema", () => {
+  it("accepts valid OpenAI API keys", () => {
+    const result = updateOpenAISettingsSchema.safeParse({
+      apiKey: "sk-test-openai",
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects keys without the sk- prefix", () => {
+    const result = updateOpenAISettingsSchema.safeParse({
+      apiKey: "invalid",
+    });
+
+    expect(result.success).toBe(false);
   });
 });

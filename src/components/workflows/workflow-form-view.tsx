@@ -30,6 +30,7 @@ import {
 import { toast } from "sonner";
 import { FormSectionCard } from "@/components/shared/form-section-card";
 import type { WorkflowStep, WorkflowDefinition } from "@/lib/workflows/types";
+import { listRuntimeCatalog } from "@/lib/agents/runtime/catalog";
 
 interface WorkflowData {
   id: string;
@@ -75,6 +76,7 @@ export function WorkflowFormView({
   profiles,
   clone = false,
 }: WorkflowFormViewProps) {
+  const runtimeOptions = listRuntimeCatalog();
   const router = useRouter();
   const mode = workflow ? (clone ? "clone" : "edit") : "create";
 
@@ -91,6 +93,7 @@ export function WorkflowFormView({
   const [timeBudgetMinutes, setTimeBudgetMinutes] = useState<number | "">(
     ""
   );
+  const [loopAssignedAgent, setLoopAssignedAgent] = useState("");
   const [loopAgentProfile, setLoopAgentProfile] = useState("");
 
   // Pre-populate form for edit/clone
@@ -111,6 +114,7 @@ export function WorkflowFormView({
             ? def.loopConfig.timeBudgetMs / 60000
             : ""
         );
+        setLoopAssignedAgent(def.loopConfig?.assignedAgent ?? "");
         setLoopAgentProfile(def.loopConfig?.agentProfile ?? "");
       } else {
         setSteps(
@@ -178,8 +182,8 @@ export function WorkflowFormView({
               ...(timeBudgetMinutes
                 ? { timeBudgetMs: Number(timeBudgetMinutes) * 60 * 1000 }
                 : {}),
-              ...(loopAgentProfile && loopAgentProfile !== "auto"
-                ? { agentProfile: loopAgentProfile }
+              ...(loopAssignedAgent ? { assignedAgent: loopAssignedAgent } : {}),
+              ...(loopAgentProfile ? { agentProfile: loopAgentProfile }
                 : {}),
             },
           }
@@ -311,7 +315,12 @@ export function WorkflowFormView({
                 {projects.length > 0 && (
                   <div className="space-y-1.5">
                     <Label>Project</Label>
-                    <Select value={projectId} onValueChange={setProjectId}>
+                    <Select
+                      value={projectId || "none"}
+                      onValueChange={(value) =>
+                        setProjectId(value === "none" ? "" : value)
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="None" />
                       </SelectTrigger>
@@ -369,8 +378,10 @@ export function WorkflowFormView({
                     <div className="space-y-1.5">
                       <Label>Agent Profile</Label>
                       <Select
-                        value={loopAgentProfile}
-                        onValueChange={setLoopAgentProfile}
+                        value={loopAgentProfile || "auto"}
+                        onValueChange={(value) =>
+                          setLoopAgentProfile(value === "auto" ? "" : value)
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Auto-detect" />
@@ -387,6 +398,30 @@ export function WorkflowFormView({
                       <p className="text-xs text-muted-foreground">Which agent to use per iteration</p>
                     </div>
                   )}
+                  <div className="space-y-1.5">
+                    <Label>Runtime</Label>
+                    <Select
+                      value={loopAssignedAgent || "default"}
+                      onValueChange={(value) =>
+                        setLoopAssignedAgent(value === "default" ? "" : value)
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Default runtime" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="default">Default runtime</SelectItem>
+                        {runtimeOptions.map((runtime) => (
+                          <SelectItem key={runtime.id} value={runtime.id}>
+                            {runtime.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Which provider runtime to use per iteration
+                    </p>
+                  </div>
                 </div>
               </FormSectionCard>
             )}
@@ -486,10 +521,10 @@ export function WorkflowFormView({
                       {profiles.length > 0 && (
                         <div className="flex-1">
                           <Select
-                            value={step.agentProfile ?? ""}
+                            value={step.agentProfile || "auto"}
                             onValueChange={(v) =>
                               updateStep(index, {
-                                agentProfile: v || undefined,
+                                agentProfile: v === "auto" ? undefined : v,
                               })
                             }
                           >
@@ -507,6 +542,29 @@ export function WorkflowFormView({
                           </Select>
                         </div>
                       )}
+                      <div className="flex-1">
+                        <Select
+                          value={step.assignedAgent || "default"}
+                          onValueChange={(value) =>
+                            updateStep(index, {
+                              assignedAgent:
+                                value === "default" ? undefined : value,
+                            })
+                          }
+                        >
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue placeholder="Runtime: Default" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="default">Default runtime</SelectItem>
+                            {runtimeOptions.map((runtime) => (
+                              <SelectItem key={runtime.id} value={runtime.id}>
+                                {runtime.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                       {pattern === "checkpoint" && (
                         <div className="flex items-center gap-2">
                           <Switch

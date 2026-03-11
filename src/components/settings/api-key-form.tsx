@@ -10,9 +10,23 @@ interface ApiKeyFormProps {
   hasKey: boolean;
   onSave: (key: string) => Promise<void>;
   onTest: () => Promise<{ connected: boolean; apiKeySource?: string; error?: string }>;
+  keyPrefix?: string;
+  placeholder?: string;
+  maskedPrefix?: string;
+  envVarName?: string;
+  testButtonLabel?: string;
 }
 
-export function ApiKeyForm({ hasKey, onSave, onTest }: ApiKeyFormProps) {
+export function ApiKeyForm({
+  hasKey,
+  onSave,
+  onTest,
+  keyPrefix = "sk-ant-",
+  placeholder = "sk-ant-...",
+  maskedPrefix = "sk-ant-••••••",
+  envVarName = "ANTHROPIC_API_KEY",
+  testButtonLabel = "Test Connection",
+}: ApiKeyFormProps) {
   const [key, setKey] = useState("");
   const [showInput, setShowInput] = useState(!hasKey);
   const [showKey, setShowKey] = useState(false);
@@ -24,7 +38,7 @@ export function ApiKeyForm({ hasKey, onSave, onTest }: ApiKeyFormProps) {
   } | null>(null);
 
   async function handleSave() {
-    if (!key.startsWith("sk-ant-")) return;
+    if (!key.startsWith(keyPrefix)) return;
     setSaving(true);
     setTestResult(null);
     try {
@@ -54,7 +68,7 @@ export function ApiKeyForm({ hasKey, onSave, onTest }: ApiKeyFormProps) {
       {hasKey && !showInput ? (
         <div className="flex items-center gap-3">
           <div className="flex-1 rounded-md border px-3 py-2 text-sm text-muted-foreground bg-muted/50">
-            Key configured (sk-ant-••••••)
+            Key configured ({maskedPrefix})
           </div>
           <Button variant="outline" size="sm" onClick={() => setShowInput(true)}>
             Replace
@@ -65,7 +79,7 @@ export function ApiKeyForm({ hasKey, onSave, onTest }: ApiKeyFormProps) {
           <div className="relative flex-1">
             <Input
               type={showKey ? "text" : "password"}
-              placeholder="sk-ant-..."
+              placeholder={placeholder}
               value={key}
               onChange={(e) => setKey(e.target.value)}
               className="pr-10"
@@ -80,7 +94,7 @@ export function ApiKeyForm({ hasKey, onSave, onTest }: ApiKeyFormProps) {
           </div>
           <Button
             size="sm"
-            disabled={!key.startsWith("sk-ant-") || saving}
+            disabled={!key.startsWith(keyPrefix) || saving}
             onClick={handleSave}
           >
             {saving && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
@@ -97,7 +111,7 @@ export function ApiKeyForm({ hasKey, onSave, onTest }: ApiKeyFormProps) {
       <div className="flex items-center gap-3">
         <Button variant="outline" size="sm" onClick={handleTest} disabled={testing}>
           {testing && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
-          Test Connection
+          {testButtonLabel}
         </Button>
 
         {testResult && (
@@ -118,6 +132,10 @@ export function ApiKeyForm({ hasKey, onSave, onTest }: ApiKeyFormProps) {
           </span>
         )}
       </div>
+
+      <p className="text-xs text-muted-foreground">
+        Environment fallback: `{envVarName}`.
+      </p>
     </div>
   );
 }

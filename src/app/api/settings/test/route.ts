@@ -2,10 +2,14 @@ import { NextResponse } from "next/server";
 import { DEFAULT_AGENT_RUNTIME } from "@/lib/agents/runtime/catalog";
 import { getRuntimeSummary, testRuntimeConnection } from "@/lib/agents/runtime";
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
-    const result = await testRuntimeConnection(DEFAULT_AGENT_RUNTIME);
-    const summary = getRuntimeSummary(DEFAULT_AGENT_RUNTIME);
+    const body = (await req.json().catch(() => ({}))) as {
+      runtime?: string;
+    };
+    const runtimeId = body.runtime ?? DEFAULT_AGENT_RUNTIME;
+    const result = await testRuntimeConnection(runtimeId);
+    const summary = getRuntimeSummary(runtimeId);
     return NextResponse.json({
       ...result,
       runtime: summary.runtime.id,

@@ -6,6 +6,7 @@ import {
   type AgentRuntimeId,
 } from "./catalog";
 import { claudeRuntimeAdapter } from "./claude";
+import { openAICodexRuntimeAdapter } from "./openai-codex";
 import type {
   AgentRuntimeAdapter,
   RuntimeConnectionResult,
@@ -17,6 +18,7 @@ import type { TaskAssistResponse } from "./task-assist-types";
 
 const runtimeRegistry: Record<AgentRuntimeId, AgentRuntimeAdapter> = {
   "claude-code": claudeRuntimeAdapter,
+  "openai-codex-app-server": openAICodexRuntimeAdapter,
 };
 
 function getRuntimeAdapter(runtimeId?: string | null): AgentRuntimeAdapter {

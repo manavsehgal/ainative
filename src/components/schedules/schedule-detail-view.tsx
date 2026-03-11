@@ -26,6 +26,7 @@ interface ScheduleDetail {
   name: string;
   prompt: string;
   cronExpression: string;
+  assignedAgent: string | null;
   agentProfile: string | null;
   recurs: boolean;
   status: string;
@@ -120,6 +121,7 @@ export function ScheduleDetailView({ scheduleId, initialSchedule }: ScheduleDeta
           <h1 className="text-2xl font-bold">{schedule.name}</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {describeCron(schedule.cronExpression)}
+            {schedule.assignedAgent && ` · Runtime: ${schedule.assignedAgent}`}
             {schedule.agentProfile && ` · Profile: ${schedule.agentProfile}`}
           </p>
         </div>

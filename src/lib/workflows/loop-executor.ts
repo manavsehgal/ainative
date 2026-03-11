@@ -21,8 +21,13 @@ export async function executeLoop(
     throw new Error("Loop pattern requires at least one step (the loop prompt)");
   }
 
-  const { maxIterations, timeBudgetMs, agentProfile, completionSignals } =
-    definition.loopConfig;
+  const {
+    maxIterations,
+    timeBudgetMs,
+    assignedAgent,
+    agentProfile,
+    completionSignals,
+  } = definition.loopConfig;
   const loopPrompt = definition.steps[0].prompt;
 
   // Restore existing state (resume) or create fresh
@@ -112,6 +117,7 @@ export async function executeLoop(
         workflowId,
         `Loop Iteration ${iterationNum}`,
         prompt,
+        assignedAgent ?? definition.steps[0].assignedAgent,
         agentProfile ?? definition.steps[0].agentProfile
       );
 

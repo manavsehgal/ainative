@@ -3,6 +3,9 @@ interface RunningExecution {
   sessionId: string | null;
   taskId: string;
   startedAt: Date;
+  interrupt?: () => Promise<void>;
+  cleanup?: () => Promise<void>;
+  metadata?: Record<string, unknown>;
 }
 
 const executions = new Map<string, RunningExecution>();

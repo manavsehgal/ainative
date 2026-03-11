@@ -18,6 +18,7 @@ interface Schedule {
   name: string;
   prompt: string;
   cronExpression: string;
+  assignedAgent: string | null;
   agentProfile: string | null;
   recurs: boolean;
   status: string;
@@ -172,6 +173,12 @@ export function ScheduleList({ projects }: ScheduleListProps) {
                     ? sched.prompt.slice(0, 80) + "..."
                     : sched.prompt}
                 </p>
+                {(sched.assignedAgent || sched.agentProfile) && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {sched.assignedAgent ? `Runtime: ${sched.assignedAgent}` : "Default runtime"}
+                    {sched.agentProfile ? ` · Profile: ${sched.agentProfile}` : ""}
+                  </p>
+                )}
                 {sched.status === "active" && sched.nextFireAt && (
                   <p className="text-xs text-muted-foreground mt-1">
                     Next: {formatRelative(sched.nextFireAt)}

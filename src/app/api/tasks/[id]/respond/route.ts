@@ -44,7 +44,7 @@ export async function POST(
   }
 
   // Write response — the polling loop in claude-agent.ts will detect this
-  const responseData = { behavior, message, updatedInput };
+  const responseData = { behavior, message, updatedInput, alwaysAllow };
   await db
     .update(notifications)
     .set({

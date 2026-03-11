@@ -4,12 +4,14 @@ export interface WorkflowStep {
   prompt: string;
   requiresApproval?: boolean;
   dependsOn?: string[];
+  assignedAgent?: string;
   agentProfile?: string;
 }
 
 export interface LoopConfig {
   maxIterations: number;
   timeBudgetMs?: number;
+  assignedAgent?: string;
   agentProfile?: string;
   completionSignals?: string[];
 }

@@ -9,10 +9,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Send } from "lucide-react";
 
 export interface Question {
+  id?: string;
   question: string;
   header: string;
-  options: { label: string; description: string }[];
-  multiSelect: boolean;
+  options?: { label: string; description: string }[];
+  multiSelect?: boolean;
+  isSecret?: boolean;
 }
 
 interface MessageResponseProps {
@@ -44,17 +46,25 @@ export function MessageResponse({
 
   const questions = toolInput?.questions ?? [];
 
-  function handleSingleSelect(question: string, label: string) {
-    setAnswers((prev) => ({ ...prev, [question]: label }));
+  function getAnswerKey(question: Question) {
+    return question.id ?? question.question;
   }
 
-  function handleMultiSelect(question: string, label: string, checked: boolean) {
+  function handleSingleSelect(questionKey: string, label: string) {
+    setAnswers((prev) => ({ ...prev, [questionKey]: label }));
+  }
+
+  function handleMultiSelect(
+    questionKey: string,
+    label: string,
+    checked: boolean
+  ) {
     setAnswers((prev) => {
-      const current = prev[question] ? prev[question].split(", ") : [];
+      const current = prev[questionKey] ? prev[questionKey].split(", ") : [];
       const next = checked
         ? [...current, label]
         : current.filter((l) => l !== label);
-      return { ...prev, [question]: next.join(", ") };
+      return { ...prev, [questionKey]: next.join(", ") };
     });
   }
 
@@ -63,11 +73,12 @@ export function MessageResponse({
     // Merge in "Other" text where applicable
     const finalAnswers: Record<string, string> = {};
     for (const q of questions) {
-      const answer = answers[q.question] ?? "";
+      const questionKey = getAnswerKey(q);
+      const answer = answers[questionKey] ?? "";
       if (answer === "__other__") {
-        finalAnswers[q.question] = otherTexts[q.question] ?? "";
+        finalAnswers[questionKey] = otherTexts[questionKey] ?? "";
       } else {
-        finalAnswers[q.question] = answer;
+        finalAnswers[questionKey] = answer;
       }
     }
 
@@ -93,20 +104,20 @@ export function MessageResponse({
   return (
     <div className="space-y-4 mt-2">
       {questions.map((q) => (
-        <div key={q.question} className="space-y-2">
+        <div key={getAnswerKey(q)} className="space-y-2">
           <p className="text-sm font-medium">{q.question}</p>
-          {q.multiSelect ? (
+          {(q.multiSelect ?? false) ? (
             <div className="space-y-2">
-              {q.options.map((opt) => (
+              {(q.options ?? []).map((opt) => (
                 <div key={opt.label} className="flex items-center gap-2">
                   <Checkbox
-                    id={`${q.question}-${opt.label}`}
+                    id={`${getAnswerKey(q)}-${opt.label}`}
                     onCheckedChange={(checked) =>
-                      handleMultiSelect(q.question, opt.label, checked as boolean)
+                      handleMultiSelect(getAnswerKey(q), opt.label, checked as boolean)
                     }
                   />
                   <Label
-                    htmlFor={`${q.question}-${opt.label}`}
+                    htmlFor={`${getAnswerKey(q)}-${opt.label}`}
                     className="text-sm"
                   >
                     {opt.label}
@@ -117,18 +128,34 @@ export function MessageResponse({
                 </div>
               ))}
             </div>
+          ) : (q.options ?? []).length === 0 ? (
+            <Input
+              type={q.isSecret ? "password" : "text"}
+              value={answers[getAnswerKey(q)] ?? ""}
+              onChange={(e) =>
+                setAnswers((prev) => ({
+                  ...prev,
+                  [getAnswerKey(q)]: e.target.value,
+                }))
+              }
+              placeholder="Type your answer"
+              className="h-8 text-sm"
+            />
           ) : (
             <RadioGroup
-              value={answers[q.question] ?? ""}
-              onValueChange={(val) => handleSingleSelect(q.question, val)}
+              value={answers[getAnswerKey(q)] ?? ""}
+              onValueChange={(val) => handleSingleSelect(getAnswerKey(q), val)}
             >
-              {q.options.map((opt) => (
+              {(q.options ?? []).map((opt) => (
                 <div key={opt.label} className="flex items-center gap-2">
                   <RadioGroupItem
                     value={opt.label}
-                    id={`${q.question}-${opt.label}`}
+                    id={`${getAnswerKey(q)}-${opt.label}`}
                   />
-                  <Label htmlFor={`${q.question}-${opt.label}`} className="text-sm">
+                  <Label
+                    htmlFor={`${getAnswerKey(q)}-${opt.label}`}
+                    className="text-sm"
+                  >
                     {opt.label}
                     <span className="text-muted-foreground ml-1">
                       — {opt.description}
@@ -137,17 +164,18 @@ export function MessageResponse({
                 </div>
               ))}
               <div className="flex items-center gap-2">
-                <RadioGroupItem value="__other__" id={`${q.question}-other`} />
-                <Label htmlFor={`${q.question}-other`} className="text-sm">
+                <RadioGroupItem value="__other__" id={`${getAnswerKey(q)}-other`} />
+                <Label htmlFor={`${getAnswerKey(q)}-other`} className="text-sm">
                   Other
                 </Label>
-                {answers[q.question] === "__other__" && (
+                {answers[getAnswerKey(q)] === "__other__" && (
                   <Input
-                    value={otherTexts[q.question] ?? ""}
+                    type={q.isSecret ? "password" : "text"}
+                    value={otherTexts[getAnswerKey(q)] ?? ""}
                     onChange={(e) =>
                       setOtherTexts((prev) => ({
                         ...prev,
-                        [q.question]: e.target.value,
+                        [getAnswerKey(q)]: e.target.value,
                       }))
                     }
                     placeholder="Type your answer"

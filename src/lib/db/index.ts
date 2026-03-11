@@ -115,6 +115,7 @@ sqlite.exec(`
     name TEXT NOT NULL,
     prompt TEXT NOT NULL,
     cron_expression TEXT NOT NULL,
+    assigned_agent TEXT,
     agent_profile TEXT,
     recurs INTEGER DEFAULT 1 NOT NULL,
     status TEXT DEFAULT 'active' NOT NULL,
@@ -151,6 +152,13 @@ sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_tasks_agent_profile ON tasks(agent_p
 // Note: sqlite.exec() here is better-sqlite3's synchronous DDL method, not child_process
 try {
   sqlite.exec(`ALTER TABLE projects ADD COLUMN working_directory TEXT;`);
+} catch {
+  // Column already exists — ignore
+}
+
+// Migration: add assigned_agent column to existing schedules table (safe to re-run)
+try {
+  sqlite.exec(`ALTER TABLE schedules ADD COLUMN assigned_agent TEXT;`);
 } catch {
   // Column already exists — ignore
 }

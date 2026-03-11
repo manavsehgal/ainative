@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { schedules, tasks } from "@/lib/db/schema";
 import { eq, like } from "drizzle-orm";
 import { parseInterval, computeNextFireTime } from "@/lib/schedules/interval-parser";
+import { resolveAgentRuntime } from "@/lib/agents/runtime/catalog";
 
 export async function GET(
   _req: NextRequest,
@@ -40,11 +41,12 @@ export async function PATCH(
 ) {
   const { id } = await params;
   const body = await req.json();
-  const { status, name, prompt, interval, agentProfile } = body as {
+  const { status, name, prompt, interval, assignedAgent, agentProfile } = body as {
     status?: string;
     name?: string;
     prompt?: string;
     interval?: string;
+    assignedAgent?: string;
     agentProfile?: string;
   };
 
@@ -121,6 +123,21 @@ export async function PATCH(
 
   if (agentProfile !== undefined) {
     updates.agentProfile = agentProfile || null;
+  }
+
+  if (assignedAgent !== undefined) {
+    if (assignedAgent) {
+      try {
+        updates.assignedAgent = resolveAgentRuntime(assignedAgent);
+      } catch (error) {
+        return NextResponse.json(
+          { error: error instanceof Error ? error.message : String(error) },
+          { status: 400 }
+        );
+      }
+    } else {
+      updates.assignedAgent = null;
+    }
   }
 
   await db.update(schedules).set(updates).where(eq(schedules.id, id));

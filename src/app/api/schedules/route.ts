@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { schedules } from "@/lib/db/schema";
 import { desc, eq } from "drizzle-orm";
 import { parseInterval, computeNextFireTime } from "@/lib/schedules/interval-parser";
+import { resolveAgentRuntime } from "@/lib/agents/runtime/catalog";
 
 export async function GET() {
   const result = await db
@@ -15,12 +16,23 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { name, prompt, interval, projectId, agentProfile, recurs, maxFirings, expiresInHours } =
+  const {
+    name,
+    prompt,
+    interval,
+    projectId,
+    assignedAgent,
+    agentProfile,
+    recurs,
+    maxFirings,
+    expiresInHours,
+  } =
     body as {
       name?: string;
       prompt?: string;
       interval?: string;
       projectId?: string;
+      assignedAgent?: string;
       agentProfile?: string;
       recurs?: boolean;
       maxFirings?: number;
@@ -48,6 +60,17 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  if (assignedAgent !== undefined && assignedAgent !== null && assignedAgent !== "") {
+    try {
+      resolveAgentRuntime(assignedAgent);
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : String(error) },
+        { status: 400 }
+      );
+    }
+  }
+
   const id = crypto.randomUUID();
   const now = new Date();
   const nextFireAt = computeNextFireTime(cronExpression, now);
@@ -63,6 +86,7 @@ export async function POST(req: NextRequest) {
     prompt: prompt.trim(),
     cronExpression,
     projectId: projectId || null,
+    assignedAgent: assignedAgent || null,
     agentProfile: agentProfile || null,
     recurs: shouldRecur,
     status: "active",

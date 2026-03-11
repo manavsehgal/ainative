@@ -2,6 +2,8 @@ export const SETTINGS_KEYS = {
   AUTH_METHOD: "auth.method",
   AUTH_API_KEY: "auth.apiKey",
   AUTH_API_KEY_SOURCE: "auth.apiKeySource",
+  OPENAI_AUTH_API_KEY: "openai.authApiKey",
+  OPENAI_AUTH_API_KEY_SOURCE: "openai.authApiKeySource",
   PERMISSIONS_ALLOW: "permissions.allow",
 } as const;
 

@@ -23,6 +23,7 @@ interface AssistResult {
 interface AIAssistPanelProps {
   title: string;
   description: string;
+  assignedAgent?: string;
   onApplyDescription: (description: string) => void;
   onCreateSubtasks: (subtasks: TaskSuggestion[]) => void;
   onResultChange?: (hasResult: boolean) => void;
@@ -44,6 +45,7 @@ const complexityColors: Record<string, string> = {
 export function AIAssistPanel({
   title,
   description,
+  assignedAgent,
   onApplyDescription,
   onCreateSubtasks,
   onResultChange,
@@ -64,7 +66,7 @@ export function AIAssistPanel({
       const res = await fetch("/api/tasks/assist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, description }),
+        body: JSON.stringify({ title, description, assignedAgent }),
       });
 
       if (!res.ok) {
