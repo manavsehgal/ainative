@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -14,14 +13,41 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Download, Trash2, Unlink } from "lucide-react";
+import {
+  Download,
+  Trash2,
+  Unlink,
+  HardDrive,
+  Clock,
+  ArrowUpRight,
+  ArrowDownLeft,
+  Link2,
+  FolderKanban,
+  FileText,
+  AlertTriangle,
+} from "lucide-react";
 import { toast } from "sonner";
 import { DocumentPreview } from "./document-preview";
-import { getFileIcon, formatSize, getStatusColor } from "./utils";
+import { getFileIcon, formatSize, getStatusColor, formatRelativeTime } from "./utils";
 import type { DocumentWithRelations } from "./types";
 
 interface DocumentDetailViewProps {
   documentId: string;
+}
+
+function getStatusDotColor(status: string): string {
+  switch (status) {
+    case "ready":
+      return "bg-status-completed";
+    case "processing":
+      return "bg-status-running";
+    case "error":
+      return "bg-status-failed";
+    case "uploaded":
+      return "bg-status-warning";
+    default:
+      return "bg-muted-foreground";
+  }
 }
 
 export function DocumentDetailView({ documentId }: DocumentDetailViewProps) {
@@ -123,6 +149,10 @@ export function DocumentDetailView({ documentId }: DocumentDetailViewProps) {
   }
 
   const Icon = getFileIcon(doc.mimeType);
+  const DirectionIcon = doc.direction === "output" ? ArrowUpRight : ArrowDownLeft;
+  const wordCount = doc.extractedText
+    ? doc.extractedText.split(/\s+/).filter(Boolean).length
+    : 0;
 
   return (
     <div className="space-y-6" aria-live="polite">
@@ -155,122 +185,160 @@ export function DocumentDetailView({ documentId }: DocumentDetailViewProps) {
         </div>
       </div>
 
-      {/* Preview */}
-      <Card>
-        <CardContent className="pt-4">
-          <DocumentPreview document={doc} />
-        </CardContent>
-      </Card>
+      {/* Bento Grid: Extracted Text + Metadata + Links */}
+      <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-4">
+        {/* Extracted Text — spans 2 rows on desktop */}
+        {doc.extractedText ? (
+          <Card className="md:row-span-2">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <FileText className="h-4 w-4 text-muted-foreground" />
+                Extracted Text
+                <Badge variant="secondary" className="text-xs ml-auto">
+                  {wordCount.toLocaleString()} words
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <pre className="text-xs bg-muted p-3 rounded-md max-h-80 overflow-y-auto whitespace-pre-wrap break-words">
+                {doc.extractedText.slice(0, 2000)}
+                {doc.extractedText.length > 2000 && "\n\n... (truncated)"}
+              </pre>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="md:row-span-2 flex items-center justify-center">
+            <CardContent className="pt-4 text-center">
+              <FileText className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">No extracted text</p>
+            </CardContent>
+          </Card>
+        )}
 
-      {/* Metadata */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium">Details</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Type</span>
-              <span>{doc.mimeType}</span>
+        {/* Metadata Strip */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Details</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {/* Type */}
+            <div className="flex items-center gap-2 text-sm">
+              <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <Badge variant="outline" className="text-xs font-normal">
+                {doc.mimeType}
+              </Badge>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Size</span>
+            {/* Size */}
+            <div className="flex items-center gap-2 text-sm">
+              <HardDrive className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               <span>{formatSize(doc.size)}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Status</span>
-              <Badge variant="outline" className={getStatusColor(doc.status)}>
+            {/* Status */}
+            <div className="flex items-center gap-2 text-sm">
+              <span className={`w-2 h-2 rounded-full shrink-0 ${getStatusDotColor(doc.status)}`} />
+              <Badge variant="outline" className={`text-xs ${getStatusColor(doc.status)}`}>
                 {doc.status}
               </Badge>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Direction</span>
-              <span>{doc.direction}</span>
+            {/* Direction */}
+            <div className="flex items-center gap-2 text-sm">
+              <DirectionIcon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <span className="capitalize">{doc.direction}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Uploaded</span>
-              <span>{new Date(doc.createdAt).toLocaleString()}</span>
+            {/* Date */}
+            <div className="flex items-center gap-2 text-sm">
+              <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <span title={new Date(doc.createdAt).toLocaleString()}>
+                {formatRelativeTime(typeof doc.createdAt === "number" ? doc.createdAt : new Date(doc.createdAt).getTime())}
+              </span>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      {/* Links */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium">Links</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <h4 className="text-sm font-medium mb-2">Linked Task</h4>
-            {doc.taskTitle ? (
-              <div className="flex items-center justify-between text-sm">
-                <span className="truncate">{doc.taskTitle}</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleUnlinkTask}
-                  aria-label="Unlink from task"
-                >
-                  <Unlink className="h-3.5 w-3.5 mr-1" />
-                  Unlink
-                </Button>
+        {/* Links */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Links</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {/* Task link */}
+            <div>
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
+                <Link2 className="h-3 w-3" />
+                <span>Task</span>
               </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">Not linked to a task</p>
-            )}
-          </div>
-
-          <Separator />
-
-          <div>
-            <h4 className="text-sm font-medium mb-2">Project</h4>
-            <Select
-              value={doc.projectId ?? "none"}
-              onValueChange={handleLinkProject}
-              disabled={linking}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select project" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">No project</SelectItem>
-                {projects.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Extracted text */}
-      {doc.extractedText && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Extracted Text</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <pre className="text-xs bg-muted p-3 rounded-md max-h-48 overflow-y-auto whitespace-pre-wrap break-words">
-              {doc.extractedText.slice(0, 2000)}
-              {doc.extractedText.length > 2000 && "\n\n... (truncated)"}
-            </pre>
+              {doc.taskTitle ? (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="truncate">{doc.taskTitle}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleUnlinkTask}
+                    aria-label="Unlink from task"
+                    className="h-7 px-2"
+                  >
+                    <Unlink className="h-3 w-3" />
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Not linked</p>
+              )}
+            </div>
+            {/* Project selector */}
+            <div>
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
+                <FolderKanban className="h-3 w-3" />
+                <span>Project</span>
+              </div>
+              <Select
+                value={doc.projectId ?? "none"}
+                onValueChange={handleLinkProject}
+                disabled={linking}
+              >
+                <SelectTrigger className="w-full h-8 text-sm">
+                  <SelectValue placeholder="Select project" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No project</SelectItem>
+                  {projects.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </CardContent>
         </Card>
-      )}
+      </div>
 
-      {/* Processing error */}
+      {/* Preview — collapsible, full width */}
+      <details className="group">
+        <summary className="flex items-center gap-2 cursor-pointer list-none text-sm font-medium p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+          <Icon className="h-4 w-4 text-muted-foreground" />
+          <span>Preview</span>
+          <span className="text-muted-foreground text-xs group-open:rotate-90 transition-transform">▶</span>
+        </summary>
+        <div className="mt-2">
+          <Card>
+            <CardContent className="pt-4">
+              <DocumentPreview document={doc} />
+            </CardContent>
+          </Card>
+        </div>
+      </details>
+
+      {/* Processing Error — conditional, red accent */}
       {doc.processingError && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-destructive">Processing Error</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground">{doc.processingError}</p>
-          </CardContent>
-        </Card>
+        <div className="rounded-lg border border-destructive/30 border-l-2 border-l-destructive bg-card p-4">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-destructive">Processing Error</p>
+              <p className="text-xs text-muted-foreground mt-1">{doc.processingError}</p>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

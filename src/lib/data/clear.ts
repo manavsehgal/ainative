@@ -5,6 +5,7 @@ import {
   documents,
   tasks,
   workflows,
+  schedules,
   projects,
 } from "@/lib/db/schema";
 import { readdirSync, unlinkSync, mkdirSync } from "fs";
@@ -27,6 +28,7 @@ export function clearAllData() {
   const documentsDeleted = db.delete(documents).run().changes;
   const tasksDeleted = db.delete(tasks).run().changes;
   const workflowsDeleted = db.delete(workflows).run().changes;
+  const schedulesDeleted = db.delete(schedules).run().changes;
   const projectsDeleted = db.delete(projects).run().changes;
 
   // Wipe uploaded files
@@ -45,6 +47,7 @@ export function clearAllData() {
     projects: projectsDeleted,
     tasks: tasksDeleted,
     workflows: workflowsDeleted,
+    schedules: schedulesDeleted,
     agentLogs: logsDeleted,
     notifications: notificationsDeleted,
     documents: documentsDeleted,

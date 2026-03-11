@@ -5,9 +5,27 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Copy, Pencil, Trash2, Play, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import {
+  Copy,
+  Pencil,
+  Trash2,
+  Play,
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  Bot,
+  Sparkles,
+  Tag,
+  User,
+  Thermometer,
+  Repeat,
+  FileOutput,
+  Wrench,
+  ShieldCheck,
+  ShieldX,
+  FileCode,
+} from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import type { AgentProfile } from "@/lib/agents/profiles/types";
@@ -119,21 +137,23 @@ export function ProfileDetailView({ profileId, isBuiltin }: ProfileDetailViewPro
     return <p className="text-muted-foreground">Profile not found.</p>;
   }
 
+  const DomainIcon = profile.domain === "work" ? Bot : Sparkles;
+  const lineCount = profile.skillMd ? profile.skillMd.split("\n").length : 0;
+  const toolCount = (profile.allowedTools?.length ?? 0);
+  const hasPolicy = profile.canUseToolPolicy &&
+    ((profile.canUseToolPolicy.autoApprove?.length ?? 0) > 0 ||
+     (profile.canUseToolPolicy.autoDeny?.length ?? 0) > 0);
+  const testTotal = testReport ? testReport.totalPassed + testReport.totalFailed : 0;
+
   return (
     <div className="space-y-6" aria-live="polite">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold">{profile.name}</h1>
-            <Badge variant={profile.domain === "work" ? "default" : "secondary"}>
-              {profile.domain}
-            </Badge>
-          </div>
-          <p className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
-            {profile.version && <span>v{profile.version}</span>}
-            {profile.author && <span>by {profile.author}</span>}
-          </p>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold">{profile.name}</h1>
+          <Badge variant={profile.domain === "work" ? "default" : "secondary"}>
+            {profile.domain}
+          </Badge>
         </div>
         <div className="flex items-center gap-2">
           {!isBuiltin && (
@@ -168,202 +188,273 @@ export function ProfileDetailView({ profileId, isBuiltin }: ProfileDetailViewPro
         </div>
       </div>
 
-      {/* Description */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium">Description</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">{profile.description}</p>
-        </CardContent>
-      </Card>
-
-      {/* Metadata Grid */}
-      {(profile.temperature !== undefined ||
-        profile.maxTurns !== undefined ||
-        profile.outputFormat) && (
+      {/* Bento Grid: Identity + Configuration + Tools & Policy */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Identity Card */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Configuration</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              {profile.temperature !== undefined && (
-                <div>
-                  <span className="font-medium">Temperature</span>
-                  <p className="text-muted-foreground">{profile.temperature}</p>
-                </div>
-              )}
-              {profile.maxTurns !== undefined && (
-                <div>
-                  <span className="font-medium">Max Turns</span>
-                  <p className="text-muted-foreground">{profile.maxTurns}</p>
-                </div>
-              )}
-              {profile.outputFormat && (
-                <div>
-                  <span className="font-medium">Output Format</span>
-                  <p className="text-muted-foreground">{profile.outputFormat}</p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Allowed Tools */}
-      {profile.allowedTools && profile.allowedTools.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Allowed Tools</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-1">
-              {profile.allowedTools.map((tool) => (
-                <Badge key={tool} variant="outline" className="text-xs">
-                  {tool}
-                </Badge>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Tool Use Policy */}
-      {profile.canUseToolPolicy &&
-        (profile.canUseToolPolicy.autoApprove?.length ||
-          profile.canUseToolPolicy.autoDeny?.length) && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Tool Use Policy</CardTitle>
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <DomainIcon className="h-4 w-4 text-muted-foreground" />
+              Identity
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {profile.canUseToolPolicy.autoApprove &&
-              profile.canUseToolPolicy.autoApprove.length > 0 && (
-                <div>
-                  <span className="text-xs text-muted-foreground">Auto-approve:</span>
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    {profile.canUseToolPolicy.autoApprove.map((tool) => (
-                      <Badge
-                        key={tool}
-                        variant="outline"
-                        className="border-green-500/30 bg-green-500/10 text-xs text-green-700 dark:text-green-400"
-                      >
-                        {tool}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-            {profile.canUseToolPolicy.autoDeny &&
-              profile.canUseToolPolicy.autoDeny.length > 0 && (
-                <div>
-                  <span className="text-xs text-muted-foreground">Auto-deny:</span>
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    {profile.canUseToolPolicy.autoDeny.map((tool) => (
-                      <Badge
-                        key={tool}
-                        variant="outline"
-                        className="border-red-500/30 bg-red-500/10 text-xs text-red-700 dark:text-red-400"
-                      >
-                        {tool}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* SKILL.md Preview */}
-      {profile.skillMd && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">SKILL.md</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded-lg bg-muted p-4 text-xs">
-              {profile.skillMd}
-            </pre>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Tests */}
-      {profile.tests && profile.tests.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">
-                Behavioral Tests ({profile.tests.length})
-              </CardTitle>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleRunTests}
-                disabled={runningTests}
-              >
-                {runningTests ? (
-                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Play className="mr-1 h-3.5 w-3.5" />
+            <p className="text-sm text-muted-foreground">{profile.description}</p>
+            {profile.tags && profile.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {profile.tags.map((tag) => (
+                  <Badge key={tag} variant="secondary" className="text-xs">
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            )}
+            {(profile.version || profile.author) && (
+              <div className="flex items-center gap-3 text-xs text-muted-foreground pt-1 border-t">
+                {profile.version && (
+                  <span className="flex items-center gap-1">
+                    <Tag className="h-3 w-3" />v{profile.version}
+                  </span>
                 )}
-                {runningTests ? "Running..." : "Run Tests"}
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {profile.tests.map((test, i) => {
-                const result = testReport?.results[i];
-                return (
-                  <div key={i} className="rounded-lg border p-3 text-sm">
-                    <div className="flex items-start gap-2">
-                      {result && (
-                        result.passed ? (
-                          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-status-completed" />
-                        ) : (
-                          <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-status-failed" />
-                        )
-                      )}
-                      <div className="flex-1">
-                        <p className="font-medium">{test.task}</p>
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {test.expectedKeywords.map((kw) => {
-                            const found = result?.foundKeywords.includes(kw);
-                            const missing = result?.missingKeywords.includes(kw);
-                            return (
-                              <Badge
-                                key={kw}
-                                variant="outline"
-                                className={`text-xs ${
-                                  found
-                                    ? "border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-400"
-                                    : missing
-                                      ? "border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-400"
-                                      : ""
-                                }`}
-                              >
-                                {kw}
-                              </Badge>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            {testReport && (
-              <div className="mt-3 text-xs text-muted-foreground">
-                {testReport.totalPassed}/{testReport.results.length} tests passed
+                {profile.author && (
+                  <span className="flex items-center gap-1">
+                    <User className="h-3 w-3" />{profile.author}
+                  </span>
+                )}
               </div>
             )}
           </CardContent>
         </Card>
-      )}
+
+        {/* Configuration Card */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Configuration</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {/* Temperature Gauge */}
+            {profile.temperature !== undefined && (
+              <div className="flex items-center gap-2">
+                <Thermometer className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <span className="text-xs text-muted-foreground w-20">Temperature</span>
+                <div className="flex-1 h-1.5 rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-primary"
+                    style={{ width: `${(profile.temperature / 2) * 100}%` }}
+                  />
+                </div>
+                <span className="text-xs font-medium w-8 text-right">{profile.temperature}</span>
+              </div>
+            )}
+            {/* Max Turns */}
+            {profile.maxTurns !== undefined && (
+              <div className="flex items-center gap-2">
+                <Repeat className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <span className="text-xs text-muted-foreground">Max Turns</span>
+                <span className="text-xl font-bold ml-auto">{profile.maxTurns}</span>
+              </div>
+            )}
+            {/* Output Format */}
+            {profile.outputFormat && (
+              <div className="flex items-center gap-2">
+                <FileOutput className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <span className="text-xs text-muted-foreground">Output</span>
+                <Badge variant="outline" className="text-xs ml-auto">
+                  {profile.outputFormat}
+                </Badge>
+              </div>
+            )}
+            {!profile.temperature && !profile.maxTurns && !profile.outputFormat && (
+              <p className="text-sm text-muted-foreground">Default configuration</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Tools & Policy Card */}
+        <Card className="md:col-span-2 lg:col-span-1">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Wrench className="h-4 w-4 text-muted-foreground" />
+              Tools & Policy
+              {toolCount > 0 && (
+                <Badge variant="secondary" className="text-xs ml-auto">{toolCount}</Badge>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {/* Allowed Tools */}
+            {profile.allowedTools && profile.allowedTools.length > 0 ? (
+              <div className="flex flex-wrap gap-1">
+                {profile.allowedTools.map((tool) => (
+                  <Badge key={tool} variant="outline" className="text-xs">
+                    {tool}
+                  </Badge>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">All tools allowed</p>
+            )}
+
+            {/* Auto-approve */}
+            {hasPolicy && profile.canUseToolPolicy?.autoApprove && profile.canUseToolPolicy.autoApprove.length > 0 && (
+              <div>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                  <ShieldCheck className="h-3 w-3 text-status-completed" />
+                  <span>Auto-approve</span>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {profile.canUseToolPolicy.autoApprove.map((tool) => (
+                    <Badge
+                      key={tool}
+                      variant="outline"
+                      className="border-green-500/30 bg-green-500/10 text-xs text-green-700 dark:text-green-400"
+                    >
+                      {tool}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Auto-deny */}
+            {hasPolicy && profile.canUseToolPolicy?.autoDeny && profile.canUseToolPolicy.autoDeny.length > 0 && (
+              <div>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                  <ShieldX className="h-3 w-3 text-status-failed" />
+                  <span>Auto-deny</span>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {profile.canUseToolPolicy.autoDeny.map((tool) => (
+                    <Badge
+                      key={tool}
+                      variant="outline"
+                      className="border-red-500/30 bg-red-500/10 text-xs text-red-700 dark:text-red-400"
+                    >
+                      {tool}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {!toolCount && !hasPolicy && (
+              <p className="text-xs text-muted-foreground">No tool restrictions</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Bottom row: SKILL.md + Tests */}
+      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4">
+        {/* SKILL.md — collapsible */}
+        {profile.skillMd && (
+          <details className="group" open>
+            <summary className="flex items-center gap-2 cursor-pointer list-none text-sm font-medium p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+              <FileCode className="h-4 w-4 text-muted-foreground" />
+              <span>SKILL.md</span>
+              <Badge variant="secondary" className="text-xs ml-auto">
+                {lineCount} lines
+              </Badge>
+              <span className="text-muted-foreground text-xs group-open:rotate-90 transition-transform">▶</span>
+            </summary>
+            <div className="mt-2 rounded-lg border bg-card p-4">
+              <pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded-lg bg-muted p-4 text-xs">
+                {profile.skillMd}
+              </pre>
+            </div>
+          </details>
+        )}
+
+        {/* Tests */}
+        {profile.tests && profile.tests.length > 0 && (
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium">
+                  Tests ({profile.tests.length})
+                </CardTitle>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleRunTests}
+                  disabled={runningTests}
+                  className="h-7"
+                >
+                  {runningTests ? (
+                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                  ) : (
+                    <Play className="mr-1 h-3 w-3" />
+                  )}
+                  {runningTests ? "Running..." : "Run Tests"}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {/* Test Summary Bar */}
+              {testReport && (
+                <div className="space-y-1">
+                  <div className="flex h-1.5 rounded-full overflow-hidden bg-muted">
+                    <div
+                      className="bg-status-completed"
+                      style={{ width: `${(testReport.totalPassed / testTotal) * 100}%` }}
+                    />
+                    <div
+                      className="bg-status-failed"
+                      style={{ width: `${(testReport.totalFailed / testTotal) * 100}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {testReport.totalPassed}/{testTotal} passed
+                  </p>
+                </div>
+              )}
+              {/* Test Items */}
+              <div className="space-y-1.5">
+                {profile.tests.map((test, i) => {
+                  const result = testReport?.results[i];
+                  return (
+                    <div key={i} className="rounded-md border p-2 text-sm">
+                      <div className="flex items-start gap-2">
+                        {result && (
+                          result.passed ? (
+                            <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-status-completed" />
+                          ) : (
+                            <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-status-failed" />
+                          )
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium truncate">{test.task}</p>
+                          <div className="mt-1 flex flex-wrap gap-0.5">
+                            {test.expectedKeywords.map((kw) => {
+                              const found = result?.foundKeywords.includes(kw);
+                              const missing = result?.missingKeywords.includes(kw);
+                              return (
+                                <Badge
+                                  key={kw}
+                                  variant="outline"
+                                  className={`text-[10px] px-1.5 py-0 ${
+                                    found
+                                      ? "border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-400"
+                                      : missing
+                                        ? "border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-400"
+                                        : ""
+                                  }`}
+                                >
+                                  {kw}
+                                </Badge>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       <ConfirmDialog
         open={confirmDelete}
