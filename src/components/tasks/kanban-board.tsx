@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { KanbanColumn } from "./kanban-column";
 import { TaskCard, type TaskItem } from "./task-card";
 import { TaskCreatePanel } from "./task-create-panel";
@@ -158,7 +159,7 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
   if (tasks.length === 0) {
     return (
       <div>
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
           <h1 className="text-2xl font-bold">Dashboard</h1>
           <div className="flex items-center gap-3">
             {filterBar}
@@ -172,7 +173,7 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
         <h1 className="text-2xl font-bold">Dashboard</h1>
         <div className="flex items-center gap-3">
           {filterBar}
@@ -186,12 +187,22 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
         onDragEnd={handleDragEnd}
       >
         <div className="relative">
-          {canScrollLeft && (
-            <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
-          )}
-          {canScrollRight && (
-            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
-          )}
+          <button
+            type="button"
+            aria-label="Scroll left"
+            onClick={() => scrollRef.current?.scrollBy({ left: -280, behavior: "smooth" })}
+            className={`absolute left-1 top-0 z-20 h-8 w-8 rounded-full flex items-center justify-center transition-opacity duration-200 cursor-pointer bg-[var(--glass-bg-heavy)] backdrop-blur-[var(--blur-glass-md)] border border-[var(--glass-border-strong)] shadow-[var(--glass-shadow)] hover:bg-[var(--glass-bg)] hover:shadow-[var(--glass-shadow-lg)] ${canScrollLeft ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+          >
+            <ChevronLeft className="h-4 w-4 text-foreground" />
+          </button>
+          <button
+            type="button"
+            aria-label="Scroll right"
+            onClick={() => scrollRef.current?.scrollBy({ left: 280, behavior: "smooth" })}
+            className={`absolute right-1 top-0 z-20 h-8 w-8 rounded-full flex items-center justify-center transition-opacity duration-200 cursor-pointer bg-[var(--glass-bg-heavy)] backdrop-blur-[var(--blur-glass-md)] border border-[var(--glass-border-strong)] shadow-[var(--glass-shadow)] hover:bg-[var(--glass-bg)] hover:shadow-[var(--glass-shadow-lg)] ${canScrollRight ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+          >
+            <ChevronRight className="h-4 w-4 text-foreground" />
+          </button>
           <div
             ref={scrollRef}
             onScroll={updateScrollIndicators}
