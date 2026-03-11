@@ -31,9 +31,12 @@ Open [localhost:3000](http://localhost:3000) to get started.
 | 📥 | **[Human-in-the-Loop](#inbox--human-in-the-loop)** | Approve tool use, answer questions, and review results from your inbox |
 | 🔀 | **[Workflows](#workflow-engine)** | Multi-step orchestration: Sequence, Planner→Executor, Checkpoints |
 | 🧠 | **[Multi-Agent Routing](#multi-agent-routing)** | Profile-based routing with auto-classification and per-step profiles |
+| 📋 | **[Agent Profile Catalog](#agent-profile-catalog)** | 13 domain-specific profiles with import, testing, and MCP support |
 | 📄 | **[Document Management](#document-management)** | Upload, preprocess, and inject documents into agent context |
 | 🔒 | **[Tool Permissions](#tool-permission-persistence)** | "Always Allow" patterns for trusted tools — no repeated prompts |
+| 🧩 | **[Workflow Blueprints](#workflow-blueprints)** | 8 pre-built templates with typed variables and dynamic forms |
 | ⏰ | **[Scheduled Prompts](#scheduled-prompt-loops)** | Time-based scheduling with cron and human-friendly intervals |
+| 🔄 | **[Autonomous Loops](#autonomous-loop-execution)** | Iterative agent execution with stop conditions and convergence detection |
 
 ---
 
@@ -113,8 +116,14 @@ AI-powered task creation: generate improved descriptions, break tasks into sub-t
 #### Session Management
 Resume failed or cancelled agent tasks with one click. Tracks retry counts (limit: 3), detects expired sessions, and provides atomic claim to prevent duplicate runs.
 
-#### Autonomous Loop Execution *(in progress)*
-Ralph Wiggum-inspired iterative agent loop pattern. Agents can loop through tasks with configurable stop conditions, iteration tracking, and convergence detection.
+#### Autonomous Loop Execution
+Iterative agent loop pattern with four stop conditions: max iterations, time budget, human cancel, and agent-signaled completion. Each iteration creates a child task with previous output as context. Loop status view with iteration timeline, progress bar, and expandable results. Pause/resume via DB status polling.
+
+#### Agent Profile Catalog
+13 domain-specific agent profiles across work (8) and personal (5) domains, built as portable Claude Code skill directories with `profile.yaml` sidecars. Profile gallery with domain tabs and search, YAML editor for customization, GitHub import via URL, and behavioral smoke tests with inline pass/fail results. MCP server configs passed through to Agent SDK execution.
+
+#### Workflow Blueprints
+8 pre-configured workflow templates across work (code review, research report, sprint planning, documentation) and personal (investment research, travel planning, meal planning, product research) domains. Browse blueprints in a gallery with domain filtering and search, preview steps and required variables, fill in a dynamic form, and instantly create a draft workflow with resolved prompts and profile assignments. Create custom blueprints via a YAML editor or import from GitHub URLs. Lineage tracking connects workflows back to their source blueprint.
 
 ### Documents
 
@@ -132,7 +141,7 @@ Documents linked to a task are automatically injected into the agent's prompt as
 #### Tool Permission Persistence
 "Always Allow" option for agent tool permissions. When you approve a tool, you can save it as a pattern (e.g., `Bash(command:git *)`, `Read`, `mcp__server__tool`). Saved patterns are checked before creating notifications — trusted tools are auto-approved instantly. Manage patterns from the Settings page. `AskUserQuestion` always requires human input.
 
-#### Scheduled Prompt Loops *(in progress)*
+#### Scheduled Prompt Loops
 Time-based scheduling for agent tasks with human-friendly intervals (`5m`, `2h`, `1d`) and raw 5-field cron expressions. One-shot and recurring modes with pause/resume lifecycle, expiry limits, and max firings. Each firing creates a child task through the existing execution pipeline. Scheduler runs as a poll-based engine started via Next.js instrumentation hook.
 
 #### Micro-Visualizations
@@ -159,7 +168,7 @@ Configuration hub with three sections: authentication (API key or OAuth), tool p
 SQLite with WAL mode via better-sqlite3 + Drizzle ORM. Eight tables: `projects`, `tasks`, `workflows`, `agent_logs`, `notifications`, `documents`, `schedules`, `settings`. Self-healing bootstrap — tables are created on startup if missing.
 
 #### App Shell
-Responsive sidebar with collapsible navigation, dark/light/system theme, and OKLCH hue 250 blue-indigo color palette. Built on shadcn/ui (New York style). Routes: Home, Projects, Documents, Workflows, Schedules, Inbox, Monitor, Settings.
+Responsive sidebar with collapsible icon-only mode, custom Stagent logo, tooltip navigation, dark/light/system theme, and OKLCH hue 250 blue-indigo color palette. Built on shadcn/ui (New York style) with PWA manifest and app icons. Routes: Home, Projects, Documents, Workflows, Schedules, Inbox, Monitor, Settings.
 
 ---
 
@@ -218,7 +227,7 @@ src/
     ├── agents/           # Claude Agent SDK + profiles
     ├── db/               # Schema, migrations
     ├── documents/        # Preprocessing + context builder
-    ├── workflows/        # Engine + types
+    ├── workflows/        # Engine + types + blueprints
     ├── schedules/        # Scheduler engine + interval parser
     ├── settings/         # Auth, permissions, helpers
     ├── constants/        # Status transitions, colors
@@ -247,6 +256,12 @@ src/
 | `/api/schedules/[id]` | GET/PATCH/DELETE | Schedule detail + updates |
 | `/api/permissions` | GET/POST/DELETE | Tool permission patterns |
 | `/api/profiles` | GET | List agent profiles |
+| `/api/profiles/[id]/test` | POST | Run behavioral tests on a profile |
+| `/api/profiles/import` | POST | Import profile from GitHub URL |
+| `/api/blueprints` | GET/POST | List and create blueprints |
+| `/api/blueprints/[id]` | GET/DELETE | Blueprint detail and deletion |
+| `/api/blueprints/[id]/instantiate` | POST | Create workflow from blueprint |
+| `/api/blueprints/import` | POST | Import blueprint from GitHub URL |
 
 ---
 
@@ -268,22 +283,18 @@ All 14 features shipped across three layers:
 |---------|-------------|
 | **Document Management** | File attachments, preprocessing (5 formats), agent document context, document browser UI |
 | **Multi-Agent Routing** | Profile registry (4 profiles), task classifier, per-step profile assignment |
+| **Agent Profile Catalog** | 13 domain-specific profiles, GitHub import, behavioral testing, MCP server passthrough |
 | **Micro-Visualizations** | Sparklines, mini bars, donut rings — zero-dependency SVG charts |
 | **Tool Permission Persistence** | "Always Allow" patterns, pre-check bypass, Settings management |
-
-### In Progress
-
-| Feature | Status |
-|---------|--------|
-| **Scheduled Prompt Loops** | Scheduler engine, API, and UI built — integration testing |
-| **Autonomous Loop Execution** | Iterative agent loop pattern with stop conditions |
+| **Scheduled Prompt Loops** | Cron + human-friendly intervals, one-shot/recurring, pause/resume lifecycle |
+| **Autonomous Loop Execution** | 4 stop conditions, iteration context chaining, pause/resume, loop status view |
+| **Workflow Blueprints** | 8 templates, gallery, YAML editor, dynamic forms, GitHub import, lineage tracking |
+| **Command Palette** | ⌘K palette with navigation, create actions, recent items, theme toggle |
 
 ### Planned
 
 | Feature | Description |
 |---------|-------------|
-| **Agent Profile Catalog** | 13 domain-specific profiles (work + personal) as portable Claude Code skills |
-| **Workflow Blueprints** | Pre-configured templates with typed variables and dynamic forms |
 | **Multi-Agent Swarm** | Multi-agent orchestration with Mayor/Workers/Refinery roles |
 | **Agent Self-Improvement** | Agents learn patterns and update context with human approval |
 | **Document Output Generation** | Agent-generated documents as deliverables |

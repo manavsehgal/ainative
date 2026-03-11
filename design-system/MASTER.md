@@ -4,20 +4,30 @@ Single source of truth for visual decisions. All new components must follow thes
 
 ## Color System
 
-**Engine:** OKLCH with hue 250 (blue-indigo). Defined in `globals.css` with light/dark mode variants.
+**Engine:** OKLCH with hue 260 (blue-cyan). Defined in `globals.css` with light/dark mode variants.
+
+### Brand Colors
+
+| Color | Hex | OKLCH (approx) | Usage |
+|-------|-----|----------------|-------|
+| Brand Blue | #2563EB | `oklch(0.55 0.22 264)` | Primary, buttons, CTAs |
+| Brand Cyan | #22D3EE | `oklch(0.80 0.15 195)` | Logo accent, highlights |
+| Brand Purple | #7C3AED | `oklch(0.50 0.22 295)` | Accent variant |
+| Dark Navy | #0F172A | `oklch(0.15 0.04 265)` | Dark mode bg, icon bg |
+| Dark Gray | #334155 | `oklch(0.35 0.02 260)` | Secondary surfaces |
 
 ### Semantic Tokens (always use these — never hardcode Tailwind colors)
 
 | Token | Light | Dark | Usage |
 |-------|-------|------|-------|
-| `--status-running` | `oklch(0.55 0.18 250)` | `oklch(0.65 0.18 250)` | Active/in-progress states |
+| `--status-running` | `oklch(0.55 0.18 260)` | `oklch(0.65 0.18 260)` | Active/in-progress states |
 | `--status-completed` | `oklch(0.6 0.15 170)` | `oklch(0.65 0.15 170)` | Success/done states |
 | `--status-failed` | `oklch(0.55 0.2 25)` | `oklch(0.65 0.2 25)` | Error/failure states |
 | `--status-warning` | `oklch(0.7 0.15 75)` | `oklch(0.75 0.15 75)` | Warnings, pending review |
 | `--priority-critical` | `oklch(0.55 0.2 25)` | `oklch(0.65 0.2 25)` | P0 priority |
 | `--priority-high` | `oklch(0.7 0.15 55)` | `oklch(0.75 0.15 55)` | P1 priority |
-| `--priority-medium` | `oklch(0.55 0.18 250)` | `oklch(0.65 0.18 250)` | P2 priority |
-| `--priority-low` | `oklch(0.6 0.02 250)` | `oklch(0.6 0.02 250)` | P3 priority |
+| `--priority-medium` | `oklch(0.55 0.18 260)` | `oklch(0.65 0.18 260)` | P2 priority |
+| `--priority-low` | `oklch(0.6 0.02 260)` | `oklch(0.6 0.02 260)` | P3 priority |
 | `--complexity-simple` | `oklch(0.6 0.15 170)` | `oklch(0.65 0.15 170)` | Simple complexity |
 | `--complexity-moderate` | `oklch(0.7 0.15 75)` | `oklch(0.75 0.15 75)` | Moderate complexity |
 | `--complexity-complex` | `oklch(0.55 0.2 25)` | `oklch(0.65 0.2 25)` | Complex tasks |
@@ -150,18 +160,18 @@ Defined in `globals.css` with light/dark variants.
 
 | Token | Light | Dark | Usage |
 |-------|-------|------|-------|
-| `--glass-bg` | `rgba(255,255,255,0.6)` | `oklch(0.18 0.025 280/0.25)` | Standard glass surface |
-| `--glass-bg-heavy` | `rgba(255,255,255,0.75)` | `oklch(0.20 0.03 280/0.35)` | Sidebar, modals, popovers |
-| `--glass-bg-light` | `rgba(255,255,255,0.4)` | `oklch(0.16 0.02 280/0.15)` | Nested glass, inputs |
-| `--glass-bg-subtle` | `rgba(255,255,255,0.25)` | `oklch(0.14 0.015 280/0.1)` | Decorative overlays |
-| `--glass-border` | `oklch(0.8 0.02 250/0.25)` | `oklch(0.4 0.04 280/0.2)` | Standard glass edge (violet-tinted) |
-| `--glass-border-strong` | `oklch(0.75 0.03 250/0.35)` | `oklch(0.45 0.05 270/0.3)` | Emphasized edges (violet-tinted) |
-| `--glass-border-subtle` | `oklch(0.85 0.015 250/0.15)` | `oklch(0.35 0.03 285/0.12)` | Inputs, nested glass (violet-tinted) |
-| `--glass-shadow` | `0 8px 32px oklch(0.55 0.05 250/0.1)` | `... oklch(0.05 0.03 280/0.5)` | Standard colored shadow |
-| `--glass-shadow-lg` | `0 12px 48px ...` | `... oklch(0.05 0.03 280/0.6)` | Hover/modal elevation |
-| `--glass-shadow-sm` | `0 4px 16px ...` | `... oklch(0.05 0.03 280/0.35)` | Subtle depth |
-| `--glass-bg-modal` | `oklch(0.97 0.008 250/0.65)` | `oklch(0.12 0.03 285/0.75)` | Sheet/dialog glass |
-| `--glass-inner-glow` | `inset 0 1px 0 0 rgba(255,255,255,0.4)` | `... oklch(0.5 0.04 270/0.1)` | Top-edge highlight (violet) |
+| `--glass-bg` | `rgba(255,255,255,0.6)` | `oklch(0.18 0.025 265/0.25)` | Standard glass surface |
+| `--glass-bg-heavy` | `rgba(255,255,255,0.75)` | `oklch(0.20 0.03 265/0.35)` | Sidebar, modals, popovers |
+| `--glass-bg-light` | `rgba(255,255,255,0.4)` | `oklch(0.16 0.02 265/0.15)` | Nested glass, inputs |
+| `--glass-bg-subtle` | `rgba(255,255,255,0.25)` | `oklch(0.14 0.015 265/0.1)` | Decorative overlays |
+| `--glass-border` | `oklch(0.8 0.02 260/0.25)` | `oklch(0.4 0.04 265/0.2)` | Standard glass edge (navy-tinted) |
+| `--glass-border-strong` | `oklch(0.75 0.03 260/0.35)` | `oklch(0.45 0.05 270/0.3)` | Emphasized edges (navy-tinted) |
+| `--glass-border-subtle` | `oklch(0.85 0.015 260/0.15)` | `oklch(0.35 0.03 285/0.12)` | Inputs, nested glass (navy-tinted) |
+| `--glass-shadow` | `0 8px 32px oklch(0.55 0.05 260/0.1)` | `... oklch(0.05 0.03 265/0.5)` | Standard colored shadow |
+| `--glass-shadow-lg` | `0 12px 48px ...` | `... oklch(0.05 0.03 265/0.6)` | Hover/modal elevation |
+| `--glass-shadow-sm` | `0 4px 16px ...` | `... oklch(0.05 0.03 265/0.35)` | Subtle depth |
+| `--glass-bg-modal` | `oklch(0.97 0.008 260/0.65)` | `oklch(0.12 0.03 285/0.75)` | Sheet/dialog glass |
+| `--glass-inner-glow` | `inset 0 1px 0 0 rgba(255,255,255,0.4)` | `... oklch(0.5 0.04 270/0.1)` | Top-edge highlight (navy) |
 | `--blur-glass-sm/md/lg/xl` | `8/16/24/40px` | (same) | Backdrop-filter blur levels |
 
 ### Glass Utility Classes
@@ -183,7 +193,7 @@ shadcn/ui components get glass treatment automatically via `[data-slot]` selecto
 - `[data-slot="input"]`, `[data-slot="textarea"]`, `[data-slot="select-trigger"]` → glass input
 - `[data-slot="popover-content"]`, `[data-slot="dropdown-menu-content"]`, `[data-slot="select-content"]` → heavy glass
 - `[data-slot="sheet-content"]`, `[data-slot="dialog-content"]` → modal glass (`--glass-bg-modal`) + XL blur
-- `[data-slot="sheet-overlay"]`, `[data-slot="dialog-overlay"]` → hue-250 tinted overlay + 4px blur
+- `[data-slot="sheet-overlay"]`, `[data-slot="dialog-overlay"]` → hue-260 tinted overlay + 4px blur
 - `[data-slot="separator"]` → 2px 3D groove gradient (light/dark variants)
 - `[data-slot="button"][data-variant="default"]` → translucent primary CTA with inner glow
 - `[data-slot="button"][data-variant="outline"]` → glass fill + blur
@@ -195,14 +205,14 @@ shadcn/ui components get glass treatment automatically via `[data-slot]` selecto
 | Preset | Pages | Light identity | Dark identity |
 |--------|-------|---------------|---------------|
 | `--gradient-morning-sky` | Home, Dashboard | Golden sunrise → warm amber → soft peach | Deep black → midnight blue |
-| `--gradient-ocean-mist` | Projects, Workflows | Cyan → seafoam → mint | Deep blue → blue-violet |
-| `--gradient-forest-dawn` | Monitor | Mint → sage → soft green | Black → deep violet |
-| `--gradient-sunset-glow` | Inbox | Peach → coral → rose | Velvet → warm violet |
-| `--gradient-twilight` | Documents | Violet → indigo-mist → periwinkle | Deep violet → indigo |
+| `--gradient-ocean-mist` | Projects, Workflows | Cyan → seafoam → mint | Deep blue → blue-navy |
+| `--gradient-forest-dawn` | Monitor | Mint → sage → soft green | Black → deep navy |
+| `--gradient-sunset-glow` | Inbox | Peach → coral → rose | Velvet → warm navy |
+| `--gradient-twilight` | Documents | Violet → indigo-mist → periwinkle | Deep navy → indigo |
 | `--gradient-neutral` | Settings | Warm cream with soft golden tint | Neutral black with velvet warmth |
 
 Applied via utility classes: `.gradient-morning-sky`, `.gradient-ocean-mist`, etc.
-Dark variants use the black/velvet/blue/violet palette at lightness 0.09-0.12, chroma 0.02-0.05, with each gradient having a distinct hue identity (250-320).
+Dark variants use the black/velvet/blue/navy palette at lightness 0.09-0.12, chroma 0.02-0.05, with each gradient having a distinct hue identity (250-320).
 
 ### Dark Palette Families
 
@@ -210,10 +220,10 @@ The dark theme uses four distinct color families to create visual depth:
 
 | Family | Hue | Lightness | Role |
 |--------|-----|-----------|------|
-| **Black** | 280 | 0.09 | Deepest surfaces — `--background`, gradient bases |
-| **Velvet** | 310-320 | 0.14-0.18 | Rich accent surfaces — `--secondary`, sidebar accent, sunset gradient |
-| **Blue** | 250 | 0.55-0.65 | Primary interactive — `--primary`, buttons, rings |
-| **Violet** | 280-290 | 0.15-0.22 | Bridge surfaces — `--muted`, `--accent`, glass overlays, gradient midpoints |
+| **Navy** | 265 | 0.09-0.15 | Deepest surfaces — `--background`, gradient bases, glass overlays |
+| **Blue** | 260 | 0.55-0.65 | Primary interactive — `--primary`, buttons, rings |
+| **Cyan** | 195 | 0.80 | Brand accent — logo highlight, data viz |
+| **Purple** | 295-300 | 0.14-0.20 | Accent surfaces — `--secondary`, sidebar accent |
 
 ### Glass Forbidden Patterns
 

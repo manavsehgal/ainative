@@ -14,7 +14,7 @@ npm run test:coverage # Coverage report
 ## Tech Stack
 
 - **Framework**: Next.js 16 + React 19 + TypeScript (strict)
-- **Styling**: Tailwind CSS v4 + shadcn/ui (New York style) + OKLCH hue 250 theme
+- **Styling**: Tailwind CSS v4 + shadcn/ui (New York style) + OKLCH hue 260 blue-cyan theme
 - **Database**: SQLite via better-sqlite3 + Drizzle ORM, WAL mode, at `~/.stagent/stagent.db`
 - **Agent SDK**: @anthropic-ai/claude-agent-sdk with canUseTool polling pattern
 - **Testing**: Vitest + Testing Library + jsdom

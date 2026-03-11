@@ -25,6 +25,7 @@ import {
   SidebarMenuItem,
   SidebarHeader,
   SidebarTrigger,
+  SidebarRail,
 } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { UnreadBadge } from "@/components/notifications/unread-badge";
@@ -52,13 +53,13 @@ export function AppSidebar() {
       <SidebarHeader className="px-4 py-3">
         <div className="flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 group-data-[collapsible=icon]:hidden">
-            <StagentLogo size={24} className="text-primary shrink-0" />
+            <StagentLogo size={24} className="shrink-0" />
             <span className="text-lg font-bold tracking-tight">Stagent</span>
           </Link>
           <Link href="/" className="hidden group-data-[collapsible=icon]:flex items-center justify-center" aria-label="Stagent home">
-            <StagentLogo size={20} className="text-primary" />
+            <StagentLogo size={20} />
           </Link>
-          <SidebarTrigger />
+          <SidebarTrigger className="group-data-[collapsible=icon]:hidden" />
         </div>
       </SidebarHeader>
       <SidebarContent>
@@ -114,6 +115,7 @@ export function AppSidebar() {
           </div>
         </div>
       </SidebarFooter>
+      <SidebarRail />
     </Sidebar>
   );
 }

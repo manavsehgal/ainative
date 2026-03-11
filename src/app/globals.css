@@ -65,48 +65,48 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(0.98 0.005 250);
-  --foreground: oklch(0.15 0.02 250);
+  --background: oklch(0.98 0.005 260);
+  --foreground: oklch(0.15 0.02 260);
   --card: rgba(255, 255, 255, 0.6);
-  --card-foreground: oklch(0.15 0.02 250);
+  --card-foreground: oklch(0.15 0.02 260);
   --popover: rgba(255, 255, 255, 0.6);
-  --popover-foreground: oklch(0.15 0.02 250);
-  --primary: oklch(0.55 0.18 250);
-  --primary-foreground: oklch(0.98 0.005 250);
-  --secondary: oklch(0.93 0.01 250);
-  --secondary-foreground: oklch(0.25 0.03 250);
-  --muted: oklch(0.94 0.008 250);
-  --muted-foreground: oklch(0.45 0.03 250);
-  --accent: oklch(0.93 0.01 250);
-  --accent-foreground: oklch(0.25 0.03 250);
+  --popover-foreground: oklch(0.15 0.02 260);
+  --primary: oklch(0.55 0.18 260);
+  --primary-foreground: oklch(0.98 0.005 260);
+  --secondary: oklch(0.93 0.01 260);
+  --secondary-foreground: oklch(0.25 0.03 260);
+  --muted: oklch(0.94 0.008 260);
+  --muted-foreground: oklch(0.45 0.03 260);
+  --accent: oklch(0.93 0.01 260);
+  --accent-foreground: oklch(0.25 0.03 260);
   --destructive: oklch(0.55 0.2 25);
-  --destructive-foreground: oklch(0.98 0.005 250);
+  --destructive-foreground: oklch(0.98 0.005 260);
   --border: var(--glass-border);
   --input: rgba(255, 255, 255, 0.4);
-  --ring: oklch(0.55 0.18 250);
-  --chart-1: oklch(0.55 0.22 250);
+  --ring: oklch(0.55 0.18 260);
+  --chart-1: oklch(0.55 0.22 260);
   --chart-2: oklch(0.6 0.19 170);
   --chart-3: oklch(0.55 0.19 45);
   --chart-4: oklch(0.6 0.22 300);
   --chart-5: oklch(0.65 0.19 30);
   --sidebar: rgba(255, 255, 255, 0.65);
-  --sidebar-foreground: oklch(0.15 0.02 250);
-  --sidebar-primary: oklch(0.55 0.18 250);
-  --sidebar-primary-foreground: oklch(0.98 0.005 250);
-  --sidebar-accent: oklch(0.93 0.01 250);
-  --sidebar-accent-foreground: oklch(0.25 0.03 250);
+  --sidebar-foreground: oklch(0.15 0.02 260);
+  --sidebar-primary: oklch(0.55 0.18 260);
+  --sidebar-primary-foreground: oklch(0.98 0.005 260);
+  --sidebar-accent: oklch(0.93 0.01 260);
+  --sidebar-accent-foreground: oklch(0.25 0.03 260);
   --sidebar-border: var(--glass-border-subtle);
-  --sidebar-ring: oklch(0.55 0.18 250);
+  --sidebar-ring: oklch(0.55 0.18 260);
   /* Semantic status tokens */
-  --status-running: oklch(0.55 0.18 250);
+  --status-running: oklch(0.55 0.18 260);
   --status-completed: oklch(0.6 0.15 170);
   --status-failed: oklch(0.55 0.2 25);
   --status-warning: oklch(0.7 0.15 75);
   /* Priority tokens */
   --priority-critical: oklch(0.55 0.2 25);
   --priority-high: oklch(0.7 0.15 55);
-  --priority-medium: oklch(0.55 0.18 250);
-  --priority-low: oklch(0.6 0.02 250);
+  --priority-medium: oklch(0.55 0.18 260);
+  --priority-low: oklch(0.6 0.02 260);
   /* Complexity tokens */
   --complexity-simple: oklch(0.6 0.15 170);
   --complexity-moderate: oklch(0.7 0.15 75);
@@ -119,21 +119,21 @@
   --glass-bg-subtle: rgba(255, 255, 255, 0.25);
 
   /* Glass borders — hue-tinted for soft edges */
-  --glass-border: oklch(0.8 0.02 250 / 0.25);
-  --glass-border-strong: oklch(0.75 0.03 250 / 0.35);
-  --glass-border-subtle: oklch(0.85 0.015 250 / 0.15);
+  --glass-border: oklch(0.8 0.02 260 / 0.25);
+  --glass-border-strong: oklch(0.75 0.03 260 / 0.35);
+  --glass-border-subtle: oklch(0.85 0.015 260 / 0.15);
 
   /* Glass shadows — colored, not gray */
-  --glass-shadow: 0 8px 32px oklch(0.55 0.05 250 / 0.1);
-  --glass-shadow-lg: 0 12px 48px oklch(0.55 0.05 250 / 0.15);
-  --glass-shadow-sm: 0 4px 16px oklch(0.55 0.05 250 / 0.08);
+  --glass-shadow: 0 8px 32px oklch(0.55 0.05 260 / 0.1);
+  --glass-shadow-lg: 0 12px 48px oklch(0.55 0.05 260 / 0.15);
+  --glass-shadow-sm: 0 4px 16px oklch(0.55 0.05 260 / 0.08);
 
   /* Inner glow (top-edge highlight) — reduced to not compete with borders */
   --glass-inner-glow: inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
   --glass-inner-glow-subtle: inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
 
   /* Glass modal background */
-  --glass-bg-modal: oklch(0.97 0.008 250 / 0.65);
+  --glass-bg-modal: oklch(0.97 0.008 260 / 0.65);
 
   /* Blur levels */
   --blur-glass-sm: 8px;
@@ -170,7 +170,7 @@
     135deg,
     oklch(0.91 0.04 290) 0%,
     oklch(0.92 0.035 260) 50%,
-    oklch(0.93 0.03 250) 100%
+    oklch(0.93 0.03 260) 100%
   );
   --gradient-neutral: linear-gradient(
     135deg,
@@ -181,39 +181,39 @@
 }
 
 .dark {
-  /* Background — deep black with violet undertone */
-  --background: oklch(0.09 0.02 280);
+  /* Background — deep black with navy undertone */
+  --background: oklch(0.09 0.02 265);
   --foreground: oklch(0.93 0.015 270);
 
-  /* Cards — violet-tinted translucency */
-  --card: oklch(0.14 0.025 280 / 0.5);
+  /* Cards — navy-tinted translucency */
+  --card: oklch(0.16 0.025 265 / 0.6);
   --card-foreground: oklch(0.93 0.015 270);
-  --popover: oklch(0.14 0.025 280 / 0.5);
+  --popover: oklch(0.14 0.025 265 / 0.5);
   --popover-foreground: oklch(0.93 0.015 270);
 
   /* Primary — blue, stays mostly the same */
-  --primary: oklch(0.65 0.18 250);
-  --primary-foreground: oklch(0.09 0.02 280);
+  --primary: oklch(0.65 0.18 260);
+  --primary-foreground: oklch(0.09 0.02 265);
 
   /* Secondary — velvet-shifted */
   --secondary: oklch(0.18 0.035 310);
   --secondary-foreground: oklch(0.93 0.015 270);
 
-  /* Muted — violet mid-tone */
+  /* Muted — navy mid-tone */
   --muted: oklch(0.18 0.03 290);
   --muted-foreground: oklch(0.6 0.03 270);
 
-  /* Accent — violet, distinct from secondary velvet */
+  /* Accent — navy, distinct from secondary velvet */
   --accent: oklch(0.20 0.04 285);
   --accent-foreground: oklch(0.93 0.015 270);
 
   --destructive: oklch(0.55 0.2 25);
-  --destructive-foreground: oklch(0.98 0.005 250);
+  --destructive-foreground: oklch(0.98 0.005 260);
   --border: var(--glass-border);
-  --input: oklch(0.14 0.03 280 / 0.4);
+  --input: oklch(0.14 0.03 265 / 0.4);
   --ring: oklch(0.65 0.18 260);
 
-  --chart-1: oklch(0.65 0.22 250);
+  --chart-1: oklch(0.65 0.22 260);
   --chart-2: oklch(0.65 0.19 170);
   --chart-3: oklch(0.65 0.19 45);
   --chart-4: oklch(0.65 0.22 300);
@@ -222,80 +222,80 @@
   /* Sidebar — slightly lighter velvet-black */
   --sidebar: oklch(0.11 0.025 290 / 0.6);
   --sidebar-foreground: oklch(0.93 0.015 270);
-  --sidebar-primary: oklch(0.65 0.18 250);
-  --sidebar-primary-foreground: oklch(0.09 0.02 280);
+  --sidebar-primary: oklch(0.65 0.18 260);
+  --sidebar-primary-foreground: oklch(0.09 0.02 265);
   --sidebar-accent: oklch(0.20 0.04 300);
   --sidebar-accent-foreground: oklch(0.93 0.015 270);
   --sidebar-border: var(--glass-border-subtle);
   --sidebar-ring: oklch(0.65 0.18 260);
   /* Semantic status tokens */
-  --status-running: oklch(0.65 0.18 250);
+  --status-running: oklch(0.65 0.18 260);
   --status-completed: oklch(0.65 0.15 170);
   --status-failed: oklch(0.65 0.2 25);
   --status-warning: oklch(0.75 0.15 75);
   /* Priority tokens */
   --priority-critical: oklch(0.65 0.2 25);
   --priority-high: oklch(0.75 0.15 55);
-  --priority-medium: oklch(0.65 0.18 250);
-  --priority-low: oklch(0.6 0.02 250);
+  --priority-medium: oklch(0.65 0.18 260);
+  --priority-low: oklch(0.6 0.02 260);
   /* Complexity tokens */
   --complexity-simple: oklch(0.65 0.15 170);
   --complexity-moderate: oklch(0.75 0.15 75);
   --complexity-complex: oklch(0.65 0.2 25);
 
-  /* Dark mode glass overrides — violet-tinted instead of colorless white */
-  --glass-bg: oklch(0.18 0.025 280 / 0.25);
-  --glass-bg-heavy: oklch(0.20 0.03 280 / 0.35);
-  --glass-bg-light: oklch(0.16 0.02 280 / 0.15);
-  --glass-bg-subtle: oklch(0.14 0.015 280 / 0.1);
+  /* Dark mode glass overrides — navy-tinted instead of colorless white */
+  --glass-bg: oklch(0.18 0.025 265 / 0.45);
+  --glass-bg-heavy: oklch(0.22 0.03 265 / 0.55);
+  --glass-bg-light: oklch(0.16 0.02 265 / 0.25);
+  --glass-bg-subtle: oklch(0.14 0.015 265 / 0.15);
 
-  /* Glass borders — violet-tinted for cohesion */
-  --glass-border: oklch(0.4 0.04 280 / 0.2);
-  --glass-border-strong: oklch(0.45 0.05 270 / 0.3);
-  --glass-border-subtle: oklch(0.35 0.03 285 / 0.12);
+  /* Glass borders — navy-tinted for cohesion */
+  --glass-border: oklch(0.4 0.04 265 / 0.3);
+  --glass-border-strong: oklch(0.45 0.05 270 / 0.4);
+  --glass-border-subtle: oklch(0.35 0.03 285 / 0.18);
 
-  /* Glass shadows — deeper with violet tint */
-  --glass-shadow: 0 8px 32px oklch(0.05 0.03 280 / 0.5);
-  --glass-shadow-lg: 0 12px 48px oklch(0.05 0.03 280 / 0.6);
-  --glass-shadow-sm: 0 4px 16px oklch(0.05 0.03 280 / 0.35);
+  /* Glass shadows — deeper with navy tint */
+  --glass-shadow: 0 8px 32px oklch(0.05 0.03 265 / 0.5);
+  --glass-shadow-lg: 0 12px 48px oklch(0.05 0.03 265 / 0.6);
+  --glass-shadow-sm: 0 4px 16px oklch(0.05 0.03 265 / 0.35);
 
-  /* Inner glow — faint violet highlight */
-  --glass-inner-glow: inset 0 1px 0 0 oklch(0.5 0.04 270 / 0.1);
-  --glass-inner-glow-subtle: inset 0 1px 0 0 oklch(0.5 0.04 270 / 0.06);
+  /* Inner glow — faint navy highlight */
+  --glass-inner-glow: inset 0 1px 0 0 oklch(0.5 0.04 270 / 0.15);
+  --glass-inner-glow-subtle: inset 0 1px 0 0 oklch(0.5 0.04 270 / 0.1);
 
-  /* Modal — deep violet glass */
+  /* Modal — deep navy glass */
   --glass-bg-modal: oklch(0.12 0.03 285 / 0.75);
 
-  /* Dark mode gradient presets — distinct identities using black/velvet/blue/violet palette */
+  /* Dark mode gradient presets — distinct identities using black/velvet/blue/navy palette */
   /* Dashboard/Home — deep black → midnight blue */
   --gradient-morning-sky: linear-gradient(
     135deg,
     oklch(0.10 0.02 260) 0%,
-    oklch(0.12 0.035 250) 50%,
+    oklch(0.12 0.035 260) 50%,
     oklch(0.10 0.025 270) 100%
   );
-  /* Projects/Workflows — deep blue → blue-violet */
+  /* Projects/Workflows — deep blue → blue-navy */
   --gradient-ocean-mist: linear-gradient(
     135deg,
-    oklch(0.11 0.04 250) 0%,
+    oklch(0.11 0.04 260) 0%,
     oklch(0.12 0.045 265) 50%,
-    oklch(0.11 0.035 280) 100%
+    oklch(0.11 0.035 265) 100%
   );
-  /* Monitor — black → deep violet */
+  /* Monitor — black → deep navy */
   --gradient-forest-dawn: linear-gradient(
     135deg,
     oklch(0.09 0.02 270) 0%,
     oklch(0.11 0.035 285) 50%,
     oklch(0.10 0.03 290) 100%
   );
-  /* Inbox — velvet → warm violet */
+  /* Inbox — velvet → warm navy */
   --gradient-sunset-glow: linear-gradient(
     135deg,
     oklch(0.12 0.04 320) 0%,
     oklch(0.11 0.045 305) 50%,
     oklch(0.12 0.035 290) 100%
   );
-  /* Documents — deep violet → indigo */
+  /* Documents — deep navy → indigo */
   --gradient-twilight: linear-gradient(
     135deg,
     oklch(0.11 0.05 290) 0%,
@@ -307,7 +307,7 @@
     135deg,
     oklch(0.10 0.015 290) 0%,
     oklch(0.095 0.02 300) 50%,
-    oklch(0.10 0.015 280) 100%
+    oklch(0.10 0.015 265) 100%
   );
 }
 
@@ -338,6 +338,15 @@
   backdrop-filter: blur(var(--blur-glass-sm));
   border: 1px solid var(--glass-border-subtle);
   box-shadow: var(--glass-shadow-sm), var(--glass-inner-glow-subtle);
+}
+
+.logo-glass-bg {
+  background: oklch(0.15 0.04 260);
+  box-shadow: inset 0 1px 0 0 oklch(0.3 0.04 260 / 0.3), var(--glass-shadow-sm);
+}
+.dark .logo-glass-bg {
+  background: oklch(0.12 0.03 260);
+  box-shadow: inset 0 1px 0 0 oklch(0.3 0.04 260 / 0.15), var(--glass-shadow-sm);
 }
 
 .glass-sidebar {
@@ -417,7 +426,7 @@
 /* Tinted overlays with subtle blur */
 [data-slot="sheet-overlay"],
 [data-slot="dialog-overlay"] {
-  background: oklch(0.3 0.03 250 / 0.4);
+  background: oklch(0.3 0.03 260 / 0.4);
   -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
 }
@@ -428,31 +437,31 @@
 
 /* 3D groove separators */
 [data-slot="separator"][data-orientation="horizontal"] {
-  background: linear-gradient(to bottom, oklch(0.7 0.02 250 / 0.12), oklch(1 0.01 250 / 0.25));
+  background: linear-gradient(to bottom, oklch(0.7 0.02 260 / 0.12), oklch(1 0.01 260 / 0.25));
   height: 2px;
 }
 [data-slot="separator"][data-orientation="vertical"] {
-  background: linear-gradient(to right, oklch(0.7 0.02 250 / 0.12), oklch(1 0.01 250 / 0.25));
+  background: linear-gradient(to right, oklch(0.7 0.02 260 / 0.12), oklch(1 0.01 260 / 0.25));
   width: 2px;
 }
 .dark [data-slot="separator"][data-orientation="horizontal"] {
-  background: linear-gradient(to bottom, oklch(0.06 0.02 280 / 0.35), oklch(0.25 0.03 270 / 0.15));
+  background: linear-gradient(to bottom, oklch(0.06 0.02 265 / 0.35), oklch(0.25 0.03 270 / 0.15));
 }
 .dark [data-slot="separator"][data-orientation="vertical"] {
-  background: linear-gradient(to right, oklch(0.06 0.02 280 / 0.35), oklch(0.25 0.03 270 / 0.15));
+  background: linear-gradient(to right, oklch(0.06 0.02 265 / 0.35), oklch(0.25 0.03 270 / 0.15));
 }
 
 /* Glass buttons — translucent CTAs */
 [data-slot="button"][data-variant="default"] {
-  background: oklch(0.55 0.18 250 / 0.85);
+  background: oklch(0.55 0.18 260 / 0.85);
   -webkit-backdrop-filter: blur(var(--blur-glass-sm));
   backdrop-filter: blur(var(--blur-glass-sm));
-  box-shadow: var(--glass-shadow-sm), inset 0 1px 0 0 oklch(0.7 0.1 250 / 0.3);
-  border: 1px solid oklch(0.5 0.15 250 / 0.3);
+  box-shadow: var(--glass-shadow-sm), inset 0 1px 0 0 oklch(0.7 0.1 260 / 0.3);
+  border: 1px solid oklch(0.5 0.15 260 / 0.3);
 }
 [data-slot="button"][data-variant="default"]:hover {
-  background: oklch(0.55 0.18 250 / 0.95);
-  box-shadow: var(--glass-shadow), inset 0 1px 0 0 oklch(0.7 0.1 250 / 0.4);
+  background: oklch(0.55 0.18 260 / 0.95);
+  box-shadow: var(--glass-shadow), inset 0 1px 0 0 oklch(0.7 0.1 260 / 0.4);
 }
 
 [data-slot="button"][data-variant="outline"] {
