@@ -6,10 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { WorkflowCreateDialog } from "./workflow-create-dialog";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
-import { GitBranch, Pencil, Copy, RotateCcw, Trash2 } from "lucide-react";
+import { GitBranch, Plus, Pencil, Copy, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { workflowStatusVariant, patternLabels } from "@/lib/constants/status-colors";
 
@@ -49,7 +48,7 @@ function getPromptPreview(definitionJson: string): string {
   try {
     const def = JSON.parse(definitionJson);
     const prompt = def.steps?.[0]?.prompt ?? "";
-    return prompt.length > 80 ? prompt.slice(0, 80) + "…" : prompt;
+    return prompt.length > 80 ? prompt.slice(0, 80) + "\u2026" : prompt;
   } catch {
     return "";
   }
@@ -60,8 +59,6 @@ export function WorkflowList({ projects }: WorkflowListProps) {
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const [dialogWorkflow, setDialogWorkflow] = useState<Workflow | null>(null);
-  const [dialogMode, setDialogMode] = useState<"edit" | "clone" | null>(null);
 
   const refresh = useCallback(async () => {
     const res = await fetch("/api/workflows");
@@ -100,7 +97,10 @@ export function WorkflowList({ projects }: WorkflowListProps) {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Workflows</h1>
-        <WorkflowCreateDialog projects={projects} onCreated={refresh} />
+        <Button onClick={() => router.push("/workflows/new")}>
+          <Plus className="h-4 w-4 mr-2" />
+          New Workflow
+        </Button>
       </div>
 
       {!loaded ? (
@@ -150,7 +150,7 @@ export function WorkflowList({ projects }: WorkflowListProps) {
                 <CardContent>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground">
                     <span>{patternLabels[pattern] ?? pattern}</span>
-                    <span>·</span>
+                    <span>&middot;</span>
                     <span>{stepCount} step{stepCount !== 1 ? "s" : ""}</span>
                   </div>
                   {promptPreview && (
@@ -165,7 +165,7 @@ export function WorkflowList({ projects }: WorkflowListProps) {
                         size="icon"
                         className="h-7 w-7"
                         aria-label="Edit workflow"
-                        onClick={(e) => { e.stopPropagation(); setDialogWorkflow(wf); setDialogMode("edit"); }}
+                        onClick={(e) => { e.stopPropagation(); router.push(`/workflows/${wf.id}/edit`); }}
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
@@ -175,7 +175,7 @@ export function WorkflowList({ projects }: WorkflowListProps) {
                       size="icon"
                       className="h-7 w-7"
                       aria-label="Clone workflow"
-                      onClick={(e) => { e.stopPropagation(); setDialogWorkflow(wf); setDialogMode("clone"); }}
+                      onClick={(e) => { e.stopPropagation(); router.push(`/workflows/${wf.id}/edit?clone=true`); }}
                     >
                       <Copy className="h-3.5 w-3.5" />
                     </Button>
@@ -207,18 +207,6 @@ export function WorkflowList({ projects }: WorkflowListProps) {
             );
           })}
         </div>
-      )}
-
-      {/* Edit/Clone dialog */}
-      {dialogWorkflow && dialogMode && (
-        <WorkflowCreateDialog
-          projects={projects}
-          onCreated={() => { setDialogWorkflow(null); setDialogMode(null); refresh(); }}
-          mode={dialogMode}
-          workflow={dialogWorkflow}
-          open={true}
-          onOpenChange={(open) => { if (!open) { setDialogWorkflow(null); setDialogMode(null); } }}
-        />
       )}
 
       {/* Delete confirmation */}

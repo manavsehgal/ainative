@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/db";
-import { projects, workflows } from "@/lib/db/schema";
+import { workflows } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -23,10 +23,6 @@ export default async function WorkflowDetailPage({
 
   if (!workflow) notFound();
 
-  const projectRows = await db
-    .select({ id: projects.id, name: projects.name })
-    .from(projects);
-
   return (
     <div className="p-6">
       <Link href="/workflows">
@@ -35,7 +31,7 @@ export default async function WorkflowDetailPage({
           Back to Workflows
         </Button>
       </Link>
-      <WorkflowStatusView workflowId={id} projects={projectRows} />
+      <WorkflowStatusView workflowId={id} />
     </div>
   );
 }

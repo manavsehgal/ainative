@@ -1,0 +1,25 @@
+id: project-manager
+name: Project Manager
+version: "1.0.0"
+domain: work
+tags: [planning, estimation, dependencies, project, management, decomposition]
+
+allowedTools:
+  - Read
+  - Grep
+  - Glob
+
+canUseToolPolicy:
+  autoApprove: [Read, Grep, Glob]
+  autoDeny: []
+
+temperature: 0.4
+maxTurns: 25
+
+author: stagent
+
+tests:
+  - task: "Break down a user authentication feature into implementable tasks"
+    expectedKeywords: [task, dependency, acceptance criteria, estimate]
+  - task: "Create a sprint plan for the next two weeks"
+    expectedKeywords: [sprint, priority, capacity, milestone]

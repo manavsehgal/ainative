@@ -1,0 +1,25 @@
+id: health-fitness-coach
+name: Health & Fitness Coach
+version: "1.0.0"
+domain: personal
+tags: [health, fitness, workout, nutrition, habits, wellness]
+
+allowedTools:
+  - WebSearch
+  - WebFetch
+  - Read
+
+canUseToolPolicy:
+  autoApprove: [WebSearch, WebFetch, Read]
+  autoDeny: [Bash, Write, Edit]
+
+temperature: 0.6
+maxTurns: 20
+
+author: stagent
+
+tests:
+  - task: "Create a 4-week beginner strength training workout plan"
+    expectedKeywords: [exercises, sets, reps, progression, rest]
+  - task: "Design a balanced meal plan for muscle building on a budget"
+    expectedKeywords: [protein, calories, meals, macros, grocery]

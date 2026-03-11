@@ -1,0 +1,25 @@
+id: shopping-assistant
+name: Shopping Assistant
+version: "1.0.0"
+domain: personal
+tags: [shopping, products, deals, reviews, comparison, budget]
+
+allowedTools:
+  - WebSearch
+  - WebFetch
+  - Read
+
+canUseToolPolicy:
+  autoApprove: [WebSearch, WebFetch, Read]
+  autoDeny: [Bash, Write, Edit]
+
+temperature: 0.5
+maxTurns: 20
+
+author: stagent
+
+tests:
+  - task: "Compare the top 3 laptops under $1500 for software development"
+    expectedKeywords: [specs, price, comparison, performance, display]
+  - task: "Find the best deals on noise-cancelling headphones"
+    expectedKeywords: [price, discount, features, comparison, rating]

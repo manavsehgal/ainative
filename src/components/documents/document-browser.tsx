@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -14,7 +15,6 @@ import { LayoutGrid, LayoutList, Upload, Trash2, Search } from "lucide-react";
 import { toast } from "sonner";
 import { DocumentTable } from "./document-table";
 import { DocumentGrid } from "./document-grid";
-import { DocumentDetailSheet } from "./document-detail-sheet";
 import { DocumentUploadDialog } from "./document-upload-dialog";
 import type { DocumentWithRelations } from "./types";
 
@@ -32,8 +32,8 @@ export function DocumentBrowser({
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [projectFilter, setProjectFilter] = useState<string>("all");
+  const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [detailDoc, setDetailDoc] = useState<DocumentWithRelations | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -199,23 +199,16 @@ export function DocumentBrowser({
           selected={selected}
           onToggleSelect={toggleSelect}
           onToggleSelectAll={toggleSelectAll}
-          onOpen={setDetailDoc}
+          onOpen={(doc) => router.push(`/documents/${doc.id}`)}
         />
       ) : (
         <DocumentGrid
           documents={filtered}
           selected={selected}
           onToggleSelect={toggleSelect}
-          onOpen={setDetailDoc}
+          onOpen={(doc) => router.push(`/documents/${doc.id}`)}
         />
       )}
-
-      <DocumentDetailSheet
-        document={detailDoc}
-        projects={projects}
-        onClose={() => setDetailDoc(null)}
-        onUpdated={refresh}
-      />
 
       <DocumentUploadDialog
         open={uploadOpen}

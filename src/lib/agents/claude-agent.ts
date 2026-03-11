@@ -7,6 +7,7 @@ import { MAX_RESUME_COUNT } from "@/lib/constants/task-status";
 import { getAuthEnv, updateAuthStatus } from "@/lib/settings/auth";
 import { buildDocumentContext } from "@/lib/documents/context-builder";
 import { getProfile } from "./profiles/registry";
+import type { CanUseToolPolicy } from "./profiles/types";
 
 /**
  * Build the environment for the Agent SDK subprocess.
@@ -169,7 +170,7 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
 
   try {
     const profile = getProfile(task.agentProfile ?? "general");
-    const systemPrompt = profile?.systemPrompt ?? "";
+    const systemPrompt = profile?.skillMd || profile?.systemPrompt || "";
     const basePrompt = task.description || task.title;
     const docContext = await buildDocumentContext(taskId);
     const prompt = [systemPrompt, docContext, basePrompt].filter(Boolean).join("\n\n");
@@ -186,6 +187,7 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
       }
     }
 
+    const policyForTask = profile?.canUseToolPolicy;
     const authEnv = await getAuthEnv();
     const response = query({
       prompt,
@@ -200,7 +202,7 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
           toolName: string,
           input: Record<string, unknown>
         ) => {
-          return handleToolPermission(taskId, toolName, input);
+          return handleToolPermission(taskId, toolName, input, policyForTask);
         },
       },
     });
@@ -263,7 +265,7 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
 
   try {
     const profile = getProfile(profileId);
-    const systemPrompt = profile?.systemPrompt ?? "";
+    const systemPrompt = profile?.skillMd || profile?.systemPrompt || "";
     const basePrompt = task.description || task.title;
     const docContext = await buildDocumentContext(taskId);
     const prompt = [systemPrompt, docContext, basePrompt].filter(Boolean).join("\n\n");
@@ -280,6 +282,7 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
       }
     }
 
+    const policyForResume = profile?.canUseToolPolicy;
     const authEnv = await getAuthEnv();
     const response = query({
       prompt,
@@ -295,7 +298,7 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
           toolName: string,
           input: Record<string, unknown>
         ) => {
-          return handleToolPermission(taskId, toolName, input);
+          return handleToolPermission(taskId, toolName, input, policyForResume);
         },
       },
     });
@@ -399,7 +402,8 @@ async function handleExecutionError(
 async function handleToolPermission(
   taskId: string,
   toolName: string,
-  input: Record<string, unknown>
+  input: Record<string, unknown>,
+  canUseToolPolicy?: CanUseToolPolicy
 ): Promise<{
   behavior: "allow" | "deny";
   updatedInput?: unknown;
@@ -407,7 +411,17 @@ async function handleToolPermission(
 }> {
   const isQuestion = toolName === "AskUserQuestion";
 
-  // Check saved permissions — skip notification for pre-approved tools
+  // Layer 1: Profile-level canUseToolPolicy — fastest check, no I/O
+  if (!isQuestion && canUseToolPolicy) {
+    if (canUseToolPolicy.autoApprove?.includes(toolName)) {
+      return { behavior: "allow" };
+    }
+    if (canUseToolPolicy.autoDeny?.includes(toolName)) {
+      return { behavior: "deny", message: `Profile policy denies ${toolName}` };
+    }
+  }
+
+  // Layer 2: Saved user permissions — skip notification for pre-approved tools
   if (!isQuestion) {
     const { isToolAllowed } = await import("@/lib/settings/permissions");
     if (await isToolAllowed(toolName, input)) {

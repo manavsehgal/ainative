@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { schedules, tasks } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, like } from "drizzle-orm";
 import { parseInterval, computeNextFireTime } from "@/lib/schedules/interval-parser";
 
 export async function GET(
@@ -19,18 +19,11 @@ export async function GET(
     return NextResponse.json({ error: "Schedule not found" }, { status: 404 });
   }
 
-  // Fetch child tasks (firing history)
-  const firingHistory = await db
+  // Fetch child tasks (firing history) by title pattern match
+  const childTasks = await db
     .select()
     .from(tasks)
-    .where(eq(tasks.title, `${schedule.name} — firing #`))
-    .all();
-
-  // Better approach: query tasks whose title starts with the schedule name pattern
-  const allTasks = await db.select().from(tasks).all();
-  const childTasks = allTasks.filter((t) =>
-    t.title.startsWith(`${schedule.name} — firing #`)
-  );
+    .where(like(tasks.title, `${schedule.name} — firing #%`));
 
   return NextResponse.json({
     ...schedule,

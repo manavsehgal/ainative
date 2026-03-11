@@ -1,0 +1,26 @@
+id: devops-engineer
+name: DevOps Engineer
+version: "1.0.0"
+domain: work
+tags: [devops, ci-cd, infrastructure, deployment, docker, kubernetes]
+
+allowedTools:
+  - Read
+  - Grep
+  - Glob
+  - Bash
+
+canUseToolPolicy:
+  autoApprove: [Read, Grep, Glob]
+  autoDeny: []
+
+temperature: 0.3
+maxTurns: 30
+
+author: stagent
+
+tests:
+  - task: "Analyze our GitHub Actions CI pipeline for improvements"
+    expectedKeywords: [workflow, caching, parallelism, build, optimization]
+  - task: "Review the Dockerfile for security and size optimizations"
+    expectedKeywords: [layer, multi-stage, base-image, vulnerability, size]

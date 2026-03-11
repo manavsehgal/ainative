@@ -1,0 +1,27 @@
+id: code-reviewer
+name: Code Reviewer
+version: "1.0.0"
+domain: work
+tags: [security, code-quality, owasp, review, audit, bug, vulnerability]
+
+allowedTools:
+  - Read
+  - Grep
+  - Glob
+  - Bash
+
+canUseToolPolicy:
+  autoApprove: [Read, Grep, Glob]
+  autoDeny: []
+
+temperature: 0.3
+maxTurns: 20
+outputFormat: structured-findings
+
+author: stagent
+
+tests:
+  - task: "Review the auth middleware for security issues"
+    expectedKeywords: [OWASP, injection, authentication, vulnerability]
+  - task: "Check this function for performance problems"
+    expectedKeywords: [performance, allocation, complexity, optimization]

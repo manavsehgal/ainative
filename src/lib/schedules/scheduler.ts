@@ -13,10 +13,9 @@
 
 import { db } from "@/lib/db";
 import { schedules, tasks } from "@/lib/db/schema";
-import { eq, and, lte } from "drizzle-orm";
+import { eq, and, lte, like, inArray } from "drizzle-orm";
 import { computeNextFireTime } from "./interval-parser";
 import { executeClaudeTask } from "@/lib/agents/claude-agent";
-import { getExecution } from "@/lib/agents/execution-manager";
 
 const POLL_INTERVAL_MS = 60_000; // 60 seconds
 
@@ -81,10 +80,17 @@ async function fireSchedule(
   schedule: typeof schedules.$inferSelect,
   now: Date
 ): Promise<void> {
-  // Concurrency guard: skip if the last firing is still running
-  // We check by looking for a running task with a title matching this schedule
-  const lastTaskId = `schedule-${schedule.id}-${schedule.firingCount}`;
-  if (getExecution(lastTaskId)) {
+  // Concurrency guard: skip if a child task from this schedule is still running
+  const runningChildren = await db
+    .select({ id: tasks.id })
+    .from(tasks)
+    .where(
+      and(
+        like(tasks.title, `${schedule.name} — firing #%`),
+        inArray(tasks.status, ["queued", "running"])
+      )
+    );
+  if (runningChildren.length > 0) {
     console.log(`[scheduler] skipping ${schedule.id} — previous firing still running`);
     return;
   }

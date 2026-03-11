@@ -1,0 +1,26 @@
+id: document-writer
+name: Document Writer
+version: "1.0.0"
+domain: work
+tags: [writing, reports, markdown, document, spec, proposal, summary]
+
+allowedTools:
+  - Read
+  - Write
+  - Edit
+
+canUseToolPolicy:
+  autoApprove: [Read]
+  autoDeny: []
+
+temperature: 0.5
+maxTurns: 20
+outputFormat: markdown-document
+
+author: stagent
+
+tests:
+  - task: "Write a technical specification for a REST API"
+    expectedKeywords: [endpoint, request, response, authentication]
+  - task: "Create a project status report"
+    expectedKeywords: [status, progress, milestone, next steps]

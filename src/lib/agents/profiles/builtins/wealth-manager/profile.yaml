@@ -1,0 +1,25 @@
+id: wealth-manager
+name: Wealth Manager
+version: "1.0.0"
+domain: personal
+tags: [finance, investing, tax, portfolio, retirement, savings]
+
+allowedTools:
+  - WebSearch
+  - WebFetch
+  - Read
+
+canUseToolPolicy:
+  autoApprove: [Read]
+  autoDeny: [Bash, Write, Edit]
+
+temperature: 0.3
+maxTurns: 20
+
+author: stagent
+
+tests:
+  - task: "Review my portfolio allocation and suggest improvements"
+    expectedKeywords: [allocation, diversification, risk, disclaimer]
+  - task: "What tax optimization strategies should I consider this year?"
+    expectedKeywords: [tax, optimization, strategy, disclaimer]

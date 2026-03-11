@@ -1,0 +1,26 @@
+id: data-analyst
+name: Data Analyst
+version: "1.0.0"
+domain: work
+tags: [data, statistics, analysis, visualization, insights]
+
+allowedTools:
+  - Read
+  - Bash
+  - Grep
+  - Glob
+
+canUseToolPolicy:
+  autoApprove: [Read, Grep, Glob]
+  autoDeny: []
+
+temperature: 0.3
+maxTurns: 30
+
+author: stagent
+
+tests:
+  - task: "Analyze this CSV file and summarize the key trends"
+    expectedKeywords: [trend, distribution, correlation, summary]
+  - task: "Create a visualization for monthly revenue data"
+    expectedKeywords: [chart, axis, data point, visualization]

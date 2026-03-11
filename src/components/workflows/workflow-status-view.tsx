@@ -21,7 +21,6 @@ import {
 import { toast } from "sonner";
 import { workflowStatusVariant, patternLabels } from "@/lib/constants/status-colors";
 import { LoopStatusView } from "./loop-status-view";
-import { WorkflowCreateDialog } from "./workflow-create-dialog";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import type { LoopState, LoopConfig } from "@/lib/workflows/types";
 
@@ -53,7 +52,6 @@ interface WorkflowStatusData {
 
 interface WorkflowStatusViewProps {
   workflowId: string;
-  projects?: { id: string; name: string }[];
 }
 
 const stepStatusIcons: Record<string, React.ReactNode> = {
@@ -65,12 +63,11 @@ const stepStatusIcons: Record<string, React.ReactNode> = {
 };
 
 
-export function WorkflowStatusView({ workflowId, projects = [] }: WorkflowStatusViewProps) {
+export function WorkflowStatusView({ workflowId }: WorkflowStatusViewProps) {
   const router = useRouter();
   const [data, setData] = useState<WorkflowStatusData | null>(null);
   const [executing, setExecuting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [dialogMode, setDialogMode] = useState<"edit" | "clone" | null>(null);
 
   const fetchStatus = useCallback(async () => {
     const res = await fetch(`/api/workflows/${workflowId}/status`);
@@ -171,10 +168,7 @@ export function WorkflowStatusView({ workflowId, projects = [] }: WorkflowStatus
     );
   }
 
-  // Build workflow data for edit/clone dialog
-  const workflowForDialog = data.definition
-    ? { id: data.id, name: data.name, projectId: data.projectId ?? null, definition: data.definition }
-    : null;
+  const hasDefinition = !!data.definition;
 
   return (
     <>
@@ -201,26 +195,26 @@ export function WorkflowStatusView({ workflowId, projects = [] }: WorkflowStatus
               )}
 
               {/* Edit — draft only */}
-              {data.status === "draft" && workflowForDialog && (
+              {data.status === "draft" && hasDefinition && (
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7"
                   aria-label="Edit workflow"
-                  onClick={() => setDialogMode("edit")}
+                  onClick={() => router.push(`/workflows/${workflowId}/edit`)}
                 >
                   <Pencil className="h-3.5 w-3.5" />
                 </Button>
               )}
 
               {/* Clone — always available */}
-              {workflowForDialog && (
+              {hasDefinition && (
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7"
                   aria-label="Clone workflow"
-                  onClick={() => setDialogMode("clone")}
+                  onClick={() => router.push(`/workflows/${workflowId}/edit?clone=true`)}
                 >
                   <Copy className="h-3.5 w-3.5" />
                 </Button>
@@ -309,18 +303,6 @@ export function WorkflowStatusView({ workflowId, projects = [] }: WorkflowStatus
           )}
         </CardContent>
       </Card>
-
-      {/* Edit/Clone dialog */}
-      {dialogMode && workflowForDialog && (
-        <WorkflowCreateDialog
-          projects={projects}
-          onCreated={() => { setDialogMode(null); fetchStatus(); }}
-          mode={dialogMode}
-          workflow={workflowForDialog}
-          open={true}
-          onOpenChange={(open) => { if (!open) setDialogMode(null); }}
-        />
-      )}
 
       {/* Delete confirmation */}
       <ConfirmDialog

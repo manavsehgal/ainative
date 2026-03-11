@@ -1,0 +1,10 @@
+id: general
+name: General
+version: "1.0.0"
+domain: work
+tags: [general, default, task, help, assistant]
+
+temperature: 0.5
+maxTurns: 30
+
+author: stagent

@@ -1,0 +1,26 @@
+id: researcher
+name: Researcher
+version: "1.0.0"
+domain: work
+tags: [research, web-search, citations, analyze, summarize, report]
+
+allowedTools:
+  - WebSearch
+  - WebFetch
+  - Read
+  - Grep
+
+canUseToolPolicy:
+  autoApprove: [WebSearch, WebFetch, Read]
+  autoDeny: []
+
+temperature: 0.4
+maxTurns: 25
+
+author: stagent
+
+tests:
+  - task: "Research the latest trends in AI agent frameworks"
+    expectedKeywords: [framework, agent, comparison, source]
+  - task: "Find and summarize recent studies on remote work productivity"
+    expectedKeywords: [study, productivity, findings, source]

@@ -10,6 +10,7 @@ import {
   FolderKanban,
   GitBranch,
   FileText,
+  Bot,
   Clock,
   Settings,
 } from "lucide-react";
@@ -30,12 +31,13 @@ import { AuthStatusDot } from "@/components/settings/auth-status-dot";
 
 const navItems = [
   { title: "Home", href: "/", icon: Home, badge: false },
-  { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard, badge: false },
+  { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard, badge: false, alsoMatches: ["/tasks"] },
   { title: "Inbox", href: "/inbox", icon: Inbox, badge: true },
   { title: "Monitor", href: "/monitor", icon: Activity, badge: false },
   { title: "Projects", href: "/projects", icon: FolderKanban, badge: false },
   { title: "Workflows", href: "/workflows", icon: GitBranch, badge: false },
   { title: "Documents", href: "/documents", icon: FileText, badge: false },
+  { title: "Profiles", href: "/profiles", icon: Bot, badge: false },
   { title: "Schedules", href: "/schedules", icon: Clock, badge: false },
   { title: "Settings", href: "/settings", icon: Settings, badge: false },
 ];
@@ -56,7 +58,12 @@ export function AppSidebar() {
             <SidebarMenu>
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton asChild isActive={pathname === item.href}>
+                  <SidebarMenuButton asChild isActive={
+                    item.href === "/"
+                      ? pathname === "/"
+                      : pathname === item.href || pathname.startsWith(item.href + "/")
+                        || (item.alsoMatches?.some(p => pathname.startsWith(p)) ?? false)
+                  }>
                     <Link href={item.href}>
                       <item.icon className="h-4 w-4" aria-hidden="true" />
                       <span>{item.title}</span>

@@ -59,7 +59,7 @@ export function LogEntry({ entry, taskName }: { entry: LogEntryData; taskName?: 
       {taskName && entry.taskId && (
         <>
           <Link
-            href={`/dashboard?task=${entry.taskId}`}
+            href={`/tasks/${entry.taskId}`}
             className="text-primary hover:underline"
             onClick={(e) => e.stopPropagation()}
           >

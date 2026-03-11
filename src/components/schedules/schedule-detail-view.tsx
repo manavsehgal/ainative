@@ -232,11 +232,11 @@ export function ScheduleDetailView({ scheduleId }: ScheduleDetailViewProps) {
                   key={task.id}
                   className="flex items-center justify-between border rounded-lg p-3 text-sm cursor-pointer hover:bg-accent/50 transition-colors"
                   tabIndex={0}
-                  onClick={() => router.push(`/projects`)}
+                  onClick={() => router.push(`/monitor?taskId=${task.id}`)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
-                      router.push(`/projects`);
+                      router.push(`/monitor?taskId=${task.id}`);
                     }
                   }}
                 >

@@ -41,7 +41,7 @@ export function ProjectDetailClient({ tasks }: ProjectDetailClientProps) {
       <SectionHeading>Tasks ({tasks.length})</SectionHeading>
       <div className="space-y-2">
         {tasks.map((task) => (
-          <Link key={task.id} href={`/dashboard?task=${task.id}`}>
+          <Link key={task.id} href={`/tasks/${task.id}`}>
             <Card className="p-3 cursor-pointer transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl">
               <div className="flex items-center gap-3">
                 <span className="text-xs font-mono text-muted-foreground w-6">

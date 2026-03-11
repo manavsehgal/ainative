@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useState, useCallback, useRef, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   DndContext,
   DragEndEvent,
@@ -22,7 +22,6 @@ import {
 } from "@/components/ui/select";
 import { KanbanColumn } from "./kanban-column";
 import { TaskCard, type TaskItem } from "./task-card";
-import { TaskDetailPanel } from "./task-detail-panel";
 import { TaskCreatePanel } from "./task-create-panel";
 import { EmptyBoard } from "./empty-board";
 import { COLUMN_ORDER, isValidDragTransition, type TaskStatus } from "@/lib/constants/task-status";
@@ -34,11 +33,9 @@ interface KanbanBoardProps {
 
 export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
   const dndId = useId();
-  const searchParams = useSearchParams();
+  const router = useRouter();
   const [tasks, setTasks] = useState<TaskItem[]>(initialTasks);
   const [activeTask, setActiveTask] = useState<TaskItem | null>(null);
-  const [detailTask, setDetailTask] = useState<TaskItem | null>(null);
-  const [detailOpen, setDetailOpen] = useState(false);
   const [projectFilter, setProjectFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [inlineCreateOpen, setInlineCreateOpen] = useState(false);
@@ -63,18 +60,6 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
     observer.observe(el);
     return () => observer.disconnect();
   }, [updateScrollIndicators, tasks]);
-
-  // I4: Deep link from monitor — open task detail panel
-  useEffect(() => {
-    const taskId = searchParams.get("task");
-    if (taskId) {
-      const task = tasks.find((t) => t.id === taskId);
-      if (task) {
-        setDetailTask(task);
-        setDetailOpen(true);
-      }
-    }
-  }, [searchParams, tasks]);
 
   // Filter tasks by project and status
   const filteredTasks = tasks.filter((t) => {
@@ -130,8 +115,7 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
   }
 
   function handleTaskClick(task: TaskItem) {
-    setDetailTask(task);
-    setDetailOpen(true);
+    router.push(`/tasks/${task.id}`);
   }
 
   const groupedTasks = COLUMN_ORDER.reduce(
@@ -234,12 +218,6 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
           ) : null}
         </DragOverlay>
       </DndContext>
-      <TaskDetailPanel
-        task={detailTask}
-        open={detailOpen}
-        onOpenChange={setDetailOpen}
-        onUpdated={refresh}
-      />
       <TaskCreatePanel
         projects={projects}
         onCreated={refresh}

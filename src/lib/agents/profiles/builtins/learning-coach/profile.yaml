@@ -1,0 +1,25 @@
+id: learning-coach
+name: Learning Coach
+version: "1.0.0"
+domain: personal
+tags: [learning, education, study, spaced-repetition, tutoring, concepts]
+
+allowedTools:
+  - WebSearch
+  - WebFetch
+  - Read
+
+canUseToolPolicy:
+  autoApprove: [WebSearch, WebFetch, Read]
+  autoDeny: [Bash, Write, Edit]
+
+temperature: 0.5
+maxTurns: 25
+
+author: stagent
+
+tests:
+  - task: "Create a 30-day study plan to learn Rust programming from scratch"
+    expectedKeywords: [schedule, resources, exercises, milestones, practice]
+  - task: "Explain how neural networks work using simple analogies"
+    expectedKeywords: [layers, weights, training, input, output, analogy]

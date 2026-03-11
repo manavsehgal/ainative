@@ -1,0 +1,285 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Copy, Pencil, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import type { AgentProfile } from "@/lib/agents/profiles/types";
+
+interface ProfileWithBuiltin extends AgentProfile {
+  isBuiltin?: boolean;
+}
+
+interface ProfileDetailViewProps {
+  profileId: string;
+  isBuiltin: boolean;
+}
+
+export function ProfileDetailView({ profileId, isBuiltin }: ProfileDetailViewProps) {
+  const router = useRouter();
+  const [profile, setProfile] = useState<ProfileWithBuiltin | null>(null);
+  const [loaded, setLoaded] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const refresh = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/profiles/${profileId}`);
+      if (res.ok) {
+        setProfile(await res.json());
+      }
+    } catch {
+      // silent
+    }
+    setLoaded(true);
+  }, [profileId]);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  async function handleDelete() {
+    setConfirmDelete(false);
+    try {
+      const res = await fetch(`/api/profiles/${profileId}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        toast.success("Profile deleted");
+        router.push("/profiles");
+      } else {
+        const data = await res.json().catch(() => null);
+        toast.error(data?.error ?? "Failed to delete profile");
+      }
+    } catch {
+      toast.error("Network error");
+    }
+  }
+
+  if (!loaded) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-48 w-full" />
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return <p className="text-muted-foreground">Profile not found.</p>;
+  }
+
+  return (
+    <div className="space-y-6" aria-live="polite">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold">{profile.name}</h1>
+            <Badge variant={profile.domain === "work" ? "default" : "secondary"}>
+              {profile.domain}
+            </Badge>
+          </div>
+          <p className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
+            {profile.version && <span>v{profile.version}</span>}
+            {profile.author && <span>by {profile.author}</span>}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {!isBuiltin && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push(`/profiles/${profileId}/edit`)}
+            >
+              <Pencil className="h-3.5 w-3.5 mr-1" />
+              Edit
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push(`/profiles/${profileId}/edit?duplicate=true`)}
+          >
+            <Copy className="h-3.5 w-3.5 mr-1" />
+            Duplicate
+          </Button>
+          {!isBuiltin && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-destructive"
+              onClick={() => setConfirmDelete(true)}
+            >
+              <Trash2 className="h-3.5 w-3.5 mr-1" />
+              Delete
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Description */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium">Description</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">{profile.description}</p>
+        </CardContent>
+      </Card>
+
+      {/* Metadata Grid */}
+      {(profile.temperature !== undefined ||
+        profile.maxTurns !== undefined ||
+        profile.outputFormat) && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Configuration</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              {profile.temperature !== undefined && (
+                <div>
+                  <span className="font-medium">Temperature</span>
+                  <p className="text-muted-foreground">{profile.temperature}</p>
+                </div>
+              )}
+              {profile.maxTurns !== undefined && (
+                <div>
+                  <span className="font-medium">Max Turns</span>
+                  <p className="text-muted-foreground">{profile.maxTurns}</p>
+                </div>
+              )}
+              {profile.outputFormat && (
+                <div>
+                  <span className="font-medium">Output Format</span>
+                  <p className="text-muted-foreground">{profile.outputFormat}</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Allowed Tools */}
+      {profile.allowedTools && profile.allowedTools.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Allowed Tools</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-1">
+              {profile.allowedTools.map((tool) => (
+                <Badge key={tool} variant="outline" className="text-xs">
+                  {tool}
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Tool Use Policy */}
+      {profile.canUseToolPolicy &&
+        (profile.canUseToolPolicy.autoApprove?.length ||
+          profile.canUseToolPolicy.autoDeny?.length) && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Tool Use Policy</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {profile.canUseToolPolicy.autoApprove &&
+              profile.canUseToolPolicy.autoApprove.length > 0 && (
+                <div>
+                  <span className="text-xs text-muted-foreground">Auto-approve:</span>
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {profile.canUseToolPolicy.autoApprove.map((tool) => (
+                      <Badge
+                        key={tool}
+                        variant="outline"
+                        className="border-green-500/30 bg-green-500/10 text-xs text-green-700 dark:text-green-400"
+                      >
+                        {tool}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            {profile.canUseToolPolicy.autoDeny &&
+              profile.canUseToolPolicy.autoDeny.length > 0 && (
+                <div>
+                  <span className="text-xs text-muted-foreground">Auto-deny:</span>
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {profile.canUseToolPolicy.autoDeny.map((tool) => (
+                      <Badge
+                        key={tool}
+                        variant="outline"
+                        className="border-red-500/30 bg-red-500/10 text-xs text-red-700 dark:text-red-400"
+                      >
+                        {tool}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* SKILL.md Preview */}
+      {profile.skillMd && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">SKILL.md</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded-lg bg-muted p-4 text-xs">
+              {profile.skillMd}
+            </pre>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Tests */}
+      {profile.tests && profile.tests.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Tests</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {profile.tests.map((test, i) => (
+                <div key={i} className="rounded-lg border p-3 text-sm">
+                  <p className="font-medium">{test.task}</p>
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {test.expectedKeywords.map((kw) => (
+                      <Badge key={kw} variant="outline" className="text-xs">
+                        {kw}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <ConfirmDialog
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        title="Delete Profile"
+        description="This will permanently delete this custom profile."
+        confirmLabel="Delete"
+        onConfirm={handleDelete}
+        destructive
+      />
+    </div>
+  );
+}

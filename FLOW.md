@@ -37,6 +37,7 @@ Key handoff patterns between skills:
 - **quality-manager ↔ product-manager**: Test gaps surface new specs; acceptance criteria become test cases
 - **capture → ideas/**: Scraped articles and research feed Ideate with YAML frontmatter metadata
 - **capture → refer**: Doc-site captures in `.claude/reference/` become searchable via `/refer` during Build/Design
+- **supervisor → all skills**: Reads project state holistically, recommends which phase/skill to invoke next
 
 Each skill's `SKILL.md` has a Role Boundaries table showing exactly when to use it vs. another.
 
@@ -58,6 +59,7 @@ For non-trivial features (multi-file, new architecture, cross-cutting concerns):
 | `/refer` | Build/Design: look up docs | Surgical answers from captured references |
 | `/skill-creator` | Meta: evolve the lifecycle | New or improved skill definitions |
 | `/code-review` | Verify: standalone reviews | Usually delegated by `/quality-manager` |
+| `/supervisor` | Meta: project health + next steps | `features/supervisor-report.md` |
 
 ## Feedback Loops
 
@@ -74,5 +76,5 @@ Evaluate findings route back into earlier phases:
 |-----------|---------|
 | `ideas/` | Raw ideas + `/capture`d articles with frontmatter |
 | `features/` | Structured feature specs + `roadmap.md` + `changelog.md` |
-| `.claude/skills/` | All skill definitions (12 skills) |
+| `.claude/skills/` | All skill definitions (13 skills) |
 | `.claude/reference/` | Captured docs — populate via `/capture`, look up via `/refer` |

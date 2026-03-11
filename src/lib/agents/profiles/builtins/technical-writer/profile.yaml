@@ -1,0 +1,28 @@
+id: technical-writer
+name: Technical Writer
+version: "1.0.0"
+domain: work
+tags: [documentation, api-docs, adr, readme, changelog, technical-writing]
+
+allowedTools:
+  - Read
+  - Grep
+  - Glob
+  - Write
+  - Edit
+
+canUseToolPolicy:
+  autoApprove: [Read, Grep, Glob]
+  autoDeny: []
+
+temperature: 0.4
+maxTurns: 20
+outputFormat: markdown
+
+author: stagent
+
+tests:
+  - task: "Write API documentation for the /api/tasks endpoint"
+    expectedKeywords: [endpoint, request, response, parameters, status]
+  - task: "Create an ADR for switching from REST to GraphQL"
+    expectedKeywords: [context, decision, consequences, alternatives, status]
