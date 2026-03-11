@@ -48,6 +48,7 @@ async function processAgentStream(
   agentProfileId = "general"
 ): Promise<void> {
   let sessionId: string | null = null;
+  let receivedResult = false;
 
   for await (const raw of response) {
     const message = raw as AgentStreamMessage;
@@ -118,8 +119,10 @@ async function processAgentStream(
       }
     }
 
-    // Handle result
+    // Handle result — skip if task was cancelled mid-stream
     if (message.type === "result" && "result" in raw) {
+      if (abortController.signal.aborted) return;
+      receivedResult = true;
       const resultText =
         typeof message.result === "string"
           ? message.result
@@ -152,6 +155,28 @@ async function processAgentStream(
         timestamp: new Date(),
       });
     }
+  }
+
+  // Safety net: if stream ended without a result frame, fail the task
+  // instead of leaving it stuck in "running" forever
+  if (!receivedResult) {
+    await db
+      .update(tasks)
+      .set({
+        status: "failed",
+        result: "Agent stream ended without producing a result",
+        updatedAt: new Date(),
+      })
+      .where(eq(tasks.id, taskId));
+
+    await db.insert(notifications).values({
+      id: crypto.randomUUID(),
+      taskId,
+      type: "task_failed",
+      title: `Task failed: ${taskTitle}`,
+      body: "Agent stream ended unexpectedly without a result",
+      createdAt: new Date(),
+    });
   }
 }
 

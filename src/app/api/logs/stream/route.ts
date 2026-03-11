@@ -78,7 +78,16 @@ export async function GET(req: NextRequest) {
         }
       });
 
-      poll();
+      poll().catch((err) => {
+        console.error("[SSE /logs/stream] poll loop error:", err);
+        closed = true;
+        clearInterval(keepalive);
+        try {
+          controller.close();
+        } catch {
+          // Already closed
+        }
+      });
     },
   });
 

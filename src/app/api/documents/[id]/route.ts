@@ -3,6 +3,13 @@ import { db } from "@/lib/db";
 import { documents, tasks, projects } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { unlink } from "fs/promises";
+import { z } from "zod/v4";
+
+const documentPatchSchema = z.object({
+  taskId: z.string().uuid().nullable().optional(),
+  projectId: z.string().uuid().nullable().optional(),
+  category: z.string().max(100).optional(),
+});
 
 export async function GET(
   _req: NextRequest,
@@ -48,7 +55,17 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const body = await req.json();
+  const raw = await req.json();
+  const parsed = documentPatchSchema.safeParse(raw);
+
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Invalid request body", details: parsed.error.issues },
+      { status: 400 }
+    );
+  }
+
+  const body = parsed.data;
 
   const [doc] = await db
     .select()

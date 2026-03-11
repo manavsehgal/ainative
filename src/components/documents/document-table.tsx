@@ -10,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
 import { getFileIcon, formatSize, getStatusColor } from "./utils";
 import type { DocumentWithRelations } from "./types";
 
@@ -31,7 +32,7 @@ export function DocumentTable({
   const allSelected = selected.size === documents.length && documents.length > 0;
 
   return (
-    <div className="rounded-md border">
+    <Card className="overflow-hidden p-0 gap-0">
       <Table>
         <TableHeader>
           <TableRow>
@@ -102,6 +103,6 @@ export function DocumentTable({
           })}
         </TableBody>
       </Table>
-    </div>
+    </Card>
   );
 }

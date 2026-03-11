@@ -13,7 +13,7 @@
 
 import { db } from "@/lib/db";
 import { schedules, tasks } from "@/lib/db/schema";
-import { eq, and, lte, like, inArray } from "drizzle-orm";
+import { eq, and, lte, like, inArray, sql } from "drizzle-orm";
 import { computeNextFireTime } from "./interval-parser";
 import { executeClaudeTask } from "@/lib/agents/claude-agent";
 
@@ -69,6 +69,25 @@ export async function tickScheduler(): Promise<void> {
 
   for (const schedule of dueSchedules) {
     try {
+      // Atomic claim: attempt to update nextFireAt to null as a lock.
+      // Only the first tick to succeed (.changes > 0) proceeds with firing.
+      const claimResult = db
+        .update(schedules)
+        .set({ nextFireAt: null, updatedAt: now })
+        .where(
+          and(
+            eq(schedules.id, schedule.id),
+            eq(schedules.status, "active"),
+            lte(schedules.nextFireAt, now)
+          )
+        )
+        .run();
+
+      if (claimResult.changes === 0) {
+        // Another tick already claimed this schedule
+        continue;
+      }
+
       await fireSchedule(schedule, now);
     } catch (err) {
       console.error(`[scheduler] failed to fire schedule ${schedule.id}:`, err);
@@ -80,13 +99,18 @@ async function fireSchedule(
   schedule: typeof schedules.$inferSelect,
   now: Date
 ): Promise<void> {
-  // Concurrency guard: skip if a child task from this schedule is still running
+  // Concurrency guard: skip if a child task from this schedule is still running.
+  // Escape SQL LIKE metacharacters (%, _) in schedule name to prevent false matches.
+  const escapedName = schedule.name
+    .replace(/\\/g, "\\\\")
+    .replace(/%/g, "\\%")
+    .replace(/_/g, "\\_");
   const runningChildren = await db
     .select({ id: tasks.id })
     .from(tasks)
     .where(
       and(
-        like(tasks.title, `${schedule.name} — firing #%`),
+        sql`${tasks.title} LIKE ${`${escapedName} — firing #%`} ESCAPE '\\'`,
         inArray(tasks.status, ["queued", "running"])
       )
     );

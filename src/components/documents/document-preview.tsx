@@ -18,7 +18,7 @@ export function DocumentPreview({ document: doc }: DocumentPreviewProps) {
 
   if (isImage) {
     return (
-      <div className="rounded-md overflow-hidden border bg-muted/30 flex items-center justify-center">
+      <div className="rounded-md overflow-hidden border border-border bg-muted/30 flex items-center justify-center">
         <img
           src={`/api/uploads/${doc.id}`}
           alt={doc.originalName}
@@ -30,7 +30,7 @@ export function DocumentPreview({ document: doc }: DocumentPreviewProps) {
 
   if (isPdf) {
     return (
-      <div className="rounded-md overflow-hidden border">
+      <div className="rounded-md overflow-hidden border border-border">
         <iframe
           src={`/api/uploads/${doc.id}`}
           className="w-full h-64"
@@ -42,7 +42,7 @@ export function DocumentPreview({ document: doc }: DocumentPreviewProps) {
 
   if (isMarkdown && doc.extractedText) {
     return (
-      <div className="rounded-md border p-3 prose prose-sm dark:prose-invert max-h-64 overflow-y-auto">
+      <div className="rounded-md border border-border p-3 prose prose-sm dark:prose-invert max-h-64 overflow-y-auto">
         <ReactMarkdown remarkPlugins={[remarkGfm]}>
           {doc.extractedText.slice(0, 5000)}
         </ReactMarkdown>
@@ -52,7 +52,7 @@ export function DocumentPreview({ document: doc }: DocumentPreviewProps) {
 
   if (isText && doc.extractedText) {
     return (
-      <pre className="text-xs bg-muted p-3 rounded-md max-h-64 overflow-y-auto whitespace-pre-wrap break-words border">
+      <pre className="text-xs bg-muted p-3 rounded-md max-h-64 overflow-y-auto whitespace-pre-wrap break-words border border-border">
         {doc.extractedText.slice(0, 5000)}
       </pre>
     );
@@ -60,7 +60,7 @@ export function DocumentPreview({ document: doc }: DocumentPreviewProps) {
 
   // Fallback — no preview
   return (
-    <div className="rounded-md border p-6 text-center text-muted-foreground">
+    <div className="rounded-md border border-border p-6 text-center text-muted-foreground">
       <p className="text-sm">No preview available for this file type.</p>
       <p className="text-xs mt-1">Download the file to view its contents.</p>
     </div>

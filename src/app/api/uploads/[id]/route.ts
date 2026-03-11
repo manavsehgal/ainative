@@ -43,10 +43,13 @@ export async function GET(
     const ext = match.split(".").pop()?.toLowerCase() ?? "";
     const contentType = MIME_TYPES[ext] ?? "application/octet-stream";
 
+    // Force download for all files to prevent stored XSS via inline rendering
+    // of attacker-controlled HTML/SVG/JS content
     return new NextResponse(data, {
       headers: {
         "Content-Type": contentType,
-        "Content-Disposition": `inline; filename="${match}"`,
+        "Content-Disposition": `attachment; filename="${match}"`,
+        "X-Content-Type-Options": "nosniff",
       },
     });
   } catch {

@@ -2,6 +2,13 @@ import { NextResponse } from "next/server";
 import { clearAllData } from "@/lib/data/clear";
 
 export async function POST() {
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json(
+      { error: "This endpoint is disabled in production" },
+      { status: 403 }
+    );
+  }
+
   try {
     const deleted = clearAllData();
     return NextResponse.json({ success: true, deleted });

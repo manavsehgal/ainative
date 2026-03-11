@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { workflows } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { executeWorkflow } from "@/lib/workflows/engine";
 import type { WorkflowDefinition } from "@/lib/workflows/types";
 
@@ -51,6 +51,26 @@ export async function POST(
         { status: 500 }
       );
     }
+  }
+
+  // Atomic claim: transition to "active" only if still in draft state.
+  // Prevents concurrent double-execution from parallel requests.
+  const claimResult = db
+    .update(workflows)
+    .set({ status: "active", updatedAt: new Date() })
+    .where(
+      and(
+        eq(workflows.id, id),
+        eq(workflows.status, "draft")
+      )
+    )
+    .run();
+
+  if (claimResult.changes === 0) {
+    return NextResponse.json(
+      { error: "Workflow is already running" },
+      { status: 409 }
+    );
   }
 
   // Fire-and-forget execution

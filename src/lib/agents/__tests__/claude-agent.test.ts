@@ -80,6 +80,9 @@ vi.mock("@/lib/agents/profiles/registry", () => ({
 vi.mock("@/lib/documents/context-builder", () => ({
   buildDocumentContext: vi.fn().mockResolvedValue(""),
 }));
+vi.mock("@/lib/settings/permissions", () => ({
+  isToolAllowed: vi.fn().mockResolvedValue(false),
+}));
 
 // Static imports (works because vi.mock is hoisted)
 import { query } from "@anthropic-ai/claude-agent-sdk";

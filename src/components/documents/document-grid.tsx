@@ -2,6 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Card } from "@/components/ui/card";
 import { getFileIcon, formatSize, getStatusColor } from "./utils";
 import type { DocumentWithRelations } from "./types";
 
@@ -25,9 +26,9 @@ export function DocumentGrid({
         const isImage = doc.mimeType.startsWith("image/");
 
         return (
-          <div
+          <Card
             key={doc.id}
-            className="group relative border rounded-lg p-3 cursor-pointer hover:bg-accent/50 transition-colors"
+            className="group relative p-3 gap-0 cursor-pointer transition-colors"
             onClick={() => onOpen(doc)}
           >
             <div
@@ -65,7 +66,7 @@ export function DocumentGrid({
                 {doc.status}
               </Badge>
             </div>
-          </div>
+          </Card>
         );
       })}
     </div>

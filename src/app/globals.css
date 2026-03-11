@@ -435,6 +435,19 @@
   background: oklch(0.05 0.03 285 / 0.65);
 }
 
+/* Glass borders for table rows — doubled selector for cascade priority over TW4 utilities */
+[data-slot="table-row"][data-slot="table-row"] {
+  border-color: var(--glass-border-subtle);
+}
+
+[data-slot="table-header"] [data-slot="table-row"] {
+  border-color: var(--glass-border);
+}
+
+[data-slot="table-footer"] {
+  border-color: var(--glass-border);
+}
+
 /* 3D groove separators */
 [data-slot="separator"][data-orientation="horizontal"] {
   background: linear-gradient(to bottom, oklch(0.7 0.02 260 / 0.12), oklch(1 0.01 260 / 0.25));

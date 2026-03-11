@@ -145,7 +145,7 @@ export function DocumentBrowser({
           </SelectContent>
         </Select>
 
-        <div className="flex items-center gap-1 border rounded-md p-0.5">
+        <div className="flex items-center gap-1 border border-border rounded-md p-0.5">
           <Button
             variant={view === "table" ? "secondary" : "ghost"}
             size="icon"
