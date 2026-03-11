@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { workflows, tasks, agentLogs, notifications } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { executeClaudeTask } from "@/lib/agents/claude-agent";
+import { executeTaskWithRuntime } from "@/lib/agents/runtime";
 import type { WorkflowDefinition, WorkflowState, StepState, LoopState } from "./types";
 import { createInitialState } from "./types";
 import { executeLoop } from "./loop-executor";
@@ -250,9 +250,9 @@ export async function executeChildTask(
     .where(eq(tasks.id, taskId));
 
   try {
-    await executeClaudeTask(taskId);
+    await executeTaskWithRuntime(taskId);
   } catch {
-    // executeClaudeTask handles its own error logging
+    // Runtime adapter handles its own error logging
   }
 
   const [completedTask] = await db

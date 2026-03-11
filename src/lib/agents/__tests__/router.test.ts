@@ -1,22 +1,36 @@
 import { describe, it, expect, vi } from "vitest";
 import { executeTaskWithAgent, resumeTaskWithAgent } from "@/lib/agents/router";
 
-vi.mock("@/lib/agents/claude-agent", () => ({
-  executeClaudeTask: vi.fn().mockResolvedValue(undefined),
-  resumeClaudeTask: vi.fn().mockResolvedValue(undefined),
+const throwIfUnknownRuntime = (agentType?: string | null) => {
+  if (agentType === "unknown-agent") {
+    throw new Error("Unknown agent type: unknown-agent");
+  }
+};
+
+vi.mock("@/lib/agents/runtime", () => ({
+  executeTaskWithRuntime: vi.fn().mockImplementation(
+    async (_taskId: string, agentType?: string | null) => {
+      throwIfUnknownRuntime(agentType);
+    }
+  ),
+  resumeTaskWithRuntime: vi.fn().mockImplementation(
+    async (_taskId: string, agentType?: string | null) => {
+      throwIfUnknownRuntime(agentType);
+    }
+  ),
 }));
 
 describe("executeTaskWithAgent", () => {
-  it("delegates to executeClaudeTask for claude-code agent", async () => {
-    const { executeClaudeTask } = await import("@/lib/agents/claude-agent");
+  it("delegates to the runtime registry for claude-code agent", async () => {
+    const { executeTaskWithRuntime } = await import("@/lib/agents/runtime");
     await executeTaskWithAgent("task-1", "claude-code");
-    expect(executeClaudeTask).toHaveBeenCalledWith("task-1");
+    expect(executeTaskWithRuntime).toHaveBeenCalledWith("task-1", "claude-code");
   });
 
   it("defaults to claude-code when no agent type specified", async () => {
-    const { executeClaudeTask } = await import("@/lib/agents/claude-agent");
+    const { executeTaskWithRuntime } = await import("@/lib/agents/runtime");
     await executeTaskWithAgent("task-2");
-    expect(executeClaudeTask).toHaveBeenCalledWith("task-2");
+    expect(executeTaskWithRuntime).toHaveBeenCalledWith("task-2", "claude-code");
   });
 
   it("throws for unknown agent type", async () => {
@@ -27,16 +41,16 @@ describe("executeTaskWithAgent", () => {
 });
 
 describe("resumeTaskWithAgent", () => {
-  it("delegates to resumeClaudeTask for claude-code agent", async () => {
-    const { resumeClaudeTask } = await import("@/lib/agents/claude-agent");
+  it("delegates to the runtime registry for claude-code agent", async () => {
+    const { resumeTaskWithRuntime } = await import("@/lib/agents/runtime");
     await resumeTaskWithAgent("task-1", "claude-code");
-    expect(resumeClaudeTask).toHaveBeenCalledWith("task-1");
+    expect(resumeTaskWithRuntime).toHaveBeenCalledWith("task-1", "claude-code");
   });
 
   it("defaults to claude-code when no agent type specified", async () => {
-    const { resumeClaudeTask } = await import("@/lib/agents/claude-agent");
+    const { resumeTaskWithRuntime } = await import("@/lib/agents/runtime");
     await resumeTaskWithAgent("task-2");
-    expect(resumeClaudeTask).toHaveBeenCalledWith("task-2");
+    expect(resumeTaskWithRuntime).toHaveBeenCalledWith("task-2", "claude-code");
   });
 
   it("throws for unknown agent type", async () => {

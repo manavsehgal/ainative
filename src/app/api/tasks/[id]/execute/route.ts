@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { tasks } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { executeTaskWithAgent, classifyTaskProfile } from "@/lib/agents/router";
+import { DEFAULT_AGENT_RUNTIME } from "@/lib/agents/runtime/catalog";
 
 export async function POST(
   _req: NextRequest,
@@ -42,7 +43,7 @@ export async function POST(
   }
 
   // Fire-and-forget — task already marked as running
-  executeTaskWithAgent(id, task.assignedAgent ?? "claude-code").catch(
+  executeTaskWithAgent(id, task.assignedAgent ?? DEFAULT_AGENT_RUNTIME).catch(
     (err) => console.error(`Task ${id} execution error:`, err)
   );
 

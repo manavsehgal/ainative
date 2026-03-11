@@ -8,6 +8,7 @@ This file captures evolving project facts, decisions, and recurring gotchas that
 - Main product surfaces are Home, Dashboard, Inbox, Monitor, Projects, Workflows, Documents, Profiles, Schedules, and Settings.
 - `features/`, `ideas/`, and `wireframes/` are intentionally local planning artifacts and remain gitignored.
 - `.claude/` is also gitignored; it is useful for Claude workflows and as source material for Codex skill ports.
+- Provider runtime abstraction is now in place under `src/lib/agents/runtime/`, with Claude registered as the first adapter and shared runtime services handling task assist, profile tests, scheduler/workflow launches, and settings health checks.
 
 ## Design System
 
@@ -42,6 +43,7 @@ This file captures evolving project facts, decisions, and recurring gotchas that
 - Task execution is fire-and-forget and human-in-the-loop flows are mediated through notifications.
 - SSE is used for log streaming.
 - Database bootstrap logic should stay aligned with migration SQL to avoid deployed-schema drift.
+- New provider work should extend the runtime registry instead of importing Claude-specific helpers directly from shared orchestration code.
 
 ## Recurring Gotchas
 

@@ -13,6 +13,10 @@ import { AuthMethodSelector } from "./auth-method-selector";
 import { ApiKeyForm } from "./api-key-form";
 import { AuthStatusBadge } from "./auth-status-badge";
 import type { AuthMethod, ApiKeySource } from "@/lib/constants/settings";
+import {
+  DEFAULT_AGENT_RUNTIME,
+  getRuntimeCatalogEntry,
+} from "@/lib/agents/runtime/catalog";
 
 interface AuthSettings {
   method: AuthMethod;
@@ -21,6 +25,7 @@ interface AuthSettings {
 }
 
 export function AuthConfigSection() {
+  const runtime = getRuntimeCatalogEntry(DEFAULT_AGENT_RUNTIME);
   const [settings, setSettings] = useState<AuthSettings>({
     method: "oauth",
     hasKey: false,
@@ -84,7 +89,7 @@ export function AuthConfigSection() {
           <div>
             <CardTitle>Authentication</CardTitle>
             <CardDescription>
-              Configure how Stagent connects to the Claude API
+              Configure how Stagent connects to the {runtime.label} runtime
             </CardDescription>
           </div>
           <AuthStatusBadge connected={connected} apiKeySource={settings.apiKeySource} />
@@ -114,6 +119,9 @@ export function AuthConfigSection() {
           <>
             <Separator />
             <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">
+                Supports resume, approvals, MCP passthrough, task assist, and profile smoke tests.
+              </p>
               <p className="text-sm text-muted-foreground">
                 OAuth mode uses the Claude Agent SDK&apos;s built-in authentication flow.
                 Requires an active Claude Max or Pro subscription.

@@ -8,20 +8,7 @@ import { getAuthEnv, updateAuthStatus } from "@/lib/settings/auth";
 import { buildDocumentContext } from "@/lib/documents/context-builder";
 import { getProfile } from "./profiles/registry";
 import type { CanUseToolPolicy } from "./profiles/types";
-
-/**
- * Build the environment for the Agent SDK subprocess.
- * Returns undefined when no changes are needed (SDK inherits process.env naturally).
- * Only intervenes when:
- *   - CLAUDECODE is set (nested session — must strip it to avoid exit code 1)
- *   - authEnv is provided (API key auth — must inject the key)
- */
-function buildSdkEnv(authEnv?: Record<string, string>): Record<string, string> | undefined {
-  const isNested = "CLAUDECODE" in process.env;
-  if (!authEnv && !isNested) return undefined;
-  const { CLAUDECODE, ...cleanEnv } = process.env as Record<string, string>;
-  return { ...cleanEnv, ...authEnv };
-}
+import { buildClaudeSdkEnv } from "./runtime/claude-sdk";
 
 /** Typed representation of messages from the Agent SDK stream */
 interface AgentStreamMessage {
@@ -220,7 +207,7 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
         abortController,
         includePartialMessages: true,
         cwd,
-        env: buildSdkEnv(authEnv),
+        env: buildClaudeSdkEnv(authEnv),
         ...(profile?.allowedTools && { allowedTools: profile.allowedTools }),
         ...(profile?.mcpServers && Object.keys(profile.mcpServers).length > 0 && { mcpServers: profile.mcpServers }),
         // @ts-expect-error Agent SDK canUseTool types are incomplete — our async handler is compatible at runtime
@@ -317,7 +304,7 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
         abortController,
         includePartialMessages: true,
         cwd,
-        env: buildSdkEnv(authEnv),
+        env: buildClaudeSdkEnv(authEnv),
         ...(profile?.allowedTools && { allowedTools: profile.allowedTools }),
         ...(profile?.mcpServers && Object.keys(profile.mcpServers).length > 0 && { mcpServers: profile.mcpServers }),
         // @ts-expect-error Agent SDK canUseTool types are incomplete — our async handler is compatible at runtime

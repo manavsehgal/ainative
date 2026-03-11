@@ -4,6 +4,7 @@ import { tasks } from "@/lib/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
 import { resumeTaskWithAgent } from "@/lib/agents/router";
 import { MAX_RESUME_COUNT } from "@/lib/constants/task-status";
+import { DEFAULT_AGENT_RUNTIME } from "@/lib/agents/runtime/catalog";
 
 export async function POST(
   _req: NextRequest,
@@ -54,7 +55,7 @@ export async function POST(
   }
 
   // Fire-and-forget
-  resumeTaskWithAgent(id, task.assignedAgent ?? "claude-code").catch((err) =>
+  resumeTaskWithAgent(id, task.assignedAgent ?? DEFAULT_AGENT_RUNTIME).catch((err) =>
     console.error(`Task ${id} resume error:`, err)
   );
 

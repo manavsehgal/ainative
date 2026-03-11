@@ -1,5 +1,9 @@
-import { executeClaudeTask, resumeClaudeTask } from "./claude-agent";
 import { getProfileTags } from "./profiles/registry";
+import {
+  executeTaskWithRuntime,
+  resumeTaskWithRuntime,
+} from "./runtime";
+import { DEFAULT_AGENT_RUNTIME } from "./runtime/catalog";
 
 /**
  * Classify a task into an agent profile based on keyword matching.
@@ -31,24 +35,14 @@ export function classifyTaskProfile(title: string, description?: string | null):
 
 export async function executeTaskWithAgent(
   taskId: string,
-  agentType = "claude-code"
+  agentType: string | null | undefined = DEFAULT_AGENT_RUNTIME
 ): Promise<void> {
-  switch (agentType) {
-    case "claude-code":
-      return executeClaudeTask(taskId);
-    default:
-      throw new Error(`Unknown agent type: ${agentType}`);
-  }
+  return executeTaskWithRuntime(taskId, agentType);
 }
 
 export async function resumeTaskWithAgent(
   taskId: string,
-  agentType = "claude-code"
+  agentType: string | null | undefined = DEFAULT_AGENT_RUNTIME
 ): Promise<void> {
-  switch (agentType) {
-    case "claude-code":
-      return resumeClaudeTask(taskId);
-    default:
-      throw new Error(`Unknown agent type: ${agentType}`);
-  }
+  return resumeTaskWithRuntime(taskId, agentType);
 }

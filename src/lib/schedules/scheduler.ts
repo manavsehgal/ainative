@@ -3,7 +3,7 @@
  *
  * Runs on a configurable interval (default 60s), checking for schedules whose
  * `nextFireAt` has passed. For each due schedule it creates a child task and
- * fires it via the existing `executeClaudeTask` pipeline.
+ * fires it via the provider runtime pipeline.
  *
  * Lifecycle:
  *   - `startScheduler()` — call once at server boot (idempotent)
@@ -15,7 +15,7 @@ import { db } from "@/lib/db";
 import { schedules, tasks } from "@/lib/db/schema";
 import { eq, and, lte, like, inArray, sql } from "drizzle-orm";
 import { computeNextFireTime } from "./interval-parser";
-import { executeClaudeTask } from "@/lib/agents/claude-agent";
+import { executeTaskWithRuntime } from "@/lib/agents/runtime";
 
 const POLL_INTERVAL_MS = 60_000; // 60 seconds
 
@@ -181,7 +181,7 @@ async function fireSchedule(
     .where(eq(schedules.id, schedule.id));
 
   // Fire-and-forget task execution
-  executeClaudeTask(taskId).catch((err) => {
+  executeTaskWithRuntime(taskId).catch((err) => {
     console.error(
       `[scheduler] task execution failed for schedule ${schedule.id}, task ${taskId}:`,
       err

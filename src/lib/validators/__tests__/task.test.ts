@@ -21,6 +21,14 @@ describe("createTaskSchema", () => {
     expect(result.success).toBe(true);
   });
 
+  it("rejects unsupported assignedAgent values", () => {
+    const result = createTaskSchema.safeParse({
+      title: "Task",
+      assignedAgent: "openai-codex-app-server",
+    });
+    expect(result.success).toBe(false);
+  });
+
   it("rejects empty title", () => {
     const result = createTaskSchema.safeParse({ title: "" });
     expect(result.success).toBe(false);
@@ -117,5 +125,12 @@ describe("updateTaskSchema", () => {
       sessionId: "session-abc",
     });
     expect(result.success).toBe(true);
+  });
+
+  it("rejects unsupported assignedAgent values on update", () => {
+    const result = updateTaskSchema.safeParse({
+      assignedAgent: "unknown-runtime",
+    });
+    expect(result.success).toBe(false);
   });
 });
