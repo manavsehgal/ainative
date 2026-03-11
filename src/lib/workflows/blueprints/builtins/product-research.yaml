@@ -1,0 +1,72 @@
+id: product-research
+name: Product Research
+description: Research options, compare reviews, and get a purchase recommendation
+version: "1.0.0"
+domain: personal
+tags: [shopping, comparison, reviews, recommendation]
+pattern: sequence
+estimatedDuration: "5-15 min"
+difficulty: beginner
+author: stagent
+
+variables:
+  - id: product
+    type: text
+    label: Product Category
+    description: What you're looking to buy
+    required: true
+    placeholder: "e.g., wireless noise-canceling headphones"
+  - id: budget
+    type: text
+    label: Budget Range
+    description: How much you want to spend
+    required: false
+    placeholder: "e.g., $100-300"
+  - id: priorities
+    type: textarea
+    label: Priorities
+    description: What matters most to you
+    required: false
+    placeholder: "e.g., comfort for long flights, good microphone, ANC quality"
+
+steps:
+  - name: Research Options
+    profileId: researcher
+    promptTemplate: |
+      Research the best options for: {{product}}
+      {{#if budget}}Budget: {{budget}}{{/if}}
+      {{#if priorities}}Priorities: {{priorities}}{{/if}}
+
+      Find the top 5-8 options currently available. For each, note:
+      key specs, price, standout features, and known issues.
+    requiresApproval: false
+    expectedOutput: product-list
+
+  - name: Compare Reviews
+    profileId: shopping-assistant
+    promptTemplate: |
+      Compare the top options for: {{product}}
+      {{#if budget}}Budget: {{budget}}{{/if}}
+      {{#if priorities}}Priorities: {{priorities}}{{/if}}
+
+      Analyze reviews and ratings for each option from the research step.
+      Create a comparison table with: price, rating, pros, cons, best for.
+      Identify any deal-breakers or red flags.
+    requiresApproval: false
+    expectedOutput: comparison-table
+
+  - name: Recommendation
+    profileId: shopping-assistant
+    promptTemplate: |
+      Provide a final purchase recommendation for: {{product}}
+      {{#if budget}}Budget: {{budget}}{{/if}}
+      {{#if priorities}}Priorities: {{priorities}}{{/if}}
+
+      Based on the research and comparison, recommend:
+      1. Best overall pick
+      2. Best value pick
+      3. Premium pick (if applicable)
+
+      Explain why each is recommended and who it's best for.
+    requiresApproval: true
+    expectedOutput: recommendation

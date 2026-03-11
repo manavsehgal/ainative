@@ -1,0 +1,73 @@
+id: meal-planning
+name: Meal Planning
+description: Assess goals, create a weekly meal plan, and generate a shopping list
+version: "1.0.0"
+domain: personal
+tags: [health, nutrition, meal-prep, shopping]
+pattern: sequence
+estimatedDuration: "5-10 min"
+difficulty: beginner
+author: stagent
+
+variables:
+  - id: goal
+    type: select
+    label: Health Goal
+    description: Primary nutrition goal
+    required: true
+    default: balanced
+    options:
+      - { value: balanced, label: "Balanced eating" }
+      - { value: weight-loss, label: "Weight loss" }
+      - { value: muscle-gain, label: "Muscle gain" }
+      - { value: energy, label: "More energy" }
+  - id: restrictions
+    type: text
+    label: Dietary Restrictions
+    description: Allergies, preferences, or restrictions
+    required: false
+    placeholder: "e.g., vegetarian, gluten-free, no nuts"
+  - id: days
+    type: number
+    label: Days to Plan
+    description: Number of days to plan meals for
+    required: true
+    default: 7
+    min: 1
+    max: 14
+
+steps:
+  - name: Goal Assessment
+    profileId: health-fitness-coach
+    promptTemplate: |
+      Assess nutritional needs for the goal: {{goal}}
+      {{#if restrictions}}Dietary restrictions: {{restrictions}}{{/if}}
+      Planning for {{days}} days.
+
+      Determine: daily calorie target, macro breakdown (protein/carbs/fat),
+      key nutrients to focus on, and foods to prioritize or avoid.
+    requiresApproval: false
+    expectedOutput: nutrition-plan
+
+  - name: Meal Plan Creation
+    profileId: health-fitness-coach
+    promptTemplate: |
+      Create a {{days}}-day meal plan for the goal: {{goal}}
+      {{#if restrictions}}Restrictions: {{restrictions}}{{/if}}
+
+      Use the nutritional assessment from the previous step.
+      Include breakfast, lunch, dinner, and snacks for each day.
+      Vary meals to avoid repetition. Include prep time estimates.
+    requiresApproval: false
+    expectedOutput: meal-plan
+
+  - name: Shopping List
+    profileId: document-writer
+    promptTemplate: |
+      Generate a complete shopping list from the {{days}}-day meal plan.
+
+      Organize by grocery section (produce, proteins, dairy, pantry, frozen).
+      Combine ingredients across meals to minimize waste.
+      Include quantities and optional budget-friendly substitutions.
+    requiresApproval: true
+    expectedOutput: shopping-list

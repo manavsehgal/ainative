@@ -1,0 +1,62 @@
+id: documentation-generation
+name: Documentation Generation
+description: Analyze code, draft documentation, and review for accuracy
+version: "1.0.0"
+domain: work
+tags: [documentation, api-docs, technical-writing, readme]
+pattern: sequence
+estimatedDuration: "10-15 min"
+difficulty: beginner
+author: stagent
+
+variables:
+  - id: target
+    type: text
+    label: Documentation Target
+    description: What to document — module path, API, or component
+    required: true
+    placeholder: "e.g., src/lib/agents/ or the REST API endpoints"
+  - id: docType
+    type: select
+    label: Documentation Type
+    description: What kind of documentation to produce
+    required: true
+    default: api-docs
+    options:
+      - { value: api-docs, label: "API Documentation" }
+      - { value: readme, label: "README" }
+      - { value: adr, label: "Architecture Decision Record" }
+      - { value: guide, label: "User Guide" }
+
+steps:
+  - name: Code Analysis
+    profileId: technical-writer
+    promptTemplate: |
+      Analyze the codebase at: {{target}}
+
+      Documentation type: {{docType}}
+
+      Map the public API surface, key abstractions, data flow, and usage patterns.
+      Identify what needs to be documented and the logical structure for the docs.
+    requiresApproval: false
+    expectedOutput: analysis-notes
+
+  - name: Draft Documentation
+    profileId: technical-writer
+    promptTemplate: |
+      Write {{docType}} documentation for: {{target}}
+
+      Use the code analysis from the previous step. Follow standard {{docType}} conventions.
+      Include code examples, parameter descriptions, return types, and edge cases.
+    requiresApproval: false
+    expectedOutput: markdown-report
+
+  - name: Technical Review
+    profileId: code-reviewer
+    promptTemplate: |
+      Review the drafted {{docType}} documentation for: {{target}}
+
+      Check for: technical accuracy, completeness, code example correctness,
+      missing edge cases, and clarity. Suggest specific improvements.
+    requiresApproval: true
+    expectedOutput: review-feedback

@@ -1,0 +1,131 @@
+import { db } from "@/lib/db";
+import { workflows } from "@/lib/db/schema";
+import { getBlueprint } from "./registry";
+import { resolveTemplate, evaluateCondition } from "./template";
+import type { BlueprintVariable, WorkflowBlueprint } from "./types";
+import type { WorkflowStep } from "../types";
+
+interface InstantiateResult {
+  workflowId: string;
+  name: string;
+  stepsCount: number;
+  skippedSteps: string[];
+}
+
+/**
+ * Instantiate a blueprint into a concrete draft workflow.
+ *
+ * 1. Validate all required variables
+ * 2. Resolve {{variable}} in prompt templates
+ * 3. Process {{#if}} conditional blocks
+ * 4. Evaluate step conditions, filter skipped steps
+ * 5. Create workflow with blueprintId lineage
+ */
+export async function instantiateBlueprint(
+  blueprintId: string,
+  variables: Record<string, unknown>,
+  projectId?: string
+): Promise<InstantiateResult> {
+  const blueprint = getBlueprint(blueprintId);
+  if (!blueprint) {
+    throw new Error(`Blueprint "${blueprintId}" not found`);
+  }
+
+  // Validate required variables
+  validateVariables(blueprint.variables, variables);
+
+  // Apply defaults for unset optional variables
+  const resolvedVars = applyDefaults(blueprint.variables, variables);
+
+  // Process steps: resolve templates, evaluate conditions
+  const resolvedSteps: WorkflowStep[] = [];
+  const skippedSteps: string[] = [];
+
+  for (const step of blueprint.steps) {
+    // Check condition — skip if evaluates to falsy
+    if (step.condition && !evaluateCondition(step.condition, resolvedVars)) {
+      skippedSteps.push(step.name);
+      continue;
+    }
+
+    const resolvedPrompt = resolveTemplate(step.promptTemplate, resolvedVars);
+
+    resolvedSteps.push({
+      id: crypto.randomUUID(),
+      name: step.name,
+      prompt: resolvedPrompt,
+      requiresApproval: step.requiresApproval,
+      agentProfile: step.profileId,
+    });
+  }
+
+  if (resolvedSteps.length === 0) {
+    throw new Error("All steps were skipped by conditions — at least one step must remain");
+  }
+
+  // Create the workflow
+  const workflowId = crypto.randomUUID();
+  const now = new Date();
+  const workflowName = resolveTemplate(
+    `${blueprint.name}: {{${blueprint.variables[0]?.id ?? "topic"}}}`,
+    resolvedVars
+  ) || blueprint.name;
+
+  const definition = {
+    pattern: blueprint.pattern,
+    steps: resolvedSteps,
+    _blueprintId: blueprintId,
+  };
+
+  await db.insert(workflows).values({
+    id: workflowId,
+    projectId: projectId ?? null,
+    name: workflowName.slice(0, 100),
+    definition: JSON.stringify(definition),
+    status: "draft",
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  return {
+    workflowId,
+    name: workflowName,
+    stepsCount: resolvedSteps.length,
+    skippedSteps,
+  };
+}
+
+function validateVariables(
+  definitions: BlueprintVariable[],
+  provided: Record<string, unknown>
+): void {
+  const errors: string[] = [];
+
+  for (const def of definitions) {
+    if (def.required) {
+      const value = provided[def.id];
+      if (value === undefined || value === null || value === "") {
+        errors.push(`"${def.label}" is required`);
+      }
+    }
+  }
+
+  if (errors.length > 0) {
+    throw new Error(`Missing required variables: ${errors.join(", ")}`);
+  }
+}
+
+function applyDefaults(
+  definitions: BlueprintVariable[],
+  provided: Record<string, unknown>
+): Record<string, unknown> {
+  const result = { ...provided };
+
+  for (const def of definitions) {
+    if (result[def.id] === undefined && def.default !== undefined) {
+      result[def.id] = def.default;
+    }
+  }
+
+  return result;
+}

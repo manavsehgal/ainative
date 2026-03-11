@@ -1,0 +1,81 @@
+id: investment-research
+name: Investment Research
+description: Gather market data, analyze risk, and produce an investment report with disclaimers
+version: "1.0.0"
+domain: personal
+tags: [finance, investing, research, risk-assessment]
+pattern: checkpoint
+estimatedDuration: "15-30 min"
+difficulty: advanced
+author: stagent
+
+variables:
+  - id: asset
+    type: text
+    label: Asset or Topic
+    description: What to research — stock, sector, strategy, or investment question
+    required: true
+    placeholder: "e.g., NVIDIA stock, index fund vs. active management"
+  - id: horizon
+    type: select
+    label: Investment Horizon
+    description: Time frame for the investment
+    required: true
+    default: medium
+    options:
+      - { value: short, label: "Short-term (< 1 year)" }
+      - { value: medium, label: "Medium-term (1-5 years)" }
+      - { value: long, label: "Long-term (5+ years)" }
+  - id: riskTolerance
+    type: select
+    label: Risk Tolerance
+    description: Your risk comfort level
+    required: true
+    default: moderate
+    options:
+      - { value: conservative, label: "Conservative" }
+      - { value: moderate, label: "Moderate" }
+      - { value: aggressive, label: "Aggressive" }
+
+steps:
+  - name: Data Gathering
+    profileId: researcher
+    promptTemplate: |
+      Research the following investment topic: {{asset}}
+
+      Investment horizon: {{horizon}}
+      Risk tolerance: {{riskTolerance}}
+
+      Gather recent financial data, market trends, analyst opinions, and relevant
+      news. Focus on fundamentals, competitive position, and macro factors.
+    requiresApproval: false
+    expectedOutput: research-data
+
+  - name: Risk Analysis
+    profileId: wealth-manager
+    promptTemplate: |
+      Analyze the investment risks for: {{asset}}
+
+      Horizon: {{horizon}}
+      Risk tolerance: {{riskTolerance}}
+
+      Evaluate: market risk, liquidity risk, concentration risk, regulatory risk.
+      Provide risk-adjusted return expectations and portfolio fit assessment.
+      Include appropriate disclaimers about investment advice.
+    requiresApproval: true
+    expectedOutput: risk-report
+
+  - name: Investment Report
+    profileId: document-writer
+    promptTemplate: |
+      Write a comprehensive investment research report on: {{asset}}
+
+      Horizon: {{horizon}}, Risk tolerance: {{riskTolerance}}
+
+      Synthesize research and risk analysis from previous steps.
+      Structure: Executive Summary, Market Analysis, Risk Assessment,
+      Recommendation, Key Risks to Monitor.
+
+      IMPORTANT: Include standard disclaimers that this is not financial advice.
+    requiresApproval: true
+    expectedOutput: markdown-report

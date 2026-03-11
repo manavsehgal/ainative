@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
-import { GitBranch, Plus, Pencil, Copy, RotateCcw, Trash2 } from "lucide-react";
+import { GitBranch, Plus, Pencil, Copy, RotateCcw, Trash2, Layers } from "lucide-react";
 import { toast } from "sonner";
 import { workflowStatusVariant, patternLabels } from "@/lib/constants/status-colors";
 
@@ -97,10 +97,16 @@ export function WorkflowList({ projects }: WorkflowListProps) {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Workflows</h1>
-        <Button onClick={() => router.push("/workflows/new")}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Workflow
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => router.push("/workflows/blueprints")}>
+            <Layers className="h-4 w-4 mr-2" />
+            From Blueprint
+          </Button>
+          <Button onClick={() => router.push("/workflows/new")}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Workflow
+          </Button>
+        </div>
       </div>
 
       {!loaded ? (

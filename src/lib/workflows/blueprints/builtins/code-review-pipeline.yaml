@@ -1,0 +1,72 @@
+id: code-review-pipeline
+name: Code Review Pipeline
+description: Security scan, quality analysis, and summary report for code changes
+version: "1.0.0"
+domain: work
+tags: [code-review, security, quality, owasp]
+pattern: checkpoint
+estimatedDuration: "10-20 min"
+difficulty: intermediate
+author: stagent
+
+variables:
+  - id: target
+    type: text
+    label: Review Target
+    description: What to review — file path, PR number, or description of changes
+    required: true
+    placeholder: "e.g., src/lib/auth/ or PR #42"
+  - id: focus
+    type: select
+    label: Review Focus
+    description: Primary focus area for the review
+    required: true
+    default: balanced
+    options:
+      - { value: security, label: "Security-focused (OWASP, injection, auth)" }
+      - { value: quality, label: "Quality-focused (patterns, duplication, naming)" }
+      - { value: balanced, label: "Balanced (security + quality)" }
+  - id: context
+    type: textarea
+    label: Additional Context
+    description: Any relevant context about the changes being reviewed
+    required: false
+    placeholder: "e.g., This is a new authentication module..."
+
+steps:
+  - name: Security Scan
+    profileId: code-reviewer
+    promptTemplate: |
+      Perform a security-focused code review of: {{target}}
+
+      Focus: {{focus}}
+      {{#if context}}Context: {{context}}{{/if}}
+
+      Check for OWASP Top 10 vulnerabilities, injection flaws, authentication bypasses,
+      and sensitive data exposure. Report each finding with severity, location, and fix.
+    requiresApproval: true
+    expectedOutput: structured-findings
+
+  - name: Quality Analysis
+    profileId: code-reviewer
+    promptTemplate: |
+      Perform a code quality analysis of: {{target}}
+
+      Focus: {{focus}}
+      {{#if context}}Context: {{context}}{{/if}}
+
+      Check for code duplication, naming conventions, error handling patterns,
+      test coverage gaps, and performance issues. Report each finding with
+      severity (CRITICAL/WARNING/SUGGESTION), location, and recommended fix.
+    requiresApproval: false
+    expectedOutput: structured-findings
+
+  - name: Review Summary
+    profileId: document-writer
+    promptTemplate: |
+      Write a concise code review summary for: {{target}}
+
+      Synthesize the security scan and quality analysis findings from previous steps.
+      Structure as: Overview, Critical Issues, Warnings, Suggestions, Verdict (approve/request changes).
+    requiresApproval: true
+    expectedOutput: markdown-report

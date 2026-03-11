@@ -197,6 +197,7 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
         cwd,
         env: buildSdkEnv(authEnv),
         ...(profile?.allowedTools && { allowedTools: profile.allowedTools }),
+        ...(profile?.mcpServers && Object.keys(profile.mcpServers).length > 0 && { mcpServers: profile.mcpServers }),
         // @ts-expect-error Agent SDK canUseTool types are incomplete — our async handler is compatible at runtime
         canUseTool: async (
           toolName: string,
@@ -293,6 +294,7 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
         cwd,
         env: buildSdkEnv(authEnv),
         ...(profile?.allowedTools && { allowedTools: profile.allowedTools }),
+        ...(profile?.mcpServers && Object.keys(profile.mcpServers).length > 0 && { mcpServers: profile.mcpServers }),
         // @ts-expect-error Agent SDK canUseTool types are incomplete — our async handler is compatible at runtime
         canUseTool: async (
           toolName: string,

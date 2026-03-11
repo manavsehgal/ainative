@@ -2,12 +2,13 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Search, Bot } from "lucide-react";
+import { Plus, Search, Bot, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ProfileCard } from "@/components/profiles/profile-card";
+import { ProfileImportDialog } from "@/components/profiles/profile-import-dialog";
 import type { AgentProfile } from "@/lib/agents/profiles/types";
 
 interface ProfileWithBuiltin extends AgentProfile {
@@ -25,6 +26,7 @@ export function ProfileBrowser({ initialProfiles }: ProfileBrowserProps) {
   const [domainFilter, setDomainFilter] = useState<
     "all" | "work" | "personal"
   >("all");
+  const [showImport, setShowImport] = useState(false);
 
   const filteredProfiles = useMemo(() => {
     const q = search.toLowerCase();
@@ -44,10 +46,16 @@ export function ProfileBrowser({ initialProfiles }: ProfileBrowserProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Profiles</h1>
-        <Button onClick={() => router.push("/profiles/new")}>
-          <Plus className="mr-2 h-4 w-4" />
-          Create Profile
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setShowImport(true)}>
+            <Download className="mr-2 h-4 w-4" />
+            Import
+          </Button>
+          <Button onClick={() => router.push("/profiles/new")}>
+            <Plus className="mr-2 h-4 w-4" />
+            Create Profile
+          </Button>
+        </div>
       </div>
 
       {/* Search + Domain Filter */}
@@ -76,6 +84,12 @@ export function ProfileBrowser({ initialProfiles }: ProfileBrowserProps) {
       </div>
 
       {/* Grid */}
+      <ProfileImportDialog
+        open={showImport}
+        onOpenChange={setShowImport}
+        onImported={() => router.refresh()}
+      />
+
       {filteredProfiles.length === 0 ? (
         <EmptyState
           icon={Bot}

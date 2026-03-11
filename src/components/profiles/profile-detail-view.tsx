@@ -7,10 +7,26 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Copy, Pencil, Trash2 } from "lucide-react";
+import { Copy, Pencil, Trash2, Play, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import type { AgentProfile } from "@/lib/agents/profiles/types";
+
+interface TestResult {
+  task: string;
+  expectedKeywords: string[];
+  foundKeywords: string[];
+  missingKeywords: string[];
+  passed: boolean;
+}
+
+interface TestReport {
+  profileId: string;
+  profileName: string;
+  results: TestResult[];
+  totalPassed: number;
+  totalFailed: number;
+}
 
 interface ProfileWithBuiltin extends AgentProfile {
   isBuiltin?: boolean;
@@ -26,6 +42,8 @@ export function ProfileDetailView({ profileId, isBuiltin }: ProfileDetailViewPro
   const [profile, setProfile] = useState<ProfileWithBuiltin | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [testReport, setTestReport] = useState<TestReport | null>(null);
+  const [runningTests, setRunningTests] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -58,6 +76,32 @@ export function ProfileDetailView({ profileId, isBuiltin }: ProfileDetailViewPro
       }
     } catch {
       toast.error("Network error");
+    }
+  }
+
+  async function handleRunTests() {
+    setRunningTests(true);
+    setTestReport(null);
+    try {
+      const res = await fetch(`/api/profiles/${profileId}/test`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        const report: TestReport = await res.json();
+        setTestReport(report);
+        if (report.totalFailed === 0) {
+          toast.success(`All ${report.totalPassed} tests passed`);
+        } else {
+          toast.warning(`${report.totalPassed} passed, ${report.totalFailed} failed`);
+        }
+      } else {
+        const data = await res.json().catch(() => null);
+        toast.error(data?.error ?? "Failed to run tests");
+      }
+    } catch {
+      toast.error("Network error running tests");
+    } finally {
+      setRunningTests(false);
     }
   }
 
@@ -250,23 +294,73 @@ export function ProfileDetailView({ profileId, isBuiltin }: ProfileDetailViewPro
       {profile.tests && profile.tests.length > 0 && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Tests</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium">
+                Behavioral Tests ({profile.tests.length})
+              </CardTitle>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleRunTests}
+                disabled={runningTests}
+              >
+                {runningTests ? (
+                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Play className="mr-1 h-3.5 w-3.5" />
+                )}
+                {runningTests ? "Running..." : "Run Tests"}
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {profile.tests.map((test, i) => (
-                <div key={i} className="rounded-lg border p-3 text-sm">
-                  <p className="font-medium">{test.task}</p>
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    {test.expectedKeywords.map((kw) => (
-                      <Badge key={kw} variant="outline" className="text-xs">
-                        {kw}
-                      </Badge>
-                    ))}
+              {profile.tests.map((test, i) => {
+                const result = testReport?.results[i];
+                return (
+                  <div key={i} className="rounded-lg border p-3 text-sm">
+                    <div className="flex items-start gap-2">
+                      {result && (
+                        result.passed ? (
+                          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-status-completed" />
+                        ) : (
+                          <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-status-failed" />
+                        )
+                      )}
+                      <div className="flex-1">
+                        <p className="font-medium">{test.task}</p>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {test.expectedKeywords.map((kw) => {
+                            const found = result?.foundKeywords.includes(kw);
+                            const missing = result?.missingKeywords.includes(kw);
+                            return (
+                              <Badge
+                                key={kw}
+                                variant="outline"
+                                className={`text-xs ${
+                                  found
+                                    ? "border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-400"
+                                    : missing
+                                      ? "border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-400"
+                                      : ""
+                                }`}
+                              >
+                                {kw}
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
+            {testReport && (
+              <div className="mt-3 text-xs text-muted-foreground">
+                {testReport.totalPassed}/{testReport.results.length} tests passed
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

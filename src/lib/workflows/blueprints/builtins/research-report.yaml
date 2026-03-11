@@ -1,0 +1,77 @@
+id: research-report
+name: Research Report
+description: Multi-step research pipeline — gather sources, analyze data, write structured report
+version: "1.0.0"
+domain: work
+tags: [research, analysis, report, writing]
+pattern: sequence
+estimatedDuration: "15-30 min"
+difficulty: intermediate
+author: stagent
+
+variables:
+  - id: topic
+    type: text
+    label: Research Topic
+    description: The main topic or question to research
+    required: true
+    placeholder: "e.g., Impact of AI on healthcare diagnostics"
+  - id: depth
+    type: select
+    label: Research Depth
+    description: How thorough the research should be
+    required: true
+    default: standard
+    options:
+      - { value: quick, label: "Quick overview (5 sources)" }
+      - { value: standard, label: "Standard (10-15 sources)" }
+      - { value: deep, label: "Deep dive (20+ sources)" }
+  - id: audience
+    type: text
+    label: Target Audience
+    description: Who will read this report
+    required: false
+    default: "General technical audience"
+  - id: includeData
+    type: boolean
+    label: Include Data Analysis
+    description: Whether to include statistical analysis section
+    required: false
+    default: false
+
+steps:
+  - name: Research Gathering
+    profileId: researcher
+    promptTemplate: |
+      Research the following topic thoroughly: {{topic}}
+
+      Depth level: {{depth}}
+      {{#if audience}}Target audience: {{audience}}{{/if}}
+
+      Find credible sources, extract key findings, and compile a structured summary
+      with full citations. Focus on recent publications (last 2 years).
+    requiresApproval: false
+    expectedOutput: structured-summary
+
+  - name: Data Analysis
+    profileId: data-analyst
+    promptTemplate: |
+      Analyze the research findings from the previous step about: {{topic}}
+
+      Identify key trends, statistical patterns, and data-driven insights.
+      Create summary statistics and recommend visualization approaches.
+    requiresApproval: false
+    expectedOutput: analysis-report
+    condition: "{{includeData}}"
+
+  - name: Report Writing
+    profileId: document-writer
+    promptTemplate: |
+      Write a comprehensive research report on: {{topic}}
+
+      {{#if audience}}Target audience: {{audience}}{{/if}}
+
+      Use the research findings and {{#if includeData}}data analysis{{/if}} from previous steps.
+      Structure with: Executive Summary, Key Findings, {{#if includeData}}Data Analysis, {{/if}}Recommendations, References.
+    requiresApproval: true
+    expectedOutput: markdown-report

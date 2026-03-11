@@ -1,0 +1,80 @@
+id: travel-planning
+name: Travel Planning
+description: Research destinations, find deals, and build a complete itinerary
+version: "1.0.0"
+domain: personal
+tags: [travel, itinerary, budget, booking]
+pattern: sequence
+estimatedDuration: "10-20 min"
+difficulty: beginner
+author: stagent
+
+variables:
+  - id: destination
+    type: text
+    label: Destination
+    description: Where you want to travel
+    required: true
+    placeholder: "e.g., Tokyo, Japan for 10 days"
+  - id: dates
+    type: text
+    label: Travel Dates
+    description: When you plan to travel
+    required: true
+    placeholder: "e.g., March 15-25, 2026"
+  - id: budget
+    type: select
+    label: Budget Level
+    description: Overall budget per person
+    required: true
+    default: moderate
+    options:
+      - { value: budget, label: "Budget ($50-100/day)" }
+      - { value: moderate, label: "Moderate ($100-250/day)" }
+      - { value: luxury, label: "Luxury ($250+/day)" }
+  - id: interests
+    type: textarea
+    label: Interests
+    description: Activities and experiences you enjoy
+    required: false
+    placeholder: "e.g., food, temples, hiking, nightlife"
+
+steps:
+  - name: Destination Research
+    profileId: travel-planner
+    promptTemplate: |
+      Research travel to: {{destination}}
+      Dates: {{dates}}
+      Budget: {{budget}}
+      {{#if interests}}Interests: {{interests}}{{/if}}
+
+      Cover: best neighborhoods to stay, transport options, must-see attractions,
+      local customs and tips, weather expectations, and safety considerations.
+    requiresApproval: false
+    expectedOutput: research-summary
+
+  - name: Deal Finding
+    profileId: shopping-assistant
+    promptTemplate: |
+      Find the best travel deals for: {{destination}}
+      Dates: {{dates}}
+      Budget: {{budget}}
+
+      Research: flight options, accommodation deals, activity passes,
+      and money-saving tips. Compare prices across budget levels.
+    requiresApproval: false
+    expectedOutput: deal-list
+
+  - name: Itinerary Building
+    profileId: travel-planner
+    promptTemplate: |
+      Create a detailed day-by-day itinerary for: {{destination}}
+      Dates: {{dates}}
+      Budget: {{budget}}
+      {{#if interests}}Interests: {{interests}}{{/if}}
+
+      Use the research and deals from previous steps. Include:
+      daily schedule, meal recommendations, transport between activities,
+      estimated costs per day, and backup options for bad weather.
+    requiresApproval: true
+    expectedOutput: itinerary
