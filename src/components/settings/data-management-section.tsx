@@ -10,9 +10,10 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Trash2, Database } from "lucide-react";
 
 export function DataManagementSection() {
   const [clearOpen, setClearOpen] = useState(false);
@@ -70,10 +71,13 @@ export function DataManagementSection() {
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Delete all projects, tasks, documents, agent logs, notifications,
-              and uploaded files. Authentication settings are preserved.
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm text-muted-foreground">
+                Delete all projects, tasks, documents, agent logs, notifications,
+                and uploaded files. Authentication settings are preserved.
+              </p>
+              <Badge variant="destructive" className="shrink-0">Irreversible</Badge>
+            </div>
             <Button
               variant="destructive"
               onClick={() => setClearOpen(true)}
@@ -81,7 +85,9 @@ export function DataManagementSection() {
             >
               {loading ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : null}
+              ) : (
+                <Trash2 className="mr-2 h-4 w-4" />
+              )}
               Clear All Data
             </Button>
           </div>
@@ -101,7 +107,9 @@ export function DataManagementSection() {
             >
               {loading ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : null}
+              ) : (
+                <Database className="mr-2 h-4 w-4" />
+              )}
               Seed Sample Data
             </Button>
           </div>

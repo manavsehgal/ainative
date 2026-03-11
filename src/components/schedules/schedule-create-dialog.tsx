@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Plus } from "lucide-react";
+import { Plus, Calendar, Clock, Bot } from "lucide-react";
 import { toast } from "sonner";
 
 interface ProfileOption {
@@ -135,137 +135,164 @@ export function ScheduleCreateDialog({
           New Schedule
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Create Schedule</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-muted-foreground" />
+            Create Schedule
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="sched-name">Name</Label>
-            <Input
-              id="sched-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g., Build status check"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="sched-prompt">Prompt</Label>
-            <Textarea
-              id="sched-prompt"
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="The prompt the agent will execute on each firing"
-              rows={3}
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Interval</Label>
-            <Select value={intervalPreset} onValueChange={setIntervalPreset}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {INTERVAL_PRESETS.map((p) => (
-                  <SelectItem key={p.value} value={p.value}>
-                    {p.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {intervalPreset === "custom" && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Left column */}
+            <div className="space-y-2">
+              <Label htmlFor="sched-name">Name</Label>
               <Input
-                value={customInterval}
-                onChange={(e) => setCustomInterval(e.target.value)}
-                placeholder="e.g., 10m, 3h, or */5 * * * *"
-                className="mt-2"
+                id="sched-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g., Build status check"
+                required
               />
+              <p className="text-xs text-muted-foreground">Human-readable schedule name</p>
+            </div>
+
+            {/* Right column */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                Interval
+              </Label>
+              <Select value={intervalPreset} onValueChange={setIntervalPreset}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {INTERVAL_PRESETS.map((p) => (
+                    <SelectItem key={p.value} value={p.value}>
+                      {p.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {intervalPreset === "custom" && (
+                <>
+                  <Input
+                    value={customInterval}
+                    onChange={(e) => setCustomInterval(e.target.value)}
+                    placeholder="e.g., 10m, 3h, or */5 * * * *"
+                    className="mt-1"
+                  />
+                  <p className="text-xs text-muted-foreground">Duration or cron expression</p>
+                </>
+              )}
+            </div>
+
+            {/* Prompt — spans full left column */}
+            <div className="space-y-2">
+              <Label htmlFor="sched-prompt">Prompt</Label>
+              <Textarea
+                id="sched-prompt"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="What the agent does each firing"
+                rows={3}
+                required
+              />
+              <p className="text-xs text-muted-foreground">Instructions for each execution</p>
+            </div>
+
+            {/* Recurring + conditional fields */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="sched-recurs">Recurring</Label>
+                <Switch
+                  id="sched-recurs"
+                  checked={recurs}
+                  onCheckedChange={setRecurs}
+                />
+              </div>
+              {recurs && (
+                <>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="sched-max">Max firings</Label>
+                    <Input
+                      id="sched-max"
+                      type="number"
+                      min={1}
+                      value={maxFirings}
+                      onChange={(e) =>
+                        setMaxFirings(e.target.value ? Number(e.target.value) : "")
+                      }
+                      placeholder="Unlimited"
+                    />
+                    <p className="text-xs text-muted-foreground">Leave empty = unlimited</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="sched-expires">Expires in (hours)</Label>
+                    <Input
+                      id="sched-expires"
+                      type="number"
+                      min={1}
+                      value={expiresInHours}
+                      onChange={(e) =>
+                        setExpiresInHours(
+                          e.target.value ? Number(e.target.value) : ""
+                        )
+                      }
+                      placeholder="Never"
+                    />
+                    <p className="text-xs text-muted-foreground">Auto-pause timer</p>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Project */}
+            {projects.length > 0 && (
+              <div className="space-y-2">
+                <Label>Project</Label>
+                <Select value={projectId} onValueChange={setProjectId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="None" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {projects.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">Context directory</p>
+              </div>
+            )}
+
+            {/* Agent Profile */}
+            {profiles.length > 0 && (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5">
+                  <Bot className="h-3.5 w-3.5 text-muted-foreground" />
+                  Agent Profile
+                </Label>
+                <Select value={agentProfile} onValueChange={setAgentProfile}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Auto-detect" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">Auto-detect</SelectItem>
+                    {profiles.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">Which agent to use</p>
+              </div>
             )}
           </div>
-
-          <div className="flex items-center justify-between">
-            <Label htmlFor="sched-recurs">Recurring</Label>
-            <Switch
-              id="sched-recurs"
-              checked={recurs}
-              onCheckedChange={setRecurs}
-            />
-          </div>
-
-          {recurs && (
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="sched-max">Max firings (optional)</Label>
-                <Input
-                  id="sched-max"
-                  type="number"
-                  min={1}
-                  value={maxFirings}
-                  onChange={(e) =>
-                    setMaxFirings(e.target.value ? Number(e.target.value) : "")
-                  }
-                  placeholder="Unlimited"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="sched-expires">Expires in (hours, optional)</Label>
-                <Input
-                  id="sched-expires"
-                  type="number"
-                  min={1}
-                  value={expiresInHours}
-                  onChange={(e) =>
-                    setExpiresInHours(
-                      e.target.value ? Number(e.target.value) : ""
-                    )
-                  }
-                  placeholder="Never"
-                />
-              </div>
-            </div>
-          )}
-
-          {projects.length > 0 && (
-            <div className="space-y-2">
-              <Label>Project (optional)</Label>
-              <Select value={projectId} onValueChange={setProjectId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="None" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  {projects.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {profiles.length > 0 && (
-            <div className="space-y-2">
-              <Label>Agent Profile (optional)</Label>
-              <Select value={agentProfile} onValueChange={setAgentProfile}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Auto-detect" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="auto">Auto-detect</SelectItem>
-                  {profiles.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
 
           {error && <p className="text-sm text-destructive">{error}</p>}
 

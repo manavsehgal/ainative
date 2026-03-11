@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Upload, CheckCircle, Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 interface DocumentUploadDialogProps {
@@ -98,6 +99,13 @@ export function DocumentUploadDialog({
           <p className="text-xs text-muted-foreground mt-1">
             Max 50MB per file. Multiple files supported.
           </p>
+          <div className="flex flex-wrap justify-center gap-1 mt-2">
+            {["PDF", "DOCX", "XLSX", "TXT", "Images"].map((type) => (
+              <Badge key={type} variant="outline" className="text-xs">
+                {type}
+              </Badge>
+            ))}
+          </div>
           <input
             ref={inputRef}
             type="file"

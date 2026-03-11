@@ -42,19 +42,21 @@ export default async function EditWorkflowPage({
   };
 
   return (
-    <div className="p-6">
-      <Link href={clone === "true" ? "/workflows" : `/workflows/${id}`}>
-        <Button variant="ghost" size="sm" className="mb-4">
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          {clone === "true" ? "Back to Workflows" : "Back to Workflow"}
-        </Button>
-      </Link>
-      <WorkflowFormView
-        workflow={workflowData}
-        projects={allProjects}
-        profiles={profiles}
-        clone={clone === "true"}
-      />
+    <div className="gradient-ocean-mist min-h-screen p-6">
+      <div className="max-w-6xl mx-auto">
+        <Link href={clone === "true" ? "/workflows" : `/workflows/${id}`}>
+          <Button variant="ghost" size="sm" className="mb-4">
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            {clone === "true" ? "Back to Workflows" : "Back to Workflow"}
+          </Button>
+        </Link>
+        <WorkflowFormView
+          workflow={workflowData}
+          projects={allProjects}
+          profiles={profiles}
+          clone={clone === "true"}
+        />
+      </div>
     </div>
   );
 }

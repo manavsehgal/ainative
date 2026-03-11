@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Upload, X, FileText } from "lucide-react";
+import { Upload, X, FileText, Image, FileCode } from "lucide-react";
 
 interface UploadedFile {
   id: string;
@@ -22,6 +22,13 @@ function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function getFileIcon(type: string) {
+  if (type.startsWith("image/")) return Image;
+  if (type.includes("pdf") || type.includes("document") || type.includes("text")) return FileText;
+  if (type.includes("javascript") || type.includes("typescript") || type.includes("json") || type.includes("xml")) return FileCode;
+  return FileText;
 }
 
 export function FileUpload({ onUploaded, uploads, onRemove }: FileUploadProps) {
@@ -76,6 +83,7 @@ export function FileUpload({ onUploaded, uploads, onRemove }: FileUploadProps) {
         <p className="text-xs text-muted-foreground">
           {uploading ? "Uploading..." : "Click or drop a file"}
         </p>
+        <p className="text-xs text-muted-foreground mt-0.5">Max 50MB per file</p>
         <input
           ref={inputRef}
           type="file"
@@ -85,9 +93,11 @@ export function FileUpload({ onUploaded, uploads, onRemove }: FileUploadProps) {
       </div>
       {uploads.length > 0 && (
         <div className="space-y-1">
-          {uploads.map((f) => (
+          {uploads.map((f) => {
+            const Icon = getFileIcon(f.type);
+            return (
             <div key={f.id} className="flex items-center gap-2 text-sm">
-              <FileText className="h-3 w-3 text-muted-foreground" />
+              <Icon className="h-3 w-3 text-muted-foreground" />
               <span className="flex-1 truncate">{f.originalName}</span>
               <span className="text-xs text-muted-foreground">{formatSize(f.size)}</span>
               <Button
@@ -101,7 +111,8 @@ export function FileUpload({ onUploaded, uploads, onRemove }: FileUploadProps) {
                 <X className="h-3 w-3" />
               </Button>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

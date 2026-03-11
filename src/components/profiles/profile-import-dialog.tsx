@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Download, Loader2 } from "lucide-react";
+import { Download, Loader2, Github } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -71,7 +71,10 @@ export function ProfileImportDialog({
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="import-url">GitHub URL</Label>
+            <Label htmlFor="import-url" className="flex items-center gap-1.5">
+              <Github className="h-3.5 w-3.5 text-muted-foreground" />
+              GitHub URL
+            </Label>
             <Input
               id="import-url"
               placeholder="https://github.com/user/repo/tree/main/.claude/skills/my-profile"
@@ -81,6 +84,7 @@ export function ProfileImportDialog({
                 if (e.key === "Enter" && !loading) handleImport();
               }}
             />
+            <p className="text-xs text-muted-foreground">Directory must contain profile.yaml and SKILL.md</p>
           </div>
           {error && (
             <p className="text-sm text-destructive">{error}</p>

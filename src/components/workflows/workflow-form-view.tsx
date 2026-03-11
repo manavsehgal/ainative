@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -14,9 +16,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2 } from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Plus,
+  Trash2,
+  GitBranch,
+  RefreshCw,
+  ListOrdered,
+  MessageSquare,
+  ArrowDown,
+  Brain,
+  ShieldCheck,
+} from "lucide-react";
 import { toast } from "sonner";
+import { FormSectionCard } from "@/components/shared/form-section-card";
 import type { WorkflowStep, WorkflowDefinition } from "@/lib/workflows/types";
 
 interface WorkflowData {
@@ -50,6 +62,13 @@ function parseDefinition(json: string): WorkflowDefinition | null {
   }
 }
 
+const PATTERN_ICONS: Record<string, React.ReactNode> = {
+  sequence: <ArrowDown className="h-3.5 w-3.5 text-muted-foreground" />,
+  "planner-executor": <Brain className="h-3.5 w-3.5 text-muted-foreground" />,
+  checkpoint: <ShieldCheck className="h-3.5 w-3.5 text-muted-foreground" />,
+  loop: <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />,
+};
+
 export function WorkflowFormView({
   workflow,
   projects,
@@ -69,7 +88,9 @@ export function WorkflowFormView({
   // Loop-specific state
   const [loopPrompt, setLoopPrompt] = useState("");
   const [maxIterations, setMaxIterations] = useState(5);
-  const [timeBudgetMinutes, setTimeBudgetMinutes] = useState<number | "">("");
+  const [timeBudgetMinutes, setTimeBudgetMinutes] = useState<number | "">(
+    ""
+  );
   const [loopAgentProfile, setLoopAgentProfile] = useState("");
 
   // Pre-populate form for edit/clone
@@ -225,247 +246,312 @@ export function WorkflowFormView({
     clone: ["Cloning...", "Clone Workflow"],
   };
 
+  const isLoop = pattern === "loop";
+
   return (
-    <Card className="max-w-3xl">
-      <CardHeader>
-        <CardTitle>{titles[mode]}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="wf-name">Name</Label>
-              <Input
-                id="wf-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Workflow name"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Pattern</Label>
-              <Select
-                value={pattern}
-                onValueChange={setPattern}
-                disabled={mode === "edit"}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="sequence">Sequence</SelectItem>
-                  <SelectItem value="planner-executor">
-                    Planner → Executor
-                  </SelectItem>
-                  <SelectItem value="checkpoint">
-                    Human-in-the-Loop Checkpoint
-                  </SelectItem>
-                  <SelectItem value="loop">Autonomous Loop</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+    <div className="space-y-4">
+      <h2 className="text-xl font-semibold">{titles[mode]}</h2>
 
-          {projects.length > 0 && (
-            <div className="space-y-2">
-              <Label>Project (optional)</Label>
-              <Select value={projectId} onValueChange={setProjectId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="None" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  {projects.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {pattern === "loop" ? (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="loop-prompt">Loop Prompt</Label>
-                <Textarea
-                  id="loop-prompt"
-                  value={loopPrompt}
-                  onChange={(e) => setLoopPrompt(e.target.value)}
-                  placeholder="The prompt the agent will iterate on. Each iteration receives the previous output as context."
-                  rows={6}
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="max-iterations">Max Iterations</Label>
+      <form onSubmit={handleSubmit}>
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-4">
+          {/* Left: Config sidebar */}
+          <div className="space-y-4">
+            <FormSectionCard icon={GitBranch} title="Workflow Identity">
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="wf-name">Name</Label>
                   <Input
-                    id="max-iterations"
-                    type="number"
-                    min={1}
-                    max={100}
-                    value={maxIterations}
-                    onChange={(e) => setMaxIterations(Number(e.target.value))}
+                    id="wf-name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Workflow name"
                     required
                   />
+                  <p className="text-xs text-muted-foreground">Short descriptive name</p>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="time-budget">
-                    Time Budget (minutes, optional)
-                  </Label>
-                  <Input
-                    id="time-budget"
-                    type="number"
-                    min={1}
-                    value={timeBudgetMinutes}
-                    onChange={(e) =>
-                      setTimeBudgetMinutes(
-                        e.target.value ? Number(e.target.value) : ""
-                      )
-                    }
-                    placeholder="No limit"
-                  />
-                </div>
-              </div>
-              {profiles.length > 0 && (
-                <div className="space-y-2">
-                  <Label>Agent Profile</Label>
+                <div className="space-y-1.5">
+                  <Label>Pattern</Label>
                   <Select
-                    value={loopAgentProfile}
-                    onValueChange={setLoopAgentProfile}
+                    value={pattern}
+                    onValueChange={setPattern}
+                    disabled={mode === "edit"}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Profile: Auto-detect" />
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="auto">Auto-detect</SelectItem>
-                      {profiles.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="sequence">
+                        <span className="flex items-center gap-1.5">
+                          {PATTERN_ICONS.sequence}
+                          Sequence
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="planner-executor">
+                        <span className="flex items-center gap-1.5">
+                          {PATTERN_ICONS["planner-executor"]}
+                          Planner → Executor
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="checkpoint">
+                        <span className="flex items-center gap-1.5">
+                          {PATTERN_ICONS.checkpoint}
+                          Checkpoint
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="loop">
+                        <span className="flex items-center gap-1.5">
+                          {PATTERN_ICONS.loop}
+                          Autonomous Loop
+                        </span>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground">How steps execute</p>
                 </div>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Label>Steps</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addStep}
-                >
-                  <Plus className="h-3 w-3 mr-1" />
-                  Add Step
-                </Button>
-              </div>
-              {steps.map((step, index) => (
-                <div key={step.id} className="border rounded-lg p-4 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono text-muted-foreground w-6">
-                      #{index + 1}
-                    </span>
-                    <Input
-                      value={step.name}
-                      onChange={(e) =>
-                        updateStep(index, { name: e.target.value })
-                      }
-                      placeholder="Step name"
-                      className="flex-1"
-                    />
-                    {steps.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => removeStep(index)}
-                        aria-label={`Remove step ${index + 1}`}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </div>
-                  <Textarea
-                    value={step.prompt}
-                    onChange={(e) =>
-                      updateStep(index, { prompt: e.target.value })
-                    }
-                    placeholder="Agent prompt for this step"
-                    rows={3}
-                  />
-                  {profiles.length > 0 && (
-                    <Select
-                      value={step.agentProfile ?? ""}
-                      onValueChange={(v) =>
-                        updateStep(index, {
-                          agentProfile: v || undefined,
-                        })
-                      }
-                    >
-                      <SelectTrigger className="h-8 text-xs">
-                        <SelectValue placeholder="Profile: Auto-detect" />
+                {projects.length > 0 && (
+                  <div className="space-y-1.5">
+                    <Label>Project</Label>
+                    <Select value={projectId} onValueChange={setProjectId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="None" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="auto">Auto-detect</SelectItem>
-                        {profiles.map((p) => (
+                        <SelectItem value="none">None</SelectItem>
+                        {projects.map((p) => (
                           <SelectItem key={p.id} value={p.id}>
                             {p.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                  )}
-                  {pattern === "checkpoint" && (
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        id={`approval-${step.id}`}
-                        checked={step.requiresApproval ?? false}
-                        onCheckedChange={(checked) =>
-                          updateStep(index, {
-                            requiresApproval: checked === true,
-                          })
-                        }
-                      />
-                      <Label
-                        htmlFor={`approval-${step.id}`}
-                        className="text-sm"
+                    <p className="text-xs text-muted-foreground">Associates working directory</p>
+                  </div>
+                )}
+              </div>
+            </FormSectionCard>
+
+            {isLoop && (
+              <FormSectionCard icon={RefreshCw} title="Loop Config">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label>Max Iterations</Label>
+                      <Badge variant="secondary" className="tabular-nums text-xs">
+                        {maxIterations}
+                      </Badge>
+                    </div>
+                    <Slider
+                      min={1}
+                      max={100}
+                      step={1}
+                      value={[maxIterations]}
+                      onValueChange={([v]) => setMaxIterations(v)}
+                    />
+                    <p className="text-xs text-muted-foreground">Safety limit for loops</p>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label>Time Budget (min)</Label>
+                      <Badge variant="secondary" className="tabular-nums text-xs">
+                        {timeBudgetMinutes || "None"}
+                      </Badge>
+                    </div>
+                    <Slider
+                      min={0}
+                      max={120}
+                      step={1}
+                      value={[typeof timeBudgetMinutes === "number" ? timeBudgetMinutes : 0]}
+                      onValueChange={([v]) => setTimeBudgetMinutes(v === 0 ? "" : v)}
+                    />
+                    <p className="text-xs text-muted-foreground">Optional time cap (0 = no limit)</p>
+                  </div>
+                  {profiles.length > 0 && (
+                    <div className="space-y-1.5">
+                      <Label>Agent Profile</Label>
+                      <Select
+                        value={loopAgentProfile}
+                        onValueChange={setLoopAgentProfile}
                       >
-                        Requires human approval before proceeding
-                      </Label>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Auto-detect" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="auto">Auto-detect</SelectItem>
+                          {profiles.map((p) => (
+                            <SelectItem key={p.id} value={p.id}>
+                              {p.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">Which agent to use per iteration</p>
                     </div>
                   )}
                 </div>
-              ))}
-            </div>
-          )}
+              </FormSectionCard>
+            )}
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
-
-          <div className="flex items-center gap-3">
-            <Button
-              type="submit"
-              disabled={loading || !name.trim()}
-            >
-              {loading ? submitLabels[mode][0] : submitLabels[mode][1]}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => router.back()}
-            >
-              Cancel
-            </Button>
+            {!isLoop && (
+              <FormSectionCard icon={ListOrdered} title="Step Overview">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Badge variant="secondary" className="text-xs">
+                      {steps.length} {steps.length === 1 ? "step" : "steps"}
+                    </Badge>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addStep}
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      Add Step
+                    </Button>
+                  </div>
+                  <div className="space-y-1">
+                    {steps.map((step, i) => (
+                      <p key={step.id} className="text-xs text-muted-foreground truncate">
+                        #{i + 1} {step.name || "(unnamed)"}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              </FormSectionCard>
+            )}
           </div>
-        </form>
-      </CardContent>
-    </Card>
+
+          {/* Right: Main content */}
+          <div className="space-y-4">
+            {isLoop ? (
+              <FormSectionCard icon={MessageSquare} title="Loop Prompt">
+                <div className="space-y-1.5">
+                  <Textarea
+                    id="loop-prompt"
+                    value={loopPrompt}
+                    onChange={(e) => setLoopPrompt(e.target.value)}
+                    placeholder="The prompt the agent will iterate on..."
+                    rows={8}
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Each iteration receives previous output as context
+                  </p>
+                </div>
+              </FormSectionCard>
+            ) : (
+              steps.map((step, index) => (
+                <FormSectionCard
+                  key={step.id}
+                  icon={ListOrdered}
+                  title={`Step ${index + 1}`}
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-xs shrink-0">
+                        #{index + 1}
+                      </Badge>
+                      <Input
+                        value={step.name}
+                        onChange={(e) =>
+                          updateStep(index, { name: e.target.value })
+                        }
+                        placeholder="Step name"
+                        className="flex-1"
+                      />
+                      {steps.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 shrink-0"
+                          onClick={() => removeStep(index)}
+                          aria-label={`Remove step ${index + 1}`}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                    <div className="space-y-1.5">
+                      <Textarea
+                        value={step.prompt}
+                        onChange={(e) =>
+                          updateStep(index, { prompt: e.target.value })
+                        }
+                        placeholder="Instructions for the agent"
+                        rows={3}
+                      />
+                      <p className="text-xs text-muted-foreground">Agent prompt for this step</p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      {profiles.length > 0 && (
+                        <div className="flex-1">
+                          <Select
+                            value={step.agentProfile ?? ""}
+                            onValueChange={(v) =>
+                              updateStep(index, {
+                                agentProfile: v || undefined,
+                              })
+                            }
+                          >
+                            <SelectTrigger className="h-8 text-xs">
+                              <SelectValue placeholder="Profile: Auto-detect" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="auto">Auto-detect</SelectItem>
+                              {profiles.map((p) => (
+                                <SelectItem key={p.id} value={p.id}>
+                                  {p.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                      {pattern === "checkpoint" && (
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            id={`approval-${step.id}`}
+                            checked={step.requiresApproval ?? false}
+                            onCheckedChange={(checked) =>
+                              updateStep(index, {
+                                requiresApproval: checked,
+                              })
+                            }
+                          />
+                          <Label
+                            htmlFor={`approval-${step.id}`}
+                            className="text-xs"
+                          >
+                            Requires approval
+                          </Label>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </FormSectionCard>
+              ))
+            )}
+
+            {error && <p className="text-sm text-destructive">{error}</p>}
+
+            <div className="flex items-center gap-3 pt-2">
+              <Button
+                type="submit"
+                disabled={loading || !name.trim()}
+              >
+                {loading ? submitLabels[mode][0] : submitLabels[mode][1]}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => router.back()}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
   );
 }

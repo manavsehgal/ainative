@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Plus } from "lucide-react";
+import { Plus, FolderOpen, AlignLeft, FolderCode } from "lucide-react";
 import { toast } from "sonner";
 
 interface ProjectCreateDialogProps {
@@ -75,7 +75,10 @@ export function ProjectCreateDialog({ onCreated }: ProjectCreateDialogProps) {
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Name</Label>
+            <Label htmlFor="name" className="flex items-center gap-1.5">
+              <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
+              Name
+            </Label>
             <Input
               id="name"
               value={name}
@@ -83,9 +86,13 @@ export function ProjectCreateDialog({ onCreated }: ProjectCreateDialogProps) {
               placeholder="Project name"
               required
             />
+            <p className="text-xs text-muted-foreground">Short, memorable name</p>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description" className="flex items-center gap-1.5">
+              <AlignLeft className="h-3.5 w-3.5 text-muted-foreground" />
+              Description
+            </Label>
             <Textarea
               id="description"
               value={description}
@@ -93,9 +100,13 @@ export function ProjectCreateDialog({ onCreated }: ProjectCreateDialogProps) {
               placeholder="Optional description"
               rows={3}
             />
+            <p className="text-xs text-muted-foreground">Optional context for agents</p>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="working-dir">Working Directory</Label>
+            <Label htmlFor="working-dir" className="flex items-center gap-1.5">
+              <FolderCode className="h-3.5 w-3.5 text-muted-foreground" />
+              Working Directory
+            </Label>
             <Input
               id="working-dir"
               value={workingDirectory}

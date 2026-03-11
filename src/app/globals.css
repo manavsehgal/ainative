@@ -404,6 +404,33 @@
   border-color: var(--glass-border-subtle);
 }
 
+[data-slot="slider"] {
+  --slider-track-bg: var(--glass-bg-light);
+}
+
+[data-slot="slider-track"] {
+  background: var(--glass-bg-light);
+  -webkit-backdrop-filter: blur(var(--blur-glass-sm));
+  backdrop-filter: blur(var(--blur-glass-sm));
+}
+
+[data-slot="slider-range"] {
+  background: var(--primary);
+}
+
+[data-slot="slider-thumb"] {
+  background: var(--glass-bg-heavy);
+  -webkit-backdrop-filter: blur(var(--blur-glass-sm));
+  backdrop-filter: blur(var(--blur-glass-sm));
+  border-color: var(--primary);
+  box-shadow: var(--glass-shadow-sm);
+}
+
+/* Temperature slider gradient track */
+.slider-temperature [data-slot="slider-range"] {
+  background: linear-gradient(90deg, oklch(0.6 0.18 260), oklch(0.7 0.15 55));
+}
+
 [data-slot="popover-content"],
 [data-slot="dropdown-menu-content"],
 [data-slot="select-content"] {

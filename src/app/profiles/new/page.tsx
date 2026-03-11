@@ -7,14 +7,16 @@ export const dynamic = "force-dynamic";
 
 export default async function NewProfilePage() {
   return (
-    <div className="p-6">
-      <Link href="/profiles">
-        <Button variant="ghost" size="sm" className="mb-4">
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Back to Profiles
-        </Button>
-      </Link>
-      <ProfileFormView />
+    <div className="gradient-ocean-mist min-h-screen p-6">
+      <div className="max-w-6xl mx-auto">
+        <Link href="/profiles">
+          <Button variant="ghost" size="sm" className="mb-4">
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Back to Profiles
+          </Button>
+        </Link>
+        <ProfileFormView />
+      </div>
     </div>
   );
 }

@@ -24,14 +24,16 @@ export default async function EditProfilePage({
   if (isBuiltin(id) && duplicate !== "true") notFound();
 
   return (
-    <div className="p-6">
-      <Link href={duplicate === "true" ? "/profiles" : `/profiles/${id}`}>
-        <Button variant="ghost" size="sm" className="mb-4">
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          {duplicate === "true" ? "Back to Profiles" : "Back to Profile"}
-        </Button>
-      </Link>
-      <ProfileFormView profileId={id} duplicate={duplicate === "true"} />
+    <div className="gradient-ocean-mist min-h-screen p-6">
+      <div className="max-w-6xl mx-auto">
+        <Link href={duplicate === "true" ? "/profiles" : `/profiles/${id}`}>
+          <Button variant="ghost" size="sm" className="mb-4">
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            {duplicate === "true" ? "Back to Profiles" : "Back to Profile"}
+          </Button>
+        </Link>
+        <ProfileFormView profileId={id} duplicate={duplicate === "true"} />
+      </div>
     </div>
   );
 }

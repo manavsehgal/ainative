@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { FolderOpen, AlignLeft, FolderCode } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
@@ -107,25 +108,36 @@ export function ProjectEditDialog({
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-name">Name</Label>
+              <Label htmlFor="edit-name" className="flex items-center gap-1.5">
+                <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
+                Name
+              </Label>
               <Input
                 id="edit-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
               />
+              <p className="text-xs text-muted-foreground">Short, memorable name</p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-description">Description</Label>
+              <Label htmlFor="edit-description" className="flex items-center gap-1.5">
+                <AlignLeft className="h-3.5 w-3.5 text-muted-foreground" />
+                Description
+              </Label>
               <Textarea
                 id="edit-description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
               />
+              <p className="text-xs text-muted-foreground">Optional context for agents</p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-working-dir">Working Directory</Label>
+              <Label htmlFor="edit-working-dir" className="flex items-center gap-1.5">
+                <FolderCode className="h-3.5 w-3.5 text-muted-foreground" />
+                Working Directory
+              </Label>
               <Input
                 id="edit-working-dir"
                 value={workingDirectory}
@@ -143,11 +155,27 @@ export function ProjectEditDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="paused">Paused</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="active">
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-[var(--status-completed)] inline-block" />
+                      Active
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="paused">
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-[var(--status-warning)] inline-block" />
+                      Paused
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="completed">
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-[var(--status-running)] inline-block" />
+                      Completed
+                    </span>
+                  </SelectItem>
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground">Paused projects won&apos;t accept task executions</p>
             </div>
             <div className="flex gap-2">
               <Button type="submit" disabled={loading || !name.trim()} className="flex-1">

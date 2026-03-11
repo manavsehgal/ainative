@@ -1,13 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,11 +13,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Bot } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Bot, FileText, Settings, Paperclip } from "lucide-react";
 import { toast } from "sonner";
 import { AIAssistPanel } from "./ai-assist-panel";
 import { FileUpload } from "./file-upload";
-import { cn } from "@/lib/utils";
+import { FormSectionCard } from "@/components/shared/form-section-card";
 
 interface ProfileOption {
   id: string;
@@ -41,16 +36,17 @@ interface UploadedFile {
 
 interface TaskCreatePanelProps {
   projects: { id: string; name: string }[];
-  onCreated: () => void;
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
 }
 
-export function TaskCreatePanel({ projects, onCreated, open: controlledOpen, onOpenChange }: TaskCreatePanelProps) {
-  const [internalOpen, setInternalOpen] = useState(false);
-  const isControlled = controlledOpen !== undefined;
-  const open = isControlled ? controlledOpen : internalOpen;
-  const setOpen = isControlled ? (onOpenChange ?? (() => {})) : setInternalOpen;
+const PRIORITY_COLORS: Record<string, string> = {
+  "0": "bg-[var(--priority-critical)]",
+  "1": "bg-[var(--priority-high)]",
+  "2": "bg-[var(--priority-medium)]",
+  "3": "bg-[var(--priority-low)]",
+};
+
+export function TaskCreatePanel({ projects }: TaskCreatePanelProps) {
+  const router = useRouter();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [projectId, setProjectId] = useState<string>("");
@@ -60,7 +56,6 @@ export function TaskCreatePanel({ projects, onCreated, open: controlledOpen, onO
   const [uploads, setUploads] = useState<UploadedFile[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [hasAIResult, setHasAIResult] = useState(false);
 
   useEffect(() => {
     fetch("/api/profiles")
@@ -88,15 +83,8 @@ export function TaskCreatePanel({ projects, onCreated, open: controlledOpen, onO
         }),
       });
       if (res.ok) {
-        setTitle("");
-        setDescription("");
-        setProjectId("");
-        setPriority("2");
-        setAgentProfile("");
-        setUploads([]);
-        setOpen(false);
         toast.success("Task created");
-        onCreated();
+        router.push("/dashboard");
       } else {
         const data = await res.json().catch(() => null);
         setError(data?.error ?? `Failed to create task (${res.status})`);
@@ -110,155 +98,171 @@ export function TaskCreatePanel({ projects, onCreated, open: controlledOpen, onO
   }
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      {!isControlled && (
-        <SheetTrigger asChild>
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            New Task
-          </Button>
-        </SheetTrigger>
-      )}
-      <SheetContent
-        className={cn(
-          "flex flex-col transition-[max-width] duration-300",
-          hasAIResult ? "sm:max-w-2xl" : "sm:max-w-md"
-        )}
-      >
-        <SheetHeader className="px-6 pt-6 pb-0">
-          <SheetTitle>Create Task</SheetTitle>
-        </SheetHeader>
-        <div className="overflow-y-auto flex-1 px-6 pb-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="task-title">Title</Label>
-              <Input
-                id="task-title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="What needs to be done?"
-                required
-              />
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg">Create Task</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <FormSectionCard icon={FileText} title="Task Details">
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="task-title">Title</Label>
+                    <Input
+                      id="task-title"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="What needs to be done?"
+                      required
+                    />
+                    <p className="text-xs text-muted-foreground">Concise task summary</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="task-desc">Description</Label>
+                    <Textarea
+                      id="task-desc"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="Detailed instructions for the agent"
+                      rows={3}
+                    />
+                    <p className="text-xs text-muted-foreground">Detailed agent instructions</p>
+                  </div>
+                </div>
+              </FormSectionCard>
+
+              <FormSectionCard icon={Settings} title="Configuration">
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label>Project</Label>
+                      <Select value={projectId} onValueChange={setProjectId}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="None" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          {projects.map((p) => (
+                            <SelectItem key={p.id} value={p.id}>
+                              {p.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">Working directory</p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Priority</Label>
+                      <Select value={priority} onValueChange={setPriority}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[
+                            { value: "0", label: "P0 - Critical" },
+                            { value: "1", label: "P1 - High" },
+                            { value: "2", label: "P2 - Medium" },
+                            { value: "3", label: "P3 - Low" },
+                          ].map((p) => (
+                            <SelectItem key={p.value} value={p.value}>
+                              <span className="flex items-center gap-1.5">
+                                <span className={`h-2 w-2 rounded-full ${PRIORITY_COLORS[p.value]} inline-block`} />
+                                {p.label}
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  {profiles.length > 0 && (
+                    <div className="space-y-1.5">
+                      <Label className="flex items-center gap-1.5">
+                        <Bot className="h-3.5 w-3.5 text-muted-foreground" />
+                        Agent Profile
+                      </Label>
+                      <Select value={agentProfile} onValueChange={setAgentProfile}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Auto-detect" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="auto">Auto-detect</SelectItem>
+                          {profiles.map((p) => (
+                            <SelectItem key={p.id} value={p.id}>
+                              <span className="flex items-center gap-1.5">
+                                <Bot className="h-3 w-3" />
+                                {p.name}
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">Auto-detect picks best agent</p>
+                    </div>
+                  )}
+                </div>
+              </FormSectionCard>
+
+              <FormSectionCard icon={Paperclip} title="Attachments">
+                <FileUpload
+                  uploads={uploads}
+                  onUploaded={(f) => setUploads((prev) => [...prev, f])}
+                  onRemove={(id) => setUploads((prev) => prev.filter((f) => f.id !== id))}
+                />
+              </FormSectionCard>
+
+              {error && (
+                <p className="text-sm text-destructive">{error}</p>
+              )}
+              <Button type="submit" disabled={loading || !title.trim()} className="w-full">
+                {loading ? "Creating..." : "Create Task"}
+              </Button>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="task-desc">Description</Label>
-              <Textarea
-                id="task-desc"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Detailed instructions for the agent"
-                rows={3}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Project</Label>
-                <Select value={projectId} onValueChange={setProjectId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="None" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    {projects.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Priority</Label>
-                <Select value={priority} onValueChange={setPriority}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0">P0 - Critical</SelectItem>
-                    <SelectItem value="1">P1 - High</SelectItem>
-                    <SelectItem value="2">P2 - Medium</SelectItem>
-                    <SelectItem value="3">P3 - Low</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            {profiles.length > 0 && (
-              <div className="space-y-2">
-                <Label>Agent Profile</Label>
-                <Select value={agentProfile} onValueChange={setAgentProfile}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Auto-detect" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="auto">Auto-detect</SelectItem>
-                    {profiles.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        <span className="flex items-center gap-1.5">
-                          <Bot className="h-3 w-3" />
-                          {p.name}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            <div className="space-y-2">
-              <Label>Attachments</Label>
-              <FileUpload
-                uploads={uploads}
-                onUploaded={(f) => setUploads((prev) => [...prev, f])}
-                onRemove={(id) => setUploads((prev) => prev.filter((f) => f.id !== id))}
-              />
-            </div>
-            {error && (
-              <p className="text-sm text-destructive">{error}</p>
-            )}
-            <Button type="submit" disabled={loading || !title.trim()} className="w-full">
-              {loading ? "Creating..." : "Create Task"}
-            </Button>
-            <AIAssistPanel
-              title={title}
-              description={description}
-              onApplyDescription={(d) => setDescription(d)}
-              onResultChange={setHasAIResult}
-              onCreateSubtasks={async (subtasks) => {
-                let created = 0;
-                const failures: string[] = [];
-                for (const sub of subtasks) {
-                  toast.info(`Creating sub-task ${created + 1}/${subtasks.length}...`);
-                  try {
-                    const res = await fetch("/api/tasks", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({
-                        title: sub.title,
-                        description: sub.description,
-                        projectId: projectId || undefined,
-                        priority: parseInt(priority, 10),
-                      }),
-                    });
-                    if (res.ok) {
-                      created++;
-                    } else {
+            <div className="glass-card-light rounded-lg">
+              <AIAssistPanel
+                title={title}
+                description={description}
+                onApplyDescription={(d) => setDescription(d)}
+                onCreateSubtasks={async (subtasks) => {
+                  let created = 0;
+                  const failures: string[] = [];
+                  for (const sub of subtasks) {
+                    toast.info(`Creating sub-task ${created + 1}/${subtasks.length}...`);
+                    try {
+                      const res = await fetch("/api/tasks", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          title: sub.title,
+                          description: sub.description,
+                          projectId: projectId || undefined,
+                          priority: parseInt(priority, 10),
+                        }),
+                      });
+                      if (res.ok) {
+                        created++;
+                      } else {
+                        failures.push(sub.title);
+                      }
+                    } catch {
                       failures.push(sub.title);
                     }
-                  } catch {
-                    failures.push(sub.title);
                   }
-                }
-                if (failures.length > 0) {
-                  toast.error(`Failed to create ${failures.length} sub-task(s): ${failures.join(", ")}`);
-                }
-                if (created > 0) {
-                  toast.success(`Created ${created} sub-task(s)`);
-                }
-                onCreated();
-              }}
-            />
-          </form>
-        </div>
-      </SheetContent>
-    </Sheet>
+                  if (failures.length > 0) {
+                    toast.error(`Failed to create ${failures.length} sub-task(s): ${failures.join(", ")}`);
+                  }
+                  if (created > 0) {
+                    toast.success(`Created ${created} sub-task(s)`);
+                  }
+                  router.push("/dashboard");
+                }}
+              />
+            </div>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

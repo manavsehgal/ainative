@@ -17,14 +17,16 @@ export default async function NewWorkflowPage() {
   const profiles = listProfiles().map((p) => ({ id: p.id, name: p.name }));
 
   return (
-    <div className="p-6">
-      <Link href="/workflows">
-        <Button variant="ghost" size="sm" className="mb-4">
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Back to Workflows
-        </Button>
-      </Link>
-      <WorkflowFormView projects={allProjects} profiles={profiles} />
+    <div className="gradient-ocean-mist min-h-screen p-6">
+      <div className="max-w-6xl mx-auto">
+        <Link href="/workflows">
+          <Button variant="ghost" size="sm" className="mb-4">
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Back to Workflows
+          </Button>
+        </Link>
+        <WorkflowFormView projects={allProjects} profiles={profiles} />
+      </div>
     </div>
   );
 }
