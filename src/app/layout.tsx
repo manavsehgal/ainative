@@ -4,6 +4,7 @@ import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppSidebar } from "@/components/shared/app-sidebar";
 import { CommandPalette } from "@/components/shared/command-palette";
+import { PendingApprovalHost } from "@/components/notifications/pending-approval-host";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -67,6 +68,7 @@ export default function RootLayout({
               {children}
             </SidebarInset>
           </SidebarProvider>
+          <PendingApprovalHost />
           <CommandPalette />
           <Toaster />
         </TooltipProvider>

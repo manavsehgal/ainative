@@ -1,0 +1,478 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  ArrowUpRight,
+  Inbox,
+  Layers3,
+  ShieldAlert,
+  Workflow,
+} from "lucide-react";
+
+import { PermissionResponseActions } from "@/components/notifications/permission-response-actions";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  getPermissionDetailEntries,
+  type PermissionToolInput,
+} from "@/lib/notifications/permissions";
+import { formatTimestamp } from "@/lib/utils/format-timestamp";
+import { cn } from "@/lib/utils";
+import type { PendingApprovalPayload } from "@/lib/notifications/actionable";
+
+function dedupePendingApprovals(items: PendingApprovalPayload[]) {
+  return Array.from(
+    new Map(items.map((item) => [item.notificationId, item])).values()
+  ).sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+}
+
+function buildContextLabel(payload: PendingApprovalPayload) {
+  if (payload.workflowName && payload.taskTitle) {
+    return `${payload.workflowName} · ${payload.taskTitle}`;
+  }
+
+  return payload.taskTitle ?? payload.workflowName ?? "Approval request";
+}
+
+function PermissionDetailFields({
+  toolName,
+  toolInput,
+}: {
+  toolName: string | null;
+  toolInput: PermissionToolInput | null;
+}) {
+  const entries = getPermissionDetailEntries(toolName, toolInput);
+
+  if (entries.length === 0) return null;
+
+  return (
+    <dl className="space-y-2 text-sm">
+      {entries.map((entry) => (
+        <div
+          key={`${entry.label}-${entry.value}`}
+          className="rounded-xl border border-border/60 bg-background/50 px-3 py-2"
+        >
+          <dt className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            {entry.label}
+          </dt>
+          <dd className="mt-1 break-all font-mono text-xs text-foreground sm:text-sm">
+            {entry.value}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function PendingApprovalDetail({
+  selected,
+  overflow,
+  onResponded,
+  onOpenInbox,
+  onSelect,
+}: {
+  selected: PendingApprovalPayload;
+  overflow: PendingApprovalPayload[];
+  onResponded: () => void;
+  onOpenInbox: () => void;
+  onSelect: (notificationId: string) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge variant="outline" className="font-mono text-xs">
+          {selected.permissionLabel}
+        </Badge>
+        {selected.workflowName && (
+          <Badge variant="secondary" className="text-xs">
+            <Workflow className="h-3.5 w-3.5" />
+            Workflow
+          </Badge>
+        )}
+        {overflow.length > 0 && (
+          <Badge variant="outline" className="text-xs">
+            <Layers3 className="h-3.5 w-3.5" />
+            {overflow.length} more pending
+          </Badge>
+        )}
+      </div>
+
+      <div className="glass-card-light rounded-2xl p-4">
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          Context
+        </p>
+        <p className="mt-2 text-sm font-medium text-foreground">
+          {buildContextLabel(selected)}
+        </p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {selected.compactSummary}
+        </p>
+        {selected.body && (
+          <p className="mt-3 text-sm leading-6 text-muted-foreground">
+            {selected.body}
+          </p>
+        )}
+        <p className="mt-3 text-xs text-muted-foreground">
+          Requested {formatTimestamp(selected.createdAt)}
+        </p>
+      </div>
+
+      <PermissionDetailFields
+        toolName={selected.toolName}
+        toolInput={selected.toolInput}
+      />
+
+      {selected.taskId && selected.toolName && selected.toolInput && (
+        <PermissionResponseActions
+          taskId={selected.taskId}
+          notificationId={selected.notificationId}
+          toolName={selected.toolName}
+          toolInput={selected.toolInput}
+          responded={false}
+          response={null}
+          onResponded={onResponded}
+          buttonSize="default"
+          layout="stacked"
+        />
+      )}
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Button variant="outline" onClick={onOpenInbox}>
+          <Inbox className="h-4 w-4" />
+          Open Inbox
+        </Button>
+        {selected.deepLink !== "/inbox" && (
+          <Button variant="ghost" asChild>
+            <Link href={selected.deepLink}>
+              <ArrowUpRight className="h-4 w-4" />
+              View Context
+            </Link>
+          </Button>
+        )}
+      </div>
+
+      {overflow.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            Also pending
+          </p>
+          <div className="space-y-2">
+            {overflow.map((item) => (
+              <button
+                key={item.notificationId}
+                type="button"
+                onClick={() => onSelect(item.notificationId)}
+                className="glass-card-light flex w-full items-start justify-between rounded-2xl p-3 text-left transition-colors hover:bg-accent/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground">
+                    {buildContextLabel(item)}
+                  </p>
+                  <p className="mt-1 truncate text-sm text-muted-foreground">
+                    {item.compactSummary}
+                  </p>
+                </div>
+                <span className="ml-3 shrink-0 text-xs text-muted-foreground">
+                  {formatTimestamp(item.createdAt)}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function PendingApprovalHost() {
+  const [items, setItems] = useState<PendingApprovalPayload[]>([]);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [announcement, setAnnouncement] = useState("");
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const knownIdsRef = useRef<string[]>([]);
+  const isMobile = useIsMobile();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const primary = items[0] ?? null;
+  const selected = useMemo(() => {
+    if (!items.length) return null;
+    return items.find((item) => item.notificationId === selectedId) ?? items[0];
+  }, [items, selectedId]);
+
+  useEffect(() => {
+    if (!items.length) {
+      setDetailOpen(false);
+      setSelectedId(null);
+      return;
+    }
+
+    if (!selectedId || !items.some((item) => item.notificationId === selectedId)) {
+      setSelectedId(items[0].notificationId);
+    }
+  }, [items, selectedId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    let pollId: ReturnType<typeof setInterval> | null = null;
+    let eventSource: EventSource | null = null;
+
+    function applySnapshot(snapshot: PendingApprovalPayload[]) {
+      if (cancelled) return;
+
+      const nextItems = dedupePendingApprovals(snapshot);
+      const previousIds = new Set(knownIdsRef.current);
+      const newestNew = nextItems.find(
+        (item) => !previousIds.has(item.notificationId)
+      );
+
+      if (newestNew) {
+        setAnnouncement(
+          `Permission required for ${buildContextLabel(newestNew)}. ${newestNew.compactSummary}`
+        );
+      }
+
+      knownIdsRef.current = nextItems.map((item) => item.notificationId);
+      setItems(nextItems);
+    }
+
+    async function refresh() {
+      try {
+        const res = await fetch("/api/notifications/pending-approvals", {
+          cache: "no-store",
+        });
+        if (!res.ok) return;
+
+        const snapshot = (await res.json()) as PendingApprovalPayload[];
+        applySnapshot(snapshot);
+      } catch {
+        // Fallback refresh should fail quietly.
+      }
+    }
+
+    const startPolling = () => {
+      if (pollId) return;
+      pollId = setInterval(refresh, 15_000);
+    };
+
+    refresh();
+
+    try {
+      eventSource = new EventSource("/api/notifications/pending-approvals/stream");
+      eventSource.onmessage = (event) => {
+        try {
+          const snapshot = JSON.parse(event.data) as PendingApprovalPayload[];
+          applySnapshot(snapshot);
+        } catch {
+          startPolling();
+        }
+      };
+      eventSource.onerror = () => {
+        eventSource?.close();
+        eventSource = null;
+        startPolling();
+      };
+    } catch {
+      startPolling();
+    }
+
+    return () => {
+      cancelled = true;
+      if (pollId) clearInterval(pollId);
+      eventSource?.close();
+    };
+  }, []);
+
+  function removeNotification(notificationId: string) {
+    setItems((current) =>
+      current.filter((item) => item.notificationId !== notificationId)
+    );
+  }
+
+  function openDetail(notificationId: string) {
+    setSelectedId(notificationId);
+    setDetailOpen(true);
+  }
+
+  function handleOpenInbox() {
+    setDetailOpen(false);
+    if (pathname !== "/inbox") {
+      router.push("/inbox");
+    }
+  }
+
+  if (!primary) {
+    return <div className="sr-only" aria-live="polite">{announcement}</div>;
+  }
+
+  const overflowCount = Math.max(items.length - 1, 0);
+  const overflowItems =
+    selected == null
+      ? []
+      : items.filter((item) => item.notificationId !== selected.notificationId);
+
+  const compactClassName = isMobile
+    ? "inset-x-3 bottom-3"
+    : "bottom-6 right-6 w-[min(26rem,calc(100vw-2rem))]";
+
+  return (
+    <>
+      <div className="sr-only" aria-live="polite">
+        {announcement}
+      </div>
+
+      <section
+        className={cn(
+          "fixed z-50 animate-in fade-in-0 duration-200",
+          isMobile ? "slide-in-from-bottom-3" : "slide-in-from-right-3",
+          compactClassName
+        )}
+        aria-label="Pending approval request"
+      >
+        <div className="glass-card-heavy rounded-[24px] border border-status-warning/30 p-3 sm:p-4">
+          <button
+            ref={triggerRef}
+            type="button"
+            onClick={() => openDetail(primary.notificationId)}
+            className="w-full rounded-[20px] p-3 text-left transition-colors hover:bg-accent/35 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
+          >
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-2xl bg-status-warning/15 text-status-warning">
+                <ShieldAlert className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-status-warning">
+                      Permission Required
+                    </p>
+                    <p className="mt-1 text-sm font-medium text-foreground">
+                      {buildContextLabel(primary)}
+                    </p>
+                  </div>
+                  {overflowCount > 0 && (
+                    <Badge variant="outline" className="shrink-0 text-xs">
+                      +{overflowCount} more
+                    </Badge>
+                  )}
+                </div>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <Badge variant="outline" className="font-mono text-xs">
+                    {primary.permissionLabel}
+                  </Badge>
+                  {primary.workflowName && (
+                    <Badge variant="secondary" className="text-xs">
+                      Workflow
+                    </Badge>
+                  )}
+                </div>
+                <p className="mt-3 line-clamp-2 text-sm text-muted-foreground">
+                  {primary.compactSummary}
+                </p>
+              </div>
+            </div>
+          </button>
+
+          {primary.taskId && primary.toolName && primary.toolInput && (
+            <PermissionResponseActions
+              taskId={primary.taskId}
+              notificationId={primary.notificationId}
+              toolName={primary.toolName}
+              toolInput={primary.toolInput}
+              responded={false}
+              response={null}
+              onResponded={() => removeNotification(primary.notificationId)}
+              className="mt-3"
+            />
+          )}
+
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <Button variant="ghost" size="sm" onClick={handleOpenInbox}>
+              <Inbox className="h-4 w-4" />
+              Open Inbox
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              {formatTimestamp(primary.createdAt)}
+            </span>
+          </div>
+        </div>
+      </section>
+
+      {selected &&
+        (isMobile ? (
+          <Sheet open={detailOpen} onOpenChange={setDetailOpen}>
+            <SheetContent
+              side="bottom"
+              className="max-h-[85dvh] rounded-t-[28px] px-4 pb-6"
+              onCloseAutoFocus={(event) => {
+                event.preventDefault();
+                triggerRef.current?.focus();
+              }}
+            >
+              <SheetHeader className="px-0 pt-6">
+                <SheetTitle>Permission required</SheetTitle>
+                <SheetDescription>
+                  Review and resolve this approval request without leaving the
+                  current route.
+                </SheetDescription>
+              </SheetHeader>
+              <div className="overflow-y-auto px-0 pb-2">
+                <PendingApprovalDetail
+                  selected={selected}
+                  overflow={overflowItems}
+                  onResponded={() => removeNotification(selected.notificationId)}
+                  onOpenInbox={handleOpenInbox}
+                  onSelect={setSelectedId}
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
+        ) : (
+          <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+            <DialogContent
+              className="max-w-2xl"
+              onCloseAutoFocus={(event) => {
+                event.preventDefault();
+                triggerRef.current?.focus();
+              }}
+            >
+              <DialogHeader>
+                <DialogTitle>Permission required</DialogTitle>
+                <DialogDescription>
+                  Review and resolve this approval request without switching to
+                  the Inbox first.
+                </DialogDescription>
+              </DialogHeader>
+              <PendingApprovalDetail
+                selected={selected}
+                overflow={overflowItems}
+                onResponded={() => removeNotification(selected.notificationId)}
+                onOpenInbox={handleOpenInbox}
+                onSelect={setSelectedId}
+              />
+            </DialogContent>
+          </Dialog>
+        ))}
+    </>
+  );
+}

@@ -9,6 +9,11 @@ import { PermissionAction } from "./permission-action";
 import { MessageResponse, type Question } from "./message-response";
 import { FailureAction } from "./failure-action";
 import { formatTimestamp } from "@/lib/utils/format-timestamp";
+import {
+  buildPermissionSummary,
+  parseNotificationToolInput,
+  type PermissionToolInput,
+} from "@/lib/notifications/permissions";
 
 interface Notification {
   id: string;
@@ -45,7 +50,10 @@ const typeLabels: Record<string, string> = {
   budget_alert: "Budget alert",
 };
 
-function formatToolInput(toolName: string | null, input: Record<string, unknown>): React.ReactNode {
+function formatToolInput(
+  toolName: string | null,
+  input: PermissionToolInput
+): React.ReactNode {
   // AskUserQuestion — show the question text directly
   if (toolName === "AskUserQuestion" || toolName === "ask_user_question") {
     const question = input.question ?? input.text ?? input.message;
@@ -91,15 +99,7 @@ export function NotificationItem({ notification, onUpdated }: NotificationItemPr
   const [dismissing, setDismissing] = useState(false);
   const isUnread = !notification.read;
   const hasResponse = !!notification.response;
-  let parsedToolInput: Record<string, unknown> | null = null;
-
-  try {
-    if (notification.toolInput) {
-      parsedToolInput = JSON.parse(notification.toolInput);
-    }
-  } catch {
-    // Invalid JSON
-  }
+  const parsedToolInput = parseNotificationToolInput(notification.toolInput);
 
   async function toggleRead() {
     setToggling(true);
@@ -161,6 +161,9 @@ export function NotificationItem({ notification, onUpdated }: NotificationItemPr
               </Badge>
               {parsedToolInput && (
                 <div className="text-sm text-muted-foreground bg-muted/60 p-2 rounded mt-1">
+                  <p className="mb-1 font-medium text-foreground">
+                    {buildPermissionSummary(notification.toolName, parsedToolInput)}
+                  </p>
                   {formatToolInput(notification.toolName, parsedToolInput)}
                 </div>
               )}
