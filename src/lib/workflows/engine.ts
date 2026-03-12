@@ -5,6 +5,11 @@ import { executeTaskWithRuntime } from "@/lib/agents/runtime";
 import type { WorkflowDefinition, WorkflowState, StepState, LoopState } from "./types";
 import { createInitialState } from "./types";
 import { executeLoop } from "./loop-executor";
+import {
+  buildParallelSynthesisPrompt,
+  getParallelWorkflowStructure,
+  PARALLEL_BRANCH_CONCURRENCY_LIMIT,
+} from "./parallel";
 
 /**
  * Execute a workflow by advancing through its steps according to the pattern.
@@ -71,6 +76,9 @@ export async function executeWorkflow(workflowId: string): Promise<void> {
         break;
       case "checkpoint":
         await executeCheckpoint(workflowId, definition, state);
+        break;
+      case "parallel":
+        await executeParallel(workflowId, definition, state);
         break;
     }
 
@@ -238,6 +246,177 @@ async function executeCheckpoint(
     }
 
     previousOutput = result.result ?? "";
+  }
+}
+
+/**
+ * Parallel pattern: execute branch steps concurrently, then run a synthesis step.
+ */
+async function executeParallel(
+  workflowId: string,
+  definition: WorkflowDefinition,
+  state: WorkflowState
+): Promise<void> {
+  const structure = getParallelWorkflowStructure(definition);
+  if (!structure) {
+    throw new Error(
+      "Parallel workflows require branch steps and exactly one synthesis step"
+    );
+  }
+
+  const { branchSteps, synthesisStep } = structure;
+  const synthesisIndex = definition.steps.findIndex(
+    (step) => step.id === synthesisStep.id
+  );
+
+  if (synthesisIndex === -1) {
+    throw new Error(`Synthesis step "${synthesisStep.id}" not found`);
+  }
+
+  let stateWriteQueue = Promise.resolve();
+  const commitState = (
+    mutate: (draft: WorkflowState) => void,
+    status: "draft" | "active" | "paused" | "completed" = "active"
+  ) => {
+    stateWriteQueue = stateWriteQueue.then(async () => {
+      mutate(state);
+      await updateWorkflowState(workflowId, state, status);
+    });
+    return stateWriteQueue;
+  };
+
+  await commitState((draft) => {
+    draft.currentStepIndex = 0;
+    const joinState = draft.stepStates[synthesisIndex];
+    joinState.status = "waiting_dependencies";
+    joinState.error = undefined;
+    joinState.result = undefined;
+  });
+
+  const branchResults = await mapWithConcurrency(
+    branchSteps,
+    PARALLEL_BRANCH_CONCURRENCY_LIMIT,
+    async (step) => {
+      const stepIndex = definition.steps.findIndex(
+        (candidate) => candidate.id === step.id
+      );
+      if (stepIndex === -1) {
+        throw new Error(`Parallel branch "${step.id}" not found`);
+      }
+
+      const startedAt = new Date().toISOString();
+      await commitState((draft) => {
+        const stepState = draft.stepStates[stepIndex];
+        stepState.status = "running";
+        stepState.startedAt = startedAt;
+        stepState.completedAt = undefined;
+        stepState.error = undefined;
+        stepState.result = undefined;
+      });
+
+      const result = await executeChildTask(
+        workflowId,
+        step.name,
+        step.prompt,
+        step.assignedAgent,
+        step.agentProfile
+      );
+
+      const completedAt = new Date().toISOString();
+      await commitState((draft) => {
+        const stepState = draft.stepStates[stepIndex];
+        stepState.taskId = result.taskId;
+        stepState.completedAt = completedAt;
+
+        if (result.status === "completed") {
+          stepState.status = "completed";
+          stepState.result = result.result ?? "";
+        } else {
+          stepState.status = "failed";
+          stepState.error =
+            result.error ?? "Task did not complete successfully";
+        }
+      });
+
+      return { step, result };
+    }
+  );
+
+  await stateWriteQueue;
+
+  const failedBranches = branchResults.filter(
+    (branch) => branch.result.status !== "completed"
+  );
+
+  if (failedBranches.length > 0) {
+    const failureSummary = failedBranches
+      .map(
+        (branch) =>
+          `${branch.step.name}: ${
+            branch.result.error ?? "Task did not complete successfully"
+          }`
+      )
+      .join("; ");
+
+    await commitState((draft) => {
+      const joinState = draft.stepStates[synthesisIndex];
+      joinState.status = "failed";
+      joinState.error = `Blocked by failed branches: ${failureSummary}`;
+    });
+    await stateWriteQueue;
+
+    throw new Error(`Parallel branches failed: ${failureSummary}`);
+  }
+
+  const synthesisStartedAt = new Date().toISOString();
+  await commitState((draft) => {
+    draft.currentStepIndex = synthesisIndex;
+    const joinState = draft.stepStates[synthesisIndex];
+    joinState.status = "running";
+    joinState.startedAt = synthesisStartedAt;
+    joinState.completedAt = undefined;
+    joinState.error = undefined;
+    joinState.result = undefined;
+  });
+
+  const synthesisPrompt = buildParallelSynthesisPrompt({
+    branchOutputs: branchResults.map((branch) => ({
+      stepName: branch.step.name,
+      result: branch.result.result ?? "",
+    })),
+    synthesisPrompt: synthesisStep.prompt,
+  });
+
+  const synthesisResult = await executeChildTask(
+    workflowId,
+    synthesisStep.name,
+    synthesisPrompt,
+    synthesisStep.assignedAgent,
+    synthesisStep.agentProfile
+  );
+
+  await commitState((draft) => {
+    const joinState = draft.stepStates[synthesisIndex];
+    joinState.taskId = synthesisResult.taskId;
+    joinState.completedAt = new Date().toISOString();
+
+    if (synthesisResult.status === "completed") {
+      joinState.status = "completed";
+      joinState.result = synthesisResult.result ?? "";
+    } else {
+      joinState.status = "failed";
+      joinState.error =
+        synthesisResult.error ?? "Task did not complete successfully";
+    }
+  });
+  await stateWriteQueue;
+
+  if (synthesisResult.status !== "completed") {
+    throw new Error(
+      `Synthesis step "${synthesisStep.name}" failed: ${
+        synthesisResult.error ?? "Task did not complete successfully"
+      }`
+    );
   }
 }
 
@@ -498,4 +677,30 @@ export async function retryWorkflowStep(
     state.completedAt = allCompleted ? new Date().toISOString() : undefined;
     await updateWorkflowState(workflowId, state, allCompleted ? "completed" : "active");
   }
+}
+
+async function mapWithConcurrency<T, TResult>(
+  items: T[],
+  limit: number,
+  worker: (item: T) => Promise<TResult>
+): Promise<TResult[]> {
+  if (items.length === 0) {
+    return [];
+  }
+
+  const results = new Array<TResult>(items.length);
+  let nextIndex = 0;
+  const workerCount = Math.min(limit, items.length);
+
+  await Promise.all(
+    Array.from({ length: workerCount }, async () => {
+      while (nextIndex < items.length) {
+        const currentIndex = nextIndex;
+        nextIndex += 1;
+        results[currentIndex] = await worker(items[currentIndex]);
+      }
+    })
+  );
+
+  return results;
 }

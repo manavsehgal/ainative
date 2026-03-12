@@ -1,3 +1,10 @@
+export type WorkflowPattern =
+  | "sequence"
+  | "planner-executor"
+  | "checkpoint"
+  | "loop"
+  | "parallel";
+
 export interface WorkflowStep {
   id: string;
   name: string;
@@ -17,7 +24,7 @@ export interface LoopConfig {
 }
 
 export interface WorkflowDefinition {
-  pattern: "sequence" | "planner-executor" | "checkpoint" | "loop";
+  pattern: WorkflowPattern;
   steps: WorkflowStep[];
   loopConfig?: LoopConfig;
 }
@@ -60,9 +67,17 @@ export function createInitialLoopState(): LoopState {
   };
 }
 
+export type WorkflowStepStatus =
+  | "pending"
+  | "running"
+  | "completed"
+  | "failed"
+  | "waiting_approval"
+  | "waiting_dependencies";
+
 export interface StepState {
   stepId: string;
-  status: "pending" | "running" | "completed" | "failed" | "waiting_approval";
+  status: WorkflowStepStatus;
   taskId?: string;
   result?: string;
   error?: string;

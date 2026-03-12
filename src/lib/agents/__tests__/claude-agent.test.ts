@@ -631,7 +631,46 @@ describe("handleToolPermission", () => {
     });
   });
 
-  describe("D5: timeout behavior", () => {
+  it("D5: reuses an answered permission for identical repeated tool input", async () => {
+    mockWhere.mockResolvedValueOnce([makeTask()]);
+
+    let firstResult: unknown;
+    let secondResult: unknown;
+    mockQuery.mockImplementation(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ({ options }: any) => {
+        return {
+          async *[Symbol.asyncIterator]() {
+            const canUseTool = options.canUseTool as (
+              toolName: string,
+              input: Record<string, unknown>
+            ) => Promise<{ behavior: string }>;
+
+            mockWhere.mockResolvedValueOnce([
+              { id: "notif-1", response: JSON.stringify({ behavior: "allow" }) },
+            ]);
+
+            firstResult = await canUseTool("Write", { path: "/test.ts" });
+            secondResult = await canUseTool("Write", { path: "/test.ts" });
+
+            yield { type: "result", result: "done" };
+          },
+        } as unknown as ReturnType<typeof query>;
+      }
+    );
+
+    await executeClaudeTask("task-1");
+
+    const permissionNotifications = mockValues.mock.calls.filter(
+      ([value]) => (value as { type?: string }).type === "permission_required"
+    );
+
+    expect(firstResult).toEqual({ behavior: "allow" });
+    expect(secondResult).toEqual({ behavior: "allow" });
+    expect(permissionNotifications).toHaveLength(1);
+  });
+
+  describe("D6: timeout behavior", () => {
     beforeEach(() => {
       vi.useFakeTimers();
     });
@@ -683,6 +722,66 @@ describe("handleToolPermission", () => {
         behavior: "deny",
         message: "Permission request timed out",
       });
+    });
+
+    it("reuses an in-flight permission request for identical input", async () => {
+      mockWhere.mockResolvedValueOnce([makeTask()]);
+
+      let releaseResponse: (() => void) | null = null;
+      const pollStarted = new Promise<void>((resolve) => {
+        releaseResponse = resolve;
+      });
+
+      let firstResult: unknown;
+      let secondResult: unknown;
+
+      mockQuery.mockImplementation(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ({ options }: any) => {
+          return {
+            async *[Symbol.asyncIterator]() {
+              const canUseTool = options.canUseTool as (
+                toolName: string,
+                input: Record<string, unknown>
+              ) => Promise<{ behavior: string }>;
+
+              mockWhere.mockImplementation(async () => {
+                await pollStarted;
+                return [
+                  {
+                    id: "notif-1",
+                    response: JSON.stringify({ behavior: "allow" }),
+                  },
+                ];
+              });
+
+              const firstPromise = canUseTool("Write", { path: "/test.ts" });
+              const secondPromise = canUseTool("Write", { path: "/test.ts" });
+
+              await vi.advanceTimersByTimeAsync(0);
+              releaseResponse?.();
+              await vi.advanceTimersByTimeAsync(1500);
+
+              [firstResult, secondResult] = await Promise.all([
+                firstPromise,
+                secondPromise,
+              ]);
+
+              yield { type: "result", result: "done" };
+            },
+          } as unknown as ReturnType<typeof query>;
+        }
+      );
+
+      await executeClaudeTask("task-1");
+
+      const permissionNotifications = mockValues.mock.calls.filter(
+        ([value]) => (value as { type?: string }).type === "permission_required"
+      );
+
+      expect(firstResult).toEqual({ behavior: "allow" });
+      expect(secondResult).toEqual({ behavior: "allow" });
+      expect(permissionNotifications).toHaveLength(1);
     });
   });
 });

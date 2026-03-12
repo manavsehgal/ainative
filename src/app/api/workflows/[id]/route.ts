@@ -4,6 +4,7 @@ import { workflows } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import type { WorkflowDefinition } from "@/lib/workflows/types";
 import { validateWorkflowDefinitionAssignments } from "@/lib/agents/profiles/assignment-validation";
+import { validateWorkflowDefinition } from "@/lib/workflows/definition-validation";
 
 export async function PATCH(
   req: NextRequest,
@@ -45,27 +46,12 @@ export async function PATCH(
     }
 
     if (definition !== undefined) {
-      if (!definition.pattern || !definition.steps?.length) {
+      const definitionError = validateWorkflowDefinition(definition);
+      if (definitionError) {
         return NextResponse.json(
-          { error: "Definition must include pattern and at least one step" },
+          { error: definitionError },
           { status: 400 }
         );
-      }
-      const validPatterns = ["sequence", "planner-executor", "checkpoint", "loop"];
-      if (!validPatterns.includes(definition.pattern)) {
-        return NextResponse.json(
-          { error: `Pattern must be one of: ${validPatterns.join(", ")}` },
-          { status: 400 }
-        );
-      }
-      if (definition.pattern === "loop") {
-        const loopConfig = definition.loopConfig;
-        if (!loopConfig || typeof loopConfig.maxIterations !== "number" || loopConfig.maxIterations < 1) {
-          return NextResponse.json(
-            { error: "Loop pattern requires loopConfig with maxIterations >= 1" },
-            { status: 400 }
-          );
-        }
       }
 
       const compatibilityError =

@@ -17,6 +17,9 @@ import {
   Copy,
   RotateCcw,
   Trash2,
+  Clock3,
+  GitBranch,
+  MessageSquareMore,
 } from "lucide-react";
 import { toast } from "sonner";
 import { workflowStatusVariant, patternLabels } from "@/lib/constants/status-colors";
@@ -29,6 +32,7 @@ interface StepWithState {
   name: string;
   prompt: string;
   requiresApproval?: boolean;
+  dependsOn?: string[];
   state: {
     stepId: string;
     status: string;
@@ -60,6 +64,7 @@ const stepStatusIcons: Record<string, React.ReactNode> = {
   completed: <CheckCircle className="h-4 w-4 text-status-completed" />,
   failed: <XCircle className="h-4 w-4 text-destructive" />,
   waiting_approval: <ShieldQuestion className="h-4 w-4 text-status-warning" />,
+  waiting_dependencies: <Clock3 className="h-4 w-4 text-status-warning" />,
 };
 
 
@@ -87,9 +92,26 @@ export function WorkflowStatusView({ workflowId }: WorkflowStatusViewProps) {
       setData({
         ...data,
         status: "active",
-        steps: data.steps.map((s, i) =>
-          i === 0 ? { ...s, state: { ...s.state, status: "running" } } : s
-        ),
+        steps: data.steps.map((step, index) => {
+          if (data.pattern === "parallel") {
+            const isJoin = !!step.dependsOn?.length;
+            return {
+              ...step,
+              state: {
+                ...step.state,
+                status: isJoin
+                  ? "waiting_dependencies"
+                  : index === 0
+                    ? "running"
+                    : "pending",
+              },
+            };
+          }
+
+          return index === 0
+            ? { ...step, state: { ...step.state, status: "running" } }
+            : step;
+        }),
       });
     }
     try {
@@ -169,6 +191,14 @@ export function WorkflowStatusView({ workflowId }: WorkflowStatusViewProps) {
   }
 
   const hasDefinition = !!data.definition;
+  const parallelBranches =
+    data.pattern === "parallel"
+      ? data.steps.filter((step) => !step.dependsOn?.length)
+      : [];
+  const synthesisStep =
+    data.pattern === "parallel"
+      ? data.steps.find((step) => step.dependsOn?.length) ?? null
+      : null;
 
   return (
     <>
@@ -269,37 +299,138 @@ export function WorkflowStatusView({ workflowId }: WorkflowStatusViewProps) {
               onRefresh={fetchStatus}
             />
           ) : (
-          <div className="space-y-3" aria-live="polite">
-            {data.steps.map((step, index) => (
-              <div key={step.id} className="flex items-start gap-3">
-                <div className="mt-0.5 flex flex-col items-center">
-                  {stepStatusIcons[step.state.status] ?? stepStatusIcons.pending}
-                  {index < data.steps.length - 1 && (
-                    <div className="w-px h-6 bg-border mt-1" />
+            <div className="space-y-4" aria-live="polite">
+              {data.pattern === "parallel" && parallelBranches.length > 0 ? (
+                <>
+                  <section className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <GitBranch className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-sm font-medium">Parallel Branches</p>
+                      <Badge variant="secondary" className="text-xs">
+                        {parallelBranches.length}
+                      </Badge>
+                    </div>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {parallelBranches.map((step, index) => (
+                        <div
+                          key={step.id}
+                          className="surface-card-muted rounded-lg border border-border/50 p-4"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="mt-0.5">
+                              {stepStatusIcons[step.state.status] ?? stepStatusIcons.pending}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="secondary" className="text-[11px]">
+                                  Branch {index + 1}
+                                </Badge>
+                                <span className="text-sm font-medium">{step.name}</span>
+                              </div>
+                              <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
+                                {step.prompt}
+                              </p>
+                              {step.state.error && (
+                                <p className="mt-2 text-xs text-destructive">
+                                  {step.state.error}
+                                </p>
+                              )}
+                              {step.state.result && step.state.status === "completed" && (
+                                <p className="mt-2 text-xs text-muted-foreground line-clamp-4">
+                                  {step.state.result.slice(0, 260)}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+
+                  {synthesisStep && (
+                    <section className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <MessageSquareMore className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-sm font-medium">Synthesis Step</p>
+                      </div>
+                      <div className="surface-card-muted rounded-lg border border-border/50 p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="mt-0.5">
+                            {stepStatusIcons[synthesisStep.state.status] ??
+                              stepStatusIcons.pending}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="text-[11px]">
+                                join
+                              </Badge>
+                              <span className="text-sm font-medium">
+                                {synthesisStep.name}
+                              </span>
+                            </div>
+                            <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
+                              {synthesisStep.prompt}
+                            </p>
+                            <p className="mt-2 text-xs text-muted-foreground">
+                              Waits for all {parallelBranches.length} branches before
+                              running.
+                            </p>
+                            {synthesisStep.state.error && (
+                              <p className="mt-2 text-xs text-destructive">
+                                {synthesisStep.state.error}
+                              </p>
+                            )}
+                            {synthesisStep.state.result &&
+                              synthesisStep.state.status === "completed" && (
+                                <p className="mt-2 text-xs text-muted-foreground line-clamp-4">
+                                  {synthesisStep.state.result.slice(0, 260)}
+                                </p>
+                              )}
+                          </div>
+                        </div>
+                      </div>
+                    </section>
                   )}
+                </>
+              ) : (
+                <div className="space-y-3">
+                  {data.steps.map((step, index) => (
+                    <div key={step.id} className="flex items-start gap-3">
+                      <div className="mt-0.5 flex flex-col items-center">
+                        {stepStatusIcons[step.state.status] ?? stepStatusIcons.pending}
+                        {index < data.steps.length - 1 && (
+                          <div className="mt-1 h-6 w-px bg-border" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">{step.name}</span>
+                          {step.requiresApproval && (
+                            <Badge variant="outline" className="text-xs">
+                              checkpoint
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate mt-0.5">
+                          {step.prompt.slice(0, 100)}
+                          {step.prompt.length > 100 ? "..." : ""}
+                        </p>
+                        {step.state.error && (
+                          <p className="text-xs text-destructive mt-1">
+                            {step.state.error}
+                          </p>
+                        )}
+                        {step.state.result && step.state.status === "completed" && (
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                            {step.state.result.slice(0, 200)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">{step.name}</span>
-                    {step.requiresApproval && (
-                      <Badge variant="outline" className="text-xs">checkpoint</Badge>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground truncate mt-0.5">
-                    {step.prompt.slice(0, 100)}{step.prompt.length > 100 ? "..." : ""}
-                  </p>
-                  {step.state.error && (
-                    <p className="text-xs text-destructive mt-1">{step.state.error}</p>
-                  )}
-                  {step.state.result && step.state.status === "completed" && (
-                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                      {step.state.result.slice(0, 200)}
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>

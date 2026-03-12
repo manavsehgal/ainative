@@ -46,6 +46,18 @@ interface TaskUsageState extends UsageSnapshot {
   scheduleId?: string | null;
 }
 
+interface ToolPermissionResponse {
+  behavior: "allow" | "deny";
+  updatedInput?: unknown;
+  message?: string;
+}
+
+const inFlightPermissionRequests = new Map<
+  string,
+  Promise<ToolPermissionResponse>
+>();
+const settledPermissionRequests = new Map<string, ToolPermissionResponse>();
+
 function createTaskUsageState(
   task: {
     id: string;
@@ -71,6 +83,56 @@ function createTaskUsageState(
 
 function applyUsageSnapshot(state: TaskUsageState, source: unknown) {
   Object.assign(state, mergeUsageSnapshot(state, extractUsageSnapshot(source)));
+}
+
+function buildPermissionCacheKey(
+  taskId: string,
+  toolName: string,
+  input: Record<string, unknown>
+): string {
+  return `${taskId}::${toolName}::${JSON.stringify(input)}`;
+}
+
+function clearPermissionCache(taskId: string) {
+  const prefix = `${taskId}::`;
+
+  for (const key of inFlightPermissionRequests.keys()) {
+    if (key.startsWith(prefix)) {
+      inFlightPermissionRequests.delete(key);
+    }
+  }
+
+  for (const key of settledPermissionRequests.keys()) {
+    if (key.startsWith(prefix)) {
+      settledPermissionRequests.delete(key);
+    }
+  }
+}
+
+async function waitForToolPermissionResponse(
+  notificationId: string
+): Promise<ToolPermissionResponse> {
+  const deadline = Date.now() + 55_000;
+  const pollInterval = 1500;
+
+  while (Date.now() < deadline) {
+    const [notification] = await db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.id, notificationId));
+
+    if (notification?.response) {
+      try {
+        return JSON.parse(notification.response) as ToolPermissionResponse;
+      } catch {
+        return { behavior: "deny", message: "Invalid response format" };
+      }
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, pollInterval));
+  }
+
+  return { behavior: "deny", message: "Permission request timed out" };
 }
 
 async function finalizeTaskUsage(
@@ -348,6 +410,7 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
       usageState
     );
   } finally {
+    clearPermissionCache(taskId);
     removeExecution(taskId);
   }
 }
@@ -497,6 +560,7 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
       usageState
     );
   } finally {
+    clearPermissionCache(taskId);
     removeExecution(taskId);
   }
 }
@@ -567,11 +631,7 @@ async function handleToolPermission(
   toolName: string,
   input: Record<string, unknown>,
   canUseToolPolicy?: CanUseToolPolicy
-): Promise<{
-  behavior: "allow" | "deny";
-  updatedInput?: unknown;
-  message?: string;
-}> {
+): Promise<ToolPermissionResponse> {
   const isQuestion = toolName === "AskUserQuestion";
 
   // Layer 1: Profile-level canUseToolPolicy — fastest check, no I/O
@@ -592,6 +652,46 @@ async function handleToolPermission(
     }
   }
 
+  if (!isQuestion) {
+    const cacheKey = buildPermissionCacheKey(taskId, toolName, input);
+    const settledResponse = settledPermissionRequests.get(cacheKey);
+    if (settledResponse) {
+      return settledResponse;
+    }
+
+    const pendingRequest = inFlightPermissionRequests.get(cacheKey);
+    if (pendingRequest) {
+      return pendingRequest;
+    }
+
+    const requestPromise = (async () => {
+      const notificationId = crypto.randomUUID();
+
+      await db.insert(notifications).values({
+        id: notificationId,
+        taskId,
+        type: "permission_required",
+        title: `Permission required: ${toolName}`,
+        body: JSON.stringify(input).slice(0, 1000),
+        toolName,
+        toolInput: JSON.stringify(input),
+        createdAt: new Date(),
+      });
+
+      const response = await waitForToolPermissionResponse(notificationId);
+      settledPermissionRequests.set(cacheKey, response);
+      return response;
+    })();
+
+    inFlightPermissionRequests.set(cacheKey, requestPromise);
+
+    try {
+      return await requestPromise;
+    } finally {
+      inFlightPermissionRequests.delete(cacheKey);
+    }
+  }
+
   const notificationId = crypto.randomUUID();
 
   await db.insert(notifications).values({
@@ -607,27 +707,5 @@ async function handleToolPermission(
     createdAt: new Date(),
   });
 
-  // Poll for response with 55s timeout (5s buffer before SDK's 60s limit)
-  const deadline = Date.now() + 55_000;
-  const pollInterval = 1500;
-
-  while (Date.now() < deadline) {
-    const [notification] = await db
-      .select()
-      .from(notifications)
-      .where(eq(notifications.id, notificationId));
-
-    if (notification?.response) {
-      try {
-        return JSON.parse(notification.response);
-      } catch {
-        return { behavior: "deny", message: "Invalid response format" };
-      }
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, pollInterval));
-  }
-
-  // Timeout — auto-deny
-  return { behavior: "deny", message: "Permission request timed out" };
+  return waitForToolPermissionResponse(notificationId);
 }

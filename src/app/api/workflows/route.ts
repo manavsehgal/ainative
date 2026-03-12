@@ -4,6 +4,7 @@ import { workflows } from "@/lib/db/schema";
 import { desc, eq } from "drizzle-orm";
 import type { WorkflowDefinition } from "@/lib/workflows/types";
 import { validateWorkflowDefinitionAssignments } from "@/lib/agents/profiles/assignment-validation";
+import { validateWorkflowDefinition } from "@/lib/workflows/definition-validation";
 
 export async function GET() {
   const result = await db
@@ -16,7 +17,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { name, projectId, definition } = body as {
+  const { name, projectId, definition: rawDefinition } = body as {
     name?: string;
     projectId?: string;
     definition?: WorkflowDefinition;
@@ -25,32 +26,17 @@ export async function POST(req: NextRequest) {
   if (!name?.trim()) {
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
   }
-  if (!definition?.pattern || !definition?.steps?.length) {
+  const definitionError = rawDefinition
+    ? validateWorkflowDefinition(rawDefinition)
+    : "Definition must include pattern and at least one step";
+  if (definitionError) {
     return NextResponse.json(
-      { error: "Definition must include pattern and at least one step" },
+      { error: definitionError },
       { status: 400 }
     );
   }
 
-  const validPatterns = ["sequence", "planner-executor", "checkpoint", "loop"];
-  if (!validPatterns.includes(definition.pattern)) {
-    return NextResponse.json(
-      { error: `Pattern must be one of: ${validPatterns.join(", ")}` },
-      { status: 400 }
-    );
-  }
-
-  // Loop pattern requires loopConfig with maxIterations
-  if (definition.pattern === "loop") {
-    const loopConfig = (definition as { loopConfig?: { maxIterations?: number } }).loopConfig;
-    if (!loopConfig || typeof loopConfig.maxIterations !== "number" || loopConfig.maxIterations < 1) {
-      return NextResponse.json(
-        { error: "Loop pattern requires loopConfig with maxIterations >= 1" },
-        { status: 400 }
-      );
-    }
-  }
-
+  const definition = rawDefinition as WorkflowDefinition;
   const compatibilityError = validateWorkflowDefinitionAssignments(definition);
   if (compatibilityError) {
     return NextResponse.json({ error: compatibilityError }, { status: 400 });

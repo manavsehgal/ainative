@@ -29,7 +29,11 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { FormSectionCard } from "@/components/shared/form-section-card";
-import type { WorkflowStep, WorkflowDefinition } from "@/lib/workflows/types";
+import type {
+  WorkflowStep,
+  WorkflowDefinition,
+  WorkflowPattern,
+} from "@/lib/workflows/types";
 import {
   type AgentRuntimeId,
   DEFAULT_AGENT_RUNTIME,
@@ -37,6 +41,11 @@ import {
 } from "@/lib/agents/runtime/catalog";
 import { profileSupportsRuntime } from "@/lib/agents/profiles/compatibility";
 import type { AgentProfile } from "@/lib/agents/profiles/types";
+import { validateWorkflowDefinition } from "@/lib/workflows/definition-validation";
+import {
+  MAX_PARALLEL_BRANCHES,
+  MIN_PARALLEL_BRANCHES,
+} from "@/lib/workflows/parallel";
 
 interface WorkflowData {
   id: string;
@@ -69,11 +78,101 @@ function parseDefinition(json: string): WorkflowDefinition | null {
   }
 }
 
+function createParallelBranchStep(index: number): WorkflowStep {
+  return {
+    id: crypto.randomUUID(),
+    name: `Research Branch ${index}`,
+    prompt: "",
+  };
+}
+
+function createParallelSynthesisStep(branchIds: string[]): WorkflowStep {
+  return {
+    id: crypto.randomUUID(),
+    name: "Synthesize findings",
+    prompt: "",
+    dependsOn: branchIds,
+  };
+}
+
+function isSynthesisStep(step: WorkflowStep): boolean {
+  return !!step.dependsOn?.length;
+}
+
+function buildParallelSteps(
+  branches: WorkflowStep[],
+  synthesis?: WorkflowStep
+): WorkflowStep[] {
+  const normalizedBranches = branches.map((branch) => ({
+    ...branch,
+    requiresApproval: false,
+    dependsOn: undefined,
+  }));
+  const branchIds = normalizedBranches.map((branch) => branch.id);
+  const joinStep = synthesis
+    ? {
+        ...synthesis,
+        requiresApproval: false,
+        dependsOn: branchIds,
+      }
+    : createParallelSynthesisStep(branchIds);
+
+  return [...normalizedBranches, joinStep];
+}
+
+function createDefaultParallelSteps(): WorkflowStep[] {
+  return buildParallelSteps(
+    Array.from({ length: MIN_PARALLEL_BRANCHES }, (_, index) =>
+      createParallelBranchStep(index + 1)
+    )
+  );
+}
+
+function normalizeParallelSteps(
+  input: WorkflowStep[],
+  options?: { cloneIds?: boolean }
+): WorkflowStep[] {
+  const rawBranches = input.filter((step) => !isSynthesisStep(step)).slice(
+    0,
+    MAX_PARALLEL_BRANCHES
+  );
+  const rawSynthesis = input.find(isSynthesisStep);
+
+  const branches = [...rawBranches];
+  while (branches.length < MIN_PARALLEL_BRANCHES) {
+    branches.push(createParallelBranchStep(branches.length + 1));
+  }
+
+  const normalizedBranches = branches.map((branch, index) => ({
+    ...branch,
+    id: options?.cloneIds ? crypto.randomUUID() : branch.id,
+    name: branch.name || `Research Branch ${index + 1}`,
+  }));
+
+  const normalizedSynthesis = rawSynthesis
+    ? {
+        ...rawSynthesis,
+        id: options?.cloneIds ? crypto.randomUUID() : rawSynthesis.id,
+        name: rawSynthesis.name || "Synthesize findings",
+      }
+    : undefined;
+
+  return buildParallelSteps(normalizedBranches, normalizedSynthesis);
+}
+
+function getParallelParts(steps: WorkflowStep[]) {
+  return {
+    branchSteps: steps.filter((step) => !isSynthesisStep(step)),
+    synthesisStep: steps.find(isSynthesisStep) ?? null,
+  };
+}
+
 const PATTERN_ICONS: Record<string, React.ReactNode> = {
   sequence: <ArrowDown className="h-3.5 w-3.5 text-muted-foreground" />,
   "planner-executor": <Brain className="h-3.5 w-3.5 text-muted-foreground" />,
   checkpoint: <ShieldCheck className="h-3.5 w-3.5 text-muted-foreground" />,
   loop: <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />,
+  parallel: <GitBranch className="h-3.5 w-3.5 text-muted-foreground" />,
 };
 
 export function WorkflowFormView({
@@ -90,7 +189,7 @@ export function WorkflowFormView({
   const mode = workflow ? (clone ? "clone" : "edit") : "create";
 
   const [name, setName] = useState("");
-  const [pattern, setPattern] = useState<string>("sequence");
+  const [pattern, setPattern] = useState<WorkflowPattern>("sequence");
   const [projectId, setProjectId] = useState("");
   const [steps, setSteps] = useState<WorkflowStep[]>([createEmptyStep()]);
   const [loading, setLoading] = useState(false);
@@ -128,26 +227,96 @@ export function WorkflowFormView({
       } else {
         setSteps(
           clone
-            ? def.steps.map((s) => ({ ...s, id: crypto.randomUUID() }))
-            : def.steps
+            ? def.pattern === "parallel"
+              ? normalizeParallelSteps(def.steps, { cloneIds: true })
+              : def.steps.map((s) => ({ ...s, id: crypto.randomUUID() }))
+            : def.pattern === "parallel"
+              ? normalizeParallelSteps(def.steps)
+              : def.steps
         );
       }
     }
   }, [workflow, clone]);
 
+  useEffect(() => {
+    if (pattern !== "parallel") {
+      return;
+    }
+
+    setSteps((prev) => {
+      const { branchSteps, synthesisStep } = getParallelParts(prev);
+      const hasValidShape =
+        branchSteps.length >= MIN_PARALLEL_BRANCHES && synthesisStep !== null;
+
+      return hasValidShape ? buildParallelSteps(branchSteps, synthesisStep) : createDefaultParallelSteps();
+    });
+  }, [pattern]);
+
   function addStep() {
-    setSteps((prev) => [...prev, createEmptyStep()]);
+    setSteps((prev) => {
+      if (pattern === "parallel") {
+        const { branchSteps, synthesisStep } = getParallelParts(prev);
+        if (branchSteps.length >= MAX_PARALLEL_BRANCHES) {
+          return prev;
+        }
+
+        return buildParallelSteps(
+          [...branchSteps, createParallelBranchStep(branchSteps.length + 1)],
+          synthesisStep ?? undefined
+        );
+      }
+
+      return [...prev, createEmptyStep()];
+    });
   }
 
   function removeStep(index: number) {
-    if (steps.length <= 1) return;
-    setSteps((prev) => prev.filter((_, i) => i !== index));
+    setSteps((prev) => {
+      if (pattern === "parallel") {
+        const { branchSteps, synthesisStep } = getParallelParts(prev);
+        if (index >= branchSteps.length || branchSteps.length <= MIN_PARALLEL_BRANCHES) {
+          return prev;
+        }
+
+        return buildParallelSteps(
+          branchSteps.filter((_, branchIndex) => branchIndex !== index),
+          synthesisStep ?? undefined
+        );
+      }
+
+      if (prev.length <= 1) {
+        return prev;
+      }
+
+      return prev.filter((_, i) => i !== index);
+    });
   }
 
   function updateStep(index: number, updates: Partial<WorkflowStep>) {
-    setSteps((prev) =>
-      prev.map((step, i) => (i === index ? { ...step, ...updates } : step))
-    );
+    setSteps((prev) => {
+      if (pattern === "parallel") {
+        const { branchSteps, synthesisStep } = getParallelParts(prev);
+
+        if (index < branchSteps.length) {
+          const nextBranches = branchSteps.map((step, branchIndex) =>
+            branchIndex === index
+              ? { ...step, ...updates, dependsOn: undefined, requiresApproval: false }
+              : step
+          );
+          return buildParallelSteps(nextBranches, synthesisStep ?? undefined);
+        }
+
+        if (synthesisStep) {
+          return buildParallelSteps(branchSteps, {
+            ...synthesisStep,
+            ...updates,
+            requiresApproval: false,
+          });
+        }
+      }
+
+      return prev.map((step, i) => (i === index ? { ...step, ...updates } : step));
+    });
   }
 
   function getProfileCompatibilityError(
@@ -179,6 +348,7 @@ export function WorkflowFormView({
     if (!name.trim()) return;
 
     const isLoop = pattern === "loop";
+    const isParallel = pattern === "parallel";
 
     if (isLoop) {
       if (!loopPrompt.trim()) {
@@ -212,13 +382,23 @@ export function WorkflowFormView({
           return;
         }
       }
+
+      if (isParallel) {
+        const { branchSteps } = getParallelParts(steps);
+        if (branchSteps.length < MIN_PARALLEL_BRANCHES) {
+          setError(
+            `Parallel workflows require at least ${MIN_PARALLEL_BRANCHES} research branches`
+          );
+          return;
+        }
+      }
     }
 
     setLoading(true);
     setError(null);
 
     try {
-      const definition = isLoop
+      const definition: WorkflowDefinition = isLoop
         ? {
             pattern,
             steps: [
@@ -238,7 +418,17 @@ export function WorkflowFormView({
                 : {}),
             },
           }
-        : { pattern, steps };
+        : {
+            pattern,
+            steps: isParallel ? normalizeParallelSteps(steps) : steps,
+          };
+
+      const definitionError = validateWorkflowDefinition(definition);
+      if (definitionError) {
+        setError(definitionError);
+        setLoading(false);
+        return;
+      }
 
       const isEdit = mode === "edit" && workflow;
 
@@ -302,6 +492,149 @@ export function WorkflowFormView({
   };
 
   const isLoop = pattern === "loop";
+  const isParallel = pattern === "parallel";
+  const { branchSteps, synthesisStep } = getParallelParts(steps);
+
+  function renderStepEditor(
+    step: WorkflowStep,
+    index: number,
+    options?: {
+      title: string;
+      icon?: typeof ListOrdered;
+      hint?: string;
+      removable?: boolean;
+      badgeLabel?: string;
+    }
+  ) {
+    return (
+      <FormSectionCard
+        key={step.id}
+        icon={options?.icon ?? ListOrdered}
+        title={options?.title ?? `Step ${index + 1}`}
+        hint={options?.hint}
+      >
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="text-xs shrink-0">
+              {options?.badgeLabel ?? `#${index + 1}`}
+            </Badge>
+            <Input
+              value={step.name}
+              onChange={(e) => updateStep(index, { name: e.target.value })}
+              placeholder="Step name"
+              className="flex-1"
+            />
+            {options?.removable && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 shrink-0"
+                onClick={() => removeStep(index)}
+                aria-label={`Remove step ${index + 1}`}
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
+          <div className="space-y-1.5">
+            <Textarea
+              value={step.prompt}
+              onChange={(e) => updateStep(index, { prompt: e.target.value })}
+              placeholder="Instructions for the agent"
+              rows={3}
+            />
+            <p className="text-xs text-muted-foreground">Agent prompt for this step</p>
+          </div>
+          <div className="flex flex-col gap-3 md:flex-row md:items-start">
+            {profiles.length > 0 && (
+              <div className="flex-1">
+                <Select
+                  value={step.agentProfile || "auto"}
+                  onValueChange={(v) =>
+                    updateStep(index, {
+                      agentProfile: v === "auto" ? undefined : v,
+                    })
+                  }
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Profile: Auto-detect" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">Auto-detect</SelectItem>
+                    {profiles.map((p) => (
+                      <SelectItem
+                        key={p.id}
+                        value={p.id}
+                        disabled={
+                          !profileSupportsRuntime(
+                            p,
+                            step.assignedAgent || DEFAULT_AGENT_RUNTIME
+                          )
+                        }
+                      >
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {step.agentProfile &&
+                  getProfileCompatibilityError(
+                    step.agentProfile,
+                    step.assignedAgent
+                  ) && (
+                    <p className="mt-1 text-xs text-destructive">
+                      {getProfileCompatibilityError(
+                        step.agentProfile,
+                        step.assignedAgent
+                      )}
+                    </p>
+                  )}
+              </div>
+            )}
+            <div className="flex-1">
+              <Select
+                value={step.assignedAgent || "default"}
+                onValueChange={(value) =>
+                  updateStep(index, {
+                    assignedAgent: value === "default" ? undefined : value,
+                  })
+                }
+              >
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="Runtime: Default" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="default">Default runtime</SelectItem>
+                  {runtimeOptions.map((runtime) => (
+                    <SelectItem key={runtime.id} value={runtime.id}>
+                      {runtime.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {pattern === "checkpoint" && (
+              <div className="flex items-center gap-2 pt-1">
+                <Switch
+                  id={`approval-${step.id}`}
+                  checked={step.requiresApproval ?? false}
+                  onCheckedChange={(checked) =>
+                    updateStep(index, {
+                      requiresApproval: checked,
+                    })
+                  }
+                />
+                <Label htmlFor={`approval-${step.id}`} className="text-xs">
+                  Requires approval
+                </Label>
+              </div>
+            )}
+          </div>
+        </div>
+      </FormSectionCard>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -328,7 +661,9 @@ export function WorkflowFormView({
                   <Label>Pattern</Label>
                   <Select
                     value={pattern}
-                    onValueChange={setPattern}
+                    onValueChange={(value) =>
+                      setPattern(value as WorkflowPattern)
+                    }
                     disabled={mode === "edit"}
                   >
                     <SelectTrigger>
@@ -357,6 +692,12 @@ export function WorkflowFormView({
                         <span className="flex items-center gap-1.5">
                           {PATTERN_ICONS.loop}
                           Autonomous Loop
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="parallel">
+                        <span className="flex items-center gap-1.5">
+                          {PATTERN_ICONS.parallel}
+                          Parallel Research
                         </span>
                       </SelectItem>
                     </SelectContent>
@@ -499,28 +840,60 @@ export function WorkflowFormView({
             )}
 
             {!isLoop && (
-              <FormSectionCard icon={ListOrdered} title="Step Overview">
+              <FormSectionCard
+                icon={isParallel ? GitBranch : ListOrdered}
+                title={isParallel ? "Parallel Overview" : "Step Overview"}
+                hint={
+                  isParallel
+                    ? "Launch 2-5 research branches, then merge them in one synthesis step."
+                    : undefined
+                }
+              >
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Badge variant="secondary" className="text-xs">
-                      {steps.length} {steps.length === 1 ? "step" : "steps"}
+                      {isParallel
+                        ? `${branchSteps.length} branch${branchSteps.length === 1 ? "" : "es"}`
+                        : `${steps.length} step${steps.length === 1 ? "" : "s"}`}
                     </Badge>
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
                       onClick={addStep}
+                      disabled={
+                        isParallel && branchSteps.length >= MAX_PARALLEL_BRANCHES
+                      }
                     >
                       <Plus className="h-3 w-3 mr-1" />
-                      Add Step
+                      {isParallel ? "Add Branch" : "Add Step"}
                     </Button>
                   </div>
                   <div className="space-y-1">
-                    {steps.map((step, i) => (
-                      <p key={step.id} className="text-xs text-muted-foreground truncate">
-                        #{i + 1} {step.name || "(unnamed)"}
-                      </p>
-                    ))}
+                    {isParallel ? (
+                      <>
+                        {branchSteps.map((step, i) => (
+                          <p
+                            key={step.id}
+                            className="text-xs text-muted-foreground truncate"
+                          >
+                            Branch {i + 1}: {step.name || "(unnamed)"}
+                          </p>
+                        ))}
+                        <p className="text-xs text-muted-foreground truncate">
+                          Join: {synthesisStep?.name || "(unnamed synthesis step)"}
+                        </p>
+                      </>
+                    ) : (
+                      steps.map((step, i) => (
+                        <p
+                          key={step.id}
+                          className="text-xs text-muted-foreground truncate"
+                        >
+                          #{i + 1} {step.name || "(unnamed)"}
+                        </p>
+                      ))
+                    )}
                   </div>
                 </div>
               </FormSectionCard>
@@ -545,142 +918,40 @@ export function WorkflowFormView({
                   </p>
                 </div>
               </FormSectionCard>
-            ) : (
-              steps.map((step, index) => (
+            ) : isParallel ? (
+              <>
                 <FormSectionCard
-                  key={step.id}
-                  icon={ListOrdered}
-                  title={`Step ${index + 1}`}
+                  icon={GitBranch}
+                  title="Research Branches"
+                  hint="Each branch runs independently before Stagent unlocks the join step."
                 >
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-xs shrink-0">
-                        #{index + 1}
-                      </Badge>
-                      <Input
-                        value={step.name}
-                        onChange={(e) =>
-                          updateStep(index, { name: e.target.value })
-                        }
-                        placeholder="Step name"
-                        className="flex-1"
-                      />
-                      {steps.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 shrink-0"
-                          onClick={() => removeStep(index)}
-                          aria-label={`Remove step ${index + 1}`}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      )}
-                    </div>
-                    <div className="space-y-1.5">
-                      <Textarea
-                        value={step.prompt}
-                        onChange={(e) =>
-                          updateStep(index, { prompt: e.target.value })
-                        }
-                        placeholder="Instructions for the agent"
-                        rows={3}
-                      />
-                      <p className="text-xs text-muted-foreground">Agent prompt for this step</p>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      {profiles.length > 0 && (
-                        <div className="flex-1">
-                          <Select
-                            value={step.agentProfile || "auto"}
-                            onValueChange={(v) =>
-                              updateStep(index, {
-                                agentProfile: v === "auto" ? undefined : v,
-                              })
-                            }
-                          >
-                            <SelectTrigger className="h-8 text-xs">
-                              <SelectValue placeholder="Profile: Auto-detect" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="auto">Auto-detect</SelectItem>
-                              {profiles.map((p) => (
-                                <SelectItem
-                                  key={p.id}
-                                  value={p.id}
-                                  disabled={
-                                    !profileSupportsRuntime(
-                                      p,
-                                      step.assignedAgent || DEFAULT_AGENT_RUNTIME
-                                    )
-                                  }
-                                >
-                                  {p.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          {step.agentProfile &&
-                            getProfileCompatibilityError(
-                              step.agentProfile,
-                              step.assignedAgent
-                            ) && (
-                              <p className="mt-1 text-xs text-destructive">
-                                {getProfileCompatibilityError(
-                                  step.agentProfile,
-                                  step.assignedAgent
-                                )}
-                              </p>
-                            )}
-                        </div>
-                      )}
-                      <div className="flex-1">
-                        <Select
-                          value={step.assignedAgent || "default"}
-                          onValueChange={(value) =>
-                            updateStep(index, {
-                              assignedAgent:
-                                value === "default" ? undefined : value,
-                            })
-                          }
-                        >
-                          <SelectTrigger className="h-8 text-xs">
-                            <SelectValue placeholder="Runtime: Default" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="default">Default runtime</SelectItem>
-                            {runtimeOptions.map((runtime) => (
-                              <SelectItem key={runtime.id} value={runtime.id}>
-                                {runtime.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      {pattern === "checkpoint" && (
-                        <div className="flex items-center gap-2">
-                          <Switch
-                            id={`approval-${step.id}`}
-                            checked={step.requiresApproval ?? false}
-                            onCheckedChange={(checked) =>
-                              updateStep(index, {
-                                requiresApproval: checked,
-                              })
-                            }
-                          />
-                          <Label
-                            htmlFor={`approval-${step.id}`}
-                            className="text-xs"
-                          >
-                            Requires approval
-                          </Label>
-                        </div>
-                      )}
-                    </div>
+                  <div className="space-y-4">
+                    {branchSteps.map((step, index) =>
+                      renderStepEditor(step, index, {
+                        title: `Branch ${index + 1}`,
+                        icon: GitBranch,
+                        removable: branchSteps.length > MIN_PARALLEL_BRANCHES,
+                        badgeLabel: `B${index + 1}`,
+                      })
+                    )}
                   </div>
                 </FormSectionCard>
-              ))
+
+                {synthesisStep &&
+                  renderStepEditor(synthesisStep, branchSteps.length, {
+                    title: "Synthesis Step",
+                    icon: MessageSquare,
+                    hint: "This step receives labeled outputs from every branch as context.",
+                    badgeLabel: "JOIN",
+                  })}
+              </>
+            ) : (
+              steps.map((step, index) =>
+                renderStepEditor(step, index, {
+                  title: `Step ${index + 1}`,
+                  removable: steps.length > 1,
+                })
+              )
             )}
 
             {error && <p className="text-sm text-destructive">{error}</p>}
