@@ -17,12 +17,14 @@ interface DocumentUploadDialogProps {
   open: boolean;
   onClose: () => void;
   onUploaded: () => void;
+  restoreFocusElement?: HTMLElement | null;
 }
 
 export function DocumentUploadDialog({
   open,
   onClose,
   onUploaded,
+  restoreFocusElement,
 }: DocumentUploadDialogProps) {
   const [uploading, setUploading] = useState(false);
   const [uploaded, setUploaded] = useState<string[]>([]);
@@ -66,7 +68,14 @@ export function DocumentUploadDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent
+        className="sm:max-w-md"
+        onCloseAutoFocus={(event) => {
+          if (!restoreFocusElement) return;
+          event.preventDefault();
+          restoreFocusElement.focus();
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Upload Documents</DialogTitle>
           <DialogDescription>

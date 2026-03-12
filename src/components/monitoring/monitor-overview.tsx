@@ -47,7 +47,11 @@ export async function MonitorOverview() {
   const hourlyActivity = await getAgentActivityByHour();
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div
+      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6"
+      aria-live="polite"
+      aria-label="Monitor overview metrics"
+    >
       {/* Active Agents */}
       <Card className="surface-card">
         <CardHeader className="flex flex-row items-center justify-between pb-2">

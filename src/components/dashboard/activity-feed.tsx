@@ -50,11 +50,14 @@ export function ActivityFeed({ entries, hourlyActivity }: ActivityFeedProps) {
           </div>
         )}
         {entries.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-4 text-center">
+          <p
+            className="text-sm text-muted-foreground py-4 text-center"
+            aria-live="polite"
+          >
             No recent agent activity.
           </p>
         ) : (
-          <div className="space-y-1">
+          <div className="space-y-1" aria-live="polite">
             {entries.map((entry) => (
               <div
                 key={entry.id}

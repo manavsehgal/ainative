@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +27,7 @@ export function ProjectCreateDialog({ onCreated }: ProjectCreateDialogProps) {
   const [workingDirectory, setWorkingDirectory] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -65,12 +66,17 @@ export function ProjectCreateDialog({ onCreated }: ProjectCreateDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
+        <Button ref={triggerRef}>
           <Plus className="h-4 w-4 mr-2" />
           New Project
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          triggerRef.current?.focus();
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Create Project</DialogTitle>
           <DialogDescription>

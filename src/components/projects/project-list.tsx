@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { FolderKanban } from "lucide-react";
 import { ProjectCard } from "./project-card";
 import { ProjectCreateDialog } from "./project-create-dialog";
@@ -21,6 +21,7 @@ export function ProjectList({ initialProjects }: { initialProjects: Project[] })
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [editProject, setEditProject] = useState<Project | null>(null);
   const [editOpen, setEditOpen] = useState(false);
+  const restoreFocusRef = useRef<HTMLElement | null>(null);
   const activeProjects = projects.filter((project) => project.status === "active").length;
   const totalTasks = projects.reduce((sum, project) => sum + project.taskCount, 0);
 
@@ -29,9 +30,10 @@ export function ProjectList({ initialProjects }: { initialProjects: Project[] })
     if (res.ok) setProjects(await res.json());
   }, []);
 
-  function handleEdit(id: string) {
+  function handleEdit(id: string, trigger: HTMLElement | null) {
     const project = projects.find((p) => p.id === id);
     if (project) {
+      restoreFocusRef.current = trigger;
       setEditProject(project);
       setEditOpen(true);
     }
@@ -99,6 +101,7 @@ export function ProjectList({ initialProjects }: { initialProjects: Project[] })
         open={editOpen}
         onOpenChange={setEditOpen}
         onUpdated={refresh}
+        restoreFocusElement={restoreFocusRef.current}
       />
     </div>
   );

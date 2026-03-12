@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +36,7 @@ export function DocumentBrowser({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [uploadOpen, setUploadOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const uploadButtonRef = useRef<HTMLButtonElement>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -101,7 +102,7 @@ export function DocumentBrowser({
     <>
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Documents</h1>
-        <Button onClick={() => setUploadOpen(true)} size="sm">
+        <Button ref={uploadButtonRef} onClick={() => setUploadOpen(true)} size="sm">
           <Upload className="h-4 w-4 mr-1.5" />
           Upload
         </Button>
@@ -214,6 +215,7 @@ export function DocumentBrowser({
         open={uploadOpen}
         onClose={() => setUploadOpen(false)}
         onUploaded={refresh}
+        restoreFocusElement={uploadButtonRef.current}
       />
     </>
   );

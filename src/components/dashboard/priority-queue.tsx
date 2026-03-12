@@ -36,11 +36,14 @@ export function PriorityQueue({ tasks }: PriorityQueueProps) {
       </CardHeader>
       <CardContent>
         {tasks.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-4 text-center">
+          <p
+            className="text-sm text-muted-foreground py-4 text-center"
+            aria-live="polite"
+          >
             No tasks need attention right now.
           </p>
         ) : (
-          <div className="space-y-1">
+          <div className="space-y-1" aria-live="polite">
             {tasks.map((task) => {
               const Icon = statusIcon[task.status] ?? Shield;
               return (

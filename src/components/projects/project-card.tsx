@@ -14,7 +14,7 @@ interface ProjectCardProps {
     status: string;
     taskCount: number;
   };
-  onEdit: (id: string) => void;
+  onEdit: (id: string, trigger: HTMLElement | null) => void;
 }
 
 export function ProjectCard({ project, onEdit }: ProjectCardProps) {
@@ -22,8 +22,13 @@ export function ProjectCard({ project, onEdit }: ProjectCardProps) {
     <Card
       tabIndex={0}
       className="surface-card cursor-pointer transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl"
-      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onEdit(project.id); } }}
-      onClick={() => onEdit(project.id)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onEdit(project.id, e.currentTarget);
+        }
+      }}
+      onClick={(e) => onEdit(project.id, e.currentTarget)}
     >
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-base font-medium">{project.name}</CardTitle>

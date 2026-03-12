@@ -36,6 +36,7 @@ interface ProjectEditDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUpdated: () => void;
+  restoreFocusElement?: HTMLElement | null;
 }
 
 export function ProjectEditDialog({
@@ -43,6 +44,7 @@ export function ProjectEditDialog({
   open,
   onOpenChange,
   onUpdated,
+  restoreFocusElement,
 }: ProjectEditDialogProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -103,7 +105,13 @@ export function ProjectEditDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent>
+        <DialogContent
+          onCloseAutoFocus={(event) => {
+            if (!restoreFocusElement) return;
+            event.preventDefault();
+            restoreFocusElement.focus();
+          }}
+        >
           <DialogHeader>
             <DialogTitle>Edit Project</DialogTitle>
             <DialogDescription>

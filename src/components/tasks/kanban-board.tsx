@@ -40,6 +40,10 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
   const [activeTask, setActiveTask] = useState<TaskItem | null>(null);
   const [projectFilter, setProjectFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [announcement, setAnnouncement] = useState(
+    `Showing ${initialTasks.length} task${initialTasks.length === 1 ? "" : "s"} on the kanban board.`
+  );
+  const hasAnnouncedFilters = useRef(false);
 
   // I5: Scroll indicators
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -69,6 +73,22 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
     return true;
   });
 
+  useEffect(() => {
+    if (!hasAnnouncedFilters.current) {
+      hasAnnouncedFilters.current = true;
+      return;
+    }
+
+    const projectName =
+      projectFilter === "all"
+        ? "all projects"
+        : projects.find((project) => project.id === projectFilter)?.name ?? "the selected project";
+    const statusName = statusFilter === "all" ? "all statuses" : statusFilter;
+    setAnnouncement(
+      `Showing ${filteredTasks.length} task${filteredTasks.length === 1 ? "" : "s"} for ${projectName} with ${statusName}.`
+    );
+  }, [filteredTasks.length, projectFilter, projects, statusFilter]);
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -95,13 +115,17 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
     const targetStatus = over.id as TaskStatus;
     if (task.status === targetStatus) return;
 
-    if (!isValidDragTransition(task.status as TaskStatus, targetStatus)) return;
+    if (!isValidDragTransition(task.status as TaskStatus, targetStatus)) {
+      setAnnouncement(`Cannot move ${task.title} from ${task.status} to ${targetStatus}.`);
+      return;
+    }
 
     // Optimistic update
     const prevTasks = [...tasks];
     setTasks((prev) =>
       prev.map((t) => (t.id === task.id ? { ...t, status: targetStatus } : t))
     );
+    setAnnouncement(`Moved ${task.title} to ${targetStatus}.`);
 
     try {
       const res = await fetch(`/api/tasks/${task.id}`, {
@@ -109,9 +133,13 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: targetStatus }),
       });
-      if (!res.ok) setTasks(prevTasks);
+      if (!res.ok) {
+        setTasks(prevTasks);
+        setAnnouncement(`Move failed. ${task.title} returned to ${task.status}.`);
+      }
     } catch {
       setTasks(prevTasks);
+      setAnnouncement(`Move failed. ${task.title} returned to ${task.status}.`);
     }
   }
 
@@ -189,6 +217,9 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
           {newTaskButton}
         </div>
       </div>
+      <p id={`${dndId}-announcements`} className="sr-only" aria-live="polite" aria-atomic="true">
+        {announcement}
+      </p>
       <DndContext
         id={dndId}
         sensors={sensors}
@@ -218,6 +249,7 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
             className="flex gap-4 overflow-x-auto pb-4"
             role="region"
             aria-label="Kanban board"
+            aria-describedby={`${dndId}-announcements`}
           >
             {COLUMN_ORDER.map((status) => (
               <KanbanColumn
