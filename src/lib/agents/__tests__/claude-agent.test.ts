@@ -16,6 +16,8 @@ const {
   mockPrepareTaskOutputDirectory,
   mockBuildTaskOutputInstructions,
   mockScanTaskOutputDocuments,
+  mockGetProfile,
+  mockIsToolAllowed,
 } = vi.hoisted(() => {
   const mockFrom = vi.fn();
   const mockWhere = vi.fn();
@@ -39,6 +41,13 @@ const {
     .fn()
     .mockReturnValue("Write outputs to /tmp/stagent-outputs/task-1");
   const mockScanTaskOutputDocuments = vi.fn().mockResolvedValue([]);
+  const mockGetProfile = vi.fn().mockReturnValue({
+    id: "general",
+    name: "General",
+    systemPrompt: "",
+    allowedTools: undefined,
+  });
+  const mockIsToolAllowed = vi.fn().mockResolvedValue(false);
   return {
     mockDb,
     mockFrom,
@@ -53,6 +62,8 @@ const {
     mockPrepareTaskOutputDirectory,
     mockBuildTaskOutputInstructions,
     mockScanTaskOutputDocuments,
+    mockGetProfile,
+    mockIsToolAllowed,
   };
 });
 
@@ -81,12 +92,7 @@ vi.mock("@/lib/settings/auth", () => ({
   updateAuthStatus: mockUpdateAuthStatus,
 }));
 vi.mock("@/lib/agents/profiles/registry", () => ({
-  getProfile: vi.fn().mockReturnValue({
-    id: "general",
-    name: "General",
-    systemPrompt: "",
-    allowedTools: undefined,
-  }),
+  getProfile: mockGetProfile,
 }));
 vi.mock("@/lib/documents/context-builder", () => ({
   buildDocumentContext: vi.fn().mockResolvedValue(""),
@@ -97,7 +103,7 @@ vi.mock("@/lib/documents/output-scanner", () => ({
   scanTaskOutputDocuments: mockScanTaskOutputDocuments,
 }));
 vi.mock("@/lib/settings/permissions", () => ({
-  isToolAllowed: vi.fn().mockResolvedValue(false),
+  isToolAllowed: mockIsToolAllowed,
 }));
 vi.mock("@/lib/usage/ledger", () => ({
   extractUsageSnapshot: vi.fn().mockReturnValue({}),
@@ -162,6 +168,13 @@ beforeEach(() => {
     "Write outputs to /tmp/stagent-outputs/task-1"
   );
   mockScanTaskOutputDocuments.mockResolvedValue([]);
+  mockGetProfile.mockReturnValue({
+    id: "general",
+    name: "General",
+    systemPrompt: "",
+    allowedTools: undefined,
+  });
+  mockIsToolAllowed.mockResolvedValue(false);
 });
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -597,6 +610,40 @@ describe("handleToolPermission", () => {
     });
   });
 
+  it("D3b: fills in updatedInput when an allow response omits it", async () => {
+    mockWhere.mockResolvedValueOnce([makeTask()]);
+
+    let toolResult: unknown;
+    mockQuery.mockImplementation(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ({ options }: any) => {
+        return {
+          async *[Symbol.asyncIterator]() {
+            const canUseTool = options.canUseTool as (
+              toolName: string,
+              input: Record<string, unknown>
+            ) => Promise<{ behavior: string; updatedInput?: Record<string, unknown> }>;
+
+            mockWhere.mockResolvedValueOnce([
+              { id: "notif-1", response: JSON.stringify({ behavior: "allow" }) },
+            ]);
+
+            toolResult = await canUseTool("Write", { path: "/test.ts" });
+
+            yield { type: "result", result: "done" };
+          },
+        } as unknown as ReturnType<typeof query>;
+      }
+    );
+
+    await executeClaudeTask("task-1");
+
+    expect(toolResult).toEqual({
+      behavior: "allow",
+      updatedInput: { path: "/test.ts" },
+    });
+  });
+
   it("D4: returns deny when response is invalid JSON", async () => {
     mockWhere.mockResolvedValueOnce([makeTask()]);
 
@@ -665,9 +712,94 @@ describe("handleToolPermission", () => {
       ([value]) => (value as { type?: string }).type === "permission_required"
     );
 
-    expect(firstResult).toEqual({ behavior: "allow" });
-    expect(secondResult).toEqual({ behavior: "allow" });
+    expect(firstResult).toEqual({
+      behavior: "allow",
+      updatedInput: { path: "/test.ts" },
+    });
+    expect(secondResult).toEqual({
+      behavior: "allow",
+      updatedInput: { path: "/test.ts" },
+    });
     expect(permissionNotifications).toHaveLength(1);
+  });
+
+  it("D5b: auto-approved tools keep the original input in updatedInput", async () => {
+    mockWhere.mockResolvedValueOnce([makeTask()]);
+    mockGetProfile.mockReturnValue({
+      id: "general",
+      name: "General",
+      systemPrompt: "",
+      canUseToolPolicy: {
+        autoApprove: ["Bash"],
+      },
+    });
+
+    let toolResult: unknown;
+    mockQuery.mockImplementation(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ({ options }: any) => {
+        return {
+          async *[Symbol.asyncIterator]() {
+            const canUseTool = options.canUseTool as (
+              toolName: string,
+              input: Record<string, unknown>
+            ) => Promise<{ behavior: string; updatedInput?: Record<string, unknown> }>;
+
+            toolResult = await canUseTool("Bash", {
+              command: "mkdir -p /tmp/stagent-outputs/task-1",
+            });
+
+            yield { type: "result", result: "done" };
+          },
+        } as unknown as ReturnType<typeof query>;
+      }
+    );
+
+    await executeClaudeTask("task-1");
+
+    expect(toolResult).toEqual({
+      behavior: "allow",
+      updatedInput: {
+        command: "mkdir -p /tmp/stagent-outputs/task-1",
+      },
+    });
+    expect(mockValues).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: "permission_required" })
+    );
+  });
+
+  it("D5c: saved tool permissions keep the original input in updatedInput", async () => {
+    mockWhere.mockResolvedValueOnce([makeTask()]);
+    mockIsToolAllowed.mockResolvedValue(true);
+
+    let toolResult: unknown;
+    mockQuery.mockImplementation(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ({ options }: any) => {
+        return {
+          async *[Symbol.asyncIterator]() {
+            const canUseTool = options.canUseTool as (
+              toolName: string,
+              input: Record<string, unknown>
+            ) => Promise<{ behavior: string; updatedInput?: Record<string, unknown> }>;
+
+            toolResult = await canUseTool("Write", { path: "/test.ts" });
+
+            yield { type: "result", result: "done" };
+          },
+        } as unknown as ReturnType<typeof query>;
+      }
+    );
+
+    await executeClaudeTask("task-1");
+
+    expect(toolResult).toEqual({
+      behavior: "allow",
+      updatedInput: { path: "/test.ts" },
+    });
+    expect(mockValues).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: "permission_required" })
+    );
   });
 
   describe("D6: timeout behavior", () => {
@@ -779,8 +911,14 @@ describe("handleToolPermission", () => {
         ([value]) => (value as { type?: string }).type === "permission_required"
       );
 
-      expect(firstResult).toEqual({ behavior: "allow" });
-      expect(secondResult).toEqual({ behavior: "allow" });
+      expect(firstResult).toEqual({
+        behavior: "allow",
+        updatedInput: { path: "/test.ts" },
+      });
+      expect(secondResult).toEqual({
+        behavior: "allow",
+        updatedInput: { path: "/test.ts" },
+      });
       expect(permissionNotifications).toHaveLength(1);
     });
   });

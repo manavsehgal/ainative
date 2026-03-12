@@ -25,7 +25,8 @@ import { toast } from "sonner";
 import { workflowStatusVariant, patternLabels } from "@/lib/constants/status-colors";
 import { LoopStatusView } from "./loop-status-view";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
-import type { LoopState, LoopConfig } from "@/lib/workflows/types";
+import { SwarmDashboard } from "./swarm-dashboard";
+import type { LoopState, LoopConfig, SwarmConfig } from "@/lib/workflows/types";
 
 interface StepWithState {
   id: string;
@@ -52,6 +53,7 @@ interface WorkflowStatusData {
   steps: StepWithState[];
   loopConfig?: LoopConfig;
   loopState?: LoopState;
+  swarmConfig?: SwarmConfig;
 }
 
 interface WorkflowStatusViewProps {
@@ -93,6 +95,22 @@ export function WorkflowStatusView({ workflowId }: WorkflowStatusViewProps) {
         ...data,
         status: "active",
         steps: data.steps.map((step, index) => {
+          if (data.pattern === "swarm") {
+            const lastIndex = data.steps.length - 1;
+            return {
+              ...step,
+              state: {
+                ...step.state,
+                status:
+                  index === 0
+                    ? "running"
+                    : index === lastIndex
+                      ? "waiting_dependencies"
+                      : "pending",
+              },
+            };
+          }
+
           if (data.pattern === "parallel") {
             const isJoin = !!step.dependsOn?.length;
             return {
@@ -297,6 +315,15 @@ export function WorkflowStatusView({ workflowId }: WorkflowStatusViewProps) {
               loopConfig={data.loopConfig}
               loopState={data.loopState ?? null}
               onRefresh={fetchStatus}
+            />
+          ) : data.pattern === "swarm" ? (
+            <SwarmDashboard
+              workflowId={workflowId}
+              workflowStatus={data.status}
+              steps={data.steps}
+              swarmConfig={data.swarmConfig}
+              onRefresh={fetchStatus}
+              stepStatusIcons={stepStatusIcons}
             />
           ) : (
             <div className="space-y-4" aria-live="polite">

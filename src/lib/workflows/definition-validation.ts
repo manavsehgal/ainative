@@ -4,6 +4,11 @@ import {
   MAX_PARALLEL_BRANCHES,
   MIN_PARALLEL_BRANCHES,
 } from "./parallel";
+import {
+  getSwarmWorkflowStructure,
+  MAX_SWARM_WORKERS,
+  MIN_SWARM_WORKERS,
+} from "./swarm";
 
 export const VALID_WORKFLOW_PATTERNS = [
   "sequence",
@@ -11,6 +16,7 @@ export const VALID_WORKFLOW_PATTERNS = [
   "checkpoint",
   "loop",
   "parallel",
+  "swarm",
 ] as const;
 
 export function validateWorkflowDefinition(
@@ -33,6 +39,40 @@ export function validateWorkflowDefinition(
     ) {
       return "Loop pattern requires loopConfig with maxIterations >= 1";
     }
+  }
+
+  if (definition.pattern === "swarm") {
+    const structure = getSwarmWorkflowStructure(definition);
+    if (!structure) {
+      return "Swarm pattern requires a mayor step, 2-5 worker steps, and a refinery step";
+    }
+
+    const { workerSteps, workerConcurrencyLimit } = structure;
+    if (workerSteps.length < MIN_SWARM_WORKERS) {
+      return `Swarm pattern requires at least ${MIN_SWARM_WORKERS} worker steps`;
+    }
+
+    if (workerSteps.length > MAX_SWARM_WORKERS) {
+      return `Swarm pattern supports at most ${MAX_SWARM_WORKERS} worker steps`;
+    }
+
+    if (definition.steps.some((step) => step.requiresApproval)) {
+      return "Swarm steps cannot require approval in the first slice";
+    }
+
+    if (definition.steps.some((step) => (step.dependsOn?.length ?? 0) > 0)) {
+      return "Swarm steps use fixed mayor/worker/refinery ordering and cannot declare dependencies";
+    }
+
+    const rawLimit = definition.swarmConfig?.workerConcurrencyLimit;
+    if (
+      rawLimit !== undefined &&
+      (rawLimit < 1 || rawLimit > workerSteps.length || rawLimit !== workerConcurrencyLimit)
+    ) {
+      return `Swarm worker concurrency limit must be between 1 and ${workerSteps.length}`;
+    }
+
+    return null;
   }
 
   if (definition.pattern !== "parallel") {

@@ -26,6 +26,37 @@ function createValidParallelDefinition(): WorkflowDefinition {
   };
 }
 
+function createValidSwarmDefinition(): WorkflowDefinition {
+  return {
+    pattern: "swarm",
+    steps: [
+      {
+        id: "mayor",
+        name: "Mayor",
+        prompt: "Plan the swarm.",
+      },
+      {
+        id: "worker-a",
+        name: "Worker A",
+        prompt: "Own the first slice.",
+      },
+      {
+        id: "worker-b",
+        name: "Worker B",
+        prompt: "Own the second slice.",
+      },
+      {
+        id: "refinery",
+        name: "Refinery",
+        prompt: "Merge the results.",
+      },
+    ],
+    swarmConfig: {
+      workerConcurrencyLimit: 2,
+    },
+  };
+}
+
 describe("validateWorkflowDefinition", () => {
   it("accepts a valid parallel fork/join definition", () => {
     expect(validateWorkflowDefinition(createValidParallelDefinition())).toBeNull();
@@ -74,6 +105,60 @@ describe("validateWorkflowDefinition", () => {
 
     expect(validateWorkflowDefinition(definition)).toBe(
       "Loop pattern requires loopConfig with maxIterations >= 1"
+    );
+  });
+
+  it("accepts a valid swarm definition", () => {
+    expect(validateWorkflowDefinition(createValidSwarmDefinition())).toBeNull();
+  });
+
+  it("rejects a swarm definition with too few workers", () => {
+    const definition: WorkflowDefinition = {
+      pattern: "swarm",
+      steps: [
+        {
+          id: "mayor",
+          name: "Mayor",
+          prompt: "Plan the swarm.",
+        },
+        {
+          id: "worker-a",
+          name: "Worker A",
+          prompt: "Own the only slice.",
+        },
+        {
+          id: "refinery",
+          name: "Refinery",
+          prompt: "Merge the results.",
+        },
+      ],
+    };
+
+    expect(validateWorkflowDefinition(definition)).toBe(
+      "Swarm pattern requires a mayor step, 2-5 worker steps, and a refinery step"
+    );
+  });
+
+  it("rejects swarm steps that declare dependencies", () => {
+    const definition = createValidSwarmDefinition();
+    definition.steps[1] = {
+      ...definition.steps[1],
+      dependsOn: ["mayor"],
+    };
+
+    expect(validateWorkflowDefinition(definition)).toBe(
+      "Swarm steps use fixed mayor/worker/refinery ordering and cannot declare dependencies"
+    );
+  });
+
+  it("rejects a swarm concurrency limit above worker count", () => {
+    const definition = createValidSwarmDefinition();
+    definition.swarmConfig = {
+      workerConcurrencyLimit: 3,
+    };
+
+    expect(validateWorkflowDefinition(definition)).toBe(
+      "Swarm worker concurrency limit must be between 1 and 2"
     );
   });
 });

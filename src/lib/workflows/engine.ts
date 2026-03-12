@@ -10,6 +10,11 @@ import {
   getParallelWorkflowStructure,
   PARALLEL_BRANCH_CONCURRENCY_LIMIT,
 } from "./parallel";
+import {
+  buildSwarmRefineryPrompt,
+  buildSwarmWorkerPrompt,
+  getSwarmWorkflowStructure,
+} from "./swarm";
 
 /**
  * Execute a workflow by advancing through its steps according to the pattern.
@@ -79,6 +84,9 @@ export async function executeWorkflow(workflowId: string): Promise<void> {
         break;
       case "parallel":
         await executeParallel(workflowId, definition, state);
+        break;
+      case "swarm":
+        await executeSwarm(workflowId, definition, state);
         break;
     }
 
@@ -421,6 +429,244 @@ async function executeParallel(
 }
 
 /**
+ * Swarm pattern: run a mayor planning step, execute worker steps in parallel,
+ * then merge the results through a refinery step.
+ */
+async function executeSwarm(
+  workflowId: string,
+  definition: WorkflowDefinition,
+  state: WorkflowState
+): Promise<void> {
+  const structure = getSwarmWorkflowStructure(definition);
+  if (!structure) {
+    throw new Error(
+      "Swarm workflows require a mayor step, 2-5 worker steps, and a refinery step"
+    );
+  }
+
+  const { mayorStep, workerSteps, refineryStep, workerConcurrencyLimit } =
+    structure;
+  const refineryIndex = definition.steps.findIndex(
+    (step) => step.id === refineryStep.id
+  );
+
+  if (refineryIndex === -1) {
+    throw new Error(`Refinery step "${refineryStep.id}" not found`);
+  }
+
+  const mayorResult = await executeStep(
+    workflowId,
+    mayorStep.id,
+    mayorStep.name,
+    mayorStep.prompt,
+    state,
+    mayorStep.assignedAgent,
+    mayorStep.agentProfile
+  );
+
+  if (mayorResult.status === "failed") {
+    throw new Error(`Mayor step "${mayorStep.name}" failed: ${mayorResult.error}`);
+  }
+
+  let stateWriteQueue = Promise.resolve();
+  const commitState = (
+    mutate: (draft: WorkflowState) => void,
+    status: "draft" | "active" | "paused" | "completed" = "active"
+  ) => {
+    stateWriteQueue = stateWriteQueue.then(async () => {
+      mutate(state);
+      await updateWorkflowState(workflowId, state, status);
+    });
+    return stateWriteQueue;
+  };
+
+  await commitState((draft) => {
+    draft.currentStepIndex = 1;
+    const refineryState = draft.stepStates[refineryIndex];
+    refineryState.status = "waiting_dependencies";
+    refineryState.error = undefined;
+    refineryState.result = undefined;
+    refineryState.startedAt = undefined;
+    refineryState.completedAt = undefined;
+  });
+
+  const workerResults = await mapWithConcurrency(
+    workerSteps,
+    workerConcurrencyLimit,
+    async (step) => {
+      const stepIndex = definition.steps.findIndex(
+        (candidate) => candidate.id === step.id
+      );
+      if (stepIndex === -1) {
+        throw new Error(`Swarm worker "${step.id}" not found`);
+      }
+
+      const workerPrompt = buildSwarmWorkerPrompt({
+        mayorName: mayorStep.name,
+        mayorResult: mayorResult.result ?? "",
+        workerName: step.name,
+        workerPrompt: step.prompt,
+      });
+
+      const startedAt = new Date().toISOString();
+      await commitState((draft) => {
+        const stepState = draft.stepStates[stepIndex];
+        stepState.status = "running";
+        stepState.startedAt = startedAt;
+        stepState.completedAt = undefined;
+        stepState.error = undefined;
+        stepState.result = undefined;
+      });
+
+      const result = await executeChildTask(
+        workflowId,
+        step.name,
+        workerPrompt,
+        step.assignedAgent,
+        step.agentProfile
+      );
+
+      const completedAt = new Date().toISOString();
+      await commitState((draft) => {
+        const stepState = draft.stepStates[stepIndex];
+        stepState.taskId = result.taskId;
+        stepState.completedAt = completedAt;
+
+        if (result.status === "completed") {
+          stepState.status = "completed";
+          stepState.result = result.result ?? "";
+        } else {
+          stepState.status = "failed";
+          stepState.error =
+            result.error ?? "Task did not complete successfully";
+        }
+      });
+
+      return { step, result };
+    }
+  );
+
+  await stateWriteQueue;
+
+  const failedWorkers = workerResults.filter(
+    (worker) => worker.result.status !== "completed"
+  );
+  if (failedWorkers.length > 0) {
+    const failureSummary = summarizeFailedWorkers(failedWorkers);
+
+    await commitState((draft) => {
+      const refineryState = draft.stepStates[refineryIndex];
+      refineryState.status = "failed";
+      refineryState.error = `Blocked by failed workers: ${failureSummary}`;
+    });
+    await stateWriteQueue;
+
+    throw new Error(`Swarm workers failed: ${failureSummary}`);
+  }
+
+  await runSwarmRefinery({
+    workflowId,
+    state,
+    mayorStep,
+    mayorResult: mayorResult.result ?? "",
+    refineryStep,
+    refineryIndex,
+    workerOutputs: workerResults.map((worker) => ({
+      stepName: worker.step.name,
+      result: worker.result.result ?? "",
+    })),
+  });
+}
+
+function summarizeFailedWorkers(
+  failedWorkers: Array<{
+    step: { name: string };
+    result: { error?: string };
+  }>
+): string {
+  return failedWorkers
+    .map(
+      (worker) =>
+        `${worker.step.name}: ${
+          worker.result.error ?? "Task did not complete successfully"
+        }`
+    )
+    .join("; ");
+}
+
+async function runSwarmRefinery(input: {
+  workflowId: string;
+  state: WorkflowState;
+  mayorStep: { name: string };
+  mayorResult: string;
+  refineryStep: {
+    id: string;
+    name: string;
+    prompt: string;
+    assignedAgent?: string;
+    agentProfile?: string;
+  };
+  refineryIndex: number;
+  workerOutputs: Array<{ stepName: string; result: string }>;
+}): Promise<void> {
+  const {
+    workflowId,
+    state,
+    mayorStep,
+    mayorResult,
+    refineryStep,
+    refineryIndex,
+    workerOutputs,
+  } = input;
+
+  state.currentStepIndex = refineryIndex;
+  const refineryState = state.stepStates[refineryIndex];
+  refineryState.status = "running";
+  refineryState.startedAt = new Date().toISOString();
+  refineryState.completedAt = undefined;
+  refineryState.error = undefined;
+  refineryState.result = undefined;
+  await updateWorkflowState(workflowId, state, "active");
+
+  const refineryPrompt = buildSwarmRefineryPrompt({
+    mayorName: mayorStep.name,
+    mayorResult,
+    workerOutputs,
+    refineryPrompt: refineryStep.prompt,
+  });
+
+  const refineryResult = await executeChildTask(
+    workflowId,
+    refineryStep.name,
+    refineryPrompt,
+    refineryStep.assignedAgent,
+    refineryStep.agentProfile
+  );
+
+  refineryState.taskId = refineryResult.taskId;
+  refineryState.completedAt = new Date().toISOString();
+
+  if (refineryResult.status === "completed") {
+    refineryState.status = "completed";
+    refineryState.result = refineryResult.result ?? "";
+  } else {
+    refineryState.status = "failed";
+    refineryState.error =
+      refineryResult.error ?? "Task did not complete successfully";
+  }
+
+  await updateWorkflowState(workflowId, state, "active");
+
+  if (refineryResult.status !== "completed") {
+    throw new Error(
+      `Refinery step "${refineryStep.name}" failed: ${
+        refineryResult.error ?? "Task did not complete successfully"
+      }`
+    );
+  }
+}
+
+/**
  * Create and execute a child task, returning its result.
  * Shared by step-based patterns and the loop executor.
  */
@@ -630,6 +876,15 @@ export async function retryWorkflowStep(
     throw new Error(`Step ${stepId} is not in failed state`);
   }
 
+  if (workflow.status === "active") {
+    throw new Error("Cannot retry a step while the workflow is active");
+  }
+
+  if (definition.pattern === "swarm") {
+    await retrySwarmStep(workflowId, definition, state, stepIndex);
+    return;
+  }
+
   // Reset step state
   stepState.status = "pending";
   stepState.error = undefined;
@@ -677,6 +932,158 @@ export async function retryWorkflowStep(
     state.completedAt = allCompleted ? new Date().toISOString() : undefined;
     await updateWorkflowState(workflowId, state, allCompleted ? "completed" : "failed");
   }
+}
+
+function resetStepState(stepState: StepState): void {
+  stepState.status = "pending";
+  stepState.error = undefined;
+  stepState.result = undefined;
+  stepState.taskId = undefined;
+  stepState.startedAt = undefined;
+  stepState.completedAt = undefined;
+}
+
+async function retrySwarmStep(
+  workflowId: string,
+  definition: WorkflowDefinition,
+  state: WorkflowState,
+  stepIndex: number
+): Promise<void> {
+  const structure = getSwarmWorkflowStructure(definition);
+  if (!structure) {
+    throw new Error(
+      "Swarm workflows require a mayor step, 2-5 worker steps, and a refinery step"
+    );
+  }
+
+  const { mayorStep, workerSteps, refineryStep } = structure;
+  const refineryIndex = definition.steps.length - 1;
+  const mayorState = state.stepStates[0];
+  const refineryState = state.stepStates[refineryIndex];
+  const targetStep = definition.steps[stepIndex];
+  const targetState = state.stepStates[stepIndex];
+
+  if (stepIndex === 0) {
+    for (const currentStepState of state.stepStates) {
+      resetStepState(currentStepState);
+    }
+
+    state.status = "running";
+    state.currentStepIndex = 0;
+    state.completedAt = undefined;
+    await updateWorkflowState(workflowId, state, "active");
+    await executeSwarm(workflowId, definition, state);
+    return;
+  }
+
+  if (mayorState.status !== "completed" || !mayorState.result) {
+    throw new Error("Swarm mayor output must complete before retrying downstream steps");
+  }
+
+  if (stepIndex === refineryIndex) {
+    const incompleteWorkers = workerSteps.filter((_, workerIndex) => {
+      const workerState = state.stepStates[workerIndex + 1];
+      return workerState.status !== "completed" || !workerState.result;
+    });
+
+    if (incompleteWorkers.length > 0) {
+      throw new Error("All swarm workers must complete before retrying the refinery");
+    }
+
+    resetStepState(refineryState);
+    state.status = "running";
+    state.currentStepIndex = refineryIndex;
+    state.completedAt = undefined;
+    await updateWorkflowState(workflowId, state, "active");
+
+    await runSwarmRefinery({
+      workflowId,
+      state,
+      mayorStep,
+      mayorResult: mayorState.result,
+      refineryStep,
+      refineryIndex,
+      workerOutputs: workerSteps.map((worker, workerIndex) => ({
+        stepName: worker.name,
+        result: state.stepStates[workerIndex + 1].result ?? "",
+      })),
+    });
+
+    state.status = "completed";
+    state.completedAt = new Date().toISOString();
+    await updateWorkflowState(workflowId, state, "completed");
+    return;
+  }
+
+  resetStepState(targetState);
+  resetStepState(refineryState);
+  refineryState.status = "waiting_dependencies";
+  state.status = "running";
+  state.currentStepIndex = stepIndex;
+  state.completedAt = undefined;
+  await updateWorkflowState(workflowId, state, "active");
+
+  const retriedWorker = await executeStep(
+    workflowId,
+    targetStep.id,
+    targetStep.name,
+    buildSwarmWorkerPrompt({
+      mayorName: mayorStep.name,
+      mayorResult: mayorState.result,
+      workerName: targetStep.name,
+      workerPrompt: targetStep.prompt,
+    }),
+    state,
+    targetStep.assignedAgent,
+    targetStep.agentProfile
+  );
+
+  if (retriedWorker.status !== "completed") {
+    state.status = "failed";
+    await updateWorkflowState(workflowId, state, "failed");
+    throw new Error(
+      `Swarm worker "${targetStep.name}" failed: ${
+        retriedWorker.error ?? "Task did not complete successfully"
+      }`
+    );
+  }
+
+  const failedWorkers = workerSteps
+    .map((worker, workerIndex) => ({
+      step: worker,
+      result: state.stepStates[workerIndex + 1],
+    }))
+    .filter((worker) => worker.result.status !== "completed");
+
+  if (failedWorkers.length > 0) {
+    refineryState.status = "failed";
+    refineryState.error = `Blocked by failed workers: ${summarizeFailedWorkers(
+      failedWorkers.map((worker) => ({
+        step: worker.step,
+        result: { error: worker.result.error },
+      }))
+    )}`;
+    state.status = "failed";
+    await updateWorkflowState(workflowId, state, "failed");
+    return;
+  }
+
+  await runSwarmRefinery({
+    workflowId,
+    state,
+    mayorStep,
+    mayorResult: mayorState.result,
+    refineryStep,
+    refineryIndex,
+    workerOutputs: workerSteps.map((worker, workerIndex) => ({
+      stepName: worker.name,
+      result: state.stepStates[workerIndex + 1].result ?? "",
+    })),
+  });
+
+  state.status = "completed";
+  state.completedAt = new Date().toISOString();
+  await updateWorkflowState(workflowId, state, "completed");
 }
 
 async function mapWithConcurrency<T, TResult>(

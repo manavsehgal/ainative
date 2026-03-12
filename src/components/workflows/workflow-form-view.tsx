@@ -21,6 +21,7 @@ import {
   Trash2,
   GitBranch,
   RefreshCw,
+  Bot,
   ListOrdered,
   MessageSquare,
   ArrowDown,
@@ -46,6 +47,11 @@ import {
   MAX_PARALLEL_BRANCHES,
   MIN_PARALLEL_BRANCHES,
 } from "@/lib/workflows/parallel";
+import {
+  DEFAULT_SWARM_CONCURRENCY_LIMIT,
+  MAX_SWARM_WORKERS,
+  MIN_SWARM_WORKERS,
+} from "@/lib/workflows/swarm";
 
 interface WorkflowData {
   id: string;
@@ -167,12 +173,124 @@ function getParallelParts(steps: WorkflowStep[]) {
   };
 }
 
+function createSwarmMayorStep(): WorkflowStep {
+  return {
+    id: crypto.randomUUID(),
+    name: "Mayor plan",
+    prompt:
+      "Break the goal into a concise swarm plan. Assign a distinct focus area to each worker by name, call out dependencies or overlap risks, and define what the refinery should merge at the end.",
+  };
+}
+
+function createSwarmWorkerStep(index: number): WorkflowStep {
+  return {
+    id: crypto.randomUUID(),
+    name: `Worker ${index}`,
+    prompt:
+      "Own one slice of the mayor plan. Produce concrete findings, decisions, or deliverables the refinery can merge with sibling worker output.",
+  };
+}
+
+function createSwarmRefineryStep(): WorkflowStep {
+  return {
+    id: crypto.randomUUID(),
+    name: "Refine and merge",
+    prompt:
+      "Merge the mayor plan and worker outputs into one final result. Resolve overlaps, call out conflicts, and produce the final deliverable with a short rationale.",
+  };
+}
+
+function buildSwarmSteps(
+  mayorStep: WorkflowStep,
+  workerSteps: WorkflowStep[],
+  refineryStep: WorkflowStep
+): WorkflowStep[] {
+  return [
+    {
+      ...mayorStep,
+      requiresApproval: false,
+      dependsOn: undefined,
+    },
+    ...workerSteps.map((worker) => ({
+      ...worker,
+      requiresApproval: false,
+      dependsOn: undefined,
+    })),
+    {
+      ...refineryStep,
+      requiresApproval: false,
+      dependsOn: undefined,
+    },
+  ];
+}
+
+function createDefaultSwarmSteps(): WorkflowStep[] {
+  return buildSwarmSteps(
+    createSwarmMayorStep(),
+    Array.from({ length: MIN_SWARM_WORKERS }, (_, index) =>
+      createSwarmWorkerStep(index + 1)
+    ),
+    createSwarmRefineryStep()
+  );
+}
+
+function getSwarmParts(steps: WorkflowStep[]) {
+  return {
+    mayorStep: steps[0] ?? null,
+    workerSteps: steps.length > 2 ? steps.slice(1, -1) : [],
+    refineryStep: steps.length > 1 ? (steps.at(-1) ?? null) : null,
+  };
+}
+
+function normalizeSwarmSteps(
+  input: WorkflowStep[],
+  options?: { cloneIds?: boolean }
+): WorkflowStep[] {
+  const { mayorStep, workerSteps, refineryStep } = getSwarmParts(input);
+
+  const normalizedMayor = {
+    ...(mayorStep ?? createSwarmMayorStep()),
+    id:
+      options?.cloneIds && mayorStep
+        ? crypto.randomUUID()
+        : (mayorStep?.id ?? crypto.randomUUID()),
+    name: mayorStep?.name || "Mayor plan",
+  };
+
+  const nextWorkers = [...workerSteps].slice(0, MAX_SWARM_WORKERS);
+  while (nextWorkers.length < MIN_SWARM_WORKERS) {
+    nextWorkers.push(createSwarmWorkerStep(nextWorkers.length + 1));
+  }
+
+  const normalizedWorkers = nextWorkers.map((worker, index) => ({
+    ...worker,
+    id: options?.cloneIds ? crypto.randomUUID() : worker.id,
+    name: worker.name || `Worker ${index + 1}`,
+  }));
+
+  const normalizedRefinery = {
+    ...(refineryStep ?? createSwarmRefineryStep()),
+    id:
+      options?.cloneIds && refineryStep
+        ? crypto.randomUUID()
+        : (refineryStep?.id ?? crypto.randomUUID()),
+    name: refineryStep?.name || "Refine and merge",
+  };
+
+  return buildSwarmSteps(
+    normalizedMayor,
+    normalizedWorkers,
+    normalizedRefinery
+  );
+}
+
 const PATTERN_ICONS: Record<string, React.ReactNode> = {
   sequence: <ArrowDown className="h-3.5 w-3.5 text-muted-foreground" />,
   "planner-executor": <Brain className="h-3.5 w-3.5 text-muted-foreground" />,
   checkpoint: <ShieldCheck className="h-3.5 w-3.5 text-muted-foreground" />,
   loop: <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />,
   parallel: <GitBranch className="h-3.5 w-3.5 text-muted-foreground" />,
+  swarm: <Bot className="h-3.5 w-3.5 text-muted-foreground" />,
 };
 
 export function WorkflowFormView({
@@ -203,6 +321,9 @@ export function WorkflowFormView({
   );
   const [loopAssignedAgent, setLoopAssignedAgent] = useState("");
   const [loopAgentProfile, setLoopAgentProfile] = useState("");
+  const [swarmConcurrencyLimit, setSwarmConcurrencyLimit] = useState(
+    DEFAULT_SWARM_CONCURRENCY_LIMIT
+  );
 
   // Pre-populate form for edit/clone
   useEffect(() => {
@@ -225,13 +346,24 @@ export function WorkflowFormView({
         setLoopAssignedAgent(def.loopConfig?.assignedAgent ?? "");
         setLoopAgentProfile(def.loopConfig?.agentProfile ?? "");
       } else {
+        if (def.pattern === "swarm") {
+          setSwarmConcurrencyLimit(
+            def.swarmConfig?.workerConcurrencyLimit ??
+              DEFAULT_SWARM_CONCURRENCY_LIMIT
+          );
+        }
+
         setSteps(
           clone
             ? def.pattern === "parallel"
               ? normalizeParallelSteps(def.steps, { cloneIds: true })
+              : def.pattern === "swarm"
+                ? normalizeSwarmSteps(def.steps, { cloneIds: true })
               : def.steps.map((s) => ({ ...s, id: crypto.randomUUID() }))
             : def.pattern === "parallel"
               ? normalizeParallelSteps(def.steps)
+              : def.pattern === "swarm"
+                ? normalizeSwarmSteps(def.steps)
               : def.steps
         );
       }
@@ -252,6 +384,34 @@ export function WorkflowFormView({
     });
   }, [pattern]);
 
+  useEffect(() => {
+    if (pattern !== "swarm") {
+      return;
+    }
+
+    setSteps((prev) => {
+      const { mayorStep, workerSteps, refineryStep } = getSwarmParts(prev);
+      const hasValidShape =
+        mayorStep !== null &&
+        refineryStep !== null &&
+        workerSteps.length >= MIN_SWARM_WORKERS;
+
+      return hasValidShape
+        ? buildSwarmSteps(mayorStep, workerSteps, refineryStep)
+        : createDefaultSwarmSteps();
+    });
+  }, [pattern]);
+
+  useEffect(() => {
+    if (pattern !== "swarm") {
+      return;
+    }
+
+    setSwarmConcurrencyLimit((prev) =>
+      Math.min(Math.max(prev, 1), Math.max(getSwarmParts(steps).workerSteps.length, 1))
+    );
+  }, [pattern, steps]);
+
   function addStep() {
     setSteps((prev) => {
       if (pattern === "parallel") {
@@ -263,6 +423,23 @@ export function WorkflowFormView({
         return buildParallelSteps(
           [...branchSteps, createParallelBranchStep(branchSteps.length + 1)],
           synthesisStep ?? undefined
+        );
+      }
+
+      if (pattern === "swarm") {
+        const { mayorStep, workerSteps, refineryStep } = getSwarmParts(prev);
+        if (
+          !mayorStep ||
+          !refineryStep ||
+          workerSteps.length >= MAX_SWARM_WORKERS
+        ) {
+          return prev;
+        }
+
+        return buildSwarmSteps(
+          mayorStep,
+          [...workerSteps, createSwarmWorkerStep(workerSteps.length + 1)],
+          refineryStep
         );
       }
 
@@ -281,6 +458,27 @@ export function WorkflowFormView({
         return buildParallelSteps(
           branchSteps.filter((_, branchIndex) => branchIndex !== index),
           synthesisStep ?? undefined
+        );
+      }
+
+      if (pattern === "swarm") {
+        const { mayorStep, workerSteps, refineryStep } = getSwarmParts(prev);
+        const workerIndex = index - 1;
+
+        if (
+          !mayorStep ||
+          !refineryStep ||
+          workerIndex < 0 ||
+          workerIndex >= workerSteps.length ||
+          workerSteps.length <= MIN_SWARM_WORKERS
+        ) {
+          return prev;
+        }
+
+        return buildSwarmSteps(
+          mayorStep,
+          workerSteps.filter((_, currentWorkerIndex) => currentWorkerIndex !== workerIndex),
+          refineryStep
         );
       }
 
@@ -312,6 +510,53 @@ export function WorkflowFormView({
             ...updates,
             requiresApproval: false,
           });
+        }
+      }
+
+      if (pattern === "swarm") {
+        const { mayorStep, workerSteps, refineryStep } = getSwarmParts(prev);
+        if (!mayorStep || !refineryStep) {
+          return createDefaultSwarmSteps();
+        }
+
+        if (index === 0) {
+          return buildSwarmSteps(
+            {
+              ...mayorStep,
+              ...updates,
+              dependsOn: undefined,
+              requiresApproval: false,
+            },
+            workerSteps,
+            refineryStep
+          );
+        }
+
+        if (index === workerSteps.length + 1) {
+          return buildSwarmSteps(mayorStep, workerSteps, {
+            ...refineryStep,
+            ...updates,
+            dependsOn: undefined,
+            requiresApproval: false,
+          });
+        }
+
+        const workerIndex = index - 1;
+        if (workerIndex >= 0 && workerIndex < workerSteps.length) {
+          return buildSwarmSteps(
+            mayorStep,
+            workerSteps.map((worker, currentWorkerIndex) =>
+              currentWorkerIndex === workerIndex
+                ? {
+                    ...worker,
+                    ...updates,
+                    dependsOn: undefined,
+                    requiresApproval: false,
+                  }
+                : worker
+            ),
+            refineryStep
+          );
         }
       }
 
@@ -349,6 +594,7 @@ export function WorkflowFormView({
 
     const isLoop = pattern === "loop";
     const isParallel = pattern === "parallel";
+    const isSwarm = pattern === "swarm";
 
     if (isLoop) {
       if (!loopPrompt.trim()) {
@@ -392,12 +638,23 @@ export function WorkflowFormView({
           return;
         }
       }
+
+      if (isSwarm) {
+        const { workerSteps } = getSwarmParts(steps);
+        if (workerSteps.length < MIN_SWARM_WORKERS) {
+          setError(
+            `Swarm workflows require at least ${MIN_SWARM_WORKERS} worker agents`
+          );
+          return;
+        }
+      }
     }
 
     setLoading(true);
     setError(null);
 
     try {
+      const normalizedSwarmSteps = isSwarm ? normalizeSwarmSteps(steps) : null;
       const definition: WorkflowDefinition = isLoop
         ? {
             pattern,
@@ -420,7 +677,26 @@ export function WorkflowFormView({
           }
         : {
             pattern,
-            steps: isParallel ? normalizeParallelSteps(steps) : steps,
+            steps: isParallel
+              ? normalizeParallelSteps(steps)
+              : isSwarm
+                ? (normalizedSwarmSteps ?? normalizeSwarmSteps(steps))
+                : steps,
+            ...(isSwarm
+              ? {
+                  swarmConfig: {
+                    workerConcurrencyLimit: Math.max(
+                      1,
+                      Math.min(
+                        swarmConcurrencyLimit,
+                        getSwarmParts(
+                          normalizedSwarmSteps ?? normalizeSwarmSteps(steps)
+                        ).workerSteps.length
+                      )
+                    ),
+                  },
+                }
+              : {}),
           };
 
       const definitionError = validateWorkflowDefinition(definition);
@@ -493,7 +769,13 @@ export function WorkflowFormView({
 
   const isLoop = pattern === "loop";
   const isParallel = pattern === "parallel";
+  const isSwarm = pattern === "swarm";
   const { branchSteps, synthesisStep } = getParallelParts(steps);
+  const {
+    mayorStep,
+    workerSteps: swarmWorkerSteps,
+    refineryStep,
+  } = getSwarmParts(steps);
 
   function renderStepEditor(
     step: WorkflowStep,
@@ -700,6 +982,12 @@ export function WorkflowFormView({
                           Parallel Research
                         </span>
                       </SelectItem>
+                      <SelectItem value="swarm">
+                        <span className="flex items-center gap-1.5">
+                          {PATTERN_ICONS.swarm}
+                          Multi-Agent Swarm
+                        </span>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">How steps execute</p>
@@ -839,13 +1127,62 @@ export function WorkflowFormView({
               </FormSectionCard>
             )}
 
+            {isSwarm && (
+              <FormSectionCard
+                icon={Bot}
+                title="Swarm Config"
+                hint="Mayor runs first, workers fan out in parallel, then the refinery merges the results."
+              >
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label>Worker Concurrency</Label>
+                    <Badge variant="secondary" className="tabular-nums text-xs">
+                      {Math.max(
+                        1,
+                        Math.min(
+                          swarmConcurrencyLimit,
+                          Math.max(swarmWorkerSteps.length, 1)
+                        )
+                      )}
+                    </Badge>
+                  </div>
+                  <Slider
+                    min={1}
+                    max={Math.max(swarmWorkerSteps.length, 1)}
+                    step={1}
+                    value={[
+                      Math.max(
+                        1,
+                        Math.min(
+                          swarmConcurrencyLimit,
+                          Math.max(swarmWorkerSteps.length, 1)
+                        )
+                      ),
+                    ]}
+                    onValueChange={([value]) => setSwarmConcurrencyLimit(value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    How many workers can run at once
+                  </p>
+                </div>
+              </FormSectionCard>
+            )}
+
             {!isLoop && (
               <FormSectionCard
-                icon={isParallel ? GitBranch : ListOrdered}
-                title={isParallel ? "Parallel Overview" : "Step Overview"}
+                icon={isParallel ? GitBranch : isSwarm ? Bot : ListOrdered}
+                title={
+                  isParallel
+                    ? "Parallel Overview"
+                    : isSwarm
+                      ? "Swarm Overview"
+                      : "Step Overview"
+                }
                 hint={
                   isParallel
                     ? "Launch 2-5 research branches, then merge them in one synthesis step."
+                    : isSwarm
+                      ? "Run one mayor, 2-5 workers, and one refinery step on the existing workflow engine."
                     : undefined
                 }
               >
@@ -854,6 +1191,8 @@ export function WorkflowFormView({
                     <Badge variant="secondary" className="text-xs">
                       {isParallel
                         ? `${branchSteps.length} branch${branchSteps.length === 1 ? "" : "es"}`
+                        : isSwarm
+                          ? `${swarmWorkerSteps.length} worker${swarmWorkerSteps.length === 1 ? "" : "s"}`
                         : `${steps.length} step${steps.length === 1 ? "" : "s"}`}
                     </Badge>
                     <Button
@@ -862,11 +1201,12 @@ export function WorkflowFormView({
                       size="sm"
                       onClick={addStep}
                       disabled={
-                        isParallel && branchSteps.length >= MAX_PARALLEL_BRANCHES
+                        (isParallel && branchSteps.length >= MAX_PARALLEL_BRANCHES) ||
+                        (isSwarm && swarmWorkerSteps.length >= MAX_SWARM_WORKERS)
                       }
                     >
                       <Plus className="h-3 w-3 mr-1" />
-                      {isParallel ? "Add Branch" : "Add Step"}
+                      {isParallel ? "Add Branch" : isSwarm ? "Add Worker" : "Add Step"}
                     </Button>
                   </div>
                   <div className="space-y-1">
@@ -882,6 +1222,23 @@ export function WorkflowFormView({
                         ))}
                         <p className="text-xs text-muted-foreground truncate">
                           Join: {synthesisStep?.name || "(unnamed synthesis step)"}
+                        </p>
+                      </>
+                    ) : isSwarm ? (
+                      <>
+                        <p className="text-xs text-muted-foreground truncate">
+                          Mayor: {mayorStep?.name || "(unnamed mayor step)"}
+                        </p>
+                        {swarmWorkerSteps.map((step, i) => (
+                          <p
+                            key={step.id}
+                            className="text-xs text-muted-foreground truncate"
+                          >
+                            Worker {i + 1}: {step.name || "(unnamed)"}
+                          </p>
+                        ))}
+                        <p className="text-xs text-muted-foreground truncate">
+                          Refinery: {refineryStep?.name || "(unnamed refinery step)"}
                         </p>
                       </>
                     ) : (
@@ -944,6 +1301,46 @@ export function WorkflowFormView({
                     hint: "This step receives labeled outputs from every branch as context.",
                     badgeLabel: "JOIN",
                   })}
+              </>
+            ) : isSwarm ? (
+              <>
+                {mayorStep &&
+                  renderStepEditor(mayorStep, 0, {
+                    title: "Mayor",
+                    icon: Brain,
+                    hint: "Plans the swarm, assigns each worker a lane, and defines the merge objective.",
+                    badgeLabel: "MAYOR",
+                  })}
+
+                <FormSectionCard
+                  icon={Bot}
+                  title="Worker Agents"
+                  hint="Workers run in parallel after the mayor step completes."
+                >
+                  <div className="space-y-4">
+                    {swarmWorkerSteps.map((step, index) =>
+                      renderStepEditor(step, index + 1, {
+                        title: `Worker ${index + 1}`,
+                        icon: Bot,
+                        removable:
+                          swarmWorkerSteps.length > MIN_SWARM_WORKERS,
+                        badgeLabel: `W${index + 1}`,
+                      })
+                    )}
+                  </div>
+                </FormSectionCard>
+
+                {refineryStep &&
+                  renderStepEditor(
+                    refineryStep,
+                    swarmWorkerSteps.length + 1,
+                    {
+                      title: "Refinery",
+                      icon: MessageSquare,
+                      hint: "Merges the mayor plan and completed worker outputs into one final result.",
+                      badgeLabel: "REFINERY",
+                    }
+                  )}
               </>
             ) : (
               steps.map((step, index) =>

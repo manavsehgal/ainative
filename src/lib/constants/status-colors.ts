@@ -40,4 +40,5 @@ export const patternLabels: Record<string, string> = {
   checkpoint: "Human-in-the-Loop",
   loop: "Autonomous Loop",
   parallel: "Parallel Research",
+  swarm: "Multi-Agent Swarm",
 };

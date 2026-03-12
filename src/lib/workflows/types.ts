@@ -3,7 +3,8 @@ export type WorkflowPattern =
   | "planner-executor"
   | "checkpoint"
   | "loop"
-  | "parallel";
+  | "parallel"
+  | "swarm";
 
 export interface WorkflowStep {
   id: string;
@@ -23,10 +24,15 @@ export interface LoopConfig {
   completionSignals?: string[];
 }
 
+export interface SwarmConfig {
+  workerConcurrencyLimit?: number;
+}
+
 export interface WorkflowDefinition {
   pattern: WorkflowPattern;
   steps: WorkflowStep[];
   loopConfig?: LoopConfig;
+  swarmConfig?: SwarmConfig;
 }
 
 export type LoopStopReason =

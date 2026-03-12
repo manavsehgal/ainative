@@ -58,6 +58,29 @@ const inFlightPermissionRequests = new Map<
 >();
 const settledPermissionRequests = new Map<string, ToolPermissionResponse>();
 
+function buildAllowedToolPermissionResponse(
+  input: Record<string, unknown>
+): ToolPermissionResponse {
+  return {
+    behavior: "allow",
+    updatedInput: input,
+  };
+}
+
+function normalizeToolPermissionResponse(
+  response: ToolPermissionResponse,
+  input: Record<string, unknown>
+): ToolPermissionResponse {
+  if (response.behavior !== "allow" || response.updatedInput !== undefined) {
+    return response;
+  }
+
+  return {
+    ...response,
+    updatedInput: input,
+  };
+}
+
 function createTaskUsageState(
   task: {
     id: string;
@@ -637,7 +660,7 @@ async function handleToolPermission(
   // Layer 1: Profile-level canUseToolPolicy — fastest check, no I/O
   if (!isQuestion && canUseToolPolicy) {
     if (canUseToolPolicy.autoApprove?.includes(toolName)) {
-      return { behavior: "allow" };
+      return buildAllowedToolPermissionResponse(input);
     }
     if (canUseToolPolicy.autoDeny?.includes(toolName)) {
       return { behavior: "deny", message: `Profile policy denies ${toolName}` };
@@ -648,7 +671,7 @@ async function handleToolPermission(
   if (!isQuestion) {
     const { isToolAllowed } = await import("@/lib/settings/permissions");
     if (await isToolAllowed(toolName, input)) {
-      return { behavior: "allow" };
+      return buildAllowedToolPermissionResponse(input);
     }
   }
 
@@ -656,7 +679,7 @@ async function handleToolPermission(
     const cacheKey = buildPermissionCacheKey(taskId, toolName, input);
     const settledResponse = settledPermissionRequests.get(cacheKey);
     if (settledResponse) {
-      return settledResponse;
+      return normalizeToolPermissionResponse(settledResponse, input);
     }
 
     const pendingRequest = inFlightPermissionRequests.get(cacheKey);
@@ -678,7 +701,10 @@ async function handleToolPermission(
         createdAt: new Date(),
       });
 
-      const response = await waitForToolPermissionResponse(notificationId);
+      const response = normalizeToolPermissionResponse(
+        await waitForToolPermissionResponse(notificationId),
+        input
+      );
       settledPermissionRequests.set(cacheKey, response);
       return response;
     })();

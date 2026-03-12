@@ -31,6 +31,7 @@ export async function GET(
       definition: workflow.definition,
       pattern: definition.pattern,
       loopConfig: definition.loopConfig,
+      swarmConfig: definition.swarmConfig,
       loopState,
       steps: definition.steps,
     });
@@ -43,6 +44,7 @@ export async function GET(
     projectId: workflow.projectId,
     definition: workflow.definition,
     pattern: definition.pattern,
+    swarmConfig: definition.swarmConfig,
     steps: definition.steps.map((step, i) => ({
       ...step,
       state: state?.stepStates[i] ?? { stepId: step.id, status: "pending" },
