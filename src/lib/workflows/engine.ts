@@ -96,7 +96,7 @@ export async function executeWorkflow(workflowId: string): Promise<void> {
     });
   } catch (error) {
     state.status = "failed";
-    await updateWorkflowState(workflowId, state, "active");
+    await updateWorkflowState(workflowId, state, "failed");
 
     await db.insert(agentLogs).values({
       id: crypto.randomUUID(),
@@ -571,7 +571,7 @@ async function waitForApproval(
 export async function updateWorkflowState(
   workflowId: string,
   state: WorkflowState,
-  status: "draft" | "active" | "paused" | "completed"
+  status: "draft" | "active" | "paused" | "completed" | "failed"
 ): Promise<void> {
   // Store state in the definition field as a combined object
   const [workflow] = await db
@@ -675,7 +675,7 @@ export async function retryWorkflowStep(
     const allCompleted = state.stepStates.every((s) => s.status === "completed");
     state.status = allCompleted ? "completed" : "failed";
     state.completedAt = allCompleted ? new Date().toISOString() : undefined;
-    await updateWorkflowState(workflowId, state, allCompleted ? "completed" : "active");
+    await updateWorkflowState(workflowId, state, allCompleted ? "completed" : "failed");
   }
 }
 
