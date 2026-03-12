@@ -4,12 +4,25 @@ import { tasks } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { executeTaskWithAgent, classifyTaskProfile } from "@/lib/agents/router";
 import { DEFAULT_AGENT_RUNTIME } from "@/lib/agents/runtime/catalog";
+import {
+  BudgetLimitExceededError,
+  enforceTaskBudgetGuardrails,
+} from "@/lib/settings/budget-guardrails";
 
 export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+
+  try {
+    await enforceTaskBudgetGuardrails(id);
+  } catch (error) {
+    if (error instanceof BudgetLimitExceededError) {
+      return NextResponse.json({ error: error.message }, { status: 429 });
+    }
+    throw error;
+  }
 
   // Atomic check-and-claim: only one request can transition queued → running
   const claimed = db

@@ -200,10 +200,14 @@ export async function recordUsageLedgerEntry(input: UsageLedgerWriteInput) {
     outputTokens: normalizedOutputTokens,
   });
 
+  const resolvedCostMicros = input.status === "blocked" ? 0 : costMicros;
+  const resolvedPricingVersion =
+    input.status === "blocked" ? "budget-guardrail" : pricingVersion;
+
   const status: UsageLedgerStatus =
     input.status === "completed" &&
     normalizedTotalTokens != null &&
-    costMicros === null
+    resolvedCostMicros === null
       ? "unknown_pricing"
       : input.status;
 
@@ -221,8 +225,8 @@ export async function recordUsageLedgerEntry(input: UsageLedgerWriteInput) {
     inputTokens: normalizedInputTokens,
     outputTokens: normalizedOutputTokens,
     totalTokens: normalizedTotalTokens,
-    costMicros,
-    pricingVersion,
+    costMicros: resolvedCostMicros,
+    pricingVersion: resolvedPricingVersion,
     startedAt: input.startedAt,
     finishedAt: input.finishedAt,
   } as const;

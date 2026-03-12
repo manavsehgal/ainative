@@ -5,6 +5,10 @@ import { eq, and, inArray } from "drizzle-orm";
 import { resumeTaskWithAgent } from "@/lib/agents/router";
 import { MAX_RESUME_COUNT } from "@/lib/constants/task-status";
 import { DEFAULT_AGENT_RUNTIME } from "@/lib/agents/runtime/catalog";
+import {
+  BudgetLimitExceededError,
+  enforceTaskBudgetGuardrails,
+} from "@/lib/settings/budget-guardrails";
 
 export async function POST(
   _req: NextRequest,
@@ -30,6 +34,15 @@ export async function POST(
       { error: "Resume limit reached. Re-queue for fresh start." },
       { status: 400 }
     );
+  }
+
+  try {
+    await enforceTaskBudgetGuardrails(id, { isResume: true });
+  } catch (error) {
+    if (error instanceof BudgetLimitExceededError) {
+      return NextResponse.json({ error: error.message }, { status: 429 });
+    }
+    throw error;
   }
 
   // Atomic claim: failed/cancelled → running

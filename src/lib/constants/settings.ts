@@ -5,6 +5,8 @@ export const SETTINGS_KEYS = {
   OPENAI_AUTH_API_KEY: "openai.authApiKey",
   OPENAI_AUTH_API_KEY_SOURCE: "openai.authApiKeySource",
   PERMISSIONS_ALLOW: "permissions.allow",
+  BUDGET_POLICY: "usage.budgetPolicy",
+  BUDGET_WARNING_STATE: "usage.budgetWarningState",
 } as const;
 
 export type AuthMethod = "api_key" | "oauth";

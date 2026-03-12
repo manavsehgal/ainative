@@ -21,6 +21,7 @@ export interface RuntimeCatalogEntry {
   id: AgentRuntimeId;
   label: string;
   description: string;
+  providerId: "anthropic" | "openai";
   capabilities: RuntimeCapabilities;
 }
 
@@ -29,6 +30,7 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
     id: "claude-code",
     label: "Claude Code",
     description: "Anthropic Claude Agent SDK runtime with approvals, resume, and MCP passthrough.",
+    providerId: "anthropic",
     capabilities: {
       resume: true,
       cancel: true,
@@ -43,6 +45,7 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
     id: "openai-codex-app-server",
     label: "OpenAI Codex App Server",
     description: "OpenAI Codex runtime over the app server protocol with resumable threads and inbox approvals.",
+    providerId: "openai",
     capabilities: {
       resume: true,
       cancel: true,

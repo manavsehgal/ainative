@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runProfileTests } from "@/lib/agents/profiles/test-runner";
+import { BudgetLimitExceededError } from "@/lib/settings/budget-guardrails";
 
 /**
  * POST /api/profiles/[id]/test
@@ -17,6 +18,9 @@ export async function POST(
     const report = await runProfileTests(id);
     return NextResponse.json(report);
   } catch (err: unknown) {
+    if (err instanceof BudgetLimitExceededError) {
+      return NextResponse.json({ error: err.message }, { status: 429 });
+    }
     const message = err instanceof Error ? err.message : "Test execution failed";
     return NextResponse.json({ error: message }, { status: 400 });
   }

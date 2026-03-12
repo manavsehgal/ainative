@@ -2,6 +2,7 @@ import { AuthConfigSection } from "@/components/settings/auth-config-section";
 import { OpenAIRuntimeSection } from "@/components/settings/openai-runtime-section";
 import { PermissionsSection } from "@/components/settings/permissions-section";
 import { DataManagementSection } from "@/components/settings/data-management-section";
+import { BudgetGuardrailsSection } from "@/components/settings/budget-guardrails-section";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,7 @@ export default function SettingsPage() {
         </div>
         <AuthConfigSection />
         <OpenAIRuntimeSection />
+        <BudgetGuardrailsSection />
         <PermissionsSection />
         <DataManagementSection />
       </div>

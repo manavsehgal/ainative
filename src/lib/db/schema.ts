@@ -86,6 +86,7 @@ export const notifications = sqliteTable(
         "task_completed",
         "task_failed",
         "agent_message",
+        "budget_alert",
       ],
     }).notNull(),
     title: text("title").notNull(),

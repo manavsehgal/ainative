@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runTaskAssistWithRuntime } from "@/lib/agents/runtime";
 import type { TaskAssistResponse } from "@/lib/agents/runtime/task-assist-types";
+import { BudgetLimitExceededError } from "@/lib/settings/budget-guardrails";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
@@ -24,6 +25,9 @@ export async function POST(req: NextRequest) {
     );
     return NextResponse.json(parsed);
   } catch (error) {
+    if (error instanceof BudgetLimitExceededError) {
+      return NextResponse.json({ error: error.message }, { status: 429 });
+    }
     const message =
       error instanceof Error ? error.message : "AI assist failed";
     return NextResponse.json({ error: message }, { status: 500 });

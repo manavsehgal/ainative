@@ -51,7 +51,11 @@ export default async function HomePage() {
     db.select({ count: count() }).from(notifications).where(
       and(
         eq(notifications.read, false),
-        inArray(notifications.type, ["permission_required", "agent_message"])
+        inArray(notifications.type, [
+          "permission_required",
+          "agent_message",
+          "budget_alert",
+        ])
       )
     ),
     db.select({ count: count() }).from(projects).where(eq(projects.status, "active")),

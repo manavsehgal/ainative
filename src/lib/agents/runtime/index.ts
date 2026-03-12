@@ -15,6 +15,10 @@ import type {
 } from "./types";
 import type { ProfileTestReport } from "@/lib/agents/profiles/test-types";
 import type { TaskAssistResponse } from "./task-assist-types";
+import {
+  enforceBudgetGuardrails,
+  enforceTaskBudgetGuardrails,
+} from "@/lib/settings/budget-guardrails";
 
 const runtimeRegistry: Record<AgentRuntimeId, AgentRuntimeAdapter> = {
   "claude-code": claudeRuntimeAdapter,
@@ -62,6 +66,7 @@ export async function executeTaskWithRuntime(
   taskId: string,
   runtimeId?: string | null
 ): Promise<void> {
+  await enforceTaskBudgetGuardrails(taskId, { failTaskOnBlock: true });
   return getRuntimeAdapter(runtimeId).executeTask(taskId);
 }
 
@@ -69,6 +74,10 @@ export async function resumeTaskWithRuntime(
   taskId: string,
   runtimeId?: string | null
 ): Promise<void> {
+  await enforceTaskBudgetGuardrails(taskId, {
+    isResume: true,
+    failTaskOnBlock: true,
+  });
   const adapter = assertCapability(runtimeId, "resume");
   return adapter.resumeTask(taskId);
 }
@@ -85,6 +94,10 @@ export async function runTaskAssistWithRuntime(
   input: TaskAssistInput,
   runtimeId?: string | null
 ): Promise<TaskAssistResponse> {
+  await enforceBudgetGuardrails({
+    runtimeId: resolveAgentRuntime(runtimeId),
+    activityType: "task_assist",
+  });
   const adapter = assertCapability(runtimeId, "taskAssist");
   if (!adapter.runTaskAssist) {
     throw new Error(`Runtime "${adapter.metadata.id}" does not implement task assist`);
@@ -96,6 +109,10 @@ export async function runProfileTestsWithRuntime(
   profileId: string,
   runtimeId?: string | null
 ): Promise<ProfileTestReport> {
+  await enforceBudgetGuardrails({
+    runtimeId: resolveAgentRuntime(runtimeId),
+    activityType: "profile_test",
+  });
   const adapter = assertCapability(runtimeId, "profileTests");
   if (!adapter.runProfileTests) {
     throw new Error(`Runtime "${adapter.metadata.id}" does not implement profile tests`);

@@ -2,7 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Shield, MessageCircle, CheckCircle, XCircle, Eye, EyeOff, Trash2 } from "lucide-react";
+import { Shield, MessageCircle, CheckCircle, XCircle, Eye, EyeOff, Trash2, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { PermissionAction } from "./permission-action";
@@ -34,6 +34,7 @@ const typeIcons: Record<string, React.ReactNode> = {
   agent_message: <MessageCircle className="h-4 w-4 text-primary" aria-hidden="true" />,
   task_completed: <CheckCircle className="h-4 w-4 text-chart-2" aria-hidden="true" />,
   task_failed: <XCircle className="h-4 w-4 text-destructive" aria-hidden="true" />,
+  budget_alert: <Wallet className="h-4 w-4 text-status-warning" aria-hidden="true" />,
 };
 
 const typeLabels: Record<string, string> = {
@@ -41,6 +42,7 @@ const typeLabels: Record<string, string> = {
   agent_message: "Agent message",
   task_completed: "Task completed",
   task_failed: "Task failed",
+  budget_alert: "Budget alert",
 };
 
 function formatToolInput(toolName: string | null, input: Record<string, unknown>): React.ReactNode {

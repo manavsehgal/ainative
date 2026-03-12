@@ -67,7 +67,9 @@ export function InboxList({
         ? notifications.filter((n) => !n.read)
         : tab === "permissions"
           ? notifications.filter((n) => n.type === "permission_required")
-          : notifications.filter((n) => n.type === "agent_message");
+          : notifications.filter(
+              (n) => n.type === "agent_message" || n.type === "budget_alert"
+            );
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
