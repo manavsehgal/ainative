@@ -7,6 +7,7 @@ import { MAX_RESUME_COUNT } from "@/lib/constants/task-status";
 import { getAuthEnv, updateAuthStatus } from "@/lib/settings/auth";
 import { buildDocumentContext } from "@/lib/documents/context-builder";
 import { getProfile } from "./profiles/registry";
+import { resolveProfileRuntimePayload } from "./profiles/compatibility";
 import type { CanUseToolPolicy } from "./profiles/types";
 import { buildClaudeSdkEnv } from "./runtime/claude-sdk";
 import {
@@ -258,7 +259,13 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
 
   try {
     const profile = getProfile(task.agentProfile ?? "general");
-    const systemPrompt = profile?.skillMd || profile?.systemPrompt || "";
+    const payload = profile
+      ? resolveProfileRuntimePayload(profile, "claude-code")
+      : null;
+    if (payload && !payload.supported) {
+      throw new Error(payload.reason ?? `Profile "${profile?.name}" is not supported on Claude Code`);
+    }
+    const systemPrompt = payload?.instructions ?? "";
     const basePrompt = task.description || task.title;
     const docContext = await buildDocumentContext(taskId);
     const prompt = [systemPrompt, docContext, basePrompt].filter(Boolean).join("\n\n");
@@ -275,7 +282,7 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
       }
     }
 
-    const policyForTask = profile?.canUseToolPolicy;
+    const policyForTask = payload?.canUseToolPolicy;
     const authEnv = await getAuthEnv();
     const response = query({
       prompt,
@@ -284,8 +291,11 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
         includePartialMessages: true,
         cwd,
         env: buildClaudeSdkEnv(authEnv),
-        ...(profile?.allowedTools && { allowedTools: profile.allowedTools }),
-        ...(profile?.mcpServers && Object.keys(profile.mcpServers).length > 0 && { mcpServers: profile.mcpServers }),
+        ...(payload?.allowedTools && { allowedTools: payload.allowedTools }),
+        ...(payload?.mcpServers &&
+          Object.keys(payload.mcpServers).length > 0 && {
+            mcpServers: payload.mcpServers,
+          }),
         // @ts-expect-error Agent SDK canUseTool types are incomplete — our async handler is compatible at runtime
         canUseTool: async (
           toolName: string,
@@ -363,7 +373,13 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
 
   try {
     const profile = getProfile(profileId);
-    const systemPrompt = profile?.skillMd || profile?.systemPrompt || "";
+    const payload = profile
+      ? resolveProfileRuntimePayload(profile, "claude-code")
+      : null;
+    if (payload && !payload.supported) {
+      throw new Error(payload.reason ?? `Profile "${profile?.name}" is not supported on Claude Code`);
+    }
+    const systemPrompt = payload?.instructions ?? "";
     const basePrompt = task.description || task.title;
     const docContext = await buildDocumentContext(taskId);
     const prompt = [systemPrompt, docContext, basePrompt].filter(Boolean).join("\n\n");
@@ -380,7 +396,7 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
       }
     }
 
-    const policyForResume = profile?.canUseToolPolicy;
+    const policyForResume = payload?.canUseToolPolicy;
     const authEnv = await getAuthEnv();
     const response = query({
       prompt,
@@ -390,8 +406,11 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
         includePartialMessages: true,
         cwd,
         env: buildClaudeSdkEnv(authEnv),
-        ...(profile?.allowedTools && { allowedTools: profile.allowedTools }),
-        ...(profile?.mcpServers && Object.keys(profile.mcpServers).length > 0 && { mcpServers: profile.mcpServers }),
+        ...(payload?.allowedTools && { allowedTools: payload.allowedTools }),
+        ...(payload?.mcpServers &&
+          Object.keys(payload.mcpServers).length > 0 && {
+            mcpServers: payload.mcpServers,
+          }),
         // @ts-expect-error Agent SDK canUseTool types are incomplete — our async handler is compatible at runtime
         canUseTool: async (
           toolName: string,

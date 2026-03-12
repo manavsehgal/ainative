@@ -18,7 +18,10 @@ export async function GET() {
     outputFormat: p.outputFormat,
     version: p.version,
     author: p.author,
+    source: p.source,
     tests: p.tests,
+    supportedRuntimes: p.supportedRuntimes,
+    runtimeOverrides: p.runtimeOverrides,
     isBuiltin: isBuiltin(p.id),
   }));
 

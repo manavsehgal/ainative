@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { workflows } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import type { WorkflowDefinition } from "@/lib/workflows/types";
+import { validateWorkflowDefinitionAssignments } from "@/lib/agents/profiles/assignment-validation";
 
 export async function PATCH(
   req: NextRequest,
@@ -65,6 +66,15 @@ export async function PATCH(
             { status: 400 }
           );
         }
+      }
+
+      const compatibilityError =
+        validateWorkflowDefinitionAssignments(definition);
+      if (compatibilityError) {
+        return NextResponse.json(
+          { error: compatibilityError },
+          { status: 400 }
+        );
       }
       updates.definition = JSON.stringify(definition);
     }

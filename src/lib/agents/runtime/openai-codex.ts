@@ -7,6 +7,7 @@ import {
   setExecution,
 } from "@/lib/agents/execution-manager";
 import { getProfile } from "@/lib/agents/profiles/registry";
+import { resolveProfileRuntimePayload } from "@/lib/agents/profiles/compatibility";
 import { buildDocumentContext } from "@/lib/documents/context-builder";
 import {
   getOpenAIApiKey,
@@ -44,7 +45,7 @@ interface JsonRpcLikeNotification {
 interface TaskExecutionContext {
   task: typeof tasks.$inferSelect;
   profileId: string;
-  systemPrompt: string;
+  instructions: string;
   prompt: string;
   cwd: string;
 }
@@ -133,7 +134,15 @@ async function resolveTaskExecutionContext(
 
   const profileId = task.agentProfile ?? "general";
   const profile = getProfile(profileId);
-  const systemPrompt = profile?.skillMd || profile?.systemPrompt || "";
+  const payload = profile
+    ? resolveProfileRuntimePayload(profile, "openai-codex-app-server")
+    : null;
+  if (payload && !payload.supported) {
+    throw new Error(
+      payload.reason ??
+        `Profile "${profile?.name}" is not supported on OpenAI Codex App Server`
+    );
+  }
   const docContext = await buildDocumentContext(taskId);
   const prompt = [docContext, task.description || task.title]
     .filter(Boolean)
@@ -151,7 +160,13 @@ async function resolveTaskExecutionContext(
     }
   }
 
-  return { task, profileId, systemPrompt, prompt, cwd };
+  return {
+    task,
+    profileId,
+    instructions: payload?.instructions ?? "",
+    prompt,
+    cwd,
+  };
 }
 
 function createTaskUsageState(
@@ -654,7 +669,7 @@ async function runAssistTurn({
 }
 
 async function executeOpenAICodexTask(taskId: string): Promise<void> {
-  const { task, profileId, systemPrompt, prompt, cwd } =
+  const { task, profileId, instructions, prompt, cwd } =
     await resolveTaskExecutionContext(taskId);
   const { apiKey, source } = await getOpenAIApiKey();
 
@@ -838,7 +853,7 @@ async function executeOpenAICodexTask(taskId: string): Promise<void> {
         cwd,
         approvalPolicy: "on-request",
         sandbox: "workspace-write",
-        developerInstructions: systemPrompt || null,
+        developerInstructions: instructions || null,
       });
     } else {
       const threadResponse = (await client.request("thread/start", {
@@ -846,7 +861,7 @@ async function executeOpenAICodexTask(taskId: string): Promise<void> {
         approvalPolicy: "on-request",
         sandbox: "workspace-write",
         serviceName: "stagent",
-        developerInstructions: systemPrompt || null,
+        developerInstructions: instructions || null,
         experimentalRawEvents: false,
         ephemeral: false,
       })) as { thread: { id: string } };

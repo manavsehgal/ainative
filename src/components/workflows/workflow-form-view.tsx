@@ -30,7 +30,13 @@ import {
 import { toast } from "sonner";
 import { FormSectionCard } from "@/components/shared/form-section-card";
 import type { WorkflowStep, WorkflowDefinition } from "@/lib/workflows/types";
-import { listRuntimeCatalog } from "@/lib/agents/runtime/catalog";
+import {
+  type AgentRuntimeId,
+  DEFAULT_AGENT_RUNTIME,
+  listRuntimeCatalog,
+} from "@/lib/agents/runtime/catalog";
+import { profileSupportsRuntime } from "@/lib/agents/profiles/compatibility";
+import type { AgentProfile } from "@/lib/agents/profiles/types";
 
 interface WorkflowData {
   id: string;
@@ -42,7 +48,7 @@ interface WorkflowData {
 interface WorkflowFormViewProps {
   workflow?: WorkflowData;
   projects: { id: string; name: string }[];
-  profiles: { id: string; name: string }[];
+  profiles: Pick<AgentProfile, "id" | "name" | "supportedRuntimes">[];
   clone?: boolean;
 }
 
@@ -77,6 +83,9 @@ export function WorkflowFormView({
   clone = false,
 }: WorkflowFormViewProps) {
   const runtimeOptions = listRuntimeCatalog();
+  const runtimeLabelMap = new Map(
+    runtimeOptions.map((runtime) => [runtime.id, runtime.label])
+  );
   const router = useRouter();
   const mode = workflow ? (clone ? "clone" : "edit") : "create";
 
@@ -141,6 +150,30 @@ export function WorkflowFormView({
     );
   }
 
+  function getProfileCompatibilityError(
+    profileId?: string,
+    runtimeId?: string
+  ): string | null {
+    if (!profileId) {
+      return null;
+    }
+
+    const profile = profiles.find((candidate) => candidate.id === profileId);
+    if (!profile) {
+      return `Profile "${profileId}" was not found`;
+    }
+
+    const selectedRuntimeId = (runtimeId ||
+      DEFAULT_AGENT_RUNTIME) as AgentRuntimeId;
+    if (profileSupportsRuntime(profile, selectedRuntimeId)) {
+      return null;
+    }
+
+    return `${profile.name} does not support ${
+      runtimeLabelMap.get(selectedRuntimeId) ?? selectedRuntimeId
+    }`;
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) return;
@@ -156,10 +189,28 @@ export function WorkflowFormView({
         setError("Max iterations must be between 1 and 100");
         return;
       }
+      const loopCompatibilityError = getProfileCompatibilityError(
+        loopAgentProfile || undefined,
+        loopAssignedAgent || undefined
+      );
+      if (loopCompatibilityError) {
+        setError(loopCompatibilityError);
+        return;
+      }
     } else {
       if (steps.some((s) => !s.name.trim() || !s.prompt.trim())) {
         setError("All steps must have a name and prompt");
         return;
+      }
+      for (const [index, step] of steps.entries()) {
+        const compatibilityError = getProfileCompatibilityError(
+          step.agentProfile,
+          step.assignedAgent
+        );
+        if (compatibilityError) {
+          setError(`Step ${index + 1}: ${compatibilityError}`);
+          return;
+        }
       }
     }
 
@@ -389,13 +440,34 @@ export function WorkflowFormView({
                         <SelectContent>
                           <SelectItem value="auto">Auto-detect</SelectItem>
                           {profiles.map((p) => (
-                            <SelectItem key={p.id} value={p.id}>
+                            <SelectItem
+                              key={p.id}
+                              value={p.id}
+                              disabled={
+                                !profileSupportsRuntime(
+                                  p,
+                                  loopAssignedAgent || DEFAULT_AGENT_RUNTIME
+                                )
+                              }
+                            >
                               {p.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                       <p className="text-xs text-muted-foreground">Which agent to use per iteration</p>
+                      {loopAgentProfile &&
+                        getProfileCompatibilityError(
+                          loopAgentProfile,
+                          loopAssignedAgent || undefined
+                        ) && (
+                          <p className="text-xs text-destructive">
+                            {getProfileCompatibilityError(
+                              loopAgentProfile,
+                              loopAssignedAgent || undefined
+                            )}
+                          </p>
+                        )}
                     </div>
                   )}
                   <div className="space-y-1.5">
@@ -534,12 +606,33 @@ export function WorkflowFormView({
                             <SelectContent>
                               <SelectItem value="auto">Auto-detect</SelectItem>
                               {profiles.map((p) => (
-                                <SelectItem key={p.id} value={p.id}>
+                                <SelectItem
+                                  key={p.id}
+                                  value={p.id}
+                                  disabled={
+                                    !profileSupportsRuntime(
+                                      p,
+                                      step.assignedAgent || DEFAULT_AGENT_RUNTIME
+                                    )
+                                  }
+                                >
                                   {p.name}
                                 </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
+                          {step.agentProfile &&
+                            getProfileCompatibilityError(
+                              step.agentProfile,
+                              step.assignedAgent
+                            ) && (
+                              <p className="mt-1 text-xs text-destructive">
+                                {getProfileCompatibilityError(
+                                  step.agentProfile,
+                                  step.assignedAgent
+                                )}
+                              </p>
+                            )}
                         </div>
                       )}
                       <div className="flex-1">

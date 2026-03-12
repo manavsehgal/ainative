@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -16,9 +17,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { User, Tag, SlidersHorizontal, Wrench, FileCode } from "lucide-react";
+import {
+  User,
+  Tag,
+  SlidersHorizontal,
+  Wrench,
+  FileCode,
+  Cpu,
+} from "lucide-react";
 import { toast } from "sonner";
 import { FormSectionCard } from "@/components/shared/form-section-card";
+import { listRuntimeCatalog } from "@/lib/agents/runtime/catalog";
 import type { AgentProfile } from "@/lib/agents/profiles/types";
 
 interface ProfileFormViewProps {
@@ -44,6 +53,7 @@ export function ProfileFormView({
   profileId,
   duplicate = false,
 }: ProfileFormViewProps) {
+  const runtimeOptions = listRuntimeCatalog();
   const router = useRouter();
   const isEdit = !!profileId && !duplicate;
 
@@ -55,6 +65,10 @@ export function ProfileFormView({
   const [author, setAuthor] = useState("");
   const [tags, setTags] = useState("");
   const [skillMd, setSkillMd] = useState("");
+  const [supportedRuntimes, setSupportedRuntimes] = useState<string[]>([
+    "claude-code",
+  ]);
+  const [codexInstructions, setCodexInstructions] = useState("");
   const [allowedTools, setAllowedTools] = useState("");
   const [temperature, setTemperature] = useState(0.5);
   const [maxTurns, setMaxTurns] = useState(30);
@@ -75,6 +89,10 @@ export function ProfileFormView({
         setAuthor(profile.author ?? "");
         setTags(profile.tags.join(", "));
         setSkillMd(profile.skillMd ?? "");
+        setSupportedRuntimes(profile.supportedRuntimes ?? ["claude-code"]);
+        setCodexInstructions(
+          profile.runtimeOverrides?.["openai-codex-app-server"]?.instructions ?? ""
+        );
         setAllowedTools(profile.allowedTools?.join(", ") ?? "");
         setTemperature(profile.temperature ?? 0.5);
         setMaxTurns(profile.maxTurns ?? 30);
@@ -102,6 +120,10 @@ export function ProfileFormView({
       toast.error("Name and ID are required");
       return;
     }
+    if (supportedRuntimes.length === 0) {
+      toast.error("Select at least one supported runtime");
+      return;
+    }
 
     setSubmitting(true);
 
@@ -113,6 +135,15 @@ export function ProfileFormView({
       author: author.trim() || undefined,
       tags: parseCommaSeparated(tags),
       skillMd: skillMd.trim(),
+      supportedRuntimes,
+      runtimeOverrides: supportedRuntimes.includes("openai-codex-app-server") &&
+        codexInstructions.trim()
+          ? {
+              "openai-codex-app-server": {
+                instructions: codexInstructions.trim(),
+              },
+            }
+          : undefined,
       allowedTools: parseCommaSeparated(allowedTools),
       temperature,
       maxTurns,
@@ -169,6 +200,16 @@ export function ProfileFormView({
   const parsedTags = parseCommaSeparated(tags);
   const parsedTools = parseCommaSeparated(allowedTools);
   const lineCount = skillMd.split("\n").length;
+
+  function toggleRuntime(runtimeId: string, checked: boolean) {
+    setSupportedRuntimes((current) => {
+      if (checked) {
+        return current.includes(runtimeId) ? current : [...current, runtimeId];
+      }
+
+      return current.filter((candidate) => candidate !== runtimeId);
+    });
+  }
 
   return (
     <div className="space-y-4">
@@ -315,6 +356,34 @@ export function ProfileFormView({
           </div>
         </FormSectionCard>
 
+        {/* Runtime Coverage */}
+        <FormSectionCard icon={Cpu} title="Runtime Coverage">
+          <div className="space-y-3">
+            {runtimeOptions.map((runtime) => (
+              <div
+                key={runtime.id}
+                className="surface-card-muted flex items-center justify-between rounded-lg border border-border/60 px-3 py-2"
+              >
+                <div>
+                  <p className="text-sm font-medium">{runtime.label}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {runtime.id === "claude-code"
+                      ? "Shared SKILL.md instructions apply here by default"
+                      : "Enable when this profile should be selectable on Codex"}
+                  </p>
+                </div>
+                <Switch
+                  checked={supportedRuntimes.includes(runtime.id)}
+                  onCheckedChange={(checked) => toggleRuntime(runtime.id, checked)}
+                />
+              </div>
+            ))}
+            <p className="text-xs text-muted-foreground">
+              Runtime support is enforced across tasks, schedules, workflow steps, and profile tests.
+            </p>
+          </div>
+        </FormSectionCard>
+
         {/* Tools */}
         <FormSectionCard icon={Wrench} title="Tools" className="lg:col-span-1 md:col-span-2">
           <div className="space-y-1.5">
@@ -337,6 +406,31 @@ export function ProfileFormView({
             )}
           </div>
         </FormSectionCard>
+
+        {/* Codex Override */}
+        {supportedRuntimes.includes("openai-codex-app-server") && (
+          <FormSectionCard
+            icon={Cpu}
+            title="Codex Override"
+            className="md:col-span-2 lg:col-span-1"
+          >
+            <div className="space-y-1.5">
+              <Label htmlFor="profile-codex-instructions">
+                OpenAI Codex Instructions
+              </Label>
+              <Textarea
+                id="profile-codex-instructions"
+                value={codexInstructions}
+                onChange={(e) => setCodexInstructions(e.target.value)}
+                placeholder="Optional runtime-specific override. Leave empty to reuse SKILL.md."
+                rows={8}
+              />
+              <p className="text-xs text-muted-foreground">
+                Optional provider-specific instructions for Codex. Shared tools and policies still apply unless overridden in profile metadata.
+              </p>
+            </div>
+          </FormSectionCard>
+        )}
 
         {/* SKILL.md */}
         <FormSectionCard

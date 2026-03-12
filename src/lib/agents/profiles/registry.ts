@@ -3,6 +3,7 @@ import path from "node:path";
 import yaml from "js-yaml";
 import { ProfileConfigSchema } from "@/lib/validators/profile";
 import type { ProfileConfig } from "@/lib/validators/profile";
+import { getSupportedRuntimes } from "./compatibility";
 import type { AgentProfile } from "./types";
 
 /**
@@ -26,6 +27,40 @@ const SKILLS_DIR = path.join(
 // ---------------------------------------------------------------------------
 
 let profileCache: Map<string, AgentProfile> | null = null;
+let profileCacheSignature: string | null = null;
+
+function getSkillsDirectorySignature(): string {
+  if (!fs.existsSync(SKILLS_DIR)) {
+    return "missing";
+  }
+
+  const entries = fs
+    .readdirSync(SKILLS_DIR, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const signatureParts: string[] = [];
+
+  for (const entry of entries) {
+    const dir = path.join(SKILLS_DIR, entry.name);
+    const yamlPath = path.join(dir, "profile.yaml");
+    const skillPath = path.join(dir, "SKILL.md");
+
+    signatureParts.push(entry.name);
+
+    if (fs.existsSync(yamlPath)) {
+      const stats = fs.statSync(yamlPath);
+      signatureParts.push(`yaml:${stats.mtimeMs}:${stats.size}`);
+    }
+
+    if (fs.existsSync(skillPath)) {
+      const stats = fs.statSync(skillPath);
+      signatureParts.push(`skill:${stats.mtimeMs}:${stats.size}`);
+    }
+  }
+
+  return signatureParts.join("|");
+}
 
 // ---------------------------------------------------------------------------
 // ensureBuiltins — copy missing builtins to .claude/skills/ (idempotent)
@@ -41,9 +76,41 @@ function ensureBuiltins(): void {
 
     const targetDir = path.join(SKILLS_DIR, entry.name);
     const targetYaml = path.join(targetDir, "profile.yaml");
+    const srcYaml = path.join(BUILTINS_DIR, entry.name, "profile.yaml");
 
     // Never overwrite user edits — only copy if profile.yaml is missing
-    if (fs.existsSync(targetYaml)) continue;
+    if (fs.existsSync(targetYaml)) {
+      try {
+        const source = (yaml.load(fs.readFileSync(srcYaml, "utf-8")) ??
+          {}) as Record<string, unknown>;
+        const target = (yaml.load(fs.readFileSync(targetYaml, "utf-8")) ??
+          {}) as Record<string, unknown>;
+        let changed = false;
+
+        if (
+          source.supportedRuntimes !== undefined &&
+          target.supportedRuntimes === undefined
+        ) {
+          target.supportedRuntimes = source.supportedRuntimes;
+          changed = true;
+        }
+
+        if (
+          source.runtimeOverrides !== undefined &&
+          target.runtimeOverrides === undefined
+        ) {
+          target.runtimeOverrides = source.runtimeOverrides;
+          changed = true;
+        }
+
+        if (changed) {
+          fs.writeFileSync(targetYaml, yaml.dump(target));
+        }
+      } catch {
+        // If a user has customized or broken the YAML, leave it untouched.
+      }
+      continue;
+    }
 
     fs.mkdirSync(targetDir, { recursive: true });
 
@@ -114,6 +181,8 @@ function scanProfiles(): Map<string, AgentProfile> {
         author: config.author,
         source: config.source,
         tests: config.tests,
+        supportedRuntimes: getSupportedRuntimes(config),
+        runtimeOverrides: config.runtimeOverrides,
       });
     } catch (err) {
       console.warn(`[profiles] Error loading profile ${entry.name}:`, err);
@@ -128,9 +197,12 @@ function scanProfiles(): Map<string, AgentProfile> {
 // ---------------------------------------------------------------------------
 
 function ensureLoaded(): Map<string, AgentProfile> {
-  if (!profileCache) {
-    ensureBuiltins();
+  ensureBuiltins();
+  const signature = getSkillsDirectorySignature();
+
+  if (!profileCache || profileCacheSignature !== signature) {
     profileCache = scanProfiles();
+    profileCacheSignature = signature;
   }
   return profileCache;
 }
@@ -158,6 +230,7 @@ export function getProfileTags(): Map<string, string[]> {
 /** Force re-scan of .claude/skills/ — call after user adds/edits profiles */
 export function reloadProfiles(): void {
   profileCache = null;
+  profileCacheSignature = null;
 }
 
 /** Check if a profile ID is a built-in (exists in builtins/ source directory) */

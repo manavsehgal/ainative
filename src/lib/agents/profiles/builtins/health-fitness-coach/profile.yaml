@@ -3,6 +3,7 @@ name: Health & Fitness Coach
 version: "1.0.0"
 domain: personal
 tags: [health, fitness, workout, nutrition, habits, wellness]
+supportedRuntimes: [claude-code]
 
 allowedTools:
   - WebSearch

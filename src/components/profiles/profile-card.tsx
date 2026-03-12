@@ -2,6 +2,8 @@
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { listRuntimeCatalog } from "@/lib/agents/runtime/catalog";
+import { getSupportedRuntimes } from "@/lib/agents/profiles/compatibility";
 import type { AgentProfile } from "@/lib/agents/profiles/types";
 
 interface ProfileCardProps {
@@ -10,6 +12,13 @@ interface ProfileCardProps {
 }
 
 export function ProfileCard({ profile, onClick }: ProfileCardProps) {
+  const runtimeLabelMap = new Map(
+    listRuntimeCatalog().map((runtime) => [
+      runtime.id,
+      runtime.label.includes("Codex") ? "Codex" : "Claude",
+    ])
+  );
+
   return (
     <Card
       tabIndex={0}
@@ -45,6 +54,14 @@ export function ProfileCard({ profile, onClick }: ProfileCardProps) {
             ))}
           </div>
         )}
+
+        <div className="flex flex-wrap gap-1">
+          {getSupportedRuntimes(profile).map((runtimeId) => (
+            <Badge key={runtimeId} variant="secondary" className="text-xs">
+              {runtimeLabelMap.get(runtimeId) ?? runtimeId}
+            </Badge>
+          ))}
+        </div>
 
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           {profile.version && <span>v{profile.version}</span>}

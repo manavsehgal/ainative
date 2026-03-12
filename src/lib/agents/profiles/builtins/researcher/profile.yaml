@@ -3,6 +3,7 @@ name: Researcher
 version: "1.0.0"
 domain: work
 tags: [research, web-search, citations, analyze, summarize, report]
+supportedRuntimes: [claude-code, openai-codex-app-server]
 
 allowedTools:
   - WebSearch

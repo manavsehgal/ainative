@@ -39,6 +39,13 @@ describe("ProfileConfigSchema", () => {
           expectedKeywords: ["thing", "done"],
         },
       ],
+      supportedRuntimes: ["claude-code", "openai-codex-app-server"],
+      runtimeOverrides: {
+        "openai-codex-app-server": {
+          instructions: "Use the Codex-specific prompt",
+          allowedTools: ["Read"],
+        },
+      },
     });
     expect(result.success).toBe(true);
   });

@@ -3,6 +3,7 @@ name: Document Writer
 version: "1.0.0"
 domain: work
 tags: [writing, reports, markdown, document, spec, proposal, summary]
+supportedRuntimes: [claude-code, openai-codex-app-server]
 
 allowedTools:
   - Read

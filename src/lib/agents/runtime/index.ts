@@ -1,12 +1,15 @@
 import {
   DEFAULT_AGENT_RUNTIME,
   getRuntimeCapabilities,
+  getRuntimeCatalogEntry,
   listRuntimeCatalog,
   resolveAgentRuntime,
   type AgentRuntimeId,
 } from "./catalog";
 import { claudeRuntimeAdapter } from "./claude";
 import { openAICodexRuntimeAdapter } from "./openai-codex";
+import { getProfile } from "@/lib/agents/profiles/registry";
+import { resolveProfileRuntimePayload } from "@/lib/agents/profiles/compatibility";
 import type {
   AgentRuntimeAdapter,
   RuntimeConnectionResult,
@@ -109,14 +112,47 @@ export async function runProfileTestsWithRuntime(
   profileId: string,
   runtimeId?: string | null
 ): Promise<ProfileTestReport> {
+  const resolvedRuntime = resolveAgentRuntime(runtimeId);
+  const profile = getProfile(profileId);
+  if (!profile) {
+    throw new Error(`Profile "${profileId}" not found`);
+  }
+
+  const payload = resolveProfileRuntimePayload(profile, resolvedRuntime);
+  if (!payload.supported) {
+    return {
+      profileId,
+      profileName: profile.name,
+      runtimeId: resolvedRuntime,
+      results: [],
+      totalPassed: 0,
+      totalFailed: 0,
+      unsupported: true,
+      unsupportedReason:
+        payload.reason ??
+        `${profile.name} does not support ${getRuntimeCatalogEntry(resolvedRuntime).label}`,
+    };
+  }
+
+  const adapter = getRuntimeAdapter(resolvedRuntime);
+  if (!adapter.metadata.capabilities.profileTests || !adapter.runProfileTests) {
+    return {
+      profileId,
+      profileName: profile.name,
+      runtimeId: resolvedRuntime,
+      results: [],
+      totalPassed: 0,
+      totalFailed: 0,
+      unsupported: true,
+      unsupportedReason: `${adapter.metadata.label} does not support profile smoke tests yet`,
+    };
+  }
+
   await enforceBudgetGuardrails({
-    runtimeId: resolveAgentRuntime(runtimeId),
+    runtimeId: resolvedRuntime,
     activityType: "profile_test",
   });
-  const adapter = assertCapability(runtimeId, "profileTests");
-  if (!adapter.runProfileTests) {
-    throw new Error(`Runtime "${adapter.metadata.id}" does not implement profile tests`);
-  }
+
   return adapter.runProfileTests(profileId);
 }
 

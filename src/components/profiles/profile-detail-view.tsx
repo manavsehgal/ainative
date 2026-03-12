@@ -25,9 +25,19 @@ import {
   ShieldCheck,
   ShieldX,
   FileCode,
+  Cpu,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import {
+  type AgentRuntimeId,
+  DEFAULT_AGENT_RUNTIME,
+  listRuntimeCatalog,
+} from "@/lib/agents/runtime/catalog";
+import {
+  getProfileRuntimeCompatibility,
+  getSupportedRuntimes,
+} from "@/lib/agents/profiles/compatibility";
 import type { AgentProfile } from "@/lib/agents/profiles/types";
 
 interface TestResult {
@@ -41,9 +51,12 @@ interface TestResult {
 interface TestReport {
   profileId: string;
   profileName: string;
+  runtimeId: string;
   results: TestResult[];
   totalPassed: number;
   totalFailed: number;
+  unsupported?: boolean;
+  unsupportedReason?: string;
 }
 
 interface ProfileWithBuiltin extends AgentProfile {
@@ -57,12 +70,18 @@ interface ProfileDetailViewProps {
 }
 
 export function ProfileDetailView({ profileId, isBuiltin, initialProfile }: ProfileDetailViewProps) {
+  const runtimeOptions = listRuntimeCatalog();
+  const runtimeLabelMap = new Map(
+    runtimeOptions.map((runtime) => [runtime.id, runtime.label])
+  );
   const router = useRouter();
   const [profile, setProfile] = useState<ProfileWithBuiltin | null>(initialProfile ?? null);
   const [loaded, setLoaded] = useState(!!initialProfile);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [testReport, setTestReport] = useState<TestReport | null>(null);
   const [runningTests, setRunningTests] = useState(false);
+  const [selectedTestRuntime, setSelectedTestRuntime] =
+    useState<AgentRuntimeId>(DEFAULT_AGENT_RUNTIME);
 
   const refresh = useCallback(async () => {
     try {
@@ -105,11 +124,15 @@ export function ProfileDetailView({ profileId, isBuiltin, initialProfile }: Prof
     try {
       const res = await fetch(`/api/profiles/${profileId}/test`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ runtimeId: selectedTestRuntime }),
       });
       if (res.ok) {
         const report: TestReport = await res.json();
         setTestReport(report);
-        if (report.totalFailed === 0) {
+        if (report.unsupported) {
+          toast.warning(report.unsupportedReason ?? "This runtime cannot test the selected profile");
+        } else if (report.totalFailed === 0) {
           toast.success(`All ${report.totalPassed} tests passed`);
         } else {
           toast.warning(`${report.totalPassed} passed, ${report.totalFailed} failed`);
@@ -146,6 +169,10 @@ export function ProfileDetailView({ profileId, isBuiltin, initialProfile }: Prof
     ((profile.canUseToolPolicy.autoApprove?.length ?? 0) > 0 ||
      (profile.canUseToolPolicy.autoDeny?.length ?? 0) > 0);
   const testTotal = testReport ? testReport.totalPassed + testReport.totalFailed : 0;
+  const runtimeCompatibility = runtimeOptions.map((runtime) => ({
+    runtime,
+    compatibility: getProfileRuntimeCompatibility(profile, runtime.id),
+  }));
 
   return (
     <div className="space-y-6" aria-live="polite">
@@ -190,8 +217,8 @@ export function ProfileDetailView({ profileId, isBuiltin, initialProfile }: Prof
         </div>
       </div>
 
-      {/* Bento Grid: Identity + Configuration + Tools & Policy */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* Bento Grid: Identity + Configuration + Runtime Coverage + Tools & Policy */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Identity Card */}
         <Card className="surface-card">
           <CardHeader className="pb-2">
@@ -269,6 +296,50 @@ export function ProfileDetailView({ profileId, isBuiltin, initialProfile }: Prof
             {!profile.temperature && !profile.maxTurns && !profile.outputFormat && (
               <p className="text-sm text-muted-foreground">Default configuration</p>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Runtime Coverage */}
+        <Card className="surface-card">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Cpu className="h-4 w-4 text-muted-foreground" />
+              Runtime Coverage
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {runtimeCompatibility.map(({ runtime, compatibility }) => (
+              <div
+                key={runtime.id}
+                className="surface-card-muted rounded-lg border border-border/60 p-3"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm font-medium">{runtime.label}</span>
+                  <Badge
+                    variant={compatibility.supported ? "secondary" : "outline"}
+                    className={
+                      compatibility.supported
+                        ? "bg-status-completed/10 text-status-completed"
+                        : "text-muted-foreground"
+                    }
+                  >
+                    {compatibility.supported ? "Supported" : "Unsupported"}
+                  </Badge>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {compatibility.supported
+                    ? compatibility.instructionsSource === "runtime-override"
+                      ? "Uses runtime-specific instructions"
+                      : "Uses shared SKILL.md instructions"
+                    : "Blocked before execution"}
+                </p>
+              </div>
+            ))}
+            <p className="text-xs text-muted-foreground">
+              {`Supports ${getSupportedRuntimes(profile)
+                .map((runtimeId) => runtimeLabelMap.get(runtimeId) ?? runtimeId)
+                .join(", ")}`}
+            </p>
           </CardContent>
         </Card>
 
@@ -375,25 +446,46 @@ export function ProfileDetailView({ profileId, isBuiltin, initialProfile }: Prof
                 <CardTitle className="text-sm font-medium">
                   Tests ({profile.tests.length})
                 </CardTitle>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleRunTests}
-                  disabled={runningTests}
-                  className="h-7"
-                >
-                  {runningTests ? (
-                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                  ) : (
-                    <Play className="mr-1 h-3 w-3" />
-                  )}
-                  {runningTests ? "Running..." : "Run Tests"}
-                </Button>
+                <div className="flex items-center gap-2">
+                    <select
+                      value={selectedTestRuntime}
+                      onChange={(event) =>
+                        setSelectedTestRuntime(event.target.value as AgentRuntimeId)
+                      }
+                      className="surface-control h-7 rounded-md border border-border/60 px-2 text-xs"
+                    >
+                    {runtimeOptions.map((runtime) => (
+                      <option key={runtime.id} value={runtime.id}>
+                        {runtime.label}
+                      </option>
+                    ))}
+                  </select>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleRunTests}
+                    disabled={runningTests}
+                    className="h-7"
+                  >
+                    {runningTests ? (
+                      <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                    ) : (
+                      <Play className="mr-1 h-3 w-3" />
+                    )}
+                    {runningTests ? "Running..." : "Run Tests"}
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-2">
+              {testReport?.unsupported && (
+                <div className="surface-card-muted rounded-md border border-warning/30 bg-warning/10 p-2 text-xs text-warning">
+                  {testReport.unsupportedReason ??
+                    `${runtimeLabelMap.get(selectedTestRuntime) ?? selectedTestRuntime} cannot test this profile yet`}
+                </div>
+              )}
               {/* Test Summary Bar */}
-              {testReport && (
+              {testReport && !testReport.unsupported && (
                 <div className="space-y-1">
                   <div className="flex h-1.5 rounded-full overflow-hidden bg-muted">
                     <div
@@ -413,7 +505,7 @@ export function ProfileDetailView({ profileId, isBuiltin, initialProfile }: Prof
               {/* Test Items */}
               <div className="space-y-1.5">
                 {profile.tests.map((test, i) => {
-                  const result = testReport?.results[i];
+                  const result = testReport?.unsupported ? undefined : testReport?.results[i];
                   return (
                     <div key={i} className="surface-card-muted rounded-md border p-2 text-sm">
                       <div className="flex items-start gap-2">

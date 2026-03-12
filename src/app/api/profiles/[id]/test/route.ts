@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runProfileTests } from "@/lib/agents/profiles/test-runner";
 import { BudgetLimitExceededError } from "@/lib/settings/budget-guardrails";
+import {
+  DEFAULT_AGENT_RUNTIME,
+  resolveAgentRuntime,
+} from "@/lib/agents/runtime/catalog";
 
 /**
  * POST /api/profiles/[id]/test
@@ -9,13 +13,24 @@ import { BudgetLimitExceededError } from "@/lib/settings/budget-guardrails";
  * with pass/fail per test case and keyword match details.
  */
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const body = await req.json().catch(() => ({}));
+  let runtimeId = DEFAULT_AGENT_RUNTIME;
 
   try {
-    const report = await runProfileTests(id);
+    runtimeId = resolveAgentRuntime(body?.runtimeId ?? DEFAULT_AGENT_RUNTIME);
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : String(error) },
+      { status: 400 }
+    );
+  }
+
+  try {
+    const report = await runProfileTests(id, runtimeId);
     return NextResponse.json(report);
   } catch (err: unknown) {
     if (err instanceof BudgetLimitExceededError) {

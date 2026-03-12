@@ -3,6 +3,7 @@ name: Data Analyst
 version: "1.0.0"
 domain: work
 tags: [data, statistics, analysis, visualization, insights]
+supportedRuntimes: [claude-code, openai-codex-app-server]
 
 allowedTools:
   - Read

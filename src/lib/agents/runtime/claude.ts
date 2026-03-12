@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { updateAuthStatus, getAuthEnv } from "@/lib/settings/auth";
 import { getExecution, removeExecution } from "@/lib/agents/execution-manager";
 import { getProfile } from "@/lib/agents/profiles/registry";
+import { resolveProfileRuntimePayload } from "@/lib/agents/profiles/compatibility";
 import { executeClaudeTask, resumeClaudeTask } from "@/lib/agents/claude-agent";
 import { getRuntimeCapabilities, getRuntimeCatalogEntry } from "./catalog";
 import { buildClaudeSdkEnv } from "./claude-sdk";
@@ -59,8 +60,12 @@ async function runSingleProfileTest(
     throw new Error(`Profile "${profileId}" not found`);
   }
 
-  const systemPrompt = profile.skillMd || profile.systemPrompt || "";
-  const prompt = `${systemPrompt}\n\n---\n\nTask: ${test.task}\n\nProvide a brief analysis (2-3 paragraphs max). Include specific terminology relevant to your domain.`;
+  const payload = resolveProfileRuntimePayload(profile, "claude-code");
+  if (!payload.supported) {
+    throw new Error(payload.reason ?? `Profile "${profile.name}" is not supported on Claude Code`);
+  }
+
+  const prompt = `${payload.instructions}\n\n---\n\nTask: ${test.task}\n\nProvide a brief analysis (2-3 paragraphs max). Include specific terminology relevant to your domain.`;
   const authEnv = await getAuthEnv();
   const abortController = new AbortController();
   const timeout = setTimeout(() => abortController.abort(), 30_000);
@@ -170,10 +175,25 @@ async function runClaudeProfileTests(profileId: string): Promise<ProfileTestRepo
     throw new Error(`Profile "${profileId}" not found`);
   }
 
-  if (!profile.tests || profile.tests.length === 0) {
+  const payload = resolveProfileRuntimePayload(profile, "claude-code");
+  if (!payload.supported) {
     return {
       profileId,
       profileName: profile.name,
+      runtimeId: "claude-code",
+      results: [],
+      totalPassed: 0,
+      totalFailed: 0,
+      unsupported: true,
+      unsupportedReason: payload.reason,
+    };
+  }
+
+  if (!payload.tests || payload.tests.length === 0) {
+    return {
+      profileId,
+      profileName: profile.name,
+      runtimeId: "claude-code",
       results: [],
       totalPassed: 0,
       totalFailed: 0,
@@ -181,13 +201,14 @@ async function runClaudeProfileTests(profileId: string): Promise<ProfileTestRepo
   }
 
   const results: ProfileTestResult[] = [];
-  for (const test of profile.tests) {
+  for (const test of payload.tests) {
     results.push(await runSingleProfileTest(profileId, test));
   }
 
   return {
     profileId,
     profileName: profile.name,
+    runtimeId: "claude-code",
     results,
     totalPassed: results.filter((result) => result.passed).length,
     totalFailed: results.filter((result) => !result.passed).length,

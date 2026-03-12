@@ -1,4 +1,27 @@
 import { z } from "zod";
+import { SUPPORTED_AGENT_RUNTIMES } from "@/lib/agents/runtime/catalog";
+
+const runtimeIdSchema = z.enum(SUPPORTED_AGENT_RUNTIMES);
+
+const profileTestsSchema = z.array(
+  z.object({
+    task: z.string(),
+    expectedKeywords: z.array(z.string()),
+  })
+);
+
+const canUseToolPolicySchema = z.object({
+  autoApprove: z.array(z.string()).optional(),
+  autoDeny: z.array(z.string()).optional(),
+});
+
+const profileRuntimeOverrideSchema = z.object({
+  instructions: z.string().min(1).optional(),
+  allowedTools: z.array(z.string()).optional(),
+  mcpServers: z.record(z.string(), z.unknown()).optional(),
+  canUseToolPolicy: canUseToolPolicySchema.optional(),
+  tests: profileTestsSchema.optional(),
+});
 
 export const ProfileConfigSchema = z.object({
   id: z.string().min(1),
@@ -8,12 +31,7 @@ export const ProfileConfigSchema = z.object({
   tags: z.array(z.string()),
   allowedTools: z.array(z.string()).optional(),
   mcpServers: z.record(z.string(), z.unknown()).optional(),
-  canUseToolPolicy: z
-    .object({
-      autoApprove: z.array(z.string()).optional(),
-      autoDeny: z.array(z.string()).optional(),
-    })
-    .optional(),
+  canUseToolPolicy: canUseToolPolicySchema.optional(),
   hooks: z
     .object({
       preToolCall: z.array(z.string()).optional(),
@@ -25,13 +43,21 @@ export const ProfileConfigSchema = z.object({
   outputFormat: z.string().optional(),
   author: z.string().optional(),
   source: z.string().url().optional(),
-  tests: z
-    .array(
-      z.object({
-        task: z.string(),
-        expectedKeywords: z.array(z.string()),
-      })
+  tests: profileTestsSchema.optional(),
+  supportedRuntimes: z.array(runtimeIdSchema).optional(),
+  runtimeOverrides: z
+    .object(
+      Object.fromEntries(
+        SUPPORTED_AGENT_RUNTIMES.map((runtimeId) => [
+          runtimeId,
+          profileRuntimeOverrideSchema.optional(),
+        ])
+      ) as Record<
+        (typeof SUPPORTED_AGENT_RUNTIMES)[number],
+        z.ZodOptional<typeof profileRuntimeOverrideSchema>
+      >
     )
+    .partial()
     .optional(),
 });
 

@@ -3,6 +3,7 @@ name: Learning Coach
 version: "1.0.0"
 domain: personal
 tags: [learning, education, study, spaced-repetition, tutoring, concepts]
+supportedRuntimes: [claude-code]
 
 allowedTools:
   - WebSearch

@@ -4,6 +4,7 @@ import { tasks } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { updateTaskSchema } from "@/lib/validators/task";
 import { isValidTransition, type TaskStatus } from "@/lib/constants/task-status";
+import { validateRuntimeProfileAssignment } from "@/lib/agents/profiles/assignment-validation";
 
 export async function GET(
   _req: NextRequest,
@@ -28,6 +29,21 @@ export async function PATCH(
 
   const [existing] = await db.select().from(tasks).where(eq(tasks.id, id));
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const compatibilityError = validateRuntimeProfileAssignment({
+    profileId:
+      parsed.data.agentProfile !== undefined
+        ? parsed.data.agentProfile
+        : existing.agentProfile,
+    runtimeId:
+      parsed.data.assignedAgent !== undefined
+        ? parsed.data.assignedAgent
+        : existing.assignedAgent,
+    context: "Task profile",
+  });
+  if (compatibilityError) {
+    return NextResponse.json({ error: compatibilityError }, { status: 400 });
+  }
 
   // Validate status transitions
   if (parsed.data.status && parsed.data.status !== existing.status) {

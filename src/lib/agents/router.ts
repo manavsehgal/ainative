@@ -1,4 +1,5 @@
-import { getProfileTags } from "./profiles/registry";
+import { listProfiles } from "./profiles/registry";
+import { profileSupportsRuntime } from "./profiles/compatibility";
 import {
   executeTaskWithRuntime,
   resumeTaskWithRuntime,
@@ -10,17 +11,24 @@ import { DEFAULT_AGENT_RUNTIME } from "./runtime/catalog";
  * Scores each profile by keyword hits in title + description.
  * Returns the highest-scoring profile ID, or "general" if no strong match.
  */
-export function classifyTaskProfile(title: string, description?: string | null): string {
+export function classifyTaskProfile(
+  title: string,
+  description?: string | null,
+  runtimeId: string | null | undefined = DEFAULT_AGENT_RUNTIME
+): string {
   const text = `${title} ${description ?? ""}`.toLowerCase();
-  const tagMap = getProfileTags();
+  const profiles = listProfiles().filter((profile) =>
+    profileSupportsRuntime(profile, runtimeId)
+  );
 
   let bestProfile = "general";
   let bestScore = 0;
 
-  for (const [profileId, tags] of tagMap) {
+  for (const profile of profiles) {
+    const profileId = profile.id;
     if (profileId === "general") continue;
     let score = 0;
-    for (const tag of tags) {
+    for (const tag of profile.tags) {
       if (text.includes(tag)) score++;
     }
     if (score > bestScore) {

@@ -14,7 +14,11 @@ export default async function NewWorkflowPage() {
     .from(projects)
     .orderBy(projects.name);
 
-  const profiles = listProfiles().map((p) => ({ id: p.id, name: p.name }));
+  const profiles = listProfiles().map((p) => ({
+    id: p.id,
+    name: p.name,
+    supportedRuntimes: p.supportedRuntimes,
+  }));
 
   return (
     <div className="gradient-ocean-mist min-h-screen p-6">

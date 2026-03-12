@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { workflows } from "@/lib/db/schema";
 import { desc, eq } from "drizzle-orm";
 import type { WorkflowDefinition } from "@/lib/workflows/types";
+import { validateWorkflowDefinitionAssignments } from "@/lib/agents/profiles/assignment-validation";
 
 export async function GET() {
   const result = await db
@@ -48,6 +49,11 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+  }
+
+  const compatibilityError = validateWorkflowDefinitionAssignments(definition);
+  if (compatibilityError) {
+    return NextResponse.json({ error: compatibilityError }, { status: 400 });
   }
 
   const id = crypto.randomUUID();

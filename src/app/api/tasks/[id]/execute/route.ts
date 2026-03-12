@@ -4,6 +4,7 @@ import { tasks } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { executeTaskWithAgent, classifyTaskProfile } from "@/lib/agents/router";
 import { DEFAULT_AGENT_RUNTIME } from "@/lib/agents/runtime/catalog";
+import { validateRuntimeProfileAssignment } from "@/lib/agents/profiles/assignment-validation";
 import {
   BudgetLimitExceededError,
   enforceTaskBudgetGuardrails,
@@ -48,11 +49,36 @@ export async function POST(
 
   // Auto-classify profile if none was set
   if (!task.agentProfile) {
-    const autoProfile = classifyTaskProfile(task.title, task.description);
+    const autoProfile = classifyTaskProfile(
+      task.title,
+      task.description,
+      task.assignedAgent ?? DEFAULT_AGENT_RUNTIME
+    );
     db.update(tasks)
       .set({ agentProfile: autoProfile, updatedAt: new Date() })
       .where(eq(tasks.id, id))
       .run();
+  }
+
+  const compatibilityError = validateRuntimeProfileAssignment({
+    profileId: task.agentProfile ?? classifyTaskProfile(
+      task.title,
+      task.description,
+      task.assignedAgent ?? DEFAULT_AGENT_RUNTIME
+    ),
+    runtimeId: task.assignedAgent,
+    context: "Task profile",
+  });
+  if (compatibilityError) {
+    db.update(tasks)
+      .set({
+        status: "failed",
+        result: compatibilityError,
+        updatedAt: new Date(),
+      })
+      .where(eq(tasks.id, id))
+      .run();
+    return NextResponse.json({ error: compatibilityError }, { status: 400 });
   }
 
   // Fire-and-forget — task already marked as running

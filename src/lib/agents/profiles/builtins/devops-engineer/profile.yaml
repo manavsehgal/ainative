@@ -3,6 +3,7 @@ name: DevOps Engineer
 version: "1.0.0"
 domain: work
 tags: [devops, ci-cd, infrastructure, deployment, docker, kubernetes]
+supportedRuntimes: [claude-code, openai-codex-app-server]
 
 allowedTools:
   - Read

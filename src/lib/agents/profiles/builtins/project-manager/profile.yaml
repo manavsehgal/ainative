@@ -3,6 +3,7 @@ name: Project Manager
 version: "1.0.0"
 domain: work
 tags: [planning, estimation, dependencies, project, management, decomposition]
+supportedRuntimes: [claude-code, openai-codex-app-server]
 
 allowedTools:
   - Read

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import yaml from "js-yaml";
 
@@ -121,5 +122,55 @@ describe("profile registry", () => {
 
     expect(workProfiles.length).toBe(8); // general, code-reviewer, researcher, document-writer, project-manager, data-analyst, technical-writer, devops-engineer
     expect(personalProfiles.length).toBe(5); // wealth-manager, travel-planner, health-fitness-coach, shopping-assistant, learning-coach
+  });
+
+  it("detects a newly added on-disk profile after the cache is warm", async () => {
+    const originalHome = process.env.HOME;
+    const tempHome = fs.mkdtempSync(
+      path.join(os.tmpdir(), "registry-cache-regression-")
+    );
+
+    try {
+      process.env.HOME = tempHome;
+      vi.resetModules();
+
+      const registry = await import("../registry");
+      const warmProfiles = registry.listProfiles();
+      const initialCount = warmProfiles.length;
+      const profileId = `registry-cache-regression-${Date.now()}`;
+      const profileDir = path.join(tempHome, ".claude", "skills", profileId);
+
+      fs.mkdirSync(profileDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(profileDir, "profile.yaml"),
+        yaml.dump({
+          id: profileId,
+          name: "Registry Cache Regression",
+          version: "1.0.0",
+          domain: "work",
+          tags: ["regression", "cache"],
+        })
+      );
+      fs.writeFileSync(
+        path.join(profileDir, "SKILL.md"),
+        `---
+name: ${profileId}
+description: Profile added after the registry cache is warm.
+---
+
+This profile exists to verify automatic cache refresh for on-disk changes.
+`
+      );
+
+      const loaded = registry.getProfile(profileId);
+
+      expect(loaded).toBeDefined();
+      expect(loaded?.name).toBe("Registry Cache Regression");
+      expect(registry.listProfiles().length).toBe(initialCount + 1);
+    } finally {
+      process.env.HOME = originalHome;
+      fs.rmSync(tempHome, { recursive: true, force: true });
+      vi.resetModules();
+    }
   });
 });

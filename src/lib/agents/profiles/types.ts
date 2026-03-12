@@ -1,6 +1,21 @@
+import type { AgentRuntimeId } from "@/lib/agents/runtime/catalog";
+
 export interface CanUseToolPolicy {
   autoApprove?: string[];
   autoDeny?: string[];
+}
+
+export interface ProfileSmokeTest {
+  task: string;
+  expectedKeywords: string[];
+}
+
+export interface ProfileRuntimeOverride {
+  instructions?: string;
+  allowedTools?: string[];
+  mcpServers?: Record<string, unknown>;
+  canUseToolPolicy?: CanUseToolPolicy;
+  tests?: ProfileSmokeTest[];
 }
 
 export interface AgentProfile {
@@ -22,5 +37,7 @@ export interface AgentProfile {
   version?: string;
   author?: string;
   source?: string;
-  tests?: Array<{ task: string; expectedKeywords: string[] }>;
+  tests?: ProfileSmokeTest[];
+  supportedRuntimes: AgentRuntimeId[];
+  runtimeOverrides?: Partial<Record<AgentRuntimeId, ProfileRuntimeOverride>>;
 }

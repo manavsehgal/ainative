@@ -4,6 +4,7 @@ import { schedules } from "@/lib/db/schema";
 import { desc, eq } from "drizzle-orm";
 import { parseInterval, computeNextFireTime } from "@/lib/schedules/interval-parser";
 import { resolveAgentRuntime } from "@/lib/agents/runtime/catalog";
+import { validateRuntimeProfileAssignment } from "@/lib/agents/profiles/assignment-validation";
 
 export async function GET() {
   const result = await db
@@ -69,6 +70,15 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+  }
+
+  const compatibilityError = validateRuntimeProfileAssignment({
+    profileId: agentProfile,
+    runtimeId: assignedAgent,
+    context: "Schedule profile",
+  });
+  if (compatibilityError) {
+    return NextResponse.json({ error: compatibilityError }, { status: 400 });
   }
 
   const id = crypto.randomUUID();

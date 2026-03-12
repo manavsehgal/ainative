@@ -3,6 +3,7 @@ name: Shopping Assistant
 version: "1.0.0"
 domain: personal
 tags: [shopping, products, deals, reviews, comparison, budget]
+supportedRuntimes: [claude-code]
 
 allowedTools:
   - WebSearch

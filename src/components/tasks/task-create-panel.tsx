@@ -19,13 +19,21 @@ import { toast } from "sonner";
 import { AIAssistPanel } from "./ai-assist-panel";
 import { FileUpload } from "./file-upload";
 import { FormSectionCard } from "@/components/shared/form-section-card";
-import { listRuntimeCatalog } from "@/lib/agents/runtime/catalog";
+import {
+  type AgentRuntimeId,
+  DEFAULT_AGENT_RUNTIME,
+  listRuntimeCatalog,
+} from "@/lib/agents/runtime/catalog";
+import {
+  getSupportedRuntimes,
+  profileSupportsRuntime,
+} from "@/lib/agents/profiles/compatibility";
+import type { AgentProfile } from "@/lib/agents/profiles/types";
 
-interface ProfileOption {
-  id: string;
-  name: string;
-  description: string;
-}
+type ProfileOption = Pick<
+  AgentProfile,
+  "id" | "name" | "description" | "supportedRuntimes"
+>;
 
 interface UploadedFile {
   id: string;
@@ -48,6 +56,9 @@ const PRIORITY_COLORS: Record<string, string> = {
 
 export function TaskCreatePanel({ projects }: TaskCreatePanelProps) {
   const runtimeOptions = listRuntimeCatalog();
+  const runtimeLabelMap = new Map(
+    runtimeOptions.map((runtime) => [runtime.id, runtime.label])
+  );
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -67,9 +78,23 @@ export function TaskCreatePanel({ projects }: TaskCreatePanelProps) {
       .catch(() => {});
   }, []);
 
+  const selectedRuntimeId = (assignedAgent ||
+    DEFAULT_AGENT_RUNTIME) as AgentRuntimeId;
+  const selectedProfile = profiles.find((profile) => profile.id === agentProfile);
+  const profileCompatibilityError =
+    selectedProfile && !profileSupportsRuntime(selectedProfile, selectedRuntimeId)
+      ? `${selectedProfile.name} does not support ${
+          runtimeLabelMap.get(selectedRuntimeId) ?? selectedRuntimeId
+        }`
+      : null;
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) return;
+    if (profileCompatibilityError) {
+      setError(profileCompatibilityError);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -231,7 +256,11 @@ export function TaskCreatePanel({ projects }: TaskCreatePanelProps) {
                         <SelectContent>
                           <SelectItem value="auto">Auto-detect</SelectItem>
                           {profiles.map((p) => (
-                            <SelectItem key={p.id} value={p.id}>
+                            <SelectItem
+                              key={p.id}
+                              value={p.id}
+                              disabled={!profileSupportsRuntime(p, selectedRuntimeId)}
+                            >
                               <span className="flex items-center gap-1.5">
                                 <Bot className="h-3 w-3" />
                                 {p.name}
@@ -240,7 +269,26 @@ export function TaskCreatePanel({ projects }: TaskCreatePanelProps) {
                           ))}
                         </SelectContent>
                       </Select>
-                      <p className="text-xs text-muted-foreground">Auto-detect picks best agent</p>
+                      <p className="text-xs text-muted-foreground">
+                        Auto-detect only considers profiles compatible with the selected runtime
+                      </p>
+                      {selectedProfile && (
+                        <p
+                          className={`text-xs ${
+                            profileCompatibilityError
+                              ? "text-destructive"
+                              : "text-muted-foreground"
+                          }`}
+                        >
+                          {profileCompatibilityError ??
+                            `Supports ${getSupportedRuntimes(selectedProfile)
+                              .map(
+                                (runtimeId) =>
+                                  runtimeLabelMap.get(runtimeId) ?? runtimeId
+                              )
+                              .join(", ")}`}
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>

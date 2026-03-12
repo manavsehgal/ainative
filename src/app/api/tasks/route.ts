@@ -4,6 +4,7 @@ import { tasks, documents } from "@/lib/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { createTaskSchema } from "@/lib/validators/task";
 import { processDocument } from "@/lib/documents/processor";
+import { validateRuntimeProfileAssignment } from "@/lib/agents/profiles/assignment-validation";
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
@@ -28,6 +29,15 @@ export async function POST(req: NextRequest) {
   const parsed = createTaskSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  }
+
+  const compatibilityError = validateRuntimeProfileAssignment({
+    profileId: parsed.data.agentProfile,
+    runtimeId: parsed.data.assignedAgent,
+    context: "Task profile",
+  });
+  if (compatibilityError) {
+    return NextResponse.json({ error: compatibilityError }, { status: 400 });
   }
 
   const now = new Date();

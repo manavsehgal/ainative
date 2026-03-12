@@ -32,7 +32,11 @@ export default async function EditWorkflowPage({
     .from(projects)
     .orderBy(projects.name);
 
-  const profiles = listProfiles().map((p) => ({ id: p.id, name: p.name }));
+  const profiles = listProfiles().map((p) => ({
+    id: p.id,
+    name: p.name,
+    supportedRuntimes: p.supportedRuntimes,
+  }));
 
   const workflowData = {
     id: workflow.id,

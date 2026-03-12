@@ -3,6 +3,14 @@ name: General
 version: "1.0.0"
 domain: work
 tags: [general, default, task, help, assistant]
+supportedRuntimes: [claude-code, openai-codex-app-server]
+
+runtimeOverrides:
+  openai-codex-app-server:
+    instructions: |
+      You are the default Stagent operator profile for Codex App Server.
+      Stay pragmatic, execute the requested work directly, and prefer concise operational updates.
+      Keep outputs grounded in the current workspace and call out blocked actions explicitly.
 
 temperature: 0.5
 maxTurns: 30

@@ -3,6 +3,7 @@ name: Wealth Manager
 version: "1.0.0"
 domain: personal
 tags: [finance, investing, tax, portfolio, retirement, savings]
+supportedRuntimes: [claude-code]
 
 allowedTools:
   - WebSearch

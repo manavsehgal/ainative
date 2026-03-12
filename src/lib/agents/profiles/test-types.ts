@@ -1,3 +1,5 @@
+import type { AgentRuntimeId } from "@/lib/agents/runtime/catalog";
+
 export interface ProfileTestResult {
   task: string;
   expectedKeywords: string[];
@@ -9,7 +11,10 @@ export interface ProfileTestResult {
 export interface ProfileTestReport {
   profileId: string;
   profileName: string;
+  runtimeId: AgentRuntimeId;
   results: ProfileTestResult[];
   totalPassed: number;
   totalFailed: number;
+  unsupported?: boolean;
+  unsupportedReason?: string;
 }

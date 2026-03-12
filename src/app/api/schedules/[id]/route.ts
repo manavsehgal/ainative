@@ -4,6 +4,7 @@ import { schedules, tasks } from "@/lib/db/schema";
 import { eq, like } from "drizzle-orm";
 import { parseInterval, computeNextFireTime } from "@/lib/schedules/interval-parser";
 import { resolveAgentRuntime } from "@/lib/agents/runtime/catalog";
+import { validateRuntimeProfileAssignment } from "@/lib/agents/profiles/assignment-validation";
 
 export async function GET(
   _req: NextRequest,
@@ -138,6 +139,19 @@ export async function PATCH(
     } else {
       updates.assignedAgent = null;
     }
+  }
+
+  const compatibilityError = validateRuntimeProfileAssignment({
+    profileId:
+      agentProfile !== undefined ? agentProfile || null : schedule.agentProfile,
+    runtimeId:
+      assignedAgent !== undefined
+        ? assignedAgent || null
+        : schedule.assignedAgent,
+    context: "Schedule profile",
+  });
+  if (compatibilityError) {
+    return NextResponse.json({ error: compatibilityError }, { status: 400 });
   }
 
   await db.update(schedules).set(updates).where(eq(schedules.id, id));
