@@ -23,8 +23,10 @@ export default async function ProjectsPage() {
     .orderBy(projects.createdAt);
 
   return (
-    <div className="gradient-ocean-mist min-h-screen p-6">
-      <ProjectList initialProjects={result} />
+    <div className="gradient-ocean-mist min-h-screen p-4 sm:p-6">
+      <div className="surface-page surface-page-shell mx-auto min-h-[calc(100dvh-2rem)] max-w-6xl rounded-[30px] p-5 sm:p-6 lg:p-7">
+        <ProjectList initialProjects={result} />
+      </div>
     </div>
   );
 }

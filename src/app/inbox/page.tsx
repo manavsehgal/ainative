@@ -20,9 +20,16 @@ export default async function InboxPage() {
   }));
 
   return (
-    <div className="gradient-sunset-glow min-h-screen p-6">
-      <h1 className="text-2xl font-bold mb-6">Inbox</h1>
-      <InboxList initialNotifications={initialNotifications} />
+    <div className="gradient-sunset-glow min-h-screen p-4 sm:p-6">
+      <div className="surface-page surface-page-shell mx-auto min-h-[calc(100dvh-2rem)] max-w-6xl rounded-[30px] p-5 sm:p-6 lg:p-7">
+        <div className="mb-5 space-y-1">
+          <h1 className="text-2xl font-bold">Inbox</h1>
+          <p className="text-sm text-muted-foreground">
+            Review approvals, questions, failures, and completions without leaving the supervision flow.
+          </p>
+        </div>
+        <InboxList initialNotifications={initialNotifications} />
+      </div>
     </div>
   );
 }

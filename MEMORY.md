@@ -30,12 +30,11 @@ This file captures evolving project facts, decisions, and recurring gotchas that
 - Dashboard, monitor, kanban, inbox, projects, profiles, and settings moved toward solid operational surfaces for better readability.
 - Profile routes now use bounded `surface-page` framing plus `surface-card` and `surface-control` primitives to avoid scroll jank and card compositing flash.
 - Settings content width was widened to improve scanability.
+- Home, inbox, and projects now use bounded route canvases and denser composition so the shell, toolbar, and sparse project states feel more intentional in browser review.
 
 ## Remaining UX Follow-Up
 
-- Sidebar/background cohesion on the home shell still needs refinement.
-- Inbox toolbar density and control affordance can be improved.
-- Projects page composition feels sparse when project count is low.
+- Sidebar/background cohesion, inbox toolbar density, and sparse projects composition were addressed by `ui-density-refinement`.
 
 ## Architecture Notes
 

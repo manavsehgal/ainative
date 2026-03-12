@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { CheckCheck, Inbox, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -72,36 +72,74 @@ export function InboxList({
             );
 
   const unreadCount = notifications.filter((n) => !n.read).length;
+  const filteredCount = filtered.length;
+  const readCount = notifications.length - unreadCount;
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <Tabs value={tab} onValueChange={setTab}>
-          <TabsList>
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="unread">
-              Unread{unreadCount > 0 ? ` (${unreadCount})` : ""}
-            </TabsTrigger>
-            <TabsTrigger value="permissions">Permissions</TabsTrigger>
-            <TabsTrigger value="messages">Messages</TabsTrigger>
-          </TabsList>
-        </Tabs>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={refresh} aria-label="Refresh notifications">
-            <RefreshCw className="h-4 w-4" />
-          </Button>
+    <div className="space-y-4">
+      <div className="surface-toolbar rounded-[24px] p-3 sm:p-4">
+        <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          <span>Notification Queue</span>
+          <span className="rounded-full bg-background/75 px-2.5 py-1 text-[11px] font-medium normal-case tracking-normal text-foreground">
+            {filteredCount} shown
+          </span>
           {unreadCount > 0 && (
-            <Button variant="ghost" size="sm" onClick={markAllRead}>
-              <CheckCheck className="h-4 w-4 mr-1" />
-              Mark all read
-            </Button>
+            <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-medium normal-case tracking-normal text-primary">
+              {unreadCount} unread
+            </span>
           )}
-          {notifications.some((n) => n.read) && (
-            <Button variant="ghost" size="sm" onClick={dismissAllRead} className="text-muted-foreground hover:text-destructive">
-              <Trash2 className="h-4 w-4 mr-1" />
-              Dismiss read
-            </Button>
+          {readCount > 0 && (
+            <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-medium normal-case tracking-normal text-muted-foreground">
+              {readCount} read
+            </span>
           )}
+        </div>
+
+        <div className="mt-3 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <Tabs value={tab} onValueChange={setTab}>
+            <TabsList className="h-auto flex-wrap justify-start gap-1 rounded-xl bg-background/75 p-1 shadow-none">
+              <TabsTrigger className="min-h-8 flex-none px-3 text-[13px]" value="all">
+                All
+              </TabsTrigger>
+              <TabsTrigger className="min-h-8 flex-none px-3 text-[13px]" value="unread">
+                Unread{unreadCount > 0 ? ` (${unreadCount})` : ""}
+              </TabsTrigger>
+              <TabsTrigger className="min-h-8 flex-none px-3 text-[13px]" value="permissions">
+                Permissions
+              </TabsTrigger>
+              <TabsTrigger className="min-h-8 flex-none px-3 text-[13px]" value="messages">
+                Messages
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon-sm"
+              onClick={refresh}
+              aria-label="Refresh notifications"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+            {unreadCount > 0 && (
+              <Button variant="secondary" size="sm" onClick={markAllRead}>
+                <CheckCheck className="h-4 w-4" />
+                Mark all read
+              </Button>
+            )}
+            {readCount > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={dismissAllRead}
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <Trash2 className="h-4 w-4" />
+                Dismiss read
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 

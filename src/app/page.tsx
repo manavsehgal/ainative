@@ -126,35 +126,37 @@ export default async function HomePage() {
   );
 
   return (
-    <div className="gradient-morning-sky min-h-screen p-6">
-      <Greeting
-        runningCount={runningResult.count}
-        awaitingCount={awaitingResult.count}
-        failedCount={failedResult.count}
-      />
-      <StatsCards
-        runningCount={runningResult.count}
-        completedToday={completedTodayResult.count}
-        completedAllTime={completedAllTimeResult.count}
-        awaitingReview={awaitingResult.count}
-        activeProjects={activeProjectsResult.count}
-        sparklines={{
-          completions: completionsByDay,
-          creations: taskCreationsByDay,
-          projects: projectCreationsByDay,
-          notifications: notificationsByDay,
-        }}
-      />
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
-        <div className="lg:col-span-3">
-          <PriorityQueue tasks={serializedPriorityTasks} />
+    <div className="gradient-morning-sky min-h-screen p-4 sm:p-6">
+      <div className="surface-page surface-page-shell mx-auto min-h-[calc(100dvh-2rem)] max-w-7xl rounded-[30px] p-5 sm:p-6 lg:p-7">
+        <Greeting
+          runningCount={runningResult.count}
+          awaitingCount={awaitingResult.count}
+          failedCount={failedResult.count}
+        />
+        <StatsCards
+          runningCount={runningResult.count}
+          completedToday={completedTodayResult.count}
+          completedAllTime={completedAllTimeResult.count}
+          awaitingReview={awaitingResult.count}
+          activeProjects={activeProjectsResult.count}
+          sparklines={{
+            completions: completionsByDay,
+            creations: taskCreationsByDay,
+            projects: projectCreationsByDay,
+            notifications: notificationsByDay,
+          }}
+        />
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-5 mb-6">
+          <div className="lg:col-span-3">
+            <PriorityQueue tasks={serializedPriorityTasks} />
+          </div>
+          <div className="lg:col-span-2">
+            <ActivityFeed entries={serializedLogs} hourlyActivity={agentActivityByHour} />
+          </div>
         </div>
-        <div className="lg:col-span-2">
-          <ActivityFeed entries={serializedLogs} hourlyActivity={agentActivityByHour} />
-        </div>
+        <QuickActions />
+        <RecentProjects projects={recentProjectData} />
       </div>
-      <QuickActions />
-      <RecentProjects projects={recentProjectData} />
     </div>
   );
 }

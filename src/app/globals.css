@@ -365,6 +365,28 @@
   box-shadow: inset -1px 0 0 0 oklch(1 0 0 / 0.15), var(--glass-shadow-sm) !important;
 }
 
+.glass-sidebar [data-sidebar="sidebar"] {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface-1) 90%, transparent) 0%,
+      color-mix(in srgb, var(--surface-2) 94%, transparent) 58%,
+      color-mix(in srgb, var(--surface-3) 88%, transparent) 100%
+    );
+  border-right: 1px solid color-mix(in oklab, var(--border) 75%, transparent);
+  box-shadow:
+    inset -1px 0 0 0 oklch(1 0 0 / 0.16),
+    12px 0 32px oklch(0.12 0.02 260 / 0.05);
+}
+
+.glass-sidebar [data-sidebar="header"] {
+  border-bottom: 1px solid color-mix(in oklab, var(--border) 68%, transparent);
+}
+
+.glass-sidebar [data-sidebar="footer"] {
+  border-top: 1px solid color-mix(in oklab, var(--border) 68%, transparent);
+}
+
 .glass-input {
   background: var(--glass-bg-light);
   -webkit-backdrop-filter: blur(var(--blur-glass-sm));
@@ -590,6 +612,20 @@
   );
 }
 
+.surface-page-shell {
+  border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
+  box-shadow:
+    0 24px 56px oklch(0.12 0.02 260 / 0.09),
+    inset 0 1px 0 0 oklch(1 0 0 / 0.22);
+}
+
+.surface-toolbar {
+  background: color-mix(in srgb, var(--surface-1) 94%, transparent);
+  color: var(--surface-foreground);
+  border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
+  box-shadow: 0 10px 24px oklch(0.12 0.02 260 / 0.07);
+}
+
 [data-slot="card"].surface-card,
 .surface-card {
   background: var(--surface-1);
@@ -678,4 +714,20 @@ body {
 
 body {
   color: var(--foreground);
+}
+
+.dark .glass-sidebar [data-sidebar="sidebar"] {
+  box-shadow:
+    inset -1px 0 0 0 oklch(0.58 0.03 270 / 0.08),
+    12px 0 32px oklch(0.03 0.02 265 / 0.32);
+}
+
+.dark .surface-page-shell {
+  box-shadow:
+    0 24px 56px oklch(0.03 0.02 265 / 0.44),
+    inset 0 1px 0 0 oklch(0.58 0.03 270 / 0.08);
+}
+
+.dark .surface-toolbar {
+  box-shadow: 0 10px 24px oklch(0.03 0.02 265 / 0.32);
 }
