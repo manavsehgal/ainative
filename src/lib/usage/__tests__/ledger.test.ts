@@ -212,12 +212,14 @@ describe("usage ledger", () => {
         modelId: "claude-sonnet-4-20250514",
         costMicros: 21_000,
         runs: 1,
+        unknownPricingRuns: 0,
       }),
       expect.objectContaining({
         providerId: "openai",
         modelId: "codex-mini-latest",
         costMicros: 5_850,
         runs: 1,
+        unknownPricingRuns: 0,
       }),
     ]);
 
@@ -229,6 +231,53 @@ describe("usage ledger", () => {
         workflowName: "Usage Workflow",
         scheduleName: "Usage Schedule",
         projectName: "Usage Project",
+      })
+    );
+  });
+
+  it("filters audit rows by runtime, status, activity type, and date range", async () => {
+    const { listUsageAuditEntries, recordUsageLedgerEntry } = await loadUsageModules();
+
+    await recordUsageLedgerEntry({
+      activityType: "task_assist",
+      runtimeId: "claude-code",
+      providerId: "anthropic",
+      modelId: "claude-sonnet-4-20250514",
+      inputTokens: 400,
+      outputTokens: 200,
+      totalTokens: 600,
+      status: "completed",
+      startedAt: new Date("2026-03-10T08:00:00.000Z"),
+      finishedAt: new Date("2026-03-10T08:01:00.000Z"),
+    });
+
+    await recordUsageLedgerEntry({
+      activityType: "task_run",
+      runtimeId: "openai-codex-app-server",
+      providerId: "openai",
+      modelId: "codex-mini-latest",
+      inputTokens: 600,
+      outputTokens: 300,
+      totalTokens: 900,
+      status: "failed",
+      startedAt: new Date("2026-03-11T09:00:00.000Z"),
+      finishedAt: new Date("2026-03-11T09:01:00.000Z"),
+    });
+
+    const filtered = await listUsageAuditEntries({
+      runtimeIds: ["openai-codex-app-server"],
+      statuses: ["failed"],
+      activityTypes: ["task_run"],
+      startedAt: new Date("2026-03-11T00:00:00.000Z"),
+      finishedAt: new Date("2026-03-11T23:59:59.999Z"),
+    });
+
+    expect(filtered).toHaveLength(1);
+    expect(filtered[0]).toEqual(
+      expect.objectContaining({
+        runtimeId: "openai-codex-app-server",
+        status: "failed",
+        activityType: "task_run",
       })
     );
   });

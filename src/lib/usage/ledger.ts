@@ -68,6 +68,18 @@ export interface UsageAuditEntry {
   projectName: string | null;
 }
 
+export interface ProviderModelBreakdownEntry {
+  providerId: string;
+  modelId: string | null;
+  runtimeId: string;
+  costMicros: number;
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+  runs: number;
+  unknownPricingRuns: number;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
@@ -304,7 +316,7 @@ export async function getDailyTokenTotals(days = 7) {
 export async function getProviderModelBreakdown(options?: {
   startedAt?: Date;
   finishedAt?: Date;
-}) {
+}): Promise<ProviderModelBreakdownEntry[]> {
   const conditions = [];
   if (options?.startedAt) {
     conditions.push(gte(usageLedger.finishedAt, options.startedAt));
@@ -329,6 +341,7 @@ export async function getProviderModelBreakdown(options?: {
       outputTokens: number;
       totalTokens: number;
       runs: number;
+      unknownPricingRuns: number;
     }
   >();
 
@@ -343,6 +356,7 @@ export async function getProviderModelBreakdown(options?: {
       outputTokens: 0,
       totalTokens: 0,
       runs: 0,
+      unknownPricingRuns: 0,
     };
 
     bucket.costMicros += row.costMicros ?? 0;
@@ -350,6 +364,9 @@ export async function getProviderModelBreakdown(options?: {
     bucket.outputTokens += row.outputTokens ?? 0;
     bucket.totalTokens += row.totalTokens ?? 0;
     bucket.runs += 1;
+    if (row.status === "unknown_pricing") {
+      bucket.unknownPricingRuns += 1;
+    }
     totals.set(key, bucket);
   });
 
@@ -363,6 +380,9 @@ export async function listUsageAuditEntries(options?: {
   offset?: number;
   statuses?: UsageLedgerStatus[];
   activityTypes?: UsageActivityType[];
+  runtimeIds?: string[];
+  startedAt?: Date;
+  finishedAt?: Date;
 }) {
   const conditions = [];
   if (options?.statuses?.length) {
@@ -370,6 +390,15 @@ export async function listUsageAuditEntries(options?: {
   }
   if (options?.activityTypes?.length) {
     conditions.push(inArray(usageLedger.activityType, options.activityTypes));
+  }
+  if (options?.runtimeIds?.length) {
+    conditions.push(inArray(usageLedger.runtimeId, options.runtimeIds));
+  }
+  if (options?.startedAt) {
+    conditions.push(gte(usageLedger.finishedAt, options.startedAt));
+  }
+  if (options?.finishedAt) {
+    conditions.push(lte(usageLedger.finishedAt, options.finishedAt));
   }
 
   const rows = await db

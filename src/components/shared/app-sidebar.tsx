@@ -12,6 +12,7 @@ import {
   FileText,
   Bot,
   Clock,
+  Wallet,
   Settings,
 } from "lucide-react";
 import {
@@ -42,6 +43,7 @@ const navItems = [
   { title: "Documents", href: "/documents", icon: FileText, badge: false },
   { title: "Profiles", href: "/profiles", icon: Bot, badge: false },
   { title: "Schedules", href: "/schedules", icon: Clock, badge: false },
+  { title: "Cost & Usage", href: "/costs", icon: Wallet, badge: false },
   { title: "Settings", href: "/settings", icon: Settings, badge: false },
 ];
 

@@ -22,6 +22,7 @@ import {
   FileText,
   Bot,
   Clock,
+  Wallet,
   Settings,
   Plus,
   Sun,
@@ -52,6 +53,7 @@ const navigationItems = [
   { title: "Documents", href: "/documents", icon: FileText, keywords: "files uploads attachments" },
   { title: "Profiles", href: "/profiles", icon: Bot, keywords: "agents configuration" },
   { title: "Schedules", href: "/schedules", icon: Clock, keywords: "cron recurring timer" },
+  { title: "Cost & Usage", href: "/costs", icon: Wallet, keywords: "spend tokens metering budget analytics" },
   { title: "Settings", href: "/settings", icon: Settings, keywords: "preferences configuration" },
 ];
 
