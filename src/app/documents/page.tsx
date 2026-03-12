@@ -16,6 +16,7 @@ export default async function DocumentsPage() {
       mimeType: documents.mimeType,
       size: documents.size,
       storagePath: documents.storagePath,
+      version: documents.version,
       direction: documents.direction,
       category: documents.category,
       status: documents.status,

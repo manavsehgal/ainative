@@ -45,6 +45,7 @@ export function DocumentTable({
             </TableHead>
             <TableHead>Name</TableHead>
             <TableHead className="hidden md:table-cell">Size</TableHead>
+            <TableHead className="hidden md:table-cell">Direction</TableHead>
             <TableHead className="hidden lg:table-cell">Task</TableHead>
             <TableHead className="hidden lg:table-cell">Project</TableHead>
             <TableHead>Status</TableHead>
@@ -75,6 +76,16 @@ export function DocumentTable({
                 </TableCell>
                 <TableCell className="hidden md:table-cell text-muted-foreground text-sm">
                   {formatSize(doc.size)}
+                </TableCell>
+                <TableCell className="hidden md:table-cell">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="capitalize">
+                      {doc.direction}
+                    </Badge>
+                    {doc.direction === "output" && (
+                      <span className="text-xs text-muted-foreground">v{doc.version}</span>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell className="hidden lg:table-cell text-sm">
                   {doc.taskTitle ? (

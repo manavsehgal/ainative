@@ -5,7 +5,7 @@
 
 import { db } from "@/lib/db";
 import { documents } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { DocumentRow } from "@/lib/db/schema";
 
 const MAX_INLINE_TEXT = 10_000;
@@ -59,7 +59,7 @@ export async function buildDocumentContext(
   const docs = await db
     .select()
     .from(documents)
-    .where(eq(documents.taskId, taskId));
+    .where(and(eq(documents.taskId, taskId), eq(documents.direction, "input")));
 
   if (docs.length === 0) return null;
 

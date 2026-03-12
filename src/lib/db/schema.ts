@@ -115,6 +115,7 @@ export const documents = sqliteTable(
     mimeType: text("mime_type").notNull(),
     size: integer("size").notNull(),
     storagePath: text("storage_path").notNull(),
+    version: integer("version").default(1).notNull(),
     direction: text("direction", { enum: ["input", "output"] })
       .default("input")
       .notNull(),

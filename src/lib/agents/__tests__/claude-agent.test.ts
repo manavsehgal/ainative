@@ -13,6 +13,9 @@ const {
   mockRemoveExecution,
   mockGetAuthEnv,
   mockUpdateAuthStatus,
+  mockPrepareTaskOutputDirectory,
+  mockBuildTaskOutputInstructions,
+  mockScanTaskOutputDocuments,
 } = vi.hoisted(() => {
   const mockFrom = vi.fn();
   const mockWhere = vi.fn();
@@ -31,6 +34,11 @@ const {
   const mockRemoveExecution = vi.fn();
   const mockGetAuthEnv = vi.fn().mockResolvedValue(undefined);
   const mockUpdateAuthStatus = vi.fn().mockResolvedValue(undefined);
+  const mockPrepareTaskOutputDirectory = vi.fn().mockResolvedValue("/tmp/stagent-outputs/task-1");
+  const mockBuildTaskOutputInstructions = vi
+    .fn()
+    .mockReturnValue("Write outputs to /tmp/stagent-outputs/task-1");
+  const mockScanTaskOutputDocuments = vi.fn().mockResolvedValue([]);
   return {
     mockDb,
     mockFrom,
@@ -42,6 +50,9 @@ const {
     mockRemoveExecution,
     mockGetAuthEnv,
     mockUpdateAuthStatus,
+    mockPrepareTaskOutputDirectory,
+    mockBuildTaskOutputInstructions,
+    mockScanTaskOutputDocuments,
   };
 });
 
@@ -79,6 +90,11 @@ vi.mock("@/lib/agents/profiles/registry", () => ({
 }));
 vi.mock("@/lib/documents/context-builder", () => ({
   buildDocumentContext: vi.fn().mockResolvedValue(""),
+}));
+vi.mock("@/lib/documents/output-scanner", () => ({
+  prepareTaskOutputDirectory: mockPrepareTaskOutputDirectory,
+  buildTaskOutputInstructions: mockBuildTaskOutputInstructions,
+  scanTaskOutputDocuments: mockScanTaskOutputDocuments,
 }));
 vi.mock("@/lib/settings/permissions", () => ({
   isToolAllowed: vi.fn().mockResolvedValue(false),
@@ -141,6 +157,11 @@ beforeEach(() => {
   mockDb.insert.mockReturnValue({ values: mockValues });
   mockValues.mockResolvedValue(undefined);
   mockSetWhere.mockResolvedValue(undefined);
+  mockPrepareTaskOutputDirectory.mockResolvedValue("/tmp/stagent-outputs/task-1");
+  mockBuildTaskOutputInstructions.mockReturnValue(
+    "Write outputs to /tmp/stagent-outputs/task-1"
+  );
+  mockScanTaskOutputDocuments.mockResolvedValue([]);
 });
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -260,9 +281,11 @@ describe("executeClaudeTask", () => {
 
     await executeClaudeTask("task-1");
 
-    // query should have been called with prompt = title
+    // query prompt should include output instructions and fall back to the title
     expect(mockQuery).toHaveBeenCalledWith(
-      expect.objectContaining({ prompt: "Test Task" })
+      expect.objectContaining({
+        prompt: "Write outputs to /tmp/stagent-outputs/task-1\n\nTest Task",
+      })
     );
   });
 });

@@ -101,6 +101,7 @@ sqlite.exec(`
     mime_type TEXT NOT NULL,
     size INTEGER NOT NULL,
     storage_path TEXT NOT NULL,
+    version INTEGER DEFAULT 1 NOT NULL,
     direction TEXT DEFAULT 'input' NOT NULL,
     category TEXT,
     status TEXT DEFAULT 'uploaded' NOT NULL,
@@ -207,6 +208,12 @@ try {
 // Migration: add assigned_agent column to existing schedules table (safe to re-run)
 try {
   sqlite.exec(`ALTER TABLE schedules ADD COLUMN assigned_agent TEXT;`);
+} catch {
+  // Column already exists — ignore
+}
+
+try {
+  sqlite.exec(`ALTER TABLE documents ADD COLUMN version INTEGER NOT NULL DEFAULT 1;`);
 } catch {
   // Column already exists — ignore
 }

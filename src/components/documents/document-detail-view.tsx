@@ -181,7 +181,7 @@ export function DocumentDetailView({ documentId, initialDocument }: DocumentDeta
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" asChild>
             <a
-              href={`/api/uploads/${doc.id}`}
+              href={`/api/documents/${doc.id}/file`}
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -261,6 +261,12 @@ export function DocumentDetailView({ documentId, initialDocument }: DocumentDeta
               <DirectionIcon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               <span className="capitalize">{doc.direction}</span>
             </div>
+            {doc.direction === "output" && (
+              <div className="flex items-center gap-2 text-sm">
+                <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <span>Version {doc.version}</span>
+              </div>
+            )}
             {/* Date */}
             <div className="flex items-center gap-2 text-sm">
               <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />

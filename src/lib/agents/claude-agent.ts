@@ -6,6 +6,11 @@ import { setExecution, removeExecution } from "./execution-manager";
 import { MAX_RESUME_COUNT } from "@/lib/constants/task-status";
 import { getAuthEnv, updateAuthStatus } from "@/lib/settings/auth";
 import { buildDocumentContext } from "@/lib/documents/context-builder";
+import {
+  buildTaskOutputInstructions,
+  prepareTaskOutputDirectory,
+  scanTaskOutputDocuments,
+} from "@/lib/documents/output-scanner";
 import { getProfile } from "./profiles/registry";
 import { resolveProfileRuntimePayload } from "./profiles/compatibility";
 import type { CanUseToolPolicy } from "./profiles/types";
@@ -214,6 +219,21 @@ async function processAgentStream(
         timestamp: new Date(),
       });
 
+      try {
+        await scanTaskOutputDocuments(taskId);
+      } catch (error) {
+        await db.insert(agentLogs).values({
+          id: crypto.randomUUID(),
+          taskId,
+          agentType: agentProfileId,
+          event: "output_scan_failed",
+          payload: JSON.stringify({
+            error: error instanceof Error ? error.message : String(error),
+          }),
+          timestamp: new Date(),
+        });
+      }
+
       await finalizeTaskUsage(usageState, "completed");
     }
   }
@@ -258,6 +278,7 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
   });
 
   try {
+    await prepareTaskOutputDirectory(taskId, { clearExisting: true });
     const profile = getProfile(task.agentProfile ?? "general");
     const payload = profile
       ? resolveProfileRuntimePayload(profile, "claude-code")
@@ -268,7 +289,10 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
     const systemPrompt = payload?.instructions ?? "";
     const basePrompt = task.description || task.title;
     const docContext = await buildDocumentContext(taskId);
-    const prompt = [systemPrompt, docContext, basePrompt].filter(Boolean).join("\n\n");
+    const outputInstructions = buildTaskOutputInstructions(taskId);
+    const prompt = [systemPrompt, docContext, outputInstructions, basePrompt]
+      .filter(Boolean)
+      .join("\n\n");
 
     // Resolve working directory: project's workingDirectory > process.cwd()
     let cwd = process.cwd();
@@ -372,6 +396,7 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
   });
 
   try {
+    await prepareTaskOutputDirectory(taskId);
     const profile = getProfile(profileId);
     const payload = profile
       ? resolveProfileRuntimePayload(profile, "claude-code")
@@ -382,7 +407,10 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
     const systemPrompt = payload?.instructions ?? "";
     const basePrompt = task.description || task.title;
     const docContext = await buildDocumentContext(taskId);
-    const prompt = [systemPrompt, docContext, basePrompt].filter(Boolean).join("\n\n");
+    const outputInstructions = buildTaskOutputInstructions(taskId);
+    const prompt = [systemPrompt, docContext, outputInstructions, basePrompt]
+      .filter(Boolean)
+      .join("\n\n");
 
     // Resolve working directory: project's workingDirectory > process.cwd()
     let cwd = process.cwd();

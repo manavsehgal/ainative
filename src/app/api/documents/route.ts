@@ -8,6 +8,7 @@ export async function GET(req: NextRequest) {
   const taskId = url.searchParams.get("taskId");
   const projectId = url.searchParams.get("projectId");
   const status = url.searchParams.get("status");
+  const direction = url.searchParams.get("direction");
   const search = url.searchParams.get("search");
 
   const conditions = [];
@@ -15,6 +16,7 @@ export async function GET(req: NextRequest) {
   if (taskId) conditions.push(eq(documents.taskId, taskId));
   if (projectId) conditions.push(eq(documents.projectId, projectId));
   if (status) conditions.push(eq(documents.status, status as "uploaded" | "processing" | "ready" | "error"));
+  if (direction) conditions.push(eq(documents.direction, direction as "input" | "output"));
 
   if (search) {
     conditions.push(
@@ -35,6 +37,7 @@ export async function GET(req: NextRequest) {
       mimeType: documents.mimeType,
       size: documents.size,
       storagePath: documents.storagePath,
+      version: documents.version,
       direction: documents.direction,
       category: documents.category,
       status: documents.status,

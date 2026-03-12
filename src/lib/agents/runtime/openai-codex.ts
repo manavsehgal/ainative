@@ -10,6 +10,11 @@ import { getProfile } from "@/lib/agents/profiles/registry";
 import { resolveProfileRuntimePayload } from "@/lib/agents/profiles/compatibility";
 import { buildDocumentContext } from "@/lib/documents/context-builder";
 import {
+  buildTaskOutputInstructions,
+  prepareTaskOutputDirectory,
+  scanTaskOutputDocuments,
+} from "@/lib/documents/output-scanner";
+import {
   getOpenAIApiKey,
   updateOpenAIAuthStatus,
 } from "@/lib/settings/openai-auth";
@@ -127,7 +132,8 @@ const TASK_ASSIST_OUTPUT_SCHEMA = {
 } as const;
 
 async function resolveTaskExecutionContext(
-  taskId: string
+  taskId: string,
+  options: { resume?: boolean } = {}
 ): Promise<TaskExecutionContext> {
   const [task] = await db.select().from(tasks).where(eq(tasks.id, taskId));
   if (!task) throw new Error(`Task ${taskId} not found`);
@@ -144,7 +150,11 @@ async function resolveTaskExecutionContext(
     );
   }
   const docContext = await buildDocumentContext(taskId);
-  const prompt = [docContext, task.description || task.title]
+  await prepareTaskOutputDirectory(taskId, {
+    clearExisting: !options.resume,
+  });
+  const outputInstructions = buildTaskOutputInstructions(taskId);
+  const prompt = [docContext, outputInstructions, task.description || task.title]
     .filter(Boolean)
     .join("\n\n");
 
@@ -345,6 +355,14 @@ async function markTaskCompleted(
     body: resultText.slice(0, 500),
     createdAt: new Date(),
   });
+
+  try {
+    await scanTaskOutputDocuments(taskId);
+  } catch (error) {
+    await insertLog(taskId, "output_scan_failed", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
 }
 
 async function markTaskFailed(taskId: string, title: string, message: string) {
@@ -668,9 +686,12 @@ async function runAssistTurn({
   }
 }
 
-async function executeOpenAICodexTask(taskId: string): Promise<void> {
+async function executeOpenAICodexTask(
+  taskId: string,
+  options: { resume?: boolean } = {}
+): Promise<void> {
   const { task, profileId, instructions, prompt, cwd } =
-    await resolveTaskExecutionContext(taskId);
+    await resolveTaskExecutionContext(taskId, options);
   const { apiKey, source } = await getOpenAIApiKey();
 
   if (!apiKey) {
@@ -944,7 +965,7 @@ async function resumeOpenAICodexTask(taskId: string) {
     })
     .where(eq(tasks.id, taskId));
 
-  await executeOpenAICodexTask(taskId);
+  await executeOpenAICodexTask(taskId, { resume: true });
 }
 
 async function cancelOpenAICodexTask(taskId: string) {

@@ -31,6 +31,7 @@ export function DocumentBrowser({
   const [view, setView] = useState<"table" | "grid">("table");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [directionFilter, setDirectionFilter] = useState<string>("all");
   const [projectFilter, setProjectFilter] = useState<string>("all");
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -59,6 +60,7 @@ export function DocumentBrowser({
       return false;
     }
     if (statusFilter !== "all" && doc.status !== statusFilter) return false;
+    if (directionFilter !== "all" && doc.direction !== directionFilter) return false;
     if (projectFilter !== "all" && doc.projectId !== projectFilter) return false;
     return true;
   });
@@ -129,6 +131,17 @@ export function DocumentBrowser({
             <SelectItem value="processing">Processing</SelectItem>
             <SelectItem value="ready">Ready</SelectItem>
             <SelectItem value="error">Error</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={directionFilter} onValueChange={setDirectionFilter}>
+          <SelectTrigger className="w-[150px]">
+            <SelectValue placeholder="Direction" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All directions</SelectItem>
+            <SelectItem value="input">Inputs</SelectItem>
+            <SelectItem value="output">Outputs</SelectItem>
           </SelectContent>
         </Select>
 

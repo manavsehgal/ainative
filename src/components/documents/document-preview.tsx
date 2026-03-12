@@ -20,7 +20,7 @@ export function DocumentPreview({ document: doc }: DocumentPreviewProps) {
     return (
       <div className="rounded-md overflow-hidden border border-border bg-muted/30 flex items-center justify-center">
         <img
-          src={`/api/uploads/${doc.id}`}
+          src={`/api/documents/${doc.id}/file?inline=1`}
           alt={doc.originalName}
           className="max-h-64 object-contain"
         />
@@ -32,7 +32,7 @@ export function DocumentPreview({ document: doc }: DocumentPreviewProps) {
     return (
       <div className="rounded-md overflow-hidden border border-border">
         <iframe
-          src={`/api/uploads/${doc.id}`}
+          src={`/api/documents/${doc.id}/file?inline=1`}
           className="w-full h-64"
           title={doc.originalName}
         />

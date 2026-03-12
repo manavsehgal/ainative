@@ -48,18 +48,6 @@ export function TaskDetailView({ taskId, initialTask }: TaskDetailViewProps) {
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [docs, setDocs] = useState<DocumentRow[]>([]);
 
-  const refresh = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/tasks/${taskId}`);
-      if (res.ok) {
-        setTask(await res.json());
-      }
-    } catch {
-      // silent
-    }
-    setLoaded(true);
-  }, [taskId]);
-
   const fetchDocs = useCallback(async () => {
     try {
       const res = await fetch(`/api/documents?taskId=${taskId}`);
@@ -70,6 +58,19 @@ export function TaskDetailView({ taskId, initialTask }: TaskDetailViewProps) {
       // silent — attachments are supplementary
     }
   }, [taskId]);
+
+  const refresh = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`);
+      if (res.ok) {
+        setTask(await res.json());
+      }
+    } catch {
+      // silent
+    }
+    await fetchDocs();
+    setLoaded(true);
+  }, [taskId, fetchDocs]);
 
   useEffect(() => {
     // If server provided initial data, only fetch supplementary data (docs)
@@ -187,6 +188,9 @@ export function TaskDetailView({ taskId, initialTask }: TaskDetailViewProps) {
     return <p className="text-muted-foreground">Task not found.</p>;
   }
 
+  const inputDocs = docs.filter((doc) => doc.direction === "input");
+  const outputDocs = docs.filter((doc) => doc.direction === "output");
+
   return (
     <div className="space-y-6" aria-live="polite">
       {/* Header */}
@@ -285,19 +289,29 @@ export function TaskDetailView({ taskId, initialTask }: TaskDetailViewProps) {
         </Card>
       )}
 
-      {/* Attachments */}
+      {/* Documents */}
       {docs.length > 0 && (
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">
-              Attachments ({docs.length})
+              Documents ({docs.length})
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <TaskAttachments
-              documents={docs}
-              onDeleted={fetchDocs}
-            />
+          <CardContent className="space-y-5">
+            {inputDocs.length > 0 && (
+              <TaskAttachments
+                documents={inputDocs}
+                title={`Input Attachments (${inputDocs.length})`}
+                onDeleted={fetchDocs}
+              />
+            )}
+            {outputDocs.length > 0 && (
+              <TaskAttachments
+                documents={outputDocs}
+                title={`Generated Outputs (${outputDocs.length})`}
+                onDeleted={fetchDocs}
+              />
+            )}
           </CardContent>
         </Card>
       )}

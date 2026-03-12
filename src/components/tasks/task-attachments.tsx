@@ -8,6 +8,7 @@ import type { DocumentRow } from "@/lib/db/schema";
 
 interface TaskAttachmentsProps {
   documents: DocumentRow[];
+  title?: string;
   onDeleted?: () => void;
 }
 
@@ -30,18 +31,22 @@ function getFileIcon(mimeType: string) {
   return File;
 }
 
-export function TaskAttachments({ documents, onDeleted }: TaskAttachmentsProps) {
+export function TaskAttachments({
+  documents,
+  title = "Attachments",
+  onDeleted,
+}: TaskAttachmentsProps) {
   const [deleting, setDeleting] = useState<string | null>(null);
 
   async function handleDelete(docId: string) {
     setDeleting(docId);
     try {
-      const res = await fetch(`/api/uploads/${docId}`, { method: "DELETE" });
+      const res = await fetch(`/api/documents/${docId}`, { method: "DELETE" });
       if (res.ok) {
-        toast.success("Attachment removed");
+        toast.success("Document removed");
         onDeleted?.();
       } else {
-        toast.error("Failed to remove attachment");
+        toast.error("Failed to remove document");
       }
     } catch {
       toast.error("Network error");
@@ -54,7 +59,7 @@ export function TaskAttachments({ documents, onDeleted }: TaskAttachmentsProps) 
 
   return (
     <div>
-      <h4 className="text-sm font-medium mb-2">Attachments</h4>
+      <h4 className="text-sm font-medium mb-2">{title}</h4>
       <div className="space-y-1.5">
         {documents.map((doc) => {
           const Icon = getFileIcon(doc.mimeType);
@@ -65,11 +70,16 @@ export function TaskAttachments({ documents, onDeleted }: TaskAttachmentsProps) 
             >
               <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               <span className="flex-1 truncate">{doc.originalName}</span>
+              {doc.direction === "output" && (
+                <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                  v{doc.version}
+                </span>
+              )}
               <span className="text-xs text-muted-foreground">
                 {formatSize(doc.size)}
               </span>
               <a
-                href={`/api/uploads/${doc.id}`}
+                href={`/api/documents/${doc.id}/file`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="opacity-0 group-hover:opacity-100 transition-opacity"

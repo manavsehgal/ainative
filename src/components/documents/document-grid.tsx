@@ -45,7 +45,7 @@ export function DocumentGrid({
             <div className="flex flex-col items-center gap-2 py-3">
               {isImage ? (
                 <img
-                  src={`/api/uploads/${doc.id}`}
+                  src={`/api/documents/${doc.id}/file?inline=1`}
                   alt={doc.originalName}
                   className="h-16 w-16 object-cover rounded"
                 />
@@ -65,6 +65,10 @@ export function DocumentGrid({
               >
                 {doc.status}
               </Badge>
+            </div>
+            <div className="mt-1 flex items-center justify-between text-[10px] text-muted-foreground">
+              <span className="capitalize">{doc.direction}</span>
+              {doc.direction === "output" && <span>v{doc.version}</span>}
             </div>
           </Card>
         );
