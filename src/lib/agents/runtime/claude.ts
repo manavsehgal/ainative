@@ -15,6 +15,12 @@ import type {
 } from "./types";
 import type { ProfileTestResult, ProfileTestReport } from "@/lib/agents/profiles/test-types";
 import type { TaskAssistResponse } from "./task-assist-types";
+import {
+  extractUsageSnapshot,
+  mergeUsageSnapshot,
+  recordUsageLedgerEntry,
+  type UsageSnapshot,
+} from "@/lib/usage/ledger";
 
 const TASK_ASSIST_SYSTEM_PROMPT = `You are an AI task definition assistant. Analyze the given task and return ONLY a JSON object (no markdown, no code fences) with:
 - "improvedDescription": A clearer version of the task for an AI agent to execute
@@ -26,10 +32,12 @@ const TASK_ASSIST_SYSTEM_PROMPT = `You are an AI task definition assistant. Anal
 
 async function collectResultText(
   response: AsyncIterable<Record<string, unknown>>
-): Promise<string> {
+): Promise<{ resultText: string; usage: UsageSnapshot }> {
   let resultText = "";
+  let usage: UsageSnapshot = {};
 
   for await (const raw of response) {
+    usage = mergeUsageSnapshot(usage, extractUsageSnapshot(raw));
     if (raw.type === "result" && "result" in raw) {
       resultText =
         typeof raw.result === "string"
@@ -39,7 +47,7 @@ async function collectResultText(
     }
   }
 
-  return resultText;
+  return { resultText, usage };
 }
 
 async function runSingleProfileTest(
@@ -56,6 +64,9 @@ async function runSingleProfileTest(
   const authEnv = await getAuthEnv();
   const abortController = new AbortController();
   const timeout = setTimeout(() => abortController.abort(), 30_000);
+  const startedAt = new Date();
+  let usage: UsageSnapshot = {};
+  let ledgerRecorded = false;
 
   try {
     const response = query({
@@ -70,6 +81,7 @@ async function runSingleProfileTest(
 
     let responseText = "";
     for await (const event of response as AsyncIterable<Record<string, unknown>>) {
+      usage = mergeUsageSnapshot(usage, extractUsageSnapshot(event));
       if (event.type === "content_block_delta") {
         const delta = event.delta as Record<string, unknown> | undefined;
         if (delta?.type === "text_delta" && typeof delta.text === "string") {
@@ -91,6 +103,20 @@ async function runSingleProfileTest(
       (kw) => !lowerResponse.includes(kw.toLowerCase())
     );
 
+    await recordUsageLedgerEntry({
+      activityType: "profile_test",
+      runtimeId: "claude-code",
+      providerId: "anthropic",
+      modelId: usage.modelId ?? null,
+      inputTokens: usage.inputTokens ?? null,
+      outputTokens: usage.outputTokens ?? null,
+      totalTokens: usage.totalTokens ?? null,
+      status: "completed",
+      startedAt,
+      finishedAt: new Date(),
+    });
+    ledgerRecorded = true;
+
     return {
       task: test.task,
       expectedKeywords: test.expectedKeywords,
@@ -99,6 +125,19 @@ async function runSingleProfileTest(
       passed: missingKeywords.length === 0,
     };
   } catch {
+    await recordUsageLedgerEntry({
+      activityType: "profile_test",
+      runtimeId: "claude-code",
+      providerId: "anthropic",
+      modelId: usage.modelId ?? null,
+      inputTokens: usage.inputTokens ?? null,
+      outputTokens: usage.outputTokens ?? null,
+      totalTokens: usage.totalTokens ?? null,
+      status: "failed",
+      startedAt,
+      finishedAt: new Date(),
+    });
+    ledgerRecorded = true;
     return {
       task: test.task,
       expectedKeywords: test.expectedKeywords,
@@ -107,6 +146,20 @@ async function runSingleProfileTest(
       passed: false,
     };
   } finally {
+    if (!ledgerRecorded && (abortController.signal.aborted || usage.modelId || usage.totalTokens != null)) {
+      await recordUsageLedgerEntry({
+        activityType: "profile_test",
+        runtimeId: "claude-code",
+        providerId: "anthropic",
+        modelId: usage.modelId ?? null,
+        inputTokens: usage.inputTokens ?? null,
+        outputTokens: usage.outputTokens ?? null,
+        totalTokens: usage.totalTokens ?? null,
+        status: "failed",
+        startedAt,
+        finishedAt: new Date(),
+      }).catch(() => {});
+    }
     clearTimeout(timeout);
   }
 }
@@ -153,28 +206,63 @@ async function runClaudeTaskAssist(
 
   const authEnv = await getAuthEnv();
   const prompt = `${TASK_ASSIST_SYSTEM_PROMPT}\n\n${userMessage}`;
-  const response = query({
-    prompt,
-    options: {
-      cwd: process.cwd(),
-      env: buildClaudeSdkEnv(authEnv),
-    },
-  });
+  const startedAt = new Date();
+  let usage: UsageSnapshot = {};
 
-  const resultText = await collectResultText(
-    response as AsyncIterable<Record<string, unknown>>
-  );
+  try {
+    const response = query({
+      prompt,
+      options: {
+        cwd: process.cwd(),
+        env: buildClaudeSdkEnv(authEnv),
+      },
+    });
 
-  if (!resultText) {
-    throw new Error("No result from AI");
+    const collected = await collectResultText(
+      response as AsyncIterable<Record<string, unknown>>
+    );
+    usage = collected.usage;
+
+    if (!collected.resultText) {
+      throw new Error("No result from AI");
+    }
+
+    const jsonMatch = collected.resultText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error("Could not parse AI response");
+    }
+
+    const parsed = JSON.parse(jsonMatch[0]) as TaskAssistResponse;
+
+    await recordUsageLedgerEntry({
+      activityType: "task_assist",
+      runtimeId: "claude-code",
+      providerId: "anthropic",
+      modelId: usage.modelId ?? null,
+      inputTokens: usage.inputTokens ?? null,
+      outputTokens: usage.outputTokens ?? null,
+      totalTokens: usage.totalTokens ?? null,
+      status: "completed",
+      startedAt,
+      finishedAt: new Date(),
+    });
+
+    return parsed;
+  } catch (error) {
+    await recordUsageLedgerEntry({
+      activityType: "task_assist",
+      runtimeId: "claude-code",
+      providerId: "anthropic",
+      modelId: usage.modelId ?? null,
+      inputTokens: usage.inputTokens ?? null,
+      outputTokens: usage.outputTokens ?? null,
+      totalTokens: usage.totalTokens ?? null,
+      status: "failed",
+      startedAt,
+      finishedAt: new Date(),
+    });
+    throw error;
   }
-
-  const jsonMatch = resultText.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    throw new Error("Could not parse AI response");
-  }
-
-  return JSON.parse(jsonMatch[0]) as TaskAssistResponse;
 }
 
 async function testClaudeConnection(): Promise<RuntimeConnectionResult> {

@@ -7,6 +7,7 @@ import {
   workflows,
   schedules,
   projects,
+  usageLedger,
 } from "@/lib/db/schema";
 import { readdirSync, unlinkSync, mkdirSync } from "fs";
 import { join } from "path";
@@ -26,6 +27,7 @@ export function clearAllData() {
   const sampleProfilesDeleted = clearSampleProfiles();
 
   // Delete in FK-safe order: children before parents
+  const usageLedgerDeleted = db.delete(usageLedger).run().changes;
   const logsDeleted = db.delete(agentLogs).run().changes;
   const notificationsDeleted = db.delete(notifications).run().changes;
   const documentsDeleted = db.delete(documents).run().changes;
@@ -52,6 +54,7 @@ export function clearAllData() {
     tasks: tasksDeleted,
     workflows: workflowsDeleted,
     schedules: schedulesDeleted,
+    usageLedger: usageLedgerDeleted,
     agentLogs: logsDeleted,
     notifications: notificationsDeleted,
     documents: documentsDeleted,

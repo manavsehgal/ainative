@@ -28,6 +28,8 @@ sqlite.exec(`
   CREATE TABLE IF NOT EXISTS tasks (
     id TEXT PRIMARY KEY NOT NULL,
     project_id TEXT,
+    workflow_id TEXT,
+    schedule_id TEXT,
     title TEXT NOT NULL,
     description TEXT,
     status TEXT DEFAULT 'planned' NOT NULL,
@@ -39,7 +41,9 @@ sqlite.exec(`
     resume_count INTEGER DEFAULT 0 NOT NULL,
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL,
-    FOREIGN KEY (project_id) REFERENCES projects(id) ON UPDATE NO ACTION ON DELETE NO ACTION
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON UPDATE NO ACTION ON DELETE NO ACTION,
+    FOREIGN KEY (workflow_id) REFERENCES workflows(id) ON UPDATE NO ACTION ON DELETE NO ACTION,
+    FOREIGN KEY (schedule_id) REFERENCES schedules(id) ON UPDATE NO ACTION ON DELETE NO ACTION
   );
 
   CREATE TABLE IF NOT EXISTS workflows (
@@ -137,6 +141,36 @@ sqlite.exec(`
   CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(read);
   CREATE INDEX IF NOT EXISTS idx_documents_task_id ON documents(task_id);
   CREATE INDEX IF NOT EXISTS idx_documents_project_id ON documents(project_id);
+
+  CREATE TABLE IF NOT EXISTS usage_ledger (
+    id TEXT PRIMARY KEY NOT NULL,
+    task_id TEXT,
+    workflow_id TEXT,
+    schedule_id TEXT,
+    project_id TEXT,
+    activity_type TEXT NOT NULL,
+    runtime_id TEXT NOT NULL,
+    provider_id TEXT NOT NULL,
+    model_id TEXT,
+    status TEXT NOT NULL,
+    input_tokens INTEGER,
+    output_tokens INTEGER,
+    total_tokens INTEGER,
+    cost_micros INTEGER,
+    pricing_version TEXT,
+    started_at INTEGER NOT NULL,
+    finished_at INTEGER NOT NULL,
+    FOREIGN KEY (task_id) REFERENCES tasks(id) ON UPDATE NO ACTION ON DELETE NO ACTION,
+    FOREIGN KEY (workflow_id) REFERENCES workflows(id) ON UPDATE NO ACTION ON DELETE NO ACTION,
+    FOREIGN KEY (schedule_id) REFERENCES schedules(id) ON UPDATE NO ACTION ON DELETE NO ACTION,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON UPDATE NO ACTION ON DELETE NO ACTION
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_usage_ledger_task_id ON usage_ledger(task_id);
+  CREATE INDEX IF NOT EXISTS idx_usage_ledger_activity_type ON usage_ledger(activity_type);
+  CREATE INDEX IF NOT EXISTS idx_usage_ledger_runtime_id ON usage_ledger(runtime_id);
+  CREATE INDEX IF NOT EXISTS idx_usage_ledger_provider_model ON usage_ledger(provider_id, model_id);
+  CREATE INDEX IF NOT EXISTS idx_usage_ledger_finished_at ON usage_ledger(finished_at);
 `);
 
 // Migration: add agent_profile column to existing tasks table (safe to re-run)
@@ -147,6 +181,20 @@ try {
   // Column already exists — ignore
 }
 sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_tasks_agent_profile ON tasks(agent_profile);`);
+
+try {
+  sqlite.exec(`ALTER TABLE tasks ADD COLUMN workflow_id TEXT REFERENCES workflows(id);`);
+} catch {
+  // Column already exists — ignore
+}
+sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_tasks_workflow_id ON tasks(workflow_id);`);
+
+try {
+  sqlite.exec(`ALTER TABLE tasks ADD COLUMN schedule_id TEXT REFERENCES schedules(id);`);
+} catch {
+  // Column already exists — ignore
+}
+sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_tasks_schedule_id ON tasks(schedule_id);`);
 
 // Migration: add working_directory column to existing projects table (safe to re-run)
 // Note: sqlite.exec() here is better-sqlite3's synchronous DDL method, not child_process

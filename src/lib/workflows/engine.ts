@@ -261,6 +261,8 @@ export async function executeChildTask(
   await db.insert(tasks).values({
     id: taskId,
     projectId: workflow?.projectId ?? null,
+    workflowId,
+    scheduleId: null,
     title: `[Workflow] ${name}`,
     description: prompt,
     status: "queued",

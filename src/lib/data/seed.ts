@@ -18,6 +18,8 @@ import { createNotifications } from "./seed-data/notifications";
 import { createSchedules } from "./seed-data/schedules";
 import { upsertSampleProfiles } from "./seed-data/profiles";
 import { processDocument } from "@/lib/documents/processor";
+import { createUsageLedgerSeeds } from "./seed-data/usage-ledger";
+import { recordUsageLedgerEntry } from "@/lib/usage/ledger";
 
 /**
  * Clear all data, then seed with realistic sample data.
@@ -103,6 +105,16 @@ export async function seedSampleData() {
     db.insert(notifications).values(n).run();
   }
 
+  // 11. Insert normalized usage ledger rows for governance and analytics surfaces
+  const usageSeeds = createUsageLedgerSeeds({
+    tasks: taskSeeds,
+    workflows: workflowSeeds,
+    schedules: scheduleSeeds,
+  });
+  for (const seed of usageSeeds) {
+    await recordUsageLedgerEntry(seed);
+  }
+
   return {
     profiles: profileCount,
     projects: projectSeeds.length,
@@ -112,5 +124,6 @@ export async function seedSampleData() {
     documents: docSeeds.length,
     agentLogs: logSeeds.length,
     notifications: notifSeeds.length,
+    usageLedger: usageSeeds.length,
   };
 }

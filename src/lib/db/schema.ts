@@ -18,6 +18,8 @@ export const tasks = sqliteTable(
   {
     id: text("id").primaryKey(),
     projectId: text("project_id").references(() => projects.id),
+    workflowId: text("workflow_id").references(() => workflows.id),
+    scheduleId: text("schedule_id").references(() => schedules.id),
     title: text("title").notNull(),
     description: text("description"),
     status: text("status", {
@@ -37,6 +39,8 @@ export const tasks = sqliteTable(
   (table) => [
     index("idx_tasks_status").on(table.status),
     index("idx_tasks_project_id").on(table.projectId),
+    index("idx_tasks_workflow_id").on(table.workflowId),
+    index("idx_tasks_schedule_id").on(table.scheduleId),
     index("idx_tasks_agent_profile").on(table.agentProfile),
   ]
 );
@@ -168,6 +172,47 @@ export const settings = sqliteTable("settings", {
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
 });
 
+export const usageLedger = sqliteTable(
+  "usage_ledger",
+  {
+    id: text("id").primaryKey(),
+    taskId: text("task_id").references(() => tasks.id),
+    workflowId: text("workflow_id").references(() => workflows.id),
+    scheduleId: text("schedule_id").references(() => schedules.id),
+    projectId: text("project_id").references(() => projects.id),
+    activityType: text("activity_type", {
+      enum: [
+        "task_run",
+        "task_resume",
+        "workflow_step",
+        "scheduled_firing",
+        "task_assist",
+        "profile_test",
+      ],
+    }).notNull(),
+    runtimeId: text("runtime_id").notNull(),
+    providerId: text("provider_id").notNull(),
+    modelId: text("model_id"),
+    status: text("status", {
+      enum: ["completed", "failed", "cancelled", "blocked", "unknown_pricing"],
+    }).notNull(),
+    inputTokens: integer("input_tokens"),
+    outputTokens: integer("output_tokens"),
+    totalTokens: integer("total_tokens"),
+    costMicros: integer("cost_micros"),
+    pricingVersion: text("pricing_version"),
+    startedAt: integer("started_at", { mode: "timestamp" }).notNull(),
+    finishedAt: integer("finished_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_usage_ledger_task_id").on(table.taskId),
+    index("idx_usage_ledger_activity_type").on(table.activityType),
+    index("idx_usage_ledger_runtime_id").on(table.runtimeId),
+    index("idx_usage_ledger_provider_model").on(table.providerId, table.modelId),
+    index("idx_usage_ledger_finished_at").on(table.finishedAt),
+  ]
+);
+
 // Shared types derived from schema — use these in components instead of `as any`
 export type ProjectRow = InferSelectModel<typeof projects>;
 export type TaskRow = InferSelectModel<typeof tasks>;
@@ -177,3 +222,4 @@ export type NotificationRow = InferSelectModel<typeof notifications>;
 export type DocumentRow = InferSelectModel<typeof documents>;
 export type ScheduleRow = InferSelectModel<typeof schedules>;
 export type SettingsRow = InferSelectModel<typeof settings>;
+export type UsageLedgerRow = InferSelectModel<typeof usageLedger>;

@@ -144,6 +144,8 @@ async function fireSchedule(
   await db.insert(tasks).values({
     id: taskId,
     projectId: schedule.projectId,
+    workflowId: null,
+    scheduleId: schedule.id,
     title: `${schedule.name} — firing #${firingNumber}`,
     description: schedule.prompt,
     status: "queued",

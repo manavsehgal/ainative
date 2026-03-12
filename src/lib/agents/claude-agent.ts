@@ -9,6 +9,14 @@ import { buildDocumentContext } from "@/lib/documents/context-builder";
 import { getProfile } from "./profiles/registry";
 import type { CanUseToolPolicy } from "./profiles/types";
 import { buildClaudeSdkEnv } from "./runtime/claude-sdk";
+import {
+  extractUsageSnapshot,
+  mergeUsageSnapshot,
+  recordUsageLedgerEntry,
+  resolveUsageActivityType,
+  type UsageActivityType,
+  type UsageSnapshot,
+} from "@/lib/usage/ledger";
 
 /** Typed representation of messages from the Agent SDK stream */
 interface AgentStreamMessage {
@@ -23,6 +31,64 @@ interface AgentStreamMessage {
   result?: unknown;
 }
 
+interface TaskUsageState extends UsageSnapshot {
+  activityType: UsageActivityType;
+  startedAt: Date;
+  taskId: string;
+  projectId?: string | null;
+  workflowId?: string | null;
+  scheduleId?: string | null;
+}
+
+function createTaskUsageState(
+  task: {
+    id: string;
+    projectId?: string | null;
+    workflowId?: string | null;
+    scheduleId?: string | null;
+  },
+  isResume = false
+): TaskUsageState {
+  return {
+    taskId: task.id,
+    projectId: task.projectId ?? null,
+    workflowId: task.workflowId ?? null,
+    scheduleId: task.scheduleId ?? null,
+    activityType: resolveUsageActivityType({
+      workflowId: task.workflowId,
+      scheduleId: task.scheduleId,
+      isResume,
+    }),
+    startedAt: new Date(),
+  };
+}
+
+function applyUsageSnapshot(state: TaskUsageState, source: unknown) {
+  Object.assign(state, mergeUsageSnapshot(state, extractUsageSnapshot(source)));
+}
+
+async function finalizeTaskUsage(
+  state: TaskUsageState,
+  status: "completed" | "failed" | "cancelled"
+) {
+  await recordUsageLedgerEntry({
+    taskId: state.taskId,
+    workflowId: state.workflowId ?? null,
+    scheduleId: state.scheduleId ?? null,
+    projectId: state.projectId ?? null,
+    activityType: state.activityType,
+    runtimeId: "claude-code",
+    providerId: "anthropic",
+    modelId: state.modelId ?? null,
+    inputTokens: state.inputTokens ?? null,
+    outputTokens: state.outputTokens ?? null,
+    totalTokens: state.totalTokens ?? null,
+    status,
+    startedAt: state.startedAt,
+    finishedAt: new Date(),
+  });
+}
+
 /**
  * Process the async message stream from the Agent SDK.
  * Shared between executeClaudeTask and resumeClaudeTask to avoid duplication.
@@ -32,13 +98,15 @@ async function processAgentStream(
   taskTitle: string,
   response: AsyncIterable<Record<string, unknown>>,
   abortController: AbortController,
-  agentProfileId = "general"
+  agentProfileId = "general",
+  usageState: TaskUsageState
 ): Promise<void> {
   let sessionId: string | null = null;
   let receivedResult = false;
 
   for await (const raw of response) {
     const message = raw as AgentStreamMessage;
+    applyUsageSnapshot(usageState, raw);
 
     // Capture session ID from init message
     if (
@@ -108,7 +176,10 @@ async function processAgentStream(
 
     // Handle result — skip if task was cancelled mid-stream
     if (message.type === "result" && "result" in raw) {
-      if (abortController.signal.aborted) return;
+      if (abortController.signal.aborted) {
+        await finalizeTaskUsage(usageState, "cancelled");
+        return;
+      }
       receivedResult = true;
       const resultText =
         typeof message.result === "string"
@@ -141,6 +212,8 @@ async function processAgentStream(
         payload: JSON.stringify({ result: resultText.slice(0, 1000) }),
         timestamp: new Date(),
       });
+
+      await finalizeTaskUsage(usageState, "completed");
     }
   }
 
@@ -164,12 +237,15 @@ async function processAgentStream(
       body: "Agent stream ended unexpectedly without a result",
       createdAt: new Date(),
     });
+
+    await finalizeTaskUsage(usageState, "failed");
   }
 }
 
 export async function executeClaudeTask(taskId: string): Promise<void> {
   const [task] = await db.select().from(tasks).where(eq(tasks.id, taskId));
   if (!task) throw new Error(`Task ${taskId} not found`);
+  const usageState = createTaskUsageState(task);
 
   const abortController = new AbortController();
 
@@ -225,10 +301,18 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
       task.title,
       response as AsyncIterable<Record<string, unknown>>,
       abortController,
-      task.agentProfile ?? "general"
+      task.agentProfile ?? "general",
+      usageState
     );
   } catch (error: unknown) {
-    await handleExecutionError(taskId, task.title, error, abortController, task.agentProfile ?? "general");
+    await handleExecutionError(
+      taskId,
+      task.title,
+      error,
+      abortController,
+      task.agentProfile ?? "general",
+      usageState
+    );
   } finally {
     removeExecution(taskId);
   }
@@ -237,6 +321,7 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
 export async function resumeClaudeTask(taskId: string): Promise<void> {
   const [task] = await db.select().from(tasks).where(eq(tasks.id, taskId));
   if (!task) throw new Error(`Task ${taskId} not found`);
+  const usageState = createTaskUsageState(task, true);
 
   if (!task.sessionId) {
     throw new Error("No session to resume — use Retry instead");
@@ -322,7 +407,8 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
       task.title,
       response as AsyncIterable<Record<string, unknown>>,
       abortController,
-      profileId
+      profileId,
+      usageState
     );
   } catch (error: unknown) {
     const errorMessage =
@@ -351,10 +437,18 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
         body: "The agent session has expired. Re-queue this task for a fresh start.",
         createdAt: new Date(),
       });
+      await finalizeTaskUsage(usageState, "failed");
       return;
     }
 
-    await handleExecutionError(taskId, task.title, error, abortController, profileId);
+    await handleExecutionError(
+      taskId,
+      task.title,
+      error,
+      abortController,
+      profileId,
+      usageState
+    );
   } finally {
     removeExecution(taskId);
   }
@@ -368,7 +462,8 @@ async function handleExecutionError(
   taskTitle: string,
   error: unknown,
   abortController: AbortController,
-  agentProfileId = "general"
+  agentProfileId = "general",
+  usageState?: TaskUsageState
 ): Promise<void> {
   const errorMessage =
     error instanceof Error ? error.message : String(error);
@@ -378,6 +473,9 @@ async function handleExecutionError(
       .update(tasks)
       .set({ status: "cancelled", updatedAt: new Date() })
       .where(eq(tasks.id, taskId));
+    if (usageState) {
+      await finalizeTaskUsage(usageState, "cancelled");
+    }
     return;
   }
 
@@ -407,6 +505,10 @@ async function handleExecutionError(
     payload: JSON.stringify({ error: errorMessage }),
     timestamp: new Date(),
   });
+
+  if (usageState) {
+    await finalizeTaskUsage(usageState, "failed");
+  }
 }
 
 /**

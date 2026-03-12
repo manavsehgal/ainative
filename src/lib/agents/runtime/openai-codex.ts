@@ -21,6 +21,14 @@ import type {
   TaskAssistInput,
 } from "./types";
 import type { TaskAssistResponse } from "./task-assist-types";
+import {
+  extractUsageSnapshot,
+  mergeUsageSnapshot,
+  recordUsageLedgerEntry,
+  resolveUsageActivityType,
+  type UsageActivityType,
+  type UsageSnapshot,
+} from "@/lib/usage/ledger";
 
 interface JsonRpcLikeRequest {
   id: number;
@@ -63,6 +71,15 @@ interface AssistTurnOptions {
   prompt: string;
   developerInstructions: string;
   cwd: string;
+}
+
+interface TaskUsageState extends UsageSnapshot {
+  activityType: UsageActivityType;
+  startedAt: Date;
+  taskId: string;
+  projectId?: string | null;
+  workflowId?: string | null;
+  scheduleId?: string | null;
 }
 
 const TASK_ASSIST_SYSTEM_PROMPT = `You are an AI task definition assistant.
@@ -135,6 +152,55 @@ async function resolveTaskExecutionContext(
   }
 
   return { task, profileId, systemPrompt, prompt, cwd };
+}
+
+function createTaskUsageState(
+  task: {
+    id: string;
+    projectId?: string | null;
+    workflowId?: string | null;
+    scheduleId?: string | null;
+  },
+  isResume = false
+): TaskUsageState {
+  return {
+    taskId: task.id,
+    projectId: task.projectId ?? null,
+    workflowId: task.workflowId ?? null,
+    scheduleId: task.scheduleId ?? null,
+    activityType: resolveUsageActivityType({
+      workflowId: task.workflowId,
+      scheduleId: task.scheduleId,
+      isResume,
+    }),
+    startedAt: new Date(),
+  };
+}
+
+function applyUsageSnapshot(state: UsageSnapshot, source: unknown) {
+  Object.assign(state, mergeUsageSnapshot(state, extractUsageSnapshot(source)));
+}
+
+async function finalizeTaskUsage(
+  state: TaskUsageState,
+  status: "completed" | "failed" | "cancelled"
+) {
+  await recordUsageLedgerEntry({
+    taskId: state.taskId,
+    workflowId: state.workflowId ?? null,
+    scheduleId: state.scheduleId ?? null,
+    projectId: state.projectId ?? null,
+    activityType: state.activityType,
+    runtimeId: "openai-codex-app-server",
+    providerId: "openai",
+    modelId: state.modelId ?? null,
+    inputTokens: state.inputTokens ?? null,
+    outputTokens: state.outputTokens ?? null,
+    totalTokens: state.totalTokens ?? null,
+    status,
+    startedAt: state.startedAt,
+    finishedAt: new Date(),
+  });
 }
 
 function buildTurnInput(prompt: string) {
@@ -507,7 +573,7 @@ async function runAssistTurn({
   prompt,
   developerInstructions,
   cwd,
-}: AssistTurnOptions): Promise<string> {
+}: AssistTurnOptions): Promise<{ text: string; usage: UsageSnapshot }> {
   const { apiKey, source } = await getOpenAIApiKey();
   if (!apiKey) {
     throw new Error("OpenAI API key is not configured");
@@ -515,6 +581,7 @@ async function runAssistTurn({
 
   let client: CodexAppServerClient | null = null;
   let text = "";
+  let usage: UsageSnapshot = {};
 
   try {
     client = await CodexAppServerClient.connect({
@@ -546,6 +613,7 @@ async function runAssistTurn({
     const completion = new Promise<void>((resolve, reject) => {
       client!.onNotification = (notification: JsonRpcLikeNotification) => {
         const params = asRecord(notification.params) ?? {};
+        applyUsageSnapshot(usage, params);
 
         if (notification.method === "item/agentMessage/delta") {
           const delta = asString(params.delta);
@@ -577,7 +645,7 @@ async function runAssistTurn({
 
     await completion;
 
-    return text.trim();
+    return { text: text.trim(), usage };
   } finally {
     if (client) {
       await client.close();
@@ -602,6 +670,7 @@ async function executeOpenAICodexTask(taskId: string): Promise<void> {
   let settled = false;
   let resolveCompletion: (() => void) | null = null;
   let rejectCompletion: ((error: Error) => void) | null = null;
+  const usageState = createTaskUsageState(task, Boolean(task.sessionId));
 
   const settle = async (work: () => Promise<void>) => {
     if (settled) return;
@@ -620,6 +689,7 @@ async function executeOpenAICodexTask(taskId: string): Promise<void> {
       void settle(async () => {
         await markTaskFailed(taskId, task.title, error.message);
         await insertLog(taskId, "failed", { error: error.message });
+        await finalizeTaskUsage(usageState, "failed");
       });
       rejectCompletion?.(error);
     };
@@ -639,6 +709,7 @@ async function executeOpenAICodexTask(taskId: string): Promise<void> {
       client!.onNotification = (notification: JsonRpcLikeNotification) => {
         void (async () => {
           const params = asRecord(notification.params) ?? {};
+          applyUsageSnapshot(usageState, params);
 
           switch (notification.method) {
             case "thread/started": {
@@ -725,6 +796,7 @@ async function executeOpenAICodexTask(taskId: string): Promise<void> {
                     result: finalResult.slice(0, 1000),
                     profileId,
                   });
+                  await finalizeTaskUsage(usageState, "completed");
                 });
                 resolveCompletion?.();
                 return;
@@ -734,6 +806,7 @@ async function executeOpenAICodexTask(taskId: string): Promise<void> {
                 await settle(async () => {
                   await markTaskCancelled(taskId);
                   await insertLog(taskId, "cancelled", { threadId, turnId });
+                  await finalizeTaskUsage(usageState, "cancelled");
                 });
                 resolveCompletion?.();
                 return;
@@ -743,6 +816,7 @@ async function executeOpenAICodexTask(taskId: string): Promise<void> {
               await settle(async () => {
                 await markTaskFailed(taskId, task.title, message);
                 await insertLog(taskId, "failed", { threadId, turnId, error: message });
+                await finalizeTaskUsage(usageState, "failed");
               });
               rejectCompletion?.(new Error(message));
               return;
@@ -829,6 +903,7 @@ async function executeOpenAICodexTask(taskId: string): Promise<void> {
     await settle(async () => {
       await markTaskFailed(taskId, task.title, message);
       await insertLog(taskId, "failed", { threadId, turnId, error: message });
+      await finalizeTaskUsage(usageState, "failed");
     });
     throw error;
   } finally {
@@ -882,13 +957,47 @@ async function runOpenAITaskAssist(
     .filter(Boolean)
     .join("\n");
 
-  const resultText = await runAssistTurn({
-    prompt,
-    developerInstructions: TASK_ASSIST_SYSTEM_PROMPT,
-    cwd: process.cwd(),
-  });
+  const startedAt = new Date();
+  let usage: UsageSnapshot = {};
 
-  return extractJsonObject(resultText);
+  try {
+    const result = await runAssistTurn({
+      prompt,
+      developerInstructions: TASK_ASSIST_SYSTEM_PROMPT,
+      cwd: process.cwd(),
+    });
+    usage = result.usage;
+    const parsed = extractJsonObject(result.text);
+
+    await recordUsageLedgerEntry({
+      activityType: "task_assist",
+      runtimeId: "openai-codex-app-server",
+      providerId: "openai",
+      modelId: usage.modelId ?? null,
+      inputTokens: usage.inputTokens ?? null,
+      outputTokens: usage.outputTokens ?? null,
+      totalTokens: usage.totalTokens ?? null,
+      status: "completed",
+      startedAt,
+      finishedAt: new Date(),
+    });
+
+    return parsed;
+  } catch (error) {
+    await recordUsageLedgerEntry({
+      activityType: "task_assist",
+      runtimeId: "openai-codex-app-server",
+      providerId: "openai",
+      modelId: usage.modelId ?? null,
+      inputTokens: usage.inputTokens ?? null,
+      outputTokens: usage.outputTokens ?? null,
+      totalTokens: usage.totalTokens ?? null,
+      status: "failed",
+      startedAt,
+      finishedAt: new Date(),
+    });
+    throw error;
+  }
 }
 
 async function testOpenAIConnection(): Promise<RuntimeConnectionResult> {

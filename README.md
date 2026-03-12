@@ -2,7 +2,7 @@
 
 > A governed AI agent operations workspace for running, supervising, and reusing AI work through projects, workflows, documents, profiles, schedules, inbox approvals, and live monitoring.
 
-[![Next.js 16](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/) [![React 19](https://img.shields.io/badge/React-19-61DAFB)](https://react.dev/) [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6)](https://www.typescriptlang.org/) [![Claude Agent SDK](https://img.shields.io/badge/Claude-Agent_SDK-D97706)](https://docs.anthropic.com/) [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Next.js 16](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/) [![React 19](https://img.shields.io/badge/React-19-61DAFB)](https://react.dev/) [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6)](https://www.typescriptlang.org/) [![Claude Agent SDK](https://img.shields.io/badge/Claude-Agent_SDK-D97706)](https://docs.anthropic.com/) [![OpenAI Codex App Server](https://img.shields.io/badge/OpenAI-Codex_App_Server-10A37F)](https://developers.openai.com/codex/app-server) [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
 ## Why Stagent
 
@@ -15,8 +15,11 @@ Stagent is a local-first AI operations workspace built around governed execution
 ```bash
 git clone <repo-url> && cd stagent && npm install
 
-# Set up your Anthropic API key
-echo "ANTHROPIC_API_KEY=your-key-here" > .env.local
+# Set up one or both runtime credentials
+cat > .env.local <<'EOF'
+ANTHROPIC_API_KEY=your-anthropic-key
+OPENAI_API_KEY=your-openai-key
+EOF
 
 # Start the dev server
 npm run dev
@@ -38,6 +41,7 @@ Open [localhost:3000](http://localhost:3000) to get started.
 | 📄 | **[Documents](#document-management)** | Upload, preprocess, inspect, and link files to tasks and projects |
 | 📥 | **[Human-in-the-Loop Inbox](#inbox--human-in-the-loop)** | Approve tool use, answer questions, and review results from one queue |
 | 👀 | **[Monitoring](#monitoring)** | Live runtime visibility with log streaming, filters, and health signals |
+| 🔁 | **[Provider Runtimes](#provider-runtimes)** | Shared runtime layer with Claude Code and OpenAI Codex App Server adapters |
 | 🔒 | **[Tool Permissions](#tool-permission-persistence)** | Trusted-tool policies with explicit "Always Allow" rules |
 
 ---
@@ -56,20 +60,20 @@ Open [localhost:3000](http://localhost:3000) to get started.
 │                  Next.js 16 Server                        │
 │                                                           │
 │  ┌─────────────┐  ┌──────────────┐  ┌────────────────┐  │
-│  │ Drizzle ORM │  │ Agent SDK    │  │ SSE Stream     │  │
-│  │ (SQLite)    │  │ (Claude API) │  │ (Logs)         │  │
+│  │ Drizzle ORM │  │ Runtime      │  │ SSE Stream     │  │
+│  │ (SQLite)    │  │ Registry     │  │ (Logs)         │  │
 │  └──────┬──────┘  └──────┬───────┘  └─────┬──────────┘  │
 │         │                │                 │              │
-│  ┌──────┴──────┐  ┌─────┴──────┐   ┌─────┴──────────┐  │
-│  │ Scheduler   │  │ Profile    │   │ Permission     │  │
-│  │ Engine      │  │ Registry   │   │ Checker        │  │
-│  └─────────────┘  └────────────┘   └────────────────┘  │
+│  ┌──────┴──────┐  ┌─────┴────────────┐  ┌─┴───────────┐ │
+│  │ Scheduler   │  │ Claude + OpenAI  │  │ Permission  │ │
+│  │ Engine      │  │ runtime adapters │  │ Checker     │ │
+│  └─────────────┘  └──────────────────┘  └─────────────┘ │
 └──────────┬────────────────┬─────────────────┬────────────┘
            │                │                 │
-    ┌──────▼──────┐  ┌─────▼──────┐   ┌─────▼──────┐
-    │ ~/.stagent/ │  │  Anthropic │   │  Browser   │
-    │ stagent.db  │  │  API       │   │  EventSource│
-    └─────────────┘  └────────────┘   └────────────┘
+    ┌──────▼──────┐  ┌─────▼─────────────┐  ┌─────▼──────┐
+    │ ~/.stagent/ │  │ Anthropic / OpenAI│  │  Browser   │
+    │ stagent.db  │  │ runtime backends  │  │ EventSource│
+    └─────────────┘  └───────────────────┘  └────────────┘
 ```
 
 **Key design decisions:**
@@ -78,6 +82,7 @@ Open [localhost:3000](http://localhost:3000) to get started.
 - **Fire-and-forget execution** — `POST /api/tasks/{id}/execute` returns 202, agent runs async
 - **Notification-as-queue** — The `notifications` table is the message bus for human-in-the-loop; agents poll it via `canUseTool`
 - **SSE for streaming** — `/api/logs/stream` pushes agent logs to the browser in real time
+- **Provider runtime abstraction** — Tasks, schedules, workflows, task assist, and health checks route through shared runtime adapters instead of provider-specific entry points
 - **Reusable agent profiles** — Profiles define instructions, allowed tools, runtime tuning, and MCP configs for repeated use
 - **Permission pre-check** — Saved "Always Allow" patterns bypass the notification loop for trusted tools
 
@@ -98,11 +103,21 @@ Create and organize projects as containers for related tasks. Each project can s
 
 ### Agent
 
+#### Provider Runtimes
+Stagent now supports two governed execution runtimes behind a shared runtime registry:
+- **Claude Code** via the Anthropic Claude Agent SDK
+- **OpenAI Codex App Server** via `codex app-server`
+
+Tasks, schedules, and workflow steps can target a runtime explicitly, while settings exposes runtime-specific authentication and health checks. Runtime-specific execution still lands in the same inbox, monitoring, and task state surfaces.
+
 #### Agent Integration
-Claude Agent SDK integration with the `canUseTool` polling pattern. Tasks are dispatched fire-and-forget and run asynchronously, while every tool call, reasoning step, and decision is surfaced through inbox approvals and monitor logs.
+Claude Agent SDK integration with the `canUseTool` polling pattern remains the default Claude execution path. Tasks are dispatched fire-and-forget and run asynchronously, while every tool call, reasoning step, and decision is surfaced through inbox approvals and monitor logs.
+
+#### OpenAI Codex Runtime
+OpenAI Codex App Server is integrated as Stagent's second governed runtime. Codex-backed tasks preserve project working directories, document context, resumable thread IDs, inbox approval requests, user questions, and provider-labeled logs. The same runtime can also power task assist, scheduled firings, and workflow child tasks.
 
 #### Agent Profiles
-Profile-backed execution with specialist definitions for different job types. Each profile packages instructions, allowed tools, runtime tuning, and MCP server configuration so teams can reuse behavior intentionally instead of relying on ad hoc prompts. Workflow steps and schedules can reference profiles directly.
+Profile-backed execution with specialist definitions for different job types. Each profile packages instructions, allowed tools, runtime tuning, and MCP server configuration so teams can reuse behavior intentionally instead of relying on ad hoc prompts. Workflow steps and schedules can reference profiles directly, and runtimes can be selected independently when provider support differs.
 
 #### Workflows
 Multi-step task orchestration with three patterns:
@@ -113,7 +128,7 @@ Multi-step task orchestration with three patterns:
 State machine engine with step-level retry, project association, and real-time status visualization.
 
 #### AI Task Assist
-AI-powered task creation: generate improved descriptions, break tasks into sub-tasks, recommend workflow patterns, and estimate complexity — all via the Agent SDK's `query` function.
+AI-powered task creation: generate improved descriptions, break tasks into sub-tasks, recommend workflow patterns, and estimate complexity through the shared runtime task-assist layer. Claude and OpenAI task assist now both route through the provider runtime abstraction.
 
 #### Session Management
 Resume failed or cancelled agent tasks with one click. Tracks retry counts (limit: 3), detects expired sessions, and provides atomic claim to prevent duplicate runs.
@@ -144,7 +159,7 @@ Documents linked to a task are automatically injected into the agent's prompt as
 "Always Allow" option for agent tool permissions. When you approve a tool, you can save it as a pattern (e.g., `Bash(command:git *)`, `Read`, `mcp__server__tool`). Saved patterns are checked before creating notifications — trusted tools are auto-approved instantly. Manage patterns from the Settings page. `AskUserQuestion` always requires human input.
 
 #### Schedules
-Time-based scheduling for agent tasks with human-friendly intervals (`5m`, `2h`, `1d`) and raw 5-field cron expressions. One-shot and recurring modes with pause/resume lifecycle, expiry limits, and max firings. Each firing creates a child task through the existing execution pipeline. Scheduler runs as a poll-based engine started via Next.js instrumentation hook.
+Time-based scheduling for agent tasks with human-friendly intervals (`5m`, `2h`, `1d`) and raw 5-field cron expressions. One-shot and recurring modes with pause/resume lifecycle, expiry limits, and max firings. Each firing creates a child task through the shared execution pipeline, and schedules can now target a runtime explicitly. Scheduler runs as a poll-based engine started via Next.js instrumentation hook.
 
 #### Micro-Visualizations
 Pure SVG chart primitives (Sparkline, MiniBar, DonutRing) with zero charting dependencies. Integrated into: homepage stats cards (7-day trends), activity feed (24h bar chart), project cards (completion donuts), monitor overview (success rate), and project detail (stacked status + 14-day sparkline). Full accessibility with `role="img"` and `aria-label`.
@@ -161,7 +176,7 @@ Real-time agent log streaming via Server-Sent Events. Filter by task or event ty
 File upload with drag-and-drop in task creation. Type-aware content preview for text, markdown (via react-markdown), code, and JSON. Copy-to-clipboard and download-as-file for task outputs.
 
 #### Settings
-Configuration hub with three sections: authentication (API key or OAuth), tool permissions (saved "Always Allow" patterns with revoke), and data management.
+Configuration hub with provider-aware sections: Claude authentication (API key or OAuth), OpenAI Codex runtime API-key management, tool permissions (saved "Always Allow" patterns with revoke), and data management.
 
 #### CLI
 `npx stagent` launches the dev server and opens the dashboard. Built with Commander, compiled via tsup to `dist/cli.js`.
@@ -182,7 +197,7 @@ Responsive sidebar with collapsible icon-only mode, custom Stagent logo, tooltip
 | Language | TypeScript (strict) | End-to-end type safety from DB schema to UI |
 | Styling | Tailwind CSS v4 + shadcn/ui | Utility-first CSS with accessible component primitives |
 | Database | SQLite (WAL) + Drizzle ORM | Zero-config embedded DB, type-safe queries, concurrent reads |
-| AI Agent | `@anthropic-ai/claude-agent-sdk` | Native tool-use, streaming, and `canUseTool` pattern |
+| AI Runtime | `@anthropic-ai/claude-agent-sdk` + `codex app-server` | Governed Claude and OpenAI execution behind a shared runtime layer |
 | CLI | Commander + tsup | Familiar CLI framework, fast ESM bundling |
 | Testing | Vitest + Testing Library | Fast test runner with React component testing |
 | Content | react-markdown + remark-gfm | Full GitHub-flavored markdown rendering |
@@ -226,7 +241,7 @@ src/
 │   ├── shared/           # App shell, sidebar
 │   └── ui/               # shadcn/ui primitives
 └── lib/
-    ├── agents/           # Claude Agent SDK + profiles
+    ├── agents/           # Runtime adapters, provider integrations, profiles
     ├── db/               # Schema, migrations
     ├── documents/        # Preprocessing + context builder
     ├── workflows/        # Engine + types + blueprints
@@ -257,6 +272,8 @@ src/
 | `/api/schedules` | GET/POST | Schedule CRUD |
 | `/api/schedules/[id]` | GET/PATCH/DELETE | Schedule detail + updates |
 | `/api/permissions` | GET/POST/DELETE | Tool permission patterns |
+| `/api/settings/openai` | GET/POST | OpenAI Codex runtime settings |
+| `/api/settings/test` | POST | Provider-aware runtime connectivity test |
 | `/api/profiles` | GET | List agent profiles |
 | `/api/profiles/[id]/test` | POST | Run behavioral tests on a profile |
 | `/api/profiles/import` | POST | Import profile from GitHub URL |
@@ -289,6 +306,7 @@ All 14 features shipped across three layers:
 | **Micro-Visualizations** | Sparklines, mini bars, donut rings — zero-dependency SVG charts |
 | **Tool Permission Persistence** | "Always Allow" patterns, pre-check bypass, Settings management |
 | **Scheduled Prompt Loops** | Cron + human-friendly intervals, one-shot/recurring, pause/resume lifecycle |
+| **Provider Runtimes** | Shared runtime registry with Claude Code and OpenAI Codex App Server adapters |
 | **Autonomous Loop Execution** | 4 stop conditions, iteration context chaining, pause/resume, loop status view |
 | **Workflow Blueprints** | 8 templates, gallery, YAML editor, dynamic forms, GitHub import, lineage tracking |
 | **Command Palette** | ⌘K palette with navigation, create actions, recent items, theme toggle |

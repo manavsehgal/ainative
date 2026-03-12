@@ -83,6 +83,15 @@ vi.mock("@/lib/documents/context-builder", () => ({
 vi.mock("@/lib/settings/permissions", () => ({
   isToolAllowed: vi.fn().mockResolvedValue(false),
 }));
+vi.mock("@/lib/usage/ledger", () => ({
+  extractUsageSnapshot: vi.fn().mockReturnValue({}),
+  mergeUsageSnapshot: vi.fn((current: Record<string, unknown>, next: Record<string, unknown>) => ({
+    ...current,
+    ...next,
+  })),
+  recordUsageLedgerEntry: vi.fn().mockResolvedValue(undefined),
+  resolveUsageActivityType: vi.fn().mockReturnValue("task_run"),
+}));
 
 // Static imports (works because vi.mock is hoisted)
 import { query } from "@anthropic-ai/claude-agent-sdk";
@@ -111,6 +120,9 @@ function makeTask(overrides: Record<string, unknown> = {}) {
     id: "task-1",
     title: "Test Task",
     description: "Test description",
+    projectId: null,
+    workflowId: null,
+    scheduleId: null,
     sessionId: null,
     resumeCount: 0,
     ...overrides,
