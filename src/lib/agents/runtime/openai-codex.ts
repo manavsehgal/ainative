@@ -540,7 +540,6 @@ async function runAssistTurn({
       serviceName: "stagent",
       developerInstructions,
       experimentalRawEvents: false,
-      persistExtendedHistory: false,
       ephemeral: true,
     })) as { thread: { id: string } };
 
@@ -766,7 +765,6 @@ async function executeOpenAICodexTask(taskId: string): Promise<void> {
         approvalPolicy: "on-request",
         sandbox: "workspace-write",
         developerInstructions: systemPrompt || null,
-        persistExtendedHistory: true,
       });
     } else {
       const threadResponse = (await client.request("thread/start", {
@@ -776,7 +774,6 @@ async function executeOpenAICodexTask(taskId: string): Promise<void> {
         serviceName: "stagent",
         developerInstructions: systemPrompt || null,
         experimentalRawEvents: false,
-        persistExtendedHistory: true,
         ephemeral: false,
       })) as { thread: { id: string } };
 
