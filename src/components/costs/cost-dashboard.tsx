@@ -66,6 +66,12 @@ interface RuntimeBreakdownRow {
   unknownPricingRuns: number;
 }
 
+interface ModelVisualMeta {
+  share: number;
+  valueLabel: string;
+  basisLabel: string;
+}
+
 interface TrendSeries {
   spend7: number[];
   spend30: number[];
@@ -118,6 +124,10 @@ function formatCompactCount(value: number | null | undefined) {
 
 function formatPercent(value: number) {
   return `${Math.round(value)}%`;
+}
+
+function clampPercent(value: number) {
+  return Math.max(0, Math.min(100, value));
 }
 
 function formatDateTime(value: string) {
@@ -254,6 +264,36 @@ function renderEntityLink(entry: UsageAuditEntry) {
   return <span className="font-medium">{formatActivityLabel(entry.activityType)}</span>;
 }
 
+function resolveModelVisualMeta(
+  row: ProviderModelBreakdownEntry,
+  totals: { costMicros: number; totalTokens: number }
+): ModelVisualMeta {
+  if (totals.costMicros > 0 && row.costMicros > 0) {
+    const share = clampPercent((row.costMicros / totals.costMicros) * 100);
+    return {
+      share,
+      valueLabel: formatCurrencyMicros(row.costMicros),
+      basisLabel: `${formatPercent(share)} of filtered spend`,
+    };
+  }
+
+  if (totals.totalTokens > 0 && row.totalTokens > 0) {
+    const share = clampPercent((row.totalTokens / totals.totalTokens) * 100);
+    return {
+      share,
+      valueLabel: `${formatCompactCount(row.totalTokens)} tokens`,
+      basisLabel: `${formatPercent(share)} of filtered tokens`,
+    };
+  }
+
+  return {
+    share: 0,
+    valueLabel:
+      row.unknownPricingRuns === row.runs ? "Pricing unavailable" : formatCurrencyMicros(0),
+    basisLabel: "No measurable cost or token usage",
+  };
+}
+
 function SummaryCard({
   eyebrow,
   title,
@@ -312,37 +352,40 @@ export function CostDashboard({
     (total, row) => total + row.unknownPricingRuns,
     0
   );
+  const modelTotals = modelBreakdown.reduce(
+    (totals, row) => ({
+      costMicros: totals.costMicros + row.costMicros,
+      totalTokens: totals.totalTokens + row.totalTokens,
+    }),
+    { costMicros: 0, totalTokens: 0 }
+  );
 
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-6">
-      <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-        <div className="max-w-3xl space-y-3">
-          <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/55 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-            <Wallet className="h-3.5 w-3.5" />
-            Governance &amp; Analytics
-          </div>
-          <div className="space-y-2">
-            <h1 className="text-2xl font-bold tracking-tight">Cost &amp; Usage</h1>
-            <p className="max-w-2xl text-sm text-muted-foreground">
-              Review spend, token usage, and the execution history behind each paid
-              runtime action without leaving the operational shell.
-            </p>
-          </div>
+      <div className="max-w-3xl space-y-3">
+        <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/55 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          <Wallet className="h-3.5 w-3.5" />
+          Governance &amp; Analytics
         </div>
-
-        <div className="w-full xl:max-w-3xl">
-          <CostFilters
-            dateRange={filters.dateRange}
-            runtimeId={filters.runtimeId}
-            status={filters.status}
-            activityType={filters.activityType}
-            runtimeOptions={runtimeCatalog.map((runtime) => ({
-              id: runtime.id,
-              label: runtime.label,
-            }))}
-          />
+        <div className="space-y-2">
+          <h1 className="text-2xl font-bold tracking-tight">Cost &amp; Usage</h1>
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            Review spend, token usage, and the execution history behind each paid
+            runtime action without leaving the operational shell.
+          </p>
         </div>
       </div>
+
+      <CostFilters
+        dateRange={filters.dateRange}
+        runtimeId={filters.runtimeId}
+        status={filters.status}
+        activityType={filters.activityType}
+        runtimeOptions={runtimeCatalog.map((runtime) => ({
+          id: runtime.id,
+          label: runtime.label,
+        }))}
+      />
 
       {blocked.length > 0 ? (
         <div className="surface-card rounded-3xl border border-status-failed/25 bg-status-failed/8 p-5">
@@ -637,85 +680,105 @@ export function CostDashboard({
             </div>
           </div>
 
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-            <div className="surface-card rounded-3xl p-5">
-              <div className="mb-4 flex items-start justify-between gap-3">
-                <div>
-                  <SectionHeading className="mb-2">Model Breakdown</SectionHeading>
-                  <p className="text-sm text-muted-foreground">
-                    Concentration by model for {formatDateRangeLabel(filters.dateRange).toLowerCase()}.
-                  </p>
-                </div>
-                {filteredUnknownPricingRuns > 0 ? (
-                  <Badge variant="outline">
-                    {filteredUnknownPricingRuns} unknown-pricing row
-                    {filteredUnknownPricingRuns === 1 ? "" : "s"}
-                  </Badge>
-                ) : null}
+          <div className="surface-card rounded-3xl p-5">
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <SectionHeading className="mb-2">Model Breakdown</SectionHeading>
+                <p className="text-sm text-muted-foreground">
+                  Concentration by model for {formatDateRangeLabel(filters.dateRange).toLowerCase()}.
+                </p>
               </div>
-
-              {modelBreakdown.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Runtime</TableHead>
-                      <TableHead>Model</TableHead>
-                      <TableHead className="text-right">Runs</TableHead>
-                      <TableHead className="text-right">Tokens</TableHead>
-                      <TableHead className="text-right">Cost</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {modelBreakdown.map((row) => (
-                      <TableRow key={`${row.runtimeId}-${row.modelId ?? "unknown"}`}>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <p className="font-medium">
-                              {runtimeLabelMap.get(row.runtimeId) ?? row.runtimeId}
-                            </p>
-                            <p className="text-xs text-muted-foreground">{row.providerId}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <p className="font-medium">{row.modelId ?? "Unknown model"}</p>
-                            {row.unknownPricingRuns > 0 ? (
-                              <Badge variant="outline">Pricing unavailable</Badge>
-                            ) : null}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">{row.runs}</TableCell>
-                        <TableCell className="text-right">
-                          {formatCompactCount(row.totalTokens)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {row.unknownPricingRuns === row.runs
-                            ? "Unavailable"
-                            : formatCurrencyMicros(row.costMicros)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              ) : (
-                <div className="surface-card-muted rounded-2xl p-4 text-sm text-muted-foreground">
-                  No model breakdown is available for the selected window yet.
-                </div>
-              )}
+              {filteredUnknownPricingRuns > 0 ? (
+                <Badge variant="outline">
+                  {filteredUnknownPricingRuns} unknown-pricing row
+                  {filteredUnknownPricingRuns === 1 ? "" : "s"}
+                </Badge>
+              ) : null}
             </div>
 
-            <div className="surface-card rounded-3xl p-5">
-              <div className="mb-4 flex items-start justify-between gap-3">
-                <div>
-                  <SectionHeading className="mb-2">Audit Log</SectionHeading>
-                  <p className="text-sm text-muted-foreground">
-                    Filtered execution history for {formatDateRangeLabel(filters.dateRange).toLowerCase()}.
-                  </p>
-                </div>
-                <Badge variant="outline">{auditEntries.length} rows</Badge>
-              </div>
+            {modelBreakdown.length > 0 ? (
+              <div className="space-y-3">
+                {modelBreakdown.map((row) => {
+                  const visual = resolveModelVisualMeta(row, modelTotals);
+                  return (
+                    <div
+                      key={`${row.runtimeId}-${row.modelId ?? "unknown"}`}
+                      className="surface-card-muted rounded-2xl p-4"
+                    >
+                      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                        <div className="min-w-0 flex-1 space-y-3">
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                            <div className="min-w-0 space-y-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="text-sm font-medium">
+                                  {row.modelId ?? "Unknown model"}
+                                </p>
+                                <Badge variant="outline">
+                                  {runtimeLabelMap.get(row.runtimeId) ?? row.runtimeId}
+                                </Badge>
+                                {row.unknownPricingRuns > 0 ? (
+                                  <Badge variant="outline">Pricing unavailable</Badge>
+                                ) : null}
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                {row.providerId} • {row.runs} run
+                                {row.runs === 1 ? "" : "s"} •{" "}
+                                {formatCompactCount(row.totalTokens)} tokens
+                              </p>
+                            </div>
+                            <div className="text-left sm:text-right">
+                              <p className="text-sm font-medium">{visual.valueLabel}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {visual.basisLabel}
+                              </p>
+                            </div>
+                          </div>
 
-              {auditEntries.length > 0 ? (
+                          <div className="space-y-2">
+                            <div className="h-2.5 overflow-hidden rounded-full bg-background/70">
+                              <div
+                                className="h-full rounded-full bg-[linear-gradient(90deg,var(--chart-1),var(--chart-2))]"
+                                style={{ width: `${Math.max(visual.share, visual.share > 0 ? 6 : 0)}%` }}
+                              />
+                            </div>
+                            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+                              <span>{formatPercent(visual.share)} of current filtered volume</span>
+                              {row.unknownPricingRuns > 0 ? (
+                                <span>
+                                  {row.unknownPricingRuns} run
+                                  {row.unknownPricingRuns === 1 ? "" : "s"} without price data
+                                </span>
+                              ) : (
+                                <span>Cost and token totals are both shown above</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="surface-card-muted rounded-2xl p-4 text-sm text-muted-foreground">
+                No model breakdown is available for the selected window yet.
+              </div>
+            )}
+          </div>
+
+          <div className="surface-card rounded-3xl p-5">
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <SectionHeading className="mb-2">Audit Log</SectionHeading>
+                <p className="text-sm text-muted-foreground">
+                  Filtered execution history for {formatDateRangeLabel(filters.dateRange).toLowerCase()}.
+                </p>
+              </div>
+              <Badge variant="outline">{auditEntries.length} rows</Badge>
+            </div>
+
+            {auditEntries.length > 0 ? (
+              <div className="surface-scroll rounded-2xl">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -780,13 +843,13 @@ export function CostDashboard({
                     ))}
                   </TableBody>
                 </Table>
-              ) : (
-                <div className="surface-card-muted rounded-2xl p-4 text-sm text-muted-foreground">
-                  No audit rows match the current filters. Adjust the runtime, status,
-                  activity, or date range to widen the view.
-                </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="surface-card-muted rounded-2xl p-4 text-sm text-muted-foreground">
+                No audit rows match the current filters. Adjust the runtime, status,
+                activity, or date range to widen the view.
+              </div>
+            )}
           </div>
         </>
       ) : (
