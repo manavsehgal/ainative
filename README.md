@@ -2,7 +2,7 @@
 
 > A governed AI agent operations workspace for running, supervising, and reusing AI work through projects, workflows, documents, profiles, schedules, inbox approvals, and live monitoring.
 
-[![Download macOS Desktop](https://img.shields.io/badge/Download-macOS_Desktop-0a7cff?style=for-the-badge&logo=apple)](https://github.com/manavsehgal/stagent/releases/latest) [![GitHub Releases](https://img.shields.io/github/v/release/manavsehgal/stagent?display_name=release&style=for-the-badge)](https://github.com/manavsehgal/stagent/releases/latest)
+[![Download macOS Desktop](https://img.shields.io/badge/Download-macOS_Desktop-0a7cff?style=for-the-badge&logo=apple)](https://github.com/manavsehgal/stagent/releases/latest/download/Stagent.dmg) [![GitHub Releases](https://img.shields.io/github/v/release/manavsehgal/stagent?display_name=release&style=for-the-badge)](https://github.com/manavsehgal/stagent/releases/latest)
 
 [![Next.js 16](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/) [![React 19](https://img.shields.io/badge/React-19-61DAFB)](https://react.dev/) [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6)](https://www.typescriptlang.org/) [![Claude Agent SDK](https://img.shields.io/badge/Claude-Agent_SDK-D97706)](https://docs.anthropic.com/) [![OpenAI Codex App Server](https://img.shields.io/badge/OpenAI-Codex_App_Server-10A37F)](https://developers.openai.com/codex/app-server) [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
@@ -16,9 +16,9 @@ Stagent is a local-first AI operations workspace built around governed execution
 
 ### Download Desktop for macOS
 
-**Primary install path:** [Download the latest macOS desktop release](https://github.com/manavsehgal/stagent/releases/latest)
+**Primary install path:** [Download the latest macOS desktop release](https://github.com/manavsehgal/stagent/releases/latest/download/Stagent.dmg)
 
-Grab the latest `Stagent_*.dmg` or `Stagent.app.zip` asset from GitHub Releases, then move `Stagent.app` into `/Applications`.
+Grab the latest `Stagent.dmg` or `Stagent.app.zip` asset from GitHub Releases, then move `Stagent.app` into `/Applications`.
 
 Current desktop release notes:
 
@@ -220,7 +220,7 @@ Configuration hub with provider-aware sections: Claude authentication (API key o
 Stagent still uses a small Node sidecar under the hood. It is built from `bin/cli.ts` into `dist/cli.js`, but it is now an internal desktop bootstrap rather than a user-facing distribution channel.
 
 #### Tauri Desktop
-The repo can now produce macOS desktop artifacts via Tauri. A GitHub Actions workflow builds unsigned `.app` and `.dmg` assets and attaches them to tagged repo releases, while local development uses `npm run desktop:dev` and local packaging uses `npm run desktop:build`.
+The repo produces macOS desktop artifacts via Tauri. Local development uses `npm run desktop:dev`, local packaging uses `npm run desktop:build`, and release publishing now runs locally via `npm run desktop:release` so the uploaded GitHub assets stay on stable names: `Stagent.dmg` and `Stagent.app.zip`. Keep `public/icon-512.png` as a square, unmasked source icon; macOS applies the rounded mask later. The local release script also stamps the same branded icon onto the mounted DMG volume so Finder shows the corrected Stagent icon during install.
 
 #### Database
 SQLite with WAL mode via better-sqlite3 + Drizzle ORM. Eight tables: `projects`, `tasks`, `workflows`, `agent_logs`, `notifications`, `documents`, `schedules`, `settings`. Self-healing bootstrap — tables are created on startup if missing.
@@ -260,13 +260,12 @@ npm run test:coverage  # Coverage report
 ## Desktop Release Checklist
 
 ```bash
-npm run desktop:icon
-npm run desktop:build
-git tag desktop-v0.1.1
-git push origin desktop-v0.1.1
+npm run desktop:release
 ```
 
-Pushing a `desktop-v*` or `v*` tag triggers the GitHub Actions macOS desktop workflow, which builds unsigned `Stagent.app.zip` and `Stagent_*.dmg` artifacts and attaches them to the repo release.
+For a build-only smoke check, run `npm run desktop:release -- --skip-upload`.
+
+The release script builds locally on macOS, verifies the DMG, creates or updates the `desktop-v<package.json version>` GitHub release, uploads `Stagent.dmg` and `Stagent.app.zip`, and refreshes the stable download URL at `https://github.com/manavsehgal/stagent/releases/latest/download/Stagent.dmg`.
 
 ### Project Structure
 

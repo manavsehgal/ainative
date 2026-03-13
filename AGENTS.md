@@ -52,3 +52,4 @@ This repository supports both Codex and Claude Code. Treat this file as the stab
 - `MEMORY.md` is the shared evolving context file for this project.
 - `CLAUDE.md` should remain a thin compatibility pointer, not a second source of truth.
 - Project-specific Codex skills live under `~/.codex/skills`; repo-local `.claude/skills/` remains useful as source material and for Claude compatibility.
+- The tracked local desktop release skill lives at `.claude/skills/stagent-release/`; keep it aligned with `scripts/release-desktop.mjs` and the README desktop release section.

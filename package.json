@@ -31,6 +31,7 @@
     "desktop:dev": "node scripts/tauri.mjs dev",
     "desktop:build": "node scripts/tauri.mjs build",
     "desktop:icon": "node scripts/tauri.mjs icon",
+    "desktop:release": "node scripts/release-desktop.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",

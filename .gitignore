@@ -24,6 +24,7 @@ next-env.d.ts
 # build artifacts
 tsconfig.tsbuildinfo
 src-tauri/target/
+output/release/
 
 # test coverage
 coverage/
@@ -35,7 +36,11 @@ features/
 wireframes/
 
 # claude code config
-.claude/
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/stagent-release/
+!.claude/skills/stagent-release/**
 
 # marketing screenshots
 screengrabs/
