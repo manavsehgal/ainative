@@ -176,11 +176,23 @@ async function ensureReleaseOutputDirectory() {
   await fs.mkdir(releaseOutputDirectory, { recursive: true });
 }
 
+async function signAppBundle() {
+  console.log("Ad-hoc signing app bundle...");
+  await run("codesign", ["--force", "--deep", "--sign", "-", macosAppPath]);
+}
+
+async function verifyAppSignature() {
+  console.log("Verifying app bundle signature...");
+  await run("codesign", ["--verify", "--deep", "--strict", macosAppPath]);
+}
+
 async function normalizeArtifacts() {
   if (!(await exists(macosAppPath))) {
     throw new Error(`Missing app bundle: ${macosAppPath}`);
   }
 
+  await signAppBundle();
+  await verifyAppSignature();
   await ensureReleaseOutputDirectory();
 
   const stableDmgPath = path.join(releaseOutputDirectory, stableDmgName);

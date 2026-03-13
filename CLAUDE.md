@@ -20,3 +20,11 @@ npm run test:coverage
 
 - Claude-local settings may live in `.claude/settings.local.json`.
 - Claude memory may also exist under `~/.claude/projects/.../memory/`, but the repo-level shared files should be treated as canonical first.
+
+## Cross-Tool Sync (Codex ↔ Claude)
+
+- Codex config: `~/.codex/config.toml` (model, trust levels, MCP servers)
+- Codex global skills: `~/.codex/skills/` — 23 skills including OpenAI API media tools (imagegen, sora, speech, transcribe) and security analysis skills
+- Shared skills live in both `.claude/skills/` and `~/.codex/skills/` — keep in sync when updating
+- Codex SDK reference docs captured at `.claude/reference/developers-openai-com-codex-sdk/`
+- Codex App Server runtime integrated via `src/lib/agents/runtime/codex-app-server-client.ts`
