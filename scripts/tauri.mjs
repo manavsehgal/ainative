@@ -1,3 +1,4 @@
+import { cpSync, existsSync, mkdirSync } from "node:fs";
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -88,6 +89,45 @@ function parseAlphaChannel(pixel) {
   return Number.isFinite(alpha) ? alpha : 1;
 }
 
+function resolveBundledAppRoot() {
+  const resourcesRoot = path.join(
+    tauriRoot,
+    "target",
+    "release",
+    "bundle",
+    "macos",
+    "Stagent.app",
+    "Contents",
+    "Resources",
+  );
+
+  for (const candidate of [path.join(resourcesRoot, "_up_"), resourcesRoot]) {
+    if (existsSync(path.join(candidate, "dist", "cli.js"))) {
+      return candidate;
+    }
+  }
+
+  throw new Error(`Could not resolve bundled app resources under ${resourcesRoot}.`);
+}
+
+function syncNextRuntimeNodeModules() {
+  const sourceNodeModules = path.join(repoRoot, ".next", "node_modules");
+  if (!existsSync(sourceNodeModules)) {
+    return;
+  }
+
+  const bundledAppRoot = resolveBundledAppRoot();
+  const bundledNextDir = path.join(bundledAppRoot, ".next");
+  const bundledNodeModules = path.join(bundledNextDir, "node_modules");
+
+  mkdirSync(bundledNextDir, { recursive: true });
+  cpSync(sourceNodeModules, bundledNodeModules, {
+    recursive: true,
+    force: true,
+    verbatimSymlinks: true,
+  });
+}
+
 async function validateIconSource() {
   const { stdout } = await capture(
     "sips",
@@ -143,7 +183,18 @@ async function main() {
   }
 
   await run("npm", ["run", "build:cli"], { cwd: repoRoot });
+
+  // For release builds, pre-build Next.js so the bundle includes .next/
+  // and the sidecar can use `next start` (fast) instead of `next dev` (slow).
+  if (mode === "build") {
+    await run("npm", ["run", "build"], { cwd: repoRoot });
+  }
+
   await run("cargo", ["tauri", mode, ...extraArgs], { cwd: tauriRoot });
+
+  if (mode === "build") {
+    syncNextRuntimeNodeModules();
+  }
 }
 
 main().catch((error) => {

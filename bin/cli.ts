@@ -115,18 +115,33 @@ function findAvailablePort(preferred: number): Promise<number> {
   });
 }
 
-// 5. Find local next binary
-function findLocalBin(name: string, cwd: string): string {
-  const local = join(cwd, "node_modules", ".bin", name);
-  if (existsSync(local)) return local;
-  // Walk up to find hoisted node_modules
-  let dir = dirname(cwd);
-  while (dir !== dirname(dir)) {
-    const candidate = join(dir, "node_modules", ".bin", name);
-    if (existsSync(candidate)) return candidate;
-    dir = dirname(dir);
+function findClosestPath(cwd: string, segments: string[]): string | null {
+  let dir = cwd;
+
+  while (true) {
+    const candidate = join(dir, ...segments);
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+
+    const parent = dirname(dir);
+    if (parent === dir) {
+      return null;
+    }
+
+    dir = parent;
   }
-  return name; // Fallback to PATH
+}
+
+function resolveNextEntrypoint(cwd: string): string {
+  const nextEntrypoint = findClosestPath(cwd, ["node_modules", "next", "dist", "bin", "next"]);
+  if (nextEntrypoint) {
+    return nextEntrypoint;
+  }
+
+  throw new Error(
+    `Could not resolve Next.js CLI entrypoint from ${cwd}. Expected node_modules/next/dist/bin/next.`,
+  );
 }
 
 async function main() {
@@ -169,13 +184,20 @@ async function main() {
     }
   }
 
-  // 7. Spawn Next.js dev server
-  const nextBin = findLocalBin("next", effectiveCwd);
+  // 7. Spawn Next.js server (production if pre-built, dev otherwise)
+  const nextEntrypoint = resolveNextEntrypoint(effectiveCwd);
+  const isPrebuilt = existsSync(join(effectiveCwd, ".next", "BUILD_ID"));
+  const nextArgs = isPrebuilt
+    ? ["start", "--port", String(actualPort)]
+    : ["dev", "--turbopack", "--port", String(actualPort)];
+
   console.log(`Stagent ${pkg.version}`);
   console.log(`Data dir: ${DATA_DIR}`);
+  console.log(`Mode: ${isPrebuilt ? "production" : "development"}`);
+  console.log(`Next entry: ${nextEntrypoint}`);
   console.log(`Starting Stagent on http://localhost:${actualPort}`);
 
-  const child = spawn(nextBin, ["dev", "--turbopack", "--port", String(actualPort)], {
+  const child = spawn(process.execPath, [nextEntrypoint, ...nextArgs], {
     cwd: effectiveCwd,
     stdio: "inherit",
     env: {

@@ -1,8 +1,8 @@
 use std::{
-    fs,
+    fs::{self, File},
     net::{TcpListener, TcpStream},
     path::PathBuf,
-    process::{Child, Command},
+    process::{Child, Command, Stdio},
     sync::Mutex,
     thread,
     time::{Duration, Instant},
@@ -22,7 +22,23 @@ impl Default for SidecarState {
     }
 }
 
+fn setup_crash_log() {
+    use std::io::Write;
+    let log_path = PathBuf::from("/tmp/stagent-crash.log");
+    let _ = fs::remove_file(&log_path);
+
+    std::panic::set_hook(Box::new(move |info| {
+        let message = format!("PANIC: {}\nLocation: {:?}\n---\n", info, info.location());
+        if let Ok(mut f) = fs::OpenOptions::new().create(true).append(true).open(&log_path) {
+            let _ = f.write_all(message.as_bytes());
+        }
+        eprintln!("{message}");
+    }));
+}
+
 fn main() {
+    setup_crash_log();
+
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
@@ -52,13 +68,37 @@ fn main() {
                 &format!("Allocated localhost port {requested_port} for the desktop sidecar."),
             );
 
-            let child = Command::new(resolve_node_bin())
+            let sidecar_log_path = PathBuf::from("/tmp/stagent-sidecar.log");
+            let log_file = File::create(&sidecar_log_path)
+                .map_err(|e| io_error(format!("failed to create sidecar log: {e}")))?;
+            let stderr_file = log_file.try_clone()
+                .map_err(|e| io_error(format!("failed to clone sidecar log handle: {e}")))?;
+
+            let node_bin = resolve_node_bin();
+
+            // The CLI spawns `node_modules/.bin/next` which is a shell shim
+            // using `#!/usr/bin/env node`. Finder-launched GUI apps have a
+            // minimal PATH that won't include node, so prepend its directory.
+            let node_dir = PathBuf::from(&node_bin)
+                .parent()
+                .unwrap_or_else(|| std::path::Path::new("/usr/local/bin"))
+                .to_path_buf();
+            let enriched_path = format!(
+                "{}:{}",
+                node_dir.display(),
+                std::env::var("PATH").unwrap_or_default()
+            );
+
+            let child = Command::new(&node_bin)
                 .arg(&cli_path)
                 .arg("--no-open")
                 .arg("--port")
                 .arg(requested_port.to_string())
                 .current_dir(&app_root)
                 .env("STAGENT_DATA_DIR", &data_dir)
+                .env("PATH", &enriched_path)
+                .stdout(Stdio::from(log_file))
+                .stderr(Stdio::from(stderr_file))
                 .spawn()
                 .map_err(|error| io_error(format!("failed to start Stagent desktop sidecar: {error}")))?;
 
@@ -115,7 +155,39 @@ fn main() {
 }
 
 fn resolve_node_bin() -> String {
-    std::env::var("STAGENT_DESKTOP_NODE_BIN").unwrap_or_else(|_| "node".to_string())
+    if let Ok(bin) = std::env::var("STAGENT_DESKTOP_NODE_BIN") {
+        return bin;
+    }
+
+    // macOS GUI apps launched via Finder get a minimal PATH (/usr/bin:/bin:/usr/sbin:/sbin).
+    // Node installed via Homebrew, nvm, fnm, Volta, or the official pkg installer won't be
+    // on that PATH. Probe common locations so the sidecar can start without requiring the
+    // user to set an env var.
+    let candidates = [
+        "/usr/local/bin/node",           // Homebrew (Intel) / official pkg
+        "/opt/homebrew/bin/node",        // Homebrew (Apple Silicon)
+        "/usr/bin/node",                 // system / distro package
+    ];
+
+    // Also check nvm/fnm/volta in the user's home directory.
+    let home_candidates: Vec<PathBuf> = if let Ok(home) = std::env::var("HOME") {
+        vec![
+            PathBuf::from(&home).join(".nvm/current/bin/node"),
+            PathBuf::from(&home).join(".local/share/fnm/aliases/default/bin/node"),
+            PathBuf::from(&home).join(".volta/bin/node"),
+        ]
+    } else {
+        vec![]
+    };
+
+    for candidate in candidates.iter().map(PathBuf::from).chain(home_candidates) {
+        if candidate.exists() {
+            return candidate.to_string_lossy().into_owned();
+        }
+    }
+
+    // Last resort: hope it's on PATH (works from terminal, not from Finder).
+    "node".to_string()
 }
 
 fn ensure_data_dir(app: &tauri::App) -> Result<String, Box<dyn std::error::Error>> {
@@ -126,9 +198,16 @@ fn ensure_data_dir(app: &tauri::App) -> Result<String, Box<dyn std::error::Error
 
 fn resolve_app_root(app: &tauri::App) -> Result<PathBuf, Box<dyn std::error::Error>> {
     if let Ok(resource_dir) = app.path().resource_dir() {
-        let bundled_cli = resource_dir.join("dist").join("cli.js");
-        if bundled_cli.exists() {
-            return Ok(resource_dir);
+        // Tauri v2 rewrites "../" resource prefixes to "_up_/" inside the bundle.
+        // Our tauri.conf.json resources use "../dist", "../node_modules", etc.,
+        // so the actual project files land under <Resources>/_up_/.
+        for candidate in &[
+            resource_dir.join("_up_"),
+            resource_dir.clone(),
+        ] {
+            if candidate.join("dist").join("cli.js").exists() {
+                return Ok(candidate.clone());
+            }
         }
     }
 

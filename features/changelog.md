@@ -2,6 +2,15 @@
 
 ## 2026-03-13
 
+### Ship Verification
+- `desktop-sidecar-boot-fix` (P0, MVP) — The bundle boot blocker is no longer the broken `next` shim
+  - Replaced the sidecar's `node_modules/.bin/next` launch path with a direct `node_modules/next/dist/bin/next` invocation via the active Node binary, which avoids Tauri's symlink-flattened `.bin/` copies
+  - Added a post-bundle sync of `.next/node_modules` into `Stagent.app` so Next's generated hashed externals such as `better-sqlite3-*` remain resolvable inside the packaged app
+  - Verified the actual release bundle sidecar starts in production mode and returns HTTP `200` on localhost under a Finder-style minimal `PATH`
+
+### Started
+- `desktop-sidecar-boot-fix` (P0, MVP) — Desktop app launches but hangs at boot screen. Five issues identified and four solved (DMG signing, node PATH, `_up_/` path mapping, shim PATH). Initial blocker for this slice: Tauri's resource bundling destroys `node_modules/.bin/` symlinks, breaking the `next` CLI shim's relative requires. Feature spec documents the full diagnosis log.
+
 ### Re-prioritized
 - **Distribution direction**: Stagent is now desktop-only in user-facing product positioning
   - Removed npm / `npx` onboarding and publish wiring from the repo surface, while keeping the CLI build only as an internal sidecar dependency of the desktop app
