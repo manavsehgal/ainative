@@ -1,4 +1,4 @@
-import { cpSync, existsSync, mkdirSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -130,6 +130,26 @@ function syncNextRuntimeNodeModules() {
   });
 }
 
+function pruneBundledNextArtifacts() {
+  const bundledAppRoot = resolveBundledAppRoot();
+  const bundledNextDir = path.join(bundledAppRoot, ".next");
+
+  for (const relativePath of [
+    "cache",
+    "dev",
+    "diagnostics",
+    "trace",
+    "trace-build",
+    "turbopack",
+    "types",
+  ]) {
+    rmSync(path.join(bundledNextDir, relativePath), {
+      recursive: true,
+      force: true,
+    });
+  }
+}
+
 async function validateIconSource() {
   const { stdout } = await capture(
     "sips",
@@ -195,7 +215,11 @@ async function main() {
   await run("cargo", ["tauri", mode, ...extraArgs], { cwd: tauriRoot });
 
   if (mode === "build") {
+    pruneBundledNextArtifacts();
     syncNextRuntimeNodeModules();
+    await run(process.execPath, [path.join("scripts", "desktop-sidecar-smoke.mjs")], {
+      cwd: repoRoot,
+    });
   }
 }
 

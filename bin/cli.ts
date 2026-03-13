@@ -14,6 +14,12 @@ import { createServer } from "net";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
+import {
+  buildNextLaunchArgs,
+  buildSidecarUrl,
+  resolveNextEntrypoint,
+  resolveSidecarPort,
+} from "../src/lib/desktop/sidecar-launch";
 import { getStagentDataDir, getStagentDbPath } from "../src/lib/utils/stagent-paths";
 import {
   bootstrapStagentDatabase,
@@ -115,37 +121,14 @@ function findAvailablePort(preferred: number): Promise<number> {
   });
 }
 
-function findClosestPath(cwd: string, segments: string[]): string | null {
-  let dir = cwd;
-
-  while (true) {
-    const candidate = join(dir, ...segments);
-    if (existsSync(candidate)) {
-      return candidate;
-    }
-
-    const parent = dirname(dir);
-    if (parent === dir) {
-      return null;
-    }
-
-    dir = parent;
-  }
-}
-
-function resolveNextEntrypoint(cwd: string): string {
-  const nextEntrypoint = findClosestPath(cwd, ["node_modules", "next", "dist", "bin", "next"]);
-  if (nextEntrypoint) {
-    return nextEntrypoint;
-  }
-
-  throw new Error(
-    `Could not resolve Next.js CLI entrypoint from ${cwd}. Expected node_modules/next/dist/bin/next.`,
-  );
-}
-
 async function main() {
-  const actualPort = await findAvailablePort(requestedPort);
+  // The desktop shell already probes and passes a free port. Re-selecting a
+  // different port here can desync the Rust wait loop from the actual server.
+  const actualPort = await resolveSidecarPort({
+    argv: process.argv.slice(2),
+    requestedPort,
+    findAvailablePort,
+  });
   let effectiveCwd = appDir;
 
   // 6. Workspace hoisting workaround for Next.js dependencies
@@ -187,15 +170,17 @@ async function main() {
   // 7. Spawn Next.js server (production if pre-built, dev otherwise)
   const nextEntrypoint = resolveNextEntrypoint(effectiveCwd);
   const isPrebuilt = existsSync(join(effectiveCwd, ".next", "BUILD_ID"));
-  const nextArgs = isPrebuilt
-    ? ["start", "--port", String(actualPort)]
-    : ["dev", "--turbopack", "--port", String(actualPort)];
+  const nextArgs = buildNextLaunchArgs({
+    isPrebuilt,
+    port: actualPort,
+  });
+  const sidecarUrl = buildSidecarUrl(actualPort);
 
   console.log(`Stagent ${pkg.version}`);
   console.log(`Data dir: ${DATA_DIR}`);
   console.log(`Mode: ${isPrebuilt ? "production" : "development"}`);
   console.log(`Next entry: ${nextEntrypoint}`);
-  console.log(`Starting Stagent on http://localhost:${actualPort}`);
+  console.log(`Starting Stagent on ${sidecarUrl}`);
 
   const child = spawn(process.execPath, [nextEntrypoint, ...nextArgs], {
     cwd: effectiveCwd,
@@ -212,7 +197,7 @@ async function main() {
     setTimeout(async () => {
       try {
         const open = (await import("open")).default;
-        await open(`http://localhost:${actualPort}`);
+        await open(sidecarUrl);
       } catch {
         // Silently fail — user can open manually
       }
