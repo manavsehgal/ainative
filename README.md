@@ -23,7 +23,7 @@ Grab the latest `Stagent.dmg` or `Stagent.app.zip` asset from GitHub Releases, t
 Current desktop release notes:
 
 - macOS-only for now
-- unsigned build, so macOS may warn that the app is from an unidentified developer
+- GitHub desktop releases are intended to be Developer ID signed and notarized; local smoke builds created with `npm run desktop:release -- --skip-upload` will still warn if Apple credentials are not configured
 - the current desktop wrapper expects `node` to be available on the machine
 
 <img src="./output/playwright/home-playwright-after.png" alt="Stagent home workspace" width="1200" />
@@ -220,7 +220,7 @@ Configuration hub with provider-aware sections: Claude authentication (API key o
 Stagent still uses a small Node sidecar under the hood. It is built from `bin/cli.ts` into `dist/cli.js`, but it is now an internal desktop bootstrap rather than a user-facing distribution channel.
 
 #### Tauri Desktop
-The repo produces macOS desktop artifacts via Tauri. Local development uses `npm run desktop:dev`, local packaging uses `npm run desktop:build`, and release publishing now runs locally via `npm run desktop:release` so the uploaded GitHub assets stay on stable names: `Stagent.dmg` and `Stagent.app.zip`. Keep `public/desktop-icon-512.png` as the dedicated rounded desktop source icon with transparent corners; `public/icon-512.png` remains the square web/PWA icon. The local release script also stamps the same branded icon onto the mounted DMG volume so Finder shows the corrected Stagent icon during install.
+The repo produces macOS desktop artifacts via Tauri. Local development uses `npm run desktop:dev`, local packaging uses `npm run desktop:build`, and release publishing now runs locally via `npm run desktop:release` so the uploaded GitHub assets stay on stable names: `Stagent.dmg` and `Stagent.app.zip`. Published releases must be built with `APPLE_SIGNING_IDENTITY` plus notarization credentials so the downloaded app clears Gatekeeper without the "Apple could not verify" malware warning. Keep `public/desktop-icon-512.png` as the dedicated rounded desktop source icon with transparent corners; `public/icon-512.png` remains the square web/PWA icon. The local release script also stamps the same branded icon onto the mounted DMG volume so Finder shows the corrected Stagent icon during install.
 
 #### Database
 SQLite with WAL mode via better-sqlite3 + Drizzle ORM. Eight tables: `projects`, `tasks`, `workflows`, `agent_logs`, `notifications`, `documents`, `schedules`, `settings`. Self-healing bootstrap — tables are created on startup if missing.
@@ -265,7 +265,20 @@ npm run desktop:release
 
 For a build-only smoke check, run `npm run desktop:release -- --skip-upload`.
 
-The release script builds locally on macOS, verifies the DMG, creates or updates the `desktop-v<package.json version>` GitHub release, uploads `Stagent.dmg` and `Stagent.app.zip`, and refreshes the stable download URL at `https://github.com/manavsehgal/stagent/releases/latest/download/Stagent.dmg`.
+Before publishing a real desktop release, configure Apple signing once on the release machine:
+
+```bash
+export APPLE_SIGNING_IDENTITY="Developer ID Application: Your Name (TEAMID)"
+xcrun notarytool store-credentials stagent-notary \
+  --apple-id "you@example.com" \
+  --team-id "TEAMID" \
+  --password "app-specific-password"
+export APPLE_NOTARY_PROFILE="stagent-notary"
+```
+
+You can use direct credentials instead of a keychain profile by exporting `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, and `APPLE_TEAM_ID`.
+
+The release script builds locally on macOS, signs the app, notarizes and staples the app bundle and DMG when Apple credentials are configured, verifies the DMG, creates or updates the `desktop-v<package.json version>` GitHub release, uploads `Stagent.dmg` and `Stagent.app.zip`, and refreshes the stable download URL at `https://github.com/manavsehgal/stagent/releases/latest/download/Stagent.dmg`. Uploads now fail fast unless Developer ID signing and notarization are configured so unsigned artifacts are not published by accident.
 
 ### Project Structure
 

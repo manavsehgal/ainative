@@ -31,6 +31,7 @@
     "desktop:dev": "node scripts/tauri.mjs dev",
     "desktop:build": "node scripts/tauri.mjs build",
     "desktop:smoke": "node scripts/desktop-sidecar-smoke.mjs",
+    "desktop:smoke:dmg": "node scripts/desktop-mounted-dmg-smoke.mjs",
     "desktop:icon": "node scripts/tauri.mjs icon",
     "desktop:release": "node scripts/release-desktop.mjs",
     "test": "vitest run",

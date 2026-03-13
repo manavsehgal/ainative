@@ -1,14 +1,18 @@
 use std::{
-    fs::{self, File},
+    fs::{self, File, OpenOptions},
     net::{TcpListener, TcpStream},
     path::PathBuf,
     process::{Child, Command, Stdio},
     sync::Mutex,
     thread,
-    time::{Duration, Instant},
+    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
-use tauri::{AppHandle, Manager, RunEvent};
+use tauri::{AppHandle, Manager, RunEvent, Url};
+
+const BOOT_LOG_PATH: &str = "/tmp/stagent-boot.log";
+const BOOT_BRIEFING_MS: Duration = Duration::from_millis(4_200);
+const BOOT_HANDOFF_FADE_MS: Duration = Duration::from_millis(360);
 
 struct SidecarState {
     child: Mutex<Option<Child>>,
@@ -36,20 +40,48 @@ fn setup_crash_log() {
     }));
 }
 
+fn setup_boot_log() {
+    let _ = fs::remove_file(BOOT_LOG_PATH);
+}
+
+fn boot_log(phase: &str, detail: &str) {
+    use std::io::Write;
+
+    let ts = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_millis())
+        .unwrap_or_default();
+    let sanitized_detail = detail.replace('\n', "\\n");
+
+    if let Ok(mut file) = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(BOOT_LOG_PATH)
+    {
+        let _ = writeln!(file, "ts={ts} phase={phase} detail={sanitized_detail}");
+    }
+}
+
 fn main() {
     setup_crash_log();
+    setup_boot_log();
 
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
         .manage(SidecarState::default())
         .setup(|app| {
+            let boot_started_at = Instant::now();
             let requested_port = find_available_port(3210)
                 .ok_or_else(|| io_error("failed to reserve a local port for the desktop sidecar"))?;
             let app_root = resolve_app_root(app)?;
             let cli_path = app_root.join("dist").join("cli.js");
 
             if !cli_path.exists() {
+                boot_log(
+                    "setup_error",
+                    &format!("desktop sidecar entry is missing: {}", cli_path.display()),
+                );
                 return Err(io_error(format!(
                     "desktop sidecar entry is missing: {}",
                     cli_path.display()
@@ -58,6 +90,10 @@ fn main() {
 
             let data_dir = ensure_data_dir(app)?;
             let server_url = format!("http://127.0.0.1:{requested_port}");
+            boot_log(
+                "port_allocated",
+                &format!("reserved localhost channel at {server_url}"),
+            );
             let wait_window = app
                 .get_webview_window("main")
                 .ok_or_else(|| io_error("desktop main window is not configured"))?;
@@ -100,13 +136,23 @@ fn main() {
                 .stdout(Stdio::from(log_file))
                 .stderr(Stdio::from(stderr_file))
                 .spawn()
-                .map_err(|error| io_error(format!("failed to start Stagent desktop sidecar: {error}")))?;
+                .map_err(|error| {
+                    boot_log(
+                        "sidecar_spawn_error",
+                        &format!("failed to start desktop sidecar: {error}"),
+                    );
+                    io_error(format!("failed to start Stagent desktop sidecar: {error}"))
+                })?;
 
             let child_id = child.id();
             {
                 let state = app.state::<SidecarState>();
                 *state.child.lock().unwrap() = Some(child);
             }
+            boot_log(
+                "sidecar_spawned",
+                &format!("pid={child_id} url={server_url}"),
+            );
 
             boot_set_status(
                 &wait_window,
@@ -118,6 +164,7 @@ fn main() {
             let ready_server_url = server_url.clone();
             tauri::async_runtime::spawn(async move {
                 if wait_for_server(requested_port, Duration::from_secs(90)) {
+                    boot_log("sidecar_ready", &ready_server_url);
                     boot_mark_ready(
                         &ready_window,
                         &ready_server_url,
@@ -126,7 +173,51 @@ fn main() {
                             "The live workspace answered on {ready_server_url}. Holding for a smooth desktop handoff."
                         ),
                     );
+
+                    let elapsed = boot_started_at.elapsed();
+                    if elapsed < BOOT_BRIEFING_MS {
+                        thread::sleep(BOOT_BRIEFING_MS - elapsed);
+                    }
+
+                    boot_log("handoff_started", &ready_server_url);
+                    boot_begin_handoff(
+                        &ready_window,
+                        "Opening workspace",
+                        "Briefing complete. Transitioning into the live desktop workspace.",
+                    );
+                    thread::sleep(BOOT_HANDOFF_FADE_MS);
+
+                    match ready_server_url.parse::<Url>() {
+                        Ok(url) => {
+                            if let Err(error) = ready_window.navigate(url) {
+                                let message = format!(
+                                    "failed to navigate desktop shell to live workspace: {error}"
+                                );
+                                boot_log("handoff_error", &message);
+                                boot_mark_error(
+                                    &ready_window,
+                                    "Handoff failed",
+                                    "Desktop sidecar answered, but the shell could not open the live workspace.",
+                                );
+                            } else {
+                                boot_log("handoff_navigated", &ready_server_url);
+                            }
+                        }
+                        Err(error) => {
+                            let message = format!("failed to parse live workspace url: {error}");
+                            boot_log("handoff_error", &message);
+                            boot_mark_error(
+                                &ready_window,
+                                "Handoff failed",
+                                "Desktop sidecar answered, but the shell could not open the live workspace.",
+                            );
+                        }
+                    }
                 } else {
+                    boot_log(
+                        "timeout",
+                        &format!("desktop sidecar did not answer on {ready_server_url} within 90s"),
+                    );
                     boot_mark_error(
                         &ready_window,
                         "Launch timeout",
@@ -256,6 +347,12 @@ fn boot_set_status(window: &tauri::WebviewWindow, phase: &str, message: &str) {
 fn boot_mark_ready(window: &tauri::WebviewWindow, url: &str, phase: &str, message: &str) {
     let _ = window.eval(&format!(
         "window.__STAGENT_BOOT__?.markReady({url:?}, {phase:?}, {message:?});"
+    ));
+}
+
+fn boot_begin_handoff(window: &tauri::WebviewWindow, phase: &str, message: &str) {
+    let _ = window.eval(&format!(
+        "window.__STAGENT_BOOT__?.beginHandoff({phase:?}, {message:?});"
     ));
 }
 

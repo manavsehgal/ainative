@@ -15,6 +15,11 @@ const stableDmgName = "Stagent.dmg";
 const stableZipName = "Stagent.app.zip";
 const defaultRepo = "manavsehgal/stagent";
 
+function readNonEmptyEnv(name) {
+  const value = process.env[name]?.trim();
+  return value ? value : null;
+}
+
 function parseArgs(argv) {
   const options = {
     repo: defaultRepo,
@@ -176,38 +181,202 @@ async function ensureReleaseOutputDirectory() {
   await fs.mkdir(releaseOutputDirectory, { recursive: true });
 }
 
-async function signAppBundle() {
-  console.log("Ad-hoc signing app bundle...");
+function resolveSigningContext({ requireTrustedRelease }) {
+  const signingIdentity = readNonEmptyEnv("APPLE_SIGNING_IDENTITY");
+  const notaryProfile = readNonEmptyEnv("APPLE_NOTARY_PROFILE");
+  const appleId = readNonEmptyEnv("APPLE_ID");
+  const appSpecificPassword =
+    readNonEmptyEnv("APPLE_APP_SPECIFIC_PASSWORD") ?? readNonEmptyEnv("APPLE_APP_PASSWORD");
+  const teamId = readNonEmptyEnv("APPLE_TEAM_ID");
+
+  const hasNotaryProfile = Boolean(notaryProfile);
+  const hasDirectNotaryCredentials = Boolean(appleId && appSpecificPassword && teamId);
+  const canNotarize = hasNotaryProfile || hasDirectNotaryCredentials;
+  const shouldUseTrustedSigning = Boolean(signingIdentity);
+  const shouldNotarize = shouldUseTrustedSigning && canNotarize;
+
+  if (requireTrustedRelease && !signingIdentity) {
+    throw new Error(
+      [
+        "Publishing desktop assets now requires a Developer ID identity.",
+        "Set APPLE_SIGNING_IDENTITY to a valid 'Developer ID Application: ...' certificate in your login keychain.",
+        "For an unsigned local smoke build, use `npm run desktop:release -- --skip-upload`.",
+      ].join(" "),
+    );
+  }
+
+  if (requireTrustedRelease && !canNotarize) {
+    throw new Error(
+      [
+        "Publishing desktop assets now requires notarization credentials.",
+        "Set APPLE_NOTARY_PROFILE to a stored `xcrun notarytool` keychain profile,",
+        "or provide APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, and APPLE_TEAM_ID.",
+      ].join(" "),
+    );
+  }
+
+  return {
+    signingIdentity,
+    shouldUseTrustedSigning,
+    shouldNotarize,
+    notaryProfile,
+    appleId,
+    appSpecificPassword,
+    teamId,
+  };
+}
+
+function getNotaryAuthArgs(signingContext) {
+  if (signingContext.notaryProfile) {
+    return ["--keychain-profile", signingContext.notaryProfile];
+  }
+
+  return [
+    "--apple-id",
+    signingContext.appleId,
+    "--password",
+    signingContext.appSpecificPassword,
+    "--team-id",
+    signingContext.teamId,
+  ];
+}
+
+async function signAppBundle(signingContext) {
+  if (signingContext.shouldUseTrustedSigning) {
+    console.log(`Signing app bundle with ${signingContext.signingIdentity}...`);
+    await run("codesign", [
+      "--force",
+      "--deep",
+      "--timestamp",
+      "--options",
+      "runtime",
+      "--sign",
+      signingContext.signingIdentity,
+      macosAppPath,
+    ]);
+    return;
+  }
+
+  console.log("Ad-hoc signing app bundle for local smoke build...");
   await run("codesign", ["--force", "--deep", "--sign", "-", macosAppPath]);
 }
 
 async function verifyAppSignature() {
   console.log("Verifying app bundle signature...");
-  await run("codesign", ["--verify", "--deep", "--strict", macosAppPath]);
+  await run("codesign", ["--verify", "--deep", "--strict", "--verbose=2", macosAppPath]);
 }
 
-async function normalizeArtifacts() {
-  if (!(await exists(macosAppPath))) {
-    throw new Error(`Missing app bundle: ${macosAppPath}`);
-  }
+async function verifyTrustedApp() {
+  console.log("Assessing app bundle with Gatekeeper...");
+  await run("spctl", ["--assess", "--type", "execute", "--verbose=4", macosAppPath]);
+}
 
-  await signAppBundle();
-  await verifyAppSignature();
-  await ensureReleaseOutputDirectory();
-
-  const stableDmgPath = path.join(releaseOutputDirectory, stableDmgName);
-  const stableZipPath = path.join(releaseOutputDirectory, stableZipName);
-
-  await buildStableDmg(stableDmgPath);
-  await fs.rm(stableZipPath, { force: true });
+async function packageAppZip(targetPath) {
+  await fs.rm(targetPath, { force: true });
   await run("ditto", [
     "-c",
     "-k",
     "--sequesterRsrc",
     "--keepParent",
     macosAppPath,
-    stableZipPath,
+    targetPath,
   ]);
+}
+
+async function signDiskImage(dmgPath, signingContext) {
+  if (!signingContext.shouldUseTrustedSigning) {
+    return;
+  }
+
+  console.log(`Signing disk image with ${signingContext.signingIdentity}...`);
+  await run("codesign", [
+    "--force",
+    "--timestamp",
+    "--sign",
+    signingContext.signingIdentity,
+    dmgPath,
+  ]);
+}
+
+async function verifySignedDiskImage(dmgPath) {
+  console.log("Verifying disk image signature...");
+  await run("codesign", ["--verify", "--strict", "--verbose=2", dmgPath]);
+}
+
+async function notarizeArtifact(targetPath, signingContext) {
+  if (!signingContext.shouldNotarize) {
+    return;
+  }
+
+  console.log(`Submitting ${path.basename(targetPath)} for notarization...`);
+  await run("xcrun", [
+    "notarytool",
+    "submit",
+    targetPath,
+    ...getNotaryAuthArgs(signingContext),
+    "--wait",
+  ]);
+}
+
+async function stapleArtifact(targetPath) {
+  console.log(`Stapling ${path.basename(targetPath)}...`);
+  await run("xcrun", ["stapler", "staple", targetPath]);
+}
+
+async function validateStapledArtifact(targetPath) {
+  console.log(`Validating stapled ticket for ${path.basename(targetPath)}...`);
+  await run("xcrun", ["stapler", "validate", targetPath]);
+}
+
+async function verifyTrustedDiskImage(dmgPath) {
+  console.log("Assessing disk image with Gatekeeper...");
+  await run("spctl", [
+    "--assess",
+    "--type",
+    "open",
+    "--context",
+    "context:primary-signature",
+    "--verbose=4",
+    dmgPath,
+  ]);
+}
+
+async function normalizeArtifacts(signingContext) {
+  if (!(await exists(macosAppPath))) {
+    throw new Error(`Missing app bundle: ${macosAppPath}`);
+  }
+
+  await ensureReleaseOutputDirectory();
+  await signAppBundle(signingContext);
+  await verifyAppSignature();
+
+  const stableDmgPath = path.join(releaseOutputDirectory, stableDmgName);
+  const stableZipPath = path.join(releaseOutputDirectory, stableZipName);
+  const notarizationZipPath = path.join(releaseOutputDirectory, "Stagent-notary.zip");
+
+  if (signingContext.shouldNotarize) {
+    await packageAppZip(notarizationZipPath);
+    await notarizeArtifact(notarizationZipPath, signingContext);
+    await stapleArtifact(macosAppPath);
+    await validateStapledArtifact(macosAppPath);
+    await verifyTrustedApp();
+  }
+
+  await buildStableDmg(stableDmgPath);
+  if (signingContext.shouldUseTrustedSigning) {
+    await signDiskImage(stableDmgPath, signingContext);
+    await verifySignedDiskImage(stableDmgPath);
+  }
+
+  if (signingContext.shouldNotarize) {
+    await notarizeArtifact(stableDmgPath, signingContext);
+    await stapleArtifact(stableDmgPath);
+    await validateStapledArtifact(stableDmgPath);
+    await verifyTrustedDiskImage(stableDmgPath);
+  }
+
+  await packageAppZip(stableZipPath);
+  await fs.rm(notarizationZipPath, { force: true });
 
   return {
     stableDmgPath,
@@ -294,6 +463,10 @@ async function buildStableDmg(stableDmgPath) {
 
 async function verifyDmg(dmgPath) {
   await run("hdiutil", ["verify", dmgPath]);
+}
+
+async function runMountedDmgSmoke(dmgPath) {
+  await run(process.execPath, [path.join("scripts", "desktop-mounted-dmg-smoke.mjs"), dmgPath]);
 }
 
 async function getPackageVersion() {
@@ -400,6 +573,9 @@ async function main() {
   }
 
   const options = parseArgs(process.argv.slice(2));
+  const signingContext = resolveSigningContext({
+    requireTrustedRelease: !options.skipUpload,
+  });
   const version = await getPackageVersion();
   const tag = options.tag ?? `desktop-v${version}`;
   const title = options.title ?? `Stagent Desktop ${version}`;
@@ -413,8 +589,19 @@ async function main() {
     await run("npm", ["run", "desktop:build"]);
   }
 
-  const { stableDmgPath, stableZipPath } = await normalizeArtifacts();
+  if (!signingContext.shouldUseTrustedSigning) {
+    console.warn(
+      "APPLE_SIGNING_IDENTITY is not set. Building an ad-hoc-signed local artifact that will trigger Gatekeeper warnings when downloaded.",
+    );
+  } else if (!signingContext.shouldNotarize) {
+    console.warn(
+      "Notarization credentials are not configured. The app will be Developer ID signed, but Gatekeeper will still warn on downloaded builds until notarization is enabled.",
+    );
+  }
+
+  const { stableDmgPath, stableZipPath } = await normalizeArtifacts(signingContext);
   await verifyDmg(stableDmgPath);
+  await runMountedDmgSmoke(stableDmgPath);
 
   if (!options.skipUpload) {
     await createOrUpdateRelease({
@@ -442,6 +629,10 @@ async function main() {
   console.log(`Tag: ${tag}`);
   console.log(`DMG: ${stableDmgPath}`);
   console.log(`ZIP: ${stableZipPath}`);
+  console.log(
+    `Signing: ${signingContext.shouldUseTrustedSigning ? signingContext.signingIdentity : "ad-hoc"}`,
+  );
+  console.log(`Notarized: ${signingContext.shouldNotarize ? "yes" : "no"}`);
   console.log(`Stable DMG URL: ${stableDmgUrl}`);
   console.log(`Stable ZIP URL: ${stableZipUrl}`);
 }

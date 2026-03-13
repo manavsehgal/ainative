@@ -47,6 +47,7 @@ This file captures evolving project facts, decisions, and recurring gotchas that
 - New provider work should extend the runtime registry instead of importing Claude-specific helpers directly from shared orchestration code.
 - Schedule rows now carry `assignedAgent`, and workflow steps / loop configs can target provider runtimes directly.
 - The desktop sidecar must bind Next to `127.0.0.1`, not wildcard interfaces. The Tauri shell polls `127.0.0.1`, and binding Next to `::` can recreate the "Waiting for the localhost app to answer" hang when another app already occupies the same IPv6 localhost port.
+- The desktop wrapper now owns the final boot handoff into the live workspace. `loading.js` is presentation-only; Rust waits out the briefing window, logs boot phases, and performs the actual `WebviewWindow::navigate(...)`.
 
 ## Recurring Gotchas
 
@@ -55,6 +56,7 @@ This file captures evolving project facts, decisions, and recurring gotchas that
 - Tailwind v4 utility layers can beat naive custom selectors; increased specificity may be required when overriding `data-slot` components.
 - New sheet or dialog bodies often need explicit inner padding; do not assume Radix/shadcn body spacing exists by default.
 - `npm run desktop:build` now includes `scripts/desktop-sidecar-smoke.mjs`, which starts the packaged sidecar while an IPv6-only localhost listener already owns the same port. Keep that smoke test passing; it is the regression guard for the desktop boot screen hang.
+- `npm run desktop:release` now also mounts the finished `Stagent.dmg`, opens `Stagent.app` from the mounted volume, and requires `/tmp/stagent-boot.log` phases `port_allocated`, `sidecar_ready`, `handoff_started`, and `handoff_navigated`. Mounted-DMG launch is considered supported, not a best-effort install shortcut.
 
 ## Browser and Capture Notes
 

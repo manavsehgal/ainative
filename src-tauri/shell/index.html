@@ -17,6 +17,9 @@
         markReady(...args) {
           this._queue.push({ type: "markReady", args });
         },
+        beginHandoff(...args) {
+          this._queue.push({ type: "beginHandoff", args });
+        },
         markError(...args) {
           this._queue.push({ type: "markError", args });
         },

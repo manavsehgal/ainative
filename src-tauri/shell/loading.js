@@ -1,6 +1,5 @@
 const MIN_BRIEFING_MS = 4200;
 const ROTATION_MS = 2600;
-const HANDOFF_FADE_MS = 360;
 
 const slides = [
   {
@@ -95,13 +94,26 @@ function setStatus(phase, message) {
 function markReady(url, phase, message) {
   state.readyUrl = url;
   state.error = null;
+  state.handoffStarted = false;
   root.dataset.bootState = "ready";
   setStatus(phase || state.readyPhase, message || state.readyMessage);
+}
+
+function beginHandoff(phase, message) {
+  state.handoffStarted = true;
+  root.dataset.bootState = "handoff";
+  setStatus(
+    phase || "Opening workspace",
+    message || "Briefing complete. Transitioning into the live desktop workspace.",
+  );
+  countdownCopy.textContent = "Opening the live workspace";
+  meterFill.style.transform = "scaleX(1)";
 }
 
 function markError(phase, message) {
   state.readyUrl = null;
   state.error = message || phase || "The desktop sidecar did not answer in time.";
+  state.handoffStarted = false;
   root.dataset.bootState = "error";
   setStatus(phase || "Launch timeout", state.error);
 }
@@ -109,7 +121,7 @@ function markError(phase, message) {
 function updateProgress(elapsedMs) {
   let progress = 0.12;
 
-  if (state.error) {
+  if (state.handoffStarted || state.error) {
     progress = 1;
   } else if (state.readyUrl) {
     if (elapsedMs < MIN_BRIEFING_MS) {
@@ -137,6 +149,11 @@ function updateMeta(elapsedMs) {
     return;
   }
 
+  if (state.handoffStarted) {
+    countdownCopy.textContent = "Opening the live workspace";
+    return;
+  }
+
   if (state.readyUrl && elapsedMs < MIN_BRIEFING_MS) {
     countdownCopy.textContent = `Ready. Entering workspace in ${((MIN_BRIEFING_MS - elapsedMs) / 1000).toFixed(1)}s`;
     return;
@@ -155,30 +172,10 @@ function updateMeta(elapsedMs) {
   countdownCopy.textContent = "Waiting for the localhost app to answer";
 }
 
-function maybeHandoff(elapsedMs) {
-  if (!state.readyUrl || state.handoffStarted || elapsedMs < MIN_BRIEFING_MS) {
-    return;
-  }
-
-  state.handoffStarted = true;
-  root.dataset.bootState = "handoff";
-  setStatus(
-    "Opening workspace",
-    "Briefing complete. Transitioning into the live desktop workspace.",
-  );
-  countdownCopy.textContent = "Opening the live workspace";
-  meterFill.style.transform = "scaleX(1)";
-
-  window.setTimeout(() => {
-    window.location.replace(state.readyUrl);
-  }, HANDOFF_FADE_MS);
-}
-
 function tick() {
   const elapsedMs = performance.now() - state.startTime;
   updateProgress(elapsedMs);
   updateMeta(elapsedMs);
-  maybeHandoff(elapsedMs);
 }
 
 function installController() {
@@ -187,6 +184,7 @@ function installController() {
   window.__STAGENT_BOOT__ = {
     setStatus,
     markReady,
+    beginHandoff,
     markError,
   };
 

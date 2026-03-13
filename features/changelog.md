@@ -8,6 +8,12 @@
   - Added a post-bundle sync of `.next/node_modules` into `Stagent.app` so Next's generated hashed externals such as `better-sqlite3-*` remain resolvable inside the packaged app
   - Verified the actual release bundle sidecar starts in production mode and returns HTTP `200` on localhost under a Finder-style minimal `PATH`
 
+### Enhancement
+- `desktop-sidecar-boot-fix` (P0, MVP) — Hardened the desktop handoff and trimmed accidental bundle bloat
+  - Stopped the internal CLI from re-running port discovery when the Tauri wrapper already passed an explicit localhost port, preventing the boot screen from polling a stale port while the sidecar listens on a different one
+  - Pruned non-runtime Next artifacts such as `.next/dev`, trace files, diagnostics, and caches from the finished `Stagent.app` bundle so desktop release size no longer inherits stale local dev output
+  - Rebuilt the local desktop artifacts to verify the size drop: the bundled `.next/` payload fell to roughly `51MB`, and the smoke DMG compressed to roughly `260MB`
+
 ### Started
 - `desktop-sidecar-boot-fix` (P0, MVP) — Desktop app launches but hangs at boot screen. Five issues identified and four solved (DMG signing, node PATH, `_up_/` path mapping, shim PATH). Initial blocker for this slice: Tauri's resource bundling destroys `node_modules/.bin/` symlinks, breaking the `next` CLI shim's relative requires. Feature spec documents the full diagnosis log.
 

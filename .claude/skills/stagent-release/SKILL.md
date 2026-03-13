@@ -19,20 +19,24 @@ This skill is only for the Stagent desktop release flow in this repository.
 2. Build and publish with `npm run desktop:release`.
 3. For a local packaging check without touching GitHub, run `npm run desktop:release -- --skip-upload`.
 4. The normalized release artifacts are written to `output/release/Stagent.dmg` and `output/release/Stagent.app.zip`.
-5. The published release must upload `Stagent.dmg` without a version in the filename so the stable download URL stays:
+5. Published releases require `APPLE_SIGNING_IDENTITY` and notarization credentials. Prefer `APPLE_NOTARY_PROFILE` backed by `xcrun notarytool store-credentials`; direct `APPLE_ID` + `APPLE_APP_SPECIFIC_PASSWORD` + `APPLE_TEAM_ID` is also supported.
+6. `--skip-upload` is the only supported path for ad-hoc local smoke builds without Apple credentials.
+7. The published release must upload `Stagent.dmg` without a version in the filename so the stable download URL stays:
    `https://github.com/manavsehgal/stagent/releases/latest/download/Stagent.dmg`
-6. Keep `public/desktop-icon-512.png` as the dedicated rounded desktop source icon with transparent corners. `public/icon-512.png` remains the square web/PWA icon.
-7. Preserve DMG volume branding: the mounted image should include `.VolumeIcon.icns` and the volume must carry the Finder custom-icon flag.
+8. Keep `public/desktop-icon-512.png` as the dedicated rounded desktop source icon with transparent corners. `public/icon-512.png` remains the square web/PWA icon.
+9. Preserve DMG volume branding: the mounted image should include `.VolumeIcon.icns` and the volume must carry the Finder custom-icon flag.
 
 ## Release Rules
 
 - Do not reintroduce a GitHub Actions workflow that builds the desktop release.
 - Keep the uploaded DMG filename exactly `Stagent.dmg`.
 - Prefer the default tag `desktop-v<package.json version>` unless the user explicitly asks for a different tag.
+- Do not upload a release unless the app and DMG have been signed, notarized, and stapled.
 - If the release process changes, update both this skill and the README release section in the same change.
 
 ## Verification
 
 - Confirm the release script finishes with a successful `hdiutil verify`.
+- For a published release, confirm the script reports `Notarized: yes`.
 - If you published the release, verify the asset names on GitHub with `gh release view <tag> --json assets,url`.
 - If the user asks about the website download link, point it to the stable asset URL, not the generic releases page.
