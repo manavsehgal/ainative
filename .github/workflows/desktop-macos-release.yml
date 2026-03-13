@@ -27,6 +27,9 @@ jobs:
       - name: Set up Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli --version "^2.0.0" --locked
+
       - name: Cache Rust build outputs
         uses: swatinem/rust-cache@v2
         with:
