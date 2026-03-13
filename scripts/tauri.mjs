@@ -6,7 +6,9 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
 const tauriRoot = path.join(repoRoot, "src-tauri");
-const sourceIconPath = path.join(repoRoot, "public", "icon-512.png");
+// macOS app bundles use the bundled icon artwork directly, so keep a
+// dedicated rounded desktop source instead of reusing the square web icon.
+const sourceIconPath = path.join(repoRoot, "public", "desktop-icon-512.png");
 const mode = process.argv[2];
 const extraArgs = process.argv.slice(3);
 
@@ -141,7 +143,7 @@ async function validateIconSource() {
 
   if (width !== 512 || height !== 512 || format !== "png") {
     throw new Error(
-      "public/icon-512.png must stay a 512x512 PNG so Tauri can generate the desktop icon set predictably.",
+      "public/desktop-icon-512.png must stay a 512x512 PNG so Tauri can generate the desktop icon set predictably.",
     );
   }
 
@@ -164,11 +166,11 @@ async function validateIconSource() {
   );
 
   const pixels = [...cornerPixels.matchAll(/(?:tl|tr|bl|br)=([^\s]+)/g)].map((match) => match[1]);
-  const hasTransparentCorner = pixels.some((pixel) => parseAlphaChannel(pixel) < 0.999);
+  const hasTransparentCorners = pixels.every((pixel) => parseAlphaChannel(pixel) < 0.01);
 
-  if (hasTransparentCorner) {
+  if (!hasTransparentCorners) {
     throw new Error(
-      "public/icon-512.png has transparent corners. Keep the source icon square and unmasked so macOS can apply its own rounded mask.",
+      "public/desktop-icon-512.png must keep transparent rounded corners so the generated macOS app icon follows Apple’s rounded shape.",
     );
   }
 }
@@ -176,7 +178,7 @@ async function validateIconSource() {
 async function main() {
   if (mode === "icon") {
     await validateIconSource();
-    await run("cargo", ["tauri", "icon", "../public/icon-512.png", ...extraArgs], {
+    await run("cargo", ["tauri", "icon", "../public/desktop-icon-512.png", ...extraArgs], {
       cwd: tauriRoot,
     });
     return;

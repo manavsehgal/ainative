@@ -220,7 +220,7 @@ Configuration hub with provider-aware sections: Claude authentication (API key o
 Stagent still uses a small Node sidecar under the hood. It is built from `bin/cli.ts` into `dist/cli.js`, but it is now an internal desktop bootstrap rather than a user-facing distribution channel.
 
 #### Tauri Desktop
-The repo produces macOS desktop artifacts via Tauri. Local development uses `npm run desktop:dev`, local packaging uses `npm run desktop:build`, and release publishing now runs locally via `npm run desktop:release` so the uploaded GitHub assets stay on stable names: `Stagent.dmg` and `Stagent.app.zip`. Keep `public/icon-512.png` as a square, unmasked source icon; macOS applies the rounded mask later. The local release script also stamps the same branded icon onto the mounted DMG volume so Finder shows the corrected Stagent icon during install.
+The repo produces macOS desktop artifacts via Tauri. Local development uses `npm run desktop:dev`, local packaging uses `npm run desktop:build`, and release publishing now runs locally via `npm run desktop:release` so the uploaded GitHub assets stay on stable names: `Stagent.dmg` and `Stagent.app.zip`. Keep `public/desktop-icon-512.png` as the dedicated rounded desktop source icon with transparent corners; `public/icon-512.png` remains the square web/PWA icon. The local release script also stamps the same branded icon onto the mounted DMG volume so Finder shows the corrected Stagent icon during install.
 
 #### Database
 SQLite with WAL mode via better-sqlite3 + Drizzle ORM. Eight tables: `projects`, `tasks`, `workflows`, `agent_logs`, `notifications`, `documents`, `schedules`, `settings`. Self-healing bootstrap — tables are created on startup if missing.
