@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS documents (
   FOREIGN KEY (task_id) REFERENCES tasks(id) ON UPDATE NO ACTION ON DELETE NO ACTION,
   FOREIGN KEY (project_id) REFERENCES projects(id) ON UPDATE NO ACTION ON DELETE NO ACTION
 );
-
+--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS idx_documents_task_id ON documents(task_id);
+--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS idx_documents_project_id ON documents(project_id);

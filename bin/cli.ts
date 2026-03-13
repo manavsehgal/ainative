@@ -1,7 +1,6 @@
 import { program } from "commander";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
-import { homedir } from "os";
 import {
   mkdirSync,
   existsSync,
@@ -15,23 +14,52 @@ import { createServer } from "net";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
+import { getStagentDataDir, getStagentDbPath } from "../src/lib/utils/stagent-paths";
+import {
+  bootstrapStagentDatabase,
+  hasLegacyStagentTables,
+  hasMigrationHistory,
+  markAllMigrationsApplied,
+} from "../src/lib/db/bootstrap";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = join(homedir(), ".stagent");
 const appDir = join(__dirname, "..");
+const DATA_DIR = getStagentDataDir();
+const dbPath = getStagentDbPath();
+const pkg = JSON.parse(readFileSync(join(appDir, "package.json"), "utf-8"));
+const HELP_TEXT = `
+Data:
+  Directory        ${DATA_DIR}
+  Database         ${dbPath}
+  Sessions         ${join(DATA_DIR, "sessions")}
+  Logs             ${join(DATA_DIR, "logs")}
+
+Environment variables:
+  STAGENT_DATA_DIR Custom data directory for the desktop sidecar and web app
+  ANTHROPIC_API_KEY Claude runtime access
+  OPENAI_API_KEY   OpenAI Codex runtime access
+
+Examples:
+  node dist/cli.js --port 3210 --no-open
+  STAGENT_DATA_DIR=/tmp/stagent-desktop node dist/cli.js --reset
+`;
 
 program
   .name("stagent")
-  .description("AI agent task management — local-first")
-  .version(
-    JSON.parse(readFileSync(join(appDir, "package.json"), "utf-8")).version
-  )
+  .description("Internal bootstrap sidecar for Stagent Desktop")
+  .version(pkg.version)
+  .addHelpText("after", HELP_TEXT)
   .option("-p, --port <number>", "port to start on", "3000")
-  .option("--reset", "delete database and start fresh")
+  .option("--reset", "delete the local database before starting")
   .option("--no-open", "don't auto-open browser")
   .parse();
 
 const opts = program.opts();
+const requestedPort = Number.parseInt(opts.port, 10);
+
+if (Number.isNaN(requestedPort) || requestedPort <= 0) {
+  program.error(`Invalid port: ${opts.port}`);
+}
 
 // 1. Data directory setup
 for (const dir of [DATA_DIR, join(DATA_DIR, "logs"), join(DATA_DIR, "sessions")]) {
@@ -39,24 +67,38 @@ for (const dir of [DATA_DIR, join(DATA_DIR, "logs"), join(DATA_DIR, "sessions")]
 }
 
 // 2. Handle --reset
-const dbPath = join(DATA_DIR, "stagent.db");
-if (opts.reset && existsSync(dbPath)) {
-  unlinkSync(dbPath);
-  // Also remove WAL/SHM files if present
-  for (const suffix of ["-wal", "-shm"]) {
-    const p = dbPath + suffix;
-    if (existsSync(p)) unlinkSync(p);
+if (opts.reset) {
+  if (existsSync(dbPath)) {
+    unlinkSync(dbPath);
+    // Also remove WAL/SHM files if present.
+    for (const suffix of ["-wal", "-shm"]) {
+      const filePath = dbPath + suffix;
+      if (existsSync(filePath)) unlinkSync(filePath);
+    }
+    console.log("Database reset.");
+  } else {
+    console.log("No database found to reset.");
   }
-  console.log("Database reset.");
 }
 
 // 3. Database migrations
 const sqlite = new Database(dbPath);
 sqlite.pragma("journal_mode = WAL");
 sqlite.pragma("foreign_keys = ON");
-const db = drizzle(sqlite);
 const migrationsDir = join(appDir, "src", "lib", "db", "migrations");
-migrate(db, { migrationsFolder: migrationsDir });
+const db = drizzle(sqlite);
+const needsLegacyRecovery =
+  hasLegacyStagentTables(sqlite) && !hasMigrationHistory(sqlite);
+
+if (needsLegacyRecovery) {
+  bootstrapStagentDatabase(sqlite);
+  markAllMigrationsApplied(sqlite, migrationsDir);
+  console.log("Recovered legacy database schema.");
+} else {
+  migrate(db, { migrationsFolder: migrationsDir });
+  bootstrapStagentDatabase(sqlite);
+}
+
 sqlite.close();
 console.log("Database ready.");
 
@@ -88,10 +130,10 @@ function findLocalBin(name: string, cwd: string): string {
 }
 
 async function main() {
-  const actualPort = await findAvailablePort(parseInt(opts.port, 10));
+  const actualPort = await findAvailablePort(requestedPort);
   let effectiveCwd = appDir;
 
-  // 6. NPX hoisting workaround
+  // 6. Workspace hoisting workaround for Next.js dependencies
   const localNm = join(appDir, "node_modules");
   if (!existsSync(join(localNm, "next", "package.json"))) {
     let searchDir = dirname(appDir);
@@ -129,6 +171,8 @@ async function main() {
 
   // 7. Spawn Next.js dev server
   const nextBin = findLocalBin("next", effectiveCwd);
+  console.log(`Stagent ${pkg.version}`);
+  console.log(`Data dir: ${DATA_DIR}`);
   console.log(`Starting Stagent on http://localhost:${actualPort}`);
 
   const child = spawn(nextBin, ["dev", "--turbopack", "--port", String(actualPort)], {

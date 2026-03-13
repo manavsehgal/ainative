@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
-import { homedir } from "os";
 import { db } from "@/lib/db";
 import { documents } from "@/lib/db/schema";
 import { processDocument } from "@/lib/documents/processor";
+import { getStagentUploadsDir } from "@/lib/utils/stagent-paths";
 
-const UPLOAD_DIR = join(homedir(), ".stagent", "uploads");
+const UPLOAD_DIR = getStagentUploadsDir();
 
 export async function POST(req: NextRequest) {
   const formData = await req.formData();

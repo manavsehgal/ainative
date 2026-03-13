@@ -1,27 +1,36 @@
 {
   "name": "stagent",
-  "version": "0.1.0",
+  "private": true,
+  "version": "0.1.1",
+  "description": "Governed desktop AI agent workspace for supervised local execution, workflows, documents, and provider runtimes.",
+  "keywords": [
+    "ai",
+    "agents",
+    "automation",
+    "workflow",
+    "claude",
+    "openai",
+    "codex",
+    "nextjs",
+    "local-first"
+  ],
   "license": "Apache-2.0",
   "type": "module",
-  "bin": {
-    "stagent": "./dist/cli.js"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/manavsehgal/stagent.git"
   },
-  "files": [
-    "dist/",
-    "src/",
-    "public/",
-    "next.config.mjs",
-    "tsconfig.json",
-    "drizzle.config.ts",
-    "postcss.config.mjs",
-    "components.json",
-    "package.json"
-  ],
+  "bugs": {
+    "url": "https://github.com/manavsehgal/stagent/issues"
+  },
+  "homepage": "https://github.com/manavsehgal/stagent#readme",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
     "build:cli": "tsup",
-    "prepublishOnly": "npm run build:cli",
+    "desktop:dev": "node scripts/tauri.mjs dev",
+    "desktop:build": "node scripts/tauri.mjs build",
+    "desktop:icon": "node scripts/tauri.mjs icon",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",

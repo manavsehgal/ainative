@@ -1,8 +1,38 @@
 # Feature Changelog
 
+## 2026-03-13
+
+### Re-prioritized
+- **Distribution direction**: Stagent is now desktop-only in user-facing product positioning
+  - Removed npm / `npx` onboarding and publish wiring from the repo surface, while keeping the CLI build only as an internal sidecar dependency of the desktop app
+  - Deferred `npm-publish-readiness` as an active product feature and updated the bootstrap spec so it describes the internal desktop sidecar rather than a public install command
+  - Promoted GitHub-hosted desktop artifacts as the only documented end-user install channel
+
+### Enhancement
+- **tauri-desktop** (P3, post-MVP): Added repo-distributed macOS desktop packaging on top of the local Tauri foundation
+  - Enabled `.dmg` output for the Tauri bundle so the desktop build produces an installable macOS artifact instead of only a local `.app`
+  - Added a GitHub Actions workflow that builds unsigned macOS desktop assets on tag push or manual dispatch, uploads them as workflow artifacts, and attaches them to GitHub releases for repo-based download
+  - Updated the README to point desktop users at GitHub Releases and to document the current limitations: macOS-only, unsigned build, and local `node` dependency
+
+### Started
+- **tauri-desktop** (P3, post-MVP): Activated the first desktop-foundation slice instead of treating the full native distribution plan as one implementation
+  - Starts with a Tauri wrapper that boots a local loading shell, spawns the existing `dist/cli.js` sidecar, and hands the window over to the same localhost-hosted Next.js app used by the desktop shell
+  - Limits the first bridge surface to native notifications and file dialogs so browser-safe shared code can grow into desktop capabilities without forcing a second UI stack
+  - Defers bundled Node runtime, system tray, updater, and signed distribution until the sidecar wrapper is stable enough to justify deeper packaging work
+- Updated roadmap: marked `tauri-desktop` as started and added it as the current post-MVP platform sprint
+
 ## 2026-03-12
 
 ### Ship Verification
+- **npm-publish-readiness** (P1, post-MVP): Acceptance criteria verified against the packaged CLI, published tarball shape, npm-facing README, and live registry publication
+  - Confirmed package metadata now covers npm discovery and links, while the published tarball keeps runtime-required source/assets and excludes repo-only test files
+  - Confirmed the CLI help path now documents `STAGENT_DATA_DIR`, startup flags, and runtime credential expectations for first-time npm users
+  - Verified with `npm run build:cli`, `npm pack --dry-run`, a passing `npm run smoke:npm` tarball launch, and successful publication of `stagent@0.1.1`
+- **multi-agent-swarm** (P3, post-MVP): Acceptance criteria verified against the new swarm workflow pattern, retry flow, targeted tests, and a successful production build
+  - Confirmed workflow authoring now supports a bounded `swarm` pattern with one mayor step, 2-5 worker steps, a refinery step, and configurable worker concurrency
+  - Confirmed execution runs the mayor first, fans worker child tasks out through the existing workflow task path, blocks the refinery on failed workers, and persists grouped swarm progress in workflow state
+  - Confirmed failed mayor, worker, and refinery stages can be retried from workflow detail through a new step-retry endpoint without re-running successful sibling workers
+  - Verified with targeted Vitest coverage (`16` passing tests across workflow validation/helpers/engine) and a successful production build
 - **ambient-approval-toast** (P1, post-MVP): Acceptance criteria verified against the shipped shell presenter, shared permission controls, targeted tests, and a successful production build
   - Confirmed unresolved `permission_required` notifications now surface through a shell-level presenter on any route, using a primary approval card plus an explicit overflow indicator instead of overlapping surfaces
   - Confirmed the toast and Inbox now share the same permission-response control path, so `Allow Once`, `Always Allow`, and `Deny` still write the canonical notification response through the existing task response endpoint
@@ -15,6 +45,14 @@
   - Verified with targeted Vitest coverage (`26` passing tests), a successful production build, and a browser check covering both unsupported and dual-runtime profile states
 
 ### Completed
+- **npm-publish-readiness** (P1, post-MVP): Shipped npm distribution hardening for `npx stagent`
+  - Added publish-ready npm metadata, tarball trimming, and a packaged smoke-test workflow that validates the CLI from the actual npm tarball instead of the repo checkout
+  - Updated CLI help and runtime path handling so packaged runs can document and honor `STAGENT_DATA_DIR`, `--port`, `--reset`, and `--no-open`
+  - Refreshed the npm-facing README with current feature coverage, a release checklist, and packaged screenshots that render from the published tarball
+- **multi-agent-swarm** (P3, post-MVP): Shipped bounded swarm orchestration on top of the existing workflow system
+  - Added a `swarm` workflow pattern with a fixed mayor → worker pool → refinery structure instead of introducing a new graph runtime
+  - Workers now execute in parallel with a configurable concurrency cap while the refinery step receives the mayor plan plus labeled worker outputs as merge context
+  - Workflow detail now groups swarm runs into mayor, worker, and refinery panels, and failed swarm stages can be retried independently through a dedicated step-retry route
 - **ambient-approval-toast** (P1, post-MVP): Shipped in-context approval toasts for human-in-the-loop task supervision
   - Added a shell-mounted pending approval host that watches unresolved permission notifications via a dedicated pending-approval payload and SSE snapshot stream with polling fallback
   - Introduced a shared permission-response action component so the ambient presenter and Inbox use the same approval semantics, including persisted `Always Allow` patterns
@@ -41,6 +79,11 @@
   - Verified with targeted Vitest coverage for profile compatibility helpers and a successful production build
 
 ### Groomed
+- **npm-publish-readiness** (P1, post-MVP): Added a bounded npm distribution hardening spec for the existing CLI bootstrap
+  - Separates publish-readiness from the already-completed local CLI bootstrap so release work is scoped to tarball shape, package metadata, smoke testing, and onboarding docs
+  - Targets the OpenVolo-style thin CLI plus source-shipped Next.js pattern already captured in `ideas/npx-web-app.md`
+  - Calls for `npm pack`-based validation so `npx stagent` is proven from the shipped tarball rather than assumed from repo-local execution
+- Updated roadmap: added `npm-publish-readiness` as a planned Platform feature
 - **ambient-approval-toast** (P1, post-MVP): Added an in-context approval surface spec for active supervision
   - Defines a shell-level permission toast that appears on any route, keeps Inbox as the durable record, and lets users approve or deny without switching context
   - Uses a compact toast plus expanded modal-like detail state so approval requests are noticeable without becoming a blocking full-screen interruption

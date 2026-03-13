@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import yaml from "js-yaml";
 import { BlueprintSchema } from "@/lib/validators/blueprint";
+import { getStagentBlueprintsDir } from "@/lib/utils/stagent-paths";
 import type { WorkflowBlueprint } from "./types";
 
 // Use fileURLToPath for ESM compatibility in Next.js
@@ -10,11 +11,7 @@ const BUILTINS_DIR = path.resolve(
   "builtins"
 );
 
-const USER_BLUEPRINTS_DIR = path.join(
-  process.env.HOME ?? process.env.USERPROFILE ?? ".",
-  ".stagent",
-  "blueprints"
-);
+const USER_BLUEPRINTS_DIR = getStagentBlueprintsDir();
 
 let blueprintCache: Map<string, WorkflowBlueprint> | null = null;
 

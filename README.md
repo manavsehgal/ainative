@@ -2,6 +2,8 @@
 
 > A governed AI agent operations workspace for running, supervising, and reusing AI work through projects, workflows, documents, profiles, schedules, inbox approvals, and live monitoring.
 
+[![Download macOS Desktop](https://img.shields.io/badge/Download-macOS_Desktop-0a7cff?style=for-the-badge&logo=apple)](https://github.com/manavsehgal/stagent/releases/latest) [![GitHub Releases](https://img.shields.io/github/v/release/manavsehgal/stagent?display_name=release&style=for-the-badge)](https://github.com/manavsehgal/stagent/releases/latest)
+
 [![Next.js 16](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/) [![React 19](https://img.shields.io/badge/React-19-61DAFB)](https://react.dev/) [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6)](https://www.typescriptlang.org/) [![Claude Agent SDK](https://img.shields.io/badge/Claude-Agent_SDK-D97706)](https://docs.anthropic.com/) [![OpenAI Codex App Server](https://img.shields.io/badge/OpenAI-Codex_App_Server-10A37F)](https://developers.openai.com/codex/app-server) [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
 ## Why Stagent
@@ -10,7 +12,23 @@ AI agents are powerful, but production deployment breaks down when teams cannot 
 
 Stagent is a local-first AI operations workspace built around governed execution and reusable automation primitives. Instead of treating every agent run as a one-off prompt, it gives teams a structured system of home workspace signals, execution dashboards, project context, workflow blueprints, reusable profiles, schedules, documents, inbox approvals, and live monitoring.
 
-## Quick Start
+## Get Started
+
+### Download Desktop for macOS
+
+**Primary install path:** [Download the latest macOS desktop release](https://github.com/manavsehgal/stagent/releases/latest)
+
+Grab the latest `Stagent_*.dmg` or `Stagent.app.zip` asset from GitHub Releases, then move `Stagent.app` into `/Applications`.
+
+Current desktop release notes:
+
+- macOS-only for now
+- unsigned build, so macOS may warn that the app is from an unidentified developer
+- the current desktop wrapper expects `node` to be available on the machine
+
+<img src="./output/playwright/home-playwright-after.png" alt="Stagent home workspace" width="1200" />
+
+### Repository development
 
 ```bash
 git clone <repo-url> && cd stagent && npm install
@@ -42,6 +60,9 @@ Open [localhost:3000](http://localhost:3000) to get started.
 | 📥 | **[Human-in-the-Loop Inbox](#inbox--human-in-the-loop)** | Approve tool use, answer questions, and review results from one queue |
 | 👀 | **[Monitoring](#monitoring)** | Live runtime visibility with log streaming, filters, and health signals |
 | 🔁 | **[Provider Runtimes](#provider-runtimes)** | Shared runtime layer with Claude Code and OpenAI Codex App Server adapters |
+| 🧪 | **[Parallel + Swarm Workflows](#parallel--swarm-workflows)** | Bounded fork/join and swarm orchestration without a free-form graph editor |
+| 💸 | **[Cost & Usage](#cost--usage)** | Provider-aware metering, budgets, and spend visibility for governed runs |
+| 🚨 | **[Ambient Approvals](#ambient-approvals)** | Shell-level approval prompts that keep Inbox as the durable supervision queue |
 | 🔒 | **[Tool Permissions](#tool-permission-persistence)** | Trusted-tool policies with explicit "Always Allow" rules |
 
 ---
@@ -127,6 +148,13 @@ Multi-step task orchestration with three patterns:
 
 State machine engine with step-level retry, project association, and real-time status visualization.
 
+#### Parallel + Swarm Workflows
+Stagent now supports two bounded expansion patterns on top of the workflow engine:
+- **Parallel research fork/join** — 2-5 concurrent branches followed by one synthesis step
+- **Swarm orchestration** — mayor → worker pool → refinery with retryable stages and configurable worker concurrency
+
+Both patterns preserve the same governed task model, runtime selection, monitoring stream, and workflow detail surface instead of introducing a separate orchestration product.
+
 #### AI Task Assist
 AI-powered task creation: generate improved descriptions, break tasks into sub-tasks, recommend workflow patterns, and estimate complexity through the shared runtime task-assist layer. Claude and OpenAI task assist now both route through the provider runtime abstraction.
 
@@ -141,6 +169,8 @@ Curated agent profiles across work and personal domains, built as portable Claud
 
 #### Workflow Blueprints
 Pre-configured workflow templates across work and personal domains. Browse blueprints in a gallery with filtering and search, preview steps and required variables, fill in a dynamic form, and create draft workflows with resolved prompts and profile assignments. Create custom blueprints via YAML or import from GitHub URLs. Lineage tracking connects workflows back to their source blueprint.
+
+<img src="https://unpkg.com/stagent@latest/public/readme/workflow-blueprints.png" alt="Stagent workflow blueprint gallery" width="1200" />
 
 ### Documents
 
@@ -158,16 +188,24 @@ Documents linked to a task are automatically injected into the agent's prompt as
 #### Tool Permission Persistence
 "Always Allow" option for agent tool permissions. When you approve a tool, you can save it as a pattern (e.g., `Bash(command:git *)`, `Read`, `mcp__server__tool`). Saved patterns are checked before creating notifications — trusted tools are auto-approved instantly. Manage patterns from the Settings page. `AskUserQuestion` always requires human input.
 
+#### Ambient Approvals
+Pending permission requests now surface through a shell-level approval presenter on any route, so operators can respond without leaving the page they are working on. Inbox remains the durable queue and source of truth, while the ambient surface provides the fast path for active supervision.
+
 #### Schedules
 Time-based scheduling for agent tasks with human-friendly intervals (`5m`, `2h`, `1d`) and raw 5-field cron expressions. One-shot and recurring modes with pause/resume lifecycle, expiry limits, and max firings. Each firing creates a child task through the shared execution pipeline, and schedules can now target a runtime explicitly. Scheduler runs as a poll-based engine started via Next.js instrumentation hook.
 
 #### Micro-Visualizations
 Pure SVG chart primitives (Sparkline, MiniBar, DonutRing) with zero charting dependencies. Integrated into: homepage stats cards (7-day trends), activity feed (24h bar chart), project cards (completion donuts), monitor overview (success rate), and project detail (stacked status + 14-day sparkline). Full accessibility with `role="img"` and `aria-label`.
 
+#### Cost & Usage
+Provider-normalized metering tracks token and spend activity across tasks, resumes, workflow child tasks, schedules, task assist, and profile tests. The dedicated `Cost & Usage` surface adds summary cards, trend views, provider/model breakdowns, and budget-aware audit visibility on top of the usage ledger.
+
 ### UI & DevEx
 
 #### Inbox & Human-in-the-Loop
 When an agent needs approval or input, a notification appears in your inbox. Review tool permission requests with "Allow Once" / "Always Allow" / "Deny" buttons, answer agent questions, and see task completion summaries. Supports bulk dismiss and 10s polling.
+
+<img src="https://unpkg.com/stagent@latest/public/readme/inbox-approvals.png" alt="Stagent inbox approval flow" width="1200" />
 
 #### Monitoring
 Real-time agent log streaming via Server-Sent Events. Filter by task or event type, click entries to jump to task details, and auto-pause polling when the tab is hidden (Page Visibility API).
@@ -179,7 +217,10 @@ File upload with drag-and-drop in task creation. Type-aware content preview for 
 Configuration hub with provider-aware sections: Claude authentication (API key or OAuth), OpenAI Codex runtime API-key management, tool permissions (saved "Always Allow" patterns with revoke), and data management.
 
 #### CLI
-`npx stagent` launches the dev server and opens the dashboard. Built with Commander, compiled via tsup to `dist/cli.js`.
+Stagent still uses a small Node sidecar under the hood. It is built from `bin/cli.ts` into `dist/cli.js`, but it is now an internal desktop bootstrap rather than a user-facing distribution channel.
+
+#### Tauri Desktop
+The repo can now produce macOS desktop artifacts via Tauri. A GitHub Actions workflow builds unsigned `.app` and `.dmg` assets and attaches them to tagged repo releases, while local development uses `npm run desktop:dev` and local packaging uses `npm run desktop:build`.
 
 #### Database
 SQLite with WAL mode via better-sqlite3 + Drizzle ORM. Eight tables: `projects`, `tasks`, `workflows`, `agent_logs`, `notifications`, `documents`, `schedules`, `settings`. Self-healing bootstrap — tables are created on startup if missing.
@@ -215,6 +256,17 @@ npm run build:cli      # Build CLI → dist/cli.js
 npm test               # Run Vitest
 npm run test:coverage  # Coverage report
 ```
+
+## Desktop Release Checklist
+
+```bash
+npm run desktop:icon
+npm run desktop:build
+git tag desktop-v0.1.1
+git push origin desktop-v0.1.1
+```
+
+Pushing a `desktop-v*` or `v*` tag triggers the GitHub Actions macOS desktop workflow, which builds unsigned `Stagent.app.zip` and `Stagent_*.dmg` artifacts and attaches them to the repo release.
 
 ### Project Structure
 

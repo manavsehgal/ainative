@@ -23,6 +23,7 @@ next-env.d.ts
 
 # build artifacts
 tsconfig.tsbuildinfo
+src-tauri/target/
 
 # test coverage
 coverage/

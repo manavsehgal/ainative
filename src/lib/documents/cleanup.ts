@@ -1,11 +1,11 @@
 import { readdir, stat, unlink } from "fs/promises";
 import { join } from "path";
-import { homedir } from "os";
 import { db } from "@/lib/db";
 import { documents } from "@/lib/db/schema";
+import { getStagentUploadsDir } from "@/lib/utils/stagent-paths";
 import { eq } from "drizzle-orm";
 
-const UPLOAD_DIR = join(homedir(), ".stagent", "uploads");
+const UPLOAD_DIR = getStagentUploadsDir();
 const ORPHAN_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export async function cleanupOrphanedUploads(): Promise<{

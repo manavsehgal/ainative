@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readFile, readdir, unlink } from "fs/promises";
 import { join } from "path";
-import { homedir } from "os";
 import { db } from "@/lib/db";
 import { documents } from "@/lib/db/schema";
+import { getStagentUploadsDir } from "@/lib/utils/stagent-paths";
 import { eq } from "drizzle-orm";
 
-const UPLOAD_DIR = join(homedir(), ".stagent", "uploads");
+const UPLOAD_DIR = getStagentUploadsDir();
 
 const MIME_TYPES: Record<string, string> = {
   txt: "text/plain",

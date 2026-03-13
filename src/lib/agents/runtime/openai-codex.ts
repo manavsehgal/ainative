@@ -591,7 +591,7 @@ async function initializeOpenAIClient(
   await client.request("initialize", {
     clientInfo: {
       name: "Stagent",
-      version: "0.1.0",
+      version: "0.1.1",
     },
     capabilities: null,
   });
