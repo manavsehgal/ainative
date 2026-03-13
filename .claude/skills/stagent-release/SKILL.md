@@ -21,7 +21,7 @@ This skill is only for the Stagent desktop release flow in this repository.
 4. The normalized release artifacts are written to `output/release/Stagent.dmg` and `output/release/Stagent.app.zip`.
 5. The published release must upload `Stagent.dmg` without a version in the filename so the stable download URL stays:
    `https://github.com/manavsehgal/stagent/releases/latest/download/Stagent.dmg`
-6. Keep `public/icon-512.png` square and unmasked. Do not bake rounded corners into the source icon; macOS applies that mask later.
+6. Keep `public/desktop-icon-512.png` as the dedicated rounded desktop source icon with transparent corners. `public/icon-512.png` remains the square web/PWA icon.
 7. Preserve DMG volume branding: the mounted image should include `.VolumeIcon.icns` and the volume must carry the Finder custom-icon flag.
 
 ## Release Rules
