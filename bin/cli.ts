@@ -41,18 +41,18 @@ Data:
   Logs             ${join(DATA_DIR, "logs")}
 
 Environment variables:
-  STAGENT_DATA_DIR Custom data directory for the desktop sidecar and web app
+  STAGENT_DATA_DIR Custom data directory for the web app
   ANTHROPIC_API_KEY Claude runtime access
   OPENAI_API_KEY   OpenAI Codex runtime access
 
 Examples:
   node dist/cli.js --port 3210 --no-open
-  STAGENT_DATA_DIR=/tmp/stagent-desktop node dist/cli.js --reset
+  STAGENT_DATA_DIR=/tmp/stagent node dist/cli.js --reset
 `;
 
 program
   .name("stagent")
-  .description("Governed desktop AI agent workspace")
+  .description("Governed AI agent workspace")
   .version(pkg.version)
   .addHelpText("after", HELP_TEXT)
   .option("-p, --port <number>", "port to start on", "3000")
@@ -122,8 +122,7 @@ function findAvailablePort(preferred: number): Promise<number> {
 }
 
 async function main() {
-  // The desktop shell already probes and passes a free port. Re-selecting a
-  // different port here can desync the Rust wait loop from the actual server.
+  // Re-use the port from argv if one was passed explicitly.
   const actualPort = await resolveSidecarPort({
     argv: process.argv.slice(2),
     requestedPort,

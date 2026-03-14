@@ -85,10 +85,9 @@ Features that enhance the product but aren't essential for first use — homepag
 | [tool-permission-persistence](tool-permission-persistence.md) | P2 | completed | agent-integration, inbox-notifications |
 | [provider-runtime-abstraction](provider-runtime-abstraction.md) | P1 | completed | agent-integration, inbox-notifications, monitoring-dashboard, session-management, tool-permission-persistence |
 | [openai-codex-app-server](openai-codex-app-server.md) | P1 | completed | provider-runtime-abstraction |
-| [npm-publish-readiness](npm-publish-readiness.md) | P3 | deferred | cli-bootstrap, database-schema, app-shell |
+| [npm-publish-readiness](npm-publish-readiness.md) | P3 | completed | cli-bootstrap, database-schema, app-shell |
 | [cross-provider-profile-compatibility](cross-provider-profile-compatibility.md) | P2 | completed | provider-runtime-abstraction, openai-codex-app-server, agent-profile-catalog |
 | [parallel-research-fork-join](parallel-research-fork-join.md) | P2 | completed | workflow-engine, multi-agent-routing |
-| [tauri-desktop](tauri-desktop.md) | P3 | started | cli-bootstrap, app-shell |
 
 ### Governance & Analytics
 
@@ -189,7 +188,6 @@ workflow-engine + multi-agent-routing
 17. **Sprint 17 — Human-Loop Attention**: ambient-approval-toast (P1, completed)
 18. **Sprint 18 — Parallel Research Foundation**: parallel-research-fork-join (P2, completed)
 19. **Sprint 19 — npm Publish Readiness**: npm-publish-readiness (P1, completed)
-20. **Sprint 20 — Tauri Desktop Foundation**: tauri-desktop (P3, started)
 
 ## Open Questions
 
@@ -198,7 +196,7 @@ workflow-engine + multi-agent-routing
 - **OpenAI runtime parity**: Codex App Server is now the shipped OpenAI path. The remaining question is what capability floor should be required before exposing future OpenAI-adjacent runtime options or provider-expansion follow-ons.
 - **Pricing source of truth**: Need a durable model-pricing strategy for Claude and Codex so historical usage rows preserve derived cost even if provider pricing changes later
 - **Parallel workflow UX ceiling**: Need to decide how much branch configurability to expose in the first slice without turning the editor into a graph builder
-- **Actionable notification channel policy**: Need to define when Stagent should escalate from in-app approval toast to browser or desktop-native notification delivery, especially for hidden tabs and future Tauri/macOS distributions
+- **Actionable notification channel policy**: Need to define when Stagent should escalate from in-app approval toast to browser notification delivery, especially for hidden tabs
 - **Drag-and-drop library**: Need to select a React DnD solution for the kanban board (react-beautiful-dnd, dnd-kit, or native HTML5 drag)
 - **SSE vs WebSocket**: Monitoring dashboard uses SSE for streaming — need to confirm this works well with Next.js App Router API routes
 - **UX design review**: Four features flagged for `/frontend-designer` review before implementation (app-shell, task-board, inbox-notifications, monitoring-dashboard, task-definition-ai, workflow-engine)

@@ -8,8 +8,7 @@ This file captures evolving project facts, decisions, and recurring gotchas that
 - Main product surfaces are Home, Dashboard, Inbox, Monitor, Projects, Workflows, Documents, Profiles, Schedules, and Settings.
 - `features/`, `ideas/`, and `wireframes/` are intentionally local planning artifacts and remain gitignored.
 - `.claude/` is also gitignored; it is useful for Claude workflows and as source material for Codex skill ports.
-- macOS desktop releases are now built locally via `npm run desktop:release`; the published GitHub assets are normalized to `Stagent.dmg` and `Stagent.app.zip` so `releases/latest/download/Stagent.dmg` stays stable.
-- Publishing those desktop assets now requires `APPLE_SIGNING_IDENTITY` plus notarization credentials (`APPLE_NOTARY_PROFILE` or `APPLE_ID` + `APPLE_APP_SPECIFIC_PASSWORD` + `APPLE_TEAM_ID`) so shipped downloads clear Gatekeeper.
+- Distribution is `npx stagent` (npm) and web app only — no desktop shell.
 - Provider runtime abstraction is now in place under `src/lib/agents/runtime/`, with Claude and OpenAI Codex App Server registered as runtime adapters and shared runtime services handling task assist, scheduler/workflow launches, inbox approvals, and settings health checks.
 
 ## Design System
@@ -46,8 +45,6 @@ This file captures evolving project facts, decisions, and recurring gotchas that
 - Database bootstrap logic should stay aligned with migration SQL to avoid deployed-schema drift.
 - New provider work should extend the runtime registry instead of importing Claude-specific helpers directly from shared orchestration code.
 - Schedule rows now carry `assignedAgent`, and workflow steps / loop configs can target provider runtimes directly.
-- The desktop sidecar must bind Next to `127.0.0.1`, not wildcard interfaces. The Tauri shell polls `127.0.0.1`, and binding Next to `::` can recreate the "Waiting for the localhost app to answer" hang when another app already occupies the same IPv6 localhost port.
-- The desktop wrapper now owns the final boot handoff into the live workspace. `loading.js` is presentation-only; Rust waits out the briefing window, logs boot phases, and performs the actual `WebviewWindow::navigate(...)`.
 
 ## Recurring Gotchas
 
@@ -55,8 +52,6 @@ This file captures evolving project facts, decisions, and recurring gotchas that
 - Raw Drizzle `sql` interpolation for column references is easy to misuse; prefer typed query builder patterns.
 - Tailwind v4 utility layers can beat naive custom selectors; increased specificity may be required when overriding `data-slot` components.
 - New sheet or dialog bodies often need explicit inner padding; do not assume Radix/shadcn body spacing exists by default.
-- `npm run desktop:build` now includes `scripts/desktop-sidecar-smoke.mjs`, which starts the packaged sidecar while an IPv6-only localhost listener already owns the same port. Keep that smoke test passing; it is the regression guard for the desktop boot screen hang.
-- `npm run desktop:release` now also mounts the finished `Stagent.dmg`, opens `Stagent.app` from the mounted volume, and requires `/tmp/stagent-boot.log` phases `port_allocated`, `sidecar_ready`, `handoff_started`, and `handoff_navigated`. Mounted-DMG launch is considered supported, not a best-effort install shortcut.
 
 ## Browser and Capture Notes
 

@@ -17,7 +17,7 @@ export const APPROVAL_ACTION_IDS = [
 ] as const;
 
 export type ApprovalActionId = (typeof APPROVAL_ACTION_IDS)[number];
-export type NotificationChannelId = "in_app" | "browser" | "tauri";
+export type NotificationChannelId = "in_app" | "browser";
 
 export interface ActionableNotificationPayload {
   notificationId: string;

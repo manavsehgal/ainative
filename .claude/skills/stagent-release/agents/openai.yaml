@@ -1,4 +1,0 @@
-interface:
-  display_name: "Stagent Release"
-  short_description: "Build and publish the Stagent macOS DMG locally with a stable asset URL"
-  default_prompt: "Build the Stagent macOS desktop release locally, verify the DMG, and publish the stable GitHub release asset."

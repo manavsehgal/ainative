@@ -1,34 +1,19 @@
 # Stagent
 
-> A governed AI agent operations workspace for running, supervising, and reusing AI work through projects, workflows, documents, profiles, schedules, inbox approvals, and live monitoring.
-
-[![Download macOS Desktop](https://img.shields.io/badge/Download-macOS_Desktop-0a7cff?style=for-the-badge&logo=apple)](https://github.com/manavsehgal/stagent/releases/latest/download/Stagent.dmg) [![GitHub Releases](https://img.shields.io/github/v/release/manavsehgal/stagent?display_name=release&style=for-the-badge)](https://github.com/manavsehgal/stagent/releases/latest)
+> Governed AI agent operations with reusable profiles, workflow blueprints, scheduled runs, and local-first oversight.
 
 [![Next.js 16](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/) [![React 19](https://img.shields.io/badge/React-19-61DAFB)](https://react.dev/) [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6)](https://www.typescriptlang.org/) [![Claude Agent SDK](https://img.shields.io/badge/Claude-Agent_SDK-D97706)](https://docs.anthropic.com/) [![OpenAI Codex App Server](https://img.shields.io/badge/OpenAI-Codex_App_Server-10A37F)](https://developers.openai.com/codex/app-server) [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
-## Why Stagent
+## Quick Start
 
-AI agents are powerful, but production deployment breaks down when teams cannot see what the agent is doing, understand which rules it is following, or intervene before an unsafe action lands. Stagent solves that operating problem.
+```bash
+npx stagent
+```
 
-Stagent is a local-first AI operations workspace built around governed execution and reusable automation primitives. Instead of treating every agent run as a one-off prompt, it gives teams a structured system of home workspace signals, execution dashboards, project context, workflow blueprints, reusable profiles, schedules, documents, inbox approvals, and live monitoring.
+Open [localhost:3000](http://localhost:3000).
 
-## Get Started
-
-### Download Desktop for macOS
-
-**Primary install path:** [Download the latest macOS desktop release](https://github.com/manavsehgal/stagent/releases/latest/download/Stagent.dmg)
-
-Grab the latest `Stagent.dmg` or `Stagent.app.zip` asset from GitHub Releases, then move `Stagent.app` into `/Applications`.
-
-Current desktop release notes:
-
-- macOS-only for now
-- GitHub desktop releases are intended to be Developer ID signed and notarized; local smoke builds created with `npm run desktop:release -- --skip-upload` will still warn if Apple credentials are not configured
-- the current desktop wrapper expects `node` to be available on the machine
-
-<img src="./output/playwright/home-playwright-after.png" alt="Stagent home workspace" width="1200" />
-
-### Repository development
+<details>
+<summary>Contributor setup (clone + dev server)</summary>
 
 ```bash
 git clone <repo-url> && cd stagent && npm install
@@ -43,7 +28,29 @@ EOF
 npm run dev
 ```
 
-Open [localhost:3000](http://localhost:3000) to get started.
+</details>
+
+**Profiles & Policies** · **Blueprints & Schedules** · **Open Source**
+
+<img src="https://unpkg.com/stagent@latest/public/readme/home-workspace.png" alt="Stagent home workspace" width="1200" />
+
+| Home Workspace | Reusable Profiles | Workflow Blueprints | Governed Execution |
+|:-:|:-:|:-:|:-:|
+| Workspace briefing with active work, pending review, project signals, and live activity | Specialist definitions with prompts, tool policy, and runtime tuning you can reuse | Pre-configured templates with dynamic forms, YAML editing, and lineage tracking | Human-in-the-loop approvals, tool permissions, and ambient supervision |
+
+---
+
+## Why Stagent
+
+AI agents are powerful — but production use breaks down when teams cannot see what the agent is doing, which rules it follows, or intervene before an unsafe action lands. Stagent gives you a governed operations workspace where every run is visible, every profile is reusable, and every approval is auditable. Run it locally with `npx stagent` and own your data from day one.
+
+---
+
+## Runtime Bridge
+
+Stagent ships a shared runtime registry that routes tasks, schedules, and workflow steps through two governed execution backends: **Claude Code** (Anthropic Claude Agent SDK) and **OpenAI Codex App Server**. Both land in the same inbox, monitoring, and task-state surfaces — so switching providers is a config change, not a rewrite.
+
+---
 
 ## Feature Highlights
 
@@ -69,33 +76,7 @@ Open [localhost:3000](http://localhost:3000) to get started.
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    Browser (React 19)                    │
-│  Home · Dashboard · Projects · Documents · Workflows     │
-│  Profiles · Schedules · Inbox · Monitor · Settings       │
-└──────────────┬──────────────────────┬────────────────────┘
-               │ Server Components    │ API Routes
-               │ (direct DB queries)  │ (mutations only)
-┌──────────────▼──────────────────────▼────────────────────┐
-│                  Next.js 16 Server                        │
-│                                                           │
-│  ┌─────────────┐  ┌──────────────┐  ┌────────────────┐  │
-│  │ Drizzle ORM │  │ Runtime      │  │ SSE Stream     │  │
-│  │ (SQLite)    │  │ Registry     │  │ (Logs)         │  │
-│  └──────┬──────┘  └──────┬───────┘  └─────┬──────────┘  │
-│         │                │                 │              │
-│  ┌──────┴──────┐  ┌─────┴────────────┐  ┌─┴───────────┐ │
-│  │ Scheduler   │  │ Claude + OpenAI  │  │ Permission  │ │
-│  │ Engine      │  │ runtime adapters │  │ Checker     │ │
-│  └─────────────┘  └──────────────────┘  └─────────────┘ │
-└──────────┬────────────────┬─────────────────┬────────────┘
-           │                │                 │
-    ┌──────▼──────┐  ┌─────▼─────────────┐  ┌─────▼──────┐
-    │ ~/.stagent/ │  │ Anthropic / OpenAI│  │  Browser   │
-    │ stagent.db  │  │ runtime backends  │  │ EventSource│
-    └─────────────┘  └───────────────────┘  └────────────┘
-```
+<img src="https://unpkg.com/stagent@latest/public/readme/architecture.svg" alt="Stagent architecture diagram" width="900" />
 
 **Key design decisions:**
 
@@ -125,7 +106,7 @@ Create and organize projects as containers for related tasks. Each project can s
 ### Agent
 
 #### Provider Runtimes
-Stagent now supports two governed execution runtimes behind a shared runtime registry:
+Stagent supports two governed execution runtimes behind a shared runtime registry:
 - **Claude Code** via the Anthropic Claude Agent SDK
 - **OpenAI Codex App Server** via `codex app-server`
 
@@ -149,7 +130,7 @@ Multi-step task orchestration with three patterns:
 State machine engine with step-level retry, project association, and real-time status visualization.
 
 #### Parallel + Swarm Workflows
-Stagent now supports two bounded expansion patterns on top of the workflow engine:
+Stagent supports two bounded expansion patterns on top of the workflow engine:
 - **Parallel research fork/join** — 2-5 concurrent branches followed by one synthesis step
 - **Swarm orchestration** — mayor → worker pool → refinery with retryable stages and configurable worker concurrency
 
@@ -217,10 +198,7 @@ File upload with drag-and-drop in task creation. Type-aware content preview for 
 Configuration hub with provider-aware sections: Claude authentication (API key or OAuth), OpenAI Codex runtime API-key management, tool permissions (saved "Always Allow" patterns with revoke), and data management.
 
 #### CLI
-Stagent still uses a small Node sidecar under the hood. It is built from `bin/cli.ts` into `dist/cli.js`, but it is now an internal desktop bootstrap rather than a user-facing distribution channel.
-
-#### Tauri Desktop
-The repo produces macOS desktop artifacts via Tauri. Local development uses `npm run desktop:dev`, local packaging uses `npm run desktop:build`, and release publishing now runs locally via `npm run desktop:release` so the uploaded GitHub assets stay on stable names: `Stagent.dmg` and `Stagent.app.zip`. Published releases must be built with `APPLE_SIGNING_IDENTITY` plus notarization credentials so the downloaded app clears Gatekeeper without the "Apple could not verify" malware warning. Keep `public/desktop-icon-512.png` as the dedicated rounded desktop source icon with transparent corners; `public/icon-512.png` remains the square web/PWA icon. The local release script also stamps the same branded icon onto the mounted DMG volume so Finder shows the corrected Stagent icon during install.
+The `npx stagent` entry point boots a Next.js server from the published npm package. It is built from `bin/cli.ts` into `dist/cli.js` using tsup, and serves as the primary distribution channel — no clone required.
 
 #### Database
 SQLite with WAL mode via better-sqlite3 + Drizzle ORM. Eight tables: `projects`, `tasks`, `workflows`, `agent_logs`, `notifications`, `documents`, `schedules`, `settings`. Self-healing bootstrap — tables are created on startup if missing.
@@ -256,29 +234,6 @@ npm run build:cli      # Build CLI → dist/cli.js
 npm test               # Run Vitest
 npm run test:coverage  # Coverage report
 ```
-
-## Desktop Release Checklist
-
-```bash
-npm run desktop:release
-```
-
-For a build-only smoke check, run `npm run desktop:release -- --skip-upload`.
-
-Before publishing a real desktop release, configure Apple signing once on the release machine:
-
-```bash
-export APPLE_SIGNING_IDENTITY="Developer ID Application: Your Name (TEAMID)"
-xcrun notarytool store-credentials stagent-notary \
-  --apple-id "you@example.com" \
-  --team-id "TEAMID" \
-  --password "app-specific-password"
-export APPLE_NOTARY_PROFILE="stagent-notary"
-```
-
-You can use direct credentials instead of a keychain profile by exporting `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, and `APPLE_TEAM_ID`.
-
-The release script builds locally on macOS, signs the app, notarizes and staples the app bundle and DMG when Apple credentials are configured, verifies the DMG, creates or updates the `desktop-v<package.json version>` GitHub release, uploads `Stagent.dmg` and `Stagent.app.zip`, and refreshes the stable download URL at `https://github.com/manavsehgal/stagent/releases/latest/download/Stagent.dmg`. Uploads now fail fast unless Developer ID signing and notarization are configured so unsigned artifacts are not published by accident.
 
 ### Project Structure
 
@@ -383,7 +338,6 @@ All 14 features shipped across three layers:
 | **Agent Self-Improvement** | Agents learn patterns and update context with human approval |
 | **Document Output Generation** | Agent-generated documents as deliverables |
 | **Parallel Workflows** | Concurrent step execution within workflows |
-| **Tauri Desktop** | Native desktop app packaging |
 
 ---
 
@@ -395,7 +349,7 @@ All 14 features shipped across three layers:
 4. Run `npm test` and `npx tsc --noEmit`
 5. Submit a pull request
 
-See `CLAUDE.md` for architecture details and development conventions.
+See `AGENTS.md` for architecture details and development conventions.
 
 ## License
 

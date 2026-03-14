@@ -1,1 +1,0 @@
-{"desktop-main":{"identifier":"desktop-main","description":"Allow the bundled localhost app to access desktop notifications and file dialogs.","remote":{"urls":["http://127.0.0.1:*","http://localhost:*"]},"local":false,"windows":["main"],"permissions":["dialog:default","notification:default"]}}

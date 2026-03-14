@@ -1,5 +1,10 @@
 # Feature Changelog
 
+## 2026-03-14
+
+### Removed
+- `tauri-desktop` — Distribution simplified to `npx stagent` (npm) and web app only. All Tauri desktop shell, macOS DMG generation, Apple signing scripts, desktop smoke tests, and related feature specs removed. CLI entry point (`bin/cli.ts`) and sidecar launch helpers retained for the npx path.
+
 ## 2026-03-13
 
 ### Ship Verification

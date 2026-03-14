@@ -1,7 +1,7 @@
 {
   "name": "stagent",
   "version": "0.1.4",
-  "description": "Governed desktop AI agent workspace for supervised local execution, workflows, documents, and provider runtimes.",
+  "description": "Governed AI agent workspace for supervised local execution, workflows, documents, and provider runtimes.",
   "keywords": [
     "ai",
     "agents",
@@ -40,13 +40,7 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "build:cli": "tsup",
-    "desktop:dev": "node scripts/tauri.mjs dev",
-    "desktop:build": "node scripts/tauri.mjs build",
-    "desktop:smoke": "node scripts/desktop-sidecar-smoke.mjs",
-    "desktop:smoke:dmg": "node scripts/desktop-mounted-dmg-smoke.mjs",
-    "desktop:icon": "node scripts/tauri.mjs icon",
-    "desktop:release": "node scripts/release-desktop.mjs",
-    "test": "vitest run",
+"test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:ui": "vitest --ui",
