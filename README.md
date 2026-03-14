@@ -1,6 +1,6 @@
 # Stagent
 
-> Governed AI agent operations with reusable profiles, workflow blueprints, scheduled runs, and local-first oversight.
+> Govern Your AI Agents. Operate With Oversight.
 
 [![Next.js 16](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/) [![React 19](https://img.shields.io/badge/React-19-61DAFB)](https://react.dev/) [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6)](https://www.typescriptlang.org/) [![Claude Agent SDK](https://img.shields.io/badge/Claude-Agent_SDK-D97706)](https://docs.anthropic.com/) [![OpenAI Codex App Server](https://img.shields.io/badge/OpenAI-Codex_App_Server-10A37F)](https://developers.openai.com/codex/app-server) [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
@@ -11,24 +11,6 @@ npx stagent
 ```
 
 Open [localhost:3000](http://localhost:3000).
-
-<details>
-<summary>Contributor setup (clone + dev server)</summary>
-
-```bash
-git clone <repo-url> && cd stagent && npm install
-
-# Set up one or both runtime credentials
-cat > .env.local <<'EOF'
-ANTHROPIC_API_KEY=your-anthropic-key
-OPENAI_API_KEY=your-openai-key
-EOF
-
-# Start the dev server
-npm run dev
-```
-
-</details>
 
 **Profiles & Policies** · **Blueprints & Schedules** · **Open Source**
 
@@ -342,6 +324,23 @@ All 14 features shipped across three layers:
 ---
 
 ## Contributing
+
+### Contributor Setup
+
+```bash
+git clone <repo-url> && cd stagent && npm install
+
+# Set up one or both runtime credentials
+cat > .env.local <<'EOF'
+ANTHROPIC_API_KEY=your-anthropic-key
+OPENAI_API_KEY=your-openai-key
+EOF
+
+# Start the dev server
+npm run dev
+```
+
+### Pull Requests
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/your-feature`)
