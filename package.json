@@ -1,7 +1,6 @@
 {
   "name": "stagent",
-  "private": true,
-  "version": "0.1.1",
+  "version": "0.1.4",
   "description": "Governed desktop AI agent workspace for supervised local execution, workflows, documents, and provider runtimes.",
   "keywords": [
     "ai",
@@ -16,6 +15,19 @@
   ],
   "license": "Apache-2.0",
   "type": "module",
+  "bin": {
+    "stagent": "./dist/cli.js"
+  },
+  "files": [
+    "dist/",
+    "src/",
+    "public/",
+    "next.config.mjs",
+    "tsconfig.json",
+    "postcss.config.mjs",
+    "components.json",
+    "drizzle.config.ts"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/manavsehgal/stagent.git"
@@ -37,17 +49,20 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "prepublishOnly": "npm run build:cli"
   },
   "engines": {
     "node": ">=20.0.0"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.2.71",
+    "@anthropic-ai/sdk": "^0.78.0",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@hookform/resolvers": "^5.2.2",
+    "@tailwindcss/postcss": "^4",
     "@tailwindcss/typography": "^0.5",
     "better-sqlite3": "^12",
     "class-variance-authority": "^0.7.1",
@@ -75,10 +90,11 @@
     "tailwind-merge": "^3",
     "tw-animate-css": "^1",
     "xlsx": "^0.18.5",
+    "tailwindcss": "^4",
+    "typescript": "^5",
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -91,9 +107,7 @@
     "@vitest/coverage-v8": "^4.0.18",
     "drizzle-kit": "^0.30",
     "jsdom": "^28.1.0",
-    "tailwindcss": "^4",
     "tsup": "^8.5",
-    "typescript": "^5",
     "vitest": "^4.0.18"
   }
 }

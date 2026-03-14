@@ -173,7 +173,6 @@ async function main() {
   const nextArgs = buildNextLaunchArgs({
     isPrebuilt,
     port: actualPort,
-    turbopack: effectiveCwd === appDir,
   });
   const sidecarUrl = buildSidecarUrl(actualPort);
 

@@ -42,21 +42,11 @@ describe("desktop sidecar launch helpers", () => {
     ).toEqual(["start", "--hostname", "127.0.0.1", "--port", "3210"]);
   });
 
-  it("launches Next on loopback for development builds with turbopack", () => {
+  it("launches Next on loopback for development builds", () => {
     expect(
       buildNextLaunchArgs({
         isPrebuilt: false,
         port: 3210,
-      }),
-    ).toEqual(["dev", "--hostname", "127.0.0.1", "--port", "3210", "--turbopack"]);
-  });
-
-  it("launches Next without turbopack when turbopack is false", () => {
-    expect(
-      buildNextLaunchArgs({
-        isPrebuilt: false,
-        port: 3210,
-        turbopack: false,
       }),
     ).toEqual(["dev", "--hostname", "127.0.0.1", "--port", "3210"]);
   });
