@@ -14,7 +14,7 @@ Open [localhost:3000](http://localhost:3000).
 
 **Profiles & Policies** · **Blueprints & Schedules** · **Open Source**
 
-<img src="https://unpkg.com/stagent@latest/public/readme/home-workspace.png" alt="Stagent home workspace" width="1200" />
+<img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/home-workspace.png" alt="Stagent home workspace" width="1200" />
 
 | Home Workspace | Reusable Profiles | Workflow Blueprints | Governed Execution |
 |:-:|:-:|:-:|:-:|
@@ -58,7 +58,7 @@ Stagent ships a shared runtime registry that routes tasks, schedules, and workfl
 
 ## Architecture
 
-<img src="https://unpkg.com/stagent@latest/public/readme/architecture.svg" alt="Stagent architecture diagram" width="900" />
+<img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/architecture.svg" alt="Stagent architecture diagram" width="900" />
 
 **Key design decisions:**
 
@@ -133,7 +133,7 @@ Curated agent profiles across work and personal domains, built as portable Claud
 #### Workflow Blueprints
 Pre-configured workflow templates across work and personal domains. Browse blueprints in a gallery with filtering and search, preview steps and required variables, fill in a dynamic form, and create draft workflows with resolved prompts and profile assignments. Create custom blueprints via YAML or import from GitHub URLs. Lineage tracking connects workflows back to their source blueprint.
 
-<img src="https://unpkg.com/stagent@latest/public/readme/workflow-blueprints.png" alt="Stagent workflow blueprint gallery" width="1200" />
+<img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/workflow-blueprints.png" alt="Stagent workflow blueprint gallery" width="1200" />
 
 ### Documents
 
@@ -168,7 +168,7 @@ Provider-normalized metering tracks token and spend activity across tasks, resum
 #### Inbox & Human-in-the-Loop
 When an agent needs approval or input, a notification appears in your inbox. Review tool permission requests with "Allow Once" / "Always Allow" / "Deny" buttons, answer agent questions, and see task completion summaries. Supports bulk dismiss and 10s polling.
 
-<img src="https://unpkg.com/stagent@latest/public/readme/inbox-approvals.png" alt="Stagent inbox approval flow" width="1200" />
+<img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/inbox-approvals.png" alt="Stagent inbox approval flow" width="1200" />
 
 #### Monitoring
 Real-time agent log streaming via Server-Sent Events. Filter by task or event type, click entries to jump to task details, and auto-pause polling when the tab is hidden (Page Visibility API).
