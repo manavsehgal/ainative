@@ -52,7 +52,7 @@ Examples:
 
 program
   .name("stagent")
-  .description("Internal bootstrap sidecar for Stagent Desktop")
+  .description("Governed desktop AI agent workspace")
   .version(pkg.version)
   .addHelpText("after", HELP_TEXT)
   .option("-p, --port <number>", "port to start on", "3000")
@@ -173,6 +173,7 @@ async function main() {
   const nextArgs = buildNextLaunchArgs({
     isPrebuilt,
     port: actualPort,
+    turbopack: effectiveCwd === appDir,
   });
   const sidecarUrl = buildSidecarUrl(actualPort);
 

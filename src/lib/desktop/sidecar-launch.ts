@@ -68,16 +68,20 @@ export function buildNextLaunchArgs({
   isPrebuilt,
   port,
   host = SIDECAR_LOOPBACK_HOST,
+  turbopack = true,
 }: {
   isPrebuilt: boolean;
   port: number;
   host?: string;
+  turbopack?: boolean;
 }): string[] {
   if (isPrebuilt) {
     return ["start", "--hostname", host, "--port", String(port)];
   }
 
-  return ["dev", "--turbopack", "--hostname", host, "--port", String(port)];
+  const args = ["dev", "--hostname", host, "--port", String(port)];
+  if (turbopack) args.push("--turbopack");
+  return args;
 }
 
 export function buildSidecarUrl(port: number, host = SIDECAR_LOOPBACK_HOST): string {
