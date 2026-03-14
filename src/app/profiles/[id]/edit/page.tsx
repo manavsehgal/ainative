@@ -25,7 +25,7 @@ export default async function EditProfilePage({
 
   return (
     <div className="gradient-ocean-mist min-h-screen p-6">
-      <div className="max-w-6xl mx-auto">
+      <div className="">
         <Link href={duplicate === "true" ? "/profiles" : `/profiles/${id}`}>
           <Button variant="ghost" size="sm" className="mb-4">
             <ArrowLeft className="h-4 w-4 mr-1" />

@@ -18,7 +18,7 @@ function applyTheme(theme: ResolvedTheme) {
   root.dataset.theme = theme;
   root.style.colorScheme = theme;
   root.style.backgroundColor =
-    theme === "dark" ? "oklch(0.09 0.02 265)" : "oklch(0.98 0.005 260)";
+    theme === "dark" ? "oklch(0.13 0.02 250)" : "oklch(0.98 0.005 260)";
   localStorage.setItem("stagent-theme", theme);
   document.cookie = `stagent-theme=${theme};path=/;max-age=31536000;SameSite=Lax`;
 }

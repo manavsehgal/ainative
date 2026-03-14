@@ -160,18 +160,18 @@ Defined in `globals.css` with light/dark variants.
 
 | Token | Light | Dark | Usage |
 |-------|-------|------|-------|
-| `--glass-bg` | `rgba(255,255,255,0.6)` | `oklch(0.18 0.025 265/0.25)` | Standard glass surface |
-| `--glass-bg-heavy` | `rgba(255,255,255,0.75)` | `oklch(0.20 0.03 265/0.35)` | Sidebar, modals, popovers |
-| `--glass-bg-light` | `rgba(255,255,255,0.4)` | `oklch(0.16 0.02 265/0.15)` | Nested glass, inputs |
-| `--glass-bg-subtle` | `rgba(255,255,255,0.25)` | `oklch(0.14 0.015 265/0.1)` | Decorative overlays |
-| `--glass-border` | `oklch(0.8 0.02 260/0.25)` | `oklch(0.4 0.04 265/0.2)` | Standard glass edge (navy-tinted) |
-| `--glass-border-strong` | `oklch(0.75 0.03 260/0.35)` | `oklch(0.45 0.05 270/0.3)` | Emphasized edges (navy-tinted) |
-| `--glass-border-subtle` | `oklch(0.85 0.015 260/0.15)` | `oklch(0.35 0.03 285/0.12)` | Inputs, nested glass (navy-tinted) |
-| `--glass-shadow` | `0 8px 32px oklch(0.55 0.05 260/0.1)` | `... oklch(0.05 0.03 265/0.5)` | Standard colored shadow |
-| `--glass-shadow-lg` | `0 12px 48px ...` | `... oklch(0.05 0.03 265/0.6)` | Hover/modal elevation |
-| `--glass-shadow-sm` | `0 4px 16px ...` | `... oklch(0.05 0.03 265/0.35)` | Subtle depth |
-| `--glass-bg-modal` | `oklch(0.97 0.008 260/0.65)` | `oklch(0.12 0.03 285/0.75)` | Sheet/dialog glass |
-| `--glass-inner-glow` | `inset 0 1px 0 0 rgba(255,255,255,0.4)` | `... oklch(0.5 0.04 270/0.1)` | Top-edge highlight (navy) |
+| `--glass-bg` | `rgba(255,255,255,0.6)` | `oklch(0.16 0.02 250/0.45)` | Standard glass surface |
+| `--glass-bg-heavy` | `rgba(255,255,255,0.75)` | `oklch(0.19 0.02 250/0.55)` | Sidebar, modals, popovers |
+| `--glass-bg-light` | `rgba(255,255,255,0.4)` | `oklch(0.16 0.02 250/0.25)` | Nested glass, inputs |
+| `--glass-bg-subtle` | `rgba(255,255,255,0.25)` | `oklch(0.13 0.02 250/0.15)` | Decorative overlays |
+| `--glass-border` | `oklch(0.8 0.02 260/0.25)` | `oklch(0.25 0.02 250/0.3)` | Standard glass edge (hue 250) |
+| `--glass-border-strong` | `oklch(0.75 0.03 260/0.35)` | `oklch(0.30 0.02 250/0.4)` | Emphasized edges (hue 250) |
+| `--glass-border-subtle` | `oklch(0.85 0.015 260/0.15)` | `oklch(0.25 0.02 250/0.18)` | Inputs, nested glass (hue 250) |
+| `--glass-shadow` | `0 8px 32px oklch(0.55 0.05 260/0.1)` | `... oklch(0.05 0.02 250/0.5)` | Standard colored shadow |
+| `--glass-shadow-lg` | `0 12px 48px ...` | `... oklch(0.05 0.02 250/0.6)` | Hover/modal elevation |
+| `--glass-shadow-sm` | `0 4px 16px ...` | `... oklch(0.05 0.02 250/0.35)` | Subtle depth |
+| `--glass-bg-modal` | `oklch(0.97 0.008 260/0.65)` | `oklch(0.13 0.02 250/0.75)` | Sheet/dialog glass |
+| `--glass-inner-glow` | `inset 0 1px 0 0 rgba(255,255,255,0.4)` | `... oklch(0.5 0.02 250/0.15)` | Top-edge highlight (hue 250) |
 | `--blur-glass-sm/md/lg/xl` | `8/16/24/40px` | (same) | Backdrop-filter blur levels |
 
 ### Glass Utility Classes
@@ -227,18 +227,22 @@ Operational rule:
 | `--gradient-neutral` | Settings | Warm cream with soft golden tint | Neutral black with velvet warmth |
 
 Applied via utility classes: `.gradient-morning-sky`, `.gradient-ocean-mist`, etc.
-Dark variants use the black/velvet/blue/navy palette at lightness 0.09-0.12, chroma 0.02-0.05, with each gradient having a distinct hue identity (250-320).
+Dark variants use unified hue 250 (blue-indigo) at lightness 0.12-0.14, chroma 0.015-0.03, with subtle hue variation (248-252) for gradient differentiation.
 
 ### Dark Palette Families
 
-The dark theme uses four distinct color families to create visual depth:
+The dark theme uses a unified hue 250 (blue-indigo) with consistent chroma 0.02 for all neutral surfaces, matching the stagent.github.io marketing site aesthetic:
 
 | Family | Hue | Lightness | Role |
 |--------|-----|-----------|------|
-| **Navy** | 265 | 0.09-0.15 | Deepest surfaces — `--background`, gradient bases, glass overlays |
-| **Blue** | 260 | 0.55-0.65 | Primary interactive — `--primary`, buttons, rings |
+| **Base** | 250 | 0.13 | Deepest surface — `--background`, gradient bases |
+| **Raised** | 250 | 0.16 | Cards, surface-1, glass backgrounds |
+| **Overlay** | 250 | 0.19 | Secondary, muted, accent surfaces |
+| **Primary** | 250 | 0.55-0.65 | Interactive — `--primary`, buttons, rings |
 | **Cyan** | 195 | 0.80 | Brand accent — logo highlight, data viz |
-| **Purple** | 295-300 | 0.14-0.20 | Accent surfaces — `--secondary`, sidebar accent |
+
+Surface hierarchy: 0.13 (base) → 0.16 (raised) → 0.19 (overlay). All neutral surfaces use chroma 0.02.
+Cards use layered `color-mix(in oklab, ...)` gradients for depth. A noise grain overlay at 3% opacity adds texture.
 
 ### Glass Forbidden Patterns
 

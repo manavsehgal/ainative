@@ -127,7 +127,7 @@ export default async function HomePage() {
 
   return (
     <div className="gradient-morning-sky min-h-screen p-4 sm:p-6">
-      <div className="surface-page surface-page-shell mx-auto min-h-[calc(100dvh-2rem)] max-w-7xl rounded-[30px] p-5 sm:p-6 lg:p-7">
+      <div className="surface-page surface-page-shell min-h-[calc(100dvh-2rem)] rounded-[30px] p-5 sm:p-6 lg:p-7">
         <Greeting
           runningCount={runningResult.count}
           awaitingCount={awaitingResult.count}

@@ -185,41 +185,41 @@
 }
 
 .dark {
-  /* Background — deep black with navy undertone */
-  --background: oklch(0.09 0.02 265);
-  --foreground: oklch(0.93 0.015 270);
+  /* Background — unified hue 250 blue-indigo */
+  --background: oklch(0.13 0.02 250);
+  --foreground: oklch(0.93 0.01 250);
 
-  /* Cards — navy-tinted translucency */
-  --card: oklch(0.16 0.025 265 / 0.6);
-  --card-foreground: oklch(0.93 0.015 270);
-  --popover: oklch(0.14 0.025 265 / 0.5);
-  --popover-foreground: oklch(0.93 0.015 270);
+  /* Cards — hue 250 translucency */
+  --card: oklch(0.16 0.02 250 / 0.6);
+  --card-foreground: oklch(0.93 0.01 250);
+  --popover: oklch(0.16 0.02 250 / 0.5);
+  --popover-foreground: oklch(0.93 0.01 250);
 
-  /* Primary — blue, stays mostly the same */
-  --primary: oklch(0.65 0.18 260);
-  --primary-foreground: oklch(0.09 0.02 265);
+  /* Primary — blue-indigo hue 250 */
+  --primary: oklch(0.65 0.18 250);
+  --primary-foreground: oklch(0.13 0.02 250);
 
-  /* Secondary — velvet-shifted */
-  --secondary: oklch(0.18 0.035 310);
-  --secondary-foreground: oklch(0.93 0.015 270);
+  /* Secondary — unified hue 250 */
+  --secondary: oklch(0.19 0.02 250);
+  --secondary-foreground: oklch(0.93 0.01 250);
 
-  /* Muted — navy mid-tone */
-  --muted: oklch(0.18 0.03 290);
-  --muted-foreground: oklch(0.6 0.03 270);
-  --surface-1: oklch(0.16 0.02 268 / 0.96);
-  --surface-2: oklch(0.14 0.018 272 / 0.9);
-  --surface-3: oklch(0.12 0.02 278 / 0.84);
-  --surface-foreground: oklch(0.93 0.015 270);
+  /* Muted — consistent hue 250 */
+  --muted: oklch(0.19 0.02 250);
+  --muted-foreground: oklch(0.6 0.02 250);
+  --surface-1: oklch(0.16 0.02 250 / 0.96);
+  --surface-2: oklch(0.14 0.02 250 / 0.9);
+  --surface-3: oklch(0.13 0.02 250 / 0.84);
+  --surface-foreground: oklch(0.93 0.01 250);
 
-  /* Accent — navy, distinct from secondary velvet */
-  --accent: oklch(0.20 0.04 285);
-  --accent-foreground: oklch(0.93 0.015 270);
+  /* Accent — unified hue 250 */
+  --accent: oklch(0.19 0.02 250);
+  --accent-foreground: oklch(0.93 0.01 250);
 
   --destructive: oklch(0.55 0.2 25);
   --destructive-foreground: oklch(0.98 0.005 260);
   --border: var(--glass-border);
-  --input: oklch(0.14 0.03 265 / 0.4);
-  --ring: oklch(0.65 0.18 260);
+  --input: oklch(0.16 0.02 250 / 0.4);
+  --ring: oklch(0.65 0.18 250);
 
   --chart-1: oklch(0.65 0.22 260);
   --chart-2: oklch(0.65 0.19 170);
@@ -227,15 +227,15 @@
   --chart-4: oklch(0.65 0.22 300);
   --chart-5: oklch(0.7 0.19 30);
 
-  /* Sidebar — slightly lighter velvet-black */
-  --sidebar: oklch(0.11 0.025 290 / 0.6);
-  --sidebar-foreground: oklch(0.93 0.015 270);
-  --sidebar-primary: oklch(0.65 0.18 260);
-  --sidebar-primary-foreground: oklch(0.09 0.02 265);
-  --sidebar-accent: oklch(0.20 0.04 300);
-  --sidebar-accent-foreground: oklch(0.93 0.015 270);
+  /* Sidebar — unified hue 250 */
+  --sidebar: oklch(0.13 0.02 250 / 0.6);
+  --sidebar-foreground: oklch(0.93 0.01 250);
+  --sidebar-primary: oklch(0.65 0.18 250);
+  --sidebar-primary-foreground: oklch(0.13 0.02 250);
+  --sidebar-accent: oklch(0.19 0.02 250);
+  --sidebar-accent-foreground: oklch(0.93 0.01 250);
   --sidebar-border: var(--glass-border-subtle);
-  --sidebar-ring: oklch(0.65 0.18 260);
+  --sidebar-ring: oklch(0.65 0.18 250);
   /* Semantic status tokens */
   --status-running: oklch(0.65 0.18 260);
   --status-completed: oklch(0.65 0.15 170);
@@ -251,72 +251,42 @@
   --complexity-moderate: oklch(0.75 0.15 75);
   --complexity-complex: oklch(0.65 0.2 25);
 
-  /* Dark mode glass overrides — navy-tinted instead of colorless white */
-  --glass-bg: oklch(0.18 0.025 265 / 0.45);
-  --glass-bg-heavy: oklch(0.22 0.03 265 / 0.55);
-  --glass-bg-light: oklch(0.16 0.02 265 / 0.25);
-  --glass-bg-subtle: oklch(0.14 0.015 265 / 0.15);
+  /* Dark mode glass overrides — unified hue 250 blue-indigo */
+  --glass-bg: oklch(0.16 0.02 250 / 0.45);
+  --glass-bg-heavy: oklch(0.19 0.02 250 / 0.55);
+  --glass-bg-light: oklch(0.16 0.02 250 / 0.25);
+  --glass-bg-subtle: oklch(0.13 0.02 250 / 0.15);
 
-  /* Glass borders — navy-tinted for cohesion */
-  --glass-border: oklch(0.4 0.04 265 / 0.3);
-  --glass-border-strong: oklch(0.45 0.05 270 / 0.4);
-  --glass-border-subtle: oklch(0.35 0.03 285 / 0.18);
+  /* Glass borders — hue 250 for cohesion */
+  --glass-border: oklch(0.25 0.02 250 / 0.3);
+  --glass-border-strong: oklch(0.30 0.02 250 / 0.4);
+  --glass-border-subtle: oklch(0.25 0.02 250 / 0.18);
 
-  /* Glass shadows — deeper with navy tint */
-  --glass-shadow: 0 8px 32px oklch(0.05 0.03 265 / 0.5);
-  --glass-shadow-lg: 0 12px 48px oklch(0.05 0.03 265 / 0.6);
-  --glass-shadow-sm: 0 4px 16px oklch(0.05 0.03 265 / 0.35);
+  /* Glass shadows — deeper with hue 250 tint */
+  --glass-shadow: 0 8px 32px oklch(0.05 0.02 250 / 0.5);
+  --glass-shadow-lg: 0 12px 48px oklch(0.05 0.02 250 / 0.6);
+  --glass-shadow-sm: 0 4px 16px oklch(0.05 0.02 250 / 0.35);
 
-  /* Inner glow — faint navy highlight */
-  --glass-inner-glow: inset 0 1px 0 0 oklch(0.5 0.04 270 / 0.15);
-  --glass-inner-glow-subtle: inset 0 1px 0 0 oklch(0.5 0.04 270 / 0.1);
+  /* Inner glow — faint hue 250 highlight */
+  --glass-inner-glow: inset 0 1px 0 0 oklch(0.5 0.02 250 / 0.15);
+  --glass-inner-glow-subtle: inset 0 1px 0 0 oklch(0.5 0.02 250 / 0.1);
 
-  /* Modal — deep navy glass */
-  --glass-bg-modal: oklch(0.12 0.03 285 / 0.75);
+  /* Modal — hue 250 glass */
+  --glass-bg-modal: oklch(0.13 0.02 250 / 0.75);
 
-  /* Dark mode gradient presets — distinct identities using black/velvet/blue/navy palette */
-  /* Dashboard/Home — deep black → midnight blue */
-  --gradient-morning-sky: linear-gradient(
-    135deg,
-    oklch(0.10 0.02 260) 0%,
-    oklch(0.12 0.035 260) 50%,
-    oklch(0.10 0.025 270) 100%
-  );
-  /* Projects/Workflows — deep blue → blue-navy */
-  --gradient-ocean-mist: linear-gradient(
-    135deg,
-    oklch(0.11 0.04 260) 0%,
-    oklch(0.12 0.045 265) 50%,
-    oklch(0.11 0.035 265) 100%
-  );
-  /* Monitor — black → deep navy */
-  --gradient-forest-dawn: linear-gradient(
-    135deg,
-    oklch(0.09 0.02 270) 0%,
-    oklch(0.11 0.035 285) 50%,
-    oklch(0.10 0.03 290) 100%
-  );
-  /* Inbox — velvet → warm navy */
-  --gradient-sunset-glow: linear-gradient(
-    135deg,
-    oklch(0.12 0.04 320) 0%,
-    oklch(0.11 0.045 305) 50%,
-    oklch(0.12 0.035 290) 100%
-  );
-  /* Documents — deep navy → indigo */
-  --gradient-twilight: linear-gradient(
-    135deg,
-    oklch(0.11 0.05 290) 0%,
-    oklch(0.10 0.045 275) 50%,
-    oklch(0.11 0.04 260) 100%
-  );
-  /* Settings — neutral black with subtle velvet warmth */
-  --gradient-neutral: linear-gradient(
-    135deg,
-    oklch(0.10 0.015 290) 0%,
-    oklch(0.095 0.02 300) 50%,
-    oklch(0.10 0.015 265) 100%
-  );
+  /* Dark mode gradient presets — unified hue 250 with subtle variation (248-252) */
+  --gradient-morning-sky: linear-gradient(135deg,
+    oklch(0.13 0.02 250) 0%, oklch(0.14 0.025 248) 50%, oklch(0.13 0.02 252) 100%);
+  --gradient-ocean-mist: linear-gradient(135deg,
+    oklch(0.13 0.025 248) 0%, oklch(0.14 0.03 250) 50%, oklch(0.13 0.025 252) 100%);
+  --gradient-forest-dawn: linear-gradient(135deg,
+    oklch(0.12 0.02 252) 0%, oklch(0.14 0.025 250) 50%, oklch(0.13 0.02 248) 100%);
+  --gradient-sunset-glow: linear-gradient(135deg,
+    oklch(0.13 0.02 246) 0%, oklch(0.14 0.025 248) 50%, oklch(0.13 0.02 250) 100%);
+  --gradient-twilight: linear-gradient(135deg,
+    oklch(0.13 0.03 252) 0%, oklch(0.14 0.025 250) 50%, oklch(0.13 0.02 248) 100%);
+  --gradient-neutral: linear-gradient(135deg,
+    oklch(0.13 0.015 250) 0%, oklch(0.135 0.02 250) 50%, oklch(0.13 0.015 250) 100%);
 }
 
 /* =============================================================
@@ -353,8 +323,8 @@
   box-shadow: inset 0 1px 0 0 oklch(0.3 0.04 260 / 0.3), var(--glass-shadow-sm);
 }
 .dark .logo-glass-bg {
-  background: oklch(0.12 0.03 260);
-  box-shadow: inset 0 1px 0 0 oklch(0.3 0.04 260 / 0.15), var(--glass-shadow-sm);
+  background: oklch(0.13 0.02 250);
+  box-shadow: inset 0 1px 0 0 oklch(0.3 0.02 250 / 0.15), var(--glass-shadow-sm);
 }
 
 .glass-sidebar {
@@ -408,6 +378,25 @@
   background: var(--glass-bg-heavy);
   box-shadow: var(--glass-shadow-lg), var(--glass-inner-glow);
   transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dark [data-slot="card"][data-slot="card"] {
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklab, var(--surface-1) 70%, transparent),
+      color-mix(in oklab, var(--background) 88%, transparent)),
+    linear-gradient(135deg,
+      color-mix(in oklab, var(--primary) 10%, transparent),
+      transparent 58%);
+  box-shadow: 0 24px 50px color-mix(in oklab, var(--background) 84%, transparent);
+}
+
+.dark .surface-card {
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklab, var(--surface-1) 85%, transparent),
+      color-mix(in oklab, var(--surface-2) 90%, transparent));
+  box-shadow: 0 12px 28px color-mix(in oklab, var(--background) 70%, transparent);
 }
 
 [data-sidebar="sidebar"] {
@@ -490,7 +479,7 @@
 }
 .dark [data-slot="sheet-overlay"],
 .dark [data-slot="dialog-overlay"] {
-  background: oklch(0.05 0.03 285 / 0.65);
+  background: oklch(0.05 0.02 250 / 0.65);
 }
 
 /* Glass borders for table rows — doubled selector for cascade priority over TW4 utilities */
@@ -516,10 +505,10 @@
   width: 2px;
 }
 .dark [data-slot="separator"][data-orientation="horizontal"] {
-  background: linear-gradient(to bottom, oklch(0.06 0.02 265 / 0.35), oklch(0.25 0.03 270 / 0.15));
+  background: linear-gradient(to bottom, oklch(0.06 0.02 250 / 0.35), oklch(0.25 0.02 250 / 0.15));
 }
 .dark [data-slot="separator"][data-orientation="vertical"] {
-  background: linear-gradient(to right, oklch(0.06 0.02 265 / 0.35), oklch(0.25 0.03 270 / 0.15));
+  background: linear-gradient(to right, oklch(0.06 0.02 250 / 0.35), oklch(0.25 0.02 250 / 0.15));
 }
 
 /* Glass buttons — translucent CTAs */
@@ -571,12 +560,12 @@
 
 /* Dark mode button overrides */
 .dark [data-slot="button"][data-variant="default"] {
-  background: oklch(0.55 0.18 255 / 0.8);
-  box-shadow: var(--glass-shadow-sm), inset 0 1px 0 0 oklch(0.7 0.1 260 / 0.15);
-  border: 1px solid oklch(0.6 0.12 260 / 0.25);
+  background: oklch(0.55 0.18 250 / 0.8);
+  box-shadow: var(--glass-shadow-sm), inset 0 1px 0 0 oklch(0.7 0.1 250 / 0.15);
+  border: 1px solid oklch(0.6 0.12 250 / 0.25);
 }
 .dark [data-slot="button"][data-variant="default"]:hover {
-  background: oklch(0.58 0.18 255 / 0.9);
+  background: oklch(0.58 0.18 250 / 0.9);
 }
 .dark [data-slot="button"][data-variant="destructive"] {
   background: oklch(0.55 0.2 25 / 0.8);
@@ -701,7 +690,7 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    oklch(0.5 0.04 270 / 0.08) 50%,
+    oklch(0.5 0.02 250 / 0.08) 50%,
     transparent 100%
   );
   background-size: 200% 100%;
@@ -718,16 +707,29 @@ body {
 
 .dark .glass-sidebar [data-sidebar="sidebar"] {
   box-shadow:
-    inset -1px 0 0 0 oklch(0.58 0.03 270 / 0.08),
-    12px 0 32px oklch(0.03 0.02 265 / 0.32);
+    inset -1px 0 0 0 oklch(0.58 0.02 250 / 0.08),
+    12px 0 32px oklch(0.03 0.02 250 / 0.32);
 }
 
 .dark .surface-page-shell {
   box-shadow:
-    0 24px 56px oklch(0.03 0.02 265 / 0.44),
-    inset 0 1px 0 0 oklch(0.58 0.03 270 / 0.08);
+    0 24px 56px oklch(0.03 0.02 250 / 0.44),
+    inset 0 1px 0 0 oklch(0.58 0.02 250 / 0.08);
 }
 
 .dark .surface-toolbar {
-  box-shadow: 0 10px 24px oklch(0.03 0.02 265 / 0.32);
+  box-shadow: 0 10px 24px oklch(0.03 0.02 250 / 0.32);
+}
+
+/* Noise grain overlay — subtle texture matching stagent.github.io */
+.dark body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  background-size: 256px 256px;
+  mix-blend-mode: overlay;
 }
