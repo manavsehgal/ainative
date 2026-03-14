@@ -15,6 +15,9 @@ import { getProfile } from "./profiles/registry";
 import { resolveProfileRuntimePayload } from "./profiles/compatibility";
 import type { CanUseToolPolicy } from "./profiles/types";
 import { buildClaudeSdkEnv } from "./runtime/claude-sdk";
+import { getActiveLearnedContext } from "./learned-context";
+import { analyzeForLearnedPatterns } from "./pattern-extractor";
+import { processSweepResult } from "./sweep";
 import {
   extractUsageSnapshot,
   mergeUsageSnapshot,
@@ -319,6 +322,13 @@ async function processAgentStream(
         });
       }
 
+      // Fire-and-forget sweep result processing
+      if (agentProfileId === "sweep") {
+        processSweepResult(taskId).catch((err) => {
+          console.error("[sweep] result processing failed:", err);
+        });
+      }
+
       await finalizeTaskUsage(usageState, "completed");
     }
   }
@@ -354,6 +364,7 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
   const usageState = createTaskUsageState(task);
 
   const abortController = new AbortController();
+  const agentProfileId = task.agentProfile ?? "general";
 
   setExecution(taskId, {
     abortController,
@@ -364,7 +375,7 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
 
   try {
     await prepareTaskOutputDirectory(taskId, { clearExisting: true });
-    const profile = getProfile(task.agentProfile ?? "general");
+    const profile = getProfile(agentProfileId);
     const payload = profile
       ? resolveProfileRuntimePayload(profile, "claude-code")
       : null;
@@ -375,7 +386,11 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
     const basePrompt = task.description || task.title;
     const docContext = await buildDocumentContext(taskId);
     const outputInstructions = buildTaskOutputInstructions(taskId);
-    const prompt = [systemPrompt, docContext, outputInstructions, basePrompt]
+    const learnedCtx = getActiveLearnedContext(agentProfileId);
+    const learnedCtxBlock = learnedCtx
+      ? `## Learned Context\nPatterns and insights learned from previous tasks:\n\n${learnedCtx}`
+      : "";
+    const prompt = [systemPrompt, learnedCtxBlock, docContext, outputInstructions, basePrompt]
       .filter(Boolean)
       .join("\n\n");
 
@@ -420,16 +435,21 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
       task.title,
       response as AsyncIterable<Record<string, unknown>>,
       abortController,
-      task.agentProfile ?? "general",
+      agentProfileId,
       usageState
     );
+
+    // Fire-and-forget pattern extraction for self-improvement
+    analyzeForLearnedPatterns(taskId, agentProfileId).catch((err) => {
+      console.error("[self-improvement] pattern extraction failed:", err);
+    });
   } catch (error: unknown) {
     await handleExecutionError(
       taskId,
       task.title,
       error,
       abortController,
-      task.agentProfile ?? "general",
+      agentProfileId,
       usageState
     );
   } finally {
@@ -494,7 +514,11 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
     const basePrompt = task.description || task.title;
     const docContext = await buildDocumentContext(taskId);
     const outputInstructions = buildTaskOutputInstructions(taskId);
-    const prompt = [systemPrompt, docContext, outputInstructions, basePrompt]
+    const learnedCtx = getActiveLearnedContext(profileId);
+    const learnedCtxBlock = learnedCtx
+      ? `## Learned Context\nPatterns and insights learned from previous tasks:\n\n${learnedCtx}`
+      : "";
+    const prompt = [systemPrompt, learnedCtxBlock, docContext, outputInstructions, basePrompt]
       .filter(Boolean)
       .join("\n\n");
 
@@ -543,6 +567,11 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
       profileId,
       usageState
     );
+
+    // Fire-and-forget pattern extraction for self-improvement
+    analyzeForLearnedPatterns(taskId, profileId).catch((err) => {
+      console.error("[self-improvement] pattern extraction failed:", err);
+    });
   } catch (error: unknown) {
     const errorMessage =
       error instanceof Error ? error.message : String(error);

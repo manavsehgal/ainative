@@ -18,6 +18,9 @@ const {
   mockScanTaskOutputDocuments,
   mockGetProfile,
   mockIsToolAllowed,
+  mockGetActiveLearnedContext,
+  mockAnalyzeForLearnedPatterns,
+  mockProcessSweepResult,
 } = vi.hoisted(() => {
   const mockFrom = vi.fn();
   const mockWhere = vi.fn();
@@ -48,6 +51,9 @@ const {
     allowedTools: undefined,
   });
   const mockIsToolAllowed = vi.fn().mockResolvedValue(false);
+  const mockGetActiveLearnedContext = vi.fn().mockReturnValue(null);
+  const mockAnalyzeForLearnedPatterns = vi.fn().mockResolvedValue(null);
+  const mockProcessSweepResult = vi.fn().mockResolvedValue(undefined);
   return {
     mockDb,
     mockFrom,
@@ -64,6 +70,9 @@ const {
     mockScanTaskOutputDocuments,
     mockGetProfile,
     mockIsToolAllowed,
+    mockGetActiveLearnedContext,
+    mockAnalyzeForLearnedPatterns,
+    mockProcessSweepResult,
   };
 });
 
@@ -113,6 +122,15 @@ vi.mock("@/lib/usage/ledger", () => ({
   })),
   recordUsageLedgerEntry: vi.fn().mockResolvedValue(undefined),
   resolveUsageActivityType: vi.fn().mockReturnValue("task_run"),
+}));
+vi.mock("@/lib/agents/learned-context", () => ({
+  getActiveLearnedContext: mockGetActiveLearnedContext,
+}));
+vi.mock("@/lib/agents/pattern-extractor", () => ({
+  analyzeForLearnedPatterns: mockAnalyzeForLearnedPatterns,
+}));
+vi.mock("@/lib/agents/sweep", () => ({
+  processSweepResult: mockProcessSweepResult,
 }));
 
 // Static imports (works because vi.mock is hoisted)
@@ -175,6 +193,9 @@ beforeEach(() => {
     allowedTools: undefined,
   });
   mockIsToolAllowed.mockResolvedValue(false);
+  mockGetActiveLearnedContext.mockReturnValue(null);
+  mockAnalyzeForLearnedPatterns.mockResolvedValue(null);
+  mockProcessSweepResult.mockResolvedValue(undefined);
 });
 
 // ═══════════════════════════════════════════════════════════════════════

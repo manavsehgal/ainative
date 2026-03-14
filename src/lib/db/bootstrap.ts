@@ -11,6 +11,7 @@ const STAGENT_TABLES = [
   "documents",
   "schedules",
   "usage_ledger",
+  "learned_context",
 ] as const;
 
 export function bootstrapStagentDatabase(sqlite: Database.Database): void {
@@ -172,6 +173,24 @@ export function bootstrapStagentDatabase(sqlite: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_usage_ledger_runtime_id ON usage_ledger(runtime_id);
     CREATE INDEX IF NOT EXISTS idx_usage_ledger_provider_model ON usage_ledger(provider_id, model_id);
     CREATE INDEX IF NOT EXISTS idx_usage_ledger_finished_at ON usage_ledger(finished_at);
+
+    CREATE TABLE IF NOT EXISTS learned_context (
+      id TEXT PRIMARY KEY NOT NULL,
+      profile_id TEXT NOT NULL,
+      version INTEGER NOT NULL,
+      content TEXT,
+      diff TEXT,
+      change_type TEXT NOT NULL,
+      source_task_id TEXT,
+      proposal_notification_id TEXT,
+      proposed_additions TEXT,
+      approved_by TEXT,
+      created_at INTEGER NOT NULL,
+      FOREIGN KEY (source_task_id) REFERENCES tasks(id) ON UPDATE NO ACTION ON DELETE NO ACTION
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_learned_context_profile_version ON learned_context(profile_id, version);
+    CREATE INDEX IF NOT EXISTS idx_learned_context_change_type ON learned_context(change_type);
   `);
 
   try {

@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { PermissionResponseActions } from "@/components/notifications/permission-response-actions";
+import { ContextProposalReview } from "@/components/profiles/context-proposal-review";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -136,23 +137,34 @@ function PendingApprovalDetail({
         </p>
       </div>
 
-      <PermissionDetailFields
-        toolName={selected.toolName}
-        toolInput={selected.toolInput}
-      />
-
-      {selected.taskId && selected.toolName && selected.toolInput && (
-        <PermissionResponseActions
-          taskId={selected.taskId}
+      {selected.notificationType === "context_proposal" ? (
+        <ContextProposalReview
           notificationId={selected.notificationId}
-          toolName={selected.toolName}
-          toolInput={selected.toolInput}
-          responded={false}
-          response={null}
+          profileId={selected.toolName ?? ""}
+          proposedAdditions={selected.body ?? ""}
           onResponded={onResponded}
-          buttonSize="default"
-          layout="stacked"
         />
+      ) : (
+        <>
+          <PermissionDetailFields
+            toolName={selected.toolName}
+            toolInput={selected.toolInput}
+          />
+
+          {selected.taskId && selected.toolName && selected.toolInput && (
+            <PermissionResponseActions
+              taskId={selected.taskId}
+              notificationId={selected.notificationId}
+              toolName={selected.toolName}
+              toolInput={selected.toolInput}
+              responded={false}
+              response={null}
+              onResponded={onResponded}
+              buttonSize="default"
+              layout="stacked"
+            />
+          )}
+        </>
       )}
 
       <div className="flex flex-wrap items-center gap-2">
@@ -393,17 +405,29 @@ export function PendingApprovalHost() {
             </div>
           </button>
 
-          {primary.taskId && primary.toolName && primary.toolInput && (
-            <PermissionResponseActions
-              taskId={primary.taskId}
-              notificationId={primary.notificationId}
-              toolName={primary.toolName}
-              toolInput={primary.toolInput}
-              responded={false}
-              response={null}
-              onResponded={() => removeNotification(primary.notificationId)}
-              className="mt-3"
-            />
+          {primary.notificationType === "context_proposal" ? (
+            <div className="mt-3">
+              <ContextProposalReview
+                notificationId={primary.notificationId}
+                profileId={primary.toolName ?? ""}
+                proposedAdditions={primary.body ?? ""}
+                onResponded={() => removeNotification(primary.notificationId)}
+                compact
+              />
+            </div>
+          ) : (
+            primary.taskId && primary.toolName && primary.toolInput && (
+              <PermissionResponseActions
+                taskId={primary.taskId}
+                notificationId={primary.notificationId}
+                toolName={primary.toolName}
+                toolInput={primary.toolInput}
+                responded={false}
+                response={null}
+                onResponded={() => removeNotification(primary.notificationId)}
+                className="mt-3"
+              />
+            )
           )}
 
           <div className="mt-3 flex items-center justify-between gap-3">

@@ -87,6 +87,7 @@ export const notifications = sqliteTable(
         "task_failed",
         "agent_message",
         "budget_alert",
+        "context_proposal",
       ],
     }).notNull(),
     title: text("title").notNull(),
@@ -168,6 +169,38 @@ export const schedules = sqliteTable(
   ]
 );
 
+export const learnedContext = sqliteTable(
+  "learned_context",
+  {
+    id: text("id").primaryKey(),
+    profileId: text("profile_id").notNull(),
+    version: integer("version").notNull(),
+    content: text("content"),
+    diff: text("diff"),
+    changeType: text("change_type", {
+      enum: [
+        "proposal",
+        "approved",
+        "rejected",
+        "rollback",
+        "summarization",
+      ],
+    }).notNull(),
+    sourceTaskId: text("source_task_id").references(() => tasks.id),
+    proposalNotificationId: text("proposal_notification_id"),
+    proposedAdditions: text("proposed_additions"),
+    approvedBy: text("approved_by"),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_learned_context_profile_version").on(
+      table.profileId,
+      table.version
+    ),
+    index("idx_learned_context_change_type").on(table.changeType),
+  ]
+);
+
 export const settings = sqliteTable("settings", {
   key: text("key").primaryKey(),
   value: text("value").notNull(),
@@ -224,4 +257,5 @@ export type NotificationRow = InferSelectModel<typeof notifications>;
 export type DocumentRow = InferSelectModel<typeof documents>;
 export type ScheduleRow = InferSelectModel<typeof schedules>;
 export type SettingsRow = InferSelectModel<typeof settings>;
+export type LearnedContextRow = InferSelectModel<typeof learnedContext>;
 export type UsageLedgerRow = InferSelectModel<typeof usageLedger>;

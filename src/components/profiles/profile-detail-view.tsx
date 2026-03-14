@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { LearnedContextPanel } from "@/components/profiles/learned-context-panel";
 import {
   type AgentRuntimeId,
   DEFAULT_AGENT_RUNTIME,
@@ -416,6 +417,9 @@ export function ProfileDetailView({ profileId, isBuiltin, initialProfile }: Prof
           </CardContent>
         </Card>
       </div>
+
+      {/* Learned Context */}
+      <LearnedContextPanel profileId={profileId} />
 
       {/* Bottom row: SKILL.md + Tests */}
       <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4">

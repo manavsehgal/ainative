@@ -1,0 +1,12 @@
+id: sweep
+name: Sweep
+version: "1.0.0"
+domain: work
+tags: [sweep, audit, improvement, maintenance]
+supportedRuntimes: [claude-code]
+
+temperature: 0.3
+maxTurns: 50
+outputFormat: json
+
+author: stagent

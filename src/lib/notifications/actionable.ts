@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { notifications, tasks, workflows } from "@/lib/db/schema";
@@ -39,6 +39,7 @@ export interface PendingApprovalPayload extends ActionableNotificationPayload {
   toolInput: PermissionToolInput | null;
   createdAt: string;
   read: boolean;
+  notificationType?: string;
 }
 
 export interface ActionableNotificationChannelAdapter {
@@ -76,7 +77,10 @@ export async function listPendingApprovalPayloads(
     .leftJoin(workflows, eq(workflows.id, tasks.workflowId))
     .where(
       and(
-        eq(notifications.type, "permission_required"),
+        inArray(notifications.type, [
+          "permission_required",
+          "context_proposal",
+        ]),
         isNull(notifications.response)
       )
     )
@@ -84,6 +88,7 @@ export async function listPendingApprovalPayloads(
     .limit(limit);
 
   return rows.map((row) => {
+    const isContextProposal = row.type === "context_proposal";
     const parsedInput = parseNotificationToolInput(row.toolInput);
 
     return {
@@ -92,10 +97,18 @@ export async function listPendingApprovalPayloads(
       taskId: row.taskId,
       workflowId: row.workflowId,
       toolName: row.toolName,
-      permissionLabel: getPermissionKindLabel(row.toolName),
-      compactSummary: buildPermissionSummary(row.toolName, parsedInput),
-      deepLink: buildDeepLink(row.taskId, row.workflowId),
-      supportedActionIds: [...APPROVAL_ACTION_IDS],
+      permissionLabel: isContextProposal
+        ? "Context Proposal"
+        : getPermissionKindLabel(row.toolName),
+      compactSummary: isContextProposal
+        ? `Learned patterns proposed for profile "${row.toolName}"`
+        : buildPermissionSummary(row.toolName, parsedInput),
+      deepLink: isContextProposal
+        ? `/profiles/${row.toolName}`
+        : buildDeepLink(row.taskId, row.workflowId),
+      supportedActionIds: isContextProposal
+        ? (["allow_once", "deny"] as ApprovalActionId[])
+        : [...APPROVAL_ACTION_IDS],
       title: row.title,
       body: row.body,
       taskTitle: row.taskTitle,
@@ -103,6 +116,7 @@ export async function listPendingApprovalPayloads(
       toolInput: parsedInput as PermissionToolInput | null,
       createdAt: row.createdAt.toISOString(),
       read: row.read,
-    };
+      notificationType: row.type,
+    } as PendingApprovalPayload;
   });
 }
