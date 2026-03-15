@@ -76,6 +76,8 @@ Features that enhance the product but aren't essential for first use — homepag
 | [profile-surface-stability](profile-surface-stability.md)           | P2       | completed | operational-surface-foundation, agent-profile-catalog                                                    |
 | [accessibility](accessibility.md)                                   | P2       | completed | app-shell, task-board, workflow-engine, content-handling                                                |
 | [ui-density-refinement](ui-density-refinement.md)                   | P2       | completed | operational-surface-foundation, app-shell, homepage-dashboard, inbox-notifications, project-management   |
+| [kanban-board-operations](kanban-board-operations.md)               | P2       | completed | task-board, task-definition-ai                                                                           |
+| [board-context-persistence](board-context-persistence.md)           | P2       | completed | task-board, kanban-board-operations                                                                      |
 
 ### Platform
 

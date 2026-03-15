@@ -7,7 +7,12 @@ import { TaskCreatePanel } from "@/components/tasks/task-create-panel";
 
 export const dynamic = "force-dynamic";
 
-export default async function NewTaskPage() {
+export default async function NewTaskPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ project?: string }>;
+}) {
+  const params = await searchParams;
   const allProjects = await db
     .select({ id: projects.id, name: projects.name })
     .from(projects)
@@ -21,7 +26,10 @@ export default async function NewTaskPage() {
           Back to Dashboard
         </Button>
       </Link>
-      <TaskCreatePanel projects={allProjects} />
+      <TaskCreatePanel
+        projects={allProjects}
+        defaultProjectId={params.project}
+      />
     </div>
   );
 }

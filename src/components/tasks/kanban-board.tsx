@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ArrowUpDown, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { KanbanColumn } from "./kanban-column";
 import { TaskCard, type TaskItem } from "./task-card";
@@ -30,6 +30,29 @@ import { TaskEditDialog } from "./task-edit-dialog";
 import { EmptyBoard } from "./empty-board";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { COLUMN_ORDER, isValidDragTransition, type TaskStatus } from "@/lib/constants/task-status";
+import { usePersistedState } from "@/hooks/use-persisted-state";
+
+type SortOrder = "priority" | "created-desc" | "created-asc" | "title-asc";
+
+const SORT_OPTIONS: { value: SortOrder; label: string }[] = [
+  { value: "priority", label: "Priority" },
+  { value: "created-desc", label: "Newest first" },
+  { value: "created-asc", label: "Oldest first" },
+  { value: "title-asc", label: "Title A-Z" },
+];
+
+export function compareTasks(a: TaskItem, b: TaskItem, order: SortOrder): number {
+  switch (order) {
+    case "priority":
+      return a.priority - b.priority;
+    case "created-desc":
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    case "created-asc":
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    case "title-asc":
+      return a.title.localeCompare(b.title);
+  }
+}
 
 interface KanbanBoardProps {
   initialTasks: TaskItem[];
@@ -53,8 +76,9 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
   });
   const [exitingIds, setExitingIds] = useState<Set<string>>(new Set());
   const [activeTask, setActiveTask] = useState<TaskItem | null>(null);
-  const [projectFilter, setProjectFilter] = useState("all");
+  const [projectFilter, setProjectFilter] = usePersistedState("stagent-project-filter", "all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [sortOrder, setSortOrder] = usePersistedState<SortOrder>("stagent-sort-order", "priority");
   const [announcement, setAnnouncement] = useState(
     `Showing ${initialTasks.length} task${initialTasks.length === 1 ? "" : "s"} on the kanban board.`
   );
@@ -86,6 +110,13 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
     observer.observe(el);
     return () => observer.disconnect();
   }, [updateScrollIndicators, tasks]);
+
+  // Reset stale project filter (e.g. project was deleted between sessions)
+  useEffect(() => {
+    if (projectFilter !== "all" && !projects.some((p) => p.id === projectFilter)) {
+      setProjectFilter("all");
+    }
+  }, [projectFilter, projects, setProjectFilter]);
 
   // Ghost card exit animation
   useEffect(() => {
@@ -271,9 +302,11 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
     router.push(`/tasks/${task.id}`);
   }
 
+  const sortedTasks = [...filteredTasks].sort((a, b) => compareTasks(a, b, sortOrder));
+
   const groupedTasks = COLUMN_ORDER.reduce(
     (acc, status) => {
-      acc[status] = filteredTasks.filter((t) => t.status === status);
+      acc[status] = sortedTasks.filter((t) => t.status === status);
       return acc;
     },
     {} as Record<TaskStatus, TaskItem[]>
@@ -305,11 +338,26 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
           ))}
         </SelectContent>
       </Select>
+      <Select value={sortOrder} onValueChange={(v) => setSortOrder(v as SortOrder)}>
+        <SelectTrigger className="w-[150px]">
+          <ArrowUpDown className="h-3.5 w-3.5 mr-1.5 shrink-0" />
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {SORT_OPTIONS.map((opt) => (
+            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 
+  const newTaskHref = projectFilter !== "all"
+    ? `/tasks/new?project=${projectFilter}`
+    : "/tasks/new";
+
   const newTaskButton = (
-    <Link href="/tasks/new">
+    <Link href={newTaskHref}>
       <Button>
         <Plus className="h-4 w-4 mr-2" />
         New Task

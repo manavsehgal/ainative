@@ -1,5 +1,26 @@
 # Feature Changelog
 
+## 2026-03-15
+
+### Completed
+- `board-context-persistence` (P2, post-MVP) — Persist board state across sessions and navigation
+  - Created generic `usePersistedState` hook for localStorage-backed state with SSR-safe hydration
+  - Project filter persists across page refreshes via `stagent-project-filter` localStorage key
+  - New Task link passes selected project as `?project=` search param, pre-filling the create form
+  - Added sort order dropdown (Priority, Newest first, Oldest first, Title A-Z) persisted to localStorage
+- `kanban-board-operations` (P2, post-MVP) — Shipped inline task editing, bulk operations, and card animations
+  - Added inline delete confirmation on task cards with 2-step UX (trash icon → confirm/cancel) and 3-second auto-revert
+  - Added task edit dialog for planned/queued tasks with profile-runtime compatibility validation
+  - Added column-level selection mode with bulk delete (confirmation modal) and bulk status transitions (planned→queued, queued→running)
+  - Added ghost card exit animation using sessionStorage for cross-navigation state persistence
+  - Added priority-colored strip toolbar on card footer with contextual action buttons
+
+### Enhancement
+- `task-definition-ai` (P2, MVP) — AI Assist panel now shows animated progress bar with rotating activity messages instead of spinner
+- `provider-runtime-abstraction` (P1, post-MVP) — Added timeout guards: 30s abort on Claude task assist, 60s timeout on Codex with subprocess error handling
+- Engineering principles codified in AGENTS.md (7 directives: zero silent failures, named errors, shadow paths, edge cases, explicit>clever, DRY with judgment, permission to scrap)
+- Version bump to 0.1.7
+
 ## 2026-03-14
 
 ### Removed

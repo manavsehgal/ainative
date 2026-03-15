@@ -45,6 +45,7 @@ interface UploadedFile {
 
 interface TaskCreatePanelProps {
   projects: { id: string; name: string }[];
+  defaultProjectId?: string;
 }
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -54,7 +55,7 @@ const PRIORITY_COLORS: Record<string, string> = {
   "3": "bg-[var(--priority-low)]",
 };
 
-export function TaskCreatePanel({ projects }: TaskCreatePanelProps) {
+export function TaskCreatePanel({ projects, defaultProjectId }: TaskCreatePanelProps) {
   const runtimeOptions = listRuntimeCatalog();
   const runtimeLabelMap = new Map(
     runtimeOptions.map((runtime) => [runtime.id, runtime.label])
@@ -62,7 +63,7 @@ export function TaskCreatePanel({ projects }: TaskCreatePanelProps) {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [projectId, setProjectId] = useState<string>("");
+  const [projectId, setProjectId] = useState<string>(defaultProjectId ?? "");
   const [assignedAgent, setAssignedAgent] = useState<string>("");
   const [priority, setPriority] = useState("2");
   const [agentProfile, setAgentProfile] = useState<string>("");
