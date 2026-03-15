@@ -47,6 +47,18 @@ This repository supports both Codex and Claude Code. Treat this file as the stab
 - For UI work, use browser evaluation when the user asks or when a visual change needs real verification.
 - Save browser artifacts under `output/` unless the task explicitly wants another location.
 
+## Engineering Principles
+
+These 7 directives apply to all skills, all code, and all reviews. They are the shared engineering vocabulary.
+
+1. **Zero silent failures** — every failure mode must be visible to the user. If something can fail, the failure path must produce output, not swallow it.
+2. **Every error has a name** — use specific error types, not generic catches. `DocumentProcessingError` beats `Error`. Name it, throw it, handle it at the right level.
+3. **Data flows have shadow paths** — trace nil, empty, and upstream-error through every pipeline. Ask: what happens when this value is undefined? What if the upstream call returns an empty array? What if it errors?
+4. **Interactions have edge cases** — double-click, navigate-away, slow connection, stale state. Every user-facing interaction has at least one edge case that isn't the happy path. Find it before the user does.
+5. **Explicit over clever** — readability beats elegance; minimal diffs beat rewrites. If you need a comment to explain it, simplify the code instead.
+6. **DRY with judgment** — extract on third use, not first. Three similar lines of code is better than a premature abstraction. When you do extract, the abstraction must earn its weight.
+7. **Permission to scrap** — if a better approach emerges mid-implementation, table current work and switch. Sunk cost is not a reason to continue a suboptimal path.
+
 ## Cross-Tool Compatibility
 
 - `MEMORY.md` is the shared evolving context file for this project.

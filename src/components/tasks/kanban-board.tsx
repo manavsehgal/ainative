@@ -23,9 +23,12 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { toast } from "sonner";
 import { KanbanColumn } from "./kanban-column";
 import { TaskCard, type TaskItem } from "./task-card";
+import { TaskEditDialog } from "./task-edit-dialog";
 import { EmptyBoard } from "./empty-board";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { COLUMN_ORDER, isValidDragTransition, type TaskStatus } from "@/lib/constants/task-status";
 
 interface KanbanBoardProps {
@@ -36,7 +39,19 @@ interface KanbanBoardProps {
 export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
   const dndId = useId();
   const router = useRouter();
-  const [tasks, setTasks] = useState<TaskItem[]>(initialTasks);
+  const [tasks, setTasks] = useState<TaskItem[]>(() => {
+    if (typeof window === "undefined") return initialTasks;
+    const raw = sessionStorage.getItem("deletedTask");
+    if (!raw) return initialTasks;
+    try {
+      const deleted = JSON.parse(raw) as TaskItem;
+      if (initialTasks.some((t) => t.id === deleted.id)) return initialTasks;
+      return [...initialTasks, deleted];
+    } catch {
+      return initialTasks;
+    }
+  });
+  const [exitingIds, setExitingIds] = useState<Set<string>>(new Set());
   const [activeTask, setActiveTask] = useState<TaskItem | null>(null);
   const [projectFilter, setProjectFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -44,6 +59,12 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
     `Showing ${initialTasks.length} task${initialTasks.length === 1 ? "" : "s"} on the kanban board.`
   );
   const hasAnnouncedFilters = useRef(false);
+
+  // Edit dialog
+  const [editingTask, setEditingTask] = useState<TaskItem | null>(null);
+
+  // Bulk delete confirmation
+  const [bulkDeleteIds, setBulkDeleteIds] = useState<string[] | null>(null);
 
   // I5: Scroll indicators
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -65,6 +86,25 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
     observer.observe(el);
     return () => observer.disconnect();
   }, [updateScrollIndicators, tasks]);
+
+  // Ghost card exit animation
+  useEffect(() => {
+    const raw = sessionStorage.getItem("deletedTask");
+    if (!raw) return;
+    sessionStorage.removeItem("deletedTask");
+    try {
+      const deleted = JSON.parse(raw) as TaskItem;
+      requestAnimationFrame(() => {
+        setExitingIds(new Set([deleted.id]));
+        setTimeout(() => {
+          setTasks((prev) => prev.filter((t) => t.id !== deleted.id));
+          setExitingIds(new Set());
+        }, 500);
+      });
+    } catch {
+      // invalid data — ignore
+    }
+  }, []);
 
   // Filter tasks by project and status
   const filteredTasks = tasks.filter((t) => {
@@ -142,6 +182,90 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
       setAnnouncement(`Move failed. ${task.title} returned to ${task.status}.`);
     }
   }
+
+  // Single task delete
+  const handleDeleteTask = useCallback(async (taskId: string) => {
+    const prevTasks = tasks;
+    setTasks((prev) => prev.filter((t) => t.id !== taskId));
+
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Task deleted");
+        setAnnouncement("Task deleted.");
+      } else if (res.status === 404) {
+        // Already gone — keep optimistic removal
+        toast.success("Task deleted");
+      } else {
+        setTasks(prevTasks);
+        toast.error("Failed to delete task");
+      }
+    } catch {
+      setTasks(prevTasks);
+      toast.error("Failed to delete task");
+    }
+  }, [tasks]);
+
+  // Bulk delete — triggered after modal confirmation
+  const handleBulkDeleteConfirm = useCallback(async () => {
+    if (!bulkDeleteIds) return;
+    const ids = bulkDeleteIds;
+    setBulkDeleteIds(null);
+
+    const prevTasks = tasks;
+    setTasks((prev) => prev.filter((t) => !ids.includes(t.id)));
+
+    const results = await Promise.allSettled(
+      ids.map((id) => fetch(`/api/tasks/${id}`, { method: "DELETE" }))
+    );
+
+    const failed = results.filter(
+      (r) => r.status === "rejected" || (r.status === "fulfilled" && !r.value.ok && r.value.status !== 404)
+    );
+
+    if (failed.length === 0) {
+      toast.success(`Deleted ${ids.length} task${ids.length === 1 ? "" : "s"}`);
+      setAnnouncement(`Deleted ${ids.length} tasks.`);
+    } else if (failed.length < ids.length) {
+      const succeeded = ids.length - failed.length;
+      toast.error(`Deleted ${succeeded}/${ids.length}, ${failed.length} failed`);
+      // Refresh to get accurate state
+      refresh();
+    } else {
+      setTasks(prevTasks);
+      toast.error("Failed to delete tasks");
+    }
+  }, [bulkDeleteIds, tasks, refresh]);
+
+  // Bulk status change
+  const handleBulkStatusChange = useCallback(async (taskIds: string[], newStatus: TaskStatus) => {
+    const prevTasks = tasks;
+    setTasks((prev) =>
+      prev.map((t) => (taskIds.includes(t.id) ? { ...t, status: newStatus } : t))
+    );
+    setAnnouncement(`Moving ${taskIds.length} tasks to ${newStatus}.`);
+
+    const results = await Promise.allSettled(
+      taskIds.map((id) =>
+        fetch(`/api/tasks/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: newStatus }),
+        })
+      )
+    );
+
+    const failed = results.filter(
+      (r) => r.status === "rejected" || (r.status === "fulfilled" && !r.value.ok)
+    );
+
+    if (failed.length === 0) {
+      toast.success(`${taskIds.length} task${taskIds.length === 1 ? "" : "s"} moved to ${newStatus}`);
+    } else {
+      toast.error(`${failed.length} of ${taskIds.length} updates failed`);
+      refresh(); // Refresh to reconcile
+    }
+  }, [tasks, refresh]);
 
   function handleTaskClick(task: TaskItem) {
     router.push(`/tasks/${task.id}`);
@@ -256,8 +380,13 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
                 key={status}
                 status={status}
                 tasks={groupedTasks[status]}
+                exitingIds={exitingIds}
                 onTaskClick={handleTaskClick}
                 onAddTask={status === "planned" ? () => router.push("/tasks/new") : undefined}
+                onDeleteTask={handleDeleteTask}
+                onEditTask={setEditingTask}
+                onBulkDelete={(ids) => setBulkDeleteIds(ids)}
+                onBulkStatusChange={handleBulkStatusChange}
               />
             ))}
           </div>
@@ -270,6 +399,25 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
           ) : null}
         </DragOverlay>
       </DndContext>
+
+      {/* Bulk delete confirmation modal */}
+      <ConfirmDialog
+        open={bulkDeleteIds !== null}
+        onOpenChange={(open) => { if (!open) setBulkDeleteIds(null); }}
+        title={`Delete ${bulkDeleteIds?.length ?? 0} task${(bulkDeleteIds?.length ?? 0) === 1 ? "" : "s"}?`}
+        description="This action cannot be undone. All selected tasks will be permanently deleted."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={handleBulkDeleteConfirm}
+      />
+
+      {/* Task edit dialog */}
+      <TaskEditDialog
+        task={editingTask}
+        open={!!editingTask}
+        onOpenChange={(open) => { if (!open) setEditingTask(null); }}
+        onUpdated={refresh}
+      />
     </div>
   );
 }

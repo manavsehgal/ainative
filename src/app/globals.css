@@ -659,6 +659,40 @@
   border: 1px solid color-mix(in oklab, var(--border) 75%, transparent);
 }
 
+/* --- Progress slide animation (AI Assist) --- */
+@keyframes progress-slide {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(0%); }
+  100% { transform: translateX(100%); }
+}
+
+/* --- Card exit animation (ghost card deletion) --- */
+@keyframes card-exit {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+    max-height: 300px;
+  }
+  40% {
+    opacity: 0;
+    transform: scale(0.97);
+    max-height: 300px;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.95);
+    max-height: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    overflow: hidden;
+  }
+}
+
+.animate-card-exit {
+  animation: card-exit 500ms ease-out forwards;
+  overflow: hidden;
+}
+
 /* --- Glass shimmer animation --- */
 @keyframes glass-shimmer {
   0% { background-position: -200% 0; }

@@ -643,7 +643,13 @@ async function runAssistTurn({
       ephemeral: true,
     })) as { thread: { id: string } };
 
+    const ASSIST_TIMEOUT_MS = 60_000;
+
     const completion = new Promise<void>((resolve, reject) => {
+      client!.onProcessError = (error: Error) => {
+        reject(new Error(`Codex process died: ${error.message}`));
+      };
+
       client!.onNotification = (notification: JsonRpcLikeNotification) => {
         const params = asRecord(notification.params) ?? {};
         applyUsageSnapshot(usage, params);
@@ -669,6 +675,13 @@ async function runAssistTurn({
       };
     });
 
+    const timeout = new Promise<never>((_, reject) => {
+      setTimeout(
+        () => reject(new Error("Codex task assist timed out after 60s")),
+        ASSIST_TIMEOUT_MS
+      );
+    });
+
     await client.request("turn/start", {
       threadId: threadResponse.thread.id,
       input: buildTurnInput(prompt),
@@ -676,7 +689,7 @@ async function runAssistTurn({
       outputSchema: TASK_ASSIST_OUTPUT_SCHEMA,
     });
 
-    await completion;
+    await Promise.race([completion, timeout]);
 
     return { text: text.trim(), usage };
   } finally {

@@ -39,11 +39,20 @@ async function collectResultText(
 
   for await (const raw of response) {
     usage = mergeUsageSnapshot(usage, extractUsageSnapshot(raw));
-    if (raw.type === "result" && "result" in raw) {
-      resultText =
-        typeof raw.result === "string"
-          ? raw.result
-          : JSON.stringify(raw.result);
+
+    if (raw.type === "content_block_delta") {
+      const delta = raw.delta as Record<string, unknown> | undefined;
+      if (delta?.type === "text_delta" && typeof delta.text === "string") {
+        resultText += delta.text;
+      }
+    } else if (raw.type === "result" && "result" in raw) {
+      if (raw.is_error) {
+        throw new Error(typeof raw.result === "string" ? raw.result : "Agent SDK returned an error");
+      }
+      const result = raw.result;
+      if (typeof result === "string" && result.length > 0) {
+        resultText = result;
+      }
       break;
     }
   }
@@ -230,12 +239,19 @@ async function runClaudeTaskAssist(
   const startedAt = new Date();
   let usage: UsageSnapshot = {};
 
+  const abortController = new AbortController();
+  const timeout = setTimeout(() => abortController.abort(), 30_000);
+
   try {
     const response = query({
       prompt,
       options: {
+        abortController,
+        includePartialMessages: true,
         cwd: process.cwd(),
         env: buildClaudeSdkEnv(authEnv),
+        allowedTools: [],   // No tool use — pure text completion
+        maxTurns: 1,        // Single turn only — no agentic loop
       },
     });
 
@@ -283,6 +299,8 @@ async function runClaudeTaskAssist(
       finishedAt: new Date(),
     });
     throw error;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 

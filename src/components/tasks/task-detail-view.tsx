@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Play, Square, RotateCcw, ArrowRight, FastForward } from "lucide-react";
+import { Play, Square, RotateCcw, ArrowRight, FastForward, Trash2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { ContentPreview } from "./content-preview";
@@ -16,6 +16,7 @@ import { formatTimestamp } from "@/lib/utils/format-timestamp";
 import { MAX_RESUME_COUNT } from "@/lib/constants/task-status";
 import { taskStatusVariant } from "@/lib/constants/status-colors";
 import type { TaskItem } from "./task-card";
+import { TaskEditDialog } from "./task-edit-dialog";
 import type { DocumentRow } from "@/lib/db/schema";
 
 function detectContentType(content: string): "text" | "markdown" | "code" | "json" | "unknown" {
@@ -46,6 +47,8 @@ export function TaskDetailView({ taskId, initialTask }: TaskDetailViewProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [docs, setDocs] = useState<DocumentRow[]>([]);
 
   const fetchDocs = useCallback(async () => {
@@ -174,6 +177,27 @@ export function TaskDetailView({ taskId, initialTask }: TaskDetailViewProps) {
     }
   }
 
+  async function handleDelete() {
+    if (!task) return;
+    setConfirmDelete(false);
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/tasks/${task.id}`, { method: "DELETE" });
+      if (res.ok || res.status === 404) {
+        sessionStorage.setItem("deletedTask", JSON.stringify(task));
+        toast.success("Task deleted");
+        router.push("/dashboard");
+      } else {
+        setError("Failed to delete task");
+      }
+    } catch {
+      setError("Network error — could not reach server");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   if (!loaded) {
     return (
       <div className="space-y-4">
@@ -207,6 +231,12 @@ export function TaskDetailView({ taskId, initialTask }: TaskDetailViewProps) {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {(task.status === "planned" || task.status === "queued") && (
+            <Button size="sm" variant="outline" onClick={() => setEditOpen(true)} disabled={loading}>
+              <Pencil className="h-3.5 w-3.5 mr-1" />
+              Edit
+            </Button>
+          )}
           {task.status === "planned" && (
             <Button size="sm" onClick={() => handleStatusChange("queued")} disabled={loading}>
               <ArrowRight className="h-3.5 w-3.5 mr-1" />
@@ -248,6 +278,18 @@ export function TaskDetailView({ taskId, initialTask }: TaskDetailViewProps) {
                 {loading ? "Retrying..." : "Retry"}
               </Button>
             </>
+          )}
+          {task.status !== "running" && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-muted-foreground hover:text-destructive"
+              onClick={() => setConfirmDelete(true)}
+              disabled={loading}
+            >
+              <Trash2 className="h-3.5 w-3.5 mr-1" />
+              Delete
+            </Button>
           )}
         </div>
       </div>
@@ -350,6 +392,21 @@ export function TaskDetailView({ taskId, initialTask }: TaskDetailViewProps) {
         confirmLabel="Cancel Task"
         destructive
         onConfirm={handleCancel}
+      />
+      <ConfirmDialog
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        title="Delete task?"
+        description="This action cannot be undone. The task and its history will be permanently deleted."
+        confirmLabel="Delete Task"
+        destructive
+        onConfirm={handleDelete}
+      />
+      <TaskEditDialog
+        task={task}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        onUpdated={refresh}
       />
     </div>
   );

@@ -1,10 +1,11 @@
 "use client";
 
+import { useState, useCallback } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Inbox, Plus } from "lucide-react";
+import { Inbox, Plus, CheckSquare, Square, ArrowRight, Play, Trash2 } from "lucide-react";
 import { TaskCard, type TaskItem } from "./task-card";
 import type { TaskStatus } from "@/lib/constants/task-status";
 
@@ -19,25 +20,159 @@ const columnLabels: Record<string, string> = {
 export function KanbanColumn({
   status,
   tasks,
+  exitingIds,
   onTaskClick,
   onAddTask,
+  onDeleteTask,
+  onEditTask,
+  onBulkDelete,
+  onBulkStatusChange,
 }: {
   status: TaskStatus;
   tasks: TaskItem[];
+  exitingIds?: Set<string>;
   onTaskClick: (task: TaskItem) => void;
   onAddTask?: () => void;
+  onDeleteTask?: (taskId: string) => void;
+  onEditTask?: (task: TaskItem) => void;
+  onBulkDelete?: (taskIds: string[]) => void;
+  onBulkStatusChange?: (taskIds: string[], newStatus: TaskStatus) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
   const label = columnLabels[status] ?? status;
 
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const canSelect = status !== "running";
+
+  const toggleSelectMode = useCallback(() => {
+    setSelectMode((prev) => {
+      if (prev) setSelectedIds(new Set());
+      return !prev;
+    });
+  }, []);
+
+  const handleSelect = useCallback((taskId: string, selected: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (selected) next.add(taskId);
+      else next.delete(taskId);
+      return next;
+    });
+  }, []);
+
+  const toggleSelectAll = useCallback(() => {
+    if (selectedIds.size === tasks.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(tasks.map((t) => t.id)));
+    }
+  }, [selectedIds.size, tasks]);
+
+  const exitSelectMode = useCallback(() => {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  }, []);
+
+  const handleBulkAction = useCallback(
+    (action: "queue" | "run" | "delete") => {
+      const ids = Array.from(selectedIds);
+      if (ids.length === 0) return;
+
+      if (action === "delete") {
+        onBulkDelete?.(ids);
+      } else if (action === "queue") {
+        onBulkStatusChange?.(ids, "queued");
+      } else if (action === "run") {
+        onBulkStatusChange?.(ids, "queued"); // queue first, then execute via board
+      }
+
+      exitSelectMode();
+    },
+    [selectedIds, onBulkDelete, onBulkStatusChange, exitSelectMode]
+  );
+
+  // Determine which bulk action button to show
+  const bulkActionButton =
+    status === "planned" ? (
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-6 text-xs gap-1"
+        onClick={() => handleBulkAction("queue")}
+        disabled={selectedIds.size === 0}
+      >
+        <ArrowRight className="h-3 w-3" />
+        Queue
+      </Button>
+    ) : status === "queued" ? (
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-6 text-xs gap-1"
+        onClick={() => handleBulkAction("run")}
+        disabled={selectedIds.size === 0}
+      >
+        <Play className="h-3 w-3" />
+        Run
+      </Button>
+    ) : null;
+
   return (
-    <div className="flex flex-col min-w-60 max-w-72 flex-1 shrink-0" role="group" aria-label={`${label} column, ${tasks.length} tasks`}>
+    <div className="group/col flex flex-col min-w-64 max-w-80 flex-1 shrink-0" role="group" aria-label={`${label} column, ${tasks.length} tasks`}>
+      {/* Column header */}
       <div className="flex items-center gap-2 mb-3 px-1">
         <h3 className="text-sm font-medium">{label}</h3>
         <Badge variant="secondary" className="text-xs">
           {tasks.length}
         </Badge>
+        <div className="flex-1" />
+        {canSelect && tasks.length > 0 && (
+          <button
+            type="button"
+            onClick={toggleSelectMode}
+            className={`p-1 rounded hover:bg-accent/50 transition-colors cursor-pointer ${
+              selectMode ? "text-primary" : "text-muted-foreground opacity-0 group-hover/col:opacity-100"
+            }`}
+            aria-label={selectMode ? "Exit select mode" : "Enter select mode"}
+            style={{ opacity: selectMode ? 1 : undefined }}
+          >
+            {selectMode ? <CheckSquare className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
+          </button>
+        )}
       </div>
+
+      {/* Bulk action bar */}
+      {selectMode && (
+        <div className="flex items-center gap-1 mb-2 px-1 py-1.5 rounded-md bg-muted/50 border border-border/40 overflow-hidden">
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-6 text-xs px-1.5 shrink-0"
+            onClick={toggleSelectAll}
+          >
+            {selectedIds.size === tasks.length ? "None" : "All"}
+          </Button>
+          <span className="text-xs text-muted-foreground whitespace-nowrap">
+            {selectedIds.size} sel.
+          </span>
+          <div className="flex-1" />
+          {bulkActionButton}
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-6 w-6 p-0 shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+            onClick={() => handleBulkAction("delete")}
+            disabled={selectedIds.size === 0}
+            aria-label="Delete selected"
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
+        </div>
+      )}
+
+      {/* Drop zone */}
       <div
         ref={setNodeRef}
         aria-label={`Drop zone for ${label}`}
@@ -53,9 +188,25 @@ export function KanbanColumn({
                 <span className="text-xs">No tasks</span>
               </div>
             ) : (
-              tasks.map((task) => (
-                <TaskCard key={task.id} task={task} onClick={onTaskClick} />
-              ))
+              tasks.map((task) => {
+                const isExiting = exitingIds?.has(task.id);
+                return (
+                  <div
+                    key={task.id}
+                    className={isExiting ? "animate-card-exit pointer-events-none" : ""}
+                  >
+                    <TaskCard
+                      task={task}
+                      onClick={onTaskClick}
+                      selectionMode={selectMode}
+                      selected={selectedIds.has(task.id)}
+                      onSelect={handleSelect}
+                      onDelete={onDeleteTask}
+                      onEdit={onEditTask}
+                    />
+                  </div>
+                );
+              })
             )}
           </div>
         </SortableContext>

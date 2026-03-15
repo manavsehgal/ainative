@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Loader2, Check, X } from "lucide-react";
+import { Sparkles, Check, X } from "lucide-react";
 
 interface TaskSuggestion {
   title: string;
@@ -41,6 +41,45 @@ const complexityColors: Record<string, string> = {
   moderate: "text-complexity-moderate",
   complex: "text-complexity-complex",
 };
+
+const ACTIVITY_MESSAGES = [
+  "Connecting to AI...",
+  "Analyzing task complexity...",
+  "Generating suggestions...",
+  "Finalizing...",
+];
+
+function ProgressBar({ loading }: { loading: boolean }) {
+  const [messageIndex, setMessageIndex] = useState(0);
+
+  useEffect(() => {
+    if (!loading) {
+      setMessageIndex(0);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setMessageIndex((prev) =>
+        prev < ACTIVITY_MESSAGES.length - 1 ? prev + 1 : prev
+      );
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [loading]);
+
+  if (!loading) return null;
+
+  return (
+    <div className="space-y-1.5">
+      <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+        <div className="h-full w-full rounded-full bg-primary animate-[progress-slide_1.5s_ease-in-out_infinite]" />
+      </div>
+      <p className="text-xs text-muted-foreground text-center">
+        {ACTIVITY_MESSAGES[messageIndex]}
+      </p>
+    </div>
+  );
+}
 
 export function AIAssistPanel({
   title,
@@ -87,7 +126,7 @@ export function AIAssistPanel({
 
   if (!result) {
     return (
-      <div className="pt-2">
+      <div className="pt-2 space-y-2">
         <Button
           type="button"
           variant="outline"
@@ -96,17 +135,16 @@ export function AIAssistPanel({
           disabled={loading || (!title.trim() && !description.trim())}
           className="w-full"
         >
-          {loading ? (
-            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-          ) : (
-            <Sparkles className="h-3 w-3 mr-1" />
-          )}
-          {loading ? "Analyzing..." : "AI Assist"}
+          <Sparkles className="h-3 w-3 mr-1" />
+          AI Assist
         </Button>
+        <ProgressBar loading={loading} />
         {error && <p className="text-xs text-destructive mt-1">{error}</p>}
-        <p className="text-xs text-muted-foreground text-center mt-1.5">
-          Suggests improved descriptions, sub-task breakdowns, and workflow patterns
-        </p>
+        {!loading && (
+          <p className="text-xs text-muted-foreground text-center mt-1.5">
+            Suggests improved descriptions, sub-task breakdowns, and workflow patterns
+          </p>
+        )}
       </div>
     );
   }
