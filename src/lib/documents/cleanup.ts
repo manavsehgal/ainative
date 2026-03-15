@@ -42,8 +42,9 @@ export async function cleanupOrphanedUploads(): Promise<{
         errors.push(`${filename}: ${err instanceof Error ? err.message : "unknown error"}`);
       }
     }
-  } catch {
-    // Upload directory may not exist yet
+  } catch (err) {
+    // Upload directory may not exist yet — log for visibility
+    console.error("[cleanup] Failed to read upload directory:", err);
   }
 
   return { deleted, errors };

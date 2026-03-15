@@ -6,14 +6,24 @@ import { createTaskSchema } from "@/lib/validators/task";
 import { processDocument } from "@/lib/documents/processor";
 import { validateRuntimeProfileAssignment } from "@/lib/agents/profiles/assignment-validation";
 
+const VALID_TASK_STATUSES = ["planned", "queued", "running", "completed", "failed", "cancelled"] as const;
+type TaskStatus = typeof VALID_TASK_STATUSES[number];
+
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const projectId = url.searchParams.get("projectId");
   const status = url.searchParams.get("status");
 
+  if (status && !VALID_TASK_STATUSES.includes(status as TaskStatus)) {
+    return NextResponse.json(
+      { error: `Invalid status. Must be one of: ${VALID_TASK_STATUSES.join(", ")}` },
+      { status: 400 }
+    );
+  }
+
   const conditions = [];
   if (projectId) conditions.push(eq(tasks.projectId, projectId));
-  if (status) conditions.push(eq(tasks.status, status as typeof tasks.status.enumValues[number]));
+  if (status) conditions.push(eq(tasks.status, status as TaskStatus));
 
   const result = await db
     .select()
@@ -70,10 +80,13 @@ export async function POST(req: NextRequest) {
           .where(eq(documents.id, fileId));
 
         // Trigger processing if not already done (fire-and-forget)
-        processDocument(fileId).catch(() => {});
+        processDocument(fileId).catch((err) => {
+          console.error(`[tasks] processDocument failed for ${fileId}:`, err);
+        });
       }
-    } catch {
+    } catch (err) {
       // File association is best-effort — don't fail task creation
+      console.error("[tasks] File association failed:", err);
     }
   }
 

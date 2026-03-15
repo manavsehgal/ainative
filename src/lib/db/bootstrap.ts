@@ -193,44 +193,29 @@ export function bootstrapStagentDatabase(sqlite: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_learned_context_change_type ON learned_context(change_type);
   `);
 
-  try {
-    sqlite.exec(`ALTER TABLE tasks ADD COLUMN agent_profile TEXT;`);
-  } catch {
-    // Column already exists.
-  }
+  const addColumnIfMissing = (ddl: string) => {
+    try {
+      sqlite.exec(ddl);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!msg.includes("duplicate column")) {
+        console.error("[bootstrap] ALTER TABLE failed:", msg);
+      }
+    }
+  };
+
+  addColumnIfMissing(`ALTER TABLE tasks ADD COLUMN agent_profile TEXT;`);
   sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_tasks_agent_profile ON tasks(agent_profile);`);
 
-  try {
-    sqlite.exec(`ALTER TABLE tasks ADD COLUMN workflow_id TEXT REFERENCES workflows(id);`);
-  } catch {
-    // Column already exists.
-  }
+  addColumnIfMissing(`ALTER TABLE tasks ADD COLUMN workflow_id TEXT REFERENCES workflows(id);`);
   sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_tasks_workflow_id ON tasks(workflow_id);`);
 
-  try {
-    sqlite.exec(`ALTER TABLE tasks ADD COLUMN schedule_id TEXT REFERENCES schedules(id);`);
-  } catch {
-    // Column already exists.
-  }
+  addColumnIfMissing(`ALTER TABLE tasks ADD COLUMN schedule_id TEXT REFERENCES schedules(id);`);
   sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_tasks_schedule_id ON tasks(schedule_id);`);
 
-  try {
-    sqlite.exec(`ALTER TABLE projects ADD COLUMN working_directory TEXT;`);
-  } catch {
-    // Column already exists.
-  }
-
-  try {
-    sqlite.exec(`ALTER TABLE schedules ADD COLUMN assigned_agent TEXT;`);
-  } catch {
-    // Column already exists.
-  }
-
-  try {
-    sqlite.exec(`ALTER TABLE documents ADD COLUMN version INTEGER NOT NULL DEFAULT 1;`);
-  } catch {
-    // Column already exists.
-  }
+  addColumnIfMissing(`ALTER TABLE projects ADD COLUMN working_directory TEXT;`);
+  addColumnIfMissing(`ALTER TABLE schedules ADD COLUMN assigned_agent TEXT;`);
+  addColumnIfMissing(`ALTER TABLE documents ADD COLUMN version INTEGER NOT NULL DEFAULT 1;`);
 }
 
 export function hasLegacyStagentTables(sqlite: Database.Database): boolean {

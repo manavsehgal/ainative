@@ -1,4 +1,5 @@
 import { query } from "@anthropic-ai/claude-agent-sdk";
+import { z } from "zod";
 import { db } from "@/lib/db";
 import { tasks, projects, agentLogs, notifications } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -49,11 +50,13 @@ interface TaskUsageState extends UsageSnapshot {
   scheduleId?: string | null;
 }
 
-interface ToolPermissionResponse {
-  behavior: "allow" | "deny";
-  updatedInput?: unknown;
-  message?: string;
-}
+const toolPermissionResponseSchema = z.object({
+  behavior: z.enum(["allow", "deny"]),
+  updatedInput: z.unknown().optional(),
+  message: z.string().optional(),
+});
+
+type ToolPermissionResponse = z.infer<typeof toolPermissionResponseSchema>;
 
 const inFlightPermissionRequests = new Map<
   string,
@@ -149,8 +152,15 @@ async function waitForToolPermissionResponse(
 
     if (notification?.response) {
       try {
-        return JSON.parse(notification.response) as ToolPermissionResponse;
-      } catch {
+        const parsed = JSON.parse(notification.response);
+        const validated = toolPermissionResponseSchema.safeParse(parsed);
+        if (validated.success) {
+          return validated.data;
+        }
+        console.error("[claude-agent] Invalid permission response shape:", validated.error.message);
+        return { behavior: "deny", message: "Invalid response format" };
+      } catch (err) {
+        console.error("[claude-agent] Failed to parse permission response:", err);
         return { behavior: "deny", message: "Invalid response format" };
       }
     }

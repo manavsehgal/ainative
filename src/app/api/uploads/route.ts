@@ -3,6 +3,7 @@ import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { db } from "@/lib/db";
 import { documents } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 import { processDocument } from "@/lib/documents/processor";
 import { getStagentUploadsDir } from "@/lib/utils/stagent-paths";
 
@@ -48,9 +49,22 @@ export async function POST(req: NextRequest) {
   });
 
   // Fire-and-forget: trigger async document processing
-  processDocument(id).catch((err) =>
-    console.error(`[upload] Processing failed for ${id}:`, err)
-  );
+  processDocument(id).catch(async (err) => {
+    console.error(`[upload] Processing failed for ${id}:`, err);
+    // Ensure document doesn't stay stuck in "processing" state
+    try {
+      await db
+        .update(documents)
+        .set({
+          status: "error",
+          processingError: err instanceof Error ? err.message : String(err),
+          updatedAt: new Date(),
+        })
+        .where(eq(documents.id, id));
+    } catch (dbErr) {
+      console.error(`[upload] Failed to update error status for ${id}:`, dbErr);
+    }
+  });
 
   return NextResponse.json(
     {

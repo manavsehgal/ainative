@@ -23,7 +23,8 @@ export function parseNotificationToolInput(
     return parsed && typeof parsed === "object"
       ? (parsed as PermissionToolInput)
       : null;
-  } catch {
+  } catch (err) {
+    console.error("[permissions] Failed to parse notification tool input:", err);
     return null;
   }
 }
@@ -163,7 +164,8 @@ export function getPermissionResponseLabel(response: string | null): string | nu
     }
 
     return null;
-  } catch {
+  } catch (err) {
+    console.error("[permissions] Failed to parse permission response:", err);
     return null;
   }
 }

@@ -705,8 +705,8 @@ export async function executeChildTask(
 
   try {
     await executeTaskWithRuntime(taskId);
-  } catch {
-    // Runtime adapter handles its own error logging
+  } catch (err) {
+    console.error(`[workflow-engine] Runtime execution failed for task ${taskId}:`, err);
   }
 
   const [completedTask] = await db
