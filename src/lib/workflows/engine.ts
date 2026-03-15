@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { workflows, tasks, agentLogs, notifications } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { executeTaskWithRuntime } from "@/lib/agents/runtime";
+import { classifyTaskProfile } from "@/lib/agents/router";
 import type { WorkflowDefinition, WorkflowState, StepState, LoopState } from "./types";
 import { createInitialState } from "./types";
 import { executeLoop } from "./loop-executor";
@@ -47,6 +48,8 @@ export async function executeWorkflow(workflowId: string): Promise<void> {
     try {
       await executeLoop(workflowId, definition);
 
+      await syncSourceTaskStatus(workflowId, "completed");
+
       await db.insert(agentLogs).values({
         id: crypto.randomUUID(),
         taskId: null,
@@ -56,6 +59,8 @@ export async function executeWorkflow(workflowId: string): Promise<void> {
         timestamp: new Date(),
       });
     } catch (error) {
+      await syncSourceTaskStatus(workflowId, "failed");
+
       await db.insert(agentLogs).values({
         id: crypto.randomUUID(),
         taskId: null,
@@ -94,6 +99,9 @@ export async function executeWorkflow(workflowId: string): Promise<void> {
     state.completedAt = new Date().toISOString();
     await updateWorkflowState(workflowId, state, "completed");
 
+    // Sync parent task status
+    await syncSourceTaskStatus(workflowId, "completed");
+
     await db.insert(agentLogs).values({
       id: crypto.randomUUID(),
       taskId: null,
@@ -105,6 +113,9 @@ export async function executeWorkflow(workflowId: string): Promise<void> {
   } catch (error) {
     state.status = "failed";
     await updateWorkflowState(workflowId, state, "failed");
+
+    // Sync parent task status
+    await syncSourceTaskStatus(workflowId, "failed");
 
     await db.insert(agentLogs).values({
       id: crypto.randomUUID(),
@@ -682,6 +693,12 @@ export async function executeChildTask(
     .from(workflows)
     .where(eq(workflows.id, workflowId));
 
+  // Resolve "auto" profile via multi-agent router
+  const resolvedProfile =
+    !agentProfile || agentProfile === "auto"
+      ? classifyTaskProfile(name, prompt, assignedAgent)
+      : agentProfile;
+
   const taskId = crypto.randomUUID();
   await db.insert(tasks).values({
     id: taskId,
@@ -693,7 +710,7 @@ export async function executeChildTask(
     status: "queued",
     priority: 1,
     assignedAgent: assignedAgent ?? null,
-    agentProfile: agentProfile ?? null,
+    agentProfile: resolvedProfile ?? null,
     createdAt: new Date(),
     updatedAt: new Date(),
   });
@@ -809,6 +826,34 @@ async function waitForApproval(
   }
 
   return false; // Timeout — treat as denied
+}
+
+/**
+ * Sync the parent (source) task's status with the workflow's final status.
+ * The parent task is linked via `sourceTaskId` in the workflow's definition JSON.
+ */
+async function syncSourceTaskStatus(
+  workflowId: string,
+  status: "completed" | "failed"
+): Promise<void> {
+  try {
+    const [workflow] = await db
+      .select()
+      .from(workflows)
+      .where(eq(workflows.id, workflowId));
+
+    if (!workflow) return;
+
+    const def = JSON.parse(workflow.definition);
+    if (!def.sourceTaskId) return;
+
+    await db
+      .update(tasks)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(tasks.id, def.sourceTaskId));
+  } catch (error) {
+    console.error(`[workflow-engine] Failed to sync source task status for workflow ${workflowId}:`, error);
+  }
 }
 
 /**
