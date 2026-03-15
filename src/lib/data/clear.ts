@@ -3,6 +3,7 @@ import {
   agentLogs,
   notifications,
   documents,
+  learnedContext,
   tasks,
   workflows,
   schedules,
@@ -31,6 +32,7 @@ export function clearAllData() {
   const logsDeleted = db.delete(agentLogs).run().changes;
   const notificationsDeleted = db.delete(notifications).run().changes;
   const documentsDeleted = db.delete(documents).run().changes;
+  const learnedContextDeleted = db.delete(learnedContext).run().changes;
   const tasksDeleted = db.delete(tasks).run().changes;
   const workflowsDeleted = db.delete(workflows).run().changes;
   const schedulesDeleted = db.delete(schedules).run().changes;
@@ -58,6 +60,7 @@ export function clearAllData() {
     agentLogs: logsDeleted,
     notifications: notificationsDeleted,
     documents: documentsDeleted,
+    learnedContext: learnedContextDeleted,
     files: filesDeleted,
   };
 }

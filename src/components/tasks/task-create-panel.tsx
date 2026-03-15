@@ -18,7 +18,13 @@ import { Bot, FileText, Settings, Paperclip } from "lucide-react";
 import { toast } from "sonner";
 import { AIAssistPanel } from "./ai-assist-panel";
 import { FileUpload } from "./file-upload";
+import type { TaskAssistResponse } from "@/lib/agents/runtime/task-assist-types";
 import { FormSectionCard } from "@/components/shared/form-section-card";
+import {
+  saveAssistState,
+  loadTaskFormState,
+  clearTaskFormState,
+} from "@/lib/workflows/assist-session";
 import {
   type AgentRuntimeId,
   DEFAULT_AGENT_RUNTIME,
@@ -77,6 +83,24 @@ export function TaskCreatePanel({ projects, defaultProjectId }: TaskCreatePanelP
       .then((r) => r.json())
       .then((data: ProfileOption[]) => setProfiles(data))
       .catch(() => {});
+  }, []);
+
+  // Restore form state when returning from workflow confirmation
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("restore") !== "1") return;
+    const saved = loadTaskFormState();
+    if (saved) {
+      setTitle(saved.title);
+      setDescription(saved.description);
+      setProjectId(saved.projectId);
+      setPriority(saved.priority);
+      setAgentProfile(saved.agentProfile);
+      setAssignedAgent(saved.assignedAgent);
+      clearTaskFormState();
+    }
+    // Clean up URL param without triggering navigation
+    window.history.replaceState({}, "", window.location.pathname);
   }, []);
 
   const selectedRuntimeId = (assignedAgent ||
@@ -351,8 +375,23 @@ export function TaskCreatePanel({ projects, defaultProjectId }: TaskCreatePanelP
                   }
                   router.push("/dashboard");
                 }}
+                onCreateWorkflow={(result) => {
+                  saveAssistState({
+                    assistResult: result as TaskAssistResponse,
+                    formState: {
+                      title,
+                      description,
+                      projectId,
+                      priority,
+                      agentProfile,
+                      assignedAgent,
+                    },
+                  });
+                  router.push("/workflows/from-assist");
+                }}
               />
             </div>
+
           </div>
         </form>
       </CardContent>

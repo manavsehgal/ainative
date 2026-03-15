@@ -4,7 +4,7 @@ import { tasks } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { updateAuthStatus, getAuthEnv } from "@/lib/settings/auth";
 import { getExecution, removeExecution } from "@/lib/agents/execution-manager";
-import { getProfile } from "@/lib/agents/profiles/registry";
+import { getProfile, listProfiles } from "@/lib/agents/profiles/registry";
 import { resolveProfileRuntimePayload } from "@/lib/agents/profiles/compatibility";
 import { executeClaudeTask, resumeClaudeTask } from "@/lib/agents/claude-agent";
 import { getRuntimeCapabilities, getRuntimeCatalogEntry } from "./catalog";
@@ -23,13 +23,41 @@ import {
   type UsageSnapshot,
 } from "@/lib/usage/ledger";
 
-const TASK_ASSIST_SYSTEM_PROMPT = `You are an AI task definition assistant. Analyze the given task and return ONLY a JSON object (no markdown, no code fences) with:
+function buildTaskAssistSystemPrompt(profileIds: string[]): string {
+  const profileList = profileIds.length > 0
+    ? `Available agent profiles: ${profileIds.join(", ")}\nUse "auto" if unsure which profile fits a step.`
+    : `No explicit profiles available. Use "auto" for suggestedProfile.`;
+
+  return `You are an AI task definition assistant. Analyze the given task and return ONLY a JSON object (no markdown, no code fences) with:
 - "improvedDescription": A clearer version of the task for an AI agent to execute
-- "breakdown": Array of {title, description} sub-tasks if complex (empty array if simple)
-- "recommendedPattern": "single", "sequence", "planner-executor", or "checkpoint"
+- "breakdown": Array of step objects if complex (empty array if simple). Each step: {title, description, suggestedProfile?, requiresApproval?, dependsOn?}
+  - "suggestedProfile": one of the available profile IDs or "auto"
+  - "requiresApproval": true if the step involves irreversible actions needing human review
+  - "dependsOn": array of step indices (0-based) this step depends on (for parallel/swarm patterns)
+- "recommendedPattern": one of "single", "sequence", "planner-executor", "checkpoint", "parallel", "loop", "swarm"
+  - "sequence": steps run one after another in order
+  - "planner-executor": first step plans, remaining steps execute the plan
+  - "checkpoint": like sequence but certain steps pause for human approval
+  - "parallel": independent steps run concurrently, a final synthesis step merges results (use dependsOn to mark the synthesis step)
+  - "loop": a single step repeats iteratively until a goal is met (include suggestedLoopConfig)
+  - "swarm": first step is the mayor (coordinator), middle steps are workers (run in parallel), last step is the refinery (merges results)
 - "complexity": "simple", "moderate", or "complex"
 - "needsCheckpoint": true if irreversible actions or needs human review
-- "reasoning": Brief explanation`;
+- "reasoning": Brief explanation of why you chose this pattern
+- "suggestedLoopConfig": {maxIterations, timeBudgetMs?} — only for loop pattern
+- "suggestedSwarmConfig": {workerConcurrencyLimit?} — only for swarm pattern
+
+${profileList}
+
+Pattern selection guide:
+- Use "single" for simple, atomic tasks
+- Use "sequence" for ordered multi-step work where each step builds on the previous
+- Use "planner-executor" when the task needs analysis before action
+- Use "checkpoint" when steps involve deployments, deletions, or other irreversible actions
+- Use "parallel" when sub-tasks are independent and can run concurrently (research, analysis)
+- Use "loop" for iterative refinement (code review cycles, optimization passes)
+- Use "swarm" for complex tasks needing multiple specialized agents coordinated by a lead`;
+}
 
 async function collectResultText(
   response: AsyncIterable<Record<string, unknown>>
@@ -235,7 +263,9 @@ async function runClaudeTaskAssist(
     .join("\n");
 
   const authEnv = await getAuthEnv();
-  const prompt = `${TASK_ASSIST_SYSTEM_PROMPT}\n\n${userMessage}`;
+  const profileIds = listProfiles().map((p) => p.id);
+  const systemPrompt = buildTaskAssistSystemPrompt(profileIds);
+  const prompt = `${systemPrompt}\n\n${userMessage}`;
   const startedAt = new Date();
   let usage: UsageSnapshot = {};
 

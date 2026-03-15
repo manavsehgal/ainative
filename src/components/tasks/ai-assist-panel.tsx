@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Check, X } from "lucide-react";
+import { Sparkles, Check, X, GitBranch } from "lucide-react";
 
 interface TaskSuggestion {
   title: string;
@@ -27,6 +27,7 @@ interface AIAssistPanelProps {
   onApplyDescription: (description: string) => void;
   onCreateSubtasks: (subtasks: TaskSuggestion[]) => void;
   onResultChange?: (hasResult: boolean) => void;
+  onCreateWorkflow?: (result: AssistResult) => void;
 }
 
 const patternLabels: Record<string, string> = {
@@ -34,6 +35,9 @@ const patternLabels: Record<string, string> = {
   sequence: "Sequence",
   "planner-executor": "Planner → Executor",
   checkpoint: "Human Checkpoint",
+  parallel: "Parallel",
+  loop: "Loop",
+  swarm: "Swarm",
 };
 
 const complexityColors: Record<string, string> = {
@@ -88,6 +92,7 @@ export function AIAssistPanel({
   onApplyDescription,
   onCreateSubtasks,
   onResultChange,
+  onCreateWorkflow,
 }: AIAssistPanelProps) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AssistResult | null>(null);
@@ -205,15 +210,31 @@ export function AIAssistPanel({
                 <span className="text-xs font-medium text-muted-foreground">
                   Suggested Breakdown ({result.breakdown.length} sub-tasks)
                 </span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 text-xs"
-                  onClick={() => onCreateSubtasks(result.breakdown)}
-                >
-                  Create All
-                </Button>
+                <div className="flex gap-1">
+                  {onCreateWorkflow &&
+                    result.breakdown.length >= 2 &&
+                    result.recommendedPattern !== "single" && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 text-xs"
+                      onClick={() => onCreateWorkflow(result)}
+                    >
+                      <GitBranch className="h-3 w-3 mr-1" />
+                      Workflow
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 text-xs"
+                    onClick={() => onCreateSubtasks(result.breakdown)}
+                  >
+                    Create All
+                  </Button>
+                </div>
               </div>
               <div className="max-h-60 overflow-y-auto space-y-1.5">
                 {result.breakdown.map((sub, i) => (

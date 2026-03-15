@@ -149,6 +149,11 @@ export function getPermissionDetailEntries(
 export function getPermissionResponseLabel(response: string | null): string | null {
   if (!response) return null;
 
+  // Handle legacy plain-string responses (pre-JSON format)
+  const legacy = response.toLowerCase();
+  if (legacy === "approved" || legacy === "allowed") return "Allowed";
+  if (legacy === "denied" || legacy === "rejected") return "Denied";
+
   try {
     const parsed = JSON.parse(response) as {
       behavior?: "allow" | "deny";
@@ -164,8 +169,7 @@ export function getPermissionResponseLabel(response: string | null): string | nu
     }
 
     return null;
-  } catch (err) {
-    console.error("[permissions] Failed to parse permission response:", err);
+  } catch {
     return null;
   }
 }

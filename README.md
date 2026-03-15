@@ -14,7 +14,7 @@ Open [localhost:3000](http://localhost:3000).
 
 **Profiles & Policies** · **Blueprints & Schedules** · **Open Source**
 
-<img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/home-workspace.png" alt="Stagent home workspace" width="1200" />
+<img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/home-list.png" alt="Stagent home workspace" width="1200" />
 
 | Home Workspace | Reusable Profiles | Workflow Blueprints | Governed Execution |
 |:-:|:-:|:-:|:-:|
@@ -53,6 +53,8 @@ Stagent ships a shared runtime registry that routes tasks, schedules, and workfl
 | 💸 | **[Cost & Usage](#cost--usage)** | Provider-aware metering, budgets, and spend visibility for governed runs |
 | 🚨 | **[Ambient Approvals](#ambient-approvals)** | Shell-level approval prompts that keep Inbox as the durable supervision queue |
 | 🔒 | **[Tool Permissions](#tool-permission-persistence)** | Trusted-tool policies with explicit "Always Allow" rules |
+| 📋 | **[Kanban Board](#kanban-board-operations)** | Inline editing, bulk operations, and persistent board state |
+| 🤖 | **[AI Assist → Workflows](#ai-assist--workflow-creation)** | Bridge task assist recommendations into governed workflow execution *(in progress)* |
 
 ---
 
@@ -82,8 +84,18 @@ Workspace-level briefing with active work, pending review, failed items, project
 #### Task Execution
 Status-driven execution board with five columns: Planned → Queued → Running → Completed → Failed. Filter across projects, create tasks inline, and open task detail to inspect status, description, and runtime state without leaving the board.
 
+<img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/dashboard-list.png" alt="Stagent kanban board" width="1200" />
+
+| Filtered by Project | Inline Card Editing | Bulk Select Mode |
+|:-:|:-:|:-:|
+| <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/dashboard-filtered.png" alt="Dashboard filtered by project" width="380" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/dashboard-card-edit.png" alt="Inline task editing dialog" width="380" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/dashboard-bulk-select.png" alt="Bulk select mode with actions" width="380" /> |
+
 #### Projects
 Create and organize projects as containers for related tasks. Each project can specify a working directory — agent tasks resolve `cwd` from the project's path, enabling agents to operate on external codebases. Server-rendered project cards with task counts, status badges, and a detail view at `/projects/[id]`.
+
+| Project Cards | Project Detail |
+|:-:|:-:|
+| <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/projects-list.png" alt="Project cards overview" width="580" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/projects-detail.png" alt="Project detail view" width="580" /> |
 
 ### Agent
 
@@ -103,11 +115,16 @@ OpenAI Codex App Server is integrated as Stagent's second governed runtime. Code
 #### Agent Profiles
 Profile-backed execution with specialist definitions for different job types. Each profile packages instructions, allowed tools, runtime tuning, and MCP server configuration so teams can reuse behavior intentionally instead of relying on ad hoc prompts. Workflow steps and schedules can reference profiles directly, and runtimes can be selected independently when provider support differs.
 
+<img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/profiles-list.png" alt="Stagent agent profiles" width="1200" />
+
 #### Workflows
-Multi-step task orchestration with three patterns:
+Multi-step task orchestration with six patterns:
 - **Sequence** — Steps execute in order
 - **Planner→Executor** — One agent plans, another executes each step
 - **Human-in-the-Loop Checkpoint** — Pauses for human approval between steps
+- **Parallel** — Concurrent branch execution with fork/join synthesis
+- **Loop** — Iterative agent execution with configurable stop conditions
+- **Swarm** — Mayor/workers/refinery multi-agent orchestration
 
 State machine engine with step-level retry, project association, and real-time status visualization.
 
@@ -121,6 +138,15 @@ Both patterns preserve the same governed task model, runtime selection, monitori
 #### AI Task Assist
 AI-powered task creation: generate improved descriptions, break tasks into sub-tasks, recommend workflow patterns, and estimate complexity through the shared runtime task-assist layer. Claude and OpenAI task assist now both route through the provider runtime abstraction.
 
+| Task Creation Form | AI Suggestions | AI Applied |
+|:-:|:-:|:-:|
+| <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/dashboard-create-form-empty.png" alt="Empty task creation form" width="380" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/dashboard-create-form-ai-assist.png" alt="AI Assist suggestions panel" width="380" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/dashboard-create-form-ai-applied.png" alt="AI suggestions applied to form" width="380" /> |
+
+#### AI Assist → Workflow Creation
+*(In progress)* Bridge from AI task assist to workflow engine: when task assist recommends a multi-step plan, a "Create as Workflow" button converts the recommendation into a validated workflow definition with per-step profile assignments, dependency ordering, and pattern selection across all six workflow types. The `WorkflowConfirmationSheet` lets operators review and edit steps, profiles, and configuration before creating the workflow. A keyword-based profile suggestion fallback ensures steps get reasonable profile assignments even without the AI classifier.
+
+<img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/dashboard-workflow-confirm.png" alt="Workflow creation from AI Assist" width="1200" />
+
 #### Session Management
 Resume failed or cancelled agent tasks with one click. Tracks retry counts (limit: 3), detects expired sessions, and provides atomic claim to prevent duplicate runs.
 
@@ -133,12 +159,16 @@ Curated agent profiles across work and personal domains, built as portable Claud
 #### Workflow Blueprints
 Pre-configured workflow templates across work and personal domains. Browse blueprints in a gallery with filtering and search, preview steps and required variables, fill in a dynamic form, and create draft workflows with resolved prompts and profile assignments. Create custom blueprints via YAML or import from GitHub URLs. Lineage tracking connects workflows back to their source blueprint.
 
-<img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/workflow-blueprints.png" alt="Stagent workflow blueprint gallery" width="1200" />
+<img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/workflows-list.png" alt="Stagent workflow management" width="1200" />
 
 ### Documents
 
 #### Document Management
 Full document browser at `/documents` with table and grid views. Upload files with drag-and-drop, preview images/PDFs/markdown/code inline, search by filename and extracted text, and filter by processing status or project. Bulk delete, link/unlink to projects and tasks.
+
+| Table View | Grid View |
+|:-:|:-:|
+| <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/documents-list.png" alt="Documents table view" width="580" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/documents-grid.png" alt="Documents grid view" width="580" /> |
 
 #### Document Preprocessing
 Automatic text extraction on upload for five file types: text, PDF (pdf-parse), images (image-size), Office documents (mammoth/jszip), and spreadsheets (xlsx). Extracted text, processed paths, and processing errors are tracked per document.
@@ -157,21 +187,27 @@ Pending permission requests now surface through a shell-level approval presenter
 #### Schedules
 Time-based scheduling for agent tasks with human-friendly intervals (`5m`, `2h`, `1d`) and raw 5-field cron expressions. One-shot and recurring modes with pause/resume lifecycle, expiry limits, and max firings. Each firing creates a child task through the shared execution pipeline, and schedules can now target a runtime explicitly. Scheduler runs as a poll-based engine started via Next.js instrumentation hook.
 
+<img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/schedules-list.png" alt="Stagent schedules" width="1200" />
+
 #### Micro-Visualizations
 Pure SVG chart primitives (Sparkline, MiniBar, DonutRing) with zero charting dependencies. Integrated into: homepage stats cards (7-day trends), activity feed (24h bar chart), project cards (completion donuts), monitor overview (success rate), and project detail (stacked status + 14-day sparkline). Full accessibility with `role="img"` and `aria-label`.
 
 #### Cost & Usage
 Provider-normalized metering tracks token and spend activity across tasks, resumes, workflow child tasks, schedules, task assist, and profile tests. The dedicated `Cost & Usage` surface adds summary cards, trend views, provider/model breakdowns, and budget-aware audit visibility on top of the usage ledger.
 
+<img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/cost-usage-list.png" alt="Stagent cost and usage dashboard" width="1200" />
+
 ### UI & DevEx
 
 #### Inbox & Human-in-the-Loop
 When an agent needs approval or input, a notification appears in your inbox. Review tool permission requests with "Allow Once" / "Always Allow" / "Deny" buttons, answer agent questions, and see task completion summaries. Supports bulk dismiss and 10s polling.
 
-<img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/inbox-approvals.png" alt="Stagent inbox approval flow" width="1200" />
+<img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/inbox-list.png" alt="Stagent inbox approval flow" width="1200" />
 
 #### Monitoring
 Real-time agent log streaming via Server-Sent Events. Filter by task or event type, click entries to jump to task details, and auto-pause polling when the tab is hidden (Page Visibility API).
+
+<img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/monitor-list.png" alt="Stagent monitoring dashboard" width="1200" />
 
 #### Content Handling
 File upload with drag-and-drop in task creation. Type-aware content preview for text, markdown (via react-markdown), code, and JSON. Copy-to-clipboard and download-as-file for task outputs.
@@ -254,34 +290,58 @@ src/
     └── utils/            # Shared helpers
 ```
 
-### API Endpoints
+### API Endpoints (48 routes)
 
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `/api/projects/[id]` | GET/PUT/DELETE | Project CRUD |
-| `/api/tasks/[id]/execute` | POST | Fire-and-forget task dispatch (202) |
-| `/api/tasks/[id]/resume` | POST | Resume failed/cancelled task |
-| `/api/tasks/[id]/respond` | POST | Human response to agent prompt |
-| `/api/tasks/[id]/logs` | GET | Task log history |
-| `/api/logs/stream` | GET | SSE agent log stream |
-| `/api/notifications` | GET/POST | Notification management |
-| `/api/workflows` | POST | Create workflow |
-| `/api/workflows/[id]/execute` | POST | Execute workflow |
-| `/api/documents` | GET | List documents with joins |
-| `/api/documents/[id]` | PATCH/DELETE | Document metadata + deletion |
-| `/api/uploads` | POST | File upload |
-| `/api/schedules` | GET/POST | Schedule CRUD |
-| `/api/schedules/[id]` | GET/PATCH/DELETE | Schedule detail + updates |
-| `/api/permissions` | GET/POST/DELETE | Tool permission patterns |
-| `/api/settings/openai` | GET/POST | OpenAI Codex runtime settings |
-| `/api/settings/test` | POST | Provider-aware runtime connectivity test |
-| `/api/profiles` | GET | List agent profiles |
-| `/api/profiles/[id]/test` | POST | Run behavioral tests on a profile |
-| `/api/profiles/import` | POST | Import profile from GitHub URL |
-| `/api/blueprints` | GET/POST | List and create blueprints |
-| `/api/blueprints/[id]` | GET/DELETE | Blueprint detail and deletion |
-| `/api/blueprints/[id]/instantiate` | POST | Create workflow from blueprint |
-| `/api/blueprints/import` | POST | Import blueprint from GitHub URL |
+| Domain | Endpoint | Method | Purpose |
+|--------|----------|--------|---------|
+| **Projects** | `/api/projects` | GET/POST | List and create projects |
+| | `/api/projects/[id]` | GET/PUT/DELETE | Project CRUD |
+| **Tasks** | `/api/tasks` | GET/POST | List and create tasks |
+| | `/api/tasks/[id]` | GET/PATCH/DELETE | Task detail, update, delete |
+| | `/api/tasks/[id]/execute` | POST | Fire-and-forget task dispatch (202) |
+| | `/api/tasks/[id]/resume` | POST | Resume failed/cancelled task |
+| | `/api/tasks/[id]/cancel` | POST | Cancel running task |
+| | `/api/tasks/[id]/respond` | POST | Human response to agent prompt |
+| | `/api/tasks/[id]/output` | GET | Task execution output |
+| | `/api/tasks/[id]/logs` | GET | Task log history |
+| | `/api/tasks/assist` | POST | AI task assist (description, subtasks, workflow recommendation) |
+| **Workflows** | `/api/workflows` | GET/POST | List and create workflows |
+| | `/api/workflows/[id]` | GET/PATCH/DELETE | Workflow detail, update, delete |
+| | `/api/workflows/[id]/execute` | POST | Execute workflow |
+| | `/api/workflows/[id]/status` | GET | Workflow execution status |
+| | `/api/workflows/[id]/steps/[stepId]/retry` | POST | Retry failed workflow step |
+| | `/api/workflows/from-assist` | POST | Create workflow from AI assist recommendation |
+| **Blueprints** | `/api/blueprints` | GET/POST | List and create blueprints |
+| | `/api/blueprints/[id]` | GET/DELETE | Blueprint detail and deletion |
+| | `/api/blueprints/[id]/instantiate` | POST | Create workflow from blueprint |
+| | `/api/blueprints/import` | POST | Import blueprint from GitHub URL |
+| **Documents** | `/api/documents` | GET | List documents with joins |
+| | `/api/documents/[id]` | GET/PATCH/DELETE | Document detail, metadata, deletion |
+| | `/api/documents/[id]/file` | GET | Download document file |
+| **Uploads** | `/api/uploads` | POST | File upload |
+| | `/api/uploads/[id]` | GET/DELETE | Upload detail and deletion |
+| | `/api/uploads/cleanup` | POST | Clean up orphaned uploads |
+| **Profiles** | `/api/profiles` | GET | List agent profiles |
+| | `/api/profiles/[id]` | GET/PUT/DELETE | Profile CRUD |
+| | `/api/profiles/[id]/test` | POST | Run behavioral tests on a profile |
+| | `/api/profiles/[id]/context` | GET | Profile context for agent execution |
+| | `/api/profiles/import` | POST | Import profile from GitHub URL |
+| **Notifications** | `/api/notifications` | GET/POST | List and create notifications |
+| | `/api/notifications/[id]` | PATCH/DELETE | Update and delete notification |
+| | `/api/notifications/mark-all-read` | POST | Mark all notifications as read |
+| | `/api/notifications/pending-approvals` | GET | Pending approval notifications |
+| | `/api/notifications/pending-approvals/stream` | GET | SSE stream for pending approvals |
+| **Schedules** | `/api/schedules` | GET/POST | Schedule CRUD |
+| | `/api/schedules/[id]` | GET/PATCH/DELETE | Schedule detail + updates |
+| **Settings** | `/api/settings` | GET/POST | General settings |
+| | `/api/settings/openai` | GET/POST | OpenAI Codex runtime settings |
+| | `/api/settings/test` | POST | Provider-aware runtime connectivity test |
+| | `/api/settings/budgets` | GET/POST | Budget configuration |
+| | `/api/permissions` | GET/POST/DELETE | Tool permission patterns |
+| **Monitoring** | `/api/logs/stream` | GET | SSE agent log stream |
+| **Platform** | `/api/command-palette/recent` | GET | Recent command palette items |
+| | `/api/data/clear` | POST | Clear all data |
+| | `/api/data/seed` | POST | Seed sample data |
 
 ---
 
@@ -297,29 +357,51 @@ All 14 features shipped across three layers:
 | **Core** | Project management, task board, agent integration, inbox notifications, monitoring dashboard |
 | **Polish** | Homepage dashboard, UX fixes, workflow engine, AI task assist, content handling, session management |
 
-### Post-MVP — Complete
+### Post-MVP — Complete (25 features)
 
-| Feature | What shipped |
+| Category | Feature | What shipped |
+|----------|---------|-------------|
+| **Documents** | File Attachments | Upload data layer with project/task linking |
+| | Document Preprocessing | Text extraction for 5 formats (text, PDF, images, Office, spreadsheets) |
+| | Agent Document Context | Automatic document injection into agent prompts |
+| | Document Browser | Table/grid views, search, filters, bulk operations at `/documents` |
+| | Document Output Generation | Agent-generated documents as deliverables |
+| **Agent Intelligence** | Multi-Agent Routing | Profile registry (4 profiles), task classifier, per-step profile assignment |
+| | Autonomous Loop Execution | 4 stop conditions, iteration context chaining, pause/resume, loop status view |
+| | Multi-Agent Swarm | Mayor → worker pool → refinery orchestration with retryable stages |
+| **Agent Profiles** | Agent Profile Catalog | 13 domain-specific profiles, GitHub import, behavioral testing, MCP passthrough |
+| | Workflow Blueprints | 8 templates, gallery, YAML editor, dynamic forms, GitHub import, lineage tracking |
+| **UI Enhancement** | Ambient Approvals | Shell-level approval presenter on any route for fast supervision |
+| | Micro-Visualizations | Sparklines, mini bars, donut rings — zero-dependency SVG charts |
+| | Command Palette | ⌘K palette with navigation, create actions, recent items, theme toggle |
+| | Operational Surface | Cross-route composition with consistent layout, density, and interaction patterns |
+| | Profile Surface | Profile gallery stability, detail views, and behavioral testing UI |
+| | Accessibility | ARIA labels, keyboard navigation, focus management, screen reader support |
+| | UI Density Refinement | Tightened spacing, typography, and visual hierarchy across all routes |
+| | Kanban Board Operations | Inline editing, bulk operations, card animations, edit dialog |
+| | Board Context Persistence | Persisted filters, sort order, and project selection across sessions |
+| **Platform** | Scheduled Prompt Loops | Cron + human-friendly intervals, one-shot/recurring, pause/resume lifecycle |
+| | Tool Permission Persistence | "Always Allow" patterns, pre-check bypass, Settings management |
+| | Provider Runtimes | Shared runtime registry with Claude Code and OpenAI Codex App Server adapters |
+| | OpenAI Codex Runtime | Codex App Server integration with inbox approvals, logs, and thread resumption |
+| | npm Publish Readiness | `npx stagent` distribution channel with CLI bundling and package config |
+| | Cross-Provider Profiles | Profile compatibility layer ensuring profiles work across Claude and Codex runtimes |
+| | Parallel Fork/Join | 2-5 concurrent research branches with synthesis step |
+| **Governance** | Usage Metering Ledger | Provider-normalized token and spend tracking across all execution paths |
+| | Spend Budget Guardrails | Per-project and global budgets with enforcement and alerts |
+| | Cost & Usage Dashboard | Summary cards, trend views, provider/model breakdowns, budget audit visibility |
+
+### In Progress
+
+| Feature | Description |
 |---------|-------------|
-| **Document Management** | File attachments, preprocessing (5 formats), agent document context, document browser UI |
-| **Multi-Agent Routing** | Profile registry (4 profiles), task classifier, per-step profile assignment |
-| **Agent Profile Catalog** | 13 domain-specific profiles, GitHub import, behavioral testing, MCP server passthrough |
-| **Micro-Visualizations** | Sparklines, mini bars, donut rings — zero-dependency SVG charts |
-| **Tool Permission Persistence** | "Always Allow" patterns, pre-check bypass, Settings management |
-| **Scheduled Prompt Loops** | Cron + human-friendly intervals, one-shot/recurring, pause/resume lifecycle |
-| **Provider Runtimes** | Shared runtime registry with Claude Code and OpenAI Codex App Server adapters |
-| **Autonomous Loop Execution** | 4 stop conditions, iteration context chaining, pause/resume, loop status view |
-| **Workflow Blueprints** | 8 templates, gallery, YAML editor, dynamic forms, GitHub import, lineage tracking |
-| **Command Palette** | ⌘K palette with navigation, create actions, recent items, theme toggle |
+| **AI Assist → Workflow Creation** | Bridge AI task assist recommendations into the workflow engine with profile assignment and pattern selection |
 
 ### Planned
 
 | Feature | Description |
 |---------|-------------|
-| **Multi-Agent Swarm** | Multi-agent orchestration with Mayor/Workers/Refinery roles |
 | **Agent Self-Improvement** | Agents learn patterns and update context with human approval |
-| **Document Output Generation** | Agent-generated documents as deliverables |
-| **Parallel Workflows** | Concurrent step execution within workflows |
 
 ---
 
