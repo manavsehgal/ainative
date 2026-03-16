@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { LightMarkdown } from "@/components/shared/light-markdown";
 import { formatTimestamp } from "@/lib/utils/format-timestamp";
 import type { LearnedContextRow } from "@/lib/db/schema";
 
@@ -270,9 +271,11 @@ export function LearnedContextPanel({ profileId }: LearnedContextPanelProps) {
                       </div>
                     </div>
                     {row.diff && (
-                      <pre className="mt-2 max-h-24 overflow-auto whitespace-pre-wrap rounded-md bg-background/50 p-2 text-xs text-muted-foreground">
-                        {row.diff}
-                      </pre>
+                      <LightMarkdown
+                        content={row.diff}
+                        maxHeight="max-h-24"
+                        className="mt-2 rounded-md bg-background/50 p-2"
+                      />
                     )}
                   </div>
                 );

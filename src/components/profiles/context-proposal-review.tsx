@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { LightMarkdown } from "@/components/shared/light-markdown";
 
 interface ContextProposalReviewProps {
   notificationId: string;
@@ -99,9 +100,12 @@ export function ContextProposalReview({
             placeholder="Edit the proposed context additions..."
           />
         ) : (
-          <pre className="max-h-48 overflow-auto whitespace-pre-wrap rounded-lg bg-background/50 p-3 text-xs text-foreground">
-            {proposedAdditions}
-          </pre>
+          <LightMarkdown
+            content={proposedAdditions}
+            maxHeight="max-h-48"
+            stripBracketTags
+            className="rounded-lg bg-background/50 p-3"
+          />
         )}
       </div>
 

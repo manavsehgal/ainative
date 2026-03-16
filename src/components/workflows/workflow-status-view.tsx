@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import { workflowStatusVariant, patternLabels } from "@/lib/constants/status-colors";
 import { LoopStatusView } from "./loop-status-view";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { LightMarkdown } from "@/components/shared/light-markdown";
 import { SwarmDashboard } from "./swarm-dashboard";
 import type { LoopState, LoopConfig, SwarmConfig } from "@/lib/workflows/types";
 
@@ -363,9 +364,11 @@ export function WorkflowStatusView({ workflowId }: WorkflowStatusViewProps) {
                                 </p>
                               )}
                               {step.state.result && step.state.status === "completed" && (
-                                <p className="mt-2 text-xs text-muted-foreground line-clamp-4">
-                                  {step.state.result.slice(0, 260)}
-                                </p>
+                                <LightMarkdown
+                                  content={step.state.result.slice(0, 500)}
+                                  lineClamp={4}
+                                  className="mt-2"
+                                />
                               )}
                             </div>
                           </div>
@@ -409,9 +412,11 @@ export function WorkflowStatusView({ workflowId }: WorkflowStatusViewProps) {
                             )}
                             {synthesisStep.state.result &&
                               synthesisStep.state.status === "completed" && (
-                                <p className="mt-2 text-xs text-muted-foreground line-clamp-4">
-                                  {synthesisStep.state.result.slice(0, 260)}
-                                </p>
+                                <LightMarkdown
+                                  content={synthesisStep.state.result.slice(0, 500)}
+                                  lineClamp={4}
+                                  className="mt-2"
+                                />
                               )}
                           </div>
                         </div>
@@ -448,9 +453,11 @@ export function WorkflowStatusView({ workflowId }: WorkflowStatusViewProps) {
                           </p>
                         )}
                         {step.state.result && step.state.status === "completed" && (
-                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                            {step.state.result.slice(0, 200)}
-                          </p>
+                          <LightMarkdown
+                            content={step.state.result.slice(0, 500)}
+                            lineClamp={2}
+                            className="mt-1"
+                          />
                         )}
                       </div>
                     </div>
