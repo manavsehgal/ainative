@@ -34,7 +34,6 @@ export function getSampleProfiles(): SampleProfileSeed[] {
         canUseToolPolicy: {
           autoApprove: ["Read", "Grep"],
         },
-        temperature: 0.3,
         maxTurns: 18,
         outputFormat: "Weekly operating note with metrics, risks, and next actions.",
         author: SAMPLE_PROFILE_AUTHOR,
@@ -73,7 +72,6 @@ You review pipeline movement, funnel risk, and rep follow-ups with a bias toward
         canUseToolPolicy: {
           autoApprove: ["Read"],
         },
-        temperature: 0.6,
         maxTurns: 16,
         outputFormat: "Experiment summary with winning message angles and next tests.",
         author: SAMPLE_PROFILE_AUTHOR,
@@ -109,7 +107,6 @@ You turn campaign performance and research inputs into sharper launch messaging.
         domain: "personal",
         tags: ["investing", "portfolio", "risk", "habits"],
         allowedTools: ["Read", "Write"],
-        temperature: 0.25,
         maxTurns: 14,
         outputFormat: "Short investor brief with posture, risk notes, and watchlist changes.",
         author: SAMPLE_PROFILE_AUTHOR,

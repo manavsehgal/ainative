@@ -13,7 +13,6 @@ export async function GET() {
     allowedTools: p.allowedTools,
     mcpServers: p.mcpServers,
     canUseToolPolicy: p.canUseToolPolicy,
-    temperature: p.temperature,
     maxTurns: p.maxTurns,
     outputFormat: p.outputFormat,
     version: p.version,

@@ -47,3 +47,9 @@ export function isValidDragTransition(from: TaskStatus, to: TaskStatus): boolean
 
 /** Maximum number of times a task can be resumed before requiring a fresh start */
 export const MAX_RESUME_COUNT = 3;
+
+/** Default max turns for agent task execution (safety net) */
+export const DEFAULT_MAX_TURNS = 50;
+
+/** Default per-execution budget cap in USD */
+export const DEFAULT_MAX_BUDGET_USD = 2.0;

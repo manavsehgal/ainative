@@ -14,7 +14,6 @@ canUseToolPolicy:
   autoApprove: [WebSearch, WebFetch, Read]
   autoDeny: [Bash, Write, Edit]
 
-temperature: 0.6
 maxTurns: 25
 
 author: stagent

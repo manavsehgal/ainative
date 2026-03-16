@@ -15,7 +15,9 @@ export type UsageActivityType =
   | "workflow_step"
   | "scheduled_firing"
   | "task_assist"
-  | "profile_test";
+  | "profile_test"
+  | "pattern_extraction"
+  | "context_summarization";
 
 export type UsageLedgerStatus =
   | "completed"

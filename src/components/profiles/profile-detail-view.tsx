@@ -18,7 +18,6 @@ import {
   Sparkles,
   Tag,
   User,
-  Thermometer,
   Repeat,
   FileOutput,
   Wrench,
@@ -262,20 +261,6 @@ export function ProfileDetailView({ profileId, isBuiltin, initialProfile }: Prof
             <CardTitle className="text-sm font-medium">Configuration</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {/* Temperature Gauge */}
-            {profile.temperature !== undefined && (
-              <div className="flex items-center gap-2">
-                <Thermometer className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                <span className="text-xs text-muted-foreground w-20">Temperature</span>
-                <div className="flex-1 h-1.5 rounded-full bg-muted">
-                  <div
-                    className="h-full rounded-full bg-primary"
-                    style={{ width: `${(profile.temperature / 2) * 100}%` }}
-                  />
-                </div>
-                <span className="text-xs font-medium w-8 text-right">{profile.temperature}</span>
-              </div>
-            )}
             {/* Max Turns */}
             {profile.maxTurns !== undefined && (
               <div className="flex items-center gap-2">
@@ -294,7 +279,7 @@ export function ProfileDetailView({ profileId, isBuiltin, initialProfile }: Prof
                 </Badge>
               </div>
             )}
-            {!profile.temperature && !profile.maxTurns && !profile.outputFormat && (
+            {!profile.maxTurns && !profile.outputFormat && (
               <p className="text-sm text-muted-foreground">Default configuration</p>
             )}
           </CardContent>

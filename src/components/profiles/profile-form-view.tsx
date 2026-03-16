@@ -70,7 +70,6 @@ export function ProfileFormView({
   ]);
   const [codexInstructions, setCodexInstructions] = useState("");
   const [allowedTools, setAllowedTools] = useState("");
-  const [temperature, setTemperature] = useState(0.5);
   const [maxTurns, setMaxTurns] = useState(30);
   const [outputFormat, setOutputFormat] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -94,7 +93,6 @@ export function ProfileFormView({
           profile.runtimeOverrides?.["openai-codex-app-server"]?.instructions ?? ""
         );
         setAllowedTools(profile.allowedTools?.join(", ") ?? "");
-        setTemperature(profile.temperature ?? 0.5);
         setMaxTurns(profile.maxTurns ?? 30);
         setOutputFormat(profile.outputFormat ?? "");
       })
@@ -145,7 +143,6 @@ export function ProfileFormView({
             }
           : undefined,
       allowedTools: parseCommaSeparated(allowedTools),
-      temperature,
       maxTurns,
       outputFormat: outputFormat.trim() || undefined,
     };
@@ -307,25 +304,6 @@ export function ProfileFormView({
         {/* Model Tuning */}
         <FormSectionCard icon={SlidersHorizontal} title="Model Tuning">
           <div className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="profile-temp">Temperature</Label>
-                <Badge variant="secondary" className="tabular-nums text-xs">
-                  {temperature.toFixed(2)}
-                </Badge>
-              </div>
-              <div className="slider-temperature">
-                <Slider
-                  id="profile-temp"
-                  min={0}
-                  max={1}
-                  step={0.05}
-                  value={[temperature]}
-                  onValueChange={([v]) => setTemperature(v)}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">Lower = deterministic, higher = creative</p>
-            </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="profile-turns">Max Turns</Label>

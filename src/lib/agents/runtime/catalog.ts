@@ -50,7 +50,7 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
       resume: true,
       cancel: true,
       approvals: true,
-      mcpServers: true,
+      mcpServers: false, // Not yet wired — configs not passed to codex subprocess
       profileTests: false,
       taskAssist: true,
       authHealthCheck: true,

@@ -28,7 +28,6 @@ describe("ProfileConfigSchema", () => {
         preToolCall: ["echo pre"],
         postToolCall: ["echo post"],
       },
-      temperature: 0.5,
       maxTurns: 20,
       outputFormat: "markdown",
       author: "stagent",
@@ -75,20 +74,6 @@ describe("ProfileConfigSchema", () => {
       domain: "other",
     });
     expect(result.success).toBe(false);
-  });
-
-  it("rejects temperature out of range", () => {
-    const tooHigh = ProfileConfigSchema.safeParse({
-      ...validProfile,
-      temperature: 1.5,
-    });
-    expect(tooHigh.success).toBe(false);
-
-    const tooLow = ProfileConfigSchema.safeParse({
-      ...validProfile,
-      temperature: -0.1,
-    });
-    expect(tooLow.success).toBe(false);
   });
 
   it("rejects invalid source URL", () => {

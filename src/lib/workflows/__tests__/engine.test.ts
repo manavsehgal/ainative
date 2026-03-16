@@ -103,6 +103,8 @@ describe("executeWorkflow", () => {
       .mockResolvedValueOnce([workflow])
       .mockResolvedValueOnce([failedTask])
       .mockResolvedValueOnce([workflow])
+      .mockResolvedValueOnce([workflow])
+      // syncSourceTaskStatus reads the workflow to find sourceTaskId
       .mockResolvedValueOnce([workflow]);
 
     const { executeWorkflow } = await import("../engine");

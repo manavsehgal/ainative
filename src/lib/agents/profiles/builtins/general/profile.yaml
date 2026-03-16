@@ -12,7 +12,6 @@ runtimeOverrides:
       Stay pragmatic, execute the requested work directly, and prefer concise operational updates.
       Keep outputs grounded in the current workspace and call out blocked actions explicitly.
 
-temperature: 0.5
 maxTurns: 30
 
 author: stagent

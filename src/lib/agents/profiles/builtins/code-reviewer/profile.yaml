@@ -15,7 +15,6 @@ canUseToolPolicy:
   autoApprove: [Read, Grep, Glob]
   autoDeny: []
 
-temperature: 0.3
 maxTurns: 20
 outputFormat: structured-findings
 

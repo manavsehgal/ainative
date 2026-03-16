@@ -252,6 +252,71 @@ async function runClaudeProfileTests(profileId: string): Promise<ProfileTestRepo
   };
 }
 
+// ---------------------------------------------------------------------------
+// Lightweight meta-completion (pattern extraction, context summarization, etc.)
+// ---------------------------------------------------------------------------
+
+export async function runMetaCompletion(input: {
+  prompt: string;
+  activityType: string;
+}): Promise<{ text: string; usage: UsageSnapshot }> {
+  const authEnv = await getAuthEnv();
+  const startedAt = new Date();
+  let usage: UsageSnapshot = {};
+  const abortController = new AbortController();
+  const timeout = setTimeout(() => abortController.abort(), 60_000);
+
+  try {
+    const response = query({
+      prompt: input.prompt,
+      options: {
+        abortController,
+        includePartialMessages: true,
+        cwd: process.cwd(),
+        env: buildClaudeSdkEnv(authEnv),
+        allowedTools: [],
+        maxTurns: 1,
+      },
+    });
+
+    const collected = await collectResultText(
+      response as AsyncIterable<Record<string, unknown>>
+    );
+    usage = collected.usage;
+
+    await recordUsageLedgerEntry({
+      activityType: input.activityType as import("@/lib/usage/ledger").UsageActivityType,
+      runtimeId: "claude-code",
+      providerId: "anthropic",
+      modelId: usage.modelId ?? null,
+      inputTokens: usage.inputTokens ?? null,
+      outputTokens: usage.outputTokens ?? null,
+      totalTokens: usage.totalTokens ?? null,
+      status: "completed",
+      startedAt,
+      finishedAt: new Date(),
+    });
+
+    return { text: collected.resultText, usage };
+  } catch (error) {
+    await recordUsageLedgerEntry({
+      activityType: input.activityType as import("@/lib/usage/ledger").UsageActivityType,
+      runtimeId: "claude-code",
+      providerId: "anthropic",
+      modelId: usage.modelId ?? null,
+      inputTokens: usage.inputTokens ?? null,
+      outputTokens: usage.outputTokens ?? null,
+      totalTokens: usage.totalTokens ?? null,
+      status: "failed",
+      startedAt,
+      finishedAt: new Date(),
+    });
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function runClaudeTaskAssist(
   input: TaskAssistInput
 ): Promise<TaskAssistResponse> {
@@ -345,6 +410,7 @@ async function testClaudeConnection(): Promise<RuntimeConnectionResult> {
       options: {
         abortController,
         maxTurns: 1,
+        includePartialMessages: false,
         cwd: process.cwd(),
         env: buildClaudeSdkEnv(authEnv),
       },

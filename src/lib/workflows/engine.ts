@@ -837,11 +837,12 @@ async function syncSourceTaskStatus(
   status: "completed" | "failed"
 ): Promise<void> {
   try {
-    const [workflow] = await db
+    const result = await db
       .select()
       .from(workflows)
       .where(eq(workflows.id, workflowId));
 
+    const workflow = Array.isArray(result) ? result[0] : undefined;
     if (!workflow) return;
 
     const def = JSON.parse(workflow.definition);

@@ -174,7 +174,6 @@ function scanProfiles(): Map<string, AgentProfile> {
         allowedTools: config.allowedTools,
         mcpServers: config.mcpServers as Record<string, unknown>,
         canUseToolPolicy: config.canUseToolPolicy,
-        temperature: config.temperature,
         maxTurns: config.maxTurns,
         outputFormat: config.outputFormat,
         version: config.version,

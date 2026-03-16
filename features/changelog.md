@@ -3,6 +3,33 @@
 ## 2026-03-15
 
 ### Completed
+- `ai-assist-workflow-creation` (P1, post-MVP) — Bridge AI Assist recommendations into workflow engine
+  - Expanded `TaskAssistResponse` with per-step profiles, dependencies, and all 6 workflow patterns
+  - Updated AI system prompt with dynamic profile catalog injection and pattern selection guide
+  - Created `assist-builder.ts` — pure function converting assist response → validated `WorkflowDefinition`
+  - Created `POST /api/workflows/from-assist` — atomic workflow + tasks creation with optional immediate execution
+  - Created `WorkflowConfirmationSheet` — editable workflow review UI (pattern, steps, profiles, config)
+  - Added "Create as Workflow" button in AI Assist panel (shown for 2+ steps, non-single patterns)
+  - Created keyword-based profile suggestion fallback (`suggest.ts`)
+  - Updated workflow engine to resolve "auto" profiles via multi-agent router at execution time
+
+### Fixed
+- `syncSourceTaskStatus` bug in workflow engine — defensive array check prevents "not iterable" TypeError when syncing parent task status after workflow completion
+- `npm-publish-readiness` roadmap status corrected from `completed` → `deferred` to match feature file frontmatter
+
+### Shipped
+- `agent-self-improvement` (P3, post-MVP) — Agents learn from execution history with human-approved instruction evolution
+  - `learned-context.ts`: Full CRUD — propose, approve, reject, rollback, summarization with size limits
+  - `pattern-extractor.ts`: LLM-powered pattern extraction from task logs (Claude tool_choice for structured output)
+  - `sweep.ts`: Sweep result processor creates prioritized improvement tasks from audit results
+  - Sweep agent profile (`builtins/sweep/`) with structured JSON output format
+  - API routes: `GET/POST/PATCH /api/profiles/[id]/context` for version history, manual add, approve/reject/rollback
+  - UI: `LearnedContextPanel` (version timeline, size bar, manual add, rollback), `ContextProposalReview` (approve/edit/reject)
+  - Integrated into `claude-agent.ts` — learned context injected into prompts, pattern extraction fire-and-forget after completion
+  - Notification system handles `context_proposal` type in `PendingApprovalHost` with inline approve/reject
+  - Tests: 35 tests across `learned-context.test.ts` (20), `sweep.test.ts` (9), `pattern-extractor.test.ts` (6)
+
+### Previously Completed
 - `board-context-persistence` (P2, post-MVP) — Persist board state across sessions and navigation
   - Created generic `usePersistedState` hook for localStorage-backed state with SSR-safe hydration
   - Project filter persists across page refreshes via `stagent-project-filter` localStorage key

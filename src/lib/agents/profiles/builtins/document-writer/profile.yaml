@@ -14,7 +14,6 @@ canUseToolPolicy:
   autoApprove: [Read]
   autoDeny: []
 
-temperature: 0.5
 maxTurns: 20
 outputFormat: markdown-document
 

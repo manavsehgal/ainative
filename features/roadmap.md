@@ -56,7 +56,8 @@ Features that enhance the product but aren't essential for first use — homepag
 | [multi-agent-routing](multi-agent-routing.md) | P3 | completed | agent-integration |
 | [autonomous-loop-execution](autonomous-loop-execution.md) | P3 | completed | workflow-engine, agent-integration |
 | [multi-agent-swarm](multi-agent-swarm.md) | P3 | completed | workflow-engine, multi-agent-routing |
-| [agent-self-improvement](agent-self-improvement.md) | P3 | planned | workflow-engine, multi-agent-routing, autonomous-loop-execution |
+| [ai-assist-workflow-creation](ai-assist-workflow-creation.md) | P1 | completed | task-definition-ai, workflow-engine, agent-profile-catalog |
+| [agent-self-improvement](agent-self-improvement.md) | P3 | completed | workflow-engine, multi-agent-routing, autonomous-loop-execution |
 
 ### Agent Profiles
 
@@ -87,7 +88,7 @@ Features that enhance the product but aren't essential for first use — homepag
 | [tool-permission-persistence](tool-permission-persistence.md) | P2 | completed | agent-integration, inbox-notifications |
 | [provider-runtime-abstraction](provider-runtime-abstraction.md) | P1 | completed | agent-integration, inbox-notifications, monitoring-dashboard, session-management, tool-permission-persistence |
 | [openai-codex-app-server](openai-codex-app-server.md) | P1 | completed | provider-runtime-abstraction |
-| [npm-publish-readiness](npm-publish-readiness.md) | P3 | completed | cli-bootstrap, database-schema, app-shell |
+| [npm-publish-readiness](npm-publish-readiness.md) | P3 | deferred | cli-bootstrap, database-schema, app-shell |
 | [cross-provider-profile-compatibility](cross-provider-profile-compatibility.md) | P2 | completed | provider-runtime-abstraction, openai-codex-app-server, agent-profile-catalog |
 | [parallel-research-fork-join](parallel-research-fork-join.md) | P2 | completed | workflow-engine, multi-agent-routing |
 
@@ -134,7 +135,8 @@ content-handling (MVP, completed)
 - **Foundation (parallel)**: cli-bootstrap, database-schema, app-shell can all be built simultaneously
 - **Polish (parallel)**: P2 features are independent of each other, can be built in any order after agent-integration
 - **Document Management**: file-attachment-data-layer unblocks all document features; preprocessing and agent-context can run in parallel
-- **UI refinement track**: accessibility remains the active in-progress quality track; the cross-route density/composition follow-up is now completed
+- **Completed**: `ai-assist-workflow-creation` bridges task assist into the workflow engine; all UI enhancement features are completed
+- **Remaining**: `agent-self-improvement` (P3, planned) is the last feature in the roadmap
 
 Provider runtime chain:
 
@@ -189,16 +191,12 @@ workflow-engine + multi-agent-routing
 16. **Sprint 16 — Profile Compatibility**: cross-provider-profile-compatibility (P2, completed)
 17. **Sprint 17 — Human-Loop Attention**: ambient-approval-toast (P1, completed)
 18. **Sprint 18 — Parallel Research Foundation**: parallel-research-fork-join (P2, completed)
-19. **Sprint 19 — npm Publish Readiness**: npm-publish-readiness (P1, completed)
+19. **Sprint 19 — npm Publish Readiness**: npm-publish-readiness (P3, deferred)
+
+> All 19 sprints above are completed. `ai-assist-workflow-creation` is now completed. Only `agent-self-improvement` (P3, planned) remains.
 
 ## Open Questions
 
-- **Agent SDK availability**: Need to verify the exact API surface of `@anthropic-ai/claude-agent-sdk` for `canUseTool`, `AskUserQuestion`, and streaming — feature specs are based on the documented SDK feature mapping in the ideas
-- **Provider parity floor**: Define the minimum capability bar before exposing a user-facing runtime switch. Current recommendation: approvals/questions, resume, monitoring logs, workflows/schedules, and MCP compatibility must all be explicit.
-- **OpenAI runtime parity**: Codex App Server is now the shipped OpenAI path. The remaining question is what capability floor should be required before exposing future OpenAI-adjacent runtime options or provider-expansion follow-ons.
 - **Pricing source of truth**: Need a durable model-pricing strategy for Claude and Codex so historical usage rows preserve derived cost even if provider pricing changes later
-- **Parallel workflow UX ceiling**: Need to decide how much branch configurability to expose in the first slice without turning the editor into a graph builder
-- **Actionable notification channel policy**: Need to define when Stagent should escalate from in-app approval toast to browser notification delivery, especially for hidden tabs
-- **Drag-and-drop library**: Need to select a React DnD solution for the kanban board (react-beautiful-dnd, dnd-kit, or native HTML5 drag)
-- **SSE vs WebSocket**: Monitoring dashboard uses SSE for streaming — need to confirm this works well with Next.js App Router API routes
-- **UX design review**: Four features flagged for `/frontend-designer` review before implementation (app-shell, task-board, inbox-notifications, monitoring-dashboard, task-definition-ai, workflow-engine)
+- **Parallel workflow UX ceiling**: Need to decide how much branch configurability to expose beyond the current fork/join pattern without turning the editor into a graph builder
+- **Notification channel policy**: Need to define when Stagent should escalate from in-app approval toast to browser notification delivery, especially for hidden tabs

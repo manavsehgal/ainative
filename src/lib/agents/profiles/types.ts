@@ -31,7 +31,6 @@ export interface AgentProfile {
   allowedTools?: string[];
   mcpServers?: Record<string, unknown>;
   canUseToolPolicy?: CanUseToolPolicy;
-  temperature?: number;
   maxTurns?: number;
   outputFormat?: string;
   version?: string;

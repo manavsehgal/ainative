@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { tasks, projects, agentLogs, notifications } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { setExecution, removeExecution } from "./execution-manager";
-import { MAX_RESUME_COUNT } from "@/lib/constants/task-status";
+import { MAX_RESUME_COUNT, DEFAULT_MAX_TURNS, DEFAULT_MAX_BUDGET_USD } from "@/lib/constants/task-status";
 import { getAuthEnv, updateAuthStatus } from "@/lib/settings/auth";
 import { buildDocumentContext } from "@/lib/documents/context-builder";
 import {
@@ -13,7 +13,7 @@ import {
   scanTaskOutputDocuments,
 } from "@/lib/documents/output-scanner";
 import { getProfile } from "./profiles/registry";
-import { resolveProfileRuntimePayload } from "./profiles/compatibility";
+import { resolveProfileRuntimePayload, type ResolvedProfileRuntimePayload } from "./profiles/compatibility";
 import type { CanUseToolPolicy } from "./profiles/types";
 import { buildClaudeSdkEnv } from "./runtime/claude-sdk";
 import { getActiveLearnedContext } from "./learned-context";
@@ -368,6 +368,76 @@ async function processAgentStream(
   }
 }
 
+// ---------------------------------------------------------------------------
+// Shared prompt & query context builder (F12: eliminate duplication)
+// ---------------------------------------------------------------------------
+
+interface TaskQueryContext {
+  /** User task content — goes into `prompt` */
+  userPrompt: string;
+  /** System instructions — goes into `options.systemPrompt` */
+  systemInstructions: string;
+  /** Resolved working directory */
+  cwd: string;
+  /** Profile payload (tools, MCP, policy) */
+  payload: ResolvedProfileRuntimePayload | null;
+  /** Profile's maxTurns or default */
+  maxTurns: number;
+  /** Profile's canUseToolPolicy */
+  canUseToolPolicy?: CanUseToolPolicy;
+}
+
+async function buildTaskQueryContext(
+  task: { id: string; title: string; description?: string | null; projectId?: string | null },
+  profileId: string
+): Promise<TaskQueryContext> {
+  const profile = getProfile(profileId);
+  const payload = profile
+    ? resolveProfileRuntimePayload(profile, "claude-code")
+    : null;
+  if (payload && !payload.supported) {
+    throw new Error(payload.reason ?? `Profile "${profile?.name}" is not supported on Claude Code`);
+  }
+
+  const profileInstructions = payload?.instructions ?? "";
+  const basePrompt = task.description || task.title;
+  const docContext = await buildDocumentContext(task.id);
+  const outputInstructions = buildTaskOutputInstructions(task.id);
+  const learnedCtx = getActiveLearnedContext(profileId);
+  const learnedCtxBlock = learnedCtx
+    ? `## Learned Context\nPatterns and insights learned from previous tasks:\n\n${learnedCtx}`
+    : "";
+
+  // F1: Separate system instructions from user content
+  const systemInstructions = [profileInstructions, learnedCtxBlock, docContext, outputInstructions]
+    .filter(Boolean)
+    .join("\n\n");
+
+  // Resolve working directory: project's workingDirectory > process.cwd()
+  let cwd = process.cwd();
+  if (task.projectId) {
+    const [project] = await db
+      .select({ workingDirectory: projects.workingDirectory })
+      .from(projects)
+      .where(eq(projects.id, task.projectId));
+    if (project?.workingDirectory) {
+      cwd = project.workingDirectory;
+    }
+  }
+
+  // F9: Use profile maxTurns or fall back to default
+  const maxTurns = profile?.maxTurns ?? DEFAULT_MAX_TURNS;
+
+  return {
+    userPrompt: basePrompt,
+    systemInstructions,
+    cwd,
+    payload,
+    maxTurns,
+    canUseToolPolicy: payload?.canUseToolPolicy,
+  };
+}
+
 export async function executeClaudeTask(taskId: string): Promise<void> {
   const [task] = await db.select().from(tasks).where(eq(tasks.id, taskId));
   if (!task) throw new Error(`Task ${taskId} not found`);
@@ -385,57 +455,35 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
 
   try {
     await prepareTaskOutputDirectory(taskId, { clearExisting: true });
-    const profile = getProfile(agentProfileId);
-    const payload = profile
-      ? resolveProfileRuntimePayload(profile, "claude-code")
-      : null;
-    if (payload && !payload.supported) {
-      throw new Error(payload.reason ?? `Profile "${profile?.name}" is not supported on Claude Code`);
-    }
-    const systemPrompt = payload?.instructions ?? "";
-    const basePrompt = task.description || task.title;
-    const docContext = await buildDocumentContext(taskId);
-    const outputInstructions = buildTaskOutputInstructions(taskId);
-    const learnedCtx = getActiveLearnedContext(agentProfileId);
-    const learnedCtxBlock = learnedCtx
-      ? `## Learned Context\nPatterns and insights learned from previous tasks:\n\n${learnedCtx}`
-      : "";
-    const prompt = [systemPrompt, learnedCtxBlock, docContext, outputInstructions, basePrompt]
-      .filter(Boolean)
-      .join("\n\n");
+    const ctx = await buildTaskQueryContext(task, agentProfileId);
 
-    // Resolve working directory: project's workingDirectory > process.cwd()
-    let cwd = process.cwd();
-    if (task.projectId) {
-      const [project] = await db
-        .select({ workingDirectory: projects.workingDirectory })
-        .from(projects)
-        .where(eq(projects.id, task.projectId));
-      if (project?.workingDirectory) {
-        cwd = project.workingDirectory;
-      }
-    }
-
-    const policyForTask = payload?.canUseToolPolicy;
     const authEnv = await getAuthEnv();
     const response = query({
-      prompt,
+      prompt: ctx.userPrompt,
       options: {
         abortController,
         includePartialMessages: true,
-        cwd,
+        cwd: ctx.cwd,
         env: buildClaudeSdkEnv(authEnv),
-        ...(payload?.allowedTools && { allowedTools: payload.allowedTools }),
-        ...(payload?.mcpServers &&
-          Object.keys(payload.mcpServers).length > 0 && {
-            mcpServers: payload.mcpServers,
+        // F1: Use dedicated systemPrompt option with claude_code preset
+        systemPrompt: ctx.systemInstructions
+          ? { type: "preset" as const, preset: "claude_code" as const, append: ctx.systemInstructions }
+          : { type: "preset" as const, preset: "claude_code" as const },
+        // F9: Bounded turn limit from profile or default
+        maxTurns: ctx.maxTurns,
+        // F4: Per-execution budget cap
+        maxBudgetUsd: DEFAULT_MAX_BUDGET_USD,
+        ...(ctx.payload?.allowedTools && { allowedTools: ctx.payload.allowedTools }),
+        ...(ctx.payload?.mcpServers &&
+          Object.keys(ctx.payload.mcpServers).length > 0 && {
+            mcpServers: ctx.payload.mcpServers,
           }),
         // @ts-expect-error Agent SDK canUseTool types are incomplete — our async handler is compatible at runtime
         canUseTool: async (
           toolName: string,
           input: Record<string, unknown>
         ) => {
-          return handleToolPermission(taskId, toolName, input, policyForTask);
+          return handleToolPermission(taskId, toolName, input, ctx.canUseToolPolicy);
         },
       },
     });
@@ -513,58 +561,36 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
 
   try {
     await prepareTaskOutputDirectory(taskId);
-    const profile = getProfile(profileId);
-    const payload = profile
-      ? resolveProfileRuntimePayload(profile, "claude-code")
-      : null;
-    if (payload && !payload.supported) {
-      throw new Error(payload.reason ?? `Profile "${profile?.name}" is not supported on Claude Code`);
-    }
-    const systemPrompt = payload?.instructions ?? "";
-    const basePrompt = task.description || task.title;
-    const docContext = await buildDocumentContext(taskId);
-    const outputInstructions = buildTaskOutputInstructions(taskId);
-    const learnedCtx = getActiveLearnedContext(profileId);
-    const learnedCtxBlock = learnedCtx
-      ? `## Learned Context\nPatterns and insights learned from previous tasks:\n\n${learnedCtx}`
-      : "";
-    const prompt = [systemPrompt, learnedCtxBlock, docContext, outputInstructions, basePrompt]
-      .filter(Boolean)
-      .join("\n\n");
+    const ctx = await buildTaskQueryContext(task, profileId);
 
-    // Resolve working directory: project's workingDirectory > process.cwd()
-    let cwd = process.cwd();
-    if (task.projectId) {
-      const [project] = await db
-        .select({ workingDirectory: projects.workingDirectory })
-        .from(projects)
-        .where(eq(projects.id, task.projectId));
-      if (project?.workingDirectory) {
-        cwd = project.workingDirectory;
-      }
-    }
-
-    const policyForResume = payload?.canUseToolPolicy;
     const authEnv = await getAuthEnv();
     const response = query({
-      prompt,
+      prompt: ctx.userPrompt,
       options: {
         resume: task.sessionId,
         abortController,
         includePartialMessages: true,
-        cwd,
+        cwd: ctx.cwd,
         env: buildClaudeSdkEnv(authEnv),
-        ...(payload?.allowedTools && { allowedTools: payload.allowedTools }),
-        ...(payload?.mcpServers &&
-          Object.keys(payload.mcpServers).length > 0 && {
-            mcpServers: payload.mcpServers,
+        // F1: Use dedicated systemPrompt option with claude_code preset
+        systemPrompt: ctx.systemInstructions
+          ? { type: "preset" as const, preset: "claude_code" as const, append: ctx.systemInstructions }
+          : { type: "preset" as const, preset: "claude_code" as const },
+        // F9: Bounded turn limit from profile or default
+        maxTurns: ctx.maxTurns,
+        // F4: Per-execution budget cap
+        maxBudgetUsd: DEFAULT_MAX_BUDGET_USD,
+        ...(ctx.payload?.allowedTools && { allowedTools: ctx.payload.allowedTools }),
+        ...(ctx.payload?.mcpServers &&
+          Object.keys(ctx.payload.mcpServers).length > 0 && {
+            mcpServers: ctx.payload.mcpServers,
           }),
         // @ts-expect-error Agent SDK canUseTool types are incomplete — our async handler is compatible at runtime
         canUseTool: async (
           toolName: string,
           input: Record<string, unknown>
         ) => {
-          return handleToolPermission(taskId, toolName, input, policyForResume);
+          return handleToolPermission(taskId, toolName, input, ctx.canUseToolPolicy);
         },
       },
     });

@@ -315,12 +315,17 @@ describe("executeClaudeTask", () => {
 
     await executeClaudeTask("task-1");
 
-    // query prompt should include output instructions and fall back to the title
+    // F1: prompt contains only user task text (title fallback); system instructions in systemPrompt
     expect(mockQuery).toHaveBeenCalledWith(
       expect.objectContaining({
-        prompt: "Write outputs to /tmp/stagent-outputs/task-1\n\nTest Task",
+        prompt: "Test Task",
       })
     );
+    // System instructions (including output instructions) are in the systemPrompt option
+    const callOptions = mockQuery.mock.calls[0][0].options;
+    expect(callOptions.systemPrompt).toBeDefined();
+    expect(callOptions.maxTurns).toBeDefined();
+    expect(callOptions.maxBudgetUsd).toBeDefined();
   });
 });
 

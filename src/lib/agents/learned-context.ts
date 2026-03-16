@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { learnedContext, notifications } from "@/lib/db/schema";
 import { and, desc, eq } from "drizzle-orm";
 import type { LearnedContextRow } from "@/lib/db/schema";
-import Anthropic from "@anthropic-ai/sdk";
+import { runMetaCompletion } from "./runtime/claude";
 
 const CONTEXT_CHAR_LIMIT = 8_000;
 const SUMMARIZATION_THRESHOLD = 6_000;
@@ -243,14 +243,8 @@ export async function summarizeContext(profileId: string): Promise<void> {
   const content = getActiveLearnedContext(profileId);
   if (!content || content.length <= SUMMARIZATION_THRESHOLD) return;
 
-  const client = new Anthropic();
-  const response = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 2048,
-    messages: [
-      {
-        role: "user",
-        content: `You are condensing learned context for an AI agent profile "${profileId}".
+  const { text } = await runMetaCompletion({
+    prompt: `You are condensing learned context for an AI agent profile "${profileId}".
 The current context has grown to ${content.length} characters and needs to be summarized to under ${SUMMARIZATION_THRESHOLD} characters while preserving all key patterns, best practices, and important insights.
 
 Current learned context:
@@ -266,12 +260,10 @@ Produce a condensed version that:
 5. Stays under ${SUMMARIZATION_THRESHOLD} characters
 
 Output ONLY the condensed context, no preamble.`,
-      },
-    ],
+    activityType: "context_summarization",
   });
 
-  const summarized =
-    response.content[0].type === "text" ? response.content[0].text : "";
+  const summarized = text.trim();
 
   if (!summarized || summarized.length >= content.length) return;
 

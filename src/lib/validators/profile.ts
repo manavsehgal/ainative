@@ -38,7 +38,6 @@ export const ProfileConfigSchema = z.object({
       postToolCall: z.array(z.string()).optional(),
     })
     .optional(),
-  temperature: z.number().min(0).max(1).optional(),
   maxTurns: z.number().positive().optional(),
   outputFormat: z.string().optional(),
   author: z.string().optional(),

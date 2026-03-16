@@ -16,7 +16,6 @@ canUseToolPolicy:
   autoApprove: [Read, Grep, Glob]
   autoDeny: []
 
-temperature: 0.4
 maxTurns: 20
 outputFormat: markdown
 

@@ -446,11 +446,6 @@
   box-shadow: var(--glass-shadow-sm);
 }
 
-/* Temperature slider gradient track */
-.slider-temperature [data-slot="slider-range"] {
-  background: linear-gradient(90deg, oklch(0.6 0.18 260), oklch(0.7 0.15 55));
-}
-
 [data-slot="popover-content"],
 [data-slot="dropdown-menu-content"],
 [data-slot="select-content"] {

@@ -33,9 +33,10 @@ function formatLocalDay(date: Date) {
 }
 
 describe("usage ledger", () => {
-  it("records normalized ledger rows with derived and unknown pricing states", async () => {
+  it("records normalized ledger rows with derived, fallback, and unknown pricing states", async () => {
     const { db, usageLedger, recordUsageLedgerEntry } = await loadUsageModules();
 
+    // Known model — gets specific pricing rule
     await recordUsageLedgerEntry({
       activityType: "task_assist",
       runtimeId: "claude-code",
@@ -49,6 +50,7 @@ describe("usage ledger", () => {
       finishedAt: new Date("2026-03-10T08:01:00.000Z"),
     });
 
+    // Unknown model — hits catch-all fallback pricing (conservative estimate)
     await recordUsageLedgerEntry({
       activityType: "task_assist",
       runtimeId: "openai-codex-app-server",
@@ -62,15 +64,37 @@ describe("usage ledger", () => {
       finishedAt: new Date("2026-03-10T09:01:00.000Z"),
     });
 
-    const rows = await db.select().from(usageLedger);
-    expect(rows).toHaveLength(2);
+    // Null modelId — gets unknown_pricing (no model to match)
+    await recordUsageLedgerEntry({
+      activityType: "task_run",
+      runtimeId: "claude-code",
+      providerId: "anthropic",
+      modelId: null,
+      inputTokens: 100,
+      outputTokens: 50,
+      totalTokens: 150,
+      status: "completed",
+      startedAt: new Date("2026-03-10T10:00:00.000Z"),
+      finishedAt: new Date("2026-03-10T10:01:00.000Z"),
+    });
 
-    const priced = rows.find((row) => row.providerId === "anthropic");
+    const rows = await db.select().from(usageLedger);
+    expect(rows).toHaveLength(3);
+
+    // Known: specific pricing
+    const priced = rows.find((row) => row.modelId === "claude-sonnet-4-20250514");
     expect(priced?.costMicros).toBe(10_500);
     expect(priced?.status).toBe("completed");
-    expect(priced?.pricingVersion).toBe("registry-2026-03-12");
+    expect(priced?.pricingVersion).toBe("registry-2026-03-15");
 
-    const unknown = rows.find((row) => row.providerId === "openai");
+    // Unknown model: fallback pricing (conservative Opus-tier for OpenAI: $10/$30)
+    const fallback = rows.find((row) => row.modelId === "codex-unknown");
+    expect(fallback?.costMicros).toBeGreaterThan(0);
+    expect(fallback?.status).toBe("completed");
+    expect(fallback?.pricingVersion).toBe("registry-2026-03-15-fallback");
+
+    // Null modelId: truly unknown
+    const unknown = rows.find((row) => row.modelId === null);
     expect(unknown?.costMicros).toBeNull();
     expect(unknown?.status).toBe("unknown_pricing");
     expect(unknown?.pricingVersion).toBeNull();

@@ -14,7 +14,6 @@ canUseToolPolicy:
   autoApprove: [Read, Grep, Glob]
   autoDeny: []
 
-temperature: 0.4
 maxTurns: 25
 
 author: stagent

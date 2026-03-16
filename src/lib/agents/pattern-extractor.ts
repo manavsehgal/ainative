@@ -1,4 +1,3 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { db } from "@/lib/db";
 import { tasks, agentLogs } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
@@ -6,6 +5,7 @@ import {
   getActiveLearnedContext,
   proposeContextAddition,
 } from "./learned-context";
+import { runMetaCompletion } from "./runtime/claude";
 
 export interface PatternEntry {
   title: string;
@@ -17,50 +17,9 @@ export interface PatternProposal {
   patterns: PatternEntry[];
 }
 
-const PATTERN_TOOL: Anthropic.Messages.Tool = {
-  name: "propose_learned_patterns",
-  description:
-    "Propose patterns learned from this task execution that should be remembered for future tasks with this profile.",
-  input_schema: {
-    type: "object" as const,
-    properties: {
-      patterns: {
-        type: "array",
-        items: {
-          type: "object",
-          properties: {
-            title: {
-              type: "string",
-              description: "Short pattern name (2-6 words)",
-            },
-            description: {
-              type: "string",
-              description:
-                "Concise description of the pattern or lesson (1-2 sentences)",
-            },
-            category: {
-              type: "string",
-              enum: [
-                "error_resolution",
-                "best_practice",
-                "shortcut",
-                "preference",
-              ],
-            },
-          },
-          required: ["title", "description", "category"],
-        },
-        description:
-          "Patterns worth remembering. Return empty array if nothing notable.",
-      },
-    },
-    required: ["patterns"],
-  },
-};
-
 /**
  * Analyze a completed task for patterns worth learning.
- * Makes a focused Claude API call, then proposes additions if patterns found.
+ * Routes through the Claude Agent SDK runtime (no direct Anthropic SDK usage).
  * Returns the notification ID if a proposal was created, null otherwise.
  */
 export async function analyzeForLearnedPatterns(
@@ -99,16 +58,13 @@ export async function analyzeForLearnedPatterns(
     })
     .join("\n");
 
-  const client = new Anthropic();
-  const response = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 1024,
-    tools: [PATTERN_TOOL],
-    tool_choice: { type: "tool", name: "propose_learned_patterns" },
-    messages: [
-      {
-        role: "user",
-        content: `Analyze this completed task for patterns worth learning for the "${profileId}" agent profile.
+  const { text } = await runMetaCompletion({
+    prompt: `Analyze this completed task for patterns worth learning for the "${profileId}" agent profile.
+
+Return ONLY a JSON array (no markdown, no code fences):
+[{"title": "...", "description": "...", "category": "error_resolution|best_practice|shortcut|preference"}]
+
+Return an empty array [] if no noteworthy patterns.
 
 ## Task
 Title: ${task.title}
@@ -124,22 +80,17 @@ ${logSummary.slice(0, 2000)}
 ${currentContext ?? "(none yet)"}
 
 Extract ONLY genuinely useful patterns — things that would help this profile avoid mistakes or work more efficiently on similar future tasks. If this task was routine with nothing notable, return an empty patterns array. Do NOT repeat patterns already in the learned context.`,
-      },
-    ],
+    activityType: "pattern_extraction",
   });
 
-  // Extract the tool use result
-  const toolBlock = response.content.find(
-    (block) => block.type === "tool_use" && block.name === "propose_learned_patterns"
-  );
+  // Parse JSON array from response text
+  const jsonMatch = text.match(/\[[\s\S]*\]/);
+  const patterns: PatternEntry[] = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
 
-  if (!toolBlock || toolBlock.type !== "tool_use") return null;
-
-  const proposal = toolBlock.input as PatternProposal;
-  if (!proposal.patterns || proposal.patterns.length === 0) return null;
+  if (patterns.length === 0) return null;
 
   // Format patterns as text for the proposal
-  const formattedAdditions = proposal.patterns
+  const formattedAdditions = patterns
     .map(
       (p) =>
         `### ${p.title} [${p.category}]\n${p.description}`

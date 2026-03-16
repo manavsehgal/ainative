@@ -7,25 +7,79 @@ export interface PricingRule {
 }
 
 const PRICING_RULES: PricingRule[] = [
+  // ── Anthropic ──────────────────────────────────────────────────────
   {
     providerId: "anthropic",
-    pricingVersion: "registry-2026-03-12",
+    pricingVersion: "registry-2026-03-15",
+    inputCostPerMillionMicros: 15_000_000,
+    outputCostPerMillionMicros: 75_000_000,
+    matchesModel(modelId) {
+      return modelId.startsWith("claude-opus");
+    },
+  },
+  {
+    providerId: "anthropic",
+    pricingVersion: "registry-2026-03-15",
     inputCostPerMillionMicros: 3_000_000,
     outputCostPerMillionMicros: 15_000_000,
     matchesModel(modelId) {
-      return (
-        modelId === "claude-sonnet-4-20250514" ||
-        modelId.startsWith("claude-sonnet-4")
-      );
+      return modelId.startsWith("claude-sonnet");
+    },
+  },
+  {
+    providerId: "anthropic",
+    pricingVersion: "registry-2026-03-15",
+    inputCostPerMillionMicros: 800_000,
+    outputCostPerMillionMicros: 4_000_000,
+    matchesModel(modelId) {
+      return modelId.startsWith("claude-haiku");
+    },
+  },
+  // ── OpenAI ─────────────────────────────────────────────────────────
+  {
+    providerId: "openai",
+    pricingVersion: "registry-2026-03-15",
+    inputCostPerMillionMicros: 1_500_000,
+    outputCostPerMillionMicros: 6_000_000,
+    matchesModel(modelId) {
+      return modelId.startsWith("codex-mini") || modelId === "codex-mini-latest";
     },
   },
   {
     providerId: "openai",
-    pricingVersion: "registry-2026-03-12",
-    inputCostPerMillionMicros: 1_500_000,
-    outputCostPerMillionMicros: 6_000_000,
+    pricingVersion: "registry-2026-03-15",
+    inputCostPerMillionMicros: 2_500_000,
+    outputCostPerMillionMicros: 10_000_000,
     matchesModel(modelId) {
-      return modelId === "codex-mini-latest" || modelId.startsWith("codex-mini");
+      return modelId.startsWith("gpt-4o");
+    },
+  },
+  {
+    providerId: "openai",
+    pricingVersion: "registry-2026-03-15",
+    inputCostPerMillionMicros: 10_000_000,
+    outputCostPerMillionMicros: 30_000_000,
+    matchesModel(modelId) {
+      return modelId.startsWith("gpt-5") || modelId.startsWith("o3") || modelId.startsWith("o4");
+    },
+  },
+  // ── Catch-all (conservative estimate to prevent null costs) ────────
+  {
+    providerId: "anthropic",
+    pricingVersion: "registry-2026-03-15-fallback",
+    inputCostPerMillionMicros: 15_000_000,
+    outputCostPerMillionMicros: 75_000_000,
+    matchesModel() {
+      return true;
+    },
+  },
+  {
+    providerId: "openai",
+    pricingVersion: "registry-2026-03-15-fallback",
+    inputCostPerMillionMicros: 10_000_000,
+    outputCostPerMillionMicros: 30_000_000,
+    matchesModel() {
+      return true;
     },
   },
 ];

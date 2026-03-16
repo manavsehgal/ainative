@@ -14,7 +14,6 @@ canUseToolPolicy:
   autoApprove: [Read]
   autoDeny: [Bash, Write, Edit]
 
-temperature: 0.3
 maxTurns: 20
 
 author: stagent
