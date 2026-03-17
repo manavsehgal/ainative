@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+
 import {
   Card,
   CardContent,
@@ -12,6 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { AuthMethodSelector } from "./auth-method-selector";
 import { ApiKeyForm } from "./api-key-form";
 import { AuthStatusBadge } from "./auth-status-badge";
+import { ConnectionTestControl } from "./connection-test-control";
 import type { AuthMethod, ApiKeySource } from "@/lib/constants/settings";
 import {
   DEFAULT_AGENT_RUNTIME,
@@ -32,6 +34,7 @@ export function AuthConfigSection() {
     apiKeySource: "unknown",
   });
   const [connected, setConnected] = useState(false);
+  const [testControlKey, setTestControlKey] = useState(0);
 
   const fetchSettings = useCallback(async () => {
     const res = await fetch("/api/settings");
@@ -55,6 +58,8 @@ export function AuthConfigSection() {
     if (res.ok) {
       const data = await res.json();
       setSettings(data);
+      setConnected(data.hasKey || data.apiKeySource === "oauth");
+      setTestControlKey((current) => current + 1);
     }
   }
 
@@ -102,6 +107,7 @@ export function AuthConfigSection() {
           <>
             <Separator />
             <ApiKeyForm
+              key={`api-key-form-${testControlKey}`}
               hasKey={settings.hasKey}
               onSave={handleSaveKey}
               onTest={handleTestConnection}
@@ -126,12 +132,10 @@ export function AuthConfigSection() {
                 OAuth mode uses the Claude Agent SDK&apos;s built-in authentication flow.
                 Requires an active Claude Max or Pro subscription.
               </p>
-              <button
-                onClick={handleTestConnection}
-                className="text-sm text-primary hover:underline cursor-pointer"
-              >
-                Test OAuth connection
-              </button>
+              <ConnectionTestControl
+                key={`oauth-test-${testControlKey}`}
+                onTest={handleTestConnection}
+              />
             </div>
           </>
         )}

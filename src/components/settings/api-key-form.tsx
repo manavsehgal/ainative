@@ -1,15 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Eye, EyeOff, CheckCircle2, XCircle } from "lucide-react";
+import { ConnectionTestControl, type ConnectionTestResult } from "./connection-test-control";
 
 interface ApiKeyFormProps {
   hasKey: boolean;
   onSave: (key: string) => Promise<void>;
-  onTest: () => Promise<{ connected: boolean; apiKeySource?: string; error?: string }>;
+  onTest: () => Promise<ConnectionTestResult & { apiKeySource?: string }>;
   keyPrefix?: string;
   placeholder?: string;
   maskedPrefix?: string;
@@ -31,33 +33,16 @@ export function ApiKeyForm({
   const [showInput, setShowInput] = useState(!hasKey);
   const [showKey, setShowKey] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState<{
-    connected: boolean;
-    error?: string;
-  } | null>(null);
 
   async function handleSave() {
     if (!key.startsWith(keyPrefix)) return;
     setSaving(true);
-    setTestResult(null);
     try {
       await onSave(key);
       setKey("");
       setShowInput(false);
     } finally {
       setSaving(false);
-    }
-  }
-
-  async function handleTest() {
-    setTesting(true);
-    setTestResult(null);
-    try {
-      const result = await onTest();
-      setTestResult(result);
-    } finally {
-      setTesting(false);
     }
   }
 
@@ -108,30 +93,7 @@ export function ApiKeyForm({
         </div>
       )}
 
-      <div className="flex items-center gap-3">
-        <Button variant="outline" size="sm" onClick={handleTest} disabled={testing}>
-          {testing && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
-          {testButtonLabel}
-        </Button>
-
-        {testResult && (
-          <span className="flex items-center gap-1.5 text-sm">
-            {testResult.connected ? (
-              <>
-                <CheckCircle2 className="h-4 w-4 text-success" />
-                <span className="text-success">Connected</span>
-              </>
-            ) : (
-              <>
-                <XCircle className="h-4 w-4 text-status-failed" />
-                <span className="text-status-failed">
-                  {testResult.error || "Connection failed"}
-                </span>
-              </>
-            )}
-          </span>
-        )}
-      </div>
+      <ConnectionTestControl onTest={onTest} buttonLabel={testButtonLabel} />
 
       <p className="text-xs text-muted-foreground">
         Environment fallback: `{envVarName}`.
