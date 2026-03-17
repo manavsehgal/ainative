@@ -207,7 +207,7 @@ export async function recordUsageLedgerEntry(input: UsageLedgerWriteInput) {
     (normalizedInputTokens != null && normalizedOutputTokens != null
       ? normalizedInputTokens + normalizedOutputTokens
       : null);
-  const { costMicros, pricingVersion } = deriveUsageCostMicros({
+  const { costMicros, pricingVersion } = await deriveUsageCostMicros({
     providerId: input.providerId,
     modelId: input.modelId,
     inputTokens: normalizedInputTokens,

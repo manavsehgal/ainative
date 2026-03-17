@@ -224,6 +224,8 @@ export const usageLedger = sqliteTable(
         "scheduled_firing",
         "task_assist",
         "profile_test",
+        "pattern_extraction",
+        "context_summarization",
       ],
     }).notNull(),
     runtimeId: text("runtime_id").notNull(),

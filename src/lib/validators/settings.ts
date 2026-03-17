@@ -25,22 +25,15 @@ const nullablePositiveNumber = z.preprocess((value) => {
   return value;
 }, z.number().finite().positive().nullable());
 
-const nullablePositiveInteger = z.preprocess((value) => {
-  if (value === "" || value == null) return null;
-  if (typeof value === "string") return Number(value);
-  return value;
-}, z.number().int().positive().nullable());
+export const claudeOAuthPlanSchema = z.enum(["pro", "max_5x", "max_20x"]);
 
 export const runtimeBudgetPolicySchema = z.object({
-  dailySpendCapUsd: nullablePositiveNumber,
   monthlySpendCapUsd: nullablePositiveNumber,
-  dailyTokenCap: nullablePositiveInteger,
-  monthlyTokenCap: nullablePositiveInteger,
+  claudeOAuthPlan: claudeOAuthPlanSchema.optional(),
 });
 
 export const budgetPolicySchema = z.object({
   overall: z.object({
-    dailySpendCapUsd: nullablePositiveNumber,
     monthlySpendCapUsd: nullablePositiveNumber,
   }),
   runtimes: z.object(
@@ -55,3 +48,4 @@ export const updateBudgetPolicySchema = budgetPolicySchema;
 export type RuntimeBudgetPolicy = z.infer<typeof runtimeBudgetPolicySchema>;
 export type BudgetPolicy = z.infer<typeof budgetPolicySchema>;
 export type UpdateBudgetPolicyInput = z.infer<typeof updateBudgetPolicySchema>;
+export type ClaudeOAuthPlan = z.infer<typeof claudeOAuthPlanSchema>;

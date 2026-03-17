@@ -2,17 +2,17 @@ import Link from "next/link";
 import {
   AlertTriangle,
   ArrowRight,
+  CalendarClock,
   CalendarRange,
   Coins,
   ShieldAlert,
   ShieldCheck,
   Wallet,
 } from "lucide-react";
-import { listRuntimeCatalog } from "@/lib/agents/runtime/catalog";
-import type {
-  ProviderModelBreakdownEntry,
-  UsageAuditEntry,
-} from "@/lib/usage/ledger";
+import type { UsageAuditEntry, ProviderModelBreakdownEntry } from "@/lib/usage/ledger";
+import type { BudgetWindowStatus } from "@/lib/settings/budget-guardrails";
+import type { RuntimeSetupState } from "@/lib/settings/runtime-setup";
+import type { PricingRegistrySnapshot } from "@/lib/usage/pricing-registry";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DonutRing } from "@/components/charts/donut-ring";
@@ -29,29 +29,12 @@ import {
 } from "@/components/ui/table";
 import { EmptyState } from "@/components/shared/empty-state";
 import { CostFilters } from "@/components/costs/cost-filters";
-
-type BudgetHealth = "unlimited" | "ok" | "warning" | "blocked";
-type BudgetMetric = "spend" | "tokens";
-type BudgetWindow = "daily" | "monthly";
-
-interface BudgetStatus {
-  id: string;
-  scopeId: string;
-  scopeLabel: string;
-  runtimeId: string | null;
-  metric: BudgetMetric;
-  window: BudgetWindow;
-  currentValue: number;
-  limitValue: number | null;
-  ratio: number | null;
-  health: BudgetHealth;
-  resetAtIso: string;
-}
+import { PricingRegistryPanel } from "@/components/settings/pricing-registry-panel";
 
 interface CostSummary {
-  todaySpendMicros: number;
   monthSpendMicros: number;
-  todayTokens: number;
+  derivedDailyBudgetMicros: number;
+  remainingMonthlyHeadroomMicros: number;
   monthTokens: number;
 }
 
@@ -64,12 +47,6 @@ interface RuntimeBreakdownRow {
   runs: number;
   share: number;
   unknownPricingRuns: number;
-}
-
-interface ModelVisualMeta {
-  share: number;
-  valueLabel: string;
-  basisLabel: string;
 }
 
 interface TrendSeries {
@@ -90,16 +67,13 @@ interface CostDashboardProps {
   filters: FilterState;
   summary: CostSummary;
   trendSeries: TrendSeries;
-  budgetStatuses: BudgetStatus[];
+  budgetStatuses: Array<BudgetWindowStatus & { resetAtIso: string }>;
+  runtimeStates: Record<string, RuntimeSetupState>;
+  pricing: PricingRegistrySnapshot;
   runtimeBreakdown: RuntimeBreakdownRow[];
   modelBreakdown: ProviderModelBreakdownEntry[];
   auditEntries: UsageAuditEntry[];
 }
-
-const runtimeCatalog = listRuntimeCatalog();
-const runtimeLabelMap = new Map<string, string>(
-  runtimeCatalog.map((runtime) => [runtime.id, runtime.label])
-);
 
 function formatCurrencyMicros(value: number | null | undefined) {
   const amount = value ?? 0;
@@ -124,10 +98,6 @@ function formatCompactCount(value: number | null | undefined) {
 
 function formatPercent(value: number) {
   return `${Math.round(value)}%`;
-}
-
-function clampPercent(value: number) {
-  return Math.max(0, Math.min(100, value));
 }
 
 function formatDateTime(value: string) {
@@ -164,17 +134,15 @@ function formatActivityLabel(value: UsageAuditEntry["activityType"]) {
       return "Task assist";
     case "profile_test":
       return "Profile test";
+    case "pattern_extraction":
+      return "Pattern extraction";
+    case "context_summarization":
+      return "Context summarization";
     default:
-      return value;
-  }
-}
-
-function formatLedgerStatusLabel(value: UsageAuditEntry["status"]) {
-  switch (value) {
-    case "unknown_pricing":
-      return "Unknown pricing";
-    default:
-      return value.charAt(0).toUpperCase() + value.slice(1);
+      return value
+        .split("_")
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(" ");
   }
 }
 
@@ -194,42 +162,12 @@ function statusBadge(status: UsageAuditEntry["status"]) {
         </Badge>
       );
     case "unknown_pricing":
-      return (
-        <Badge variant="outline" className="border-border/70 text-muted-foreground">
-          Unknown pricing
-        </Badge>
-      );
+      return <Badge variant="secondary">Pricing unavailable</Badge>;
     case "cancelled":
       return <Badge variant="secondary">Cancelled</Badge>;
     default:
-      return <Badge variant="secondary">{formatLedgerStatusLabel(status)}</Badge>;
+      return <Badge variant="secondary">{status}</Badge>;
   }
-}
-
-function budgetBadge(status: BudgetStatus) {
-  if (status.health === "blocked") {
-    return <Badge variant="destructive">Blocked</Badge>;
-  }
-  if (status.health === "warning") {
-    return (
-      <Badge
-        variant="outline"
-        className="border-status-warning/30 bg-status-warning/10 text-status-warning"
-      >
-        Warning
-      </Badge>
-    );
-  }
-  if (status.health === "ok") {
-    return <Badge variant="success">Tracked</Badge>;
-  }
-  return <Badge variant="secondary">Unlimited</Badge>;
-}
-
-function formatBudgetValue(status: BudgetStatus, value: number) {
-  return status.metric === "spend"
-    ? formatCurrencyMicros(value)
-    : formatTokenCount(value);
 }
 
 function renderEntityLink(entry: UsageAuditEntry) {
@@ -262,36 +200,6 @@ function renderEntityLink(entry: UsageAuditEntry) {
   }
 
   return <span className="font-medium">{formatActivityLabel(entry.activityType)}</span>;
-}
-
-function resolveModelVisualMeta(
-  row: ProviderModelBreakdownEntry,
-  totals: { costMicros: number; totalTokens: number }
-): ModelVisualMeta {
-  if (totals.costMicros > 0 && row.costMicros > 0) {
-    const share = clampPercent((row.costMicros / totals.costMicros) * 100);
-    return {
-      share,
-      valueLabel: formatCurrencyMicros(row.costMicros),
-      basisLabel: `${formatPercent(share)} of filtered spend`,
-    };
-  }
-
-  if (totals.totalTokens > 0 && row.totalTokens > 0) {
-    const share = clampPercent((row.totalTokens / totals.totalTokens) * 100);
-    return {
-      share,
-      valueLabel: `${formatCompactCount(row.totalTokens)} tokens`,
-      basisLabel: `${formatPercent(share)} of filtered tokens`,
-    };
-  }
-
-  return {
-    share: 0,
-    valueLabel:
-      row.unknownPricingRuns === row.runs ? "Pricing unavailable" : formatCurrencyMicros(0),
-    basisLabel: "No measurable cost or token usage",
-  };
 }
 
 function SummaryCard({
@@ -328,21 +236,30 @@ function SummaryCard({
   );
 }
 
+function getStatus(
+  statuses: Array<BudgetWindowStatus & { resetAtIso: string }>,
+  scopeId: string,
+  window: "daily" | "monthly"
+) {
+  return statuses.find(
+    (status) => status.scopeId === scopeId && status.window === window
+  );
+}
+
 export function CostDashboard({
   filters,
   summary,
   trendSeries,
   budgetStatuses,
+  runtimeStates,
+  pricing,
   runtimeBreakdown,
   modelBreakdown,
   auditEntries,
 }: CostDashboardProps) {
+  const configuredRuntimes = Object.values(runtimeStates).filter((runtime) => runtime.configured);
   const warnings = budgetStatuses.filter((status) => status.health === "warning");
   const blocked = budgetStatuses.filter((status) => status.health === "blocked");
-  const configuredBudgets = budgetStatuses.filter((status) => status.limitValue != null);
-  const nearestBudget = configuredBudgets
-    .slice()
-    .sort((left, right) => (right.ratio ?? 0) - (left.ratio ?? 0))[0];
   const hasUsage =
     summary.monthSpendMicros > 0 ||
     summary.monthTokens > 0 ||
@@ -352,13 +269,16 @@ export function CostDashboard({
     (total, row) => total + row.unknownPricingRuns,
     0
   );
-  const modelTotals = modelBreakdown.reduce(
-    (totals, row) => ({
-      costMicros: totals.costMicros + row.costMicros,
-      totalTokens: totals.totalTokens + row.totalTokens,
-    }),
-    { costMicros: 0, totalTokens: 0 }
-  );
+  const activeMixLabel =
+    configuredRuntimes.length === 0
+      ? "No providers configured"
+      : configuredRuntimes.length === 1
+        ? configuredRuntimes[0]!.label
+        : configuredRuntimes.map((runtime) => runtime.label).join(" + ");
+  const dominantRuntime = runtimeBreakdown[0] ?? null;
+  const pacingTone =
+    blocked.length > 0 ? "blocked" : warnings.length > 0 ? "warning" : "healthy";
+  const overallMonthly = getStatus(budgetStatuses, "overall", "monthly");
 
   return (
     <div className="flex flex-col gap-6">
@@ -370,8 +290,8 @@ export function CostDashboard({
         <div className="space-y-2">
           <h1 className="text-2xl font-bold tracking-tight">Cost &amp; Usage</h1>
           <p className="max-w-2xl text-sm text-muted-foreground">
-            Review spend, token usage, and the execution history behind each paid
-            runtime action without leaving the operational shell.
+            Track current spend pacing, provider mix, and the execution history behind paid
+            runtime work without juggling a second budgeting model.
           </p>
         </div>
       </div>
@@ -381,151 +301,136 @@ export function CostDashboard({
         runtimeId={filters.runtimeId}
         status={filters.status}
         activityType={filters.activityType}
-        runtimeOptions={runtimeCatalog.map((runtime) => ({
-          id: runtime.id,
+        runtimeOptions={configuredRuntimes.map((runtime) => ({
+          id: runtime.runtimeId,
           label: runtime.label,
         }))}
       />
 
-      {blocked.length > 0 ? (
-        <div className="surface-card rounded-3xl border border-status-failed/25 bg-status-failed/8 p-5">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-status-failed">
-                <ShieldAlert className="h-4 w-4" />
-                <p className="text-sm font-semibold">Provider activity is currently blocked</p>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                One or more active budget windows have been exceeded. New paid work
-                will remain blocked until the affected window resets.
-              </p>
-            </div>
-            <div className="grid gap-2 lg:min-w-[320px]">
-              {blocked.slice(0, 2).map((status) => (
-                <div
-                  key={status.id}
-                  className="surface-card-muted flex items-start justify-between gap-3 rounded-2xl p-3"
-                >
-                  <div>
-                    <p className="text-sm font-medium">
-                      {status.scopeLabel} {status.window} {status.metric}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatBudgetValue(status, status.currentValue)} of{" "}
-                      {formatBudgetValue(status, status.limitValue ?? 0)} used
-                    </p>
-                  </div>
-                  <p className="text-right text-xs text-muted-foreground">
-                    Resets {formatDateTime(status.resetAtIso)}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {blocked.length === 0 && warnings.length > 0 ? (
-        <div className="surface-card rounded-3xl border border-status-warning/25 bg-status-warning/8 p-5">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="mt-0.5 h-4 w-4 text-status-warning" />
-            <div className="space-y-2">
-              <p className="text-sm font-semibold">Budget usage is approaching a cap</p>
-              <p className="text-sm text-muted-foreground">
-                {warnings[0].scopeLabel} {warnings[0].window} {warnings[0].metric} is at{" "}
-                {formatPercent((warnings[0].ratio ?? 0) * 100)} of its configured
-                limit and resets {formatDateTime(warnings[0].resetAtIso)}.
-              </p>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <SummaryCard
-          eyebrow="Today"
-          title="Spend"
-          value={formatCurrencyMicros(summary.todaySpendMicros)}
-          detail="Current-day spend across governed runtimes"
-          icon={Wallet}
-        />
         <SummaryCard
           eyebrow="Month"
           title="Spend"
           value={formatCurrencyMicros(summary.monthSpendMicros)}
-          detail="Current-month spend used so far"
+          detail="Budget basis for the current month"
+          icon={Wallet}
+        />
+        <SummaryCard
+          eyebrow="Derived"
+          title="Daily Budget"
+          value={formatCurrencyMicros(summary.derivedDailyBudgetMicros)}
+          detail="Calculated from the monthly cap"
           icon={CalendarRange}
         />
         <SummaryCard
-          eyebrow="Today"
-          title="Tokens"
-          value={formatCompactCount(summary.todayTokens)}
-          detail={`${formatTokenCount(summary.todayTokens)} total tokens today`}
-          icon={Coins}
+          eyebrow="Remaining"
+          title="Monthly Headroom"
+          value={formatCurrencyMicros(summary.remainingMonthlyHeadroomMicros)}
+          detail="Spend left before the monthly cap"
+          icon={ShieldCheck}
         />
         <SummaryCard
-          eyebrow="Month"
-          title="Tokens"
-          value={formatCompactCount(summary.monthTokens)}
-          detail={`${formatTokenCount(summary.monthTokens)} total tokens this month`}
-          icon={Coins}
+          eyebrow="Providers"
+          title="Active Mix"
+          value={configuredRuntimes.length === 0 ? "None" : String(configuredRuntimes.length)}
+          detail={activeMixLabel}
+          icon={ArrowRight}
         />
+        <SummaryCard
+          eyebrow="Pricing"
+          title="Freshness"
+          value={pricing.stale ? "Stale" : "Current"}
+          detail={
+            pricing.lastUpdatedIso
+              ? `Updated ${formatDateTime(pricing.lastUpdatedIso)}`
+              : "No refresh recorded yet"
+          }
+          icon={CalendarClock}
+        />
+      </div>
 
-        <div className="surface-card rounded-3xl p-5">
-          <div className="mb-4 flex items-start justify-between gap-3">
-            <div className="space-y-1">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                Budgets
-              </p>
-              <h2 className="text-sm font-medium text-foreground">Guardrail state</h2>
-            </div>
-            <div className="surface-card-muted rounded-2xl p-2.5">
-              {blocked.length > 0 ? (
-                <ShieldAlert className="h-4 w-4 text-status-failed" />
+      <div
+        className={`surface-card rounded-3xl p-5 ${
+          pacingTone === "blocked"
+            ? "border border-status-failed/25 bg-status-failed/8"
+            : pacingTone === "warning"
+              ? "border border-status-warning/25 bg-status-warning/8"
+              : ""
+        }`}
+      >
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="space-y-2">
+            <div
+              className={`flex items-center gap-2 ${
+                pacingTone === "blocked"
+                  ? "text-status-failed"
+                  : pacingTone === "warning"
+                    ? "text-status-warning"
+                    : "text-status-completed"
+              }`}
+            >
+              {pacingTone === "blocked" ? (
+                <ShieldAlert className="h-4 w-4" />
+              ) : pacingTone === "warning" ? (
+                <AlertTriangle className="h-4 w-4" />
               ) : (
-                <ShieldCheck className="h-4 w-4 text-status-completed" />
+                <ShieldCheck className="h-4 w-4" />
               )}
+              <p className="text-sm font-semibold">
+                {pacingTone === "blocked"
+                  ? "Budget pacing is blocked"
+                  : pacingTone === "warning"
+                    ? "Budget pacing is near a cap"
+                    : "Budget pacing is on track"}
+              </p>
             </div>
+            <p className="text-sm text-muted-foreground">
+              {pacingTone === "blocked"
+                ? "One or more active spend windows have been exceeded. New paid work remains blocked until the affected window resets."
+                : pacingTone === "warning"
+                  ? "A configured spend window is approaching its limit. Review the active provider mix before it becomes a hard stop."
+                  : "Spend is within the configured pacing windows. Derived daily caps continue to roll forward from the monthly budget."}
+            </p>
           </div>
 
-          {nearestBudget ? (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                {budgetBadge(nearestBudget)}
-                <span className="text-xs text-muted-foreground">
-                  {nearestBudget.scopeLabel} {nearestBudget.window} {nearestBudget.metric}
-                </span>
-              </div>
-              <div className="space-y-1">
-                <p className="text-2xl font-bold tracking-tight">
-                  {formatBudgetValue(
-                    nearestBudget,
-                    Math.max((nearestBudget.limitValue ?? 0) - nearestBudget.currentValue, 0)
-                  )}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Remaining before the nearest configured cap. Resets{" "}
-                  {formatDateTime(nearestBudget.resetAtIso)}.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <Badge variant="secondary">Unconfigured</Badge>
-              <p className="text-sm text-muted-foreground">
-                No spend or token caps are configured yet. Usage is being metered,
-                but there is no automatic stop condition.
+          <div className="grid gap-2 lg:min-w-[340px]">
+            <div className="surface-card-muted rounded-2xl p-3">
+              <p className="text-sm font-medium">Primary spend driver</p>
+              <p className="text-xs text-muted-foreground">
+                {dominantRuntime
+                  ? `${dominantRuntime.label} represents ${formatPercent(
+                      dominantRuntime.share
+                    )} of filtered spend.`
+                  : "No provider has recorded spend in the current filtered window."}
               </p>
             </div>
-          )}
+            {overallMonthly ? (
+              <div className="surface-card-muted rounded-2xl p-3">
+                <p className="text-sm font-medium">
+                  {formatCurrencyMicros(overallMonthly.currentValue)} of{" "}
+                  {overallMonthly.limitValue == null
+                    ? "Unlimited"
+                    : formatCurrencyMicros(overallMonthly.limitValue)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Monthly reset {formatDateTime(overallMonthly.resetAtIso)}.
+                </p>
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
+
+      <PricingRegistryPanel
+        initialSnapshot={pricing}
+        showClaudePlans={runtimeStates["claude-code"]?.billingMode === "subscription"}
+      />
 
       {hasUsage ? (
         <>
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
             <div className="surface-card rounded-3xl p-5">
-              <SectionHeading>Trend View</SectionHeading>
+              <SectionHeading>Spend Trends</SectionHeading>
               <div className="grid gap-4 lg:grid-cols-2">
                 <div className="surface-card-muted rounded-2xl p-4">
                   <div className="mb-4 flex items-center justify-between gap-3">
@@ -572,9 +477,9 @@ export function CostDashboard({
                 <div className="surface-card-muted rounded-2xl p-4">
                   <div className="mb-4 flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-sm font-medium">Token velocity</p>
+                      <p className="text-sm font-medium">Activity tokens</p>
                       <p className="text-xs text-muted-foreground">
-                        7-day and 30-day token series
+                        Secondary telemetry for the same window
                       </p>
                     </div>
                     <Badge variant="outline">{formatCompactCount(summary.monthTokens)} tokens</Badge>
@@ -614,7 +519,9 @@ export function CostDashboard({
             </div>
 
             <div className="surface-card rounded-3xl p-5">
-              <SectionHeading>Runtime Breakdown</SectionHeading>
+              <SectionHeading>
+                {runtimeBreakdown.length <= 1 ? "Active Provider" : "Provider Breakdown"}
+              </SectionHeading>
               <div className="space-y-3">
                 {runtimeBreakdown.length > 0 ? (
                   runtimeBreakdown.map((runtime) => (
@@ -623,22 +530,32 @@ export function CostDashboard({
                       className="surface-card-muted flex items-center justify-between gap-4 rounded-2xl p-4"
                     >
                       <div className="flex items-center gap-4">
-                        <DonutRing
-                          value={runtime.share}
-                          size={44}
-                          strokeWidth={4}
-                          color="var(--chart-1)"
-                          trackColor="var(--muted)"
-                          label={`${runtime.label} share of spend`}
-                        />
+                        {runtimeBreakdown.length > 1 ? (
+                          <DonutRing
+                            value={runtime.share}
+                            size={44}
+                            strokeWidth={4}
+                            color="var(--chart-1)"
+                            trackColor="var(--muted)"
+                            label={`${runtime.label} share of spend`}
+                          />
+                        ) : (
+                          <div className="rounded-2xl border border-border/60 bg-background/40 px-3 py-2 text-sm font-semibold">
+                            {runtime.label}
+                          </div>
+                        )}
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
                             <p className="text-sm font-medium">{runtime.label}</p>
                             <Badge variant="outline">{runtime.providerId}</Badge>
+                            {runtimeStates[runtime.runtimeId]?.billingMode === "subscription" ? (
+                              <Badge variant="secondary">Plan priced</Badge>
+                            ) : null}
                           </div>
                           <p className="text-xs text-muted-foreground">
-                            {formatPercent(runtime.share)} of filtered spend across{" "}
-                            {runtime.runs} runs
+                            {runtimeBreakdown.length > 1
+                              ? `${formatPercent(runtime.share)} of filtered spend across ${runtime.runs} runs`
+                              : `${runtime.runs} filtered runs in the selected window`}
                           </p>
                         </div>
                       </div>
@@ -662,9 +579,8 @@ export function CostDashboard({
                         {runtime.unknownPricingRuns > 0 ? (
                           <div className="col-span-2">
                             <p className="text-xs text-muted-foreground">
-                              {runtime.unknownPricingRuns} run
-                              {runtime.unknownPricingRuns === 1 ? "" : "s"} missing
-                              pricing data
+                              {runtime.unknownPricingRuns} row
+                              {runtime.unknownPricingRuns === 1 ? "" : "s"} without price data
                             </p>
                           </div>
                         ) : null}
@@ -673,7 +589,8 @@ export function CostDashboard({
                   ))
                 ) : (
                   <div className="surface-card-muted rounded-2xl p-4 text-sm text-muted-foreground">
-                    No metered runtime activity exists for {formatDateRangeLabel(filters.dateRange).toLowerCase()}.
+                    No metered provider activity exists for{" "}
+                    {formatDateRangeLabel(filters.dateRange).toLowerCase()}.
                   </div>
                 )}
               </div>
@@ -685,12 +602,13 @@ export function CostDashboard({
               <div>
                 <SectionHeading className="mb-2">Model Breakdown</SectionHeading>
                 <p className="text-sm text-muted-foreground">
-                  Concentration by model for {formatDateRangeLabel(filters.dateRange).toLowerCase()}.
+                  Spend-first concentration by model for{" "}
+                  {formatDateRangeLabel(filters.dateRange).toLowerCase()}.
                 </p>
               </div>
               {filteredUnknownPricingRuns > 0 ? (
-                <Badge variant="outline">
-                  {filteredUnknownPricingRuns} unknown-pricing row
+                <Badge variant="secondary">
+                  {filteredUnknownPricingRuns} pricing gap
                   {filteredUnknownPricingRuns === 1 ? "" : "s"}
                 </Badge>
               ) : null}
@@ -698,66 +616,49 @@ export function CostDashboard({
 
             {modelBreakdown.length > 0 ? (
               <div className="space-y-3">
-                {modelBreakdown.map((row) => {
-                  const visual = resolveModelVisualMeta(row, modelTotals);
-                  return (
-                    <div
-                      key={`${row.runtimeId}-${row.modelId ?? "unknown"}`}
-                      className="surface-card-muted rounded-2xl p-4"
-                    >
-                      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                        <div className="min-w-0 flex-1 space-y-3">
-                          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                            <div className="min-w-0 space-y-1">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <p className="text-sm font-medium">
-                                  {row.modelId ?? "Unknown model"}
-                                </p>
-                                <Badge variant="outline">
-                                  {runtimeLabelMap.get(row.runtimeId) ?? row.runtimeId}
-                                </Badge>
-                                {row.unknownPricingRuns > 0 ? (
-                                  <Badge variant="outline">Pricing unavailable</Badge>
-                                ) : null}
-                              </div>
-                              <p className="text-xs text-muted-foreground">
-                                {row.providerId} • {row.runs} run
-                                {row.runs === 1 ? "" : "s"} •{" "}
-                                {formatCompactCount(row.totalTokens)} tokens
-                              </p>
-                            </div>
-                            <div className="text-left sm:text-right">
-                              <p className="text-sm font-medium">{visual.valueLabel}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {visual.basisLabel}
-                              </p>
-                            </div>
-                          </div>
+                {modelBreakdown.map((row) => (
+                  <div
+                    key={`${row.runtimeId}-${row.modelId ?? "unknown"}`}
+                    className="surface-card-muted rounded-2xl p-4"
+                  >
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="min-w-0 space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-medium">
+                            {row.modelId ?? "Unknown model"}
+                          </p>
+                          <Badge variant="outline">
+                            {runtimeStates[row.runtimeId]?.label ?? row.runtimeId}
+                          </Badge>
+                          {row.unknownPricingRuns > 0 ? (
+                            <Badge variant="secondary">Pricing unavailable</Badge>
+                          ) : null}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {row.providerId} • {row.runs} run
+                          {row.runs === 1 ? "" : "s"} • {formatCompactCount(row.totalTokens)} tokens
+                        </p>
+                      </div>
 
-                          <div className="space-y-2">
-                            <div className="h-2.5 overflow-hidden rounded-full bg-background/70">
-                              <div
-                                className="h-full rounded-full bg-[linear-gradient(90deg,var(--chart-1),var(--chart-2))]"
-                                style={{ width: `${Math.max(visual.share, visual.share > 0 ? 6 : 0)}%` }}
-                              />
-                            </div>
-                            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-                              <span>{formatPercent(visual.share)} of current filtered volume</span>
-                              {row.unknownPricingRuns > 0 ? (
-                                <span>
-                                  {row.unknownPricingRuns} run
-                                  {row.unknownPricingRuns === 1 ? "" : "s"} without price data
-                                </span>
-                              ) : (
-                                <span>Cost and token totals are both shown above</span>
-                              )}
-                            </div>
-                          </div>
+                      <div className="grid gap-2 text-left sm:min-w-[180px] sm:text-right">
+                        <div>
+                          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                            Spend
+                          </p>
+                          <p className="font-medium">{formatCurrencyMicros(row.costMicros)}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                            Tokens
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {formatCompactCount(row.totalTokens)}
+                          </p>
                         </div>
                       </div>
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             ) : (
               <div className="surface-card-muted rounded-2xl p-4 text-sm text-muted-foreground">
@@ -786,8 +687,8 @@ export function CostDashboard({
                       <TableHead>Activity</TableHead>
                       <TableHead>Linked entity</TableHead>
                       <TableHead>Runtime</TableHead>
-                      <TableHead>Tokens</TableHead>
                       <TableHead>Cost</TableHead>
+                      <TableHead>Tokens</TableHead>
                       <TableHead>Status</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -825,18 +726,23 @@ export function CostDashboard({
                         <TableCell className="align-top">
                           <div className="space-y-1">
                             <p className="font-medium">
-                              {runtimeLabelMap.get(entry.runtimeId) ?? entry.runtimeId}
+                              {runtimeStates[entry.runtimeId]?.label ?? entry.runtimeId}
                             </p>
-                            <p className="text-xs text-muted-foreground">{entry.providerId}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {entry.providerId}
+                              {runtimeStates[entry.runtimeId]?.billingMode === "subscription"
+                                ? " • plan priced"
+                                : ""}
+                            </p>
                           </div>
-                        </TableCell>
-                        <TableCell className="align-top text-right">
-                          {formatCompactCount(entry.totalTokens ?? 0)}
                         </TableCell>
                         <TableCell className="align-top text-right">
                           {entry.status === "unknown_pricing"
                             ? "Unavailable"
                             : formatCurrencyMicros(entry.costMicros)}
+                        </TableCell>
+                        <TableCell className="align-top text-right text-muted-foreground">
+                          {formatCompactCount(entry.totalTokens ?? 0)}
                         </TableCell>
                         <TableCell className="align-top">{statusBadge(entry.status)}</TableCell>
                       </TableRow>

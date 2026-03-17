@@ -8,10 +8,13 @@ let tempDir: string;
 beforeEach(() => {
   tempDir = mkdtempSync(join(tmpdir(), "stagent-budget-guardrails-"));
   vi.resetModules();
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-03-17T12:00:00.000Z"));
   vi.stubEnv("STAGENT_DATA_DIR", tempDir);
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllEnvs();
   rmSync(tempDir, { recursive: true, force: true });
 });
@@ -21,8 +24,9 @@ async function loadModules() {
   const schema = await import("@/lib/db/schema");
   const ledger = await import("@/lib/usage/ledger");
   const budgets = await import("../budget-guardrails");
+  const auth = await import("../auth");
 
-  return { db, ...schema, ...ledger, ...budgets };
+  return { db, ...schema, ...ledger, ...budgets, ...auth };
 }
 
 describe("budget guardrails", () => {
@@ -33,25 +37,22 @@ describe("budget guardrails", () => {
       recordUsageLedgerEntry,
       setBudgetPolicy,
       enforceBudgetGuardrails,
+      setAuthSettings,
     } = await loadModules();
+
+    vi.stubEnv("ANTHROPIC_API_KEY", "sk-ant-test-key");
+    await setAuthSettings({ method: "api_key" });
 
     await setBudgetPolicy({
       overall: {
-        dailySpendCapUsd: 0.012,
-        monthlySpendCapUsd: null,
+        monthlySpendCapUsd: 0.36,
       },
       runtimes: {
         "claude-code": {
-          dailySpendCapUsd: null,
-          monthlySpendCapUsd: null,
-          dailyTokenCap: null,
-          monthlyTokenCap: null,
+          monthlySpendCapUsd: 0.36,
         },
         "openai-codex-app-server": {
-          dailySpendCapUsd: null,
           monthlySpendCapUsd: null,
-          dailyTokenCap: null,
-          monthlyTokenCap: null,
         },
       },
     });
@@ -80,9 +81,10 @@ describe("budget guardrails", () => {
     });
 
     const rows = await db.select().from(notifications);
-    expect(rows).toHaveLength(1);
-    expect(rows[0]?.type).toBe("budget_alert");
-    expect(rows[0]?.title).toContain("Overall daily spend");
+    expect(rows).toHaveLength(2);
+    expect(rows.every((row) => row.type === "budget_alert")).toBe(true);
+    expect(rows.some((row) => row.title.includes("Overall daily spend"))).toBe(true);
+    expect(rows.some((row) => row.title.includes("Claude Code daily spend"))).toBe(true);
   });
 
   it("blocks new runtime activity, records a zero-cost ledger row, and fails queued tasks when requested", async () => {
@@ -95,7 +97,11 @@ describe("budget guardrails", () => {
       setBudgetPolicy,
       enforceTaskBudgetGuardrails,
       BudgetLimitExceededError,
+      setAuthSettings,
     } = await loadModules();
+
+    vi.stubEnv("ANTHROPIC_API_KEY", "sk-ant-test-key");
+    await setAuthSettings({ method: "api_key" });
 
     const taskId = crypto.randomUUID();
     const now = new Date();
@@ -120,21 +126,14 @@ describe("budget guardrails", () => {
 
     await setBudgetPolicy({
       overall: {
-        dailySpendCapUsd: null,
-        monthlySpendCapUsd: null,
+        monthlySpendCapUsd: 0.001,
       },
       runtimes: {
         "claude-code": {
-          dailySpendCapUsd: null,
-          monthlySpendCapUsd: null,
-          dailyTokenCap: 100,
-          monthlyTokenCap: null,
+          monthlySpendCapUsd: 0.001,
         },
         "openai-codex-app-server": {
-          dailySpendCapUsd: null,
           monthlySpendCapUsd: null,
-          dailyTokenCap: null,
-          monthlyTokenCap: null,
         },
       },
     });
@@ -159,7 +158,7 @@ describe("budget guardrails", () => {
 
     const [task] = await db.select().from(tasks);
     expect(task?.status).toBe("failed");
-    expect(task?.result).toContain("token usage");
+    expect(task?.result).toContain("spend");
 
     const ledgerRows = await db.select().from(usageLedger);
     const blockedRow = ledgerRows.find((row) => row.status === "blocked");
@@ -176,6 +175,69 @@ describe("budget guardrails", () => {
 
     const budgetNotifications = await db.select().from(notifications);
     expect(budgetNotifications.at(-1)?.title).toContain("blocked");
-    expect(budgetNotifications.at(-1)?.body).toContain("Resets");
+    expect(budgetNotifications.at(-1)?.body).toContain("spend");
+  });
+
+  it("derives daily spend caps from the monthly cap and auto-assigns a single configured runtime", async () => {
+    const { setBudgetPolicy, getBudgetGuardrailSnapshot, setAuthSettings } =
+      await loadModules();
+
+    vi.stubEnv("ANTHROPIC_API_KEY", "sk-ant-test-key");
+    vi.stubEnv("OPENAI_API_KEY", "");
+    await setAuthSettings({ method: "api_key" });
+
+    await setBudgetPolicy({
+      overall: {
+        monthlySpendCapUsd: 310,
+      },
+      runtimes: {
+        "claude-code": {
+          monthlySpendCapUsd: 155,
+        },
+        "openai-codex-app-server": {
+          monthlySpendCapUsd: 155,
+        },
+      },
+    });
+
+    const snapshot = await getBudgetGuardrailSnapshot();
+    const overallDaily = snapshot.statuses.find(
+      (status) => status.scopeId === "overall" && status.window === "daily"
+    );
+    const claudeMonthly = snapshot.policy.runtimes["claude-code"].monthlySpendCapUsd;
+    const openAIMonthly =
+      snapshot.policy.runtimes["openai-codex-app-server"].monthlySpendCapUsd;
+
+    expect(overallDaily?.limitValue).toBe(10_000_000);
+    expect(claudeMonthly).toBe(310);
+    expect(openAIMonthly).toBeNull();
+  });
+
+  it("splits configured provider caps from the overall budget when both runtimes are configured", async () => {
+    vi.stubEnv("ANTHROPIC_API_KEY", "sk-ant-test-key");
+    vi.stubEnv("OPENAI_API_KEY", "sk-test-openai");
+    const { setBudgetPolicy, getBudgetGuardrailSnapshot, setAuthSettings } =
+      await loadModules();
+    await setAuthSettings({ method: "api_key" });
+
+    await setBudgetPolicy({
+      overall: {
+        monthlySpendCapUsd: 300,
+      },
+      runtimes: {
+        "claude-code": {
+          monthlySpendCapUsd: 120,
+        },
+        "openai-codex-app-server": {
+          monthlySpendCapUsd: 180,
+        },
+      },
+    });
+
+    const snapshot = await getBudgetGuardrailSnapshot();
+    expect(snapshot.policy.runtimes["claude-code"].monthlySpendCapUsd).toBe(120);
+    expect(snapshot.policy.runtimes["openai-codex-app-server"].monthlySpendCapUsd).toBe(
+      180
+    );
   });
 });

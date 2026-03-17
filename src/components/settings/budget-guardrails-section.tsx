@@ -1,75 +1,38 @@
 "use client";
 
-import { useEffect, useState, type ComponentType } from "react";
+import { useEffect, useMemo, useState, type ComponentType } from "react";
+import { AlertTriangle, ArrowRight, CalendarClock, ShieldAlert, Wallet } from "lucide-react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
-import { listRuntimeCatalog } from "@/lib/agents/runtime/catalog";
-import type { BudgetPolicy } from "@/lib/validators/settings";
+import { Slider } from "@/components/ui/slider";
 import {
-  AlertTriangle,
-  ArrowRight,
-  ChevronDown,
-  ChevronUp,
-  Coins,
-  Landmark,
-  RotateCcw,
-  ShieldAlert,
-  ShieldCheck,
-  Wallet,
-} from "lucide-react";
-import { toast } from "sonner";
-
-type BudgetHealth = "unlimited" | "ok" | "warning" | "blocked";
-type BudgetMetric = "spend" | "tokens";
-type BudgetWindow = "daily" | "monthly";
-
-interface BudgetStatus {
-  id: string;
-  scopeId: string;
-  scopeLabel: string;
-  runtimeId: string | null;
-  metric: BudgetMetric;
-  window: BudgetWindow;
-  currentValue: number;
-  limitValue: number | null;
-  ratio: number | null;
-  health: BudgetHealth;
-  resetAtIso: string;
-}
-
-interface BudgetSnapshot {
-  policy: BudgetPolicy;
-  statuses: BudgetStatus[];
-  dailyResetAtIso: string;
-  monthlyResetAtIso: string;
-}
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import type { AgentRuntimeId } from "@/lib/agents/runtime/catalog";
+import type { BudgetPolicy, ClaudeOAuthPlan } from "@/lib/validators/settings";
+import type { BudgetSnapshot, BudgetWindowStatus } from "@/lib/settings/budget-guardrails";
+import type { RuntimeSetupState } from "@/lib/settings/runtime-setup";
+import { PricingRegistryPanel } from "./pricing-registry-panel";
 
 interface BudgetFormState {
-  overallDailySpendCapUsd: string;
   overallMonthlySpendCapUsd: string;
   runtimes: Record<
-    string,
+    AgentRuntimeId,
     {
-      dailySpendCapUsd: string;
       monthlySpendCapUsd: string;
-      dailyTokenCap: string;
-      monthlyTokenCap: string;
+      claudeOAuthPlan?: ClaudeOAuthPlan;
     }
   >;
 }
 
-const runtimes = listRuntimeCatalog();
-
-interface DerivedTokenEstimate {
-  estimatedBudgetTokens: number | null;
-  estimatedRemainingTokens: number | null;
-  sourceLabel: string | null;
-}
-
-function toInputValue(value: number | null) {
+function toInputValue(value: number | null | undefined) {
   return value == null ? "" : String(value);
 }
 
@@ -80,52 +43,64 @@ function toNullableNumber(value: string) {
 
 function buildFormState(policy: BudgetPolicy): BudgetFormState {
   return {
-    overallDailySpendCapUsd: toInputValue(policy.overall.dailySpendCapUsd),
     overallMonthlySpendCapUsd: toInputValue(policy.overall.monthlySpendCapUsd),
-    runtimes: Object.fromEntries(
-      runtimes.map((runtime) => [
-        runtime.id,
-        {
-          dailySpendCapUsd: toInputValue(
-            policy.runtimes[runtime.id].dailySpendCapUsd
-          ),
-          monthlySpendCapUsd: toInputValue(
-            policy.runtimes[runtime.id].monthlySpendCapUsd
-          ),
-          dailyTokenCap: toInputValue(policy.runtimes[runtime.id].dailyTokenCap),
-          monthlyTokenCap: toInputValue(
-            policy.runtimes[runtime.id].monthlyTokenCap
-          ),
-        },
-      ])
-    ),
+    runtimes: {
+      "claude-code": {
+        monthlySpendCapUsd: toInputValue(
+          policy.runtimes["claude-code"].monthlySpendCapUsd
+        ),
+        claudeOAuthPlan: policy.runtimes["claude-code"].claudeOAuthPlan,
+      },
+      "openai-codex-app-server": {
+        monthlySpendCapUsd: toInputValue(
+          policy.runtimes["openai-codex-app-server"].monthlySpendCapUsd
+        ),
+      },
+    },
   };
 }
 
 function buildPayload(form: BudgetFormState): BudgetPolicy {
   return {
     overall: {
-      dailySpendCapUsd: toNullableNumber(form.overallDailySpendCapUsd),
       monthlySpendCapUsd: toNullableNumber(form.overallMonthlySpendCapUsd),
     },
-    runtimes: Object.fromEntries(
-      runtimes.map((runtime) => [
-        runtime.id,
-        {
-          dailySpendCapUsd: toNullableNumber(
-            form.runtimes[runtime.id].dailySpendCapUsd
-          ),
-          monthlySpendCapUsd: toNullableNumber(
-            form.runtimes[runtime.id].monthlySpendCapUsd
-          ),
-          dailyTokenCap: toNullableNumber(form.runtimes[runtime.id].dailyTokenCap),
-          monthlyTokenCap: toNullableNumber(
-            form.runtimes[runtime.id].monthlyTokenCap
-          ),
-        },
-      ])
-    ) as BudgetPolicy["runtimes"],
+    runtimes: {
+      "claude-code": {
+        monthlySpendCapUsd: toNullableNumber(
+          form.runtimes["claude-code"].monthlySpendCapUsd
+        ),
+        claudeOAuthPlan: form.runtimes["claude-code"].claudeOAuthPlan,
+      },
+      "openai-codex-app-server": {
+        monthlySpendCapUsd: toNullableNumber(
+          form.runtimes["openai-codex-app-server"].monthlySpendCapUsd
+        ),
+      },
+    },
   };
+}
+
+function formatCurrencyUsd(value: number | null) {
+  if (value == null) {
+    return "Unlimited";
+  }
+
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: value >= 100 ? 0 : 2,
+    maximumFractionDigits: value >= 100 ? 0 : 2,
+  }).format(value);
+}
+
+function formatMicrosAsUsd(value: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: value >= 1_000_000 ? 2 : 4,
+  }).format(value / 1_000_000);
 }
 
 function formatResetAt(value: string) {
@@ -133,48 +108,6 @@ function formatResetAt(value: string) {
     dateStyle: "medium",
     timeStyle: "short",
   });
-}
-
-function formatStatusValue(status: BudgetStatus) {
-  if (status.metric === "tokens") {
-    return new Intl.NumberFormat("en-US").format(status.currentValue);
-  }
-
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 4,
-  }).format(status.currentValue / 1_000_000);
-}
-
-function formatStatusLimit(status: BudgetStatus) {
-  if (status.limitValue == null) {
-    return "Unlimited";
-  }
-
-  if (status.metric === "tokens") {
-    return new Intl.NumberFormat("en-US").format(status.limitValue);
-  }
-
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 4,
-  }).format(status.limitValue / 1_000_000);
-}
-
-function formatEstimatedTokens(value: number | null) {
-  if (value == null) {
-    return "Unavailable";
-  }
-
-  const rounded = Math.max(0, Math.round(value));
-  return new Intl.NumberFormat("en-US", {
-    notation: rounded >= 100_000 ? "compact" : "standard",
-    maximumFractionDigits: rounded >= 100_000 ? 1 : 0,
-  }).format(rounded);
 }
 
 function SectionEyebrow({
@@ -192,104 +125,91 @@ function SectionEyebrow({
   );
 }
 
-function healthBadge(status: BudgetStatus) {
-  if (status.health === "blocked") {
-    return <Badge variant="destructive">Blocked</Badge>;
-  }
-  if (status.health === "warning") {
-    return (
-      <Badge
-        variant="outline"
-        className="border-status-warning/30 bg-status-warning/10 text-status-warning"
-      >
-        Warning
-      </Badge>
-    );
-  }
-  if (status.health === "ok") {
-    return <Badge variant="success">Healthy</Badge>;
-  }
-  return <Badge variant="secondary">Unlimited</Badge>;
-}
-
 function getStatus(
-  statuses: BudgetStatus[],
+  statuses: BudgetWindowStatus[],
   scopeId: string,
-  window: BudgetWindow,
-  metric: BudgetMetric
+  window: "daily" | "monthly"
 ) {
   return statuses.find(
-    (status) =>
-      status.scopeId === scopeId &&
-      status.window === window &&
-      status.metric === metric
+    (status) => status.scopeId === scopeId && status.window === window
   );
 }
 
-function deriveTokenEstimate(input: {
-  spendCapUsd: string;
-  primarySpendStatus?: BudgetStatus;
-  primaryTokenStatus?: BudgetStatus;
-  fallbackSpendStatus?: BudgetStatus;
-  fallbackTokenStatus?: BudgetStatus;
-}): DerivedTokenEstimate {
-  const spendCapUsd = toNullableNumber(input.spendCapUsd);
-  if (spendCapUsd == null) {
-    return {
-      estimatedBudgetTokens: null,
-      estimatedRemainingTokens: null,
-      sourceLabel: null,
-    };
-  }
+function roundUsd(value: number) {
+  return Math.round(value * 100) / 100;
+}
 
-  const spendCapMicros = spendCapUsd * 1_000_000;
-  const primaryHasRate =
-    (input.primarySpendStatus?.currentValue ?? 0) > 0 &&
-    (input.primaryTokenStatus?.currentValue ?? 0) > 0;
-  const fallbackHasRate =
-    (input.fallbackSpendStatus?.currentValue ?? 0) > 0 &&
-    (input.fallbackTokenStatus?.currentValue ?? 0) > 0;
-
-  const spendStatus = primaryHasRate
-    ? input.primarySpendStatus
-    : fallbackHasRate
-      ? input.fallbackSpendStatus
-      : undefined;
-  const tokenStatus = primaryHasRate
-    ? input.primaryTokenStatus
-    : fallbackHasRate
-      ? input.fallbackTokenStatus
-      : undefined;
-
-  if (!spendStatus || !tokenStatus) {
-    return {
-      estimatedBudgetTokens: null,
-      estimatedRemainingTokens: null,
-      sourceLabel: null,
-    };
-  }
-
-  const tokensPerMicro = tokenStatus.currentValue / spendStatus.currentValue;
-  const estimatedBudgetTokens = spendCapMicros * tokensPerMicro;
-  const estimatedRemainingTokens = Math.max(
-    0,
-    (spendCapMicros - spendStatus.currentValue) * tokensPerMicro
+function deriveClaudeAllocation(form: BudgetFormState) {
+  const overall = toNullableNumber(form.overallMonthlySpendCapUsd);
+  const claude = toNullableNumber(form.runtimes["claude-code"].monthlySpendCapUsd);
+  const openai = toNullableNumber(
+    form.runtimes["openai-codex-app-server"].monthlySpendCapUsd
   );
 
-  return {
-    estimatedBudgetTokens,
-    estimatedRemainingTokens,
-    sourceLabel:
-      spendStatus.window === input.primarySpendStatus?.window
-        ? `${spendStatus.window} blended pricing`
-        : `${spendStatus.window} blended pricing fallback`,
+  if (overall == null || overall <= 0) {
+    return 50;
+  }
+
+  const total = (claude ?? 0) + (openai ?? 0);
+  if (total <= 0) {
+    return 50;
+  }
+
+  return Math.round(((claude ?? 0) / total) * 100);
+}
+
+function applyBudgetSplit(
+  current: BudgetFormState,
+  overallMonthlySpendCapUsd: string,
+  activeRuntimeIds: AgentRuntimeId[],
+  claudePercent = deriveClaudeAllocation(current)
+): BudgetFormState {
+  const overall = toNullableNumber(overallMonthlySpendCapUsd);
+  const next: BudgetFormState = {
+    overallMonthlySpendCapUsd,
+    runtimes: {
+      ...current.runtimes,
+      "claude-code": { ...current.runtimes["claude-code"] },
+      "openai-codex-app-server": {
+        ...current.runtimes["openai-codex-app-server"],
+      },
+    },
   };
+
+  if (overall == null || activeRuntimeIds.length === 0) {
+    next.runtimes["claude-code"].monthlySpendCapUsd = "";
+    next.runtimes["openai-codex-app-server"].monthlySpendCapUsd = "";
+    return next;
+  }
+
+  if (activeRuntimeIds.length === 1) {
+    const runtimeId = activeRuntimeIds[0];
+    next.runtimes[runtimeId].monthlySpendCapUsd = String(overall);
+    for (const candidate of ["claude-code", "openai-codex-app-server"] as const) {
+      if (candidate !== runtimeId) {
+        next.runtimes[candidate].monthlySpendCapUsd = "";
+      }
+    }
+    return next;
+  }
+
+  const claudeCap = roundUsd(overall * (claudePercent / 100));
+  const openAICap = roundUsd(Math.max(overall - claudeCap, 0));
+
+  next.runtimes["claude-code"].monthlySpendCapUsd = String(claudeCap);
+  next.runtimes["openai-codex-app-server"].monthlySpendCapUsd = String(openAICap);
+  return next;
 }
+
+const CLAUDE_PLAN_LABELS: Record<ClaudeOAuthPlan, string> = {
+  pro: "Pro",
+  max_5x: "Max 5x",
+  max_20x: "Max 20x",
+};
 
 export function BudgetGuardrailsSection() {
   const [snapshot, setSnapshot] = useState<BudgetSnapshot | null>(null);
   const [form, setForm] = useState<BudgetFormState | null>(null);
-  const [advancedOpen, setAdvancedOpen] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -309,17 +229,6 @@ export function BudgetGuardrailsSection() {
       const parsed = data as BudgetSnapshot;
       setSnapshot(parsed);
       setForm(buildFormState(parsed.policy));
-      setAdvancedOpen(
-        Object.fromEntries(
-          runtimes.map((runtime) => [
-            runtime.id,
-            Boolean(
-              parsed.policy.runtimes[runtime.id].dailyTokenCap ||
-                parsed.policy.runtimes[runtime.id].monthlyTokenCap
-            ),
-          ])
-        )
-      );
     } catch (fetchError) {
       setError(
         fetchError instanceof Error
@@ -371,471 +280,345 @@ export function BudgetGuardrailsSection() {
     }
   }
 
+  const activeRuntimes = useMemo(() => {
+    if (!snapshot) {
+      return [] as RuntimeSetupState[];
+    }
+    return Object.values(snapshot.runtimeStates).filter((runtime) => runtime.configured);
+  }, [snapshot]);
+
   if (loading || !snapshot || !form) {
     return (
       <Card className="surface-card">
         <CardHeader>
           <CardTitle>Cost &amp; Usage Guardrails</CardTitle>
-          <CardDescription>Loading budget policy and current usage windows.</CardDescription>
+          <CardDescription>Loading budget policy, runtime setup, and pricing data.</CardDescription>
         </CardHeader>
       </Card>
     );
   }
 
-  const blockedStatuses = snapshot.statuses.filter((status) => status.health === "blocked");
-  const warningStatuses = snapshot.statuses.filter((status) => status.health === "warning");
-  const groupedStatuses = snapshot.statuses.reduce<Record<string, BudgetStatus[]>>(
-    (acc, status) => {
-      const key = status.scopeId;
-      acc[key] ??= [];
-      acc[key].push(status);
-      return acc;
-    },
-    {}
-  );
+  const overallDaily = getStatus(snapshot.statuses, "overall", "daily");
+  const overallMonthly = getStatus(snapshot.statuses, "overall", "monthly");
+  const blocked = snapshot.statuses.filter((status) => status.health === "blocked");
+  const warnings = snapshot.statuses.filter((status) => status.health === "warning");
+  const claudeAllocation = deriveClaudeAllocation(form);
+  const claudeRuntime = snapshot.runtimeStates["claude-code"];
+  const showSplitSlider = activeRuntimes.length === 2;
 
   return (
     <Card className="surface-card">
-      <CardHeader>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <CardTitle className="flex items-center gap-2">
-              <Wallet className="h-5 w-5" />
-              Cost &amp; Usage Guardrails
-            </CardTitle>
-            <CardDescription>
-              Set optional daily and monthly spend caps for all runtime activity.
-              Runtime sections keep spend as the primary control, show derived
-              token guidance from recent blended pricing, and tuck hard token
-              ceilings into an advanced section.
-            </CardDescription>
-          </div>
-          <div className="grid gap-3 md:grid-cols-3">
-            <div className="surface-card-muted flex items-start gap-3 rounded-xl px-4 py-3">
-              <div className="rounded-lg bg-destructive/10 p-2 text-destructive">
-                <ShieldAlert className="h-4 w-4" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Blocked now
-                </p>
-                <p className="mt-1 text-lg font-semibold">{blockedStatuses.length}</p>
-              </div>
-            </div>
-            <div className="surface-card-muted flex items-start gap-3 rounded-xl px-4 py-3">
-              <div className="rounded-lg bg-status-warning/10 p-2 text-status-warning">
-                <AlertTriangle className="h-4 w-4" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Near cap
-                </p>
-                <p className="mt-1 text-lg font-semibold">{warningStatuses.length}</p>
-              </div>
-            </div>
-            <div className="surface-card-muted flex items-start gap-3 rounded-xl px-4 py-3">
-              <div className="rounded-lg bg-info/10 p-2 text-info">
-                <RotateCcw className="h-4 w-4" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Reset windows
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Day: {formatResetAt(snapshot.dailyResetAtIso)}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Month: {formatResetAt(snapshot.monthlyResetAtIso)}
-                </p>
-              </div>
-            </div>
-          </div>
+      <CardHeader className="space-y-4">
+        <div className="space-y-2">
+          <CardTitle className="flex items-center gap-2">
+            <Wallet className="h-5 w-5" />
+            Cost &amp; Usage Guardrails
+          </CardTitle>
+          <CardDescription>
+            Set one monthly budget, let Stagent derive daily pacing, and keep provider spend
+            splits aligned with the runtimes you actually have configured.
+          </CardDescription>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="surface-panel rounded-xl p-4">
-          <div className="flex items-start gap-3">
-            {blockedStatuses.length > 0 ? (
+
+        {blocked.length > 0 ? (
+          <div className="surface-card-muted rounded-2xl border border-destructive/20 bg-destructive/8 p-4">
+            <div className="flex items-start gap-3">
               <ShieldAlert className="mt-0.5 h-4 w-4 text-destructive" />
-            ) : (
+              <div className="space-y-1">
+                <p className="text-sm font-semibold">Spend is currently blocked</p>
+                <p className="text-sm text-muted-foreground">
+                  {blocked[0]?.scopeLabel} hit its {blocked[0]?.window} cap. New paid work stays
+                  blocked until the next reset.
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : warnings.length > 0 ? (
+          <div className="surface-card-muted rounded-2xl border border-status-warning/25 bg-status-warning/8 p-4">
+            <div className="flex items-start gap-3">
               <AlertTriangle className="mt-0.5 h-4 w-4 text-status-warning" />
-            )}
-            <div className="space-y-1 text-sm text-muted-foreground">
-              <p>
-                Warning notifications are emitted once per window when usage
-                reaches 80% of a configured cap.
-              </p>
-              <p>
-                Blocked attempts are recorded in the usage ledger with zero cost
-                so later audit views can explain why work did not start.
-              </p>
+              <div className="space-y-1">
+                <p className="text-sm font-semibold">Spend is approaching a cap</p>
+                <p className="text-sm text-muted-foreground">
+                  {warnings[0]?.scopeLabel} is close to its {warnings[0]?.window} spend limit.
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        ) : null}
+      </CardHeader>
 
-        <div className="space-y-4">
-          <div className="space-y-3">
-            <div>
-              <SectionEyebrow icon={Landmark} label="Global Guardrails" />
-              <h3 className="text-sm font-semibold">Overall spend caps</h3>
-              <p className="text-xs text-muted-foreground">
-                Leave an input blank to keep that window unlimited.
-              </p>
-            </div>
-            <div className="grid gap-3 md:grid-cols-2">
-              <label className="space-y-2">
-                <span className="text-sm font-medium">Daily spend cap (USD)</span>
-                <Input
-                  className="surface-control"
-                  inputMode="decimal"
-                  placeholder="Unlimited"
-                  value={form.overallDailySpendCapUsd}
-                  onChange={(event) =>
-                    setForm((current) =>
-                      current
-                        ? {
-                            ...current,
-                            overallDailySpendCapUsd: event.target.value,
-                          }
-                        : current
-                    )
-                  }
-                />
-              </label>
-              <label className="space-y-2">
-                <span className="text-sm font-medium">Monthly spend cap (USD)</span>
-                <Input
-                  className="surface-control"
-                  inputMode="decimal"
-                  placeholder="Unlimited"
-                  value={form.overallMonthlySpendCapUsd}
-                  onChange={(event) =>
-                    setForm((current) =>
-                      current
-                        ? {
-                            ...current,
-                            overallMonthlySpendCapUsd: event.target.value,
-                          }
-                        : current
-                    )
-                  }
-                />
-              </label>
-            </div>
+      <CardContent className="space-y-6">
+        {activeRuntimes.length === 0 ? (
+          <div className="surface-panel rounded-2xl p-4 text-sm text-muted-foreground">
+            Configure Claude and/or OpenAI first. Guardrails adapt to the runtimes that are
+            currently set up.
           </div>
-
-          <Separator />
-
-          <div className="space-y-4">
-            {runtimes.map((runtime) => (
-              <div key={runtime.id} className="surface-card-muted rounded-xl p-4">
-                <div className="mb-3">
-                  <SectionEyebrow icon={Wallet} label="Runtime Budget" />
-                  <h3 className="mt-1 text-sm font-semibold">{runtime.label}</h3>
+        ) : (
+          <>
+            <div className="surface-panel rounded-2xl p-4">
+              <div className="space-y-3">
+                <div>
+                  <SectionEyebrow icon={Wallet} label="Monthly Budget" />
+                  <h3 className="mt-1 text-sm font-semibold">Overall spend cap</h3>
                   <p className="text-xs text-muted-foreground">
-                    {runtime.description}
+                    Leave blank to keep spend unlimited. Daily pacing is derived automatically.
                   </p>
                 </div>
-                <div className="grid gap-3 md:grid-cols-2">
-                  <label className="space-y-2">
-                    <span className="text-sm font-medium">Daily spend cap (USD)</span>
-                    <Input
-                      className="surface-control"
-                      inputMode="decimal"
-                      placeholder="Unlimited"
-                      value={form.runtimes[runtime.id].dailySpendCapUsd}
-                      onChange={(event) =>
-                        setForm((current) =>
-                          current
-                            ? {
-                                ...current,
-                                runtimes: {
-                                  ...current.runtimes,
-                                  [runtime.id]: {
-                                    ...current.runtimes[runtime.id],
-                                    dailySpendCapUsd: event.target.value,
-                                  },
-                                },
-                              }
-                            : current
-                        )
-                      }
-                    />
-                  </label>
-                  <label className="space-y-2">
-                    <span className="text-sm font-medium">Monthly spend cap (USD)</span>
-                    <Input
-                      className="surface-control"
-                      inputMode="decimal"
-                      placeholder="Unlimited"
-                      value={form.runtimes[runtime.id].monthlySpendCapUsd}
-                      onChange={(event) =>
-                        setForm((current) =>
-                          current
-                            ? {
-                                ...current,
-                                runtimes: {
-                                  ...current.runtimes,
-                                  [runtime.id]: {
-                                    ...current.runtimes[runtime.id],
-                                    monthlySpendCapUsd: event.target.value,
-                                  },
-                                },
-                              }
-                            : current
-                        )
-                      }
-                    />
-                  </label>
-                </div>
-                {(() => {
-                  const dailySpendStatus = getStatus(
-                    snapshot.statuses,
-                    runtime.id,
-                    "daily",
-                    "spend"
-                  );
-                  const dailyTokenStatus = getStatus(
-                    snapshot.statuses,
-                    runtime.id,
-                    "daily",
-                    "tokens"
-                  );
-                  const monthlySpendStatus = getStatus(
-                    snapshot.statuses,
-                    runtime.id,
-                    "monthly",
-                    "spend"
-                  );
-                  const monthlyTokenStatus = getStatus(
-                    snapshot.statuses,
-                    runtime.id,
-                    "monthly",
-                    "tokens"
-                  );
-                  const dailyEstimate = deriveTokenEstimate({
-                    spendCapUsd: form.runtimes[runtime.id].dailySpendCapUsd,
-                    primarySpendStatus: dailySpendStatus,
-                    primaryTokenStatus: dailyTokenStatus,
-                    fallbackSpendStatus: monthlySpendStatus,
-                    fallbackTokenStatus: monthlyTokenStatus,
-                  });
-                  const monthlyEstimate = deriveTokenEstimate({
-                    spendCapUsd: form.runtimes[runtime.id].monthlySpendCapUsd,
-                    primarySpendStatus: monthlySpendStatus,
-                    primaryTokenStatus: monthlyTokenStatus,
-                    fallbackSpendStatus: dailySpendStatus,
-                    fallbackTokenStatus: dailyTokenStatus,
-                  });
-                  const hasAdvancedTokenCaps =
-                    Boolean(form.runtimes[runtime.id].dailyTokenCap) ||
-                    Boolean(form.runtimes[runtime.id].monthlyTokenCap);
 
-                  return (
-                    <>
-                      <div className="mt-4 grid gap-3 md:grid-cols-2">
-                        <div className="surface-panel rounded-lg px-3 py-3">
-                          <SectionEyebrow icon={Coins} label="Derived Guidance" />
-                          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                            Estimated Daily Token Budget
-                          </p>
-                          {dailyEstimate.sourceLabel ? (
-                            <>
-                              <p className="mt-1 text-sm font-semibold">
-                                ~{formatEstimatedTokens(dailyEstimate.estimatedBudgetTokens)}
-                              </p>
-                              <p className="mt-1 text-xs text-muted-foreground">
-                                ~{formatEstimatedTokens(dailyEstimate.estimatedRemainingTokens)} remaining headroom based on {dailyEstimate.sourceLabel}.
-                              </p>
-                            </>
-                          ) : (
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              Set a spend cap and accumulate priced usage to see a token estimate.
-                            </p>
-                          )}
-                        </div>
-                        <div className="surface-panel rounded-lg px-3 py-3">
-                          <SectionEyebrow icon={Coins} label="Derived Guidance" />
-                          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                            Estimated Monthly Token Budget
-                          </p>
-                          {monthlyEstimate.sourceLabel ? (
-                            <>
-                              <p className="mt-1 text-sm font-semibold">
-                                ~{formatEstimatedTokens(monthlyEstimate.estimatedBudgetTokens)}
-                              </p>
-                              <p className="mt-1 text-xs text-muted-foreground">
-                                ~{formatEstimatedTokens(monthlyEstimate.estimatedRemainingTokens)} remaining headroom based on {monthlyEstimate.sourceLabel}.
-                              </p>
-                            </>
-                          ) : (
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              Set a spend cap and accumulate priced usage to see a token estimate.
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="mt-4 rounded-lg border border-border/60 bg-background/40">
-                        <button
-                          type="button"
-                          className="flex w-full items-center justify-between gap-3 cursor-pointer px-3 py-2 text-left text-sm font-medium"
-                          onClick={() =>
-                            setAdvancedOpen((current) => ({
-                              ...current,
-                              [runtime.id]: !(current[runtime.id] ?? hasAdvancedTokenCaps),
-                            }))
-                          }
-                        >
-                          <span className="flex items-center gap-2">
-                            <ShieldCheck className="h-4 w-4 text-muted-foreground" />
-                            {advancedOpen[runtime.id] ?? hasAdvancedTokenCaps
-                              ? "Hide advanced token guardrails"
-                              : "Show advanced token guardrails"}
-                          </span>
-                          {advancedOpen[runtime.id] ?? hasAdvancedTokenCaps ? (
-                            <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                          )}
-                        </button>
-                        {(advancedOpen[runtime.id] ?? hasAdvancedTokenCaps) && (
-                          <div className="border-t border-border/60 px-3 py-3">
-                          <SectionEyebrow icon={ShieldCheck} label="Advanced Override" />
-                          <p className="mb-3 text-xs text-muted-foreground">
-                            Use hard token caps only when you need a strict technical ceiling. Spend caps remain the primary operator control.
-                          </p>
-                          <div className="grid gap-3 md:grid-cols-2">
-                            <label className="space-y-2">
-                              <span className="text-sm font-medium">Daily token cap</span>
-                              <Input
-                                className="surface-control"
-                                inputMode="numeric"
-                                placeholder="Unlimited"
-                                value={form.runtimes[runtime.id].dailyTokenCap}
-                                onChange={(event) =>
-                                  setForm((current) =>
-                                    current
-                                      ? {
-                                          ...current,
-                                          runtimes: {
-                                            ...current.runtimes,
-                                            [runtime.id]: {
-                                              ...current.runtimes[runtime.id],
-                                              dailyTokenCap: event.target.value,
-                                            },
-                                          },
-                                        }
-                                      : current
-                                  )
-                                }
-                              />
-                            </label>
-                            <label className="space-y-2">
-                              <span className="text-sm font-medium">Monthly token cap</span>
-                              <Input
-                                className="surface-control"
-                                inputMode="numeric"
-                                placeholder="Unlimited"
-                                value={form.runtimes[runtime.id].monthlyTokenCap}
-                                onChange={(event) =>
-                                  setForm((current) =>
-                                    current
-                                      ? {
-                                          ...current,
-                                          runtimes: {
-                                            ...current.runtimes,
-                                            [runtime.id]: {
-                                              ...current.runtimes[runtime.id],
-                                              monthlyTokenCap: event.target.value,
-                                            },
-                                          },
-                                        }
-                                      : current
-                                  )
-                                }
-                              />
-                            </label>
-                          </div>
-                          </div>
-                        )}
-                      </div>
-                    </>
-                  );
-                })()}
+                <label className="space-y-2">
+                  <span className="text-sm font-medium">Monthly spend cap (USD)</span>
+                  <Input
+                    className="surface-control"
+                    inputMode="decimal"
+                    placeholder="Unlimited"
+                    value={form.overallMonthlySpendCapUsd}
+                    onChange={(event) =>
+                      setForm((current) =>
+                        current
+                          ? applyBudgetSplit(
+                              current,
+                              event.target.value,
+                              activeRuntimes.map((runtime) => runtime.runtimeId)
+                            )
+                          : current
+                      )
+                    }
+                  />
+                </label>
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
+
+            {showSplitSlider ? (
+              <div className="surface-panel rounded-2xl p-4">
+                <div className="space-y-4">
+                  <div>
+                    <SectionEyebrow icon={ArrowRight} label="Provider Allocation" />
+                    <h3 className="mt-1 text-sm font-semibold">Split the monthly cap</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Adjust one slider. Stagent writes the provider cap figures for you.
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-3 text-sm">
+                      <span className="font-medium">Claude</span>
+                      <span className="text-muted-foreground">{claudeAllocation}%</span>
+                    </div>
+                    <Slider
+                      value={[claudeAllocation]}
+                      min={0}
+                      max={100}
+                      step={1}
+                      onValueChange={(value) =>
+                        setForm((current) =>
+                          current
+                            ? applyBudgetSplit(
+                                current,
+                                current.overallMonthlySpendCapUsd,
+                                activeRuntimes.map((runtime) => runtime.runtimeId),
+                                value[0] ?? 50
+                              )
+                            : current
+                        )
+                      }
+                    />
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {activeRuntimes.map((runtime) => (
+                        <div key={runtime.runtimeId} className="rounded-xl border border-border/60 bg-background/40 p-3">
+                          <p className="text-sm font-medium">{runtime.label}</p>
+                          <p className="mt-1 text-lg font-semibold">
+                            {formatCurrencyUsd(
+                              toNullableNumber(form.runtimes[runtime.runtimeId].monthlySpendCapUsd)
+                            )}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {runtime.runtimeId === "claude-code"
+                              ? `${claudeAllocation}% of the monthly cap`
+                              : `${100 - claudeAllocation}% of the monthly cap`}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="grid gap-3 md:grid-cols-2">
+                {activeRuntimes.map((runtime) => (
+                  <div key={runtime.runtimeId} className="surface-panel rounded-2xl p-4">
+                    <SectionEyebrow icon={Wallet} label="Provider Cap" />
+                    <h3 className="mt-1 text-sm font-semibold">{runtime.label}</h3>
+                    <p className="mt-2 text-lg font-semibold">
+                      {formatCurrencyUsd(
+                        toNullableNumber(form.runtimes[runtime.runtimeId].monthlySpendCapUsd)
+                      )}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {runtime.label} receives the full monthly cap because it is the only
+                      configured paid provider.
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {claudeRuntime.configured && claudeRuntime.billingMode === "subscription" ? (
+              <div className="surface-panel rounded-2xl p-4">
+                <div className="space-y-3">
+                  <div>
+                    <SectionEyebrow icon={CalendarClock} label="Claude Plan" />
+                    <h3 className="mt-1 text-sm font-semibold">Claude OAuth billing</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Claude OAuth uses fixed monthly subscription pricing for budgeting instead
+                      of token-priced usage.
+                    </p>
+                  </div>
+
+                  <div className="grid gap-3 md:grid-cols-[minmax(0,240px)_1fr]">
+                    <Select
+                      value={form.runtimes["claude-code"].claudeOAuthPlan ?? "pro"}
+                      onValueChange={(value: ClaudeOAuthPlan) =>
+                        setForm((current) =>
+                          current
+                            ? {
+                                ...current,
+                                runtimes: {
+                                  ...current.runtimes,
+                                  "claude-code": {
+                                    ...current.runtimes["claude-code"],
+                                    claudeOAuthPlan: value,
+                                  },
+                                },
+                              }
+                            : current
+                        )
+                      }
+                    >
+                      <SelectTrigger className="surface-control">
+                        <SelectValue placeholder="Select Claude plan" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(CLAUDE_PLAN_LABELS).map(([value, label]) => (
+                          <SelectItem key={value} value={value}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <div className="rounded-xl border border-border/60 bg-background/40 p-3">
+                      <p className="text-sm font-medium">Budget basis</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Dashboard pacing and guardrail enforcement use the selected plan price as
+                        Claude&apos;s monthly cost basis. Activity and tokens still appear in audit
+                        views.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            <PricingRegistryPanel
+              initialSnapshot={snapshot.pricing}
+              showClaudePlans={claudeRuntime.billingMode === "subscription"}
+            />
+
+            <div className="surface-panel rounded-2xl p-4">
+              <div className="space-y-3">
+                <div>
+                  <SectionEyebrow icon={ArrowRight} label="Live Status" />
+                  <h3 className="mt-1 text-sm font-semibold">Current spend pacing</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Derived daily pacing is recalculated from the monthly cap using the current
+                    calendar month.
+                  </p>
+                </div>
+
+                <div className="grid gap-3 lg:grid-cols-2">
+                  <div className="rounded-xl border border-border/60 bg-background/40 p-3">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Overall monthly spend
+                    </p>
+                    <p className="mt-1 text-lg font-semibold">
+                      {overallMonthly
+                        ? `${formatMicrosAsUsd(overallMonthly.currentValue)} / ${overallMonthly.limitValue == null ? "Unlimited" : formatMicrosAsUsd(overallMonthly.limitValue)}`
+                        : "Unavailable"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Resets {formatResetAt(snapshot.monthlyResetAtIso)}
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-border/60 bg-background/40 p-3">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Today pace vs derived daily cap
+                    </p>
+                    <p className="mt-1 text-lg font-semibold">
+                      {overallDaily
+                        ? `${formatMicrosAsUsd(overallDaily.currentValue)} / ${overallDaily.limitValue == null ? "Unlimited" : formatMicrosAsUsd(overallDaily.limitValue)}`
+                        : "Unavailable"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Resets {formatResetAt(snapshot.dailyResetAtIso)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  {activeRuntimes.map((runtime) => {
+                    const monthlyStatus = getStatus(snapshot.statuses, runtime.runtimeId, "monthly");
+                    const dailyStatus = getStatus(snapshot.statuses, runtime.runtimeId, "daily");
+
+                    return (
+                      <div
+                        key={runtime.runtimeId}
+                        className="flex flex-col gap-2 rounded-xl border border-border/60 bg-background/40 px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
+                      >
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium">{runtime.label}</p>
+                            <Badge variant="outline">
+                              {runtime.billingMode === "subscription" ? "Plan priced" : "Usage priced"}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Monthly {monthlyStatus ? formatMicrosAsUsd(monthlyStatus.currentValue) : "Unavailable"}
+                            {monthlyStatus?.limitValue != null
+                              ? ` of ${formatMicrosAsUsd(monthlyStatus.limitValue)}`
+                              : " of Unlimited"}
+                          </p>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Today {dailyStatus ? formatMicrosAsUsd(dailyStatus.currentValue) : "Unavailable"}
+                          {dailyStatus?.limitValue != null
+                            ? ` / ${formatMicrosAsUsd(dailyStatus.limitValue)}`
+                            : " / Unlimited"}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
 
         <div className="flex items-center justify-between gap-3">
           <div className="text-xs text-muted-foreground">
-            Blank fields are treated as unlimited. Changes reset warning dedupe for the current windows.
+            Warning notifications fire once per window after 80% of a configured cap is reached.
           </div>
           <Button onClick={handleSave} disabled={saving}>
             {saving ? "Saving..." : "Save guardrails"}
           </Button>
         </div>
 
-        {error && (
+        {error ? (
           <div className="rounded-xl border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
             {error}
           </div>
-        )}
-
-        <Separator />
-
-        <div className="space-y-3">
-          <div>
-            <SectionEyebrow icon={ArrowRight} label="Live Status" />
-            <h3 className="text-sm font-semibold">Current window status</h3>
-            <p className="text-xs text-muted-foreground">
-              Live usage is derived from the normalized usage ledger in the
-              machine&apos;s local timezone.
-            </p>
-          </div>
-          <div className="grid gap-4 xl:grid-cols-3">
-            {Object.entries(groupedStatuses).map(([scopeId, statuses]) => (
-              <div key={scopeId} className="surface-card-muted rounded-xl p-4">
-                <div className="mb-3 flex items-center justify-between gap-2">
-                  <h4 className="text-sm font-semibold">{statuses[0]?.scopeLabel}</h4>
-                  {statuses.some((status) => status.health === "blocked")
-                    ? <Badge variant="destructive">Blocked</Badge>
-                    : statuses.some((status) => status.health === "warning")
-                      ? (
-                        <Badge
-                          variant="outline"
-                          className="border-status-warning/30 bg-status-warning/10 text-status-warning"
-                        >
-                          Warning
-                        </Badge>
-                      )
-                      : <Badge variant="success">Healthy</Badge>}
-                </div>
-                <div className="space-y-2">
-                  {statuses.map((status) => (
-                    <div key={status.id} className="surface-panel rounded-lg px-3 py-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <div>
-                          <p className="text-sm font-medium capitalize">
-                            {status.window} {status.metric}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {formatStatusValue(status)} / {formatStatusLimit(status)}
-                          </p>
-                        </div>
-                        {healthBadge(status)}
-                      </div>
-                      <p className="mt-2 text-xs text-muted-foreground">
-                        Resets {formatResetAt(status.resetAtIso)}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        ) : null}
       </CardContent>
     </Card>
   );

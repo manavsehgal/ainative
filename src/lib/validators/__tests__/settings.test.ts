@@ -99,24 +99,18 @@ describe("updateOpenAISettingsSchema", () => {
 });
 
 describe("updateBudgetPolicySchema", () => {
-  it("accepts nullable budget caps for all windows", () => {
+  it("accepts a monthly-only budget payload", () => {
     const result = updateBudgetPolicySchema.safeParse({
       overall: {
-        dailySpendCapUsd: null,
         monthlySpendCapUsd: 50,
       },
       runtimes: {
         "claude-code": {
-          dailySpendCapUsd: 10,
           monthlySpendCapUsd: 100,
-          dailyTokenCap: 10000,
-          monthlyTokenCap: null,
+          claudeOAuthPlan: "max_5x",
         },
         "openai-codex-app-server": {
-          dailySpendCapUsd: null,
           monthlySpendCapUsd: null,
-          dailyTokenCap: null,
-          monthlyTokenCap: 50000,
         },
       },
     });
@@ -127,21 +121,34 @@ describe("updateBudgetPolicySchema", () => {
   it("rejects zero and negative values", () => {
     const result = updateBudgetPolicySchema.safeParse({
       overall: {
-        dailySpendCapUsd: 0,
         monthlySpendCapUsd: -1,
       },
       runtimes: {
         "claude-code": {
-          dailySpendCapUsd: null,
-          monthlySpendCapUsd: null,
-          dailyTokenCap: 0,
-          monthlyTokenCap: null,
+          monthlySpendCapUsd: 0,
+          claudeOAuthPlan: "pro",
         },
         "openai-codex-app-server": {
-          dailySpendCapUsd: null,
           monthlySpendCapUsd: null,
-          dailyTokenCap: null,
-          monthlyTokenCap: null,
+        },
+      },
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects invalid Claude OAuth plans", () => {
+    const result = updateBudgetPolicySchema.safeParse({
+      overall: {
+        monthlySpendCapUsd: 300,
+      },
+      runtimes: {
+        "claude-code": {
+          monthlySpendCapUsd: 150,
+          claudeOAuthPlan: "enterprise",
+        },
+        "openai-codex-app-server": {
+          monthlySpendCapUsd: 150,
         },
       },
     });

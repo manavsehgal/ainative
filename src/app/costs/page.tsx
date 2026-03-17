@@ -1,4 +1,3 @@
-import { listRuntimeCatalog } from "@/lib/agents/runtime/catalog";
 import { CostDashboard } from "@/components/costs/cost-dashboard";
 import { getBudgetGuardrailSnapshot } from "@/lib/settings/budget-guardrails";
 import {
@@ -13,8 +12,6 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const runtimeCatalog = listRuntimeCatalog();
-const validRuntimeIds = new Set<string>(runtimeCatalog.map((runtime) => runtime.id));
 const validDateRanges = new Set(["7d", "30d", "90d", "all"]);
 const validStatuses = new Set<UsageLedgerStatus>([
   "completed",
@@ -38,10 +35,6 @@ function toScalar(value: string | string[] | undefined) {
 
 function resolveDateRange(value: string | undefined) {
   return value && validDateRanges.has(value) ? value : "30d";
-}
-
-function resolveRuntime(value: string | undefined) {
-  return value && validRuntimeIds.has(value) ? value : "all";
 }
 
 function resolveStatus(value: string | undefined) {
@@ -102,25 +95,6 @@ function fillSeries<T extends { day: string }>(
   return keys.map((key) => values.get(key) ?? 0);
 }
 
-function findOverallSpend(
-  statuses: Array<{
-    scopeId: string;
-    window: string;
-    metric: string;
-    currentValue: number;
-  }>,
-  window: "daily" | "monthly"
-) {
-  return (
-    statuses.find(
-      (status) =>
-        status.scopeId === "overall" &&
-        status.window === window &&
-        status.metric === "spend"
-    )?.currentValue ?? 0
-  );
-}
-
 function buildRuntimeBreakdown(
   rows: ProviderModelBreakdownEntry[]
 ): Array<{
@@ -149,9 +123,7 @@ function buildRuntimeBreakdown(
   for (const row of rows) {
     const current = totals.get(row.runtimeId) ?? {
       runtimeId: row.runtimeId,
-      label:
-        runtimeCatalog.find((runtime) => runtime.id === row.runtimeId)?.label ??
-        row.runtimeId,
+      label: row.runtimeId,
       providerId: row.providerId,
       costMicros: 0,
       totalTokens: 0,
@@ -191,22 +163,34 @@ export default async function CostsPage({
 }) {
   const params = await searchParams;
   const dateRange = resolveDateRange(toScalar(params.range));
-  const runtimeId = resolveRuntime(toScalar(params.runtime));
   const status = resolveStatus(toScalar(params.status));
   const activityType = resolveActivityType(toScalar(params.activity));
-
   const rangeStart = getRangeStart(dateRange);
-  const [spendRows30, tokenRows30, monthBreakdown, filteredBreakdown, auditEntries, budgetSnapshot] =
+
+  const budgetSnapshot = await getBudgetGuardrailSnapshot();
+  const configuredRuntimeIds = Object.values(budgetSnapshot.runtimeStates)
+    .filter((runtime) => runtime.configured)
+    .map((runtime) => runtime.runtimeId);
+  const requestedRuntime = toScalar(params.runtime);
+  const runtimeId =
+    requestedRuntime && configuredRuntimeIds.includes(requestedRuntime as never)
+      ? requestedRuntime
+      : "all";
+
+  const [spendRows30, tokenRows30, monthBreakdown, filteredBreakdown, auditEntries] =
     await Promise.all([
       getDailySpendTotals(30),
       getDailyTokenTotals(30),
       getProviderModelBreakdown({ startedAt: startOfCurrentMonth() }),
-      getProviderModelBreakdown(
-        rangeStart ? { startedAt: rangeStart } : undefined
-      ),
+      getProviderModelBreakdown(rangeStart ? { startedAt: rangeStart } : undefined),
       listUsageAuditEntries({
         limit: 100,
-        runtimeIds: runtimeId === "all" ? undefined : [runtimeId],
+        runtimeIds:
+          runtimeId === "all"
+            ? configuredRuntimeIds.length > 0
+              ? configuredRuntimeIds
+              : undefined
+            : [runtimeId],
         statuses: status === "all" ? undefined : [status as UsageLedgerStatus],
         activityTypes:
           activityType === "all"
@@ -214,15 +198,36 @@ export default async function CostsPage({
             : [activityType as UsageActivityType],
         startedAt: rangeStart,
       }),
-      getBudgetGuardrailSnapshot(),
     ]);
+
+  const configuredBreakdown = filteredBreakdown.filter((row) =>
+    configuredRuntimeIds.length > 0
+      ? configuredRuntimeIds.includes(row.runtimeId as never)
+      : true
+  );
+  const configuredMonthBreakdown = monthBreakdown.filter((row) =>
+    configuredRuntimeIds.length > 0
+      ? configuredRuntimeIds.includes(row.runtimeId as never)
+      : true
+  );
 
   const spendSeries30 = fillSeries(30, spendRows30, (row) => row.costMicros);
   const tokenSeries30 = fillSeries(30, tokenRows30, (row) => row.totalTokens);
-  const runtimeBreakdown = buildRuntimeBreakdown(filteredBreakdown);
-  const monthTokens = monthBreakdown.reduce(
+  const runtimeBreakdown = buildRuntimeBreakdown(configuredBreakdown).map((row) => ({
+    ...row,
+    label: budgetSnapshot.runtimeStates[row.runtimeId as keyof typeof budgetSnapshot.runtimeStates]
+      ?.label ?? row.runtimeId,
+  }));
+  const monthTokens = configuredMonthBreakdown.reduce(
     (sum, row) => sum + row.totalTokens,
     0
+  );
+
+  const overallDaily = budgetSnapshot.statuses.find(
+    (status) => status.scopeId === "overall" && status.window === "daily"
+  );
+  const overallMonthly = budgetSnapshot.statuses.find(
+    (status) => status.scopeId === "overall" && status.window === "monthly"
   );
 
   return (
@@ -235,9 +240,12 @@ export default async function CostsPage({
           activityType,
         }}
         summary={{
-          todaySpendMicros: findOverallSpend(budgetSnapshot.statuses, "daily"),
-          monthSpendMicros: findOverallSpend(budgetSnapshot.statuses, "monthly"),
-          todayTokens: tokenSeries30[tokenSeries30.length - 1] ?? 0,
+          monthSpendMicros: overallMonthly?.currentValue ?? 0,
+          derivedDailyBudgetMicros: overallDaily?.limitValue ?? 0,
+          remainingMonthlyHeadroomMicros: Math.max(
+            (overallMonthly?.limitValue ?? 0) - (overallMonthly?.currentValue ?? 0),
+            0
+          ),
           monthTokens,
         }}
         trendSeries={{
@@ -247,8 +255,10 @@ export default async function CostsPage({
           tokens30: tokenSeries30,
         }}
         budgetStatuses={budgetSnapshot.statuses}
+        runtimeStates={budgetSnapshot.runtimeStates}
+        pricing={budgetSnapshot.pricing}
         runtimeBreakdown={runtimeBreakdown}
-        modelBreakdown={filteredBreakdown}
+        modelBreakdown={configuredBreakdown}
         auditEntries={auditEntries}
       />
     </div>

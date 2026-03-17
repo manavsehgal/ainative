@@ -32,6 +32,14 @@ export function AuthStatusBadge({ connected, apiKeySource }: AuthStatusBadgeProp
     );
   }
 
+  if (apiKeySource === "unknown") {
+    return (
+      <Badge variant="outline" className="border-success/50 text-success">
+        Connected
+      </Badge>
+    );
+  }
+
   return (
     <Badge variant="outline" className="border-success/50 text-success">
       Connected via {sourceLabels[apiKeySource]}

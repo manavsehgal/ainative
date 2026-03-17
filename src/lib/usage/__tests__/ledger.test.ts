@@ -85,13 +85,13 @@ describe("usage ledger", () => {
     const priced = rows.find((row) => row.modelId === "claude-sonnet-4-20250514");
     expect(priced?.costMicros).toBe(10_500);
     expect(priced?.status).toBe("completed");
-    expect(priced?.pricingVersion).toBe("registry-2026-03-15");
+    expect(priced?.pricingVersion).toBe("anthropic-claude-sonnet");
 
     // Unknown model: fallback pricing (conservative Opus-tier for OpenAI: $10/$30)
     const fallback = rows.find((row) => row.modelId === "codex-unknown");
     expect(fallback?.costMicros).toBeGreaterThan(0);
     expect(fallback?.status).toBe("completed");
-    expect(fallback?.pricingVersion).toBe("registry-2026-03-15-fallback");
+    expect(fallback?.pricingVersion).toBe("openai-fallback");
 
     // Null modelId: truly unknown
     const unknown = rows.find((row) => row.modelId === null);

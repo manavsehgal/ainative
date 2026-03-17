@@ -7,6 +7,7 @@ export const SETTINGS_KEYS = {
   PERMISSIONS_ALLOW: "permissions.allow",
   BUDGET_POLICY: "usage.budgetPolicy",
   BUDGET_WARNING_STATE: "usage.budgetWarningState",
+  PRICING_REGISTRY: "usage.pricingRegistry",
 } as const;
 
 export type AuthMethod = "api_key" | "oauth";

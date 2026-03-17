@@ -12,6 +12,7 @@ import {
 import { getSetting, setSetting } from "./helpers";
 import {
   budgetPolicySchema,
+  claudeOAuthPlanSchema,
   type BudgetPolicy,
   type RuntimeBudgetPolicy,
   type UpdateBudgetPolicyInput,
@@ -21,11 +22,20 @@ import {
   resolveUsageActivityType,
   type UsageActivityType,
 } from "@/lib/usage/ledger";
+import {
+  getClaudeOAuthPlanPrice,
+  getPricingRegistrySnapshot,
+  type PricingRegistrySnapshot,
+} from "@/lib/usage/pricing-registry";
+import {
+  getRuntimeSetupStates,
+  listConfiguredRuntimeIds,
+  type RuntimeSetupState,
+} from "./runtime-setup";
 
 const WARNING_THRESHOLD = 0.8;
 
 type BudgetWindow = "daily" | "monthly";
-type BudgetMetric = "spend" | "tokens";
 type BudgetHealth = "unlimited" | "ok" | "warning" | "blocked";
 type BudgetScopeId = "overall" | AgentRuntimeId;
 
@@ -34,12 +44,11 @@ interface UsageAggregate {
   totalTokens: number;
 }
 
-interface BudgetWindowStatus {
+export interface BudgetWindowStatus {
   id: string;
   scopeId: BudgetScopeId;
   scopeLabel: string;
   runtimeId: AgentRuntimeId | null;
-  metric: BudgetMetric;
   window: BudgetWindow;
   currentValue: number;
   limitValue: number | null;
@@ -52,11 +61,13 @@ interface BudgetWarningState {
   [statusId: string]: string;
 }
 
-interface BudgetSnapshot {
+export interface BudgetSnapshot {
   policy: BudgetPolicy;
   statuses: Array<BudgetWindowStatus & { resetAtIso: string }>;
   dailyResetAtIso: string;
   monthlyResetAtIso: string;
+  runtimeStates: Record<AgentRuntimeId, RuntimeSetupState>;
+  pricing: PricingRegistrySnapshot;
 }
 
 interface BudgetGuardInput {
@@ -69,19 +80,34 @@ interface BudgetGuardInput {
   failTaskOnBlock?: boolean;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function toPositiveNumber(value: unknown) {
+  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+    return value;
+  }
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  }
+  return null;
+}
+
+function roundUsd(value: number) {
+  return Math.round(value * 100) / 100;
+}
+
 function createEmptyRuntimeBudgetPolicy(): RuntimeBudgetPolicy {
   return {
-    dailySpendCapUsd: null,
     monthlySpendCapUsd: null,
-    dailyTokenCap: null,
-    monthlyTokenCap: null,
   };
 }
 
 export function createEmptyBudgetPolicy(): BudgetPolicy {
   return {
     overall: {
-      dailySpendCapUsd: null,
       monthlySpendCapUsd: null,
     },
     runtimes: Object.fromEntries(
@@ -91,6 +117,10 @@ export function createEmptyBudgetPolicy(): BudgetPolicy {
       ])
     ) as BudgetPolicy["runtimes"],
   };
+}
+
+function daysInMonth(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
 }
 
 function formatWindowKey(window: BudgetWindow, date: Date) {
@@ -116,10 +146,6 @@ function formatMicrosAsUsd(micros: number) {
   }).format(micros / 1_000_000);
 }
 
-function formatTokenCount(tokens: number) {
-  return new Intl.NumberFormat("en-US").format(tokens);
-}
-
 function formatResetAt(date: Date) {
   return new Intl.DateTimeFormat("en-US", {
     dateStyle: "medium",
@@ -129,6 +155,13 @@ function formatResetAt(date: Date) {
 
 function usdToMicros(value: number | null) {
   return value == null ? null : Math.round(value * 1_000_000);
+}
+
+function deriveDailyMicros(monthlySpendCapUsd: number | null, now: Date) {
+  if (monthlySpendCapUsd == null) {
+    return null;
+  }
+  return Math.round((monthlySpendCapUsd * 1_000_000) / daysInMonth(now));
 }
 
 function getBudgetWindowBounds(now = new Date()) {
@@ -167,6 +200,86 @@ async function setWarningState(state: BudgetWarningState) {
   await setSetting(SETTINGS_KEYS.BUDGET_WARNING_STATE, JSON.stringify(state));
 }
 
+function normalizePersistedBudgetPolicy(raw: unknown): BudgetPolicy {
+  const fallback = createEmptyBudgetPolicy();
+  if (!isRecord(raw)) {
+    return fallback;
+  }
+
+  const overall = isRecord(raw.overall) ? raw.overall : {};
+  const runtimes = isRecord(raw.runtimes) ? raw.runtimes : {};
+
+  const next = createEmptyBudgetPolicy();
+  next.overall.monthlySpendCapUsd =
+    toPositiveNumber(overall.monthlySpendCapUsd) ??
+    toPositiveNumber(overall.dailySpendCapUsd);
+
+  for (const runtimeId of SUPPORTED_AGENT_RUNTIMES) {
+    const runtimeRaw = isRecord(runtimes[runtimeId]) ? runtimes[runtimeId] : {};
+    const runtime = next.runtimes[runtimeId];
+    runtime.monthlySpendCapUsd =
+      toPositiveNumber(runtimeRaw.monthlySpendCapUsd) ??
+      toPositiveNumber(runtimeRaw.dailySpendCapUsd);
+
+    if (
+      runtimeId === "claude-code" &&
+      typeof runtimeRaw.claudeOAuthPlan === "string"
+    ) {
+      const parsedPlan = claudeOAuthPlanSchema.safeParse(runtimeRaw.claudeOAuthPlan);
+      if (parsedPlan.success) {
+        runtime.claudeOAuthPlan = parsedPlan.data;
+      }
+    }
+  }
+
+  return next;
+}
+
+function normalizeBudgetPolicyWithRuntimeSetup(input: {
+  policy: BudgetPolicy;
+  runtimeStates: Record<AgentRuntimeId, RuntimeSetupState>;
+}): BudgetPolicy {
+  const next = createEmptyBudgetPolicy();
+  const overallMonthly = input.policy.overall.monthlySpendCapUsd;
+  const configuredRuntimeIds = listConfiguredRuntimeIds(input.runtimeStates);
+
+  next.overall.monthlySpendCapUsd = overallMonthly;
+  next.runtimes["claude-code"].claudeOAuthPlan =
+    input.policy.runtimes["claude-code"].claudeOAuthPlan ??
+    (input.runtimeStates["claude-code"].billingMode === "subscription"
+      ? "pro"
+      : undefined);
+
+  if (overallMonthly == null || configuredRuntimeIds.length === 0) {
+    return next;
+  }
+
+  if (configuredRuntimeIds.length === 1) {
+    next.runtimes[configuredRuntimeIds[0]].monthlySpendCapUsd = overallMonthly;
+    return next;
+  }
+
+  const activeRuntimeIds = configuredRuntimeIds.filter(
+    (runtimeId) => input.runtimeStates[runtimeId].configured
+  );
+  const totalRequested = activeRuntimeIds.reduce(
+    (sum, runtimeId) => sum + (input.policy.runtimes[runtimeId].monthlySpendCapUsd ?? 0),
+    0
+  );
+
+  const claudeShare =
+    totalRequested > 0
+      ? (input.policy.runtimes["claude-code"].monthlySpendCapUsd ?? 0) / totalRequested
+      : 0.5;
+  const claudeMonthly = roundUsd(overallMonthly * claudeShare);
+  const openAIMonthly = roundUsd(Math.max(overallMonthly - claudeMonthly, 0));
+
+  next.runtimes["claude-code"].monthlySpendCapUsd = claudeMonthly;
+  next.runtimes["openai-codex-app-server"].monthlySpendCapUsd = openAIMonthly;
+
+  return next;
+}
+
 export async function getBudgetPolicy(): Promise<BudgetPolicy> {
   const raw = await getSetting(SETTINGS_KEYS.BUDGET_POLICY);
   if (!raw) {
@@ -174,8 +287,8 @@ export async function getBudgetPolicy(): Promise<BudgetPolicy> {
   }
 
   try {
-    const parsed = budgetPolicySchema.safeParse(JSON.parse(raw));
-    return parsed.success ? parsed.data : createEmptyBudgetPolicy();
+    const parsed = JSON.parse(raw) as unknown;
+    return normalizePersistedBudgetPolicy(parsed);
   } catch {
     return createEmptyBudgetPolicy();
   }
@@ -185,12 +298,21 @@ export async function setBudgetPolicy(
   input: UpdateBudgetPolicyInput
 ): Promise<BudgetPolicy> {
   const parsed = budgetPolicySchema.parse(input);
-  await setSetting(SETTINGS_KEYS.BUDGET_POLICY, JSON.stringify(parsed));
+  const runtimeStates = await getRuntimeSetupStates();
+  const normalized = normalizeBudgetPolicyWithRuntimeSetup({
+    policy: parsed,
+    runtimeStates,
+  });
+  await setSetting(SETTINGS_KEYS.BUDGET_POLICY, JSON.stringify(normalized));
   await setWarningState({});
-  return parsed;
+  return normalized;
 }
 
-async function getUsageAggregates(now = new Date()) {
+async function getUsageAggregates(
+  policy: BudgetPolicy,
+  runtimeStates: Record<AgentRuntimeId, RuntimeSetupState>,
+  now = new Date()
+) {
   const { dailyStart, dailyEnd, monthlyStart, monthlyEnd } =
     getBudgetWindowBounds(now);
 
@@ -209,10 +331,6 @@ async function getUsageAggregates(now = new Date()) {
       )
     );
 
-  const overall = {
-    daily: { costMicros: 0, totalTokens: 0 },
-    monthly: { costMicros: 0, totalTokens: 0 },
-  };
   const runtimes = Object.fromEntries(
     SUPPORTED_AGENT_RUNTIMES.map((runtimeId) => [
       runtimeId,
@@ -231,21 +349,40 @@ async function getUsageAggregates(now = new Date()) {
       return;
     }
 
-    const costMicros = row.costMicros ?? 0;
-    const totalTokens = row.totalTokens ?? 0;
-
-    overall.monthly.costMicros += costMicros;
-    overall.monthly.totalTokens += totalTokens;
-    runtimes[runtimeId].monthly.costMicros += costMicros;
-    runtimes[runtimeId].monthly.totalTokens += totalTokens;
+    runtimes[runtimeId].monthly.costMicros += row.costMicros ?? 0;
+    runtimes[runtimeId].monthly.totalTokens += row.totalTokens ?? 0;
 
     if (row.finishedAt >= dailyStart && row.finishedAt < dailyEnd) {
-      overall.daily.costMicros += costMicros;
-      overall.daily.totalTokens += totalTokens;
-      runtimes[runtimeId].daily.costMicros += costMicros;
-      runtimes[runtimeId].daily.totalTokens += totalTokens;
+      runtimes[runtimeId].daily.costMicros += row.costMicros ?? 0;
+      runtimes[runtimeId].daily.totalTokens += row.totalTokens ?? 0;
     }
   });
+
+  if (runtimeStates["claude-code"].billingMode === "subscription") {
+    const planPriceUsd = await getClaudeOAuthPlanPrice(
+      policy.runtimes["claude-code"].claudeOAuthPlan
+    );
+    const monthlyMicros = usdToMicros(planPriceUsd) ?? 0;
+    const dailyMicros = Math.round(monthlyMicros / daysInMonth(now));
+    runtimes["claude-code"].monthly.costMicros = monthlyMicros;
+    runtimes["claude-code"].daily.costMicros = dailyMicros;
+  }
+
+  const overall = {
+    daily: { costMicros: 0, totalTokens: 0 },
+    monthly: { costMicros: 0, totalTokens: 0 },
+  };
+
+  for (const runtimeId of SUPPORTED_AGENT_RUNTIMES) {
+    if (!runtimeStates[runtimeId].configured) {
+      continue;
+    }
+
+    overall.daily.costMicros += runtimes[runtimeId].daily.costMicros;
+    overall.daily.totalTokens += runtimes[runtimeId].daily.totalTokens;
+    overall.monthly.costMicros += runtimes[runtimeId].monthly.costMicros;
+    overall.monthly.totalTokens += runtimes[runtimeId].monthly.totalTokens;
+  }
 
   return {
     overall,
@@ -258,7 +395,6 @@ function buildStatus(input: {
   scopeId: BudgetScopeId;
   scopeLabel: string;
   runtimeId: AgentRuntimeId | null;
-  metric: BudgetMetric;
   window: BudgetWindow;
   currentValue: number;
   limitValue: number | null;
@@ -281,11 +417,10 @@ function buildStatus(input: {
   }
 
   return {
-    id: `${input.scopeId}:${input.window}:${input.metric}`,
+    id: `${input.scopeId}:${input.window}:spend`,
     scopeId: input.scopeId,
     scopeLabel: input.scopeLabel,
     runtimeId: input.runtimeId,
-    metric: input.metric,
     window: input.window,
     currentValue: input.currentValue,
     limitValue: input.limitValue,
@@ -297,7 +432,9 @@ function buildStatus(input: {
 
 function buildBudgetStatuses(
   policy: BudgetPolicy,
-  aggregates: Awaited<ReturnType<typeof getUsageAggregates>>
+  runtimeStates: Record<AgentRuntimeId, RuntimeSetupState>,
+  aggregates: Awaited<ReturnType<typeof getUsageAggregates>>,
+  now: Date
 ) {
   const statuses: BudgetWindowStatus[] = [];
 
@@ -306,17 +443,15 @@ function buildBudgetStatuses(
       scopeId: "overall",
       scopeLabel: "Overall",
       runtimeId: null,
-      metric: "spend",
       window: "daily",
       currentValue: aggregates.overall.daily.costMicros,
-      limitValue: usdToMicros(policy.overall.dailySpendCapUsd),
+      limitValue: deriveDailyMicros(policy.overall.monthlySpendCapUsd, now),
       resetAt: aggregates.dailyEnd,
     }),
     buildStatus({
       scopeId: "overall",
       scopeLabel: "Overall",
       runtimeId: null,
-      metric: "spend",
       window: "monthly",
       currentValue: aggregates.overall.monthly.costMicros,
       limitValue: usdToMicros(policy.overall.monthlySpendCapUsd),
@@ -324,7 +459,11 @@ function buildBudgetStatuses(
     })
   );
 
-  SUPPORTED_AGENT_RUNTIMES.forEach((runtimeId) => {
+  for (const runtimeId of SUPPORTED_AGENT_RUNTIMES) {
+    if (!runtimeStates[runtimeId].configured) {
+      continue;
+    }
+
     const runtime = getRuntimeCatalogEntry(runtimeId);
     const runtimePolicy = policy.runtimes[runtimeId];
     const usage = aggregates.runtimes[runtimeId];
@@ -334,62 +473,32 @@ function buildBudgetStatuses(
         scopeId: runtimeId,
         scopeLabel: runtime.label,
         runtimeId,
-        metric: "spend",
         window: "daily",
         currentValue: usage.daily.costMicros,
-        limitValue: usdToMicros(runtimePolicy.dailySpendCapUsd),
+        limitValue: deriveDailyMicros(runtimePolicy.monthlySpendCapUsd, now),
         resetAt: aggregates.dailyEnd,
       }),
       buildStatus({
         scopeId: runtimeId,
         scopeLabel: runtime.label,
         runtimeId,
-        metric: "spend",
         window: "monthly",
         currentValue: usage.monthly.costMicros,
         limitValue: usdToMicros(runtimePolicy.monthlySpendCapUsd),
         resetAt: aggregates.monthlyEnd,
-      }),
-      buildStatus({
-        scopeId: runtimeId,
-        scopeLabel: runtime.label,
-        runtimeId,
-        metric: "tokens",
-        window: "daily",
-        currentValue: usage.daily.totalTokens,
-        limitValue: runtimePolicy.dailyTokenCap,
-        resetAt: aggregates.dailyEnd,
-      }),
-      buildStatus({
-        scopeId: runtimeId,
-        scopeLabel: runtime.label,
-        runtimeId,
-        metric: "tokens",
-        window: "monthly",
-        currentValue: usage.monthly.totalTokens,
-        limitValue: runtimePolicy.monthlyTokenCap,
-        resetAt: aggregates.monthlyEnd,
       })
     );
-  });
+  }
 
   return statuses;
 }
 
 function describeBudgetStatus(status: BudgetWindowStatus) {
-  const metricLabel = status.metric === "spend" ? "spend" : "token usage";
-  const currentLabel =
-    status.metric === "spend"
-      ? formatMicrosAsUsd(status.currentValue)
-      : formatTokenCount(status.currentValue);
+  const currentLabel = formatMicrosAsUsd(status.currentValue);
   const limitLabel =
-    status.limitValue == null
-      ? "Unlimited"
-      : status.metric === "spend"
-        ? formatMicrosAsUsd(status.limitValue)
-        : formatTokenCount(status.limitValue);
+    status.limitValue == null ? "Unlimited" : formatMicrosAsUsd(status.limitValue);
 
-  return `${status.scopeLabel} ${status.window} ${metricLabel} is ${currentLabel} of ${limitLabel}. Resets ${formatResetAt(status.resetAt)}.`;
+  return `${status.scopeLabel} ${status.window} spend is ${currentLabel} of ${limitLabel}. Resets ${formatResetAt(status.resetAt)}.`;
 }
 
 async function createBudgetNotification(input: {
@@ -428,7 +537,7 @@ async function emitWarningNotifications(
     const percent = status.ratio == null ? 0 : Math.round(status.ratio * 100);
     await createBudgetNotification({
       taskId,
-      title: `${status.scopeLabel} ${status.window} ${status.metric} at ${percent}%`,
+      title: `${status.scopeLabel} ${status.window} spend at ${percent}%`,
       body: describeBudgetStatus(status),
     });
     warningState[status.id] = windowKey;
@@ -518,8 +627,15 @@ export async function enforceBudgetGuardrails(input: BudgetGuardInput) {
   const runtimeId = resolveAgentRuntime(input.runtimeId ?? DEFAULT_AGENT_RUNTIME);
   const policy = await getBudgetPolicy();
   const warningState = await getWarningState();
-  const aggregates = await getUsageAggregates();
-  const statuses = buildBudgetStatuses(policy, aggregates).filter(
+  const runtimeStates = await getRuntimeSetupStates();
+
+  if (!runtimeStates[runtimeId].configured) {
+    return;
+  }
+
+  const now = new Date();
+  const aggregates = await getUsageAggregates(policy, runtimeStates, now);
+  const statuses = buildBudgetStatuses(policy, runtimeStates, aggregates, now).filter(
     (status) => status.scopeId === "overall" || status.runtimeId === runtimeId
   );
 
@@ -535,7 +651,7 @@ export async function enforceBudgetGuardrails(input: BudgetGuardInput) {
   }
 
   const runtime = getRuntimeCatalogEntry(runtimeId);
-  const title = `${runtime.label} blocked by ${blocked.window} ${blocked.metric} cap`;
+  const title = `${runtime.label} blocked by ${blocked.window} spend cap`;
   const body = describeBudgetStatus(blocked);
 
   await createBudgetNotification({
@@ -574,17 +690,29 @@ export async function enforceTaskBudgetGuardrails(
 }
 
 export async function getBudgetGuardrailSnapshot(): Promise<BudgetSnapshot> {
-  const policy = await getBudgetPolicy();
-  const aggregates = await getUsageAggregates();
-  const statuses = buildBudgetStatuses(policy, aggregates).map((status) => ({
-    ...status,
-    resetAtIso: status.resetAt.toISOString(),
-  }));
+  const [runtimeStates, pricing] = await Promise.all([
+    getRuntimeSetupStates(),
+    getPricingRegistrySnapshot(),
+  ]);
+  const policy = normalizeBudgetPolicyWithRuntimeSetup({
+    policy: await getBudgetPolicy(),
+    runtimeStates,
+  });
+  const now = new Date();
+  const aggregates = await getUsageAggregates(policy, runtimeStates, now);
+  const statuses = buildBudgetStatuses(policy, runtimeStates, aggregates, now).map(
+    (status) => ({
+      ...status,
+      resetAtIso: status.resetAt.toISOString(),
+    })
+  );
 
   return {
     policy,
     statuses,
     dailyResetAtIso: aggregates.dailyEnd.toISOString(),
     monthlyResetAtIso: aggregates.monthlyEnd.toISOString(),
+    runtimeStates,
+    pricing,
   };
 }
