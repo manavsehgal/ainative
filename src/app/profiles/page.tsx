@@ -1,13 +1,16 @@
 import { listProfiles, isBuiltin } from "@/lib/agents/profiles/registry";
+import { sortProfilesByName } from "@/lib/agents/profiles/sort";
 import { ProfileBrowser } from "@/components/profiles/profile-browser";
 
 export const dynamic = "force-dynamic";
 
 export default async function ProfilesPage() {
-  const profiles = listProfiles().map((p) => ({
-    ...p,
-    isBuiltin: isBuiltin(p.id),
-  }));
+  const profiles = sortProfilesByName(
+    listProfiles().map((p) => ({
+      ...p,
+      isBuiltin: isBuiltin(p.id),
+    }))
+  );
 
   return (
     <div className="gradient-ocean-mist min-h-[100dvh] p-4 sm:p-6">

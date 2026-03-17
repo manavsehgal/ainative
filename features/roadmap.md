@@ -72,6 +72,7 @@ Features that enhance the product but aren't essential for first use — homepag
 | Feature                                                             | Priority | Status    | Dependencies                                                                                             |
 | ------------------------------------------------------------------- | -------- | --------- | -------------------------------------------------------------------------------------------------------- |
 | [ambient-approval-toast](ambient-approval-toast.md)                 | P1       | completed | app-shell, inbox-notifications, tool-permission-persistence                                              |
+| [learned-context-ux-completion](learned-context-ux-completion.md)   | P2       | planned   | agent-self-improvement, agent-profile-catalog                                                            |
 | [micro-visualizations](micro-visualizations.md)                     | P2       | completed | homepage-dashboard, monitoring-dashboard, project-management                                             |
 | [command-palette-enhancement](command-palette-enhancement.md)       | P2       | completed | app-shell                                                                                                |
 | [operational-surface-foundation](operational-surface-foundation.md) | P2       | completed | app-shell, homepage-dashboard, task-board, inbox-notifications, monitoring-dashboard, project-management |

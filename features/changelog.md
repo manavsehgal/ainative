@@ -2,6 +2,12 @@
 
 ## 2026-03-17
 
+### Groomed
+- `learned-context-ux-completion` (P2, planned) — bounded UX follow-up from the agent self-improvement browser evaluation
+  - Split the remaining learned-context UX gaps out of `agent-self-improvement` instead of reopening the completed base feature
+  - Scoped the follow-up to user-facing gaps only: unified diff rendering, clearer rollback/snapshot visibility, version-count grammar, and deterministic profile ordering for discoverability
+  - Explicitly left reset/delete context tooling, compact-toast editing, and additional warning-tier polish out of scope for this slice
+
 ### Groomed & Implemented (E2E Test Report Recommendations)
 - Assessed 5 recommendations from `output/done-agent-e2e-test-report.md` (2026-03-15, 10/10 pass)
 - `e2e-test-automation` (P2, completed) — API-level E2E test suite

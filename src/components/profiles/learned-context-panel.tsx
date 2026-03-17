@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   Brain,
+  ChevronDown,
+  ChevronUp,
   Check,
   Clock,
   History,
@@ -10,7 +12,6 @@ import {
   Plus,
   RotateCcw,
   Sparkles,
-  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -21,6 +22,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { LightMarkdown } from "@/components/shared/light-markdown";
 import { formatTimestamp } from "@/lib/utils/format-timestamp";
 import type { LearnedContextRow } from "@/lib/db/schema";
+import {
+  buildLearnedContextHistoryEntries,
+  hasMeaningfulDerivedDiff,
+} from "@/lib/utils/learned-context-history";
 
 interface ContextHistoryResponse {
   history: LearnedContextRow[];
@@ -50,6 +55,7 @@ export function LearnedContextPanel({ profileId }: LearnedContextPanelProps) {
   const [addingManual, setAddingManual] = useState(false);
   const [manualContent, setManualContent] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [expandedDiffs, setExpandedDiffs] = useState<Record<string, boolean>>({});
 
   const refresh = useCallback(async () => {
     try {
@@ -66,6 +72,10 @@ export function LearnedContextPanel({ profileId }: LearnedContextPanelProps) {
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    setExpandedDiffs({});
+  }, [profileId]);
 
   async function handleAddManual() {
     if (!manualContent.trim()) return;
@@ -122,6 +132,7 @@ export function LearnedContextPanel({ profileId }: LearnedContextPanelProps) {
   }
 
   const history = data?.history ?? [];
+  const entries = buildLearnedContextHistoryEntries(history);
   const currentSize = data?.currentSize ?? 0;
   const limit = data?.limit ?? 8000;
   const usagePercent = Math.min((currentSize / limit) * 100, 100);
@@ -135,7 +146,7 @@ export function LearnedContextPanel({ profileId }: LearnedContextPanelProps) {
             Learned Context
             {history.length > 0 && (
               <Badge variant="secondary" className="text-xs">
-                {history.length} versions
+                {history.length} {history.length === 1 ? "version" : "versions"}
               </Badge>
             )}
           </CardTitle>
@@ -224,11 +235,25 @@ export function LearnedContextPanel({ profileId }: LearnedContextPanelProps) {
               Version History
             </div>
             <div className="max-h-72 space-y-2 overflow-y-auto">
-              {history.map((row) => {
+              {entries.map((entry) => {
+                const { row, snapshotContent, derivedDiff } = entry;
                 const badgeConfig = CHANGE_TYPE_BADGE[row.changeType] ?? {
                   variant: "outline" as const,
                   label: row.changeType,
                 };
+                const diffId = `learned-context-diff-${row.id}`;
+                const diffExpanded = expandedDiffs[row.id] ?? false;
+                const canShowDiff = hasMeaningfulDerivedDiff(derivedDiff);
+                const previewLabel =
+                  row.changeType === "rollback"
+                    ? "Restored Context"
+                    : row.changeType === "summarization"
+                      ? "Summarized Context"
+                      : row.changeType === "approved"
+                        ? "Approved Context"
+                        : row.changeType === "proposal"
+                          ? "Proposed Additions"
+                          : "Change Summary";
                 return (
                   <div
                     key={row.id}
@@ -270,13 +295,93 @@ export function LearnedContextPanel({ profileId }: LearnedContextPanelProps) {
                         </span>
                       </div>
                     </div>
-                    {row.diff && (
-                      <LightMarkdown
-                        content={row.diff}
-                        maxHeight="max-h-24"
-                        className="mt-2 rounded-md bg-background/50 p-2"
-                      />
-                    )}
+                    <div className="mt-3 space-y-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                          {previewLabel}
+                        </p>
+                        {canShowDiff && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 px-2 text-xs"
+                            aria-expanded={diffExpanded}
+                            aria-controls={diffId}
+                            onClick={() =>
+                              setExpandedDiffs((current) => ({
+                                ...current,
+                                [row.id]: !current[row.id],
+                              }))
+                            }
+                          >
+                            {diffExpanded ? (
+                              <ChevronUp className="mr-1 h-3 w-3" />
+                            ) : (
+                              <ChevronDown className="mr-1 h-3 w-3" />
+                            )}
+                            {diffExpanded ? "Hide Diff" : "Show Diff"}
+                          </Button>
+                        )}
+                      </div>
+
+                      {snapshotContent ? (
+                        <LightMarkdown
+                          content={snapshotContent}
+                          maxHeight="max-h-28"
+                          className="rounded-md bg-background/50 p-2"
+                        />
+                      ) : row.diff ? (
+                        <LightMarkdown
+                          content={row.diff}
+                          maxHeight="max-h-24"
+                          className="rounded-md bg-background/50 p-2"
+                        />
+                      ) : null}
+
+                      {canShowDiff && diffExpanded && derivedDiff && (
+                        <div
+                          id={diffId}
+                          className="surface-scroll rounded-md border border-border/60 bg-background/60 p-2"
+                        >
+                          <div className="mb-2 flex items-center justify-between gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                            <span>Unified Diff</span>
+                            <span>
+                              {derivedDiff.previousVersion === null
+                                ? "Initial version"
+                                : `vs v${derivedDiff.previousVersion}`}
+                            </span>
+                          </div>
+                          <div className="max-h-44 space-y-1 overflow-y-auto font-mono text-xs">
+                            {derivedDiff.lines.map((line, index) => {
+                              const toneClass =
+                                line.kind === "added"
+                                  ? "bg-status-completed/10 text-status-completed"
+                                  : line.kind === "removed"
+                                    ? "bg-destructive/10 text-destructive"
+                                    : "bg-muted/40 text-muted-foreground";
+                              const prefix =
+                                line.kind === "added"
+                                  ? "+"
+                                  : line.kind === "removed"
+                                    ? "-"
+                                    : " ";
+
+                              return (
+                                <div
+                                  key={`${row.id}-diff-${index}`}
+                                  className={`grid grid-cols-[auto_minmax(0,1fr)] gap-2 rounded-sm px-2 py-1 ${toneClass}`}
+                                >
+                                  <span aria-hidden="true">{prefix}</span>
+                                  <span className="whitespace-pre-wrap break-words">
+                                    {line.value || " "}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
               })}

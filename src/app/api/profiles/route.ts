@@ -1,28 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 import { listProfiles, createProfile, isBuiltin } from "@/lib/agents/profiles/registry";
+import { sortProfilesByName } from "@/lib/agents/profiles/sort";
 import { ProfileConfigSchema } from "@/lib/validators/profile";
 
 export async function GET() {
-  const profiles = listProfiles().map((p) => ({
-    id: p.id,
-    name: p.name,
-    description: p.description,
-    domain: p.domain,
-    tags: p.tags,
-    skillMd: p.skillMd,
-    allowedTools: p.allowedTools,
-    mcpServers: p.mcpServers,
-    canUseToolPolicy: p.canUseToolPolicy,
-    maxTurns: p.maxTurns,
-    outputFormat: p.outputFormat,
-    version: p.version,
-    author: p.author,
-    source: p.source,
-    tests: p.tests,
-    supportedRuntimes: p.supportedRuntimes,
-    runtimeOverrides: p.runtimeOverrides,
-    isBuiltin: isBuiltin(p.id),
-  }));
+  const profiles = sortProfilesByName(
+    listProfiles().map((p) => ({
+      id: p.id,
+      name: p.name,
+      description: p.description,
+      domain: p.domain,
+      tags: p.tags,
+      skillMd: p.skillMd,
+      allowedTools: p.allowedTools,
+      mcpServers: p.mcpServers,
+      canUseToolPolicy: p.canUseToolPolicy,
+      maxTurns: p.maxTurns,
+      outputFormat: p.outputFormat,
+      version: p.version,
+      author: p.author,
+      source: p.source,
+      tests: p.tests,
+      supportedRuntimes: p.supportedRuntimes,
+      runtimeOverrides: p.runtimeOverrides,
+      isBuiltin: isBuiltin(p.id),
+    }))
+  );
 
   return NextResponse.json(profiles);
 }
