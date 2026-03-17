@@ -16,6 +16,10 @@ import {
   buildSwarmWorkerPrompt,
   getSwarmWorkflowStructure,
 } from "./swarm";
+import {
+  openLearningSession,
+  closeLearningSession,
+} from "@/lib/agents/learning-session";
 
 /**
  * Execute a workflow by advancing through its steps according to the pattern.
@@ -42,6 +46,10 @@ export async function executeWorkflow(workflowId: string): Promise<void> {
     payload: JSON.stringify({ workflowId, pattern: definition.pattern }),
     timestamp: new Date(),
   });
+
+  // Open a learning session to buffer context proposals during execution.
+  // Proposals are collected and presented as a single batch at workflow end.
+  openLearningSession(workflowId);
 
   // Loop pattern manages its own lifecycle — delegate fully
   if (definition.pattern === "loop") {
@@ -71,6 +79,11 @@ export async function executeWorkflow(workflowId: string): Promise<void> {
           error: error instanceof Error ? error.message : String(error),
         }),
         timestamp: new Date(),
+      });
+    } finally {
+      // Close learning session — flush buffered proposals as batch notification
+      await closeLearningSession(workflowId).catch((err) => {
+        console.error("[workflow-engine] Failed to close learning session:", err);
       });
     }
     return;
@@ -127,6 +140,11 @@ export async function executeWorkflow(workflowId: string): Promise<void> {
         error: error instanceof Error ? error.message : String(error),
       }),
       timestamp: new Date(),
+    });
+  } finally {
+    // Close learning session — flush buffered proposals as batch notification
+    await closeLearningSession(workflowId).catch((err) => {
+      console.error("[workflow-engine] Failed to close learning session:", err);
     });
   }
 }

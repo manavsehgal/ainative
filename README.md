@@ -54,7 +54,8 @@ Stagent ships a shared runtime registry that routes tasks, schedules, and workfl
 | 🚨 | **[Ambient Approvals](#ambient-approvals)** | Shell-level approval prompts that keep Inbox as the durable supervision queue |
 | 🔒 | **[Tool Permissions](#tool-permission-persistence)** | Trusted-tool policies with explicit "Always Allow" rules |
 | 📋 | **[Kanban Board](#kanban-board-operations)** | Inline editing, bulk operations, and persistent board state |
-| 🤖 | **[AI Assist → Workflows](#ai-assist--workflow-creation)** | Bridge task assist recommendations into governed workflow execution *(in progress)* |
+| 🤖 | **[AI Assist → Workflows](#ai-assist--workflow-creation)** | Bridge task assist recommendations into governed workflow execution |
+| 🧬 | **[Agent Self-Improvement](#agent-self-improvement)** | Agents learn patterns from execution history with human-approved context evolution |
 
 ---
 
@@ -71,6 +72,7 @@ Stagent ships a shared runtime registry that routes tasks, schedules, and workfl
 - **Provider runtime abstraction** — Tasks, schedules, workflows, task assist, and health checks route through shared runtime adapters instead of provider-specific entry points
 - **Reusable agent profiles** — Profiles define instructions, allowed tools, runtime tuning, and MCP configs for repeated use
 - **Permission pre-check** — Saved "Always Allow" patterns bypass the notification loop for trusted tools
+- **Learned context loop** — Pattern extraction → human approval → versioned context injection creates a supervised self-improvement cycle
 
 ---
 
@@ -113,7 +115,7 @@ Claude Agent SDK integration with the `canUseTool` polling pattern remains the d
 OpenAI Codex App Server is integrated as Stagent's second governed runtime. Codex-backed tasks preserve project working directories, document context, resumable thread IDs, inbox approval requests, user questions, and provider-labeled logs. The same runtime can also power task assist, scheduled firings, and workflow child tasks.
 
 #### Agent Profiles
-Profile-backed execution with specialist definitions for different job types. Each profile packages instructions, allowed tools, runtime tuning, and MCP server configuration so teams can reuse behavior intentionally instead of relying on ad hoc prompts. Workflow steps and schedules can reference profiles directly, and runtimes can be selected independently when provider support differs.
+Profile-backed execution with specialist definitions for different job types. Each profile packages instructions, allowed tools, max turns, and output format so teams can reuse behavior intentionally instead of relying on ad hoc prompts. Workflow steps and schedules can reference profiles directly, and runtimes can be selected independently when provider support differs.
 
 <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/profiles-list.png" alt="Stagent agent profiles" width="1200" />
 
@@ -143,9 +145,12 @@ AI-powered task creation: generate improved descriptions, break tasks into sub-t
 | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/dashboard-create-form-empty.png" alt="Empty task creation form" width="380" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/dashboard-create-form-ai-assist.png" alt="AI Assist suggestions panel" width="380" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/dashboard-create-form-ai-applied.png" alt="AI suggestions applied to form" width="380" /> |
 
 #### AI Assist → Workflow Creation
-*(In progress)* Bridge from AI task assist to workflow engine: when task assist recommends a multi-step plan, a "Create as Workflow" button converts the recommendation into a validated workflow definition with per-step profile assignments, dependency ordering, and pattern selection across all six workflow types. The `WorkflowConfirmationSheet` lets operators review and edit steps, profiles, and configuration before creating the workflow. A keyword-based profile suggestion fallback ensures steps get reasonable profile assignments even without the AI classifier.
+Bridge from AI task assist to workflow engine: when task assist recommends a multi-step plan, a "Create as Workflow" button converts the recommendation into a validated workflow definition with per-step profile assignments, dependency ordering, and pattern selection across all six workflow types. The `WorkflowConfirmationSheet` lets operators review and edit steps, profiles, and configuration before creating the workflow. A keyword-based profile suggestion fallback ensures steps get reasonable profile assignments even without the AI classifier.
 
 <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/dashboard-workflow-confirm.png" alt="Workflow creation from AI Assist" width="1200" />
+
+#### Agent Self-Improvement
+Agents learn from execution history through a human-approved instruction evolution loop. After each task completion, the pattern extractor analyzes logs and proposes context updates — concise behavioral rules the agent should follow in future runs. Operators approve, reject, or edit proposals before they take effect. Learned context is versioned with rollback support and size-limited summarization to prevent unbounded growth. A sweep agent can audit the codebase for improvement opportunities and create prioritized tasks from its findings.
 
 #### Session Management
 Resume failed or cancelled agent tasks with one click. Tracks retry counts (limit: 3), detects expired sessions, and provides atomic claim to prevent duplicate runs.
@@ -219,7 +224,7 @@ Configuration hub with provider-aware sections: Claude authentication (API key o
 The `npx stagent` entry point boots a Next.js server from the published npm package. It is built from `bin/cli.ts` into `dist/cli.js` using tsup, and serves as the primary distribution channel — no clone required.
 
 #### Database
-SQLite with WAL mode via better-sqlite3 + Drizzle ORM. Eight tables: `projects`, `tasks`, `workflows`, `agent_logs`, `notifications`, `documents`, `schedules`, `settings`. Self-healing bootstrap — tables are created on startup if missing.
+SQLite with WAL mode via better-sqlite3 + Drizzle ORM. Ten tables: `projects`, `tasks`, `workflows`, `agent_logs`, `notifications`, `documents`, `schedules`, `settings`, `learned_context`, `usage_ledger`. Self-healing bootstrap — tables are created on startup if missing.
 
 #### App Shell
 Responsive sidebar with collapsible icon-only mode, custom Stagent logo, tooltip navigation, dark/light/system theme, and OKLCH hue 250 blue-indigo color palette. Built on shadcn/ui (New York style) with PWA manifest and app icons. Routes: Home, Dashboard, Projects, Documents, Workflows, Profiles, Schedules, Inbox, Monitor, Settings.
@@ -258,32 +263,38 @@ npm run test:coverage  # Coverage report
 ```
 src/
 ├── app/                  # Next.js App Router pages
-│   ├── dashboard/        # Project overview
+│   ├── dashboard/        # Task kanban board
 │   ├── projects/[id]/    # Project detail
+│   ├── tasks/            # Task detail + creation (redirects to dashboard)
+│   ├── profiles/         # Agent profile gallery + detail + creation
 │   ├── documents/        # Document browser
-│   ├── workflows/        # Workflow management
+│   ├── workflows/        # Workflow management + blueprints
 │   ├── schedules/        # Schedule management
+│   ├── costs/            # Cost & usage dashboard
 │   ├── inbox/            # Notifications
 │   ├── monitor/          # Log streaming
 │   └── settings/         # Configuration
 ├── components/
 │   ├── dashboard/        # Homepage widgets + charts
 │   ├── tasks/            # Board, cards, panels
-│   ├── workflows/        # Workflow UI
+│   ├── profiles/         # Profile gallery, detail, form, learned context
+│   ├── workflows/        # Workflow UI + blueprints + swarm
 │   ├── documents/        # Document browser + upload
+│   ├── costs/            # Cost dashboard + filters
 │   ├── schedules/        # Schedule management
 │   ├── monitoring/       # Log viewer
 │   ├── notifications/    # Inbox + permission actions
-│   ├── settings/         # Auth, permissions, data mgmt
+│   ├── settings/         # Auth, permissions, budgets, data mgmt
 │   ├── shared/           # App shell, sidebar
 │   └── ui/               # shadcn/ui primitives
 └── lib/
-    ├── agents/           # Runtime adapters, provider integrations, profiles
+    ├── agents/           # Runtime adapters, profiles, learned context, pattern extraction
     ├── db/               # Schema, migrations
     ├── documents/        # Preprocessing + context builder
     ├── workflows/        # Engine + types + blueprints
     ├── schedules/        # Scheduler engine + interval parser
     ├── settings/         # Auth, permissions, helpers
+    ├── usage/            # Metering ledger + pricing registry
     ├── constants/        # Status transitions, colors
     ├── queries/          # Chart data aggregation
     ├── validators/       # Zod schemas
@@ -324,7 +335,7 @@ src/
 | **Profiles** | `/api/profiles` | GET | List agent profiles |
 | | `/api/profiles/[id]` | GET/PUT/DELETE | Profile CRUD |
 | | `/api/profiles/[id]/test` | POST | Run behavioral tests on a profile |
-| | `/api/profiles/[id]/context` | GET | Profile context for agent execution |
+| | `/api/profiles/[id]/context` | GET/POST/PATCH | Learned context: version history, manual add, approve/reject/rollback |
 | | `/api/profiles/import` | POST | Import profile from GitHub URL |
 | **Notifications** | `/api/notifications` | GET/POST | List and create notifications |
 | | `/api/notifications/[id]` | PATCH/DELETE | Update and delete notification |
@@ -357,7 +368,7 @@ All 14 features shipped across three layers:
 | **Core** | Project management, task board, agent integration, inbox notifications, monitoring dashboard |
 | **Polish** | Homepage dashboard, UX fixes, workflow engine, AI task assist, content handling, session management |
 
-### Post-MVP — Complete (25 features)
+### Post-MVP — Complete (27 features)
 
 | Category | Feature | What shipped |
 |----------|---------|-------------|
@@ -369,6 +380,8 @@ All 14 features shipped across three layers:
 | **Agent Intelligence** | Multi-Agent Routing | Profile registry (4 profiles), task classifier, per-step profile assignment |
 | | Autonomous Loop Execution | 4 stop conditions, iteration context chaining, pause/resume, loop status view |
 | | Multi-Agent Swarm | Mayor → worker pool → refinery orchestration with retryable stages |
+| | AI Assist → Workflows | Bridge task assist into workflow engine with profile assignment and pattern selection |
+| | Agent Self-Improvement | Pattern extraction from logs, human-approved context evolution, versioned rollback |
 | **Agent Profiles** | Agent Profile Catalog | 13 domain-specific profiles, GitHub import, behavioral testing, MCP passthrough |
 | | Workflow Blueprints | 8 templates, gallery, YAML editor, dynamic forms, GitHub import, lineage tracking |
 | **UI Enhancement** | Ambient Approvals | Shell-level approval presenter on any route for fast supervision |
@@ -384,24 +397,11 @@ All 14 features shipped across three layers:
 | | Tool Permission Persistence | "Always Allow" patterns, pre-check bypass, Settings management |
 | | Provider Runtimes | Shared runtime registry with Claude Code and OpenAI Codex App Server adapters |
 | | OpenAI Codex Runtime | Codex App Server integration with inbox approvals, logs, and thread resumption |
-| | npm Publish Readiness | `npx stagent` distribution channel with CLI bundling and package config |
 | | Cross-Provider Profiles | Profile compatibility layer ensuring profiles work across Claude and Codex runtimes |
 | | Parallel Fork/Join | 2-5 concurrent research branches with synthesis step |
 | **Governance** | Usage Metering Ledger | Provider-normalized token and spend tracking across all execution paths |
 | | Spend Budget Guardrails | Per-project and global budgets with enforcement and alerts |
 | | Cost & Usage Dashboard | Summary cards, trend views, provider/model breakdowns, budget audit visibility |
-
-### In Progress
-
-| Feature | Description |
-|---------|-------------|
-| **AI Assist → Workflow Creation** | Bridge AI task assist recommendations into the workflow engine with profile assignment and pattern selection |
-
-### Planned
-
-| Feature | Description |
-|---------|-------------|
-| **Agent Self-Improvement** | Agents learn patterns and update context with human approval |
 
 ---
 

@@ -58,6 +58,7 @@ Features that enhance the product but aren't essential for first use — homepag
 | [multi-agent-swarm](multi-agent-swarm.md) | P3 | completed | workflow-engine, multi-agent-routing |
 | [ai-assist-workflow-creation](ai-assist-workflow-creation.md) | P1 | completed | task-definition-ai, workflow-engine, agent-profile-catalog |
 | [agent-self-improvement](agent-self-improvement.md) | P3 | completed | workflow-engine, multi-agent-routing, autonomous-loop-execution |
+| [workflow-context-batching](workflow-context-batching.md) | P2 | completed | agent-self-improvement, workflow-engine |
 
 ### Agent Profiles
 
@@ -91,6 +92,14 @@ Features that enhance the product but aren't essential for first use — homepag
 | [npm-publish-readiness](npm-publish-readiness.md) | P3 | deferred | cli-bootstrap, database-schema, app-shell |
 | [cross-provider-profile-compatibility](cross-provider-profile-compatibility.md) | P2 | completed | provider-runtime-abstraction, openai-codex-app-server, agent-profile-catalog |
 | [parallel-research-fork-join](parallel-research-fork-join.md) | P2 | completed | workflow-engine, multi-agent-routing |
+| [tool-permission-presets](tool-permission-presets.md) | P2 | completed | tool-permission-persistence |
+
+### Runtime Quality
+
+| Feature | Priority | Status | Dependencies |
+|---------|----------|--------|--------------|
+| [sdk-runtime-hardening](sdk-runtime-hardening.md) | P2 | completed | provider-runtime-abstraction, usage-metering-ledger, spend-budget-guardrails, agent-self-improvement |
+| [e2e-test-automation](e2e-test-automation.md) | P2 | completed | provider-runtime-abstraction, workflow-engine, agent-profile-catalog |
 
 ### Governance & Analytics
 
@@ -136,7 +145,7 @@ content-handling (MVP, completed)
 - **Polish (parallel)**: P2 features are independent of each other, can be built in any order after agent-integration
 - **Document Management**: file-attachment-data-layer unblocks all document features; preprocessing and agent-context can run in parallel
 - **Completed**: `ai-assist-workflow-creation` bridges task assist into the workflow engine; all UI enhancement features are completed
-- **Remaining**: `agent-self-improvement` (P3, planned) is the last feature in the roadmap
+- **Runtime Quality**: `sdk-runtime-hardening` tracks cross-cutting SDK audit fixes that span provider-runtime, usage-metering, and budget-guardrails features
 
 Provider runtime chain:
 

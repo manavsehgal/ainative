@@ -73,9 +73,13 @@ export function ActivityFeed({ entries, hourlyActivity }: ActivityFeedProps) {
                       <span className="text-muted-foreground"> — {entry.taskTitle}</span>
                     )}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground" suppressHydrationWarning>
                     {new Date(entry.timestamp).toLocaleTimeString()}
-                    {entry.payload && ` · ${entry.payload.slice(0, 60)}${entry.payload.length > 60 ? "..." : ""}`}
+                    {entry.payload && (() => {
+                      const chars = Array.from(entry.payload);
+                      const truncated = chars.length > 60 ? chars.slice(0, 60).join("") + "..." : entry.payload;
+                      return ` · ${truncated}`;
+                    })()}
                   </p>
                 </div>
               </div>

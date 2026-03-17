@@ -88,6 +88,7 @@ export const notifications = sqliteTable(
         "agent_message",
         "budget_alert",
         "context_proposal",
+        "context_proposal_batch",
       ],
     }).notNull(),
     title: text("title").notNull(),

@@ -32,6 +32,8 @@ coverage/
 ideas/
 features/
 wireframes/
+methods/
+output/
 
 # claude code config
 .claude/*

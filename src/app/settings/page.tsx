@@ -1,6 +1,6 @@
 import { AuthConfigSection } from "@/components/settings/auth-config-section";
 import { OpenAIRuntimeSection } from "@/components/settings/openai-runtime-section";
-import { PermissionsSection } from "@/components/settings/permissions-section";
+import { PermissionsSections } from "@/components/settings/permissions-sections";
 import { DataManagementSection } from "@/components/settings/data-management-section";
 import { BudgetGuardrailsSection } from "@/components/settings/budget-guardrails-section";
 
@@ -19,7 +19,7 @@ export default function SettingsPage() {
         <AuthConfigSection />
         <OpenAIRuntimeSection />
         <BudgetGuardrailsSection />
-        <PermissionsSection />
+        <PermissionsSections />
         <DataManagementSection />
       </div>
     </div>

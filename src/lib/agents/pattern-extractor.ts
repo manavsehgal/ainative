@@ -6,6 +6,11 @@ import {
   proposeContextAddition,
 } from "./learned-context";
 import { runMetaCompletion } from "./runtime/claude";
+import {
+  getTaskWorkflowId,
+  hasLearningSession,
+  bufferProposal,
+} from "./learning-session";
 
 export interface PatternEntry {
   title: string;
@@ -96,6 +101,20 @@ Extract ONLY genuinely useful patterns — things that would help this profile a
         `### ${p.title} [${p.category}]\n${p.description}`
     )
     .join("\n\n");
+
+  // Check if this task is part of a workflow with an active learning session.
+  // If so, buffer the proposal instead of creating an individual notification.
+  const workflowId = getTaskWorkflowId(taskId);
+  if (workflowId && hasLearningSession(workflowId)) {
+    const rowId = await proposeContextAddition(
+      profileId,
+      taskId,
+      formattedAdditions,
+      { silent: true }
+    );
+    bufferProposal(workflowId, rowId);
+    return rowId;
+  }
 
   return proposeContextAddition(profileId, taskId, formattedAdditions);
 }

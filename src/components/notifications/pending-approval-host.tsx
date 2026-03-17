@@ -13,6 +13,7 @@ import {
 
 import { PermissionResponseActions } from "@/components/notifications/permission-response-actions";
 import { ContextProposalReview } from "@/components/profiles/context-proposal-review";
+import { BatchProposalReview } from "@/components/notifications/batch-proposal-review";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -44,6 +45,22 @@ function dedupePendingApprovals(items: PendingApprovalPayload[]) {
   ).sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
+}
+
+function parseBatchToolInput(toolInput: unknown): {
+  proposalIds: string[];
+  profileIds: string[];
+} {
+  try {
+    const parsed =
+      typeof toolInput === "string" ? JSON.parse(toolInput) : toolInput;
+    return {
+      proposalIds: Array.isArray(parsed?.proposalIds) ? parsed.proposalIds : [],
+      profileIds: Array.isArray(parsed?.profileIds) ? parsed.profileIds : [],
+    };
+  } catch {
+    return { proposalIds: [], profileIds: [] };
+  }
 }
 
 function buildContextLabel(payload: PendingApprovalPayload) {
@@ -127,7 +144,7 @@ function PendingApprovalDetail({
         <p className="mt-2 text-sm text-muted-foreground">
           {selected.compactSummary}
         </p>
-        {selected.body && (
+        {selected.body && selected.notificationType !== "context_proposal" && (
           <p className="mt-3 text-sm leading-6 text-muted-foreground">
             {selected.body}
           </p>
@@ -137,7 +154,19 @@ function PendingApprovalDetail({
         </p>
       </div>
 
-      {selected.notificationType === "context_proposal" ? (
+      {selected.notificationType === "context_proposal_batch" ? (
+        (() => {
+          const parsed = parseBatchToolInput(selected.toolInput);
+          return (
+            <BatchProposalReview
+              proposalIds={parsed.proposalIds}
+              profileIds={parsed.profileIds}
+              body={selected.body ?? ""}
+              onResponded={onResponded}
+            />
+          );
+        })()
+      ) : selected.notificationType === "context_proposal" ? (
         <ContextProposalReview
           notificationId={selected.notificationId}
           profileId={selected.toolName ?? ""}
@@ -405,7 +434,22 @@ export function PendingApprovalHost() {
             </div>
           </button>
 
-          {primary.notificationType === "context_proposal" ? (
+          {primary.notificationType === "context_proposal_batch" ? (
+            <div className="mt-3">
+              {(() => {
+                const parsed = parseBatchToolInput(primary.toolInput);
+                return (
+                  <BatchProposalReview
+                    proposalIds={parsed.proposalIds}
+                    profileIds={parsed.profileIds}
+                    body={primary.body ?? ""}
+                    onResponded={() => removeNotification(primary.notificationId)}
+                    compact
+                  />
+                );
+              })()}
+            </div>
+          ) : primary.notificationType === "context_proposal" ? (
             <div className="mt-3">
               <ContextProposalReview
                 notificationId={primary.notificationId}
@@ -474,7 +518,7 @@ export function PendingApprovalHost() {
         ) : (
           <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
             <DialogContent
-              className="max-w-2xl"
+              className="max-w-2xl max-h-[85dvh] flex flex-col"
               onCloseAutoFocus={(event) => {
                 event.preventDefault();
                 triggerRef.current?.focus();
@@ -487,13 +531,15 @@ export function PendingApprovalHost() {
                   the Inbox first.
                 </DialogDescription>
               </DialogHeader>
-              <PendingApprovalDetail
-                selected={selected}
-                overflow={overflowItems}
-                onResponded={() => removeNotification(selected.notificationId)}
-                onOpenInbox={handleOpenInbox}
-                onSelect={setSelectedId}
-              />
+              <div className="overflow-y-auto -mx-6 px-6 pb-1">
+                <PendingApprovalDetail
+                  selected={selected}
+                  overflow={overflowItems}
+                  onResponded={() => removeNotification(selected.notificationId)}
+                  onOpenInbox={handleOpenInbox}
+                  onSelect={setSelectedId}
+                />
+              </div>
             </DialogContent>
           </Dialog>
         ))}

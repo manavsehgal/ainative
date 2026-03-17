@@ -1,6 +1,6 @@
 {
   "name": "stagent",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "description": "Governed AI agent workspace for supervised local execution, workflows, documents, and provider runtimes.",
   "keywords": [
     "ai",
@@ -35,7 +35,7 @@
   "bugs": {
     "url": "https://github.com/manavsehgal/stagent/issues"
   },
-  "homepage": "https://github.com/manavsehgal/stagent#readme",
+  "homepage": "https://stagent.io",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
@@ -43,6 +43,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:e2e": "vitest run --config vitest.config.e2e.ts",
     "test:ui": "vitest --ui",
     "prepublishOnly": "npm run build:cli"
   },

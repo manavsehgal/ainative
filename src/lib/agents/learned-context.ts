@@ -58,14 +58,24 @@ function getNextVersion(profileId: string): number {
 // Proposal flow
 // ---------------------------------------------------------------------------
 
-/** Insert a context proposal and create a notification for human review */
+/**
+ * Insert a context proposal and optionally create a notification for human review.
+ *
+ * When `options.silent` is true, the proposal row is created but no notification
+ * is generated. This is used by the learning session system to buffer proposals
+ * during workflow execution — a batch notification is created when the session closes.
+ *
+ * Returns the learned_context row ID (not the notification ID) so callers can
+ * reference the proposal regardless of whether a notification was created.
+ */
 export async function proposeContextAddition(
   profileId: string,
   taskId: string,
-  additions: string
+  additions: string,
+  options?: { silent?: boolean }
 ): Promise<string> {
   const version = getNextVersion(profileId);
-  const notificationId = crypto.randomUUID();
+  const notificationId = options?.silent ? null : crypto.randomUUID();
   const rowId = crypto.randomUUID();
   const now = new Date();
 
@@ -83,19 +93,21 @@ export async function proposeContextAddition(
     createdAt: now,
   });
 
-  // Create notification for human review
-  await db.insert(notifications).values({
-    id: notificationId,
-    taskId,
-    type: "context_proposal",
-    title: `Context proposal for ${profileId}`,
-    body: additions.slice(0, 500),
-    toolName: profileId,
-    toolInput: JSON.stringify({ profileId, additions, learnedContextId: rowId }),
-    createdAt: now,
-  });
+  // Create notification for human review (unless silent)
+  if (notificationId) {
+    await db.insert(notifications).values({
+      id: notificationId,
+      taskId,
+      type: "context_proposal",
+      title: `Context proposal for ${profileId}`,
+      body: additions.slice(0, 500),
+      toolName: profileId,
+      toolInput: JSON.stringify({ profileId, additions, learnedContextId: rowId }),
+      createdAt: now,
+    });
+  }
 
-  return notificationId;
+  return rowId;
 }
 
 // ---------------------------------------------------------------------------

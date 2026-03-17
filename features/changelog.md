@@ -1,5 +1,63 @@
 # Feature Changelog
 
+## 2026-03-17
+
+### Groomed & Implemented (E2E Test Report Recommendations)
+- Assessed 5 recommendations from `output/done-agent-e2e-test-report.md` (2026-03-15, 10/10 pass)
+- `e2e-test-automation` (P2, completed) — API-level E2E test suite
+  - Created `vitest.config.e2e.ts` with 120s timeouts, sequential execution, node environment
+  - Created `src/__tests__/e2e/helpers.ts` — HTTP client utilities, polling helpers, runtime detection
+  - Created `src/__tests__/e2e/setup.ts` — test project + sandbox creation/teardown with deliberate-bug TypeScript files
+  - 5 test files: `single-task`, `sequence-workflow`, `parallel-workflow`, `blueprint`, `cross-runtime`
+  - ~15 test cases covering both runtimes, 4 profiles, 4 workflow patterns
+  - Tests skip gracefully when runtimes aren't configured (no CI failures)
+  - Added `npm run test:e2e` script to package.json
+  - Rec #4 (Codex workflow testing) folded in as Codex-specific describe blocks
+- `tool-permission-presets` (P2, completed) — Preset permission bundles
+  - Created `src/lib/settings/permission-presets.ts` — 3 presets (read-only, git-safe, full-auto) with apply/remove logic
+  - Presets are layered (git-safe includes read-only), removal only strips unique patterns
+  - Created `POST/GET/DELETE /api/permissions/presets` route
+  - Created `PresetsSection` component with risk badges and enable/disable toggles
+  - Created `PermissionsSections` wrapper coordinating presets + individual permissions via forwardRef
+  - Integrated into Settings page above existing Tool Permissions section
+- `workflow-context-batching` (P2, completed) — Workflow-scoped proposal buffering
+  - Created `src/lib/agents/learning-session.ts` — session lifecycle (open/buffer/close), batch approve/reject
+  - Modified `engine.ts` — wraps all workflow patterns in learning session open/close (including loop + try/finally)
+  - Modified `pattern-extractor.ts` — detects workflow session, calls `proposeContextAddition({ silent: true })` to skip notification
+  - Modified `learned-context.ts` — `proposeContextAddition` accepts `{ silent }` option to create row without notification
+  - Created `POST /api/context/batch` — batch approve/reject endpoint
+  - Created `BatchProposalReview` component with Approve All / Reject All actions
+  - Integrated into `PendingApprovalHost` for both compact toast and full detail views
+  - Added `context_proposal_batch` to notification type enum in DB schema
+- Rec #2 (Codex output artifacts) closed — documented output contract in `provider-runtime-abstraction.md`
+
+### Catalog Sync
+- Renamed `output/agent-e2e-test-report.md` → `output/done-agent-e2e-test-report.md` (all 5 recommendations addressed)
+- Updated references in 5 feature files + changelog
+
+### Completed
+- `sdk-runtime-hardening` (P2, post-MVP) — Systematic SDK audit fixes for cost tracking, execution safety, and prompt quality
+  - F1: Refactored to use `systemPrompt: { type: 'preset', preset: 'claude_code', append }` instead of prompt stuffing
+  - F2: Removed decorative `temperature` from all profile YAMLs and `AgentProfile` type
+  - F4: Added per-execution `maxBudgetUsd` via `DEFAULT_MAX_BUDGET_USD` to both execute and resume paths
+  - F5: Expanded pricing registry from 2 to 6 model families (3 Anthropic + 3 OpenAI) with fallback estimates
+  - F6: Added `getProviderModelBreakdown()` for per-model usage extraction from SDK `modelUsage` field
+  - F9: Added default `maxTurns` on task execution with per-profile override via `DEFAULT_MAX_TURNS`
+  - F10: Codex `item/tool/call` handler returns structured graceful response instead of bare string stub
+  - F12: Extracted shared `buildTaskQueryContext()` helper eliminating duplicate execute/resume prompt construction
+
+### Catalog Sync
+- Feature catalog updated retroactively to reflect SDK audit-driven code changes (commit `e5680ff`)
+- Added implementation notes to `usage-metering-ledger` (F5, F6), `spend-budget-guardrails` (F4, F9), `provider-runtime-abstraction` (F1, F12), `cross-provider-profile-compatibility` (F2)
+- Renamed `output/sdk-usage-audit.md` → `output/done-sdk-usage-audit.md`
+
+### Deferred
+- F3 (`outputFormat`) — Profile field exists but not wired to `query()` options; needs per-profile JSON Schema definitions
+- F7 (`fallbackModel`) — No multi-model failover needed currently
+- F8 (`includePartialMessages`) — Only optimized for connection test; remaining call sites deferred
+- F11 (Codex MCP passthrough) — Catalog already lists `mcpServers: false`
+- F13 (Usage dedup by message ID) — Current merge strategy sufficient without multi-model sessions
+
 ## 2026-03-15
 
 ### Completed
