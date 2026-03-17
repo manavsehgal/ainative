@@ -56,6 +56,9 @@ Stagent ships a shared runtime registry that routes tasks, schedules, and workfl
 | 📋 | **[Kanban Board](#kanban-board-operations)** | Inline editing, bulk operations, and persistent board state |
 | 🤖 | **[AI Assist → Workflows](#ai-assist--workflow-creation)** | Bridge task assist recommendations into governed workflow execution |
 | 🧬 | **[Agent Self-Improvement](#agent-self-improvement)** | Agents learn patterns from execution history with human-approved context evolution |
+| 🎯 | **[Tool Permission Presets](#tool-permission-presets)** | Pre-configured permission bundles (read-only, git-safe, full-auto) with layered apply/remove |
+| 📦 | **[Workflow Context Batching](#workflow-context-batching)** | Workflow-scoped proposal buffering with batch approve/reject for learned context |
+| 🧪 | **[E2E Test Automation](#e2e-test-automation)** | API-level end-to-end test suite covering both runtimes, 4 profiles, and 4 workflow patterns |
 
 ---
 
@@ -73,6 +76,7 @@ Stagent ships a shared runtime registry that routes tasks, schedules, and workfl
 - **Reusable agent profiles** — Profiles define instructions, allowed tools, runtime tuning, and MCP configs for repeated use
 - **Permission pre-check** — Saved "Always Allow" patterns bypass the notification loop for trusted tools
 - **Learned context loop** — Pattern extraction → human approval → versioned context injection creates a supervised self-improvement cycle
+- **Permission presets** — Layered preset bundles (read-only ⊂ git-safe ⊂ full-auto) that compose with individual "Always Allow" patterns
 
 ---
 
@@ -152,6 +156,9 @@ Bridge from AI task assist to workflow engine: when task assist recommends a mul
 #### Agent Self-Improvement
 Agents learn from execution history through a human-approved instruction evolution loop. After each task completion, the pattern extractor analyzes logs and proposes context updates — concise behavioral rules the agent should follow in future runs. Operators approve, reject, or edit proposals before they take effect. Learned context is versioned with rollback support and size-limited summarization to prevent unbounded growth. A sweep agent can audit the codebase for improvement opportunities and create prioritized tasks from its findings.
 
+#### Workflow Context Batching
+During workflow execution, the pattern extractor buffers context proposals into a learning session instead of creating individual notifications per proposal. When the workflow completes, all proposals are surfaced as a single batch for review. Operators can approve all, reject all, or review individually — reducing notification noise from multi-step workflows while preserving human oversight. The batch review component integrates into the existing pending approval host.
+
 #### Session Management
 Resume failed or cancelled agent tasks with one click. Tracks retry counts (limit: 3), detects expired sessions, and provides atomic claim to prevent duplicate runs.
 
@@ -188,6 +195,9 @@ Documents linked to a task are automatically injected into the agent's prompt as
 
 #### Ambient Approvals
 Pending permission requests now surface through a shell-level approval presenter on any route, so operators can respond without leaving the page they are working on. Inbox remains the durable queue and source of truth, while the ambient surface provides the fast path for active supervision.
+
+#### Tool Permission Presets
+Pre-configured permission bundles that reduce friction for common tool approval patterns. Three layered presets — read-only (file reads, glob, grep), git-safe (adds git operations), and full-auto (adds write, edit, bash) — compose with existing "Always Allow" patterns. Presets are layered: enabling git-safe automatically includes read-only patterns; removing git-safe only strips its unique additions. Risk badges indicate the trust level of each preset. Manage presets from the Settings page alongside individual tool permissions.
 
 #### Schedules
 Time-based scheduling for agent tasks with human-friendly intervals (`5m`, `2h`, `1d`) and raw 5-field cron expressions. One-shot and recurring modes with pause/resume lifecycle, expiry limits, and max firings. Each firing creates a child task through the shared execution pipeline, and schedules can now target a runtime explicitly. Scheduler runs as a poll-based engine started via Next.js instrumentation hook.
@@ -229,6 +239,9 @@ SQLite with WAL mode via better-sqlite3 + Drizzle ORM. Ten tables: `projects`, `
 #### App Shell
 Responsive sidebar with collapsible icon-only mode, custom Stagent logo, tooltip navigation, dark/light/system theme, and OKLCH hue 250 blue-indigo color palette. Built on shadcn/ui (New York style) with PWA manifest and app icons. Routes: Home, Dashboard, Projects, Documents, Workflows, Profiles, Schedules, Inbox, Monitor, Settings.
 
+#### E2E Test Automation
+API-level end-to-end test suite built on Vitest with 120-second timeouts and sequential execution. Five test files cover single-task execution, sequence workflows, parallel workflows, blueprints, and cross-runtime scenarios across both Claude and Codex backends. Tests skip gracefully when runtimes are not configured, preventing CI failures. Run with `npm run test:e2e`.
+
 ---
 
 ## Tech Stack
@@ -256,6 +269,7 @@ npm run dev            # Next.js dev server (Turbopack)
 npm run build:cli      # Build CLI → dist/cli.js
 npm test               # Run Vitest
 npm run test:coverage  # Coverage report
+npm run test:e2e       # E2E integration tests (requires runtime credentials)
 ```
 
 ### Project Structure
@@ -301,7 +315,7 @@ src/
     └── utils/            # Shared helpers
 ```
 
-### API Endpoints (48 routes)
+### API Endpoints (51 routes)
 
 | Domain | Endpoint | Method | Purpose |
 |--------|----------|--------|---------|
@@ -349,6 +363,8 @@ src/
 | | `/api/settings/test` | POST | Provider-aware runtime connectivity test |
 | | `/api/settings/budgets` | GET/POST | Budget configuration |
 | | `/api/permissions` | GET/POST/DELETE | Tool permission patterns |
+| | `/api/permissions/presets` | GET/POST/DELETE | Permission preset bundles |
+| **Context** | `/api/context/batch` | POST | Batch approve/reject context proposals |
 | **Monitoring** | `/api/logs/stream` | GET | SSE agent log stream |
 | **Platform** | `/api/command-palette/recent` | GET | Recent command palette items |
 | | `/api/data/clear` | POST | Clear all data |
@@ -368,7 +384,7 @@ All 14 features shipped across three layers:
 | **Core** | Project management, task board, agent integration, inbox notifications, monitoring dashboard |
 | **Polish** | Homepage dashboard, UX fixes, workflow engine, AI task assist, content handling, session management |
 
-### Post-MVP — Complete (27 features)
+### Post-MVP — Complete (30 features)
 
 | Category | Feature | What shipped |
 |----------|---------|-------------|
@@ -382,6 +398,7 @@ All 14 features shipped across three layers:
 | | Multi-Agent Swarm | Mayor → worker pool → refinery orchestration with retryable stages |
 | | AI Assist → Workflows | Bridge task assist into workflow engine with profile assignment and pattern selection |
 | | Agent Self-Improvement | Pattern extraction from logs, human-approved context evolution, versioned rollback |
+| | Workflow Context Batching | Workflow-scoped proposal buffering with batch approve/reject |
 | **Agent Profiles** | Agent Profile Catalog | 13 domain-specific profiles, GitHub import, behavioral testing, MCP passthrough |
 | | Workflow Blueprints | 8 templates, gallery, YAML editor, dynamic forms, GitHub import, lineage tracking |
 | **UI Enhancement** | Ambient Approvals | Shell-level approval presenter on any route for fast supervision |
@@ -395,10 +412,12 @@ All 14 features shipped across three layers:
 | | Board Context Persistence | Persisted filters, sort order, and project selection across sessions |
 | **Platform** | Scheduled Prompt Loops | Cron + human-friendly intervals, one-shot/recurring, pause/resume lifecycle |
 | | Tool Permission Persistence | "Always Allow" patterns, pre-check bypass, Settings management |
+| | Tool Permission Presets | 3 layered presets (read-only, git-safe, full-auto) with risk badges |
 | | Provider Runtimes | Shared runtime registry with Claude Code and OpenAI Codex App Server adapters |
 | | OpenAI Codex Runtime | Codex App Server integration with inbox approvals, logs, and thread resumption |
 | | Cross-Provider Profiles | Profile compatibility layer ensuring profiles work across Claude and Codex runtimes |
 | | Parallel Fork/Join | 2-5 concurrent research branches with synthesis step |
+| **Runtime Quality** | E2E Test Automation | API-level test suite covering both runtimes, 4 profiles, 4 workflow patterns |
 | **Governance** | Usage Metering Ledger | Provider-normalized token and spend tracking across all execution paths |
 | | Spend Budget Guardrails | Per-project and global budgets with enforcement and alerts |
 | | Cost & Usage Dashboard | Summary cards, trend views, provider/model breakdowns, budget audit visibility |

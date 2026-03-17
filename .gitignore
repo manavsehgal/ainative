@@ -42,3 +42,9 @@ output/
 
 # marketing screenshots
 screengrabs/
+
+# local agent context
+MEMORY.md
+
+# local package artifacts
+stagent-*.tgz
