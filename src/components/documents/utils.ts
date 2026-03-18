@@ -55,3 +55,73 @@ export function getStatusColor(status: string): string {
       return "";
   }
 }
+
+export function getStatusDotColor(status: string): string {
+  switch (status) {
+    case "ready":
+      return "bg-status-completed";
+    case "processing":
+      return "bg-status-running";
+    case "error":
+      return "bg-status-failed";
+    case "uploaded":
+      return "bg-status-warning";
+    default:
+      return "bg-muted-foreground";
+  }
+}
+
+export function isMarkdown(mimeType: string): boolean {
+  return mimeType === "text/markdown" || mimeType === "text/x-markdown";
+}
+
+export function isCode(mimeType: string): boolean {
+  return (
+    mimeType.includes("javascript") ||
+    mimeType.includes("typescript") ||
+    mimeType.includes("python") ||
+    mimeType.includes("json") ||
+    mimeType.includes("html") ||
+    mimeType.includes("css") ||
+    mimeType.includes("xml") ||
+    mimeType.includes("yaml") ||
+    mimeType.includes("toml") ||
+    mimeType === "text/x-shellscript" ||
+    mimeType === "application/x-sh"
+  );
+}
+
+export function isPlainText(mimeType: string): boolean {
+  return mimeType === "text/plain";
+}
+
+export function isPdf(mimeType: string): boolean {
+  return mimeType === "application/pdf";
+}
+
+export function isImage(mimeType: string): boolean {
+  return mimeType.startsWith("image/");
+}
+
+const LANGUAGE_MAP: Record<string, string> = {
+  "application/javascript": "JavaScript",
+  "text/javascript": "JavaScript",
+  "application/typescript": "TypeScript",
+  "text/typescript": "TypeScript",
+  "text/x-python": "Python",
+  "application/x-python": "Python",
+  "application/json": "JSON",
+  "text/html": "HTML",
+  "text/css": "CSS",
+  "text/xml": "XML",
+  "application/xml": "XML",
+  "text/yaml": "YAML",
+  "application/x-yaml": "YAML",
+  "text/x-toml": "TOML",
+  "text/x-shellscript": "Shell",
+  "application/x-sh": "Shell",
+};
+
+export function getLanguageLabel(mimeType: string): string {
+  return LANGUAGE_MAP[mimeType] ?? mimeType.split("/").pop()?.toUpperCase() ?? "Code";
+}

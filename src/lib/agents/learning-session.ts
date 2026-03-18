@@ -9,7 +9,7 @@
 
 import { db } from "@/lib/db";
 import { learnedContext, notifications, tasks } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc, isNull } from "drizzle-orm";
 
 // ---------------------------------------------------------------------------
 // In-memory session registry
@@ -168,12 +168,17 @@ export function getTaskWorkflowId(taskId: string): string | null {
 
 /**
  * Approve all proposals in a batch by their IDs.
+ *
+ * Batch proposals are created with `silent: true`, so each proposal's
+ * `proposalNotificationId` is null. We approve them directly by row ID
+ * instead of going through the individual notification flow, then mark
+ * the parent batch notification as responded.
  */
 export async function batchApproveProposals(
   proposalRowIds: string[]
 ): Promise<number> {
-  // Import inline to avoid circular dependency
-  const { approveProposal } = await import("./learned-context");
+  const { getActiveLearnedContext, checkContextSize, summarizeContext } =
+    await import("./learned-context");
 
   let approved = 0;
   for (const rowId of proposalRowIds) {
@@ -188,15 +193,52 @@ export async function batchApproveProposals(
       )
       .all();
 
-    if (row?.proposalNotificationId) {
-      try {
-        await approveProposal(row.proposalNotificationId);
-        approved++;
-      } catch {
-        // Skip if already approved/rejected
-      }
+    if (!row) continue;
+
+    const currentContent = getActiveLearnedContext(row.profileId) ?? "";
+    const additions = row.proposedAdditions ?? "";
+    const mergedContent = currentContent
+      ? `${currentContent}\n\n${additions}`
+      : additions;
+
+    const nextVersion = getNextVersionForProfile(row.profileId);
+
+    await db.insert(learnedContext).values({
+      id: crypto.randomUUID(),
+      profileId: row.profileId,
+      version: nextVersion,
+      content: mergedContent,
+      diff: additions,
+      changeType: "approved",
+      sourceTaskId: row.sourceTaskId,
+      proposalNotificationId: row.proposalNotificationId,
+      proposedAdditions: additions,
+      approvedBy: "human",
+      createdAt: new Date(),
+    });
+
+    // Also mark individual notification if it exists
+    if (row.proposalNotificationId) {
+      await db
+        .update(notifications)
+        .set({
+          response: JSON.stringify({ action: "approved" }),
+          respondedAt: new Date(),
+        })
+        .where(eq(notifications.id, row.proposalNotificationId));
+    }
+
+    approved++;
+
+    const sizeInfo = checkContextSize(row.profileId);
+    if (sizeInfo.needsSummarization) {
+      await summarizeContext(row.profileId);
     }
   }
+
+  // Mark the batch notification as responded
+  await markBatchNotificationResponded(proposalRowIds, "approved");
+
   return approved;
 }
 
@@ -206,7 +248,7 @@ export async function batchApproveProposals(
 export async function batchRejectProposals(
   proposalRowIds: string[]
 ): Promise<number> {
-  const { rejectProposal } = await import("./learned-context");
+  const { getActiveLearnedContext } = await import("./learned-context");
 
   let rejected = 0;
   for (const rowId of proposalRowIds) {
@@ -221,14 +263,92 @@ export async function batchRejectProposals(
       )
       .all();
 
-    if (row?.proposalNotificationId) {
-      try {
-        await rejectProposal(row.proposalNotificationId);
-        rejected++;
-      } catch {
-        // Skip if already approved/rejected
+    if (!row) continue;
+
+    const nextVersion = getNextVersionForProfile(row.profileId);
+
+    await db.insert(learnedContext).values({
+      id: crypto.randomUUID(),
+      profileId: row.profileId,
+      version: nextVersion,
+      content: getActiveLearnedContext(row.profileId),
+      diff: row.proposedAdditions,
+      changeType: "rejected",
+      sourceTaskId: row.sourceTaskId,
+      proposalNotificationId: row.proposalNotificationId,
+      proposedAdditions: row.proposedAdditions,
+      createdAt: new Date(),
+    });
+
+    // Also mark individual notification if it exists
+    if (row.proposalNotificationId) {
+      await db
+        .update(notifications)
+        .set({
+          response: JSON.stringify({ action: "rejected" }),
+          respondedAt: new Date(),
+        })
+        .where(eq(notifications.id, row.proposalNotificationId));
+    }
+
+    rejected++;
+  }
+
+  // Mark the batch notification as responded
+  await markBatchNotificationResponded(proposalRowIds, "rejected");
+
+  return rejected;
+}
+
+/**
+ * Find and mark the batch notification that contains these proposal IDs as responded.
+ */
+async function markBatchNotificationResponded(
+  proposalRowIds: string[],
+  action: "approved" | "rejected"
+): Promise<void> {
+  // Find batch notifications that reference these proposal IDs
+  const batchRows = db
+    .select({ id: notifications.id, toolInput: notifications.toolInput })
+    .from(notifications)
+    .where(
+      and(
+        eq(notifications.type, "context_proposal_batch"),
+        // Only unresolved batch notifications
+        isNull(notifications.response)
+      )
+    )
+    .all();
+
+  for (const row of batchRows) {
+    try {
+      const parsed = JSON.parse(row.toolInput ?? "{}");
+      const ids: string[] = parsed?.proposalIds ?? [];
+      // If this batch notification contains any of the proposal IDs, mark it
+      if (proposalRowIds.some((id) => ids.includes(id))) {
+        await db
+          .update(notifications)
+          .set({
+            response: JSON.stringify({ action }),
+            respondedAt: new Date(),
+          })
+          .where(eq(notifications.id, row.id));
       }
+    } catch {
+      // Skip unparseable toolInput
     }
   }
-  return rejected;
+}
+
+/** Helper to get next version for a profile (avoids circular import) */
+function getNextVersionForProfile(profileId: string): number {
+  const [row] = db
+    .select({ version: learnedContext.version })
+    .from(learnedContext)
+    .where(eq(learnedContext.profileId, profileId))
+    .orderBy(desc(learnedContext.version))
+    .limit(1)
+    .all();
+
+  return (row?.version ?? 0) + 1;
 }

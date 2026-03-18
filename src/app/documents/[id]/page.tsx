@@ -33,14 +33,16 @@ export default async function DocumentDetailPage({
   };
 
   return (
-    <div className="gradient-forest-dawn min-h-screen p-6">
-      <Link href="/documents">
-        <Button variant="ghost" size="sm" className="mb-4">
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Back to Documents
-        </Button>
-      </Link>
-      <DocumentDetailView documentId={id} initialDocument={initialDoc} />
+    <div className="gradient-twilight min-h-screen p-6">
+      <div className="surface-page-shell rounded-xl p-6 max-w-5xl mx-auto">
+        <Link href="/documents">
+          <Button variant="ghost" size="sm" className="mb-4">
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Back to Documents
+          </Button>
+        </Link>
+        <DocumentDetailView documentId={id} initialDocument={initialDoc} />
+      </div>
     </div>
   );
 }

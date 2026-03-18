@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { workflows } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import {
+  workflows,
+  tasks,
+  agentLogs,
+  notifications,
+  documents,
+  learnedContext,
+  usageLedger,
+} from "@/lib/db/schema";
+import { eq, inArray } from "drizzle-orm";
 import type { WorkflowDefinition } from "@/lib/workflows/types";
 import { validateWorkflowDefinitionAssignments } from "@/lib/agents/profiles/assignment-validation";
 import { validateWorkflowDefinition } from "@/lib/workflows/definition-validation";
@@ -127,7 +135,38 @@ export async function DELETE(
     );
   }
 
-  await db.delete(workflows).where(eq(workflows.id, id));
+  try {
+    // Cascade-delete in FK-safe order
+    const taskIds = db
+      .select({ id: tasks.id })
+      .from(tasks)
+      .where(eq(tasks.workflowId, id))
+      .all()
+      .map((r) => r.id);
 
-  return NextResponse.json({ deleted: true });
+    // Delete usage ledger entries (reference both workflowId and taskId)
+    db.delete(usageLedger).where(eq(usageLedger.workflowId, id)).run();
+
+    if (taskIds.length > 0) {
+      // Delete task children first
+      db.delete(agentLogs).where(inArray(agentLogs.taskId, taskIds)).run();
+      db.delete(notifications).where(inArray(notifications.taskId, taskIds)).run();
+      db.delete(documents).where(inArray(documents.taskId, taskIds)).run();
+      db.delete(learnedContext).where(inArray(learnedContext.sourceTaskId, taskIds)).run();
+      db.delete(usageLedger).where(inArray(usageLedger.taskId, taskIds)).run();
+      // Delete the tasks themselves
+      db.delete(tasks).where(inArray(tasks.id, taskIds)).run();
+    }
+
+    // Finally delete the workflow
+    db.delete(workflows).where(eq(workflows.id, id)).run();
+
+    return NextResponse.json({ deleted: true });
+  } catch (err) {
+    console.error("Workflow delete failed:", err);
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Delete failed" },
+      { status: 500 }
+    );
+  }
 }
