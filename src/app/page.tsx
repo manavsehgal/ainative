@@ -35,6 +35,7 @@ export default async function HomePage() {
     [activeProjectsResult],
     priorityTasks,
     activeWorkflows,
+    [activeWorkflowCountResult],
     recentLogs,
     allProjects,
     recentActiveProjects,
@@ -64,11 +65,11 @@ export default async function HomePage() {
     // Priority queue: failed + running tasks, sorted by priority
     db.select().from(tasks).where(
       inArray(tasks.status, ["failed", "running", "queued"])
-    ).orderBy(tasks.priority, desc(tasks.updatedAt)).limit(5),
-    // Active/failed workflows for priority queue
-    db.select().from(workflows).where(
-      inArray(workflows.status, ["active", "failed"])
-    ).orderBy(desc(workflows.updatedAt)).limit(5),
+    ).orderBy(tasks.priority, desc(tasks.updatedAt)).limit(8),
+    // All workflows for priority queue (match kanban board behavior)
+    db.select().from(workflows).orderBy(desc(workflows.updatedAt)).limit(8),
+    // Count active workflows for stats
+    db.select({ count: count() }).from(workflows).where(eq(workflows.status, "active")),
     // Recent agent logs
     db.select().from(agentLogs).orderBy(desc(agentLogs.timestamp)).limit(6),
     // All projects for quick actions
@@ -126,7 +127,7 @@ export default async function HomePage() {
     return {
       id: w.id,
       title: w.name,
-      status: w.status === "active" ? "running" : w.status,
+      status: w.status,
       priority: 1, // Workflows always high priority in the attention queue
       projectName: w.projectId ? projectMap.get(w.projectId) ?? undefined : undefined,
       workflowProgress,
@@ -134,8 +135,15 @@ export default async function HomePage() {
     };
   });
 
-  // Merge and limit to 5 items total
-  const allPriorityItems = [...workflowPriorityItems, ...serializedPriorityTasks].slice(0, 5);
+  // Urgency ranking: actionable items surface first
+  const urgencyRank: Record<string, number> = {
+    failed: 0, running: 1, active: 1, queued: 2, paused: 3, draft: 4, completed: 5,
+  };
+
+  // Merge, sort by urgency, and limit to 8 items
+  const allPriorityItems = [...workflowPriorityItems, ...serializedPriorityTasks]
+    .sort((a, b) => (urgencyRank[a.status] ?? 6) - (urgencyRank[b.status] ?? 6))
+    .slice(0, 8);
 
   // Get task titles for log entries
   const logTaskIds = [...new Set(recentLogs.filter((l) => l.taskId).map((l) => l.taskId!))];
@@ -175,6 +183,7 @@ export default async function HomePage() {
           runningCount={runningResult.count}
           awaitingCount={awaitingResult.count}
           failedCount={failedResult.count}
+          activeWorkflows={activeWorkflowCountResult.count}
         />
         <StatsCards
           runningCount={runningResult.count}
@@ -182,6 +191,7 @@ export default async function HomePage() {
           completedAllTime={completedAllTimeResult.count}
           awaitingReview={awaitingResult.count}
           activeProjects={activeProjectsResult.count}
+          activeWorkflows={activeWorkflowCountResult.count}
           sparklines={{
             completions: completionsByDay,
             creations: taskCreationsByDay,

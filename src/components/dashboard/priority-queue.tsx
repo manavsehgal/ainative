@@ -4,8 +4,8 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Clock, Shield, ArrowRight, Workflow as WorkflowIcon } from "lucide-react";
-import { taskStatusVariant } from "@/lib/constants/status-colors";
+import { AlertTriangle, Clock, Shield, ArrowRight, Workflow as WorkflowIcon, FilePen, Pause, CheckCircle2 } from "lucide-react";
+import { taskStatusVariant, workflowStatusVariant } from "@/lib/constants/status-colors";
 
 export interface PriorityTask {
   id: string;
@@ -32,6 +32,14 @@ const statusIcon: Record<string, typeof AlertTriangle> = {
   running: Clock,
 };
 
+const workflowStatusIcon: Record<string, typeof AlertTriangle> = {
+  draft: FilePen,
+  active: WorkflowIcon,
+  paused: Pause,
+  completed: CheckCircle2,
+  failed: AlertTriangle,
+};
+
 const priorityColors = ["text-priority-critical", "text-priority-high", "text-status-warning", "text-muted-foreground"];
 
 export function PriorityQueue({ tasks }: PriorityQueueProps) {
@@ -48,14 +56,14 @@ export function PriorityQueue({ tasks }: PriorityQueueProps) {
             className="text-sm text-muted-foreground py-4 text-center"
             aria-live="polite"
           >
-            No tasks need attention right now.
+            No tasks or workflows need attention right now.
           </p>
         ) : (
           <div className="space-y-1" aria-live="polite">
             {tasks.map((task) => {
-              // Workflow items use the workflow icon; tasks use status icons
+              // Workflow items use workflow-specific status icons; tasks use task status icons
               const Icon = task.isWorkflow
-                ? WorkflowIcon
+                ? workflowStatusIcon[task.status] ?? WorkflowIcon
                 : statusIcon[task.status] ?? Shield;
               const linkHref = task.isWorkflow
                 ? `/workflows/${task.workflowProgress?.workflowId ?? task.id}`
@@ -95,10 +103,12 @@ export function PriorityQueue({ tasks }: PriorityQueueProps) {
                       </div>
                     )}
                   </div>
-                  <Badge variant={taskStatusVariant[task.status] ?? "secondary"} className="text-xs">
-                    {task.isWorkflow && task.workflowProgress
-                      ? task.workflowProgress.workflowStatus
-                      : task.status}
+                  <Badge variant={
+                    task.isWorkflow
+                      ? workflowStatusVariant[task.status] ?? "secondary"
+                      : taskStatusVariant[task.status] ?? "secondary"
+                  } className="text-xs">
+                    {task.status}
                   </Badge>
                 </Link>
               );

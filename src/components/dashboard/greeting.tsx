@@ -2,6 +2,7 @@ interface GreetingProps {
   runningCount: number;
   awaitingCount: number;
   failedCount: number;
+  activeWorkflows: number;
 }
 
 function getGreeting(): string {
@@ -11,9 +12,10 @@ function getGreeting(): string {
   return "Good evening";
 }
 
-export function Greeting({ runningCount, awaitingCount, failedCount }: GreetingProps) {
+export function Greeting({ runningCount, awaitingCount, failedCount, activeWorkflows }: GreetingProps) {
   const parts: string[] = [];
   if (runningCount > 0) parts.push(`${runningCount} task${runningCount !== 1 ? "s" : ""} running`);
+  if (activeWorkflows > 0) parts.push(`${activeWorkflows} workflow${activeWorkflows !== 1 ? "s" : ""} active`);
   if (awaitingCount > 0) parts.push(`${awaitingCount} awaiting your review`);
   if (failedCount > 0) parts.push(`${failedCount} failed task${failedCount !== 1 ? "s" : ""} to address`);
 

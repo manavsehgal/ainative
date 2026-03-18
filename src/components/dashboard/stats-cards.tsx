@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity, CheckCircle, MessageSquare, FolderKanban } from "lucide-react";
+import { Activity, CheckCircle, MessageSquare, FolderKanban, Workflow } from "lucide-react";
 import { Sparkline } from "@/components/charts/sparkline";
 
 interface StatsCardsProps {
@@ -11,6 +11,7 @@ interface StatsCardsProps {
   completedAllTime: number;
   awaitingReview: number;
   activeProjects: number;
+  activeWorkflows: number;
   sparklines?: {
     completions: number[];
     creations: number[];
@@ -25,6 +26,7 @@ export function StatsCards({
   completedAllTime,
   awaitingReview,
   activeProjects,
+  activeWorkflows,
   sparklines,
 }: StatsCardsProps) {
   const stats = [
@@ -72,10 +74,20 @@ export function StatsCards({
       destination: "Projects",
       sparklineData: sparklines?.projects,
     },
+    {
+      title: "Workflows Active",
+      value: activeWorkflows,
+      subtitle: "In progress",
+      icon: Workflow,
+      color: "text-primary",
+      chartColor: "var(--chart-5)",
+      href: "/workflows",
+      destination: "Workflows",
+    },
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
       {stats.map((s) => (
         <Link key={s.title} href={s.href}>
           <Card className="surface-card glass-shimmer cursor-pointer transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl">
