@@ -49,7 +49,7 @@ describe("kanban board accessibility", () => {
       />
     );
 
-    const announcement = screen.getByText("Showing 1 task on the kanban board.");
+    const announcement = screen.getByText("Showing 1 item on the kanban board.");
     const board = screen.getByRole("region", { name: "Kanban board" });
 
     expect(announcement).toHaveAttribute("aria-live", "polite");

@@ -5,7 +5,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, Bot, ArrowUp, ArrowDown, Minus, Trash2, Check, X, Loader2, Square, CheckSquare, Pencil, Workflow } from "lucide-react";
+import { AlertCircle, Bot, ArrowUp, ArrowDown, Minus, Trash2, Check, X, Loader2, Square, CheckSquare, Pencil } from "lucide-react";
 import type { TaskStatus } from "@/lib/constants/task-status";
 
 export interface TaskItem {
@@ -18,8 +18,6 @@ export interface TaskItem {
   agentProfile: string | null;
   projectId: string | null;
   projectName?: string;
-  linkedWorkflowId?: string;
-  linkedWorkflowStatus?: string;
   result: string | null;
   sessionId: string | null;
   resumeCount: number;
@@ -151,19 +149,6 @@ export function TaskCard({
                 <Badge variant="secondary" className="text-xs gap-1 max-w-[120px]">
                   <Bot className="h-3 w-3 shrink-0" aria-hidden="true" />
                   <span className="truncate">{task.assignedAgent}</span>
-                </Badge>
-              )}
-              {task.linkedWorkflowId && (
-                <Badge
-                  variant="outline"
-                  className="text-xs gap-1 cursor-pointer hover:bg-accent/50"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    window.open(`/workflows/${task.linkedWorkflowId}`, "_self");
-                  }}
-                >
-                  <Workflow className="h-3 w-3 shrink-0" aria-hidden="true" />
-                  {task.linkedWorkflowStatus === "completed" ? "Workflow done" : "Workflow"}
                 </Badge>
               )}
               {isFailed && <AlertCircle className="h-3.5 w-3.5 text-destructive" aria-label="Task failed" />}

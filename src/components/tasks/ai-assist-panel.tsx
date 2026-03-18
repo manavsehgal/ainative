@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Check, X, GitBranch } from "lucide-react";
+import { Sparkles, Check, X, GitBranch, Info } from "lucide-react";
 
 interface TaskSuggestion {
   title: string;
@@ -154,9 +154,14 @@ export function AIAssistPanel({
     );
   }
 
+  const showWorkflowCTA =
+    onCreateWorkflow &&
+    result.breakdown.length >= 2 &&
+    result.recommendedPattern !== "single";
+
   return (
-    <div className="pt-2 space-y-3">
-      {/* Header row — full width */}
+    <div className="p-4 space-y-4">
+      {/* Header row */}
       <div className="flex items-center gap-2 flex-wrap">
         <Sparkles className="h-4 w-4 text-primary" />
         <span className="text-sm font-medium">AI Suggestions</span>
@@ -171,86 +176,111 @@ export function AIAssistPanel({
         )}
       </div>
 
-      {/* Two-column grid for cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {/* Improved description */}
-        <Card>
-          <CardContent className="p-3">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-medium text-muted-foreground">
-                Improved Description
-              </span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-6 text-xs"
-                onClick={() => {
-                  onApplyDescription(result.improvedDescription);
-                  setDescriptionApplied(true);
-                }}
-                disabled={descriptionApplied}
-              >
-                {descriptionApplied ? (
-                  <><Check className="h-3 w-3 mr-1" /> Applied</>
-                ) : (
-                  "Apply"
-                )}
-              </Button>
-            </div>
-            <p className="text-sm">{result.improvedDescription}</p>
-          </CardContent>
-        </Card>
+      {/* Improved description — full width */}
+      <Card>
+        <CardContent className="p-3">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs font-medium text-muted-foreground">
+              Improved Description
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-6 text-xs"
+              onClick={() => {
+                onApplyDescription(result.improvedDescription);
+                setDescriptionApplied(true);
+              }}
+              disabled={descriptionApplied}
+            >
+              {descriptionApplied ? (
+                <><Check className="h-3 w-3 mr-1" /> Applied</>
+              ) : (
+                "Apply"
+              )}
+            </Button>
+          </div>
+          <p className="text-sm">{result.improvedDescription}</p>
+        </CardContent>
+      </Card>
 
-        {/* Task breakdown */}
-        {result.breakdown.length > 0 && (
-          <Card>
-            <CardContent className="p-3">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-muted-foreground">
-                  Suggested Breakdown ({result.breakdown.length} sub-tasks)
-                </span>
-                <div className="flex gap-1">
-                  {onCreateWorkflow &&
-                    result.breakdown.length >= 2 &&
-                    result.recommendedPattern !== "single" && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 text-xs"
-                      onClick={() => onCreateWorkflow(result)}
-                    >
-                      <GitBranch className="h-3 w-3 mr-1" />
-                      Workflow
-                    </Button>
-                  )}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 text-xs"
-                    onClick={() => onCreateSubtasks(result.breakdown)}
-                  >
-                    Create All
-                  </Button>
+      {/* Reasoning + Workflow CTA combined callout */}
+      {(result.reasoning || showWorkflowCTA) && (
+        <div className="rounded-md border bg-muted/50 p-3 space-y-2.5">
+          {result.reasoning && (
+            <div className="flex gap-2">
+              <Info className="h-3.5 w-3.5 mt-0.5 shrink-0 text-muted-foreground" />
+              <p className="text-xs text-muted-foreground">
+                {result.reasoning}
+                {result.complexity === "complex" && result.recommendedPattern !== "single"
+                  ? " Complex tasks benefit from workflow execution — each step builds on the previous result."
+                  : ""}
+              </p>
+            </div>
+          )}
+          {showWorkflowCTA && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-full justify-start h-auto py-2 border-primary/50 bg-background"
+              onClick={() => onCreateWorkflow(result)}
+            >
+              <div className="text-left flex-1">
+                <div className="flex items-center gap-1.5">
+                  <GitBranch className="h-3 w-3" />
+                  <span className="text-xs font-medium">Create as Workflow</span>
+                  <Badge variant="default" className="text-[10px] h-4 px-1">
+                    Recommended
+                  </Badge>
+                </div>
+                <div className="text-[11px] text-muted-foreground font-normal mt-0.5">
+                  Runs as {patternLabels[result.recommendedPattern]?.toLowerCase() ?? result.recommendedPattern} — each step receives prior output
                 </div>
               </div>
-              <div className="max-h-60 overflow-y-auto space-y-1.5">
-                {result.breakdown.map((sub, i) => (
-                  <div key={i} className="text-sm">
-                    <span className="font-medium">{sub.title}</span>
-                    <p className="text-xs text-muted-foreground">{sub.description}</p>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+            </Button>
+          )}
+        </div>
+      )}
 
-      {/* Reasoning + Dismiss — full width */}
-      <p className="text-xs text-muted-foreground">{result.reasoning}</p>
+      {/* Breakdown as flat numbered list */}
+      {result.breakdown.length > 0 && (
+        <>
+          {/* "or" divider — only show when workflow CTA is present */}
+          {showWorkflowCTA && (
+            <div className="flex items-center gap-3">
+              <div className="flex-1 border-t" />
+              <span className="text-xs text-muted-foreground">or create as individual tasks</span>
+              <div className="flex-1 border-t" />
+            </div>
+          )}
+
+          <div className="space-y-2.5">
+            {result.breakdown.map((sub, i) => (
+              <div key={i} className="flex gap-2.5">
+                <span className="text-xs font-medium text-muted-foreground mt-0.5 shrink-0 w-4 text-right">
+                  {i + 1}.
+                </span>
+                <div className="min-w-0">
+                  <span className="text-sm font-medium">{sub.title}</span>
+                  <p className="text-xs text-muted-foreground">{sub.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={() => onCreateSubtasks(result.breakdown)}
+          >
+            Create {result.breakdown.length} Independent Tasks
+          </Button>
+        </>
+      )}
 
       <Button
         type="button"
@@ -260,7 +290,7 @@ export function AIAssistPanel({
           setResult(null);
           onResultChange?.(false);
         }}
-        className="w-full"
+        className="w-full text-muted-foreground"
       >
         <X className="h-3 w-3 mr-1" /> Dismiss
       </Button>

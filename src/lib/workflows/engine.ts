@@ -20,6 +20,7 @@ import {
   openLearningSession,
   closeLearningSession,
 } from "@/lib/agents/learning-session";
+import { buildWorkflowDocumentContext } from "@/lib/documents/context-builder";
 
 /**
  * Execute a workflow by advancing through its steps according to the pattern.
@@ -35,6 +36,9 @@ export async function executeWorkflow(workflowId: string): Promise<void> {
 
   const definition: WorkflowDefinition = JSON.parse(workflow.definition);
   const state = createInitialState(definition);
+
+  // Extract parent task ID for document context propagation to child steps
+  const parentTaskId: string | undefined = definition.sourceTaskId ?? undefined;
 
   await updateWorkflowState(workflowId, state, "active");
 
@@ -56,8 +60,6 @@ export async function executeWorkflow(workflowId: string): Promise<void> {
     try {
       await executeLoop(workflowId, definition);
 
-      await syncSourceTaskStatus(workflowId, "completed");
-
       await db.insert(agentLogs).values({
         id: crypto.randomUUID(),
         taskId: null,
@@ -67,8 +69,6 @@ export async function executeWorkflow(workflowId: string): Promise<void> {
         timestamp: new Date(),
       });
     } catch (error) {
-      await syncSourceTaskStatus(workflowId, "failed");
-
       await db.insert(agentLogs).values({
         id: crypto.randomUUID(),
         taskId: null,
@@ -92,28 +92,25 @@ export async function executeWorkflow(workflowId: string): Promise<void> {
   try {
     switch (definition.pattern) {
       case "sequence":
-        await executeSequence(workflowId, definition, state);
+        await executeSequence(workflowId, definition, state, parentTaskId);
         break;
       case "planner-executor":
-        await executePlannerExecutor(workflowId, definition, state);
+        await executePlannerExecutor(workflowId, definition, state, parentTaskId);
         break;
       case "checkpoint":
-        await executeCheckpoint(workflowId, definition, state);
+        await executeCheckpoint(workflowId, definition, state, parentTaskId);
         break;
       case "parallel":
-        await executeParallel(workflowId, definition, state);
+        await executeParallel(workflowId, definition, state, parentTaskId);
         break;
       case "swarm":
-        await executeSwarm(workflowId, definition, state);
+        await executeSwarm(workflowId, definition, state, parentTaskId);
         break;
     }
 
     state.status = "completed";
     state.completedAt = new Date().toISOString();
     await updateWorkflowState(workflowId, state, "completed");
-
-    // Sync parent task status
-    await syncSourceTaskStatus(workflowId, "completed");
 
     await db.insert(agentLogs).values({
       id: crypto.randomUUID(),
@@ -126,9 +123,6 @@ export async function executeWorkflow(workflowId: string): Promise<void> {
   } catch (error) {
     state.status = "failed";
     await updateWorkflowState(workflowId, state, "failed");
-
-    // Sync parent task status
-    await syncSourceTaskStatus(workflowId, "failed");
 
     await db.insert(agentLogs).values({
       id: crypto.randomUUID(),
@@ -155,7 +149,8 @@ export async function executeWorkflow(workflowId: string): Promise<void> {
 async function executeSequence(
   workflowId: string,
   definition: WorkflowDefinition,
-  state: WorkflowState
+  state: WorkflowState,
+  parentTaskId?: string
 ): Promise<void> {
   let previousOutput = "";
 
@@ -175,7 +170,8 @@ async function executeSequence(
       contextPrompt,
       state,
       step.assignedAgent,
-      step.agentProfile
+      step.agentProfile,
+      parentTaskId
     );
 
     if (result.status === "failed") {
@@ -192,7 +188,8 @@ async function executeSequence(
 async function executePlannerExecutor(
   workflowId: string,
   definition: WorkflowDefinition,
-  state: WorkflowState
+  state: WorkflowState,
+  parentTaskId?: string
 ): Promise<void> {
   if (definition.steps.length < 2) {
     throw new Error("Planner-Executor requires at least 2 steps (planner + executor)");
@@ -208,7 +205,8 @@ async function executePlannerExecutor(
     plannerStep.prompt,
     state,
     plannerStep.assignedAgent,
-    plannerStep.agentProfile
+    plannerStep.agentProfile,
+    parentTaskId
   );
 
   if (planResult.status === "failed") {
@@ -228,7 +226,8 @@ async function executePlannerExecutor(
       contextPrompt,
       state,
       step.assignedAgent,
-      step.agentProfile
+      step.agentProfile,
+      parentTaskId
     );
 
     if (result.status === "failed") {
@@ -243,7 +242,8 @@ async function executePlannerExecutor(
 async function executeCheckpoint(
   workflowId: string,
   definition: WorkflowDefinition,
-  state: WorkflowState
+  state: WorkflowState,
+  parentTaskId?: string
 ): Promise<void> {
   let previousOutput = "";
 
@@ -275,7 +275,8 @@ async function executeCheckpoint(
       contextPrompt,
       state,
       step.assignedAgent,
-      step.agentProfile
+      step.agentProfile,
+      parentTaskId
     );
 
     if (result.status === "failed") {
@@ -292,7 +293,8 @@ async function executeCheckpoint(
 async function executeParallel(
   workflowId: string,
   definition: WorkflowDefinition,
-  state: WorkflowState
+  state: WorkflowState,
+  parentTaskId?: string
 ): Promise<void> {
   const structure = getParallelWorkflowStructure(definition);
   if (!structure) {
@@ -356,7 +358,8 @@ async function executeParallel(
         step.name,
         step.prompt,
         step.assignedAgent,
-        step.agentProfile
+        step.agentProfile,
+        parentTaskId
       );
 
       const completedAt = new Date().toISOString();
@@ -429,7 +432,8 @@ async function executeParallel(
     synthesisStep.name,
     synthesisPrompt,
     synthesisStep.assignedAgent,
-    synthesisStep.agentProfile
+    synthesisStep.agentProfile,
+    parentTaskId
   );
 
   await commitState((draft) => {
@@ -464,7 +468,8 @@ async function executeParallel(
 async function executeSwarm(
   workflowId: string,
   definition: WorkflowDefinition,
-  state: WorkflowState
+  state: WorkflowState,
+  parentTaskId?: string
 ): Promise<void> {
   const structure = getSwarmWorkflowStructure(definition);
   if (!structure) {
@@ -490,7 +495,8 @@ async function executeSwarm(
     mayorStep.prompt,
     state,
     mayorStep.assignedAgent,
-    mayorStep.agentProfile
+    mayorStep.agentProfile,
+    parentTaskId
   );
 
   if (mayorResult.status === "failed") {
@@ -552,7 +558,8 @@ async function executeSwarm(
         step.name,
         workerPrompt,
         step.assignedAgent,
-        step.agentProfile
+        step.agentProfile,
+        parentTaskId
       );
 
       const completedAt = new Date().toISOString();
@@ -604,6 +611,7 @@ async function executeSwarm(
       stepName: worker.step.name,
       result: worker.result.result ?? "",
     })),
+    parentTaskId,
   });
 }
 
@@ -637,6 +645,7 @@ async function runSwarmRefinery(input: {
   };
   refineryIndex: number;
   workerOutputs: Array<{ stepName: string; result: string }>;
+  parentTaskId?: string;
 }): Promise<void> {
   const {
     workflowId,
@@ -646,6 +655,7 @@ async function runSwarmRefinery(input: {
     refineryStep,
     refineryIndex,
     workerOutputs,
+    parentTaskId,
   } = input;
 
   state.currentStepIndex = refineryIndex;
@@ -669,7 +679,8 @@ async function runSwarmRefinery(input: {
     refineryStep.name,
     refineryPrompt,
     refineryStep.assignedAgent,
-    refineryStep.agentProfile
+    refineryStep.agentProfile,
+    parentTaskId
   );
 
   refineryState.taskId = refineryResult.taskId;
@@ -704,7 +715,8 @@ export async function executeChildTask(
   name: string,
   prompt: string,
   assignedAgent?: string,
-  agentProfile?: string
+  agentProfile?: string,
+  parentTaskId?: string
 ): Promise<{ taskId: string; status: string; result?: string; error?: string }> {
   const [workflow] = await db
     .select()
@@ -717,6 +729,16 @@ export async function executeChildTask(
       ? classifyTaskProfile(name, prompt, assignedAgent)
       : agentProfile;
 
+  // Inject parent task's document context into step prompt so file attachments
+  // from the original task are visible to every workflow child step
+  let enrichedPrompt = prompt;
+  if (parentTaskId) {
+    const docContext = await buildWorkflowDocumentContext(parentTaskId);
+    if (docContext) {
+      enrichedPrompt = `${docContext}\n\n${prompt}`;
+    }
+  }
+
   const taskId = crypto.randomUUID();
   await db.insert(tasks).values({
     id: taskId,
@@ -724,7 +746,7 @@ export async function executeChildTask(
     workflowId,
     scheduleId: null,
     title: `[Workflow] ${name}`,
-    description: prompt,
+    description: enrichedPrompt,
     status: "queued",
     priority: 1,
     assignedAgent: assignedAgent ?? null,
@@ -769,7 +791,8 @@ async function executeStep(
   prompt: string,
   state: WorkflowState,
   assignedAgent?: string,
-  agentProfile?: string
+  agentProfile?: string,
+  parentTaskId?: string
 ): Promise<StepState> {
   const stepState = state.stepStates.find((s) => s.stepId === stepId);
   if (!stepState) throw new Error(`Step ${stepId} not found in state`);
@@ -783,7 +806,8 @@ async function executeStep(
     stepName,
     prompt,
     assignedAgent,
-    agentProfile
+    agentProfile,
+    parentTaskId
   );
 
   stepState.taskId = result.taskId;
@@ -846,34 +870,6 @@ async function waitForApproval(
   return false; // Timeout — treat as denied
 }
 
-/**
- * Sync the parent (source) task's status with the workflow's final status.
- * The parent task is linked via `sourceTaskId` in the workflow's definition JSON.
- */
-async function syncSourceTaskStatus(
-  workflowId: string,
-  status: "completed" | "failed"
-): Promise<void> {
-  try {
-    const result = await db
-      .select()
-      .from(workflows)
-      .where(eq(workflows.id, workflowId));
-
-    const workflow = Array.isArray(result) ? result[0] : undefined;
-    if (!workflow) return;
-
-    const def = JSON.parse(workflow.definition);
-    if (!def.sourceTaskId) return;
-
-    await db
-      .update(tasks)
-      .set({ status, updatedAt: new Date() })
-      .where(eq(tasks.id, def.sourceTaskId));
-  } catch (error) {
-    console.error(`[workflow-engine] Failed to sync source task status for workflow ${workflowId}:`, error);
-  }
-}
 
 /**
  * Update workflow state in the database.

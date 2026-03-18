@@ -73,3 +73,44 @@ export async function buildDocumentContext(
     "--- End Attached Documents ---",
   ].join("\n");
 }
+
+const MAX_WORKFLOW_DOC_CONTEXT = 30_000;
+
+/**
+ * Build document context for workflow child tasks by querying the parent task's
+ * input documents. Returns null if no parent task or no documents.
+ */
+export async function buildWorkflowDocumentContext(
+  parentTaskId?: string
+): Promise<string | null> {
+  if (!parentTaskId) return null;
+
+  try {
+    const docs = await db
+      .select()
+      .from(documents)
+      .where(and(eq(documents.taskId, parentTaskId), eq(documents.direction, "input")));
+
+    if (docs.length === 0) return null;
+
+    const sections = docs.map((doc, i) => formatDocument(doc, i));
+    let result = sections.join("\n\n");
+
+    // Guard against prompt bloat from many/large attachments
+    if (result.length > MAX_WORKFLOW_DOC_CONTEXT) {
+      result = result.slice(0, MAX_WORKFLOW_DOC_CONTEXT);
+      result += `\n\n(Document context truncated at ${MAX_WORKFLOW_DOC_CONTEXT} chars — use Read tool for full content)`;
+    }
+
+    return [
+      "--- Parent Task Documents ---",
+      "",
+      result,
+      "",
+      "--- End Parent Task Documents ---",
+    ].join("\n");
+  } catch (error) {
+    console.error("[context-builder] Failed to build workflow document context:", error);
+    return null;
+  }
+}

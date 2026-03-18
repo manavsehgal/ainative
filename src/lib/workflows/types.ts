@@ -33,6 +33,8 @@ export interface WorkflowDefinition {
   steps: WorkflowStep[];
   loopConfig?: LoopConfig;
   swarmConfig?: SwarmConfig;
+  /** Parent task ID — set when workflow is created from AI assist, used to propagate document context */
+  sourceTaskId?: string;
 }
 
 export type LoopStopReason =

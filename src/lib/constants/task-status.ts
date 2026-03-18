@@ -53,3 +53,6 @@ export const DEFAULT_MAX_TURNS = 50;
 
 /** Default per-execution budget cap in USD */
 export const DEFAULT_MAX_BUDGET_USD = 2.0;
+
+/** Higher budget cap for workflow child tasks — complex multi-step work needs more room */
+export const WORKFLOW_STEP_MAX_BUDGET_USD = 5.0;

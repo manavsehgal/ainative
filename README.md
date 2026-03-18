@@ -12,7 +12,7 @@ npx stagent
 
 Open [localhost:3000](http://localhost:3000).
 
-**Profiles & Policies** · **Blueprints & Schedules** · **Open Source**
+**Profiles & Policies** · **Blueprints & Schedules** · **Built-in Playbook** · **Open Source**
 
 <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/home-list.png" alt="Stagent home workspace" width="1200" />
 
@@ -59,6 +59,7 @@ Stagent ships a shared runtime registry that routes tasks, schedules, and workfl
 | 🎯 | **[Tool Permission Presets](#tool-permission-presets)** | Pre-configured permission bundles (read-only, git-safe, full-auto) with layered apply/remove |
 | 📦 | **[Workflow Context Batching](#workflow-context-batching)** | Workflow-scoped proposal buffering with batch approve/reject for learned context |
 | 🧪 | **[E2E Test Automation](#e2e-test-automation)** | API-level end-to-end test suite covering both runtimes, 4 profiles, and 4 workflow patterns |
+| 📖 | **[Playbook](#playbook)** | Built-in documentation with usage-stage awareness, adoption heatmap, and guided learning journeys |
 
 ---
 
@@ -188,6 +189,11 @@ Automatic text extraction on upload for five file types: text, PDF (pdf-parse), 
 #### Agent Document Context
 Documents linked to a task are automatically injected into the agent's prompt as context. The context builder aggregates extracted text from all linked documents, giving agents access to uploaded reference material without manual copy-paste.
 
+### Knowledge
+
+#### Playbook
+Built-in documentation system at `/playbook` with usage-stage awareness that adapts content to your experience level (new, early, active, power user). Browse feature reference docs and guided learning journeys organized by persona (Personal, Work, Power User, Developer). Adoption heatmap tracks which features you've explored, while journey cards show progress through multi-step learning paths. Markdown rendering with automatic internal link resolution, table of contents, related docs, and screengrab embedding.
+
 ### Platform
 
 #### Tool Permission Persistence
@@ -237,7 +243,7 @@ The `npx stagent` entry point boots a Next.js server from the published npm pack
 SQLite with WAL mode via better-sqlite3 + Drizzle ORM. Ten tables: `projects`, `tasks`, `workflows`, `agent_logs`, `notifications`, `documents`, `schedules`, `settings`, `learned_context`, `usage_ledger`. Self-healing bootstrap — tables are created on startup if missing.
 
 #### App Shell
-Responsive sidebar with collapsible icon-only mode, custom Stagent logo, tooltip navigation, dark/light/system theme, and OKLCH hue 250 blue-indigo color palette. Built on shadcn/ui (New York style) with PWA manifest and app icons. Routes: Home, Dashboard, Projects, Documents, Workflows, Profiles, Schedules, Inbox, Monitor, Settings.
+Responsive sidebar with collapsible icon-only mode, custom Stagent logo, tooltip navigation, dark/light/system theme, and OKLCH hue 250 blue-indigo color palette. Built on shadcn/ui (New York style) with PWA manifest and app icons. Routes: Home, Dashboard, Inbox, Monitor, Projects, Workflows, Documents, Profiles, Schedules, Cost & Usage, Playbook, Settings.
 
 #### E2E Test Automation
 API-level end-to-end test suite built on Vitest with 120-second timeouts and sequential execution. Five test files cover single-task execution, sequence workflows, parallel workflows, blueprints, and cross-runtime scenarios across both Claude and Codex backends. Tests skip gracefully when runtimes are not configured, preventing CI failures. Run with `npm run test:e2e`.
@@ -275,6 +281,7 @@ npm run test:e2e       # E2E integration tests (requires runtime credentials)
 ### Project Structure
 
 ```
+docs/                     # Playbook markdown docs + manifest.json
 src/
 ├── app/                  # Next.js App Router pages
 │   ├── dashboard/        # Task kanban board
@@ -285,6 +292,7 @@ src/
 │   ├── workflows/        # Workflow management + blueprints
 │   ├── schedules/        # Schedule management
 │   ├── costs/            # Cost & usage dashboard
+│   ├── playbook/         # Documentation & learning journeys
 │   ├── inbox/            # Notifications
 │   ├── monitor/          # Log streaming
 │   └── settings/         # Configuration
@@ -295,6 +303,7 @@ src/
 │   ├── workflows/        # Workflow UI + blueprints + swarm
 │   ├── documents/        # Document browser + upload
 │   ├── costs/            # Cost dashboard + filters
+│   ├── playbook/         # Playbook docs + journeys + adoption
 │   ├── schedules/        # Schedule management
 │   ├── monitoring/       # Log viewer
 │   ├── notifications/    # Inbox + permission actions
@@ -304,6 +313,7 @@ src/
 └── lib/
     ├── agents/           # Runtime adapters, profiles, learned context, pattern extraction
     ├── db/               # Schema, migrations
+    ├── docs/             # Playbook reader, adoption, usage-stage, journey tracker
     ├── documents/        # Preprocessing + context builder
     ├── workflows/        # Engine + types + blueprints
     ├── schedules/        # Scheduler engine + interval parser
@@ -315,7 +325,7 @@ src/
     └── utils/            # Shared helpers
 ```
 
-### API Endpoints (51 routes)
+### API Endpoints (52 routes)
 
 | Domain | Endpoint | Method | Purpose |
 |--------|----------|--------|---------|
@@ -366,6 +376,7 @@ src/
 | | `/api/permissions/presets` | GET/POST/DELETE | Permission preset bundles |
 | **Context** | `/api/context/batch` | POST | Batch approve/reject context proposals |
 | **Monitoring** | `/api/logs/stream` | GET | SSE agent log stream |
+| **Playbook** | `/api/playbook/status` | GET | Playbook adoption status and usage stage |
 | **Platform** | `/api/command-palette/recent` | GET | Recent command palette items |
 | | `/api/data/clear` | POST | Clear all data |
 | | `/api/data/seed` | POST | Seed sample data |
@@ -384,7 +395,7 @@ All 14 features shipped across three layers:
 | **Core** | Project management, task board, agent integration, inbox notifications, monitoring dashboard |
 | **Polish** | Homepage dashboard, UX fixes, workflow engine, AI task assist, content handling, session management |
 
-### Post-MVP — Complete (30 features)
+### Post-MVP — Complete (31 features)
 
 | Category | Feature | What shipped |
 |----------|---------|-------------|
@@ -418,6 +429,7 @@ All 14 features shipped across three layers:
 | | Cross-Provider Profiles | Profile compatibility layer ensuring profiles work across Claude and Codex runtimes |
 | | Parallel Fork/Join | 2-5 concurrent research branches with synthesis step |
 | **Runtime Quality** | E2E Test Automation | API-level test suite covering both runtimes, 4 profiles, 4 workflow patterns |
+| **Knowledge** | Playbook | Built-in documentation with usage-stage awareness, adoption heatmap, guided learning journeys |
 | **Governance** | Usage Metering Ledger | Provider-normalized token and spend tracking across all execution paths |
 | | Spend Budget Guardrails | Per-project and global budgets with enforcement and alerts |
 | | Cost & Usage Dashboard | Summary cards, trend views, provider/model breakdowns, budget audit visibility |

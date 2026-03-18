@@ -23,7 +23,7 @@ interface FromAssistBody {
 
 export async function POST(req: NextRequest) {
   const body = (await req.json()) as FromAssistBody;
-  const { name, projectId, definition, priority, assignedAgent, executeImmediately, parentTask } = body;
+  const { name, projectId, definition, priority, assignedAgent, executeImmediately } = body;
 
   if (!name?.trim()) {
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
@@ -46,53 +46,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: compatibilityError }, { status: 400 });
   }
 
-  // Transaction: create workflow + tasks + optional parent task atomically
+  // Transaction: create workflow + step tasks atomically (no phantom parent task)
   const workflowId = crypto.randomUUID();
   const now = new Date();
   const taskIds: string[] = [];
-  let parentTaskId: string | null = null;
 
   try {
     db.transaction((tx) => {
-      // Create parent task (no workflowId — visible on dashboard)
-      if (parentTask?.title) {
-        parentTaskId = crypto.randomUUID();
-        tx.insert(tasks)
-          .values({
-            id: parentTaskId,
-            title: parentTask.title,
-            description: parentTask.description || null,
-            projectId: projectId || null,
-            workflowId: null,
-            status: executeImmediately ? "running" : "planned",
-            assignedAgent: assignedAgent ?? null,
-            agentProfile: parentTask.agentProfile ?? null,
-            priority: priority ?? 2,
-            createdAt: now,
-            updatedAt: now,
-          })
-          .run();
-      }
-
-      // Store sourceTaskId in definition for parent↔workflow linkage
-      const defToStore = parentTaskId
-        ? { ...definition, sourceTaskId: parentTaskId }
-        : definition;
-
-      // Create workflow
+      // Create workflow — no sourceTaskId needed since there's no parent task
       tx.insert(workflows)
         .values({
           id: workflowId,
           name: name.trim(),
           projectId: projectId || null,
-          definition: JSON.stringify(defToStore),
+          definition: JSON.stringify(definition),
           status: executeImmediately ? "active" : "draft",
           createdAt: now,
           updatedAt: now,
         })
         .run();
 
-      // Create tasks for each step (with workflowId — hidden from dashboard)
+      // Create tasks for each step (with workflowId — hidden from dashboard kanban)
       for (const step of definition.steps) {
         const taskId = crypto.randomUUID();
         taskIds.push(taskId);
@@ -135,7 +109,7 @@ export async function POST(req: NextRequest) {
     {
       workflow: created,
       taskIds,
-      parentTaskId,
+      parentTaskId: null,
       status: executeImmediately ? "started" : "created",
     },
     { status: 201 }

@@ -20,13 +20,20 @@ import {
   Clock3,
   GitBranch,
   MessageSquareMore,
+  ChevronDown,
+  ChevronRight,
+  FileText,
+  Paperclip,
 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
 import { workflowStatusVariant, patternLabels } from "@/lib/constants/status-colors";
 import { LoopStatusView } from "./loop-status-view";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { LightMarkdown } from "@/components/shared/light-markdown";
 import { SwarmDashboard } from "./swarm-dashboard";
+import { WorkflowFullOutput } from "./workflow-full-output";
 import type { LoopState, LoopConfig, SwarmConfig } from "@/lib/workflows/types";
 
 interface StepWithState {
@@ -44,6 +51,14 @@ interface StepWithState {
   };
 }
 
+interface DocumentInfo {
+  id: string;
+  originalName: string;
+  mimeType: string;
+  storagePath: string;
+  direction: string;
+}
+
 interface WorkflowStatusData {
   id: string;
   name: string;
@@ -55,6 +70,8 @@ interface WorkflowStatusData {
   loopConfig?: LoopConfig;
   loopState?: LoopState;
   swarmConfig?: SwarmConfig;
+  stepDocuments?: Record<string, DocumentInfo[]>;
+  parentDocuments?: DocumentInfo[];
 }
 
 interface WorkflowStatusViewProps {
@@ -69,6 +86,72 @@ const stepStatusIcons: Record<string, React.ReactNode> = {
   waiting_approval: <ShieldQuestion className="h-4 w-4 text-status-warning" />,
   waiting_dependencies: <Clock3 className="h-4 w-4 text-status-warning" />,
 };
+
+/** Expandable step result: collapsed LightMarkdown preview + full markdown on expand */
+function ExpandableResult({ result }: { result: string }) {
+  const [expanded, setExpanded] = useState(false);
+
+  if (!result) return null;
+
+  return (
+    <div className="mt-2">
+      {expanded ? (
+        <>
+          <div className="prose prose-sm dark:prose-invert max-w-none max-h-96 overflow-auto rounded-md border bg-muted/30 p-3">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{result}</ReactMarkdown>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="mt-1 h-6 text-xs text-muted-foreground"
+            onClick={() => setExpanded(false)}
+          >
+            <ChevronDown className="h-3 w-3 mr-1" />
+            Collapse
+          </Button>
+        </>
+      ) : (
+        <>
+          <LightMarkdown content={result.slice(0, 500)} lineClamp={2} />
+          {result.length > 200 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mt-1 h-6 text-xs text-muted-foreground"
+              onClick={() => setExpanded(true)}
+            >
+              <ChevronRight className="h-3 w-3 mr-1" />
+              Expand
+            </Button>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+/** Document list for a single step or parent task */
+function DocumentList({ docs, label }: { docs: DocumentInfo[]; label: string }) {
+  if (docs.length === 0) return null;
+
+  return (
+    <div className="mt-3">
+      <p className="text-xs font-medium text-muted-foreground mb-1.5">{label}</p>
+      <div className="space-y-1">
+        {docs.map((doc) => (
+          <a
+            key={doc.id}
+            href={`/api/documents/${doc.id}/download`}
+            className="flex items-center gap-2 text-xs text-brand-blue hover:underline"
+          >
+            <FileText className="h-3 w-3 shrink-0" />
+            {doc.originalName}
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 
 export function WorkflowStatusView({ workflowId }: WorkflowStatusViewProps) {
@@ -219,6 +302,15 @@ export function WorkflowStatusView({ workflowId }: WorkflowStatusViewProps) {
       ? data.steps.find((step) => step.dependsOn?.length) ?? null
       : null;
 
+  // Collect all completed step outputs for full output sheet
+  const completedStepOutputs = data.steps
+    .filter((s) => s.state.result && s.state.status === "completed")
+    .map((s) => ({ name: s.name, result: s.state.result! }));
+
+  // Check for any documents
+  const hasStepDocs = data.stepDocuments && Object.keys(data.stepDocuments).length > 0;
+  const hasParentDocs = data.parentDocuments && data.parentDocuments.length > 0;
+
   return (
     <>
       <Card>
@@ -231,6 +323,14 @@ export function WorkflowStatusView({ workflowId }: WorkflowStatusViewProps) {
               </p>
             </div>
             <div className="flex items-center gap-2">
+              {/* Full Output sheet — when any steps have completed */}
+              {completedStepOutputs.length > 0 && (
+                <WorkflowFullOutput
+                  workflowName={data.name}
+                  steps={completedStepOutputs}
+                />
+              )}
+
               <Badge variant={workflowStatusVariant[data.status] ?? "secondary"}>
                 {data.status}
               </Badge>
@@ -364,10 +464,13 @@ export function WorkflowStatusView({ workflowId }: WorkflowStatusViewProps) {
                                 </p>
                               )}
                               {step.state.result && step.state.status === "completed" && (
-                                <LightMarkdown
-                                  content={step.state.result.slice(0, 500)}
-                                  lineClamp={4}
-                                  className="mt-2"
+                                <ExpandableResult result={step.state.result} />
+                              )}
+                              {/* Step output documents */}
+                              {step.state.taskId && data.stepDocuments?.[step.state.taskId] && (
+                                <DocumentList
+                                  docs={data.stepDocuments[step.state.taskId]}
+                                  label="Generated Files"
                                 />
                               )}
                             </div>
@@ -412,12 +515,15 @@ export function WorkflowStatusView({ workflowId }: WorkflowStatusViewProps) {
                             )}
                             {synthesisStep.state.result &&
                               synthesisStep.state.status === "completed" && (
-                                <LightMarkdown
-                                  content={synthesisStep.state.result.slice(0, 500)}
-                                  lineClamp={4}
-                                  className="mt-2"
-                                />
+                                <ExpandableResult result={synthesisStep.state.result} />
                               )}
+                            {/* Synthesis step documents */}
+                            {synthesisStep.state.taskId && data.stepDocuments?.[synthesisStep.state.taskId] && (
+                              <DocumentList
+                                docs={data.stepDocuments[synthesisStep.state.taskId]}
+                                label="Generated Files"
+                              />
+                            )}
                           </div>
                         </div>
                       </div>
@@ -453,10 +559,13 @@ export function WorkflowStatusView({ workflowId }: WorkflowStatusViewProps) {
                           </p>
                         )}
                         {step.state.result && step.state.status === "completed" && (
-                          <LightMarkdown
-                            content={step.state.result.slice(0, 500)}
-                            lineClamp={2}
-                            className="mt-1"
+                          <ExpandableResult result={step.state.result} />
+                        )}
+                        {/* Step output documents */}
+                        {step.state.taskId && data.stepDocuments?.[step.state.taskId] && (
+                          <DocumentList
+                            docs={data.stepDocuments[step.state.taskId]}
+                            label="Generated Files"
                           />
                         )}
                       </div>
@@ -464,6 +573,29 @@ export function WorkflowStatusView({ workflowId }: WorkflowStatusViewProps) {
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Documents section — parent inputs and step outputs */}
+          {(hasParentDocs || hasStepDocs) && (
+            <div className="mt-6 pt-4 border-t border-border/50">
+              <div className="flex items-center gap-2 mb-3">
+                <Paperclip className="h-4 w-4 text-muted-foreground" />
+                <p className="text-sm font-medium">Documents</p>
+              </div>
+              {hasParentDocs && (
+                <DocumentList docs={data.parentDocuments!} label="Input Files" />
+              )}
+              {hasStepDocs && Object.entries(data.stepDocuments!).map(([taskId, docs]) => {
+                const step = data.steps.find((s) => s.state.taskId === taskId);
+                return (
+                  <DocumentList
+                    key={taskId}
+                    docs={docs}
+                    label={step ? `Output: ${step.name}` : "Output Files"}
+                  />
+                );
+              })}
             </div>
           )}
         </CardContent>

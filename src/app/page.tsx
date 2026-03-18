@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
-import { tasks, projects, agentLogs, notifications } from "@/lib/db/schema";
+import { tasks, projects, agentLogs, notifications, workflows } from "@/lib/db/schema";
 import { eq, count, gte, and, desc, sql, inArray } from "drizzle-orm";
+import { parseWorkflowState } from "@/lib/workflows/engine";
 import { Greeting } from "@/components/dashboard/greeting";
 import { StatsCards } from "@/components/dashboard/stats-cards";
 import { PriorityQueue } from "@/components/dashboard/priority-queue";
@@ -33,6 +34,7 @@ export default async function HomePage() {
     [awaitingResult],
     [activeProjectsResult],
     priorityTasks,
+    activeWorkflows,
     recentLogs,
     allProjects,
     recentActiveProjects,
@@ -63,6 +65,10 @@ export default async function HomePage() {
     db.select().from(tasks).where(
       inArray(tasks.status, ["failed", "running", "queued"])
     ).orderBy(tasks.priority, desc(tasks.updatedAt)).limit(5),
+    // Active/failed workflows for priority queue
+    db.select().from(workflows).where(
+      inArray(workflows.status, ["active", "failed"])
+    ).orderBy(desc(workflows.updatedAt)).limit(5),
     // Recent agent logs
     db.select().from(agentLogs).orderBy(desc(agentLogs.timestamp)).limit(6),
     // All projects for quick actions
@@ -86,6 +92,7 @@ export default async function HomePage() {
   // Build project name lookup for priority tasks
   const projectMap = new Map(allProjects.map((p) => [p.id, p.name]));
 
+  // Serialize priority tasks (no more workflow linkage via parent task)
   const serializedPriorityTasks: PriorityTask[] = priorityTasks.map((t) => ({
     id: t.id,
     title: t.title,
@@ -93,6 +100,42 @@ export default async function HomePage() {
     priority: t.priority,
     projectName: t.projectId ? projectMap.get(t.projectId) ?? undefined : undefined,
   }));
+
+  // Build workflow priority items directly
+  const workflowPriorityItems: PriorityTask[] = activeWorkflows.map((w) => {
+    let workflowProgress: PriorityTask["workflowProgress"];
+
+    try {
+      const { definition: def, state } = parseWorkflowState(w.definition);
+      if (state && def.steps) {
+        const completed = state.stepStates.filter((s) => s.status === "completed").length;
+        const running = state.stepStates.find((s) => s.status === "running");
+        const runningStep = running
+          ? def.steps.find((step) => step.id === running.stepId)
+          : undefined;
+        workflowProgress = {
+          current: completed,
+          total: def.steps.length,
+          currentStepName: runningStep?.name,
+          workflowId: w.id,
+          workflowStatus: w.status,
+        };
+      }
+    } catch { /* skip parse errors */ }
+
+    return {
+      id: w.id,
+      title: w.name,
+      status: w.status === "active" ? "running" : w.status,
+      priority: 1, // Workflows always high priority in the attention queue
+      projectName: w.projectId ? projectMap.get(w.projectId) ?? undefined : undefined,
+      workflowProgress,
+      isWorkflow: true,
+    };
+  });
+
+  // Merge and limit to 5 items total
+  const allPriorityItems = [...workflowPriorityItems, ...serializedPriorityTasks].slice(0, 5);
 
   // Get task titles for log entries
   const logTaskIds = [...new Set(recentLogs.filter((l) => l.taskId).map((l) => l.taskId!))];
@@ -148,7 +191,7 @@ export default async function HomePage() {
         />
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-5 mb-6">
           <div className="lg:col-span-3">
-            <PriorityQueue tasks={serializedPriorityTasks} />
+            <PriorityQueue tasks={allPriorityItems} />
           </div>
           <div className="lg:col-span-2">
             <ActivityFeed entries={serializedLogs} hourlyActivity={agentActivityByHour} />

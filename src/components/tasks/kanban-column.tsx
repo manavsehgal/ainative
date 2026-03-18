@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Inbox, Plus, CheckSquare, Square, ArrowRight, Play, Trash2 } from "lucide-react";
 import { TaskCard, type TaskItem } from "./task-card";
+import { WorkflowKanbanCard, type WorkflowKanbanItem } from "@/components/workflows/workflow-kanban-card";
 import type { TaskStatus } from "@/lib/constants/task-status";
 
 const columnLabels: Record<string, string> = {
@@ -20,6 +21,7 @@ const columnLabels: Record<string, string> = {
 export function KanbanColumn({
   status,
   tasks,
+  workflows = [],
   exitingIds,
   onTaskClick,
   onAddTask,
@@ -30,6 +32,7 @@ export function KanbanColumn({
 }: {
   status: TaskStatus;
   tasks: TaskItem[];
+  workflows?: WorkflowKanbanItem[];
   exitingIds?: Set<string>;
   onTaskClick: (task: TaskItem) => void;
   onAddTask?: () => void;
@@ -40,6 +43,7 @@ export function KanbanColumn({
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
   const label = columnLabels[status] ?? status;
+  const totalCount = tasks.length + workflows.length;
 
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -120,12 +124,12 @@ export function KanbanColumn({
     ) : null;
 
   return (
-    <div className="group/col flex flex-col min-w-64 max-w-80 flex-1 shrink-0" role="group" aria-label={`${label} column, ${tasks.length} tasks`}>
+    <div className="group/col flex flex-col min-w-64 max-w-80 flex-1 shrink-0" role="group" aria-label={`${label} column, ${totalCount} items`}>
       {/* Column header */}
       <div className="flex items-center gap-2 mb-3 px-1">
         <h3 className="text-sm font-medium">{label}</h3>
         <Badge variant="secondary" className="text-xs">
-          {tasks.length}
+          {totalCount}
         </Badge>
         <div className="flex-1" />
         {canSelect && tasks.length > 0 && (
@@ -182,31 +186,38 @@ export function KanbanColumn({
       >
         <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
           <div className="space-y-2">
-            {tasks.length === 0 ? (
+            {totalCount === 0 ? (
               <div className="flex flex-col items-center justify-center h-full min-h-[120px] text-muted-foreground border-2 border-dashed border-border/50 rounded-lg bg-background/35">
                 <Inbox className="h-5 w-5 mb-1 opacity-40" />
-                <span className="text-xs">No tasks</span>
+                <span className="text-xs">No items</span>
               </div>
             ) : (
-              tasks.map((task) => {
-                const isExiting = exitingIds?.has(task.id);
-                return (
-                  <div
-                    key={task.id}
-                    className={isExiting ? "animate-card-exit pointer-events-none" : ""}
-                  >
-                    <TaskCard
-                      task={task}
-                      onClick={onTaskClick}
-                      selectionMode={selectMode}
-                      selected={selectedIds.has(task.id)}
-                      onSelect={handleSelect}
-                      onDelete={onDeleteTask}
-                      onEdit={onEditTask}
-                    />
-                  </div>
-                );
-              })
+              <>
+                {/* Workflow cards first (not draggable) */}
+                {workflows.map((workflow) => (
+                  <WorkflowKanbanCard key={workflow.id} workflow={workflow} />
+                ))}
+                {/* Task cards (draggable) */}
+                {tasks.map((task) => {
+                  const isExiting = exitingIds?.has(task.id);
+                  return (
+                    <div
+                      key={task.id}
+                      className={isExiting ? "animate-card-exit pointer-events-none" : ""}
+                    >
+                      <TaskCard
+                        task={task}
+                        onClick={onTaskClick}
+                        selectionMode={selectMode}
+                        selected={selectedIds.has(task.id)}
+                        onSelect={handleSelect}
+                        onDelete={onDeleteTask}
+                        onEdit={onEditTask}
+                      />
+                    </div>
+                  );
+                })}
+              </>
             )}
           </div>
         </SortableContext>

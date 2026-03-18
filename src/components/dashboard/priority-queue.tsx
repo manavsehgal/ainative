@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Clock, Shield, ArrowRight } from "lucide-react";
+import { AlertTriangle, Clock, Shield, ArrowRight, Workflow as WorkflowIcon } from "lucide-react";
 import { taskStatusVariant } from "@/lib/constants/status-colors";
 
 export interface PriorityTask {
@@ -13,6 +13,14 @@ export interface PriorityTask {
   status: string;
   priority: number;
   projectName?: string;
+  isWorkflow?: boolean;
+  workflowProgress?: {
+    current: number;
+    total: number;
+    currentStepName?: string;
+    workflowId: string;
+    workflowStatus: string;
+  };
 }
 
 interface PriorityQueueProps {
@@ -45,23 +53,54 @@ export function PriorityQueue({ tasks }: PriorityQueueProps) {
         ) : (
           <div className="space-y-1" aria-live="polite">
             {tasks.map((task) => {
-              const Icon = statusIcon[task.status] ?? Shield;
+              // Workflow items use the workflow icon; tasks use status icons
+              const Icon = task.isWorkflow
+                ? WorkflowIcon
+                : statusIcon[task.status] ?? Shield;
+              const linkHref = task.isWorkflow
+                ? `/workflows/${task.workflowProgress?.workflowId ?? task.id}`
+                : `/tasks/${task.id}`;
+
               return (
-                <div
+                <Link
                   key={task.id}
-                  className="flex items-center gap-3 py-2.5 border-b border-border/50 last:border-b-0"
+                  href={linkHref}
+                  className="flex items-center gap-3 py-2.5 border-b border-border/50 last:border-b-0 hover:bg-accent/30 rounded-md px-1 -mx-1 transition-colors"
                 >
-                  <Icon className={`h-4 w-4 flex-shrink-0 ${priorityColors[task.priority] ?? priorityColors[3]}`} />
+                  <Icon className={`h-4 w-4 flex-shrink-0 ${
+                    task.isWorkflow ? "text-primary" : priorityColors[task.priority] ?? priorityColors[3]
+                  }`} />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{task.title}</p>
                     {task.projectName && (
                       <p className="text-xs text-muted-foreground">{task.projectName}</p>
                     )}
+                    {task.workflowProgress && (
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <span className="text-xs text-muted-foreground">
+                          {task.workflowProgress.current}/{task.workflowProgress.total}
+                        </span>
+                        {task.workflowProgress.currentStepName && (
+                          <span className="text-[11px] text-muted-foreground truncate">
+                            {task.workflowProgress.currentStepName}
+                          </span>
+                        )}
+                        {/* Mini progress bar */}
+                        <div className="h-1 flex-1 max-w-16 rounded-full bg-muted overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-primary transition-all"
+                            style={{ width: `${(task.workflowProgress.current / task.workflowProgress.total) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <Badge variant={taskStatusVariant[task.status] ?? "secondary"} className="text-xs">
-                    {task.status}
+                    {task.isWorkflow && task.workflowProgress
+                      ? task.workflowProgress.workflowStatus
+                      : task.status}
                   </Badge>
-                </div>
+                </Link>
               );
             })}
           </div>

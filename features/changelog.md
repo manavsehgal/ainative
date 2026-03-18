@@ -2,6 +2,10 @@
 
 ## 2026-03-17
 
+### Completed
+- Playbook documentation system — built-in docs at `/playbook` with usage-stage awareness, adoption heatmap, journey cards, markdown rendering, and command palette integration
+- README updated with Playbook feature across all sections (highlights, deep dives, project structure, API routes, roadmap)
+
 ### Groomed
 - `learned-context-ux-completion` (P2, planned) — bounded UX follow-up from the agent self-improvement browser evaluation
   - Split the remaining learned-context UX gaps out of `agent-self-improvement` instead of reopening the completed base feature

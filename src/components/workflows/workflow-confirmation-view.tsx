@@ -188,11 +188,6 @@ export function WorkflowConfirmationView({
           priority,
           assignedAgent: assignedAgent || undefined,
           executeImmediately,
-          parentTask: {
-            title: steps[0].title,
-            description: steps[0].description,
-            agentProfile: steps[0].profile === "auto" ? undefined : steps[0].profile,
-          },
         }),
       });
 
@@ -205,8 +200,8 @@ export function WorkflowConfirmationView({
       const data = await res.json();
       toast.success(
         executeImmediately
-          ? `Task created with workflow (${data.taskIds.length} steps)`
-          : `Task created with draft workflow (${data.taskIds.length} steps)`,
+          ? `Workflow started (${data.taskIds.length} steps)`
+          : `Workflow created as draft (${data.taskIds.length} steps)`,
         {
           action: {
             label: "View workflow",

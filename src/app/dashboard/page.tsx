@@ -2,9 +2,11 @@ import { Suspense } from "react";
 import { db } from "@/lib/db";
 import { tasks, projects, workflows } from "@/lib/db/schema";
 import { desc, isNull } from "drizzle-orm";
+import { parseWorkflowState } from "@/lib/workflows/engine";
 import { KanbanBoard } from "@/components/tasks/kanban-board";
 import { SkeletonBoard } from "@/components/tasks/skeleton-board";
 import type { TaskItem } from "@/components/tasks/task-card";
+import type { WorkflowKanbanItem } from "@/components/workflows/workflow-kanban-card";
 
 export const dynamic = "force-dynamic";
 
@@ -21,38 +23,74 @@ async function BoardContent() {
     .from(projects)
     .orderBy(projects.name);
 
-  // Build project name lookup for task cards
+  // Build project name lookup
   const projectMap = new Map(allProjects.map((p) => [p.id, p.name]));
 
-  // Look up linked workflows for parent tasks (via sourceTaskId in definition JSON)
+  // Fetch all workflows for kanban display
   const allWorkflows = await db
-    .select({ id: workflows.id, definition: workflows.definition, status: workflows.status })
-    .from(workflows);
+    .select()
+    .from(workflows)
+    .orderBy(desc(workflows.updatedAt));
 
-  const linkedWorkflowMap = new Map<string, { workflowId: string; workflowStatus: string }>();
-  for (const w of allWorkflows) {
-    try {
-      const def = JSON.parse(w.definition);
-      if (def.sourceTaskId) {
-        linkedWorkflowMap.set(def.sourceTaskId, {
-          workflowId: w.id,
-          workflowStatus: w.status,
-        });
-      }
-    } catch { /* skip invalid JSON */ }
-  }
-
-  // Serialize Date objects for client component consumption
+  // Serialize tasks (no more linkedWorkflow fields)
   const serializedTasks: TaskItem[] = allTasks.map((t) => ({
     ...t,
     projectName: t.projectId ? projectMap.get(t.projectId) ?? undefined : undefined,
-    linkedWorkflowId: linkedWorkflowMap.get(t.id)?.workflowId,
-    linkedWorkflowStatus: linkedWorkflowMap.get(t.id)?.workflowStatus,
     createdAt: t.createdAt.toISOString(),
     updatedAt: t.updatedAt.toISOString(),
   }));
 
-  return <KanbanBoard initialTasks={serializedTasks} projects={allProjects} />;
+  // Build workflow kanban items with step progress
+  const serializedWorkflows: WorkflowKanbanItem[] = allWorkflows.map((w) => {
+    let stepProgress = { current: 0, total: 0 };
+    let currentStepName: string | undefined;
+
+    try {
+      const { definition, state } = parseWorkflowState(w.definition);
+      if (definition.steps) {
+        stepProgress.total = definition.steps.length;
+        if (state) {
+          stepProgress.current = state.stepStates.filter(
+            (s) => s.status === "completed"
+          ).length;
+          const running = state.stepStates.find((s) => s.status === "running");
+          if (running) {
+            currentStepName = definition.steps.find(
+              (step) => step.id === running.stepId
+            )?.name;
+          }
+        }
+      }
+    } catch {
+      /* skip parse errors */
+    }
+
+    return {
+      type: "workflow" as const,
+      id: w.id,
+      name: w.name,
+      status: w.status,
+      pattern: (() => {
+        try {
+          return JSON.parse(w.definition).pattern ?? "sequence";
+        } catch {
+          return "sequence";
+        }
+      })(),
+      projectName: w.projectId ? projectMap.get(w.projectId) ?? undefined : undefined,
+      stepProgress,
+      currentStepName,
+      createdAt: w.createdAt.toISOString(),
+    };
+  });
+
+  return (
+    <KanbanBoard
+      initialTasks={serializedTasks}
+      initialWorkflows={serializedWorkflows}
+      projects={allProjects}
+    />
+  );
 }
 
 export default function DashboardPage() {
