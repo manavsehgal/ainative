@@ -18,11 +18,24 @@ export interface TaskItem {
   agentProfile: string | null;
   projectId: string | null;
   projectName?: string;
+  workflowId: string | null;
+  scheduleId: string | null;
+  workflowName?: string;
+  scheduleName?: string;
   result: string | null;
   sessionId: string | null;
   resumeCount: number;
   createdAt: string;
   updatedAt: string;
+  usage?: {
+    inputTokens: number | null;
+    outputTokens: number | null;
+    totalTokens: number | null;
+    costMicros: number | null;
+    modelId: string | null;
+    startedAt: string | null;
+    finishedAt: string | null;
+  };
 }
 
 interface TaskCardProps {

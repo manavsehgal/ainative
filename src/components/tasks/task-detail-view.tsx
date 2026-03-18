@@ -2,30 +2,16 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Play, Square, RotateCcw, ArrowRight, FastForward, Trash2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { TaskAttachments } from "./task-attachments";
-import { LightMarkdown } from "@/components/shared/light-markdown";
-import { ExpandableResult } from "@/components/workflows/workflow-status-view";
-import { formatTimestamp } from "@/lib/utils/format-timestamp";
-import { MAX_RESUME_COUNT } from "@/lib/constants/task-status";
-import { taskStatusVariant } from "@/lib/constants/status-colors";
-import type { TaskItem } from "./task-card";
+import { TaskChipBar } from "./task-chip-bar";
+import { TaskBentoGrid } from "./task-bento-grid";
+import { TaskResultRenderer } from "./task-result-renderer";
 import { TaskEditDialog } from "./task-edit-dialog";
+import type { TaskItem } from "./task-card";
 import type { DocumentRow } from "@/lib/db/schema";
-
-const priorityLabels: Record<number, string> = {
-  0: "P0 - Critical",
-  1: "P1 - High",
-  2: "P2 - Medium",
-  3: "P3 - Low",
-};
 
 interface TaskDetailViewProps {
   taskId: string;
@@ -68,8 +54,6 @@ export function TaskDetailView({ taskId, initialTask }: TaskDetailViewProps) {
   }, [taskId, fetchDocs]);
 
   useEffect(() => {
-    // If server provided initial data, only fetch supplementary data (docs)
-    // and skip the redundant task refresh
     if (!initialTask) refresh();
     fetchDocs();
   }, [refresh, fetchDocs, initialTask]);
@@ -193,8 +177,8 @@ export function TaskDetailView({ taskId, initialTask }: TaskDetailViewProps) {
   if (!loaded) {
     return (
       <div className="space-y-4">
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-20 w-full" />
         <Skeleton className="h-48 w-full" />
       </div>
     );
@@ -208,171 +192,49 @@ export function TaskDetailView({ taskId, initialTask }: TaskDetailViewProps) {
   const outputDocs = docs.filter((doc) => doc.direction === "output");
 
   return (
-    <div className="space-y-6" aria-live="polite">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">{task.title}</h1>
-          <div className="flex items-center gap-2 mt-1">
-            <Badge variant={taskStatusVariant[task.status] ?? "secondary"}>
-              {task.status}
-            </Badge>
-            <span className="text-sm text-muted-foreground">
-              {priorityLabels[task.priority] ?? `P${task.priority}`}
-            </span>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {(task.status === "planned" || task.status === "queued") && (
-            <Button size="sm" variant="outline" onClick={() => setEditOpen(true)} disabled={loading}>
-              <Pencil className="h-3.5 w-3.5 mr-1" />
-              Edit
-            </Button>
-          )}
-          {task.status === "planned" && (
-            <Button size="sm" onClick={() => handleStatusChange("queued")} disabled={loading}>
-              <ArrowRight className="h-3.5 w-3.5 mr-1" />
-              {loading ? "Queueing..." : "Queue"}
-            </Button>
-          )}
-          {task.status === "queued" && (
-            <Button size="sm" onClick={handleExecute} disabled={loading}>
-              <Play className="h-3.5 w-3.5 mr-1" />
-              {loading ? "Starting..." : "Run"}
-            </Button>
-          )}
-          {task.status === "running" && (
-            <Button
-              size="sm"
-              variant="destructive"
-              onClick={() => setConfirmCancel(true)}
-              disabled={loading}
-            >
-              <Square className="h-3.5 w-3.5 mr-1" />
-              {loading ? "Cancelling..." : "Cancel"}
-            </Button>
-          )}
-          {(task.status === "failed" || task.status === "cancelled") && (
-            <>
-              {task.sessionId && task.resumeCount < MAX_RESUME_COUNT && (
-                <Button size="sm" onClick={handleResume} disabled={loading}>
-                  <FastForward className="h-3.5 w-3.5 mr-1" />
-                  {loading ? "Resuming..." : "Resume"}
-                </Button>
-              )}
-              <Button
-                size="sm"
-                variant={task.sessionId ? "outline" : "default"}
-                onClick={() => handleStatusChange("queued")}
-                disabled={loading}
-              >
-                <RotateCcw className="h-3.5 w-3.5 mr-1" />
-                {loading ? "Retrying..." : "Retry"}
-              </Button>
-            </>
-          )}
-          {task.status !== "running" && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-muted-foreground hover:text-destructive"
-              onClick={() => setConfirmDelete(true)}
-              disabled={loading}
-            >
-              <Trash2 className="h-3.5 w-3.5 mr-1" />
-              Delete
-            </Button>
-          )}
-        </div>
-      </div>
+    <div className="space-y-4" aria-live="polite">
+      {error && <p className="text-sm text-destructive">{error}</p>}
 
-      {error && (
-        <p className="text-sm text-destructive">{error}</p>
-      )}
+      <TaskChipBar
+        task={task}
+        loading={loading}
+        onEdit={() => setEditOpen(true)}
+        onQueue={() => handleStatusChange("queued")}
+        onRun={handleExecute}
+        onCancel={() => setConfirmCancel(true)}
+        onResume={handleResume}
+        onRetry={() => handleStatusChange("queued")}
+        onDelete={() => setConfirmDelete(true)}
+      />
 
-      {/* Description */}
-      {task.description && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Description</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <LightMarkdown content={task.description} textSize="sm" />
-          </CardContent>
-        </Card>
-      )}
+      <TaskBentoGrid task={task} docs={docs} />
 
-      {/* Agent Info */}
-      {(task.assignedAgent || task.agentProfile) && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Agent</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-1">
-            {task.assignedAgent && (
-              <p className="text-sm text-muted-foreground">{task.assignedAgent}</p>
-            )}
-            {task.agentProfile && (
-              <p className="text-sm text-muted-foreground">
-                Profile: {task.agentProfile}
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Documents */}
       {docs.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">
-              Documents ({docs.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            {inputDocs.length > 0 && (
-              <TaskAttachments
-                documents={inputDocs}
-                title={`Input Attachments (${inputDocs.length})`}
-                onDeleted={fetchDocs}
-              />
-            )}
-            {outputDocs.length > 0 && (
-              <TaskAttachments
-                documents={outputDocs}
-                title={`Generated Outputs (${outputDocs.length})`}
-                onDeleted={fetchDocs}
-              />
-            )}
-          </CardContent>
-        </Card>
+        <div className="surface-card-muted rounded-lg p-4 space-y-4">
+          {inputDocs.length > 0 && (
+            <TaskAttachments
+              documents={inputDocs}
+              title={`Input Attachments (${inputDocs.length})`}
+              onDeleted={fetchDocs}
+            />
+          )}
+          {outputDocs.length > 0 && (
+            <TaskAttachments
+              documents={outputDocs}
+              title={`Generated Outputs (${outputDocs.length})`}
+              onDeleted={fetchDocs}
+            />
+          )}
+        </div>
       )}
 
-      {/* Result / Error */}
-      {task.result && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">
-              {task.status === "failed" ? "Error" : "Result"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {task.status === "failed" ? (
-              <pre className="text-xs text-muted-foreground bg-muted p-3 rounded-md overflow-auto max-h-60 whitespace-pre-wrap">
-                {task.result}
-              </pre>
-            ) : (
-              <ExpandableResult result={task.result} />
-            )}
-          </CardContent>
-        </Card>
+      {(task.description || task.result) && (
+        <TaskResultRenderer
+          description={task.description}
+          result={task.result}
+          status={task.status}
+        />
       )}
-
-      {/* Timestamps */}
-      <div className="text-xs text-muted-foreground">
-        <p>Created: {formatTimestamp(task.createdAt)}</p>
-        <p>Updated: {formatTimestamp(task.updatedAt)}</p>
-      </div>
 
       <ConfirmDialog
         open={confirmCancel}
