@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { LightMarkdown } from "@/components/shared/light-markdown";
+import { ExpandableResult } from "./workflow-status-view";
 import {
   CheckCircle,
   Circle,
@@ -234,13 +234,7 @@ export function LoopStatusView({
                         <p className="text-xs text-destructive">{iter.error}</p>
                       )}
                       {iter.result && (
-                        <LightMarkdown
-                          content={
-                            iter.result.slice(0, 1000) +
-                            (iter.result.length > 1000 ? "..." : "")
-                          }
-                          lineClamp={6}
-                        />
+                        <ExpandableResult result={iter.result} />
                       )}
                       {iter.taskId && (
                         <a

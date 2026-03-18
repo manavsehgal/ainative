@@ -3,13 +3,7 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Copy, Download, FileText } from "lucide-react";
 import { toast } from "sonner";
 
@@ -48,19 +42,14 @@ export function WorkflowFullOutput({ workflowName, steps }: WorkflowFullOutputPr
   }
 
   return (
-    <Sheet>
-      <SheetTrigger asChild>
-        <Button variant="outline" size="sm">
-          <FileText className="h-3 w-3 mr-1" />
-          Full Output
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="right" className="w-full sm:max-w-2xl">
-        <SheetHeader>
-          <SheetTitle>{workflowName} — Full Output</SheetTitle>
-        </SheetHeader>
-        <div className="px-6 pb-6 space-y-4 overflow-y-auto max-h-[calc(100vh-8rem)]">
-          <div className="flex gap-2">
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <FileText className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-base">Full Output</CardTitle>
+          </div>
+          <div className="flex gap-1">
             <Button variant="ghost" size="sm" onClick={copyAll}>
               <Copy className="h-3 w-3 mr-1" />
               Copy All
@@ -70,10 +59,13 @@ export function WorkflowFullOutput({ workflowName, steps }: WorkflowFullOutputPr
               Download .md
             </Button>
           </div>
-
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-6">
           {completedSteps.map((step, i) => (
             <div key={i}>
-              {i > 0 && <hr className="my-4 border-border" />}
+              {i > 0 && <hr className="border-border" />}
               <h3 className="text-sm font-semibold mb-3">{step.name}</h3>
               <div className="prose prose-sm dark:prose-invert max-w-none">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{step.result}</ReactMarkdown>
@@ -81,7 +73,7 @@ export function WorkflowFullOutput({ workflowName, steps }: WorkflowFullOutputPr
             </div>
           ))}
         </div>
-      </SheetContent>
-    </Sheet>
+      </CardContent>
+    </Card>
   );
 }

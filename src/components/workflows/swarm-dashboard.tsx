@@ -5,6 +5,7 @@ import { Brain, GitBranch, MessageSquareMore, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ExpandableResult } from "./workflow-status-view";
 import type { SwarmConfig } from "@/lib/workflows/types";
 
 interface StepWithState {
@@ -101,9 +102,7 @@ export function SwarmDashboard({
               <p className="text-xs text-destructive">{step.state.error}</p>
             )}
             {step.state.result && step.state.status === "completed" && (
-              <p className="text-xs text-muted-foreground line-clamp-4">
-                {step.state.result.slice(0, 320)}
-              </p>
+              <ExpandableResult result={step.state.result} />
             )}
             {canRetry && (
               <Button

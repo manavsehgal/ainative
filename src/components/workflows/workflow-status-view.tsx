@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -88,7 +89,7 @@ const stepStatusIcons: Record<string, React.ReactNode> = {
 };
 
 /** Expandable step result: collapsed LightMarkdown preview + full markdown on expand */
-function ExpandableResult({ result }: { result: string }) {
+export function ExpandableResult({ result }: { result: string }) {
   const [expanded, setExpanded] = useState(false);
 
   if (!result) return null;
@@ -139,14 +140,14 @@ function DocumentList({ docs, label }: { docs: DocumentInfo[]; label: string }) 
       <p className="text-xs font-medium text-muted-foreground mb-1.5">{label}</p>
       <div className="space-y-1">
         {docs.map((doc) => (
-          <a
+          <Link
             key={doc.id}
-            href={`/api/documents/${doc.id}/download`}
+            href={`/documents/${doc.id}`}
             className="flex items-center gap-2 text-xs text-brand-blue hover:underline"
           >
             <FileText className="h-3 w-3 shrink-0" />
             {doc.originalName}
-          </a>
+          </Link>
         ))}
       </div>
     </div>
@@ -312,7 +313,7 @@ export function WorkflowStatusView({ workflowId }: WorkflowStatusViewProps) {
   const hasParentDocs = data.parentDocuments && data.parentDocuments.length > 0;
 
   return (
-    <>
+    <div className="space-y-6">
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -323,14 +324,6 @@ export function WorkflowStatusView({ workflowId }: WorkflowStatusViewProps) {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              {/* Full Output sheet — when any steps have completed */}
-              {completedStepOutputs.length > 0 && (
-                <WorkflowFullOutput
-                  workflowName={data.name}
-                  steps={completedStepOutputs}
-                />
-              )}
-
               <Badge variant={workflowStatusVariant[data.status] ?? "secondary"}>
                 {data.status}
               </Badge>
@@ -601,6 +594,14 @@ export function WorkflowStatusView({ workflowId }: WorkflowStatusViewProps) {
         </CardContent>
       </Card>
 
+      {/* Full output — inline below workflow card when completed */}
+      {data.status === "completed" && completedStepOutputs.length > 0 && (
+        <WorkflowFullOutput
+          workflowName={data.name}
+          steps={completedStepOutputs}
+        />
+      )}
+
       {/* Delete confirmation */}
       <ConfirmDialog
         open={confirmDelete}
@@ -611,6 +612,6 @@ export function WorkflowStatusView({ workflowId }: WorkflowStatusViewProps) {
         onConfirm={handleDelete}
         destructive
       />
-    </>
+    </div>
   );
 }
