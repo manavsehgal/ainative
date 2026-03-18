@@ -125,10 +125,10 @@ export function DocumentChipBar({
               : new Date(doc.createdAt).getTime()
           )}
         </Badge>
+      </div>
 
-        {/* Divider */}
-        <span className="w-px h-4 bg-border" />
-
+      {/* Row 3: Links — task, workflow, project */}
+      <div className="flex flex-wrap items-center gap-2">
         {/* Task link */}
         {doc.taskTitle ? (
           <Badge
@@ -164,7 +164,7 @@ export function DocumentChipBar({
             onValueChange={onLinkProject}
             disabled={linking}
           >
-            <SelectTrigger className="h-7 w-[140px] text-xs border-dashed">
+            <SelectTrigger className="h-7 w-[220px] text-xs border-dashed">
               <SelectValue placeholder="Project" />
             </SelectTrigger>
             <SelectContent>

@@ -10,23 +10,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Play, Square, RotateCcw, ArrowRight, FastForward, Trash2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
-import { ContentPreview } from "./content-preview";
 import { TaskAttachments } from "./task-attachments";
+import { LightMarkdown } from "@/components/shared/light-markdown";
+import { ExpandableResult } from "@/components/workflows/workflow-status-view";
 import { formatTimestamp } from "@/lib/utils/format-timestamp";
 import { MAX_RESUME_COUNT } from "@/lib/constants/task-status";
 import { taskStatusVariant } from "@/lib/constants/status-colors";
 import type { TaskItem } from "./task-card";
 import { TaskEditDialog } from "./task-edit-dialog";
 import type { DocumentRow } from "@/lib/db/schema";
-
-function detectContentType(content: string): "text" | "markdown" | "code" | "json" | "unknown" {
-  if (content.startsWith("{") || content.startsWith("[")) {
-    try { JSON.parse(content); return "json"; } catch { /* not json */ }
-  }
-  if (content.includes("```") || content.includes("# ") || content.includes("**")) return "markdown";
-  if (content.includes("function ") || content.includes("const ") || content.includes("import ")) return "code";
-  return "text";
-}
 
 const priorityLabels: Record<number, string> = {
   0: "P0 - Critical",
@@ -305,9 +297,7 @@ export function TaskDetailView({ taskId, initialTask }: TaskDetailViewProps) {
             <CardTitle className="text-sm font-medium">Description</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-              {task.description}
-            </p>
+            <LightMarkdown content={task.description} textSize="sm" />
           </CardContent>
         </Card>
       )}
@@ -372,7 +362,7 @@ export function TaskDetailView({ taskId, initialTask }: TaskDetailViewProps) {
                 {task.result}
               </pre>
             ) : (
-              <ContentPreview content={task.result} contentType={detectContentType(task.result)} />
+              <ExpandableResult result={task.result} />
             )}
           </CardContent>
         </Card>

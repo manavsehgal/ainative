@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Copy, Download, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { PROSE_READER } from "@/lib/constants/prose-styles";
 
 interface StepOutput {
   name: string;
@@ -62,12 +63,12 @@ export function WorkflowFullOutput({ workflowName, steps }: WorkflowFullOutputPr
         </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-6">
+        <div className="prose-reader-surface space-y-6">
           {completedSteps.map((step, i) => (
             <div key={i}>
               {i > 0 && <hr className="border-border" />}
               <h3 className="text-sm font-semibold mb-3">{step.name}</h3>
-              <div className="prose prose-sm dark:prose-invert max-w-none">
+              <div className={PROSE_READER}>
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{step.result}</ReactMarkdown>
               </div>
             </div>

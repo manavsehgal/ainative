@@ -18,6 +18,7 @@ import {
   isImage,
   getLanguageLabel,
 } from "./utils";
+import { PROSE_READER } from "@/lib/constants/prose-styles";
 import type { DocumentWithRelations } from "./types";
 
 interface DocumentContentRendererProps {
@@ -50,7 +51,7 @@ function DocumentContentRendererInner({ doc }: DocumentContentRendererProps) {
   // Tier 1: Markdown — full render, no truncation
   if (isMarkdown(doc.mimeType) && doc.extractedText) {
     return (
-      <div className="prose prose-sm dark:prose-invert max-w-none">
+      <div className={PROSE_READER}>
         <ReactMarkdown remarkPlugins={[remarkGfm]}>
           {doc.extractedText}
         </ReactMarkdown>
@@ -79,7 +80,7 @@ function DocumentContentRendererInner({ doc }: DocumentContentRendererProps) {
   if (isPlainText(doc.mimeType) && doc.extractedText) {
     const paragraphs = doc.extractedText.split(/\n{2,}/).filter(Boolean);
     return (
-      <div className="prose prose-sm dark:prose-invert max-w-none space-y-4">
+      <div className={`${PROSE_READER} space-y-4`}>
         {paragraphs.map((p, i) => (
           <p key={i} className="whitespace-pre-wrap">
             {p}

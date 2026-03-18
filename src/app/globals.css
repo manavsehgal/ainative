@@ -654,6 +654,17 @@
   border: 1px solid color-mix(in oklab, var(--border) 75%, transparent);
 }
 
+/* Document reader surface — white bg for readability */
+.prose-reader-surface {
+  background: oklch(1 0 0);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+}
+
+.dark .prose-reader-surface {
+  background: oklch(0.18 0.015 265);
+}
+
 /* --- Progress slide animation (AI Assist) --- */
 @keyframes progress-slide {
   0% { transform: translateX(-100%); }

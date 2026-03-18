@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Copy, Download, Maximize2, Minimize2 } from "lucide-react";
 import { toast } from "sonner";
+import { PROSE_READER } from "@/lib/constants/prose-styles";
 
 interface ContentPreviewProps {
   content: string;
@@ -75,7 +76,7 @@ export function ContentPreview({ content, contentType }: ContentPreviewProps) {
             {content}
           </pre>
         ) : contentType === "markdown" ? (
-          <div className={`prose prose-sm dark:prose-invert max-w-none overflow-auto ${heightClass}`}>
+          <div className={`${PROSE_READER} overflow-auto ${heightClass}`}>
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
           </div>
         ) : (

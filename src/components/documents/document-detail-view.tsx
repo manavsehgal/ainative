@@ -136,7 +136,7 @@ export function DocumentDetailView({ documentId, initialDocument }: DocumentDeta
         deleting={deleting}
         linking={linking}
       />
-      <div className="bg-white dark:bg-transparent rounded-lg p-6">
+      <div className="prose-reader-surface">
         <DocumentContentRenderer doc={doc} />
       </div>
     </div>

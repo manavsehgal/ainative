@@ -7,6 +7,7 @@ import remarkGfm from "remark-gfm";
 import { ArrowLeft, ArrowRight, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { PROSE_READER_FULL } from "@/lib/constants/prose-styles";
 import { PlaybookToc } from "./playbook-toc";
 import { RelatedDocs } from "./related-docs";
 import type { ParsedDoc, DocSection, AdoptionEntry } from "@/lib/docs/types";
@@ -200,7 +201,7 @@ export function PlaybookDetailView({
 
         {/* Prose content */}
         <div className="flex-1 min-w-0">
-          <div className="prose dark:prose-invert max-w-none prose-headings:scroll-mt-20 prose-img:rounded-xl prose-img:border prose-img:border-border/50">
+          <div className={PROSE_READER_FULL}>
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{

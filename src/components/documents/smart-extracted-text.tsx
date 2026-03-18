@@ -2,6 +2,7 @@
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { PROSE_READER } from "@/lib/constants/prose-styles";
 
 interface SmartExtractedTextProps {
   text: string;
@@ -36,7 +37,7 @@ export function SmartExtractedText({ text }: SmartExtractedTextProps) {
       <p className="text-xs text-muted-foreground italic">
         Extracted text — original formatting may differ
       </p>
-      <div className="prose prose-sm dark:prose-invert max-w-none">
+      <div className={PROSE_READER}>
         <ReactMarkdown remarkPlugins={[remarkGfm]}>
           {formatted}
         </ReactMarkdown>
