@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { tasks, projects, agentLogs, notifications } from "@/lib/db/schema";
+import { tasks, projects, agentLogs, notifications, workflows } from "@/lib/db/schema";
 import { sql, eq, and, gte } from "drizzle-orm";
 
 /** Helper: generate array of date strings (YYYY-MM-DD) for the last N days */
@@ -132,6 +132,25 @@ export async function getNotificationsByDay(days = 7): Promise<number[]> {
     .from(notifications)
     .where(gte(notifications.createdAt, since))
     .groupBy(sql`strftime('%Y-%m-%d', ${notifications.createdAt} , 'unixepoch')`);
+
+  return gapFill(dates, rows);
+}
+
+/**
+ * 7-day count of distinct active workflows updated each day.
+ */
+export async function getWorkflowActivityByDay(days = 7): Promise<number[]> {
+  const dates = lastNDays(days);
+  const since = daysAgoTimestamp(days);
+
+  const rows = await db
+    .select({
+      date: sql<string>`strftime('%Y-%m-%d', ${workflows.updatedAt} , 'unixepoch')`,
+      count: sql<number>`count(distinct ${workflows.id})`,
+    })
+    .from(workflows)
+    .where(and(eq(workflows.status, "active"), gte(workflows.updatedAt, since)))
+    .groupBy(sql`strftime('%Y-%m-%d', ${workflows.updatedAt} , 'unixepoch')`);
 
   return gapFill(dates, rows);
 }

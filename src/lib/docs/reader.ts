@@ -39,12 +39,17 @@ function parseMarkdown(content: string, slug: string): ParsedDoc {
       value = value.slice(1, -1);
     }
 
-    // Parse arrays: ["a", "b"]
-    if (typeof value === "string" && value.startsWith("[")) {
+    // Parse arrays: ["a", "b"] or YAML-style [a, b, c]
+    if (typeof value === "string" && value.startsWith("[") && value.endsWith("]")) {
       try {
         value = JSON.parse(value);
       } catch {
-        // keep as string
+        // YAML-style unquoted array: [a, b, c] → ["a", "b", "c"]
+        value = value
+          .slice(1, -1)
+          .split(",")
+          .map((s: string) => s.trim())
+          .filter(Boolean);
       }
     }
 

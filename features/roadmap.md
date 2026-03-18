@@ -72,7 +72,7 @@ Features that enhance the product but aren't essential for first use — homepag
 | Feature                                                             | Priority | Status    | Dependencies                                                                                             |
 | ------------------------------------------------------------------- | -------- | --------- | -------------------------------------------------------------------------------------------------------- |
 | [ambient-approval-toast](ambient-approval-toast.md)                 | P1       | completed | app-shell, inbox-notifications, tool-permission-persistence                                              |
-| [learned-context-ux-completion](learned-context-ux-completion.md)   | P2       | planned   | agent-self-improvement, agent-profile-catalog                                                            |
+| [learned-context-ux-completion](learned-context-ux-completion.md)   | P2       | completed | agent-self-improvement, agent-profile-catalog                                                            |
 | [micro-visualizations](micro-visualizations.md)                     | P2       | completed | homepage-dashboard, monitoring-dashboard, project-management                                             |
 | [command-palette-enhancement](command-palette-enhancement.md)       | P2       | completed | app-shell                                                                                                |
 | [operational-surface-foundation](operational-surface-foundation.md) | P2       | completed | app-shell, homepage-dashboard, task-board, inbox-notifications, monitoring-dashboard, project-management |
@@ -81,6 +81,9 @@ Features that enhance the product but aren't essential for first use — homepag
 | [ui-density-refinement](ui-density-refinement.md)                   | P2       | completed | operational-surface-foundation, app-shell, homepage-dashboard, inbox-notifications, project-management   |
 | [kanban-board-operations](kanban-board-operations.md)               | P2       | completed | task-board, task-definition-ai                                                                           |
 | [board-context-persistence](board-context-persistence.md)           | P2       | completed | task-board, kanban-board-operations                                                                      |
+| [detail-view-redesign](detail-view-redesign.md)                     | P2       | completed | task-board, document-manager, workflow-engine, ui-density-refinement                                     |
+| [playbook-documentation](playbook-documentation.md)                 | P2       | completed | app-shell, command-palette-enhancement                                                                   |
+| [workflow-ux-overhaul](workflow-ux-overhaul.md)                     | P1       | in-progress | workflow-engine, ai-assist-workflow-creation, agent-document-context, document-output-generation        |
 
 ### Platform
 
@@ -177,8 +180,13 @@ Workflow expansion chain:
 ```
 workflow-engine + multi-agent-routing
                 │
-                └── parallel-research-fork-join
-                          └── multi-agent-swarm
+                ├── parallel-research-fork-join
+                │         └── multi-agent-swarm
+                └── workflow-ux-overhaul (in-progress)
+                          ├── doc context propagation
+                          ├── output readability ✓
+                          ├── dashboard visibility ✓
+                          └── AI assist guidance
 ```
 
 ## Recommended Build Order
@@ -202,8 +210,9 @@ workflow-engine + multi-agent-routing
 17. **Sprint 17 — Human-Loop Attention**: ambient-approval-toast (P1, completed)
 18. **Sprint 18 — Parallel Research Foundation**: parallel-research-fork-join (P2, completed)
 19. **Sprint 19 — npm Publish Readiness**: npm-publish-readiness (P3, deferred)
+20. **Sprint 20 — Detail Polish**: detail-view-redesign (P2, completed) + playbook-documentation (P2, completed) + learned-context-ux-completion (P2, completed)
 
-> All 19 sprints above are completed. `ai-assist-workflow-creation` is now completed. Only `agent-self-improvement` (P3, planned) remains.
+> All sprints above are completed or deferred except `workflow-ux-overhaul` (P1, in-progress — chunks 2 & 3 partially addressed, chunks 1 & 4 remaining).
 
 ## Open Questions
 

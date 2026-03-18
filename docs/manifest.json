@@ -1,15 +1,15 @@
 {
-  "generated": "2026-03-17T00:00:00Z",
+  "generated": "2026-03-18T21:30:00Z",
   "version": 1,
   "sections": [
     {
       "slug": "home-workspace",
-      "title": "Home & Workspace",
+      "title": "Home Workspace",
       "category": "feature-reference",
       "path": "features/home-workspace.md",
       "route": "/",
-      "tags": ["workspace", "briefing", "activity", "stats", "dashboard"],
-      "features": ["homepage-dashboard", "micro-visualizations", "operational-surface-foundation"],
+      "tags": ["home", "workspace", "briefing", "micro-visualizations"],
+      "features": ["homepage-dashboard", "micro-visualizations"],
       "screengrabCount": 2
     },
     {
@@ -18,18 +18,18 @@
       "category": "feature-reference",
       "path": "features/dashboard-kanban.md",
       "route": "/dashboard",
-      "tags": ["kanban", "tasks", "board", "execution", "AI assist"],
-      "features": ["task-board", "kanban-board-operations", "board-context-persistence", "task-definition-ai", "ai-assist-workflow-creation", "content-handling"],
+      "tags": ["kanban", "tasks", "ai-assist", "board", "execution"],
+      "features": ["task-board", "task-definition-ai", "kanban-board-operations", "board-context-persistence", "ai-assist-workflow-creation", "detail-view-redesign"],
       "screengrabCount": 6
     },
     {
       "slug": "inbox-notifications",
-      "title": "Inbox & Notifications",
+      "title": "Inbox & Approvals",
       "category": "feature-reference",
       "path": "features/inbox-notifications.md",
       "route": "/inbox",
-      "tags": ["inbox", "notifications", "approvals", "human-in-the-loop", "permissions"],
-      "features": ["inbox-notifications", "ambient-approval-toast", "tool-permission-persistence"],
+      "tags": ["inbox", "approvals", "notifications", "human-in-the-loop"],
+      "features": ["inbox-notifications", "ambient-approval-toast"],
       "screengrabCount": 1
     },
     {
@@ -38,7 +38,7 @@
       "category": "feature-reference",
       "path": "features/monitoring.md",
       "route": "/monitor",
-      "tags": ["monitoring", "logs", "streaming", "real-time", "agent activity"],
+      "tags": ["monitoring", "logs", "streaming", "real-time"],
       "features": ["monitoring-dashboard"],
       "screengrabCount": 1
     },
@@ -48,7 +48,7 @@
       "category": "feature-reference",
       "path": "features/projects.md",
       "route": "/projects",
-      "tags": ["projects", "organization", "portfolio", "working directory"],
+      "tags": ["projects", "portfolio", "organization"],
       "features": ["project-management"],
       "screengrabCount": 2
     },
@@ -58,9 +58,9 @@
       "category": "feature-reference",
       "path": "features/workflows.md",
       "route": "/workflows",
-      "tags": ["workflows", "orchestration", "blueprints", "multi-step", "patterns"],
-      "features": ["workflow-engine", "workflow-blueprints", "ai-assist-workflow-creation", "parallel-research-fork-join", "multi-agent-swarm"],
-      "screengrabCount": 2
+      "tags": ["workflows", "orchestration", "blueprints", "parallel", "swarm", "loop"],
+      "features": ["workflow-engine", "workflow-blueprints", "parallel-research-fork-join", "multi-agent-swarm", "autonomous-loop-execution", "workflow-ux-overhaul"],
+      "screengrabCount": 5
     },
     {
       "slug": "documents",
@@ -68,7 +68,7 @@
       "category": "feature-reference",
       "path": "features/documents.md",
       "route": "/documents",
-      "tags": ["documents", "uploads", "file management", "preprocessing", "context"],
+      "tags": ["documents", "upload", "preprocessing", "context"],
       "features": ["document-manager", "file-attachment-data-layer", "document-preprocessing", "agent-document-context", "document-output-generation"],
       "screengrabCount": 2
     },
@@ -78,9 +78,9 @@
       "category": "feature-reference",
       "path": "features/profiles.md",
       "route": "/profiles",
-      "tags": ["profiles", "agents", "specialists", "catalog", "testing"],
-      "features": ["multi-agent-routing", "agent-profile-catalog", "cross-provider-profile-compatibility", "profile-surface-stability"],
-      "screengrabCount": 1
+      "tags": ["profiles", "agents", "routing", "self-improvement", "catalog"],
+      "features": ["multi-agent-routing", "agent-profile-catalog", "agent-self-improvement", "learned-context-ux-completion", "cross-provider-profile-compatibility", "profile-surface-stability"],
+      "screengrabCount": 2
     },
     {
       "slug": "schedules",
@@ -88,8 +88,8 @@
       "category": "feature-reference",
       "path": "features/schedules.md",
       "route": "/schedules",
-      "tags": ["schedules", "automation", "cron", "recurring", "intervals"],
-      "features": ["scheduled-prompt-loops", "autonomous-loop-execution"],
+      "tags": ["schedules", "cron", "recurring", "automation"],
+      "features": ["scheduled-prompt-loops"],
       "screengrabCount": 1
     },
     {
@@ -98,8 +98,8 @@
       "category": "feature-reference",
       "path": "features/cost-usage.md",
       "route": "/costs",
-      "tags": ["costs", "usage", "metering", "budgets", "spending"],
-      "features": ["cost-and-usage-dashboard", "usage-metering-ledger", "spend-budget-guardrails"],
+      "tags": ["cost", "usage", "metering", "budgets", "spending"],
+      "features": ["usage-metering-ledger", "spend-budget-guardrails", "cost-and-usage-dashboard"],
       "screengrabCount": 1
     },
     {
@@ -108,8 +108,8 @@
       "category": "feature-reference",
       "path": "features/settings.md",
       "route": "/settings",
-      "tags": ["settings", "configuration", "authentication", "providers", "data"],
-      "features": ["app-shell", "tool-permission-persistence", "provider-runtime-abstraction", "openai-codex-app-server"],
+      "tags": ["settings", "authentication", "permissions", "presets"],
+      "features": ["session-management", "tool-permission-persistence", "tool-permission-presets"],
       "screengrabCount": 1
     },
     {
@@ -118,8 +118,8 @@
       "category": "feature-reference",
       "path": "features/provider-runtimes.md",
       "route": "cross-cutting",
-      "tags": ["providers", "runtimes", "Claude", "OpenAI", "Codex", "abstraction"],
-      "features": ["provider-runtime-abstraction", "openai-codex-app-server", "cross-provider-profile-compatibility"],
+      "tags": ["runtimes", "claude", "openai", "codex", "providers"],
+      "features": ["provider-runtime-abstraction", "openai-codex-app-server", "agent-integration"],
       "screengrabCount": 0
     },
     {
@@ -128,8 +128,8 @@
       "category": "feature-reference",
       "path": "features/agent-intelligence.md",
       "route": "cross-cutting",
-      "tags": ["AI", "self-improvement", "learning", "context", "autonomous"],
-      "features": ["agent-self-improvement", "workflow-context-batching", "multi-agent-routing", "autonomous-loop-execution", "session-management"],
+      "tags": ["ai", "routing", "loops", "swarm", "self-improvement"],
+      "features": ["multi-agent-routing", "autonomous-loop-execution", "multi-agent-swarm", "agent-self-improvement", "workflow-context-batching", "ai-assist-workflow-creation"],
       "screengrabCount": 0
     },
     {
@@ -138,8 +138,8 @@
       "category": "feature-reference",
       "path": "features/tool-permissions.md",
       "route": "cross-cutting",
-      "tags": ["permissions", "security", "tool policy", "presets", "governance"],
-      "features": ["tool-permission-persistence", "tool-permission-presets"],
+      "tags": ["permissions", "approvals", "presets", "governance"],
+      "features": ["tool-permission-persistence", "tool-permission-presets", "ambient-approval-toast"],
       "screengrabCount": 0
     }
   ],
@@ -160,7 +160,7 @@
       "difficulty": "intermediate",
       "path": "journeys/work-use.md",
       "sections": ["projects", "documents", "schedules", "cost-usage", "inbox-notifications"],
-      "stepCount": 8
+      "stepCount": 12
     },
     {
       "slug": "power-user",
@@ -169,7 +169,7 @@
       "difficulty": "advanced",
       "path": "journeys/power-user.md",
       "sections": ["profiles", "workflows", "schedules", "monitoring"],
-      "stepCount": 10
+      "stepCount": 12
     },
     {
       "slug": "developer",
@@ -177,14 +177,14 @@
       "persona": "developer",
       "difficulty": "advanced",
       "path": "journeys/developer.md",
-      "sections": ["settings", "monitoring", "profiles", "dashboard-kanban"],
+      "sections": ["settings", "monitoring", "profiles"],
       "stepCount": 10
     }
   ],
   "metadata": {
     "totalDocs": 21,
-    "totalScreengrabs": 23,
-    "featuresCovered": 40,
+    "totalScreengrabs": 28,
+    "featuresCovered": 45,
     "appSections": 11
   }
 }

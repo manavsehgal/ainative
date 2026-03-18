@@ -17,6 +17,7 @@ interface StatsCardsProps {
     creations: number[];
     projects: number[];
     notifications: number[];
+    workflows: number[];
   };
 }
 
@@ -83,6 +84,7 @@ export function StatsCards({
       chartColor: "var(--chart-5)",
       href: "/workflows",
       destination: "Workflows",
+      sparklineData: sparklines?.workflows,
     },
   ];
 

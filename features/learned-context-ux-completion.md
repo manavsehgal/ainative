@@ -1,6 +1,6 @@
 ---
 title: Learned Context UX Completion
-status: planned
+status: completed
 priority: P2
 milestone: post-mvp
 layer: UI Enhancement

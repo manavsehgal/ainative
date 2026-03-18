@@ -1,10 +1,33 @@
 # Feature Changelog
 
+## 2026-03-18
+
+### Completed
+- `detail-view-redesign` (P2, post-MVP) — Unified detail views across task, document, and workflow surfaces
+  - Task detail: bento grid layout, chip bar (status/priority/complexity/profile/dates), prose reader surface, usage metrics
+  - Document detail: chip bar + content renderer, image zoom, smart extracted text display
+  - Workflow kanban cards: status-colored left strips matching workflow state
+  - Shared `prose-reader-surface` CSS class and `PROSE_READER` constants for consistent typography across 6+ views
+- Workflow cascade delete — FK-safe child task cleanup when deleting workflows
+- Notification UX — click-through navigation to source entities, expand/collapse, destructive delete-read styling
+
+### Started
+- `workflow-ux-overhaul` (P1, in-progress) — comprehensive workflow UX fix
+  - Chunk 2 (Output Readability): partially addressed — `ExpandableResult` component, full output as inline Card
+  - Chunk 3 (Dashboard Visibility): partially addressed — all workflow statuses shown on home dashboard, urgency sort
+  - Chunk 1 (Document Context Propagation): not yet started
+  - Chunk 4 (AI Assist Guidance): not yet started
+
+### Fixed
+- Document links: `/download` route replaced with `/documents/[id]` view navigation
+- Batch context proposal approve/reject now works without requiring individual notification IDs
+
 ## 2026-03-17
 
 ### Completed
 - Playbook documentation system — built-in docs at `/playbook` with usage-stage awareness, adoption heatmap, journey cards, markdown rendering, and command palette integration
 - README updated with Playbook feature across all sections (highlights, deep dives, project structure, API routes, roadmap)
+- `learned-context-ux-completion` (P2, completed) — diff rendering, snapshot display, deterministic profile ordering (groomed and implemented same day)
 
 ### Groomed
 - `learned-context-ux-completion` (P2, planned) — bounded UX follow-up from the agent self-improvement browser evaluation

@@ -35,7 +35,8 @@ export function PlaybookDetailView({
 }: PlaybookDetailViewProps) {
   const title =
     (doc.frontmatter.title as string) || doc.slug.replace(/-/g, " ");
-  const tags = (doc.frontmatter.tags as string[]) || [];
+  const rawTags = doc.frontmatter.tags;
+  const tags = Array.isArray(rawTags) ? (rawTags as string[]) : [];
   const route = doc.frontmatter.route as string | undefined;
   const category = doc.frontmatter.category as string | undefined;
   const difficulty = doc.frontmatter.difficulty as string | undefined;
@@ -127,8 +128,8 @@ export function PlaybookDetailView({
 
     // Resolve ../screengrabs/ paths to /readme/ (images live in public/readme/)
     let resolvedSrc = src;
-    if (src.startsWith("../screengrabs/")) {
-      resolvedSrc = `/readme/${src.replace("../screengrabs/", "")}`;
+    if (src.includes("screengrabs/")) {
+      resolvedSrc = `/readme/${src.split("screengrabs/").pop()}`;
     } else if (src.startsWith("./")) {
       resolvedSrc = `/docs/${src.replace("./", "")}`;
     }

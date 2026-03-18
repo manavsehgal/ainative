@@ -17,6 +17,7 @@ import {
   getActiveProjectActivityByDay,
   getAgentActivityByHour,
   getNotificationsByDay,
+  getWorkflowActivityByDay,
 } from "@/lib/queries/chart-data";
 
 export const dynamic = "force-dynamic";
@@ -44,6 +45,7 @@ export default async function HomePage() {
     projectCreationsByDay,
     agentActivityByHour,
     notificationsByDay,
+    workflowsByDay,
   ] = await Promise.all([
     db.select({ count: count() }).from(tasks).where(eq(tasks.status, "running")),
     db.select({ count: count() }).from(tasks).where(eq(tasks.status, "failed")),
@@ -88,6 +90,7 @@ export default async function HomePage() {
     getActiveProjectActivityByDay(7),
     getAgentActivityByHour(),
     getNotificationsByDay(7),
+    getWorkflowActivityByDay(7),
   ]);
 
   // Build project name lookup for priority tasks
@@ -197,6 +200,7 @@ export default async function HomePage() {
             creations: taskCreationsByDay,
             projects: projectCreationsByDay,
             notifications: notificationsByDay,
+            workflows: workflowsByDay,
           }}
         />
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-5 mb-6">

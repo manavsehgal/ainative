@@ -1,8 +1,10 @@
 # Stagent
 
-> Govern Your AI Agents. Operate With Oversight.
+> Governed AI Agent Workspace — Supervised Local Execution, Workflows, Documents, and Provider Runtimes.
 
-[![Next.js 16](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/) [![React 19](https://img.shields.io/badge/React-19-61DAFB)](https://react.dev/) [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6)](https://www.typescriptlang.org/) [![Claude Agent SDK](https://img.shields.io/badge/Claude-Agent_SDK-D97706)](https://docs.anthropic.com/) [![OpenAI Codex App Server](https://img.shields.io/badge/OpenAI-Codex_App_Server-10A37F)](https://developers.openai.com/codex/app-server) [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![npm](https://img.shields.io/npm/v/stagent)](https://www.npmjs.com/package/stagent) [![Next.js 16](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/) [![React 19](https://img.shields.io/badge/React-19-61DAFB)](https://react.dev/) [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6)](https://www.typescriptlang.org/) [![Claude Agent SDK](https://img.shields.io/badge/Claude-Agent_SDK-D97706)](https://docs.anthropic.com/) [![OpenAI Codex App Server](https://img.shields.io/badge/OpenAI-Codex_App_Server-10A37F)](https://developers.openai.com/codex/app-server) [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+
+**[stagent.io](https://stagent.io)** · **[GitHub](https://github.com/manavsehgal/stagent)**
 
 ## Quick Start
 
@@ -10,7 +12,7 @@
 npx stagent
 ```
 
-Open [localhost:3000](http://localhost:3000).
+Open [localhost:3000](http://localhost:3000). That's it — zero config, local SQLite, own your data.
 
 **Profiles & Policies** · **Blueprints & Schedules** · **Built-in Playbook** · **Open Source**
 
@@ -24,13 +26,20 @@ Open [localhost:3000](http://localhost:3000).
 
 ## Why Stagent
 
-AI agents are powerful — but production use breaks down when teams cannot see what the agent is doing, which rules it follows, or intervene before an unsafe action lands. Stagent gives you a governed operations workspace where every run is visible, every profile is reusable, and every approval is auditable. Run it locally with `npx stagent` and own your data from day one.
+AI agents are powerful — but production use breaks down when teams cannot see what the agent is doing, which rules it follows, or intervene before an unsafe action lands. Stagent gives you a **governed operations workspace** where every run is visible, every profile is reusable, and every approval is auditable.
+
+- **Local-first** — SQLite database, no cloud dependency, `npx stagent` and go
+- **Multi-provider** — Claude Code + OpenAI Codex App Server behind one runtime registry
+- **Human-in-the-loop** — Inbox approvals, ambient toasts, tool permission policies
+- **Reusable profiles** — 13+ agent profiles with instructions, tool policies, and runtime tuning
+- **Workflow orchestration** — 6 patterns (sequence, planner-executor, checkpoint, parallel, loop, swarm)
+- **Cost governance** — Usage metering, budgets, and spend visibility per provider and model
 
 ---
 
 ## Runtime Bridge
 
-Stagent ships a shared runtime registry that routes tasks, schedules, and workflow steps through two governed execution backends: **Claude Code** (Anthropic Claude Agent SDK) and **OpenAI Codex App Server**. Both land in the same inbox, monitoring, and task-state surfaces — so switching providers is a config change, not a rewrite.
+Stagent ships a shared runtime registry that routes tasks, schedules, and workflow steps through two governed execution backends: **Claude Code** (Anthropic Claude Agent SDK) and **OpenAI Codex App Server**. Both land in the same inbox, monitoring, and task-state surfaces — switching providers is a config change, not a rewrite.
 
 ---
 
@@ -120,9 +129,9 @@ Claude Agent SDK integration with the `canUseTool` polling pattern remains the d
 OpenAI Codex App Server is integrated as Stagent's second governed runtime. Codex-backed tasks preserve project working directories, document context, resumable thread IDs, inbox approval requests, user questions, and provider-labeled logs. The same runtime can also power task assist, scheduled firings, and workflow child tasks.
 
 #### Agent Profiles
-Profile-backed execution with specialist definitions for different job types. Each profile packages instructions, allowed tools, max turns, and output format so teams can reuse behavior intentionally instead of relying on ad hoc prompts. Workflow steps and schedules can reference profiles directly, and runtimes can be selected independently when provider support differs.
+Profile-backed execution with specialist definitions for different job types. Each profile packages instructions, allowed tools, max turns, and output format so teams can reuse behavior intentionally instead of relying on ad hoc prompts. Profile cards display role-based icon circles with keyword-inferred colors (blue for work, purple for personal), alongside domain tags, runtime badges, and tool counts. Workflow steps and schedules can reference profiles directly, and runtimes can be selected independently when provider support differs.
 
-<img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/profiles-list.png" alt="Stagent agent profiles" width="1200" />
+<img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/profiles-list.png" alt="Stagent agent profiles with role-based icon circles" width="1200" />
 
 #### Workflows
 Multi-step task orchestration with six patterns:
@@ -167,12 +176,12 @@ Resume failed or cancelled agent tasks with one click. Tracks retry counts (limi
 Iterative agent loop pattern with four stop conditions: max iterations, time budget, human cancel, and agent-signaled completion. Each iteration creates a child task with previous output as context. Loop status view with iteration timeline, progress bar, and expandable results. Pause/resume via DB status polling.
 
 #### Agent Profile Catalog
-Curated agent profiles across work and personal domains, built as portable Claude Code skill directories with `profile.yaml` sidecars. The profile gallery supports domain filtering and search, while YAML customization, GitHub import, and behavioral smoke tests keep profile behavior inspectable and reusable.
+Curated agent profiles across work and personal domains, built as portable Claude Code skill directories with `profile.yaml` sidecars. The profile gallery displays role-based icon circles with keyword-inferred colors and supports domain filtering and search, while YAML customization, GitHub import, and behavioral smoke tests keep profile behavior inspectable and reusable.
 
 #### Workflow Blueprints
-Pre-configured workflow templates across work and personal domains. Browse blueprints in a gallery with filtering and search, preview steps and required variables, fill in a dynamic form, and create draft workflows with resolved prompts and profile assignments. Create custom blueprints via YAML or import from GitHub URLs. Lineage tracking connects workflows back to their source blueprint.
+Pre-configured workflow templates across work and personal domains. Browse blueprints in a gallery with pattern-colored icon circles, domain tags, and difficulty badges. Preview steps and required variables, fill in a dynamic form, and create draft workflows with resolved prompts and profile assignments. Create custom blueprints via YAML or import from GitHub URLs. Lineage tracking connects workflows back to their source blueprint.
 
-<img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/workflows-list.png" alt="Stagent workflow management" width="1200" />
+<img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/workflows-list.png" alt="Stagent workflows with keyword-inferred icon circles" width="1200" />
 
 ### Documents
 
@@ -234,7 +243,9 @@ Real-time agent log streaming via Server-Sent Events. Filter by task or event ty
 File upload with drag-and-drop in task creation. Type-aware content preview for text, markdown (via react-markdown), code, and JSON. Copy-to-clipboard and download-as-file for task outputs.
 
 #### Settings
-Configuration hub with provider-aware sections: Claude authentication (API key or OAuth), OpenAI Codex runtime API-key management, tool permissions (saved "Always Allow" patterns with revoke), and data management.
+Configuration hub with provider-aware sections: Claude authentication (API key or OAuth), OpenAI Codex runtime API-key management, tool permissions (saved "Always Allow" patterns with revoke), permission presets, budget configuration, and data management.
+
+<img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/settings-list.png" alt="Stagent settings" width="1200" />
 
 #### CLI
 The `npx stagent` entry point boots a Next.js server from the published npm package. It is built from `bin/cli.ts` into `dist/cli.js` using tsup, and serves as the primary distribution channel — no clone required.
@@ -395,44 +406,23 @@ All 14 features shipped across three layers:
 | **Core** | Project management, task board, agent integration, inbox notifications, monitoring dashboard |
 | **Polish** | Homepage dashboard, UX fixes, workflow engine, AI task assist, content handling, session management |
 
-### Post-MVP — Complete (31 features)
+### Post-MVP — 31 features shipped
 
-| Category | Feature | What shipped |
-|----------|---------|-------------|
-| **Documents** | File Attachments | Upload data layer with project/task linking |
-| | Document Preprocessing | Text extraction for 5 formats (text, PDF, images, Office, spreadsheets) |
-| | Agent Document Context | Automatic document injection into agent prompts |
-| | Document Browser | Table/grid views, search, filters, bulk operations at `/documents` |
-| | Document Output Generation | Agent-generated documents as deliverables |
-| **Agent Intelligence** | Multi-Agent Routing | Profile registry (4 profiles), task classifier, per-step profile assignment |
-| | Autonomous Loop Execution | 4 stop conditions, iteration context chaining, pause/resume, loop status view |
-| | Multi-Agent Swarm | Mayor → worker pool → refinery orchestration with retryable stages |
-| | AI Assist → Workflows | Bridge task assist into workflow engine with profile assignment and pattern selection |
-| | Agent Self-Improvement | Pattern extraction from logs, human-approved context evolution, versioned rollback |
-| | Workflow Context Batching | Workflow-scoped proposal buffering with batch approve/reject |
-| **Agent Profiles** | Agent Profile Catalog | 13 domain-specific profiles, GitHub import, behavioral testing, MCP passthrough |
-| | Workflow Blueprints | 8 templates, gallery, YAML editor, dynamic forms, GitHub import, lineage tracking |
-| **UI Enhancement** | Ambient Approvals | Shell-level approval presenter on any route for fast supervision |
-| | Micro-Visualizations | Sparklines, mini bars, donut rings — zero-dependency SVG charts |
-| | Command Palette | ⌘K palette with navigation, create actions, recent items, theme toggle |
-| | Operational Surface | Cross-route composition with consistent layout, density, and interaction patterns |
-| | Profile Surface | Profile gallery stability, detail views, and behavioral testing UI |
-| | Accessibility | ARIA labels, keyboard navigation, focus management, screen reader support |
-| | UI Density Refinement | Tightened spacing, typography, and visual hierarchy across all routes |
-| | Kanban Board Operations | Inline editing, bulk operations, card animations, edit dialog |
-| | Board Context Persistence | Persisted filters, sort order, and project selection across sessions |
-| **Platform** | Scheduled Prompt Loops | Cron + human-friendly intervals, one-shot/recurring, pause/resume lifecycle |
-| | Tool Permission Persistence | "Always Allow" patterns, pre-check bypass, Settings management |
-| | Tool Permission Presets | 3 layered presets (read-only, git-safe, full-auto) with risk badges |
-| | Provider Runtimes | Shared runtime registry with Claude Code and OpenAI Codex App Server adapters |
-| | OpenAI Codex Runtime | Codex App Server integration with inbox approvals, logs, and thread resumption |
-| | Cross-Provider Profiles | Profile compatibility layer ensuring profiles work across Claude and Codex runtimes |
-| | Parallel Fork/Join | 2-5 concurrent research branches with synthesis step |
-| **Runtime Quality** | E2E Test Automation | API-level test suite covering both runtimes, 4 profiles, 4 workflow patterns |
-| **Knowledge** | Playbook | Built-in documentation with usage-stage awareness, adoption heatmap, guided learning journeys |
-| **Governance** | Usage Metering Ledger | Provider-normalized token and spend tracking across all execution paths |
-| | Spend Budget Guardrails | Per-project and global budgets with enforcement and alerts |
-| | Cost & Usage Dashboard | Summary cards, trend views, provider/model breakdowns, budget audit visibility |
+| Category | Features |
+|----------|---------|
+| **Documents** (5) | File attachments, preprocessing (5 formats), agent context injection, document browser, output generation |
+| **Agent Intelligence** (6) | Multi-agent routing, autonomous loops, multi-agent swarm, AI assist→workflows, agent self-improvement, workflow context batching |
+| **Agent Profiles** (2) | Agent profile catalog (13+ profiles), workflow blueprints (8 templates) |
+| **UI Enhancement** (13) | Ambient approvals, learned context UX, micro-visualizations, command palette, operational surface, profile surface, accessibility, UI density, kanban operations, board persistence, detail view redesign, playbook documentation, workflow UX overhaul (in-progress) |
+| **Platform** (8) | Scheduled prompt loops, tool permissions, provider runtimes, OpenAI Codex runtime, cross-provider profiles, parallel fork/join, tool permission presets, npm publish (deferred) |
+| **Runtime Quality** (2) | SDK runtime hardening, E2E test automation |
+| **Governance** (3) | Usage metering ledger, spend budget guardrails, cost & usage dashboard |
+
+### In Progress
+
+| Feature | Description |
+|---------|-------------|
+| Workflow UX Overhaul | Document context propagation, output readability, dashboard visibility, AI assist guidance |
 
 ---
 
@@ -441,7 +431,7 @@ All 14 features shipped across three layers:
 ### Contributor Setup
 
 ```bash
-git clone <repo-url> && cd stagent && npm install
+git clone https://github.com/manavsehgal/stagent.git && cd stagent && npm install
 
 # Set up one or both runtime credentials
 cat > .env.local <<'EOF'
@@ -463,6 +453,10 @@ npm run dev
 
 See `AGENTS.md` for architecture details and development conventions.
 
+---
+
 ## License
 
 Licensed under the [Apache License 2.0](LICENSE).
+
+Copyright 2025-2026 [Manav Sehgal](https://stagent.io)

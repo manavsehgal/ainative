@@ -1,97 +1,105 @@
 ---
 title: "Getting Started"
 category: "getting-started"
-lastUpdated: "2026-03-17"
+lastUpdated: "2026-03-18"
 ---
 
 # Getting Started
 
-Get Stagent running in under 5 minutes. This guide covers installation, first-run configuration, and connecting to an AI provider.
+Get Stagent running in under a minute and create your first governed agent task.
 
 ## Installation
 
-Stagent runs as an npm package — no cloning or building required.
+Stagent runs as a single command — no clone, no build step required:
 
 ```bash
 npx stagent
 ```
 
-Open [localhost:3000](http://localhost:3000) in your browser.
+Open [localhost:3000](http://localhost:3000) in your browser. All data is stored in `~/.stagent/stagent.db` (SQLite) and uploaded files go to `~/.stagent/uploads/`.
 
-That's it. Stagent creates its SQLite database automatically at `~/.stagent/stagent.db` and starts a Next.js server.
+### Requirements
+
+- **Node.js 20+** — required for the runtime
+- **One or both AI provider credentials**:
+  - Anthropic API key or OAuth (for Claude Code runtime)
+  - OpenAI API key (for Codex App Server runtime)
 
 ## First Run
 
-When you first open Stagent, you'll see the Home workspace with empty stat cards. Before agents can execute tasks, you need to connect at least one AI provider.
+When you open Stagent for the first time:
 
-### Connect Claude (Recommended)
+1. **Home Workspace** — You'll see the workspace briefing with empty stat cards
+2. **Configure a runtime** — Navigate to **Settings** and enter your API key for Claude or OpenAI (or both)
+3. **Test connectivity** — Use the **Test Connection** button in Settings to verify your runtime is reachable
 
-1. Click **Settings** in the sidebar
-2. In the **Authentication** section, choose your method:
-   - **OAuth** — uses your Claude Max subscription (no per-token cost)
-   - **API Key** — paste your Anthropic API key (metered billing)
-3. Click **Test Connection** — you should see a green status indicator
+## Your First Task
 
-### Connect OpenAI Codex (Optional)
-
-1. In Settings, find the **OpenAI Codex** section
-2. Enter your OpenAI API key
-3. Click **Test Connection** to verify
-
-### Alternative: Environment File
-
-For developer setups, create a `.env.local` file in Stagent's directory:
-
-```bash
-ANTHROPIC_API_KEY=your-anthropic-key
-OPENAI_API_KEY=your-openai-key    # Optional
-```
+1. Navigate to **Dashboard** (kanban board)
+2. Click **Create Task**
+3. Enter a title and description
+4. (Optional) Click **AI Assist** to get an improved description and complexity estimate
+5. Click **Create** — your task appears in the "Planned" column
+6. Click the task card, then **Execute** to dispatch it to an agent
+7. Watch the **Monitor** page for live logs, and check **Inbox** for approval requests
 
 ## Configuration
 
+### Claude Authentication
+
+Go to **Settings** → Claude section:
+- **OAuth** (default) — Uses your Claude subscription, no API key needed
+- **API Key** — Enter your `ANTHROPIC_API_KEY` for direct API access
+
+### OpenAI Codex Runtime
+
+Go to **Settings** → OpenAI section:
+- Enter your `OPENAI_API_KEY`
+- Test the connection to verify the Codex App Server is reachable
+
 ### Tool Permissions
 
-By default, agents ask for permission before using any tool. To reduce approval friction:
-
-1. Navigate to **Settings** → **Tool Permissions**
-2. Apply a **preset**:
-   - **Read Only** — file reads, glob, grep (safest)
-   - **Git Safe** — adds git operations
-   - **Full Auto** — adds write, edit, bash (maximum autonomy)
+Agents request permission before using tools. You can streamline this:
+- **Always Allow** — Save patterns for tools you trust (e.g., `Read`, `Bash(command:git *)`)
+- **Presets** — Enable read-only, git-safe, or full-auto bundles from Settings
 
 ### Seed Sample Data
 
 To explore Stagent with example data before creating your own:
-
 1. Navigate to **Settings** → **Data Management**
 2. Click **Seed Sample Data**
 3. This creates sample projects, tasks, and workflows to explore
-
-## Your First Task
-
-1. Navigate to **Projects** → click **New Project** → give it a name
-2. Navigate to **Dashboard** → click **New Task**
-3. Enter a title and description, select your project
-4. Click **Create**, then click **Execute** on the task card
-5. Watch the agent work in **Monitor** and handle approvals in **Inbox**
-
-## Next Steps
-
-- [Personal Use Guide](./journeys/personal-use.md) — full walkthrough for solo productivity
-- [Work Use Guide](./journeys/work-use.md) — documents, schedules, and budgets
-- [Feature Reference](./index.md#feature-reference) — detailed docs for every section
 
 ## Development
 
 For contributors building Stagent from source:
 
 ```bash
-git clone <repo-url> && cd stagent && npm install
-npm run dev            # Next.js dev server (Turbopack)
-npm run build:cli      # Build CLI → dist/cli.js
-npm test               # Run Vitest
-npm run test:coverage  # Coverage report
-npm run test:e2e       # E2E integration tests
+git clone https://github.com/manavsehgal/stagent.git
+cd stagent && npm install
+
+# Set up credentials
+cat > .env.local <<'EOF'
+ANTHROPIC_API_KEY=your-key
+OPENAI_API_KEY=your-key
+EOF
+
+# Start dev server
+npm run dev
 ```
 
-See [Developer Guide](./journeys/developer.md) for the full technical walkthrough.
+### Useful Commands
+
+| Command | Purpose |
+|---------|---------|
+| `npm run dev` | Start dev server (Turbopack) |
+| `npm run build:cli` | Build CLI to `dist/cli.js` |
+| `npm test` | Run unit tests |
+| `npm run test:coverage` | Coverage report |
+| `npm run test:e2e` | E2E integration tests |
+
+## What's Next
+
+- [Personal Use Guide](./journeys/personal-use.md) — Solo productivity walkthrough
+- [Work Use Guide](./journeys/work-use.md) — Team operations walkthrough
+- [Feature Reference](./index.md) — Browse all features by section

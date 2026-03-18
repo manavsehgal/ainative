@@ -3,178 +3,255 @@ title: "Developer Guide"
 category: "user-journey"
 persona: "developer"
 difficulty: "advanced"
-estimatedTime: "25 minutes"
-sections: ["settings", "monitoring", "profiles", "dashboard-kanban"]
-tags: ["developer", "CLI", "API", "technical", "configuration", "providers"]
-lastUpdated: "2026-03-17"
+estimatedTime: "20 minutes"
+sections: ["settings", "monitor", "profiles", "cli"]
+tags: [developer, CLI, configuration, runtimes, testing, architecture, extending]
+lastUpdated: "2026-03-18"
 ---
 
 # Developer Guide
 
-You're a developer who wants to understand Stagent's technical architecture, configure both runtimes, use the CLI for deployment, and potentially extend Stagent with custom profiles and API integrations. This guide covers the technical side of the product.
+You are a developer who wants to understand what is happening under the hood. You care about runtime configuration, tool permission models, the architecture that connects your prompts to agent execution, and how to extend the system when the built-in capabilities are not enough. This guide takes you through the technical setup of Stagent's dual-runtime architecture, the permission system that governs agent behavior, the monitoring layer that gives you full visibility, and the development workflow for contributing to Stagent itself.
 
 ## Prerequisites
-- Node.js 18+ installed
-- Anthropic API key and/or OpenAI API key
-- Familiarity with terminal/CLI workflows
+
+- **Node.js 18 or later** installed
+- An **Anthropic API key** or Claude Max subscription
+- Optionally, an **OpenAI API key** for the Codex runtime
+- Familiarity with terminal/CLI workflows and TypeScript
+- About 20 minutes
 
 ## Journey Steps
 
-### Step 1: Install and Start Stagent
+### Step 1 — Install and Run from the CLI
+*Estimated time: 2 minutes*
 
-Stagent runs as an npm package — no cloning required.
+Stagent is distributed as an npm package. No cloning, no Docker, no infrastructure.
 
-1. Open your terminal and run:
-   ```bash
-   npx stagent
-   ```
-2. Stagent starts a Next.js server at `localhost:3000`
-3. Open your browser to verify the home workspace loads
-4. The SQLite database is created automatically at `~/.stagent/stagent.db`
-
-> **Tip:** Stagent uses WAL mode for SQLite, enabling concurrent reads while maintaining data integrity. The database self-heals — tables are created on startup if missing.
-
-### Step 2: Configure Dual Runtimes
-
-Stagent supports two AI providers. Configure both for maximum flexibility.
-
-![Settings page](../screengrabs/settings-list.png)
-
-1. Navigate to **Settings**
-2. **Claude Configuration:**
-   - Choose **OAuth** for Max subscription (no per-token cost) or **API Key**
-   - If using API Key, create a `.env.local` file: `ANTHROPIC_API_KEY=your-key`
-   - Click **Test Connection** to verify
-3. **OpenAI Codex Configuration:**
-   - Enter your OpenAI API key
-   - Click **Test Connection** to verify the Codex App Server is reachable
-4. Both runtimes produce logs in the same Monitor stream, labeled by provider
-
-> **Tip:** OAuth is recommended for Claude — it uses your Max subscription instead of metered API billing. For CI/CD or server deployments, API keys are more practical.
-
-### Step 3: Understand the Project Structure
-
-Stagent's codebase is organized around Next.js App Router conventions:
-
-```
-src/
-├── app/           # Page routes (Server Components by default)
-├── components/    # React components organized by feature
-├── lib/
-│   ├── agents/    # Runtime adapters, profiles, execution
-│   ├── db/        # Schema, migrations (Drizzle + SQLite)
-│   ├── workflows/ # Engine, types, blueprints
-│   └── usage/     # Metering, pricing registry
+```bash
+npx stagent
 ```
 
-Key architecture decisions:
-- **Server Components query the database directly** — no API layer for reads
-- **API routes handle mutations only** — POST/PATCH/DELETE operations
-- **Fire-and-forget execution** — task dispatch returns HTTP 202 immediately
-- **SSE for streaming** — agent logs stream to the browser in real time
+This command does several things in sequence:
 
-### Step 4: Explore the API
+1. Downloads and caches the Stagent package
+2. Starts a Next.js server (Turbopack-accelerated in development)
+3. Initializes a SQLite database at `~/.stagent/stagent.db` with WAL mode enabled
+4. Creates the upload directory at `~/.stagent/uploads/`
+5. Opens your browser to `http://localhost:3000`
 
-Stagent has 51 API endpoints. Here are the most useful for integration:
+The database is self-healing — `CREATE TABLE IF NOT EXISTS` runs at startup for all critical tables, so you never need to manually run migrations. If you are working from a cloned repository, use `npm run dev` instead for hot reloading.
 
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `/api/tasks` | POST | Create a task |
-| `/api/tasks/[id]/execute` | POST | Execute a task (202 response) |
-| `/api/tasks/[id]/output` | GET | Get task execution output |
-| `/api/workflows` | POST | Create a workflow |
-| `/api/workflows/[id]/execute` | POST | Execute a workflow |
-| `/api/profiles` | GET | List available profiles |
-| `/api/logs/stream` | GET | SSE stream of agent logs |
-| `/api/settings/test` | POST | Test runtime connectivity |
+> **Tip**: The database uses WAL (Write-Ahead Logging) mode, which allows concurrent reads during writes. This matters when multiple agent tasks are executing simultaneously and writing logs.
 
-1. Use your browser's dev tools or `curl` to explore the API
-2. All endpoints accept and return JSON
-3. The SSE stream at `/api/logs/stream` is useful for building custom monitoring
+---
 
-### Step 5: Set Up Tool Permissions for Development
+### Step 2 — Configure Claude Authentication
+*Estimated time: 2 minutes*
 
-As a developer, you'll want agents to have sufficient permissions for code tasks.
+Stagent supports two authentication methods for the Claude runtime. Navigate to **Settings** in the sidebar.
 
-1. Navigate to **Settings** → **Tool Permissions**
-2. Apply the **Git Safe** preset — this allows file reads, glob, grep, and git operations
-3. For trusted development tasks, apply **Full Auto** — adds write, edit, and bash
-4. Individual patterns let you fine-tune: `Bash(command:npm *)` allows npm but not arbitrary shell
+![Settings page showing authentication configuration, tool permissions, and runtime status](../../screengrabs/settings-list.png)
 
-> **Tip:** Start with Git Safe for code review tasks, escalate to Full Auto only for agents you trust with write access to your codebase.
+**OAuth (recommended for Claude Max subscribers)**:
+- Select the **OAuth** radio button
+- Click **Test Connection** to verify
+- OAuth routes through your Claude Max subscription with no per-token billing
 
-### Step 6: Create Developer-Oriented Tasks
+**API Key**:
+- Select the **API Key** radio button
+- Enter your Anthropic API key (or set `ANTHROPIC_API_KEY` in `.env.local`)
+- Click **Test Connection** to verify
+- API key usage is metered and billed per token
 
-Leverage agent profiles designed for development work.
+The default authentication method is OAuth. An important architectural detail: when Stagent spawns agent subprocesses, it strips the `ANTHROPIC_API_KEY` from the environment to prevent OAuth agents from accidentally falling back to API key billing. This isolation is intentional.
 
-![Kanban board](../screengrabs/dashboard-list.png)
+> **Tip**: For CI/CD or headless deployments, API key authentication is more practical since OAuth requires an interactive browser session for the initial handshake.
 
-1. Navigate to **Dashboard** and click **New Task**
-2. Select the **Code Reviewer** profile for security and quality analysis
-3. Point the task at a specific project with a working directory
-4. Write a clear prompt: "Review the authentication module for OWASP Top 10 vulnerabilities"
-5. Execute and monitor the results
+---
 
-### Step 7: Watch Agent Execution in Detail
+### Step 3 — Set Up the OpenAI Codex Runtime
+*Estimated time: 2 minutes*
 
-Use the Monitor to understand exactly what an agent does.
+Stagent supports a second runtime: OpenAI Codex, accessed through the Codex App Server.
 
-![Monitor with log streaming](../screengrabs/monitor-list.png)
+In **Settings**, find the OpenAI Codex configuration section:
 
-1. Navigate to **Monitor** while a task is running
-2. Filter by your specific task
-3. Watch each tool call: which files the agent reads, what commands it runs
-4. Look for reasoning entries — they show the agent's decision-making process
-5. If something goes wrong, error entries are highlighted in red
+1. Enter your OpenAI API key
+2. Click **Test Connection** to verify the Codex App Server is reachable
+3. The connection uses WebSocket JSON-RPC under the hood (see `src/lib/agents/runtime/codex-app-server-client.ts`)
 
-> **Tip:** Monitoring is invaluable for debugging profiles. If an agent isn't behaving as expected, the log stream shows exactly where it diverges from your instructions.
+With both runtimes configured, you can assign different providers to different tasks or workflow steps. This is powerful for cross-provider workflows — use Claude for research and reasoning tasks, use Codex for code generation, and let each provider play to its strengths.
 
-### Step 8: Extend Profiles for Your Stack
+Both runtimes produce logs in the same Monitor stream, labeled by provider, so you get unified visibility regardless of which runtime executed a task.
 
-Create profiles tailored to your development stack.
+---
 
-1. Navigate to **Profiles** and click **New Profile**
-2. Create profiles for your common tasks:
-   - "Next.js Specialist" — App Router patterns, Server Components best practices
-   - "Database Migration Expert" — Drizzle ORM, SQLite optimization
-   - "Test Writer" — Vitest, Testing Library, coverage-focused
-3. Include stack-specific instructions and constraints
-4. Test each profile before using in production
+### Step 4 — Manage Tool Permissions
+*Estimated time: 2 minutes*
 
-### Step 9: Use Cross-Provider Workflows
+The tool permission system is the governance layer between agent intent and system access. Navigate to **Settings** and find the **Tool Permissions** section.
 
-Mix providers within a single workflow for best results.
+Every tool call an agent makes is checked against the permission registry:
 
-1. Create a workflow with the **Sequence** pattern
-2. Step 1: "Research current best practices" — assign to Claude (good at research)
-3. Step 2: "Implement the changes" — assign to OpenAI Codex (good at code generation)
-4. Step 3: "Review the implementation" — assign to Claude with Code Reviewer profile
-5. Execute and watch both providers work together on the same goal
+- **Not configured**: The agent pauses and sends an approval request to your Inbox
+- **Always Allow**: The tool call proceeds automatically, matching on tool name and argument patterns
+- **Denied**: The tool call is blocked; the agent receives an error and tries an alternative approach
 
-### Step 10: Build the CLI
+Permission patterns support wildcards. For example:
+- `Bash(command:npm *)` — allows any npm command but not arbitrary shell access
+- `Read(file_path:/Users/you/projects/*)` — allows reading files only within your projects directory
+- `Write(*)` — allows all file writes (use with caution)
 
-If contributing to Stagent's development:
+Permissions accumulate over time. Each "Always Allow" click in the Inbox adds a pattern. You can also manage them directly in Settings.
 
-1. Clone the repository and run `npm install`
-2. Build the CLI:
-   ```bash
-   npm run build:cli
+---
+
+### Step 5 — Enable Permission Presets
+*Estimated time: 2 minutes*
+
+Instead of building permissions one click at a time, apply a preset that matches your trust level:
+
+- **Read Only**: File reads, glob, grep — no writes, no shell. Suitable for research and analysis tasks where the agent should observe but not modify.
+- **Git Safe**: Read Only plus git operations — the agent can commit, branch, and diff but cannot push or run arbitrary commands. Good for code review workflows.
+- **Full Auto**: All tools enabled including bash, file write, and file edit. Use only for trusted profiles on well-understood tasks.
+
+Start with **Read Only** for new profiles. Escalate to **Git Safe** once you are confident the profile behaves correctly. Reserve **Full Auto** for profiles you have tested thoroughly.
+
+> **Tip**: Permission presets are additive. Applying Git Safe after Read Only merges the permissions rather than replacing them.
+
+---
+
+### Step 6 — Create and Test a Developer Profile
+*Estimated time: 2 minutes*
+
+As a developer, you will want profiles tailored to your specific stack and conventions.
+
+![Agent profiles catalog with role-based icon circles, domain tags, and runtime badges](../../screengrabs/profiles-list.png)
+
+Navigate to **Profiles** and click **New Profile**. Create a profile for your development workflow:
+
+1. **Name**: "Next.js App Router Specialist"
+2. **Instructions**: Include stack-specific knowledge:
    ```
-3. Test the build:
-   ```bash
-   node dist/cli.js
+   You are an expert in Next.js App Router patterns.
+   - Use Server Components by default; only use 'use client' when state or effects are needed
+   - Query the database directly in Server Components; use API routes only for mutations
+   - Follow the project's Drizzle ORM patterns for database access
+   - Place tests in __tests__/ subdirectories adjacent to source files
    ```
-4. Run the test suite:
-   ```bash
-   npm test
-   npm run test:coverage
-   npm run test:e2e  # Requires runtime credentials
-   ```
+3. **Allowed Tools**: Grant file read, write, glob, grep, and bash
+4. **Max Turns**: 30
 
-> **Tip:** The E2E test suite covers both runtimes, 4 profiles, and 4 workflow patterns. Tests skip gracefully when runtimes aren't configured, so CI doesn't fail.
+After creating the profile, click **Run Test** to verify it follows your instructions. Iterate on the instructions until the behavior matches your expectations.
+
+---
+
+### Step 7 — Monitor Agent Execution
+*Estimated time: 2 minutes*
+
+The Monitor is your window into every action an agent takes. Navigate to **Monitor** while a task is running.
+
+![Monitor view showing real-time log entries with tool calls, reasoning steps, and status indicators](../../screengrabs/monitor-list.png)
+
+The log stream shows:
+
+- **Tool calls**: Which files the agent reads, what commands it executes, what APIs it calls
+- **Tool results**: The output of each tool call, including file contents and command output
+- **Reasoning entries**: The agent's internal decision-making process
+- **Status changes**: When a task moves between queued, running, completed, or failed
+- **Error entries**: Failed operations highlighted with red indicators and error messages
+
+Filter by task, project, or log type. For debugging profiles, the reasoning entries are especially valuable — they show where the agent's behavior diverges from your instructions.
+
+> **Tip**: The SSE stream at `/api/logs/stream` delivers log entries in real time. You can consume this endpoint programmatically to build custom monitoring dashboards or integrate with external alerting systems.
+
+---
+
+### Step 8 — Understand the Runtime Bridge
+*Estimated time: 2 minutes*
+
+Stagent's architecture connects the UI to agent execution through several layers:
+
+```
+Browser UI
+  |
+  v
+API Routes (POST /api/tasks/[id]/execute)
+  |
+  v
+Execution Manager (src/lib/agents/execution-manager.ts)
+  |
+  v
+Runtime Adapter (Claude Agent SDK or Codex App Server Client)
+  |
+  v
+Agent Subprocess (isolated environment, governed tool access)
+  |
+  v
+Results + Logs → Database → SSE Stream → Browser
+```
+
+Key architectural decisions that matter for developers:
+
+- **Fire-and-forget execution**: `POST /api/tasks/[id]/execute` returns HTTP 202 immediately. The agent runs asynchronously.
+- **Database polling for tool approvals**: The `canUseTool` check polls the notification table, which acts as a message queue. No WebSocket connection needed.
+- **Server Components for reads**: Page routes query the database directly using Drizzle ORM. No API layer for read operations.
+- **API routes for mutations only**: POST, PATCH, and DELETE operations go through `/api/` routes.
+- **SSE for log streaming**: `ReadableStream` with a poll loop delivers agent logs to the browser in real time.
+
+This architecture means Stagent works entirely with HTTP and SQLite — no Redis, no message broker, no external dependencies beyond the AI providers themselves.
+
+---
+
+### Step 9 — Run the Test Suite
+*Estimated time: 2 minutes*
+
+If you are contributing to Stagent or extending it, run the test suite to verify your changes.
+
+```bash
+# Build the CLI
+npm run build:cli
+
+# Run all tests
+npm test
+
+# Run tests with coverage reporting
+npm run test:coverage
+```
+
+The test suite covers:
+
+- **Data layer**: CRUD operations, cascade deletes, FK-safe ordering
+- **Validators**: Input validation for tasks, projects, workflows, schedules
+- **Agent integration**: Profile loading, execution flow, tool permission checks
+- **API routes**: Request/response contracts for all mutation endpoints
+- **Components**: Rendering, interaction, and state management
+
+Coverage tiers are enforced: critical paths (validators) require 90%+, agent and API code requires 75%+, UI components require 60%+. Shadcn/ui primitives are excluded from coverage.
+
+> **Tip**: When adding new database tables, update both the migration SQL in `src/lib/db/migrations/` and the bootstrap `CREATE TABLE IF NOT EXISTS` in `src/lib/db/index.ts`. Also add the table to `src/lib/data/clear.ts` in FK-safe order — a safety-net test will fail if you forget.
+
+---
+
+### Step 10 — Next Steps: Contributing and Extending
+*Estimated time: 1 minute*
+
+You now understand Stagent's runtime architecture, permission model, monitoring layer, and development workflow. Here is where to go from here:
+
+- **Build custom profiles** for your team's specific tech stack and conventions
+- **Create workflow blueprints** that encode your team's best practices as reusable templates
+- **Extend the document processor registry** to support new file types (see `src/lib/documents/processors/`)
+- **Add new agent profiles** by creating profile modules in `src/lib/agents/profiles/`
+- **Integrate with external systems** using the API routes and SSE stream
+- **Contribute upstream** — run `npm test` and `npm run test:coverage` before submitting
 
 ## What's Next
-- [Provider Runtimes](../features/provider-runtimes.md) — deep dive into the runtime layer
-- [Tool Permissions](../features/tool-permissions.md) — advanced permission management
-- [Agent Intelligence](../features/agent-intelligence.md) — self-improvement and learning
-- [Power User Guide](./power-user.md) — workflows, blueprints, and swarm patterns
+
+- [Power User Guide](./power-user.md) — workflows, blueprints, swarm patterns, and autonomous loops
+- [Work Use Guide](./work-use.md) — document management, scheduling, and cost control
+- [Personal Use Guide](./personal-use.md) — revisit the fundamentals if needed
+
+---
+
+*You are not just using Stagent — you understand how it works. The runtime bridge, the permission model, the monitoring layer, and the extension points are all visible to you. Build on top of them.*

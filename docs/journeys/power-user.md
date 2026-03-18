@@ -3,160 +3,240 @@ title: "Power User Guide"
 category: "user-journey"
 persona: "power-user"
 difficulty: "advanced"
-estimatedTime: "30 minutes"
-sections: ["profiles", "workflows", "schedules", "monitoring"]
-tags: ["advanced", "profiles", "workflows", "blueprints", "autonomous", "swarm"]
-lastUpdated: "2026-03-17"
+estimatedTime: "24 minutes"
+sections: ["profiles", "workflows", "schedules", "monitor"]
+tags: [advanced, profiles, workflows, blueprints, autonomous, swarm, orchestration]
+lastUpdated: "2026-03-18"
 ---
 
 # Power User Guide
 
-You've mastered the basics and want to push Stagent further. This guide covers creating custom agent profiles, building multi-step workflows, using blueprints for common patterns, running autonomous loops, and orchestrating multi-agent swarms. These are the power tools that make complex automation possible.
+You have run dozens of tasks, built several projects, and learned the rhythms of governed AI. Now you want to push further. You want agents that behave exactly the way you specify, multi-step workflows that chain operations together, blueprint templates you can reuse across projects, parallel research that fans out to multiple agents simultaneously, and autonomous loops that iterate until a goal is met. This guide covers the advanced orchestration layer that makes Stagent a true agent workspace rather than a simple chat interface.
 
 ## Prerequisites
+
 - Familiarity with basic Stagent operations (see [Personal Use Guide](./personal-use.md))
-- At least one project with some completed tasks
-- Both Claude and/or OpenAI Codex configured (for cross-provider workflows)
+- At least one project with completed tasks
+- A configured AI provider (Claude, OpenAI Codex, or both for cross-provider workflows)
+- Comfort with writing detailed agent instructions
 
 ## Journey Steps
 
-### Step 1: Create a Custom Agent Profile
+### Step 1 — Browse the Agent Profile Catalog
+*Estimated time: 2 minutes*
 
-Built-in profiles are a starting point. Custom profiles let you define exactly how an agent should behave.
+Stagent ships with 13+ built-in agent profiles, each designed for a specific type of work. Before creating custom profiles, understand what is already available.
 
-![Agent profile gallery](../screengrabs/profiles-list.png)
+![Agent profile catalog with role-based icon circles, domain tags, and runtime badges](../../screengrabs/profiles-list.png)
 
-1. Navigate to **Profiles** and click **New Profile**
-2. Give it a clear name: "TypeScript Migration Specialist"
-3. Write detailed **instructions**:
+Navigate to **Profiles** in the sidebar. The catalog displays each profile as a card with a colored icon circle (blue for work, purple for personal), its name, description, and capability tags. The built-in profiles include:
+
+- **General** — a balanced all-rounder for most tasks
+- **Code Reviewer** — security and quality analysis with OWASP awareness
+- **Researcher** — deep investigation with citation tracking
+- **Document Writer** — structured output with format control
+
+Browse the catalog and read the descriptions. Each profile defines the agent's personality, allowed tools, response style, and behavioral constraints. Understanding these will help you decide when to use a built-in profile and when to create your own.
+
+> **Tip**: Profiles are not just prompts. They control tool access, max turn count, and behavioral rules. A Code Reviewer profile restricts the agent to read-only tools, while a Document Writer profile grants write access for generating output files.
+
+---
+
+### Step 2 — Create a Custom Profile
+*Estimated time: 2 minutes*
+
+Built-in profiles cover common cases. Custom profiles let you encode your exact requirements.
+
+Click **New Profile** in the Profiles view. Build a specialist:
+
+1. **Name**: "TypeScript Migration Specialist"
+2. **Description**: "Migrates JavaScript codebases to TypeScript with strict type safety"
+3. **Instructions**: Write detailed behavioral rules:
    ```
    You are an expert at migrating JavaScript codebases to TypeScript.
-   Focus on type safety, avoid `any` types, and preserve existing tests.
-   Always check for breaking changes before modifying imports.
+   - Always use strict TypeScript configuration (no `any` types)
+   - Preserve existing test coverage; update test imports after migration
+   - Check for circular dependencies before modifying module structure
+   - Report a migration progress percentage after each file conversion
    ```
-4. Configure **allowed tools** — grant file read/write and shell access
-5. Set **max turns** to 50 (migrations need more iterations)
-6. Click **Create**
+4. **Allowed Tools**: Grant file read, file write, glob, grep, and bash
+5. **Max Turns**: Set to 50 (migrations require many iterations)
 
-> **Tip:** Good instructions are specific about what the agent should and shouldn't do. Include constraints ("avoid `any` types") alongside goals ("migrate to TypeScript").
+Click **Create** and your custom profile appears in the catalog alongside the built-in ones.
 
-### Step 2: Test Your Profile
+> **Tip**: Good profile instructions include both goals ("migrate to TypeScript") and constraints ("no `any` types"). Constraints are what differentiate a mediocre agent from a reliable one.
 
-Before using a profile in production, verify it behaves correctly.
+---
 
-1. Open your new profile's detail view
-2. Click **Run Test**
-3. The system runs a behavioral smoke test with sample prompts
-4. Review the results — does the agent follow your instructions?
-5. Iterate on the instructions if the test reveals unexpected behavior
+### Step 3 — Test Profile Behavior
+*Estimated time: 2 minutes*
 
-### Step 3: Import a Community Profile
+Before deploying a custom profile on real work, verify it behaves as expected.
 
-Discover profiles others have built and import them.
+Open your new profile's detail view and click **Run Test**. Stagent sends a series of sample prompts to the profile and shows you how the agent responds. Check for:
 
-1. Navigate to **Profiles**
-2. Click **Import from GitHub**
-3. Paste a GitHub URL pointing to a profile YAML file
-4. Review the imported profile's instructions and tool policy
-5. Click **Import** to add it to your gallery
+- Does the agent follow your instructions faithfully?
+- Does it respect the tool restrictions you set?
+- Does it produce output in the format you expect?
+- Does it handle edge cases gracefully?
 
-### Step 4: Build a Workflow from a Blueprint
+If the behavior is off, edit the instructions and test again. Iteration is normal — even a few rounds of refinement can dramatically improve output quality. Think of profile creation as training a new team member: you give instructions, observe behavior, and provide corrections.
 
-Blueprints are pre-configured workflow templates. Use them to spin up common automations quickly.
+---
 
-![Workflow list](../screengrabs/workflows-list.png)
+### Step 4 — Build a Sequence Workflow
+*Estimated time: 2 minutes*
 
-1. Navigate to **Workflows** and click **New Workflow**
-2. Select the **Blueprints** tab
-3. Browse available templates — "Code Review Pipeline", "Research Report", "Documentation Sprint"
-4. Click a blueprint to preview its steps, required variables, and profile assignments
-5. Fill in the **dynamic form** with your specific values (e.g., repository URL, review criteria)
-6. Review the generated workflow steps
-7. Click **Create Workflow**
+Workflows chain multiple tasks together. A sequence workflow runs steps one after another, with each step receiving the previous step's output as context.
 
-> **Tip:** Blueprints track lineage — you can always see which template a workflow came from and how it was customized.
+Navigate to **Workflows** in the sidebar and click **New Workflow**.
 
-### Step 5: Create a Custom Multi-Step Workflow
+![Workflow list with keyword-inferred icon circles, status badges, and pattern indicators](../../screengrabs/workflows-list.png)
 
-For unique automation needs, build workflows from scratch.
+Select the **Sequence** pattern and add your steps:
 
-1. Navigate to **Workflows** and click **New Workflow**
-2. Choose a **pattern**:
-   - **Sequence** — steps run in order
-   - **Parallel** — 2-5 branches run concurrently, then synthesize
-   - **Checkpoint** — pauses for your approval between steps
-3. Add steps, each with a name, prompt, and profile assignment
-4. Assign your custom "TypeScript Migration Specialist" to the relevant steps
-5. Click **Create** and then **Execute**
+1. **Step 1 — Research**: "Analyze the current codebase and identify all JavaScript files that should be migrated to TypeScript. Prioritize by import frequency." Assign the Researcher profile.
+2. **Step 2 — Migrate**: "Using the prioritized list from the previous step, migrate the top 5 files to TypeScript." Assign your custom TypeScript Migration Specialist profile.
+3. **Step 3 — Review**: "Review the migrated files for type safety, check that tests still pass, and report any issues." Assign the Code Reviewer profile.
 
-### Step 6: Monitor Workflow Execution
+Click **Create Workflow**. Each step inherits the project's working directory and has access to previous step outputs.
 
-Watch a multi-step workflow unfold in real time.
+---
 
-![Monitor with log streaming](../screengrabs/monitor-list.png)
+### Step 5 — Use a Blueprint Template
+*Estimated time: 2 minutes*
 
-1. Open the workflow detail view to see step-level progress
-2. Each step shows: status (pending, running, completed, failed), assigned profile, and output
-3. Click **Monitor** for real-time log streaming across all steps
-4. For checkpoint workflows, approve each step when it pauses for your review
+Blueprints are pre-configured workflow templates. Instead of building from scratch every time, start from a proven pattern.
 
-> **Tip:** If a step fails, you can retry just that step without restarting the entire workflow.
+Click **New Workflow** and select the **Blueprints** tab. Browse the available templates — "Code Review Pipeline," "Research Report," "Documentation Sprint," and others. Each blueprint shows:
 
-### Step 7: Set Up an Autonomous Loop
+- The workflow pattern (sequence, parallel, checkpoint)
+- The number of steps and their descriptions
+- Which variables you need to fill in (repository path, review criteria, output format)
 
-Autonomous loops let an agent iterate on a task until it reaches a satisfactory result.
+Select a blueprint, fill in the dynamic form with your specific values, review the generated steps, and click **Create Workflow**. The blueprint becomes a fully editable workflow that you can customize further.
 
-1. Create a workflow with the **Loop** pattern
-2. Write a prompt that benefits from iteration, e.g.:
-   ```
-   Improve test coverage for the authentication module.
-   Each iteration: identify the least-covered function, write tests for it,
-   and report the new coverage percentage.
-   ```
-3. Configure **stop conditions**:
-   - Max iterations: 10
-   - Time budget: 30 minutes (whichever comes first)
-4. Execute the workflow
+![Workflow confirmation dialog showing steps and profile assignments before execution](../../screengrabs/dashboard-workflow-confirm.png)
 
-The agent runs multiple iterations, each building on the previous output. Monitor progress in the loop status view.
+> **Tip**: Blueprints track lineage. You can always see which template a workflow came from and how it was customized, making it easy to iterate on proven patterns.
 
-### Step 8: Run a Multi-Agent Swarm
+---
 
-Swarm orchestration uses multiple agents working together: a mayor plans the work, workers execute in parallel, and a refinery synthesizes results.
+### Step 6 — Configure a Parallel Research Workflow
+*Estimated time: 2 minutes*
 
-1. Create a workflow with the **Swarm** pattern
-2. Define the **mayor prompt** — what should be planned
-3. Set **worker concurrency** (2-5 simultaneous workers)
-4. Configure the **refinery prompt** — how to synthesize worker outputs
-5. Assign profiles: use "Researcher" for workers and "Document Writer" for refinery
-6. Execute and watch the mayor delegate, workers execute, and refinery combine
+Some tasks benefit from multiple agents working simultaneously on different facets of the same problem. The parallel pattern fans out to 2-5 branches, then synthesizes results.
 
-### Step 9: Review Agent Learning
+Create a new workflow with the **Parallel** pattern:
 
-After running tasks, agents propose behavioral improvements. Review and curate them.
+- **Branch 1**: "Research competitive pricing models in the SaaS market for developer tools"
+- **Branch 2**: "Analyze our current pricing structure and identify gaps"
+- **Branch 3**: "Survey recent industry reports on developer tool adoption trends"
+- **Synthesis step**: "Combine the three research outputs into a unified pricing strategy recommendation with supporting evidence"
 
-1. Check your **Inbox** after task or workflow completion
-2. Look for **context proposals** — behavioral rules the agent wants to learn
-3. Review each proposal carefully
-4. **Approve** valuable patterns (e.g., "Always check for circular imports before refactoring")
-5. **Reject** unhelpful ones
-6. **Edit** to refine wording before approving
+Assign the Researcher profile to all branches and the Document Writer profile to the synthesis step. When executed, all three branches run concurrently, and the synthesis step waits for all of them to complete before combining their outputs.
 
-For workflows, proposals arrive in batches — review them all at once instead of one by one.
+---
 
-### Step 10: Create a Blueprint from Your Workflow
+### Step 7 — Set Up a Swarm Workflow
+*Estimated time: 2 minutes*
 
-Once you've built a workflow that works well, save it as a blueprint for reuse.
+The swarm pattern is Stagent's most sophisticated orchestration model. A **mayor** agent plans the work, **worker** agents execute in parallel, and a **refinery** agent synthesizes the results.
 
-1. Open a completed workflow's detail view
-2. Click **Save as Blueprint**
-3. Add a description and configure which values should be variables (filled in each time)
-4. Your blueprint appears in the gallery for future use
+Create a new workflow with the **Swarm** pattern:
 
-> **Tip:** You can also create blueprints from YAML files or import them from GitHub URLs, making it easy to share with others.
+1. **Mayor prompt**: "Break down the following goal into 3-4 independent subtasks: Audit the entire authentication module for security vulnerabilities, performance bottlenecks, and code quality issues."
+2. **Worker concurrency**: Set to 3
+3. **Refinery prompt**: "Synthesize the worker outputs into a single audit report with severity rankings, recommended fixes, and estimated effort for each issue."
+4. **Profile assignments**: Use Code Reviewer for workers and Document Writer for refinery
+
+The mayor decomposes the goal, workers execute their assigned subtasks in parallel, and the refinery combines everything into a coherent deliverable.
+
+---
+
+### Step 8 — Monitor Workflow Execution
+*Estimated time: 2 minutes*
+
+Multi-step workflows generate a lot of activity. The Monitor is where you watch it unfold.
+
+![Monitor view showing real-time log streaming with tool calls, reasoning, and status changes](../../screengrabs/monitor-list.png)
+
+Navigate to **Monitor** while a workflow is running. You will see:
+
+- **Step-level progress**: Which steps are pending, running, completed, or failed
+- **Tool calls**: Every file read, command execution, and API call the agents make
+- **Reasoning entries**: The agent's decision-making process, visible in real time
+- **Error highlights**: Failed operations displayed with red status indicators
+
+For checkpoint workflows, the Monitor will show pause points where the workflow is waiting for your approval. Click through to approve or reject before the next step begins.
+
+> **Tip**: If a step fails, you can retry just that step without restarting the entire workflow. This saves time and tokens on long-running orchestrations.
+
+---
+
+### Step 9 — Review Learned Context Proposals
+*Estimated time: 2 minutes*
+
+After workflows complete, agents often propose behavioral improvements — patterns they discovered during execution that could make future runs more effective.
+
+Check your **Inbox** after a workflow finishes. Learned context proposals arrive in batches for workflow runs, so you can review them all at once. Each proposal describes a rule like:
+
+- "This codebase uses path aliases (`@/lib/...`) instead of relative imports"
+- "Test files are co-located in `__tests__/` subdirectories, not in a top-level test folder"
+- "The team prefers functional components over class components"
+
+**Accept** proposals that capture genuine patterns. **Edit** proposals that are directionally correct but need refinement. **Reject** proposals that are too specific or incorrect. Accepted proposals become permanent context for future tasks in the same project.
+
+---
+
+### Step 10 — Schedule Autonomous Runs
+*Estimated time: 2 minutes*
+
+Combine workflows with schedules to create fully autonomous pipelines.
+
+![Schedules page showing active schedules with intervals, next run times, and firing counts](../../screengrabs/schedules-list.png)
+
+Navigate to **Schedules** and click **New Schedule**. Instead of a simple prompt, you can link a schedule to a workflow:
+
+1. **Name**: "Weekly Code Quality Pipeline"
+2. **Linked Workflow**: Select your sequence workflow from Step 4
+3. **Interval**: `7d` or `0 9 * * 1` (Monday mornings at 9am)
+4. **Max Firings**: 12 (three months of weekly runs)
+5. **Stop Conditions**: Configure iteration limits, time budgets, or quality thresholds
+
+The schedule fires the entire workflow automatically, creating child tasks for each step. Results accumulate on the Dashboard, and you review them at your convenience.
+
+> **Tip**: Autonomous loops support four stop conditions: max iterations, time budget, token budget, and custom quality checks. Use multiple conditions together for safety — the loop stops when any condition is met.
+
+---
+
+### Step 11 — Stream Live Logs
+*Estimated time: 2 minutes*
+
+For real-time visibility into running tasks, use the Monitor's live streaming mode.
+
+Navigate to **Monitor** and filter by a specific task or workflow. The SSE (Server-Sent Events) stream delivers log entries as they happen — tool calls, agent reasoning, file modifications, and status changes appear with sub-second latency.
+
+This is especially valuable for long-running autonomous loops where you want to observe the agent's iterative progress without waiting for the full run to complete. You can spot issues early, pause execution if something goes wrong, and resume once the problem is fixed.
+
+---
+
+### Step 12 — Next Steps
+*Estimated time: 1 minute*
+
+You now have access to Stagent's full orchestration toolkit: custom profiles, multi-step workflows, blueprint templates, parallel research, swarm patterns, and scheduled autonomous runs. Here is where to go deeper:
+
+- **Create blueprints from successful workflows** — save your best patterns as reusable templates
+- **Experiment with cross-provider workflows** — assign different providers to different steps (Claude for research, Codex for code generation)
+- **Build a profile library** — create specialist profiles for every type of work your team does
+- **Combine swarm and schedule patterns** — run complex multi-agent orchestrations on a recurring cadence
 
 ## What's Next
-- [Developer Guide](./developer.md) — CLI setup, API integration, extending profiles
-- [Workflows](../features/workflows.md) — all six workflow patterns explained
-- [Agent Profiles](../features/profiles.md) — advanced profile configuration
-- [Agent Intelligence](../features/agent-intelligence.md) — self-improvement deep dive
+
+- [Developer Guide](./developer.md) — CLI setup, runtime configuration, API integration, and extending Stagent
+- [Work Use Guide](./work-use.md) — document management, cost control, and approval workflows
+- [Personal Use Guide](./personal-use.md) — revisit the fundamentals
+
+---
+
+*You are no longer just using AI agents — you are orchestrating them. Custom profiles define how they think, workflows define how they collaborate, and schedules define when they act. The workspace is yours to design.*
