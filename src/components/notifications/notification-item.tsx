@@ -2,10 +2,11 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Shield, MessageCircle, CheckCircle, XCircle, Eye, EyeOff, Trash2, Wallet } from "lucide-react";
+import { Shield, MessageCircle, CheckCircle, XCircle, Eye, EyeOff, Trash2, Wallet, Brain, ChevronRight, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LightMarkdown } from "@/components/shared/light-markdown";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { PermissionAction } from "./permission-action";
 import { MessageResponse, type Question } from "./message-response";
 import { FailureAction } from "./failure-action";
@@ -41,6 +42,8 @@ const typeIcons: Record<string, React.ReactNode> = {
   task_completed: <CheckCircle className="h-4 w-4 text-chart-2" aria-hidden="true" />,
   task_failed: <XCircle className="h-4 w-4 text-destructive" aria-hidden="true" />,
   budget_alert: <Wallet className="h-4 w-4 text-status-warning" aria-hidden="true" />,
+  context_proposal: <Brain className="h-4 w-4 text-chart-4" aria-hidden="true" />,
+  context_proposal_batch: <Brain className="h-4 w-4 text-chart-4" aria-hidden="true" />,
 };
 
 const typeLabels: Record<string, string> = {
@@ -49,6 +52,8 @@ const typeLabels: Record<string, string> = {
   task_completed: "Task completed",
   task_failed: "Task failed",
   budget_alert: "Budget alert",
+  context_proposal: "Self-learning",
+  context_proposal_batch: "Self-learning batch",
 };
 
 function formatToolInput(
@@ -95,12 +100,31 @@ function formatToolInput(
   );
 }
 
+const navigableTypes = new Set(["task_completed", "task_failed", "permission_required", "agent_message"]);
+
 export function NotificationItem({ notification, onUpdated }: NotificationItemProps) {
+  const router = useRouter();
   const [toggling, setToggling] = useState(false);
   const [dismissing, setDismissing] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const isUnread = !notification.read;
   const hasResponse = !!notification.response;
   const parsedToolInput = parseNotificationToolInput(notification.toolInput);
+  const isNavigable = !!notification.taskId && navigableTypes.has(notification.type);
+
+  async function handleNavigate() {
+    if (!isNavigable) return;
+    // Mark as read on click-through
+    if (isUnread) {
+      await fetch(`/api/notifications/${notification.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ read: true }),
+      });
+      onUpdated();
+    }
+    router.push(`/tasks/${notification.taskId}`);
+  }
 
   async function toggleRead() {
     setToggling(true);
@@ -134,9 +158,17 @@ export function NotificationItem({ notification, onUpdated }: NotificationItemPr
         isUnread
           ? "surface-card border-l-4 border-l-primary"
           : "surface-card-muted"
-      }`}
+      }${isNavigable ? " cursor-pointer hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" : ""}`}
       role="article"
       aria-label={`${typeLabels[notification.type] ?? "Notification"}: ${notification.title}${isUnread ? " (unread)" : ""}`}
+      tabIndex={isNavigable ? 0 : undefined}
+      onClick={isNavigable ? handleNavigate : undefined}
+      onKeyDown={isNavigable ? (e: React.KeyboardEvent) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handleNavigate();
+        }
+      } : undefined}
     >
       <div className="flex items-start gap-3">
         <div className="mt-0.5">{typeIcons[notification.type]}</div>
@@ -175,11 +207,43 @@ export function NotificationItem({ notification, onUpdated }: NotificationItemPr
           {notification.body &&
             notification.type !== "permission_required" &&
             notification.type !== "agent_message" && (
-              <LightMarkdown
-                content={notification.body}
-                lineClamp={3}
-                textSize="sm"
-              />
+              <div className="mt-1" onClick={(e) => e.stopPropagation()}>
+                {expanded ? (
+                  <>
+                    <div className="prose prose-sm dark:prose-invert max-w-none max-h-96 overflow-auto rounded-md border bg-muted/30 p-3">
+                      <LightMarkdown content={notification.body} textSize="sm" />
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="mt-1 h-6 text-xs text-muted-foreground"
+                      onClick={(e) => { e.stopPropagation(); setExpanded(false); }}
+                    >
+                      <ChevronDown className="h-3 w-3 mr-1" />
+                      Collapse
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <LightMarkdown
+                      content={notification.body}
+                      lineClamp={2}
+                      textSize="sm"
+                    />
+                    {notification.body.length > 200 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="mt-1 h-6 text-xs text-muted-foreground"
+                        onClick={(e) => { e.stopPropagation(); setExpanded(true); }}
+                      >
+                        <ChevronRight className="h-3 w-3 mr-1" />
+                        Expand
+                      </Button>
+                    )}
+                  </>
+                )}
+              </div>
             )}
 
           {/* Actions based on type */}
@@ -225,7 +289,7 @@ export function NotificationItem({ notification, onUpdated }: NotificationItemPr
             )}
           </p>
         </div>
-        <div className="flex flex-col gap-1 shrink-0">
+        <div className="flex flex-col gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
           <Button
             variant="ghost"
             size="icon"

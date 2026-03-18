@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { CheckCheck, Inbox, RefreshCw, Trash2 } from "lucide-react";
+import { Eye, Inbox, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { NotificationItem } from "./notification-item";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -124,19 +124,18 @@ export function InboxList({
             </Button>
             {unreadCount > 0 && (
               <Button variant="secondary" size="sm" onClick={markAllRead}>
-                <CheckCheck className="h-4 w-4" />
+                <Eye className="h-4 w-4" />
                 Mark all read
               </Button>
             )}
             {readCount > 0 && (
               <Button
-                variant="outline"
+                variant="destructive"
                 size="sm"
                 onClick={dismissAllRead}
-                className="text-muted-foreground hover:text-destructive"
               >
                 <Trash2 className="h-4 w-4" />
-                Dismiss read
+                Delete read
               </Button>
             )}
           </div>

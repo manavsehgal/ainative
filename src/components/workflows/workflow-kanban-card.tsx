@@ -22,6 +22,14 @@ interface WorkflowKanbanCardProps {
   workflow: WorkflowKanbanItem;
 }
 
+const statusStripBg: Record<string, string> = {
+  draft: "bg-muted/40 border-t-border/30",
+  active: "bg-status-running/8 border-t-status-running/15",
+  completed: "bg-status-completed/10 border-t-status-completed/20",
+  failed: "bg-status-failed/10 border-t-status-failed/20",
+  paused: "bg-status-warning/8 border-t-status-warning/15",
+};
+
 export function WorkflowKanbanCard({ workflow }: WorkflowKanbanCardProps) {
   const isActive = workflow.status === "active";
   const isFailed = workflow.status === "failed";
@@ -35,8 +43,12 @@ export function WorkflowKanbanCard({ workflow }: WorkflowKanbanCardProps) {
       <Card
         role="button"
         aria-label={`${workflow.name}, ${patternLabels[workflow.pattern] ?? workflow.pattern}, ${workflow.status}`}
-        className={`surface-card cursor-pointer transition-shadow hover:shadow-md group overflow-hidden py-0 gap-0 border-l-4 ${
-          isFailed ? "border-l-destructive" : "border-l-primary"
+        className={`surface-card cursor-pointer transition-shadow hover:shadow-md group overflow-hidden py-0 gap-0 ${
+          isFailed
+            ? "border-l-4 border-l-destructive"
+            : isActive
+              ? "border-l-4 border-l-primary"
+              : ""
         }`}
       >
         <div className="p-3">
@@ -91,7 +103,7 @@ export function WorkflowKanbanCard({ workflow }: WorkflowKanbanCardProps) {
         </div>
 
         {/* Status strip */}
-        <div className="flex items-center h-7 px-3 border-t border-border/30 transition-colors">
+        <div className={`flex items-center h-7 px-3 border-t transition-colors ${statusStripBg[workflow.status] ?? statusStripBg.draft}`}>
           <Badge
             variant={workflowStatusVariant[workflow.status] ?? "secondary"}
             className="text-[11px] h-5"
