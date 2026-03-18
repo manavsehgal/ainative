@@ -19,6 +19,7 @@ import {
 import { Loader2, Play } from "lucide-react";
 import { toast } from "sonner";
 import { patternLabels } from "@/lib/constants/status-colors";
+import { IconCircle, getWorkflowIconFromName } from "@/lib/constants/card-icons";
 import type { WorkflowBlueprint, BlueprintVariable } from "@/lib/workflows/blueprints/types";
 
 interface BlueprintPreviewProps {
@@ -76,7 +77,13 @@ export function BlueprintPreview({
     <div className="space-y-6 max-w-2xl">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">{blueprint.name}</h1>
+        <div className="flex items-center gap-3">
+          <IconCircle
+            icon={getWorkflowIconFromName(blueprint.name, blueprint.pattern).icon}
+            colors={getWorkflowIconFromName(blueprint.name, blueprint.pattern).colors}
+          />
+          <h1 className="text-2xl font-bold tracking-tight">{blueprint.name}</h1>
+        </div>
         <p className="text-sm text-muted-foreground mt-1">{blueprint.description}</p>
         <div className="flex flex-wrap gap-1.5 mt-3">
           <Badge variant={blueprint.domain === "work" ? "default" : "secondary"}>

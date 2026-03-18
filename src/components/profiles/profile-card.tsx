@@ -4,14 +4,16 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { listRuntimeCatalog } from "@/lib/agents/runtime/catalog";
 import { getSupportedRuntimes } from "@/lib/agents/profiles/compatibility";
+import { IconCircle, getProfileIcon, getDomainColors } from "@/lib/constants/card-icons";
 import type { AgentProfile } from "@/lib/agents/profiles/types";
 
 interface ProfileCardProps {
   profile: AgentProfile;
+  isBuiltin?: boolean;
   onClick: () => void;
 }
 
-export function ProfileCard({ profile, onClick }: ProfileCardProps) {
+export function ProfileCard({ profile, isBuiltin = true, onClick }: ProfileCardProps) {
   const runtimeLabelMap = new Map(
     listRuntimeCatalog().map((runtime) => [
       runtime.id,
@@ -32,13 +34,19 @@ export function ProfileCard({ profile, onClick }: ProfileCardProps) {
         }
       }}
     >
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-base font-medium">{profile.name}</CardTitle>
-        <Badge
-          variant={profile.domain === "work" ? "default" : "secondary"}
-        >
-          {profile.domain}
-        </Badge>
+      <CardHeader className="flex flex-row items-center gap-3 space-y-0 pb-2">
+        <IconCircle
+          icon={getProfileIcon(profile.id)}
+          colors={getDomainColors(profile.domain, isBuiltin)}
+        />
+        <div className="flex min-w-0 flex-1 items-center justify-between">
+          <CardTitle className="truncate text-base font-medium">{profile.name}</CardTitle>
+          <Badge
+            variant={profile.domain === "work" ? "default" : "secondary"}
+          >
+            {profile.domain}
+          </Badge>
+        </div>
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="line-clamp-2 text-sm text-muted-foreground">

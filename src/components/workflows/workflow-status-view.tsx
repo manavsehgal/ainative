@@ -30,6 +30,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
 import { workflowStatusVariant, patternLabels } from "@/lib/constants/status-colors";
+import { IconCircle, getWorkflowIconFromName } from "@/lib/constants/card-icons";
 import { LoopStatusView } from "./loop-status-view";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { LightMarkdown } from "@/components/shared/light-markdown";
@@ -317,11 +318,17 @@ export function WorkflowStatusView({ workflowId }: WorkflowStatusViewProps) {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>{data.name}</CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">
-                {patternLabels[data.pattern] ?? data.pattern}
-              </p>
+            <div className="flex items-center gap-3">
+              <IconCircle
+                icon={getWorkflowIconFromName(data.name, data.pattern).icon}
+                colors={getWorkflowIconFromName(data.name, data.pattern).colors}
+              />
+              <div>
+                <CardTitle>{data.name}</CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {patternLabels[data.pattern] ?? data.pattern}
+                </p>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <Badge variant={workflowStatusVariant[data.status] ?? "secondary"}>

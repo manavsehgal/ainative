@@ -40,6 +40,7 @@ import {
   getSupportedRuntimes,
 } from "@/lib/agents/profiles/compatibility";
 import type { AgentProfile } from "@/lib/agents/profiles/types";
+import { IconCircle, getProfileIcon, getDomainColors } from "@/lib/constants/card-icons";
 
 interface TestResult {
   task: string;
@@ -179,7 +180,11 @@ export function ProfileDetailView({ profileId, isBuiltin, initialProfile }: Prof
     <div className="space-y-6" aria-live="polite">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          <IconCircle
+            icon={getProfileIcon(profile.id)}
+            colors={getDomainColors(profile.domain, isBuiltin)}
+          />
           <h1 className="text-2xl font-bold">{profile.name}</h1>
           <Badge variant={profile.domain === "work" ? "default" : "secondary"}>
             {profile.domain}

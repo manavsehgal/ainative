@@ -107,6 +107,7 @@ export function ProfileBrowser({ initialProfiles }: ProfileBrowserProps) {
             <ProfileCard
               key={profile.id}
               profile={profile}
+              isBuiltin={profile.isBuiltin}
               onClick={() => router.push(`/profiles/${profile.id}`)}
             />
           ))}

@@ -11,6 +11,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { GitBranch, Plus, Pencil, Copy, RotateCcw, Trash2, Layers } from "lucide-react";
 import { toast } from "sonner";
 import { workflowStatusVariant, patternLabels } from "@/lib/constants/status-colors";
+import { IconCircle, getWorkflowIconFromName } from "@/lib/constants/card-icons";
 
 interface Workflow {
   id: string;
@@ -137,6 +138,7 @@ export function WorkflowList({ projects }: WorkflowListProps) {
             const pattern = getPattern(wf.definition);
             const stepCount = getStepCount(wf.definition);
             const promptPreview = getPromptPreview(wf.definition);
+            const wfIcon = getWorkflowIconFromName(wf.name, pattern);
             return (
               <Card
                 key={wf.id}
@@ -146,11 +148,9 @@ export function WorkflowList({ projects }: WorkflowListProps) {
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); router.push(`/workflows/${wf.id}`); } }}
               >
                 <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base font-medium">{wf.name}</CardTitle>
-                    <Badge variant={workflowStatusVariant[wf.status] ?? "secondary"}>
-                      {wf.status}
-                    </Badge>
+                  <div className="flex items-center gap-3">
+                    <IconCircle icon={wfIcon.icon} colors={wfIcon.colors} />
+                    <CardTitle className="min-w-0 truncate text-base font-medium">{wf.name}</CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -164,49 +164,54 @@ export function WorkflowList({ projects }: WorkflowListProps) {
                       {promptPreview}
                     </p>
                   )}
-                  <div className="flex items-center gap-1 mt-3">
-                    {wf.status === "draft" && (
+                  <div className="flex items-center justify-between mt-3">
+                    <Badge variant={workflowStatusVariant[wf.status] ?? "secondary"}>
+                      {wf.status}
+                    </Badge>
+                    <div className="flex items-center gap-1">
+                      {wf.status === "draft" && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          aria-label="Edit workflow"
+                          onClick={(e) => { e.stopPropagation(); router.push(`/workflows/${wf.id}/edit`); }}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7"
-                        aria-label="Edit workflow"
-                        onClick={(e) => { e.stopPropagation(); router.push(`/workflows/${wf.id}/edit`); }}
+                        aria-label="Clone workflow"
+                        onClick={(e) => { e.stopPropagation(); router.push(`/workflows/${wf.id}/edit?clone=true`); }}
                       >
-                        <Pencil className="h-3.5 w-3.5" />
+                        <Copy className="h-3.5 w-3.5" />
                       </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      aria-label="Clone workflow"
-                      onClick={(e) => { e.stopPropagation(); router.push(`/workflows/${wf.id}/edit?clone=true`); }}
-                    >
-                      <Copy className="h-3.5 w-3.5" />
-                    </Button>
-                    {(wf.status === "completed" || wf.status === "failed") && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        aria-label="Re-run workflow"
-                        onClick={(e) => { e.stopPropagation(); handleRerun(wf.id); }}
-                      >
-                        <RotateCcw className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
-                    {wf.status !== "active" && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-destructive"
-                        aria-label="Delete workflow"
-                        onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(wf.id); }}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
+                      {(wf.status === "completed" || wf.status === "failed") && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          aria-label="Re-run workflow"
+                          onClick={(e) => { e.stopPropagation(); handleRerun(wf.id); }}
+                        >
+                          <RotateCcw className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                      {wf.status !== "active" && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-destructive"
+                          aria-label="Delete workflow"
+                          onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(wf.id); }}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>

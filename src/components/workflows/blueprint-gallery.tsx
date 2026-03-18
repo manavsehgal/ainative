@@ -11,6 +11,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
 import { Search, Layers, Plus } from "lucide-react";
 import { patternLabels } from "@/lib/constants/status-colors";
+import { IconCircle, getWorkflowIconFromName } from "@/lib/constants/card-icons";
 import type { WorkflowBlueprint } from "@/lib/workflows/blueprints/types";
 
 const difficultyColors: Record<string, string> = {
@@ -114,19 +115,25 @@ export function BlueprintGallery() {
               }}
             >
               <CardHeader className="pb-1">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-medium">
-                    {bp.name}
-                  </CardTitle>
-                  <div className="flex items-center gap-1.5">
-                    <Badge variant={bp.domain === "work" ? "default" : "secondary"}>
-                      {bp.domain}
-                    </Badge>
-                    {bp.difficulty && (
-                      <Badge variant="outline" className={`text-xs ${difficultyColors[bp.difficulty] ?? ""}`}>
-                        {bp.difficulty}
+                <div className="flex items-center gap-3">
+                  <IconCircle
+                    icon={getWorkflowIconFromName(bp.name, bp.pattern).icon}
+                    colors={getWorkflowIconFromName(bp.name, bp.pattern).colors}
+                  />
+                  <div className="flex min-w-0 flex-1 items-center justify-between">
+                    <CardTitle className="truncate text-sm font-medium">
+                      {bp.name}
+                    </CardTitle>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <Badge variant={bp.domain === "work" ? "default" : "secondary"}>
+                        {bp.domain}
                       </Badge>
-                    )}
+                      {bp.difficulty && (
+                        <Badge variant="outline" className={`text-xs ${difficultyColors[bp.difficulty] ?? ""}`}>
+                          {bp.difficulty}
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                 </div>
               </CardHeader>
