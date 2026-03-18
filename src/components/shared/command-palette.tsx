@@ -29,6 +29,7 @@ import {
   Moon,
   CheckCheck,
   Loader2,
+  BookOpen,
 } from "lucide-react";
 
 interface RecentProject {
@@ -43,6 +44,12 @@ interface RecentTask {
   status: string;
 }
 
+interface PlaybookItem {
+  slug: string;
+  title: string;
+  tags: string[];
+}
+
 const navigationItems = [
   { title: "Home", href: "/", icon: Home, keywords: "landing welcome" },
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard, keywords: "tasks kanban board" },
@@ -54,6 +61,7 @@ const navigationItems = [
   { title: "Profiles", href: "/profiles", icon: Bot, keywords: "agents configuration" },
   { title: "Schedules", href: "/schedules", icon: Clock, keywords: "cron recurring timer" },
   { title: "Cost & Usage", href: "/costs", icon: Wallet, keywords: "spend tokens metering budget analytics" },
+  { title: "Playbook", href: "/playbook", icon: BookOpen, keywords: "docs guide documentation help" },
   { title: "Settings", href: "/settings", icon: Settings, keywords: "preferences configuration" },
 ];
 
@@ -81,6 +89,7 @@ export function CommandPalette() {
   const [open, setOpen] = useState(false);
   const [recentProjects, setRecentProjects] = useState<RecentProject[]>([]);
   const [recentTasks, setRecentTasks] = useState<RecentTask[]>([]);
+  const [playbookItems, setPlaybookItems] = useState<PlaybookItem[]>([]);
   const [loadingRecent, setLoadingRecent] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const router = useRouter();
@@ -114,6 +123,7 @@ export function CommandPalette() {
         if (data) {
           setRecentProjects(data.projects);
           setRecentTasks(data.tasks);
+          setPlaybookItems(data.playbook ?? []);
         }
       })
       .catch(() => {
@@ -212,6 +222,26 @@ export function CommandPalette() {
         </CommandGroup>
 
         <CommandSeparator />
+
+        {/* Playbook */}
+        {playbookItems.length > 0 && (
+          <>
+            <CommandGroup heading="Playbook">
+              {playbookItems.map((item) => (
+                <CommandItem
+                  key={`playbook-${item.slug}`}
+                  value={`playbook-${item.title}`}
+                  onSelect={() => navigate(`/playbook/${item.slug}`)}
+                  keywords={["docs", "guide", ...item.tags]}
+                >
+                  <BookOpen className="h-4 w-4" />
+                  <span className="flex-1 truncate">{item.title}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+            <CommandSeparator />
+          </>
+        )}
 
         {/* Create */}
         <CommandGroup heading="Create">

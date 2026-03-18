@@ -13,6 +13,7 @@ import {
   Bot,
   Clock,
   Wallet,
+  BookMarked,
   Settings,
 } from "lucide-react";
 import {
@@ -44,6 +45,7 @@ const navItems = [
   { title: "Profiles", href: "/profiles", icon: Bot, badge: false },
   { title: "Schedules", href: "/schedules", icon: Clock, badge: false },
   { title: "Cost & Usage", href: "/costs", icon: Wallet, badge: false },
+  { title: "Playbook", href: "/playbook", icon: BookMarked, badge: false },
   { title: "Settings", href: "/settings", icon: Settings, badge: false },
 ];
 

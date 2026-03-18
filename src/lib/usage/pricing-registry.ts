@@ -48,8 +48,8 @@ const DEFAULT_ROWS: PricingRow[] = [
     label: "Claude Opus",
     visible: true,
     matchPrefixes: ["claude-opus"],
-    inputCostPerMillionMicros: 15_000_000,
-    outputCostPerMillionMicros: 75_000_000,
+    inputCostPerMillionMicros: 5_000_000,
+    outputCostPerMillionMicros: 25_000_000,
     monthlyPriceUsd: null,
   },
   {
@@ -70,8 +70,8 @@ const DEFAULT_ROWS: PricingRow[] = [
     label: "Claude Haiku",
     visible: true,
     matchPrefixes: ["claude-haiku"],
-    inputCostPerMillionMicros: 800_000,
-    outputCostPerMillionMicros: 4_000_000,
+    inputCostPerMillionMicros: 1_000_000,
+    outputCostPerMillionMicros: 5_000_000,
     monthlyPriceUsd: null,
   },
   {
@@ -81,8 +81,8 @@ const DEFAULT_ROWS: PricingRow[] = [
     label: "Anthropic Fallback",
     visible: false,
     matchPrefixes: [],
-    inputCostPerMillionMicros: 15_000_000,
-    outputCostPerMillionMicros: 75_000_000,
+    inputCostPerMillionMicros: 5_000_000,
+    outputCostPerMillionMicros: 25_000_000,
     monthlyPriceUsd: null,
   },
   {
@@ -389,7 +389,7 @@ async function refreshAnthropicPricing(
   const text = normalizeText(await response.text());
   const rows = current.rows.map((row) => ({ ...row }));
 
-  const opus = extractModelPricing(text, ["Claude Opus 4.1", "Claude Opus 4"]);
+  const opus = extractModelPricing(text, ["Claude Opus 4.6", "Claude Opus 4.5", "Claude Opus 4"]);
   if (opus) {
     updateRow(rows, "anthropic-claude-opus", {
       inputCostPerMillionMicros: opus.inputMicros,
@@ -397,7 +397,7 @@ async function refreshAnthropicPricing(
     });
   }
 
-  const sonnet = extractModelPricing(text, ["Claude Sonnet 4.5", "Claude Sonnet 4"]);
+  const sonnet = extractModelPricing(text, ["Claude Sonnet 4.6", "Claude Sonnet 4.5", "Claude Sonnet 4"]);
   if (sonnet) {
     updateRow(rows, "anthropic-claude-sonnet", {
       inputCostPerMillionMicros: sonnet.inputMicros,
@@ -405,7 +405,7 @@ async function refreshAnthropicPricing(
     });
   }
 
-  const haiku = extractModelPricing(text, ["Claude Haiku 3.5", "Claude Haiku"]);
+  const haiku = extractModelPricing(text, ["Claude Haiku 4.5", "Claude Haiku 3.5", "Claude Haiku"]);
   if (haiku) {
     updateRow(rows, "anthropic-claude-haiku", {
       inputCostPerMillionMicros: haiku.inputMicros,
@@ -454,7 +454,7 @@ async function refreshOpenAIPricing(
   const text = normalizeText(await response.text());
   const rows = current.rows.map((row) => ({ ...row }));
 
-  const gpt5 = extractModelPricing(text, ["GPT-5.4", "GPT-5"]);
+  const gpt5 = extractModelPricing(text, ["GPT-5.4", "GPT-5.1", "GPT-5"]);
   if (gpt5) {
     updateRow(rows, "openai-gpt-5", {
       inputCostPerMillionMicros: gpt5.inputMicros,
