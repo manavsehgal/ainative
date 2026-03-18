@@ -45,7 +45,7 @@ function parseMarkdown(content: string, slug: string): ParsedDoc {
         value = JSON.parse(value);
       } catch {
         // YAML-style unquoted array: [a, b, c] → ["a", "b", "c"]
-        value = value
+        value = (value as string)
           .slice(1, -1)
           .split(",")
           .map((s: string) => s.trim())

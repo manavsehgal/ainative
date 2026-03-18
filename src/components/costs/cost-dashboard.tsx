@@ -139,7 +139,7 @@ function formatActivityLabel(value: UsageAuditEntry["activityType"]) {
     case "context_summarization":
       return "Context summarization";
     default:
-      return value
+      return (value as string)
         .split("_")
         .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
         .join(" ");
