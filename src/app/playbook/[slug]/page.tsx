@@ -62,8 +62,8 @@ export default async function PlaybookDetailPage({
   ];
 
   return (
-    <div className="gradient-twilight min-h-[100dvh] p-4 sm:p-6">
-      <div className="surface-page rounded-[28px] border border-border/60 p-6 shadow-[0_18px_48px_oklch(0.12_0.02_260_/_0.08)]">
+    <div className="bg-background min-h-[100dvh] p-4 sm:p-6">
+      <div className="surface-page-shell rounded-xl p-6">
         <PlaybookDetailView
           doc={doc}
           relatedSections={relatedSections}

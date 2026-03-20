@@ -1,6 +1,7 @@
 import { listProfiles, isBuiltin } from "@/lib/agents/profiles/registry";
 import { sortProfilesByName } from "@/lib/agents/profiles/sort";
 import { ProfileBrowser } from "@/components/profiles/profile-browser";
+import { PageShell } from "@/components/shared/page-shell";
 
 export const dynamic = "force-dynamic";
 
@@ -13,10 +14,11 @@ export default async function ProfilesPage() {
   );
 
   return (
-    <div className="gradient-ocean-mist min-h-[100dvh] p-4 sm:p-6">
-      <div className="surface-page rounded-[28px] border border-border/60 p-6 shadow-[0_18px_48px_oklch(0.12_0.02_260_/_0.08)]">
-        <ProfileBrowser initialProfiles={profiles} />
-      </div>
-    </div>
+    <PageShell
+      title="Profiles"
+      description="Browse and inspect agent profiles without blur-heavy detail surfaces."
+    >
+      <ProfileBrowser initialProfiles={profiles} />
+    </PageShell>
   );
 }

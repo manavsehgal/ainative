@@ -282,20 +282,6 @@ export function CostDashboard({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="max-w-3xl space-y-3">
-        <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/55 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-          <Wallet className="h-3.5 w-3.5" />
-          Governance &amp; Analytics
-        </div>
-        <div className="space-y-2">
-          <h1 className="text-2xl font-bold tracking-tight">Cost &amp; Usage</h1>
-          <p className="max-w-2xl text-sm text-muted-foreground">
-            Track current spend pacing, provider mix, and the execution history behind paid
-            runtime work without juggling a second budgeting model.
-          </p>
-        </div>
-      </div>
-
       <CostFilters
         dateRange={filters.dateRange}
         runtimeId={filters.runtimeId}

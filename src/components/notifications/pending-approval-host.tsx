@@ -135,7 +135,7 @@ function PendingApprovalDetail({
         )}
       </div>
 
-      <div className="glass-card-light rounded-2xl p-4">
+      <div className="surface-card-muted rounded-lg p-4">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
           Context
         </p>
@@ -225,7 +225,7 @@ function PendingApprovalDetail({
                 key={item.notificationId}
                 type="button"
                 onClick={() => onSelect(item.notificationId)}
-                className="glass-card-light flex w-full items-start justify-between rounded-2xl p-3 text-left transition-colors hover:bg-accent/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
+                className="surface-card-muted flex w-full items-start justify-between rounded-lg p-3 text-left transition-colors hover:bg-accent/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
               >
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-foreground">
@@ -393,7 +393,7 @@ export function PendingApprovalHost() {
         )}
         aria-label="Pending approval request"
       >
-        <div className="glass-card-heavy rounded-[24px] border border-status-warning/30 p-3 sm:p-4">
+        <div className="elevation-3 rounded-xl border border-status-warning/30 bg-popover p-3 sm:p-4">
           <button
             ref={triggerRef}
             type="button"

@@ -22,6 +22,7 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -30,30 +31,84 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
+import { TrustTierBadge } from "@/components/shared/trust-tier-badge";
 import { UnreadBadge } from "@/components/notifications/unread-badge";
 import { AuthStatusDot } from "@/components/settings/auth-status-dot";
 import { StagentLogo } from "@/components/shared/stagent-logo";
 
-const navItems = [
-  { title: "Home", href: "/", icon: Home, badge: false },
-  { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard, badge: false, alsoMatches: ["/tasks"] },
+interface NavItem {
+  title: string;
+  href: string;
+  icon: typeof Home;
+  badge?: boolean;
+  alsoMatches?: string[];
+}
+
+const workItems: NavItem[] = [
+  { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard, alsoMatches: ["/tasks"] },
   { title: "Inbox", href: "/inbox", icon: Inbox, badge: true },
-  { title: "Monitor", href: "/monitor", icon: Activity, badge: false },
-  { title: "Projects", href: "/projects", icon: FolderKanban, badge: false },
-  { title: "Workflows", href: "/workflows", icon: Workflow, badge: false },
-  { title: "Documents", href: "/documents", icon: FileText, badge: false },
-  { title: "Profiles", href: "/profiles", icon: Bot, badge: false },
-  { title: "Schedules", href: "/schedules", icon: Clock, badge: false },
-  { title: "Cost & Usage", href: "/costs", icon: Wallet, badge: false },
-  { title: "Playbook", href: "/playbook", icon: BookMarked, badge: false },
-  { title: "Settings", href: "/settings", icon: Settings, badge: false },
+  { title: "Projects", href: "/projects", icon: FolderKanban },
+  { title: "Workflows", href: "/workflows", icon: Workflow },
+  { title: "Documents", href: "/documents", icon: FileText },
 ];
+
+const manageItems: NavItem[] = [
+  { title: "Monitor", href: "/monitor", icon: Activity },
+  { title: "Profiles", href: "/profiles", icon: Bot },
+  { title: "Schedules", href: "/schedules", icon: Clock },
+  { title: "Cost & Usage", href: "/costs", icon: Wallet },
+];
+
+const configureItems: NavItem[] = [
+  { title: "Playbook", href: "/playbook", icon: BookMarked },
+  { title: "Settings", href: "/settings", icon: Settings },
+];
+
+function NavGroup({
+  label,
+  items,
+  pathname,
+}: {
+  label: string;
+  items: NavItem[];
+  pathname: string;
+}) {
+  return (
+    <SidebarGroup>
+      <SidebarGroupLabel>{label}</SidebarGroupLabel>
+      <SidebarGroupContent>
+        <SidebarMenu>
+          {items.map((item) => (
+            <SidebarMenuItem key={item.href}>
+              <SidebarMenuButton
+                asChild
+                tooltip={item.title}
+                isActive={
+                  item.href === "/"
+                    ? pathname === "/"
+                    : pathname === item.href || pathname.startsWith(item.href + "/")
+                      || (item.alsoMatches?.some(p => pathname.startsWith(p)) ?? false)
+                }
+              >
+                <Link href={item.href}>
+                  <item.icon className="h-4 w-4" aria-hidden="true" />
+                  <span>{item.title}</span>
+                  {item.badge && <span className="group-data-[collapsible=icon]:hidden"><UnreadBadge /></span>}
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  );
+}
 
 export function AppSidebar() {
   const pathname = usePathname();
 
   return (
-    <Sidebar collapsible="icon" className="glass-sidebar">
+    <Sidebar collapsible="icon" className="border-r border-sidebar-border">
       <SidebarHeader className="px-4 py-3">
         <div className="flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 group-data-[collapsible=icon]:hidden">
@@ -67,37 +122,15 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    asChild
-                    tooltip={item.title}
-                    isActive={
-                      item.href === "/"
-                        ? pathname === "/"
-                        : pathname === item.href || pathname.startsWith(item.href + "/")
-                          || (item.alsoMatches?.some(p => pathname.startsWith(p)) ?? false)
-                    }
-                  >
-                    <Link href={item.href}>
-                      <item.icon className="h-4 w-4" aria-hidden="true" />
-                      <span>{item.title}</span>
-                      {item.badge && <span className="group-data-[collapsible=icon]:hidden"><UnreadBadge /></span>}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        <NavGroup label="Work" items={workItems} pathname={pathname} />
+        <NavGroup label="Manage" items={manageItems} pathname={pathname} />
+        <NavGroup label="Configure" items={configureItems} pathname={pathname} />
       </SidebarContent>
       <SidebarFooter className="px-4 py-3">
         <div className="flex items-center justify-between group-data-[collapsible=icon]:justify-center">
-          <div className="flex items-center gap-2 group-data-[collapsible=icon]:hidden">
+          <div className="flex items-center gap-3 group-data-[collapsible=icon]:hidden">
             <AuthStatusDot />
+            <TrustTierBadge />
           </div>
           <div className="flex items-center gap-1">
             <button

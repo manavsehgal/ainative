@@ -1,60 +1,37 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Card, CardContent } from "@/components/ui/card";
-import { Plus, FolderPlus, Inbox, Activity } from "lucide-react";
+import { Plus, FolderPlus, Inbox, Activity, Workflow, FileText, Bot, Clock } from "lucide-react";
 import { SectionHeading } from "@/components/shared/section-heading";
 
 export function QuickActions() {
   const router = useRouter();
 
   const actions = [
-    {
-      label: "New Task",
-      description: "Create & queue an agent task",
-      icon: Plus,
-      onClick: () => router.push("/tasks/new"),
-    },
-    {
-      label: "New Project",
-      description: "Organize tasks into a project",
-      icon: FolderPlus,
-      onClick: () => router.push("/projects"),
-    },
-    {
-      label: "Open Inbox",
-      description: "Review pending notifications",
-      icon: Inbox,
-      onClick: () => router.push("/inbox"),
-    },
-    {
-      label: "Open Monitor",
-      description: "Watch live agent logs",
-      icon: Activity,
-      onClick: () => router.push("/monitor"),
-    },
+    { label: "New Task", icon: Plus, href: "/tasks/new" },
+    { label: "Projects", icon: FolderPlus, href: "/projects" },
+    { label: "Inbox", icon: Inbox, href: "/inbox" },
+    { label: "Monitor", icon: Activity, href: "/monitor" },
+    { label: "Workflows", icon: Workflow, href: "/workflows" },
+    { label: "Documents", icon: FileText, href: "/documents" },
+    { label: "Profiles", icon: Bot, href: "/profiles" },
+    { label: "Schedules", icon: Clock, href: "/schedules" },
   ];
 
   return (
     <div className="mb-6">
-      <SectionHeading>Quick Actions</SectionHeading>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <SectionHeading>Quick Navigation</SectionHeading>
+      <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
         {actions.map((action) => (
-          <Card
+          <button
             key={action.label}
-            tabIndex={0}
-            className="surface-card cursor-pointer transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl"
-            onClick={action.onClick}
-            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); action.onClick(); } }}
+            type="button"
+            onClick={() => router.push(action.href)}
+            className="flex flex-col items-center gap-1.5 rounded-lg p-3 text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
           >
-            <CardContent className="flex flex-col items-center justify-center py-5 gap-2">
-              <action.icon className="h-8 w-8 text-muted-foreground" />
-              <span className="text-sm font-medium">{action.label}</span>
-              <span className="text-xs text-muted-foreground text-center">
-                {action.description}
-              </span>
-            </CardContent>
-          </Card>
+            <action.icon className="h-5 w-5" />
+            <span className="text-[11px] font-medium">{action.label}</span>
+          </button>
         ))}
       </div>
     </div>

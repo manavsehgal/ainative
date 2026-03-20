@@ -43,24 +43,16 @@ export function ProfileBrowser({ initialProfiles }: ProfileBrowserProps) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Profiles</h1>
-          <p className="text-sm text-muted-foreground">
-            Browse and inspect agent profiles without blur-heavy detail surfaces.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => setShowImport(true)}>
-            <Download className="mr-2 h-4 w-4" />
-            Import
-          </Button>
-          <Button onClick={() => router.push("/profiles/new")}>
-            <Plus className="mr-2 h-4 w-4" />
-            Create Profile
-          </Button>
-        </div>
+      {/* Action buttons (title now provided by PageShell) */}
+      <div className="flex items-center justify-end gap-2">
+        <Button variant="outline" onClick={() => setShowImport(true)}>
+          <Download className="mr-2 h-4 w-4" />
+          Import
+        </Button>
+        <Button onClick={() => router.push("/profiles/new")}>
+          <Plus className="mr-2 h-4 w-4" />
+          Create Profile
+        </Button>
       </div>
 
       {/* Search + Domain Filter */}

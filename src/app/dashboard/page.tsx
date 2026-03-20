@@ -3,10 +3,11 @@ import { db } from "@/lib/db";
 import { tasks, projects, workflows } from "@/lib/db/schema";
 import { desc, isNull } from "drizzle-orm";
 import { parseWorkflowState } from "@/lib/workflows/engine";
-import { KanbanBoard } from "@/components/tasks/kanban-board";
+import { TaskSurface } from "@/components/tasks/task-surface";
 import { SkeletonBoard } from "@/components/tasks/skeleton-board";
 import type { TaskItem } from "@/components/tasks/task-card";
 import type { WorkflowKanbanItem } from "@/components/workflows/workflow-kanban-card";
+import { PageShell } from "@/components/shared/page-shell";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +33,7 @@ async function BoardContent() {
     .from(workflows)
     .orderBy(desc(workflows.updatedAt));
 
-  // Serialize tasks (no more linkedWorkflow fields)
+  // Serialize tasks
   const serializedTasks: TaskItem[] = allTasks.map((t) => ({
     ...t,
     projectName: t.projectId ? projectMap.get(t.projectId) ?? undefined : undefined,
@@ -85,7 +86,7 @@ async function BoardContent() {
   });
 
   return (
-    <KanbanBoard
+    <TaskSurface
       initialTasks={serializedTasks}
       initialWorkflows={serializedWorkflows}
       projects={allProjects}
@@ -95,10 +96,10 @@ async function BoardContent() {
 
 export default function DashboardPage() {
   return (
-    <div className="gradient-morning-sky min-h-screen p-6">
+    <PageShell title="Tasks" description="Board and table view of all tasks and workflows" fullBleed>
       <Suspense fallback={<SkeletonBoard />}>
         <BoardContent />
       </Suspense>
-    </div>
+    </PageShell>
   );
 }

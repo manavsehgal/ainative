@@ -21,7 +21,7 @@ export default async function NewWorkflowPage() {
   }));
 
   return (
-    <div className="gradient-ocean-mist min-h-screen p-6">
+    <div className="bg-background min-h-screen p-6">
       <div className="">
         <Link href="/workflows">
           <Button variant="ghost" size="sm" className="mb-4">

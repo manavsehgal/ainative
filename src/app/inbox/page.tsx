@@ -1,16 +1,56 @@
 import { db } from "@/lib/db";
 import { notifications } from "@/lib/db/schema";
-import { desc } from "drizzle-orm";
+import { desc, eq, and, gte } from "drizzle-orm";
 import { InboxList } from "@/components/notifications/inbox-list";
+import { GovernanceStats } from "@/components/notifications/governance-stats";
+import { PageShell } from "@/components/shared/page-shell";
 
 export const dynamic = "force-dynamic";
 
 export default async function InboxPage() {
-  const rows = await db
-    .select()
-    .from(notifications)
-    .orderBy(desc(notifications.createdAt))
-    .limit(100);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const [rows, pendingCount, approvedTodayCount, deniedTodayCount] =
+    await Promise.all([
+      db
+        .select()
+        .from(notifications)
+        .orderBy(desc(notifications.createdAt))
+        .limit(100),
+      db
+        .select()
+        .from(notifications)
+        .where(
+          and(
+            eq(notifications.type, "permission_required"),
+            eq(notifications.read, false)
+          )
+        )
+        .then((r) => r.length),
+      db
+        .select()
+        .from(notifications)
+        .where(
+          and(
+            eq(notifications.type, "permission_required"),
+            eq(notifications.response, "approved"),
+            gte(notifications.respondedAt, today)
+          )
+        )
+        .then((r) => r.length),
+      db
+        .select()
+        .from(notifications)
+        .where(
+          and(
+            eq(notifications.type, "permission_required"),
+            eq(notifications.response, "denied"),
+            gte(notifications.respondedAt, today)
+          )
+        )
+        .then((r) => r.length),
+    ]);
 
   // Serialize Date objects for client component consumption
   const initialNotifications = rows.map((n) => ({
@@ -20,16 +60,16 @@ export default async function InboxPage() {
   }));
 
   return (
-    <div className="gradient-sunset-glow min-h-screen p-4 sm:p-6">
-      <div className="surface-page surface-page-shell min-h-[calc(100dvh-2rem)] rounded-[30px] p-5 sm:p-6 lg:p-7">
-        <div className="mb-5 space-y-1">
-          <h1 className="text-2xl font-bold">Inbox</h1>
-          <p className="text-sm text-muted-foreground">
-            Review approvals, questions, failures, and completions without leaving the supervision flow.
-          </p>
-        </div>
-        <InboxList initialNotifications={initialNotifications} />
-      </div>
-    </div>
+    <PageShell
+      title="Inbox"
+      description="Governance command center — review approvals, questions, and agent activity."
+    >
+      <GovernanceStats
+        pending={pendingCount}
+        approvedToday={approvedTodayCount}
+        deniedToday={deniedTodayCount}
+      />
+      <InboxList initialNotifications={initialNotifications} />
+    </PageShell>
   );
 }

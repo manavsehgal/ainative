@@ -87,7 +87,7 @@ export function ContextProposalReview({
   return (
     <div className="space-y-4">
       {/* Proposed additions preview / editor */}
-      <div className="glass-card-light rounded-2xl p-4">
+      <div className="surface-card-muted rounded-lg p-4">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-2">
           Proposed Patterns
         </p>

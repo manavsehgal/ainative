@@ -1,66 +1,121 @@
-# Stagent Design System
+# Stagent Design System — Calm Ops
 
 Single source of truth for visual decisions. All new components must follow these conventions.
 
+## Design Philosophy
+
+**"Calm operational clarity"** — an enterprise-grade design system inspired by Linear's calm density, Stripe's component discipline, and GitHub Primer's accessibility rigor.
+
+Core principles:
+1. **Operational familiarity** — every page resembles a recognizable enterprise surface
+2. **Progressive disclosure** — overview first, details on demand, raw logs last
+3. **Quiet hierarchy** — typography, spacing, and borders do the work; color is for status
+4. **Human oversight visible** — approvals, policies, provenance never feel bolted on
+5. **Reusable primitives** — shared patterns across all entity types
+
 ## Color System
 
-**Engine:** OKLCH with hue 260 (blue-cyan). Defined in `globals.css` with light/dark mode variants.
+**Engine:** OKLCH with accent hue ~250 (indigo/blue-violet). Defined in `globals.css` with light/dark mode variants.
 
-### Brand Colors
+### Accent Palette
 
-| Color | Hex | OKLCH (approx) | Usage |
-|-------|-----|----------------|-------|
-| Brand Blue | #2563EB | `oklch(0.55 0.22 264)` | Primary, buttons, CTAs |
-| Brand Cyan | #22D3EE | `oklch(0.80 0.15 195)` | Logo accent, highlights |
-| Brand Purple | #7C3AED | `oklch(0.50 0.22 295)` | Accent variant |
-| Dark Navy | #0F172A | `oklch(0.15 0.04 265)` | Dark mode bg, icon bg |
-| Dark Gray | #334155 | `oklch(0.35 0.02 260)` | Secondary surfaces |
+| Role | Light | Dark | Usage |
+|------|-------|------|-------|
+| Primary | `oklch(0.50 0.20 260)` | `oklch(0.65 0.20 260)` | Buttons, links, active states |
+| Destructive | `oklch(0.55 0.22 25)` | `oklch(0.60 0.22 25)` | Delete, error actions |
 
-### Semantic Tokens (always use these — never hardcode Tailwind colors)
+### Semantic Status Tokens (always use these — never hardcode Tailwind colors)
 
 | Token | Light | Dark | Usage |
 |-------|-------|------|-------|
-| `--status-running` | `oklch(0.55 0.18 260)` | `oklch(0.65 0.18 260)` | Active/in-progress states |
-| `--status-completed` | `oklch(0.6 0.15 170)` | `oklch(0.65 0.15 170)` | Success/done states |
-| `--status-failed` | `oklch(0.55 0.2 25)` | `oklch(0.65 0.2 25)` | Error/failure states |
-| `--status-warning` | `oklch(0.7 0.15 75)` | `oklch(0.75 0.15 75)` | Warnings, pending review |
-| `--priority-critical` | `oklch(0.55 0.2 25)` | `oklch(0.65 0.2 25)` | P0 priority |
-| `--priority-high` | `oklch(0.7 0.15 55)` | `oklch(0.75 0.15 55)` | P1 priority |
-| `--priority-medium` | `oklch(0.55 0.18 260)` | `oklch(0.65 0.18 260)` | P2 priority |
-| `--priority-low` | `oklch(0.6 0.02 260)` | `oklch(0.6 0.02 260)` | P3 priority |
-| `--complexity-simple` | `oklch(0.6 0.15 170)` | `oklch(0.65 0.15 170)` | Simple complexity |
-| `--complexity-moderate` | `oklch(0.7 0.15 75)` | `oklch(0.75 0.15 75)` | Moderate complexity |
-| `--complexity-complex` | `oklch(0.55 0.2 25)` | `oklch(0.65 0.2 25)` | Complex tasks |
+| `--status-running` | `oklch(0.50 0.20 260)` | `oklch(0.65 0.20 260)` | Active/in-progress |
+| `--status-completed` | `oklch(0.52 0.17 165)` | `oklch(0.62 0.17 165)` | Success/done |
+| `--status-failed` | `oklch(0.55 0.22 25)` | `oklch(0.65 0.22 25)` | Error/failure |
+| `--status-warning` | `oklch(0.65 0.18 75)` | `oklch(0.75 0.18 75)` | Warnings, pending |
+| `--priority-critical` | `oklch(0.55 0.22 25)` | `oklch(0.65 0.22 25)` | P0 |
+| `--priority-high` | `oklch(0.65 0.18 55)` | `oklch(0.75 0.18 55)` | P1 |
+| `--priority-medium` | `oklch(0.50 0.20 260)` | `oklch(0.65 0.20 260)` | P2 |
+| `--priority-low` | `oklch(0.55 0.02 250)` | `oklch(0.58 0.02 250)` | P3 |
+| `--complexity-simple` | `oklch(0.52 0.17 165)` | `oklch(0.62 0.17 165)` | Simple |
+| `--complexity-moderate` | `oklch(0.65 0.18 75)` | `oklch(0.75 0.18 75)` | Moderate |
+| `--complexity-complex` | `oklch(0.55 0.22 25)` | `oklch(0.65 0.22 25)` | Complex |
 
 ### Tailwind Utility Classes
 
-These are mapped in `@theme inline` so Tailwind auto-generates `text-*`, `bg-*`, `border-*` variants:
+Mapped in `@theme inline` for automatic `text-*`, `bg-*`, `border-*` generation:
 
 - `text-status-running`, `bg-status-running`, `border-status-running`
 - `text-status-completed`, `bg-status-completed`, `border-status-completed`
 - `text-status-failed`, `bg-status-failed`, `border-status-failed`
 - `text-status-warning`, `bg-status-warning`, `border-status-warning`
 - `text-priority-critical`, `text-priority-high`, `text-priority-medium`, `text-priority-low`
-- `text-success`, `bg-success`, `border-success` (alias for status-completed)
-- `text-warning`, `bg-warning`, `border-warning` (alias for status-warning)
-- `text-info`, `bg-info`, `border-info` (alias for status-running)
-- `text-complexity-simple`, `text-complexity-moderate`, `text-complexity-complex`
+- `text-success`, `bg-success` (alias for status-completed)
+- `text-warning`, `bg-warning` (alias for status-warning)
+- `text-info`, `bg-info` (alias for status-running)
 
 ### Forbidden Patterns
 
-Never use raw Tailwind color classes for semantic meaning:
 - `text-green-500` / `text-green-600` — use `text-status-completed` or `text-success`
 - `text-red-500` / `text-red-600` — use `text-status-failed` or `text-destructive`
 - `text-blue-500` / `text-blue-600` — use `text-status-running` or `text-primary`
 - `text-amber-500` / `text-amber-600` — use `text-status-warning` or `text-warning`
-- `text-orange-500` — use `text-priority-high`
-- `bg-green-500` / `bg-red-500` — use `bg-success` / `bg-status-failed`
+- Any `backdrop-filter`, `backdrop-blur` — removed from design system
+- Any `rgba()` transparency on surface tokens — all surfaces are opaque
+- Any `gradient-*` utility class — no page-level gradient backgrounds
+- Any `glass-*` utility class — glass morphism has been removed entirely
+- Any `rounded-[24px]`, `rounded-[28px]`, `rounded-[30px]` — max is `rounded-xl` (16px)
 
-**Exception:** Decorative use only (gradients, illustrations) — never for state indication.
+**Exception:** Decorative use only (illustrations, empty state artwork) — never for state indication.
+
+## Surface System
+
+All surfaces are **opaque** with border-centric elevation. No transparency, no backdrop-filter.
+
+### Surface Hierarchy
+
+| Level | Light | Dark | Usage |
+|-------|-------|------|-------|
+| Background | `oklch(0.985 0.004 250)` | `oklch(0.14 0.02 250)` | Page canvas |
+| Surface-1 | `oklch(1 0 0)` (white) | `oklch(0.18 0.02 250)` | Cards, panels |
+| Surface-2 | `oklch(0.975 0.004 250)` | `oklch(0.16 0.02 250)` | Nested cards, controls |
+| Surface-3 | `oklch(0.96 0.006 250)` | `oklch(0.14 0.02 250)` | Inset areas |
+
+### Elevation Levels
+
+| Class | Border | Shadow | Usage |
+|-------|--------|--------|-------|
+| `.elevation-0` | `--border-subtle` | none | Flat, inline elements |
+| `.elevation-1` | `--border` | subtle | Cards, panels |
+| `.elevation-2` | `--border` | raised | Active cards, toolbars |
+| `.elevation-3` | `--border-strong` | overlay | Popovers, modals |
+
+### Surface Utility Classes
+
+| Class | Usage |
+|-------|-------|
+| `.surface-page` | Page-level background |
+| `.surface-page-shell` | Bounded page container with border |
+| `.surface-toolbar` | Toolbar / filter bar |
+| `.surface-card` | Primary operational card |
+| `.surface-card-muted` | Secondary/nested card |
+| `.surface-panel` | Grouped sections |
+| `.surface-control` | Search, filter, toolbar controls |
+| `.surface-scroll` | Scrollable containers |
+
+### Data-Slot Styling
+
+shadcn/ui components get clean opaque styling via `[data-slot]` selectors:
+- `[data-slot="card"]` → opaque card with subtle border + hover border-strong
+- `[data-slot="input"]`, `[data-slot="textarea"]` → surface-1 with border
+- `[data-slot="popover-content"]`, `[data-slot="dropdown-menu-content"]` → overlay elevation
+- `[data-slot="sheet-content"]`, `[data-slot="dialog-content"]` → overlay elevation
+- `[data-slot="separator"]` → 1px solid border (no 3D groove)
 
 ## Typography
 
 **Font family:** Geist Sans (body) + Geist Mono (code, IDs, timestamps)
+
+> Note: Font migration to Inter + JetBrains Mono is planned (F2).
 
 ### Scale
 
@@ -69,39 +124,44 @@ Never use raw Tailwind color classes for semantic meaning:
 | Page title | `text-2xl font-bold` | Route headings |
 | Card title | `text-base font-medium` | Card headers |
 | Section heading | `SectionHeading` component | Uppercase label sections |
-| Body | `text-sm` | Default text |
-| Caption | `text-xs text-muted-foreground` | Metadata, timestamps |
+| Body | `text-sm` | Default text (14px) |
+| Dense | `text-xs` | Table cells, metadata (13px) |
+| Caption | `text-xs text-muted-foreground` | Timestamps, secondary info |
 | Metric | `text-2xl font-bold` | Dashboard stat values |
-
-### Section Heading Component
-
-Use `<SectionHeading>` from `@/components/shared/section-heading` for labeled sections:
-```tsx
-<SectionHeading>Recent Projects</SectionHeading>
-```
-Renders as: `text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3`
 
 ## Spacing
 
-| Context | Pattern |
-|---------|---------|
-| Page padding | `p-6` |
-| Card internal | `p-3` to `p-4` (compact) or default CardContent |
-| Grid gap | `gap-4` |
-| Section margin | `mb-6` |
-| Inline element gap | `gap-2` to `gap-3` |
-| Stack spacing | `space-y-2` to `space-y-3` |
-
-## Border Radius
-
-Base: `--radius: 0.625rem` (10px)
+**System:** 8pt grid with CSS custom properties.
 
 | Token | Value | Usage |
 |-------|-------|-------|
-| `--radius-sm` | 6px | Small elements, badges |
-| `--radius-md` | 8px | Inputs, buttons |
-| `--radius-lg` | 10px | Cards |
-| `--radius-xl` | 14px | Modals, sheets |
+| `--space-1` | 4px | Tight gaps |
+| `--space-2` | 8px | Default inline gap |
+| `--space-3` | 12px | Compact padding |
+| `--space-4` | 16px | Standard padding |
+| `--space-6` | 24px | Section padding |
+| `--space-8` | 32px | Page-level spacing |
+
+| Context | Pattern |
+|---------|---------|
+| Page padding | `p-4 sm:p-6` |
+| Card internal | `p-3` to `p-4` |
+| Grid gap | `gap-4` |
+| Section margin | `mb-6` |
+| Inline element gap | `gap-2` to `gap-3` |
+
+## Border Radius
+
+Base: `--radius: 0.5rem` (8px)
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `--radius-sm` | 4px | Small elements, badges |
+| `--radius-md` | 6px | Inputs, buttons |
+| `--radius-lg` | 8px | Cards |
+| `--radius-xl` | 12px | Page shells, modals |
+
+**Rule:** Maximum radius is `rounded-xl` (12px). No oversized 20-30px radii in enterprise surfaces.
 
 ## Components
 
@@ -109,8 +169,8 @@ Base: `--radius: 0.625rem` (10px)
 
 | Variant | Usage |
 |---------|-------|
-| `default` | Running/active states (primary blue) |
-| `success` | Completed/done states (green tint) |
+| `default` | Running/active states (primary) |
+| `success` | Completed/done states |
 | `secondary` | Queued/cancelled (muted) |
 | `destructive` | Failed/error states |
 | `outline` | Planned/draft (bordered) |
@@ -119,15 +179,15 @@ Base: `--radius: 0.625rem` (10px)
 
 | Component | Path | Usage |
 |-----------|------|-------|
-| `EmptyState` | `@/components/shared/empty-state` | No data available. Props: icon, heading, description, action? |
-| `ErrorState` | `@/components/shared/error-state` | Data fetch/operation failed. Props: heading?, description, onRetry? |
+| `EmptyState` | `@/components/shared/empty-state` | No data. Props: icon, heading, description, action? |
+| `ErrorState` | `@/components/shared/error-state` | Fetch/operation failed. Props: heading?, description, onRetry? |
 | `Skeleton` | `@/components/ui/skeleton` | Loading placeholder |
 
 ### Interactive Cards
 
 All clickable cards must include:
 - `cursor-pointer transition-colors hover:bg-accent/50`
-- `focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl`
+- `focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-lg`
 - `tabIndex={0}` + `onKeyDown` handler for non-Link cards
 
 ## Icons
@@ -137,129 +197,57 @@ All clickable cards must include:
 | Size | Class | Usage |
 |------|-------|-------|
 | Default | `h-4 w-4` | Inline icons, buttons, badges |
-| Medium | `h-5 w-5` | List items, column empty states |
-| Large | `h-8 w-8` | Empty states (minor), quick actions |
+| Medium | `h-5 w-5` | List items |
+| Large | `h-8 w-8` | Empty states (minor) |
 | Hero | `h-12 w-12` | EmptyState component |
 
 ## Animation
 
+**Principle:** Minimal, functional only. No decorative animations.
+
 | Pattern | Class | Usage |
 |---------|-------|-------|
-| Hover transition | `transition-colors` | All interactive elements |
+| Hover transition | `transition-colors` | All interactive elements (150ms) |
+| Border hover | `hover:border-border-strong` | Cards (150ms) |
 | Loading spinner | `animate-spin` | Loader2 icon |
 | Loading placeholder | `animate-pulse` | Skeleton component |
 | Focus ring | `focus-visible:ring-2` | Keyboard navigation |
-| Glass shimmer | `glass-shimmer` | Hover shimmer on glass cards (stats, feature cards) |
-| Card hover | `[data-slot="card"]:hover` | Auto glass enhancement (bg + shadow boost) |
+| Card exit | `animate-card-exit` | Ghost card deletion (400ms) |
 
-## Glassmorphism System
+### Removed Animation Patterns
 
-### Glass Tokens
+- `glass-shimmer` — removed (was hover shimmer on glass cards)
+- Card hover auto-glass enhancement — removed
+- Noise grain overlay — removed
 
-Defined in `globals.css` with light/dark variants.
+## Theme System
 
-| Token | Light | Dark | Usage |
-|-------|-------|------|-------|
-| `--glass-bg` | `rgba(255,255,255,0.6)` | `oklch(0.16 0.02 250/0.45)` | Standard glass surface |
-| `--glass-bg-heavy` | `rgba(255,255,255,0.75)` | `oklch(0.19 0.02 250/0.55)` | Sidebar, modals, popovers |
-| `--glass-bg-light` | `rgba(255,255,255,0.4)` | `oklch(0.16 0.02 250/0.25)` | Nested glass, inputs |
-| `--glass-bg-subtle` | `rgba(255,255,255,0.25)` | `oklch(0.13 0.02 250/0.15)` | Decorative overlays |
-| `--glass-border` | `oklch(0.8 0.02 260/0.25)` | `oklch(0.25 0.02 250/0.3)` | Standard glass edge (hue 250) |
-| `--glass-border-strong` | `oklch(0.75 0.03 260/0.35)` | `oklch(0.30 0.02 250/0.4)` | Emphasized edges (hue 250) |
-| `--glass-border-subtle` | `oklch(0.85 0.015 260/0.15)` | `oklch(0.25 0.02 250/0.18)` | Inputs, nested glass (hue 250) |
-| `--glass-shadow` | `0 8px 32px oklch(0.55 0.05 260/0.1)` | `... oklch(0.05 0.02 250/0.5)` | Standard colored shadow |
-| `--glass-shadow-lg` | `0 12px 48px ...` | `... oklch(0.05 0.02 250/0.6)` | Hover/modal elevation |
-| `--glass-shadow-sm` | `0 4px 16px ...` | `... oklch(0.05 0.02 250/0.35)` | Subtle depth |
-| `--glass-bg-modal` | `oklch(0.97 0.008 260/0.65)` | `oklch(0.13 0.02 250/0.75)` | Sheet/dialog glass |
-| `--glass-inner-glow` | `inset 0 1px 0 0 rgba(255,255,255,0.4)` | `... oklch(0.5 0.02 250/0.15)` | Top-edge highlight (hue 250) |
-| `--blur-glass-sm/md/lg/xl` | `8/16/24/40px` | (same) | Backdrop-filter blur levels |
+### Light Theme (Primary)
+- Flagship design target
+- Opaque white surfaces (`oklch(1 0 0)`)
+- Subtle shadows, visible borders
+- Strong text contrast
 
-### Glass Utility Classes
+### Dark Theme (Derived Secondary)
+- Charcoal base, not pure black (`oklch(0.14 0.02 250)`)
+- Unified hue 250 (blue-indigo)
+- Stronger borders than light mode
+- Softer text whites (`oklch(0.92 0.01 250)`)
+- Every `.dark` token has a derivation comment explaining the light→dark mapping
 
-| Class | Background | Blur | Border | Shadow | Usage |
-|-------|-----------|------|--------|--------|-------|
-| `.glass-card` | `--glass-bg` | md (16px) | standard | standard + glow | Default card surfaces |
-| `.glass-card-heavy` | `--glass-bg-heavy` | lg (24px) | strong | large + glow | Sidebar, primary panels |
-| `.glass-card-light` | `--glass-bg-light` | sm (8px) | subtle | small + subtle glow | Nested glass inside glass |
-| `.glass-sidebar` | `--glass-bg-heavy` | lg (24px) | right-side | — | Sidebar panel |
-| `.glass-input` | `--glass-bg-light` | sm (8px) | subtle | — | Form inputs |
+### Dark Surface Hierarchy
 
-### Solid Surface Utility Classes
-
-| Class | Usage |
-|-------|-------|
-| `.surface-page` | Bounded dense-work area inside a route-level gradient |
-| `.surface-card` | Primary cards on operational screens |
-| `.surface-card-muted` | Secondary or nested cards within dense views |
-| `.surface-panel` | Framed groups such as filter bars or expandable bodies |
-| `.surface-control` | Search, filter, and toolbar controls on dense screens |
-| `.surface-scroll` | Scrollable code/text containers that should stay visually stable |
-
-### Data-Slot Auto-Glass
-
-shadcn/ui components get glass treatment automatically via `[data-slot]` selectors:
-- `[data-slot="card"]` → glass-card treatment + hover enhancement
-- `[data-sidebar="sidebar"]` → backdrop blur
-- `[data-slot="badge"]` → subtle backdrop blur
-- `[data-slot="input"]`, `[data-slot="textarea"]`, `[data-slot="select-trigger"]` → glass input
-- `[data-slot="popover-content"]`, `[data-slot="dropdown-menu-content"]`, `[data-slot="select-content"]` → heavy glass
-- `[data-slot="sheet-content"]`, `[data-slot="dialog-content"]` → modal glass (`--glass-bg-modal`) + XL blur
-- `[data-slot="sheet-overlay"]`, `[data-slot="dialog-overlay"]` → hue-260 tinted overlay + 4px blur
-- `[data-slot="separator"]` → 2px 3D groove gradient (light/dark variants)
-- `[data-slot="button"][data-variant="default"]` → translucent primary CTA with inner glow
-- `[data-slot="button"][data-variant="outline"]` → glass fill + blur
-- `[data-slot="button"][data-variant="secondary"]` → subtle glass
-- `[data-slot="button"][data-variant="destructive"]` → translucent red with glow
-
-Operational rule:
-- Default `Card` still resolves through the auto-glass path.
-- On dense routes like dashboard, inbox, monitor, projects, profiles, and settings, opt out explicitly with `surface-card` or a related surface utility instead of relying on default card rendering.
-
-### Pastel Gradient Presets
-
-| Preset | Pages | Light identity | Dark identity |
-|--------|-------|---------------|---------------|
-| `--gradient-morning-sky` | Home, Dashboard | Golden sunrise → warm amber → soft peach | Deep black → midnight blue |
-| `--gradient-ocean-mist` | Projects, Workflows | Cyan → seafoam → mint | Deep blue → blue-navy |
-| `--gradient-forest-dawn` | Monitor | Mint → sage → soft green | Black → deep navy |
-| `--gradient-sunset-glow` | Inbox | Peach → coral → rose | Velvet → warm navy |
-| `--gradient-twilight` | Documents | Violet → indigo-mist → periwinkle | Deep navy → indigo |
-| `--gradient-neutral` | Settings | Warm cream with soft golden tint | Neutral black with velvet warmth |
-
-Applied via utility classes: `.gradient-morning-sky`, `.gradient-ocean-mist`, etc.
-Dark variants use unified hue 250 (blue-indigo) at lightness 0.12-0.14, chroma 0.015-0.03, with subtle hue variation (248-252) for gradient differentiation.
-
-### Dark Palette Families
-
-The dark theme uses a unified hue 250 (blue-indigo) with consistent chroma 0.02 for all neutral surfaces, matching the stagent.github.io marketing site aesthetic:
-
-| Family | Hue | Lightness | Role |
-|--------|-----|-----------|------|
-| **Base** | 250 | 0.13 | Deepest surface — `--background`, gradient bases |
-| **Raised** | 250 | 0.16 | Cards, surface-1, glass backgrounds |
-| **Overlay** | 250 | 0.19 | Secondary, muted, accent surfaces |
-| **Primary** | 250 | 0.55-0.65 | Interactive — `--primary`, buttons, rings |
-| **Cyan** | 195 | 0.80 | Brand accent — logo highlight, data viz |
-
-Surface hierarchy: 0.13 (base) → 0.16 (raised) → 0.19 (overlay). All neutral surfaces use chroma 0.02.
-Cards use layered `color-mix(in oklab, ...)` gradients for depth. A noise grain overlay at 3% opacity adds texture.
-
-### Glass Forbidden Patterns
-
-- **Never** use `backdrop-blur` without a semi-transparent `background` — invisible without it
-- **Never** nest `.glass-card` inside `.glass-card-heavy` — use `.glass-card-light` for nested glass
-- **Never** stack more than 2 blur layers — performance degrades significantly
-- **Always** include `-webkit-backdrop-filter` alongside `backdrop-filter` for Safari
-- **Never** use glass on scrollable lists with 50+ items — repaints are expensive
-- **Never** ship primary profile list/detail surfaces on the default glass-card path — use `surface-page`, `surface-card`, and `surface-control`
-- **Never** use solid `bg-*` colors on elements that should be glass — breaks the transparency
-- **Never** use bare `border-b` for list dividers — use `border-b border-border/50` for softened separators
-- **Never** use solid opaque `bg-primary` on buttons in glass UI — buttons get auto-glass via data-slot selectors
+| Family | Lightness | Role |
+|--------|-----------|------|
+| Base | 0.14 | Background |
+| Raised | 0.18 | Cards, surface-1 |
+| Intermediate | 0.16 | Surface-2, nested |
+| Overlay | 0.20 | Popovers, secondary |
 
 ## Design Metrics (Target Range)
 
 | Metric | Target | Context |
 |--------|--------|---------|
-| DESIGN_VARIANCE | 6-7 | Glassmorphism + gradients add visual richness |
-| MOTION_INTENSITY | 5-6 | Shimmer animations, hover transitions |
-| VISUAL_DENSITY | 5-6 | Glass creates depth and breathing room |
+| DESIGN_VARIANCE | 3-4 | Calm, consistent, border-centric |
+| MOTION_INTENSITY | 2-3 | Minimal transitions only |
+| VISUAL_DENSITY | 6-7 | Dense operational surfaces with breathing room |

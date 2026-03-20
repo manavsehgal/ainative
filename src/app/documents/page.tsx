@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { documents, tasks, projects } from "@/lib/db/schema";
 import { desc, eq } from "drizzle-orm";
 import { DocumentBrowser } from "@/components/documents/document-browser";
+import { PageShell } from "@/components/shared/page-shell";
 
 export const dynamic = "force-dynamic";
 
@@ -38,8 +39,8 @@ export default async function DocumentsPage() {
     .from(projects);
 
   return (
-    <div className="gradient-forest-dawn min-h-screen flex flex-col gap-4 p-4 md:p-6">
+    <PageShell title="Documents" fullBleed>
       <DocumentBrowser initialDocuments={docs} projects={projectList} />
-    </div>
+    </PageShell>
   );
 }

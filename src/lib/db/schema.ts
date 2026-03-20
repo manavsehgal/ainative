@@ -251,6 +251,35 @@ export const usageLedger = sqliteTable(
   ]
 );
 
+export const views = sqliteTable(
+  "views",
+  {
+    id: text("id").primaryKey(),
+    /** Surface this view belongs to (e.g., "tasks", "documents", "workflows") */
+    surface: text("surface").notNull(),
+    /** User-assigned name for the view */
+    name: text("name").notNull(),
+    /** JSON-serialized filter state */
+    filters: text("filters"),
+    /** JSON-serialized sort state (column + direction) */
+    sorting: text("sorting"),
+    /** JSON-serialized column visibility state */
+    columns: text("columns"),
+    /** Density preference: compact | comfortable | spacious */
+    density: text("density", {
+      enum: ["compact", "comfortable", "spacious"],
+    }).default("comfortable"),
+    /** Whether this is the default view for the surface */
+    isDefault: integer("is_default", { mode: "boolean" }).default(false).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_views_surface").on(table.surface),
+    index("idx_views_surface_default").on(table.surface, table.isDefault),
+  ]
+);
+
 // Shared types derived from schema — use these in components instead of `as any`
 export type ProjectRow = InferSelectModel<typeof projects>;
 export type TaskRow = InferSelectModel<typeof tasks>;
@@ -262,3 +291,4 @@ export type ScheduleRow = InferSelectModel<typeof schedules>;
 export type SettingsRow = InferSelectModel<typeof settings>;
 export type LearnedContextRow = InferSelectModel<typeof learnedContext>;
 export type UsageLedgerRow = InferSelectModel<typeof usageLedger>;
+export type ViewRow = InferSelectModel<typeof views>;

@@ -33,7 +33,7 @@ export default async function DocumentDetailPage({
   };
 
   return (
-    <div className="gradient-twilight min-h-screen p-6">
+    <div className="bg-background min-h-screen p-6">
       <div className="surface-page-shell rounded-xl p-6 max-w-5xl mx-auto">
         <Link href="/documents">
           <Button variant="ghost" size="sm" className="mb-4">

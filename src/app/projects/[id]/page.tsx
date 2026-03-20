@@ -56,7 +56,7 @@ export default async function ProjectDetailPage({
   };
 
   return (
-    <div className="gradient-ocean-mist min-h-screen p-6">
+    <div className="bg-background min-h-screen p-6">
       <div className="mb-6">
         <Link href="/projects">
           <Button variant="ghost" size="sm" className="mb-2">

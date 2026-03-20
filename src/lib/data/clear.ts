@@ -9,6 +9,7 @@ import {
   schedules,
   projects,
   usageLedger,
+  views,
 } from "@/lib/db/schema";
 import { readdirSync, unlinkSync, mkdirSync } from "fs";
 import { join } from "path";
@@ -28,6 +29,7 @@ export function clearAllData() {
   const sampleProfilesDeleted = clearSampleProfiles();
 
   // Delete in FK-safe order: children before parents
+  const viewsDeleted = db.delete(views).run().changes;
   const usageLedgerDeleted = db.delete(usageLedger).run().changes;
   const logsDeleted = db.delete(agentLogs).run().changes;
   const notificationsDeleted = db.delete(notifications).run().changes;
@@ -52,6 +54,7 @@ export function clearAllData() {
 
   return {
     sampleProfiles: sampleProfilesDeleted,
+    views: viewsDeleted,
     projects: projectsDeleted,
     tasks: tasksDeleted,
     workflows: workflowsDeleted,

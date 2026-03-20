@@ -19,7 +19,7 @@ export default async function NewTaskPage({
     .orderBy(projects.name);
 
   return (
-    <div className="gradient-morning-sky min-h-screen p-6">
+    <div className="bg-background min-h-screen p-6">
       <Link href="/dashboard">
         <Button variant="ghost" size="sm" className="mb-4">
           <ArrowLeft className="h-4 w-4 mr-1" />

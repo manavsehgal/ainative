@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 
 export default function BlueprintsPage() {
   return (
-    <div className="gradient-ocean-mist min-h-screen p-6">
+    <div className="bg-background min-h-screen p-6">
       <BlueprintGallery />
     </div>
   );

@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { projects, tasks } from "@/lib/db/schema";
 import { eq, count } from "drizzle-orm";
 import { ProjectList } from "@/components/projects/project-list";
+import { PageShell } from "@/components/shared/page-shell";
 
 export const dynamic = "force-dynamic";
 
@@ -23,10 +24,11 @@ export default async function ProjectsPage() {
     .orderBy(projects.createdAt);
 
   return (
-    <div className="gradient-ocean-mist min-h-screen p-4 sm:p-6">
-      <div className="surface-page surface-page-shell min-h-[calc(100dvh-2rem)] rounded-[30px] p-5 sm:p-6 lg:p-7">
-        <ProjectList initialProjects={result} />
-      </div>
-    </div>
+    <PageShell
+      title="Projects"
+      description="Keep agent work anchored to durable project spaces so tasks, files, and follow-up flows stay legible."
+    >
+      <ProjectList initialProjects={result} />
+    </PageShell>
   );
 }

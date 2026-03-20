@@ -1,20 +1,21 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppSidebar } from "@/components/shared/app-sidebar";
 import { CommandPalette } from "@/components/shared/command-palette";
 import { PendingApprovalHost } from "@/components/notifications/pending-approval-host";
+import { GlobalShortcuts } from "@/components/shared/global-shortcuts";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
   subsets: ["latin"],
 });
 
@@ -24,28 +25,30 @@ export const metadata: Metadata = {
 };
 
 // Inline theme bootstrap prevents a flash between the server render and local theme preference.
+// Default is light theme for fresh visits (no localStorage).
 const CRITICAL_THEME_CSS = `
   :root {
     color-scheme: light;
-    --background: oklch(0.98 0.005 260);
-    --foreground: oklch(0.15 0.02 260);
-    --surface-1: rgba(255, 255, 255, 0.92);
-    --surface-2: rgba(255, 255, 255, 0.82);
-    --border: oklch(0.82 0.01 260 / 0.2);
+    --background: oklch(0.985 0.004 250);
+    --foreground: oklch(0.14 0.02 250);
+    --surface-1: oklch(1 0 0);
+    --surface-2: oklch(0.975 0.004 250);
+    --border: oklch(0.90 0.006 250);
   }
   html.dark {
     color-scheme: dark;
-    --background: oklch(0.13 0.02 250);
-    --foreground: oklch(0.93 0.01 250);
-    --surface-1: oklch(0.16 0.02 250 / 0.96);
-    --surface-2: oklch(0.14 0.02 250 / 0.9);
-    --border: oklch(0.25 0.02 250 / 0.28);
+    --background: oklch(0.14 0.02 250);
+    --foreground: oklch(0.92 0.01 250);
+    --surface-1: oklch(0.18 0.02 250);
+    --surface-2: oklch(0.16 0.02 250);
+    --border: oklch(0.26 0.015 250);
   }
-  html { background: var(--background); }
+  html { background: var(--background); font-size: 14px; }
 `.replace(/\s+/g, " ").trim();
 
+// Light-first: defaults to 'light' when no localStorage preference exists.
 // Static theme initialization script — no user input, safe from XSS.
-const THEME_INIT_SCRIPT = `(function(){try{var d=document.documentElement;var s=localStorage.getItem('stagent-theme');var t=s==='dark'||s==='light'?s:(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');d.classList.toggle('dark',t==='dark');d.dataset.theme=t;d.style.colorScheme=t;d.style.backgroundColor=t==='dark'?'oklch(0.13 0.02 250)':'oklch(0.98 0.005 260)';document.cookie='stagent-theme='+t+';path=/;max-age=31536000;SameSite=Lax';}catch(e){}})()`;
+const THEME_INIT_SCRIPT = `(function(){try{var d=document.documentElement;var s=localStorage.getItem('stagent-theme');var t=s==='dark'||s==='light'?s:'light';d.classList.toggle('dark',t==='dark');d.dataset.theme=t;d.style.colorScheme=t;d.style.backgroundColor=t==='dark'?'oklch(0.14 0.02 250)':'oklch(0.985 0.004 250)';document.cookie='stagent-theme='+t+';path=/;max-age=31536000;SameSite=Lax';}catch(e){}})()`;
 
 export default function RootLayout({
   children,
@@ -55,21 +58,28 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        {/* Static CSS/JS — no user input, safe from XSS */}
         <style dangerouslySetInnerHTML={{ __html: CRITICAL_THEME_CSS }} />
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased bg-background text-foreground`}
+        className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased bg-background text-foreground`}
       >
+        <a href="#main-content" className="skip-nav">
+          Skip to main content
+        </a>
         <TooltipProvider>
           <SidebarProvider>
             <AppSidebar />
             <SidebarInset className="min-w-0">
-              {children}
+              <main id="main-content">
+                {children}
+              </main>
             </SidebarInset>
           </SidebarProvider>
           <PendingApprovalHost />
           <CommandPalette />
+          <GlobalShortcuts />
           <Toaster />
         </TooltipProvider>
       </body>

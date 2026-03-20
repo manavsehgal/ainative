@@ -20,7 +20,7 @@ export default async function WorkflowFromAssistPage() {
   }));
 
   return (
-    <div className="gradient-ocean-mist min-h-screen p-6">
+    <div className="bg-background min-h-screen p-6">
       <div>
         <Link href="/tasks/new?restore=1">
           <Button variant="ghost" size="sm" className="mb-4">

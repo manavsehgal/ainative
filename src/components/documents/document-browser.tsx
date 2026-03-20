@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { DocumentTable } from "./document-table";
 import { DocumentGrid } from "./document-grid";
 import { DocumentUploadDialog } from "./document-upload-dialog";
+import { FilterBar } from "@/components/shared/filter-bar";
 import type { DocumentWithRelations } from "./types";
 
 interface DocumentBrowserProps {
@@ -102,15 +103,27 @@ export function DocumentBrowser({
 
   return (
     <>
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Documents</h1>
+      <div className="flex justify-end">
         <Button ref={uploadButtonRef} onClick={() => setUploadOpen(true)} size="sm">
           <Upload className="h-4 w-4 mr-1.5" />
           Upload
         </Button>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <FilterBar
+        activeCount={
+          (search ? 1 : 0) +
+          (statusFilter !== "all" ? 1 : 0) +
+          (directionFilter !== "all" ? 1 : 0) +
+          (projectFilter !== "all" ? 1 : 0)
+        }
+        onClear={() => {
+          setSearch("");
+          setStatusFilter("all");
+          setDirectionFilter("all");
+          setProjectFilter("all");
+        }}
+      >
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
@@ -191,7 +204,7 @@ export function DocumentBrowser({
             Delete {selected.size}
           </Button>
         )}
-      </div>
+      </FilterBar>
 
       {filtered.length === 0 ? (
         <div className="text-center py-16 text-muted-foreground">

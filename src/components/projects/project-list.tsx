@@ -41,13 +41,7 @@ export function ProjectList({ initialProjects }: { initialProjects: Project[] })
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold">Projects</h1>
-          <p className="max-w-2xl text-sm text-muted-foreground">
-            Keep agent work anchored to durable project spaces so tasks, files, and follow-up flows stay legible.
-          </p>
-        </div>
+      <div className="flex justify-end">
         <ProjectCreateDialog onCreated={refresh} />
       </div>
 
@@ -72,7 +66,7 @@ export function ProjectList({ initialProjects }: { initialProjects: Project[] })
         </div>
       </div>
 
-      <section className="surface-panel rounded-[24px] p-4 sm:p-5">
+      <section className="surface-panel elevation-1 rounded-xl p-4 sm:p-5">
         <div className="mb-4 flex items-baseline justify-between gap-3">
           <SectionHeading className="mb-0">All Projects</SectionHeading>
           <p className="text-xs text-muted-foreground">{projects.length} visible</p>

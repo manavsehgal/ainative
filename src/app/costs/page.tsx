@@ -1,4 +1,5 @@
 import { CostDashboard } from "@/components/costs/cost-dashboard";
+import { PageShell } from "@/components/shared/page-shell";
 import { getBudgetGuardrailSnapshot } from "@/lib/settings/budget-guardrails";
 import {
   getDailySpendTotals,
@@ -231,7 +232,11 @@ export default async function CostsPage({
   );
 
   return (
-    <div className="gradient-neutral min-h-screen p-6">
+    <PageShell
+      title="Cost & Usage"
+      description="Track current spend pacing, provider mix, and the execution history behind paid runtime work without juggling a second budgeting model."
+      fullBleed
+    >
       <CostDashboard
         filters={{
           dateRange,
@@ -261,6 +266,6 @@ export default async function CostsPage({
         modelBreakdown={configuredBreakdown}
         auditEntries={auditEntries}
       />
-    </div>
+    </PageShell>
   );
 }

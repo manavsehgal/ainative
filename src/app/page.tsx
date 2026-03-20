@@ -11,6 +11,7 @@ import type { ActivityEntry } from "@/components/dashboard/activity-feed";
 import { QuickActions } from "@/components/dashboard/quick-actions";
 import { RecentProjects } from "@/components/dashboard/recent-projects";
 import type { RecentProject } from "@/components/dashboard/recent-projects";
+import { WelcomeLanding } from "@/components/dashboard/welcome-landing";
 import {
   getCompletionsByDay,
   getTaskCreationsByDay,
@@ -92,6 +93,23 @@ export default async function HomePage() {
     getNotificationsByDay(7),
     getWorkflowActivityByDay(7),
   ]);
+
+  // Fresh instance detection: show welcome landing if no tasks or workflows exist
+  const isFreshInstance =
+    completedAllTimeResult.count === 0 &&
+    runningResult.count === 0 &&
+    failedResult.count === 0 &&
+    activeWorkflowCountResult.count === 0;
+
+  if (isFreshInstance) {
+    return (
+      <div className="bg-background min-h-screen p-4 sm:p-6">
+        <div className="surface-page-shell min-h-[calc(100dvh-2rem)] rounded-xl p-5 sm:p-6 lg:p-7">
+          <WelcomeLanding />
+        </div>
+      </div>
+    );
+  }
 
   // Build project name lookup for priority tasks
   const projectMap = new Map(allProjects.map((p) => [p.id, p.name]));
@@ -180,8 +198,8 @@ export default async function HomePage() {
   );
 
   return (
-    <div className="gradient-morning-sky min-h-screen p-4 sm:p-6">
-      <div className="surface-page surface-page-shell min-h-[calc(100dvh-2rem)] rounded-[30px] p-5 sm:p-6 lg:p-7">
+    <div className="bg-background min-h-screen p-4 sm:p-6">
+      <div className="surface-page-shell min-h-[calc(100dvh-2rem)] rounded-xl p-5 sm:p-6 lg:p-7">
         <Greeting
           runningCount={runningResult.count}
           awaitingCount={awaitingResult.count}
@@ -204,15 +222,15 @@ export default async function HomePage() {
           }}
         />
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-5 mb-6">
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-3 space-y-6">
             <PriorityQueue tasks={allPriorityItems} />
+            <RecentProjects projects={recentProjectData} />
           </div>
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-6">
             <ActivityFeed entries={serializedLogs} hourlyActivity={agentActivityByHour} />
+            <QuickActions />
           </div>
         </div>
-        <QuickActions />
-        <RecentProjects projects={recentProjectData} />
       </div>
     </div>
   );

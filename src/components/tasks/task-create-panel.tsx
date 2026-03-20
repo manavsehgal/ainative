@@ -334,7 +334,7 @@ export function TaskCreatePanel({ projects, defaultProjectId }: TaskCreatePanelP
                 {loading ? "Creating..." : "Create Task"}
               </Button>
             </div>
-            <div className="glass-card-light rounded-lg">
+            <div className="surface-card-muted rounded-lg">
               <AIAssistPanel
                 title={title}
                 description={description}

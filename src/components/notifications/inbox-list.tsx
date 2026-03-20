@@ -77,7 +77,7 @@ export function InboxList({
 
   return (
     <div className="space-y-4">
-      <div className="surface-toolbar rounded-[24px] p-3 sm:p-4">
+      <div className="surface-toolbar rounded-xl p-3 sm:p-4">
         <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
           <span>Notification Queue</span>
           <span className="rounded-full bg-background/75 px-2.5 py-1 text-[11px] font-medium normal-case tracking-normal text-foreground">
@@ -142,7 +142,7 @@ export function InboxList({
         </div>
       </div>
 
-      <div className="space-y-3" aria-live="polite">
+      <div className="elevation-0 space-y-3" aria-live="polite">
         {filtered.length === 0 ? (
           <EmptyState
             icon={Inbox}

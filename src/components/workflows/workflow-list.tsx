@@ -6,12 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
-import { GitBranch, Plus, Pencil, Copy, RotateCcw, Trash2, Layers } from "lucide-react";
+import { GitBranch, Pencil, Copy, RotateCcw, Trash2, FileCog, Play } from "lucide-react";
 import { toast } from "sonner";
 import { workflowStatusVariant, patternLabels } from "@/lib/constants/status-colors";
 import { IconCircle, getWorkflowIconFromName } from "@/lib/constants/card-icons";
+import { StatusChip } from "@/components/shared/status-chip";
 
 interface Workflow {
   id: string;
@@ -94,22 +96,11 @@ export function WorkflowList({ projects }: WorkflowListProps) {
     }
   }
 
+  const templates = workflows.filter((wf) => wf.status === "draft");
+  const runs = workflows.filter((wf) => wf.status !== "draft");
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Workflows</h1>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => router.push("/workflows/blueprints")}>
-            <Layers className="h-4 w-4 mr-2" />
-            From Blueprint
-          </Button>
-          <Button onClick={() => router.push("/workflows/new")}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Workflow
-          </Button>
-        </div>
-      </div>
-
       {!loaded ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" aria-live="polite">
           {[1, 2, 3].map((i) => (
@@ -133,8 +124,34 @@ export function WorkflowList({ projects }: WorkflowListProps) {
           description="Create a workflow to chain agent tasks together."
         />
       ) : (
+        <Tabs defaultValue="all" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="all" className="text-sm">
+              All ({workflows.length})
+            </TabsTrigger>
+            <TabsTrigger value="templates" className="text-sm">
+              <FileCog className="h-3.5 w-3.5 mr-1" />
+              Templates ({templates.length})
+            </TabsTrigger>
+            <TabsTrigger value="runs" className="text-sm">
+              <Play className="h-3.5 w-3.5 mr-1" />
+              Runs ({runs.length})
+            </TabsTrigger>
+          </TabsList>
+
+          {["all", "templates", "runs"].map((tab) => {
+            const tabWorkflows = tab === "templates" ? templates : tab === "runs" ? runs : workflows;
+            return (
+              <TabsContent key={tab} value={tab}>
+                {tabWorkflows.length === 0 ? (
+                  <EmptyState
+                    icon={tab === "templates" ? FileCog : Play}
+                    heading={`No ${tab === "all" ? "workflows" : tab} yet`}
+                    description={tab === "templates" ? "Create a draft workflow to use as a template." : "Run a workflow to see it here."}
+                  />
+                ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {workflows.map((wf) => {
+          {tabWorkflows.map((wf) => {
             const pattern = getPattern(wf.definition);
             const stepCount = getStepCount(wf.definition);
             const promptPreview = getPromptPreview(wf.definition);
@@ -143,7 +160,7 @@ export function WorkflowList({ projects }: WorkflowListProps) {
               <Card
                 key={wf.id}
                 tabIndex={0}
-                className="cursor-pointer transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl"
+                className="elevation-1 cursor-pointer transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl"
                 onClick={() => router.push(`/workflows/${wf.id}`)}
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); router.push(`/workflows/${wf.id}`); } }}
               >
@@ -218,6 +235,11 @@ export function WorkflowList({ projects }: WorkflowListProps) {
             );
           })}
         </div>
+                )}
+              </TabsContent>
+            );
+          })}
+        </Tabs>
       )}
 
       {/* Delete confirmation */}

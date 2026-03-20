@@ -12,6 +12,7 @@ const STAGENT_TABLES = [
   "schedules",
   "usage_ledger",
   "learned_context",
+  "views",
 ] as const;
 
 export function bootstrapStagentDatabase(sqlite: Database.Database): void {
@@ -191,6 +192,22 @@ export function bootstrapStagentDatabase(sqlite: Database.Database): void {
 
     CREATE INDEX IF NOT EXISTS idx_learned_context_profile_version ON learned_context(profile_id, version);
     CREATE INDEX IF NOT EXISTS idx_learned_context_change_type ON learned_context(change_type);
+
+    CREATE TABLE IF NOT EXISTS views (
+      id TEXT PRIMARY KEY NOT NULL,
+      surface TEXT NOT NULL,
+      name TEXT NOT NULL,
+      filters TEXT,
+      sorting TEXT,
+      columns TEXT,
+      density TEXT DEFAULT 'comfortable',
+      is_default INTEGER DEFAULT 0 NOT NULL,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_views_surface ON views(surface);
+    CREATE INDEX IF NOT EXISTS idx_views_surface_default ON views(surface, is_default);
   `);
 
   const addColumnIfMissing = (ddl: string) => {

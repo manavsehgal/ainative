@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export default async function NewProfilePage() {
   return (
-    <div className="gradient-ocean-mist min-h-screen p-6">
+    <div className="bg-background min-h-screen p-6">
       <div className="">
         <Link href="/profiles">
           <Button variant="ghost" size="sm" className="mb-4">

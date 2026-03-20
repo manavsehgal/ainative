@@ -45,7 +45,7 @@ export function PlaybookCard({ section, adoption }: PlaybookCardProps) {
       href={`/playbook/${section.slug}`}
       className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl"
     >
-      <Card className="surface-card glass-shimmer group h-full transition-colors hover:border-border hover:bg-accent/50 rounded-xl">
+      <Card className="surface-card group h-full transition-colors hover:border-border-strong hover:bg-accent/50 rounded-lg">
         <CardHeader className="pb-2">
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">

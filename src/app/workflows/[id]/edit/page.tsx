@@ -46,7 +46,7 @@ export default async function EditWorkflowPage({
   };
 
   return (
-    <div className="gradient-ocean-mist min-h-screen p-6">
+    <div className="bg-background min-h-screen p-6">
       <div className="">
         <Link href={clone === "true" ? "/workflows" : `/workflows/${id}`}>
           <Button variant="ghost" size="sm" className="mb-4">

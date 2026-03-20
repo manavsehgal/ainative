@@ -9,7 +9,8 @@ type ResolvedTheme = "light" | "dark";
 function resolveThemePreference(): ResolvedTheme {
   const stored = localStorage.getItem("stagent-theme");
   if (stored === "dark" || stored === "light") return stored;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  // Light-first: default to light when no explicit preference stored
+  return "light";
 }
 
 function applyTheme(theme: ResolvedTheme) {
@@ -18,7 +19,7 @@ function applyTheme(theme: ResolvedTheme) {
   root.dataset.theme = theme;
   root.style.colorScheme = theme;
   root.style.backgroundColor =
-    theme === "dark" ? "oklch(0.13 0.02 250)" : "oklch(0.98 0.005 260)";
+    theme === "dark" ? "oklch(0.14 0.02 250)" : "oklch(0.985 0.004 250)";
   localStorage.setItem("stagent-theme", theme);
   document.cookie = `stagent-theme=${theme};path=/;max-age=31536000;SameSite=Lax`;
 }

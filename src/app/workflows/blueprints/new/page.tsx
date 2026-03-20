@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export default function NewBlueprintPage() {
   return (
-    <div className="gradient-ocean-mist min-h-screen p-6">
+    <div className="bg-background min-h-screen p-6">
       <Link href="/workflows/blueprints">
         <Button variant="ghost" size="sm" className="mb-4">
           <ArrowLeft className="h-4 w-4 mr-1" />

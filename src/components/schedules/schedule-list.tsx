@@ -100,8 +100,7 @@ export function ScheduleList({ projects }: ScheduleListProps) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Schedules</h1>
+      <div className="flex justify-end mb-4">
         <ScheduleCreateDialog projects={projects} onCreated={refresh} />
       </div>
 
@@ -136,7 +135,7 @@ export function ScheduleList({ projects }: ScheduleListProps) {
             <Card
               key={sched.id}
               tabIndex={0}
-              className="cursor-pointer transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl"
+              className="elevation-1 cursor-pointer transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl"
               onClick={() => router.push(`/schedules/${sched.id}`)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {

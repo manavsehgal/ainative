@@ -24,7 +24,7 @@ export default async function EditProfilePage({
   if (isBuiltin(id) && duplicate !== "true") notFound();
 
   return (
-    <div className="gradient-ocean-mist min-h-screen p-6">
+    <div className="bg-background min-h-screen p-6">
       <div className="">
         <Link href={duplicate === "true" ? "/profiles" : `/profiles/${id}`}>
           <Button variant="ghost" size="sm" className="mb-4">
