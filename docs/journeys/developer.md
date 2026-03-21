@@ -51,7 +51,7 @@ The database is self-healing — `CREATE TABLE IF NOT EXISTS` runs at startup fo
 
 Stagent supports two authentication methods for the Claude runtime. Navigate to **Settings** in the sidebar.
 
-![Settings page showing authentication configuration, tool permissions, and runtime status](../../screengrabs/settings-list.png)
+![Settings page showing authentication method selection and OpenAI Codex runtime configuration](../../screengrabs/settings-list.png)
 
 **OAuth (recommended for Claude Max subscribers)**:
 - Select the **OAuth** radio button

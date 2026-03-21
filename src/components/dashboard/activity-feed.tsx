@@ -29,13 +29,13 @@ const eventColors: Record<string, string> = {
 
 export function ActivityFeed({ entries, hourlyActivity }: ActivityFeedProps) {
   return (
-    <Card className="surface-card">
+    <Card className="surface-card h-full flex flex-col">
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Live Agent Activity
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1 flex flex-col">
         {hourlyActivity && hourlyActivity.some((v) => v > 0) && (
           <div className="mb-3 pb-3 border-b border-border/50">
             <p className="text-[10px] text-muted-foreground mb-1.5">24h activity</p>
@@ -86,7 +86,7 @@ export function ActivityFeed({ entries, hourlyActivity }: ActivityFeedProps) {
             ))}
           </div>
         )}
-        <div className="mt-3">
+        <div className="mt-auto pt-3">
           <Link href="/monitor">
             <Button variant="outline" size="sm" className="w-full">
               Open monitor <ArrowRight className="h-3 w-3 ml-1" />

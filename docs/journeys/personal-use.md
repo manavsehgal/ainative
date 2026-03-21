@@ -6,7 +6,7 @@ difficulty: "beginner"
 estimatedTime: "20 minutes"
 sections: ["home", "dashboard", "projects"]
 tags: [getting-started, solo, productivity, first-run]
-lastUpdated: "2026-03-18"
+lastUpdated: "2026-03-20"
 ---
 
 # Personal Use Guide
@@ -81,7 +81,7 @@ The dashboard supports multiple views. You can filter by project, by priority, b
 
 Click the **Create Task** button in the top right corner of the dashboard. A form opens with fields for the task title, description, project assignment, priority, and complexity.
 
-![Empty task creation form with fields for title, description, and configuration](../../screengrabs/dashboard-create-form-empty.png)
+![Create Task form showing title, description, project, priority, and complexity fields](../../screengrabs/dashboard-create-form-filled.png)
 
 Start by typing a clear, specific title. Instead of "Write something," try "Draft a 500-word introduction for my personal website that highlights my background in data science." The more specific your prompt, the better the agent will perform.
 
@@ -96,7 +96,7 @@ Select your project from the dropdown. Set the priority to **Medium** and the co
 
 Before you submit, notice the **AI Assist** button on the form. This is one of Stagent's most useful features for beginners. Click it and watch what happens.
 
-![AI Assist analyzing the task and suggesting improvements to the description](../../screengrabs/dashboard-create-form-ai-assist.png)
+![AI Assist button on the Create Task form generating description and metadata suggestions](../../screengrabs/dashboard-create-form-ai-assist.png)
 
 AI Assist analyzes your task title and generates a detailed description, suggests an appropriate complexity level, recommends a priority, and even proposes which agent profile would be best suited for the job. It turns your one-line instruction into a well-structured task specification.
 

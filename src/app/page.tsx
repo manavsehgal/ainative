@@ -222,12 +222,16 @@ export default async function HomePage() {
           }}
         />
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-5 mb-6">
-          <div className="lg:col-span-3 space-y-6">
+          <div className="lg:col-span-3">
             <PriorityQueue tasks={allPriorityItems} />
+          </div>
+          <div className="lg:col-span-2">
+            <ActivityFeed entries={serializedLogs} hourlyActivity={agentActivityByHour} />
+          </div>
+          <div className="lg:col-span-3">
             <RecentProjects projects={recentProjectData} />
           </div>
-          <div className="lg:col-span-2 space-y-6">
-            <ActivityFeed entries={serializedLogs} hourlyActivity={agentActivityByHour} />
+          <div className="lg:col-span-2">
             <QuickActions />
           </div>
         </div>

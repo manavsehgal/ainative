@@ -6,7 +6,7 @@ difficulty: "advanced"
 estimatedTime: "24 minutes"
 sections: ["profiles", "workflows", "schedules", "monitor"]
 tags: [advanced, profiles, workflows, blueprints, autonomous, swarm, orchestration]
-lastUpdated: "2026-03-18"
+lastUpdated: "2026-03-21"
 ---
 
 # Power User Guide
@@ -47,11 +47,18 @@ Browse the catalog and read the descriptions. Each profile defines the agent's p
 
 Built-in profiles cover common cases. Custom profiles let you encode your exact requirements.
 
-Click **New Profile** in the Profiles view. Build a specialist:
+Click **New Profile** in the Profiles view to open the full-page creation form.
 
-1. **Name**: "TypeScript Migration Specialist"
-2. **Description**: "Migrates JavaScript codebases to TypeScript with strict type safety"
-3. **Instructions**: Write detailed behavioral rules:
+![Create Profile form with Identity, Metadata, Runtime, Tools, and SKILL.md sections](../../screengrabs/profiles-create-form-empty.png)
+
+Build a specialist by filling in each section of the form:
+
+1. **Identity**: Enter a **Name** like "TypeScript Migration Specialist." The **ID** auto-generates a slug from the name. Set the **Domain** to Work or Personal — this controls default tool permissions
+2. **Metadata**: Set **Version** (e.g., 1.0.0), optionally add an **Author**, and enter **Tags** like "coding, migration, typescript" for searchability
+3. **Model Tuning**: Adjust the **Max Turns** slider (default is 30 — increase for complex multi-file tasks). Set an **Output Format** if you want structured responses (e.g., markdown, json)
+4. **Runtime Coverage**: Toggle **Claude Code** on (enabled by default). Toggle **OpenAI Codex App Server** on if you want this profile available on the Codex runtime too
+5. **Tools**: Enter **Allowed Tools** as a comma-separated list (e.g., "Read, Edit, Bash, Grep"). Leave empty to allow all tools
+6. **SKILL.md**: Write detailed behavioral **Instructions** in the textarea:
    ```
    You are an expert at migrating JavaScript codebases to TypeScript.
    - Always use strict TypeScript configuration (no `any` types)
@@ -59,8 +66,6 @@ Click **New Profile** in the Profiles view. Build a specialist:
    - Check for circular dependencies before modifying module structure
    - Report a migration progress percentage after each file conversion
    ```
-4. **Allowed Tools**: Grant file read, file write, glob, grep, and bash
-5. **Max Turns**: Set to 50 (migrations require many iterations)
 
 Click **Create** and your custom profile appears in the catalog alongside the built-in ones.
 
@@ -89,17 +94,20 @@ If the behavior is off, edit the instructions and test again. Iteration is norma
 
 Workflows chain multiple tasks together. A sequence workflow runs steps one after another, with each step receiving the previous step's output as context.
 
-Navigate to **Workflows** in the sidebar and click **New Workflow**.
+Navigate to **Workflows** in the sidebar and click **New Workflow** to open the workflow creation form.
 
-![Workflow list with keyword-inferred icon circles, status badges, and pattern indicators](../../screengrabs/workflows-list.png)
+![Create Workflow form with pattern selector, step editor, and profile assignment](../../screengrabs/workflows-create-form-filled.png)
 
-Select the **Sequence** pattern and add your steps:
+The form has two panels. The left panel defines the **Workflow Identity**: Name, Pattern dropdown, and Project selector, plus a **Step Overview** sidebar that lists all steps and a **+ Add Step** button. The right panel is the **Step Editor** where you configure each step's title, prompt, profile, and runtime.
 
-1. **Step 1 — Research**: "Analyze the current codebase and identify all JavaScript files that should be migrated to TypeScript. Prioritize by import frequency." Assign the Researcher profile.
-2. **Step 2 — Migrate**: "Using the prioritized list from the previous step, migrate the top 5 files to TypeScript." Assign your custom TypeScript Migration Specialist profile.
-3. **Step 3 — Review**: "Review the migrated files for type safety, check that tests still pass, and report any issues." Assign the Code Reviewer profile.
+Here is an example using the **Planner → Executor** pattern:
 
-Click **Create Workflow**. Each step inherits the project's working directory and has access to previous step outputs.
+1. **Name**: "Content Marketing Pipeline"
+2. **Pattern**: Select **Planner → Executor** from the dropdown — the planner agent breaks the goal into subtasks and the executor runs them
+3. **Project**: Select a project to associate the working directory
+4. **Step 1 — Research & Outline**: Write the agent prompt (e.g., "Research trending topics in the target domain. Analyze competitor content gaps and audience interests. Generate a detailed content outline with key points, target keywords, and suggested structure for a blog post.") and assign the **Researcher** profile
+
+Click **+ Add Step** to add more steps — for example, a writing step with the Document Writer profile and a review step with the Code Reviewer profile. Click **Create Workflow** when done. Each step inherits the project's working directory and has access to previous step outputs.
 
 ---
 
@@ -108,15 +116,22 @@ Click **Create Workflow**. Each step inherits the project's working directory an
 
 Blueprints are pre-configured workflow templates. Instead of building from scratch every time, start from a proven pattern.
 
-Click **New Workflow** and select the **Blueprints** tab. Browse the available templates — "Code Review Pipeline," "Research Report," "Documentation Sprint," and others. Each blueprint shows:
+Navigate to **Blueprints** in the sidebar to browse the template gallery.
 
-- The workflow pattern (sequence, parallel, checkpoint)
-- The number of steps and their descriptions
-- Which variables you need to fill in (repository path, review criteria, output format)
+![Blueprint gallery with domain-filtered template cards](../../screengrabs/workflows-blueprints.png)
+
+Browse the available templates — "Code Review Pipeline," "Documentation Generation," "Research Report," "Sprint Planning," and others. Each blueprint card shows:
+
+- A colored icon circle matching the blueprint's category
+- **Domain badges** (work or personal) and **difficulty badges** (beginner, intermediate, advanced)
+- A short description of what the workflow does
+- The workflow pattern, **step count**, and **estimated time** (e.g., "Sequence · 3 steps · 10-15 min")
+
+Use the **All / Work / Personal** filter tabs or the search bar to narrow the gallery.
 
 Select a blueprint, fill in the dynamic form with your specific values, review the generated steps, and click **Create Workflow**. The blueprint becomes a fully editable workflow that you can customize further.
 
-![Workflow confirmation dialog showing steps and profile assignments before execution](../../screengrabs/dashboard-workflow-confirm.png)
+![Workflow detail showing steps with checkpoint badges and execution status](../../screengrabs/workflows-detail.png)
 
 > **Tip**: Blueprints track lineage. You can always see which template a workflow came from and how it was customized, making it easy to iterate on proven patterns.
 
@@ -196,7 +211,11 @@ Combine workflows with schedules to create fully autonomous pipelines.
 
 ![Schedules page showing active schedules with intervals, next run times, and firing counts](../../screengrabs/schedules-list.png)
 
-Navigate to **Schedules** and click **New Schedule**. Instead of a simple prompt, you can link a schedule to a workflow:
+Navigate to **Schedules** and click **New Schedule** to open the creation dialog.
+
+![Create Schedule dialog with interval presets, prompt field, and profile selector](../../screengrabs/schedules-create-form-filled.png)
+
+Instead of a simple prompt, you can link a schedule to a workflow:
 
 1. **Name**: "Weekly Code Quality Pipeline"
 2. **Linked Workflow**: Select your sequence workflow from Step 4

@@ -40,9 +40,6 @@ output/
 !.claude/skills/
 .claude/skills/*
 
-# marketing screenshots
-screengrabs/
-
 # local agent context
 MEMORY.md
 

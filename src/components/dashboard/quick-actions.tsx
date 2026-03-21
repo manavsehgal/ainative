@@ -21,7 +21,7 @@ export function QuickActions() {
   return (
     <div className="mb-6">
       <SectionHeading>Quick Navigation</SectionHeading>
-      <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
+      <div className="grid grid-cols-4 gap-2">
         {actions.map((action) => (
           <button
             key={action.label}

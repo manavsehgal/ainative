@@ -44,13 +44,13 @@ const priorityColors = ["text-priority-critical", "text-priority-high", "text-st
 
 export function PriorityQueue({ tasks }: PriorityQueueProps) {
   return (
-    <Card className="surface-card">
+    <Card className="surface-card h-full flex flex-col">
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Needs Attention
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1 flex flex-col">
         {tasks.length === 0 ? (
           <p
             className="text-sm text-muted-foreground py-4 text-center"
@@ -115,7 +115,7 @@ export function PriorityQueue({ tasks }: PriorityQueueProps) {
             })}
           </div>
         )}
-        <div className="mt-3">
+        <div className="mt-auto pt-3">
           <Link href="/dashboard">
             <Button variant="outline" size="sm" className="w-full">
               View all tasks <ArrowRight className="h-3 w-3 ml-1" />

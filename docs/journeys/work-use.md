@@ -29,7 +29,7 @@ Work projects are different from personal experiments. They need structure, and 
 
 Navigate to **Projects** in the sidebar and click **New Project**. Name it something meaningful like "Q2 API Migration" or "Client Onboarding Automation." Write a description that captures the project's goal — agents will see this description as context when working on tasks within the project.
 
-![Project detail view showing task list, status distribution, and activity sparkline](../../screengrabs/projects-detail.png)
+![Create Project form with name, description, and working directory fields](../../screengrabs/projects-create-form-filled.png)
 
 Set the **Working Directory** to the relevant folder on your machine. For a code project, point it at the repository root. For a documentation project, point it at the folder where output files should land. The working directory is the agent's home base — it determines where file operations happen.
 
@@ -44,7 +44,7 @@ Agents work better with context. Instead of pasting long specifications into tas
 
 Navigate to **Documents** in the sidebar. Click **Upload** and select your reference files — API specifications, design documents, compliance checklists, meeting notes, or anything the agent might need to reference.
 
-![Documents table view showing uploaded files with type, size, and project assignment](../../screengrabs/documents-list.png)
+![Documents table view showing files with name, size, direction, task, project, status, and date columns](../../screengrabs/documents-list.png)
 
 Stagent automatically processes each upload: it extracts text from PDFs, parses Word documents, reads spreadsheets, and measures image dimensions. The extracted content becomes searchable and injectable into agent prompts. Assign each document to the appropriate project using the project dropdown.
 
@@ -57,7 +57,7 @@ Stagent automatically processes each upload: it extracts text from PDFs, parses 
 
 Switch to the grid view to see your document library visually.
 
-![Documents grid view showing file thumbnails and metadata cards](../../screengrabs/documents-grid.png)
+![Documents grid view showing file cards with type icons, size, status badges, and direction labels](../../screengrabs/documents-grid.png)
 
 The grid view displays document cards with type icons, file sizes, and processing status indicators. Click any card to open the document detail sheet, where you can see the extracted text, edit metadata, or reassign the document to a different project.
 
@@ -121,7 +121,7 @@ Start with a conservative global limit and adjust as you learn your usage patter
 
 Navigate to **Cost & Usage** in the sidebar to see where your budget is going.
 
-![Cost and Usage dashboard showing spending breakdown by provider and project](../../screengrabs/cost-usage-list.png)
+![Cost and Usage dashboard showing monthly spend, daily budget, remaining headroom, active providers, and pricing tables](../../screengrabs/cost-usage-list.png)
 
 The dashboard breaks down spending by:
 
@@ -181,6 +181,8 @@ Accepted proposals become part of the agent's context for future tasks in the sa
 Return to the project detail view to see how your work project is progressing.
 
 Click your project in the **Projects** list. The detail view shows:
+
+![Project detail view showing task breakdown by status, completion bar, and activity sparkline](../../screengrabs/projects-detail.png)
 
 - **Task breakdown by status**: How many tasks are planned, in progress, completed, or failed
 - **Completion percentage**: A progress indicator across all tasks
