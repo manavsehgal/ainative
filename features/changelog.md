@@ -1,5 +1,11 @@
 # Feature Changelog
 
+## 2026-03-20
+
+### Completed
+- Calm Ops design system eval pass — applied PageShell wrapper to all remaining routes (`/settings`, `/playbook`, `/schedules`), wired elevation classes (`.elevation-0` through `.elevation-3`) to stats cards, project sections, workflow cards, schedule cards, and inbox list; integrated FilterBar into DocumentBrowser with active count badge and clear-all button
+- Version bump to 0.1.13 — regenerated docs and recaptured screenshots for icon circle badges
+
 ## 2026-03-18
 
 ### Completed
@@ -10,6 +16,10 @@
   - Shared `prose-reader-surface` CSS class and `PROSE_READER` constants for consistent typography across 6+ views
 - Workflow cascade delete — FK-safe child task cleanup when deleting workflows
 - Notification UX — click-through navigation to source entities, expand/collapse, destructive delete-read styling
+- Icon circle badges with keyword-inferred colors on profile, blueprint, and workflow cards
+
+### Fixed
+- Three type errors caught by production build
 
 ### Started
 - `workflow-ux-overhaul` (P1, in-progress) — comprehensive workflow UX fix

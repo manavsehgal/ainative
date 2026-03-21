@@ -212,7 +212,7 @@ workflow-engine + multi-agent-routing
 19. **Sprint 19 — npm Publish Readiness**: npm-publish-readiness (P3, deferred)
 20. **Sprint 20 — Detail Polish**: detail-view-redesign (P2, completed) + playbook-documentation (P2, completed) + learned-context-ux-completion (P2, completed)
 
-> All sprints above are completed or deferred except `workflow-ux-overhaul` (P1, in-progress — chunks 2 & 3 partially addressed, chunks 1 & 4 remaining).
+> All sprints above are completed or deferred except `workflow-ux-overhaul` (P1, in-progress — chunks 2 & 3 shipped, chunks 1 & 4 remaining).
 
 ## Open Questions
 

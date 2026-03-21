@@ -86,6 +86,7 @@ function statusColorClass(status: string): string {
 }
 
 export function CommandPalette() {
+  const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [recentProjects, setRecentProjects] = useState<RecentProject[]>([]);
   const [recentTasks, setRecentTasks] = useState<RecentTask[]>([]);
@@ -93,6 +94,9 @@ export function CommandPalette() {
   const [loadingRecent, setLoadingRecent] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const router = useRouter();
+
+  // Defer render until after hydration to avoid Radix ID mismatch
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -154,6 +158,8 @@ export function CommandPalette() {
   }
 
   const hasRecent = recentProjects.length > 0 || recentTasks.length > 0;
+
+  if (!mounted) return null;
 
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>

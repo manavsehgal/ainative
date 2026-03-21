@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Eye, GitBranch, BotIcon, Shield } from "lucide-react";
+import { Eye, GitBranch, BotIcon, Shield, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Popover,
@@ -17,6 +17,7 @@ interface TierInfo {
   description: string;
   icon: typeof Eye;
   variant: "outline" | "secondary" | "destructive" | "default";
+  presetId: string;
 }
 
 const TIERS: TierInfo[] = [
@@ -26,6 +27,7 @@ const TIERS: TierInfo[] = [
     description: "Read-only — agent can read but not modify",
     icon: Eye,
     variant: "outline",
+    presetId: "read-only",
   },
   {
     id: "collaborator",
@@ -33,6 +35,7 @@ const TIERS: TierInfo[] = [
     description: "Git-safe — agent can edit files and use git",
     icon: GitBranch,
     variant: "secondary",
+    presetId: "git-safe",
   },
   {
     id: "autonomous",
@@ -40,6 +43,7 @@ const TIERS: TierInfo[] = [
     description: "Full auto — all tools approved automatically",
     icon: BotIcon,
     variant: "destructive",
+    presetId: "full-auto",
   },
 ];
 
@@ -49,28 +53,71 @@ const presetToTier: Record<string, TrustTier> = {
   "full-auto": "autonomous",
 };
 
+function deriveTierFromPresets(activePresetIds: string[]): TrustTier {
+  if (activePresetIds.includes("full-auto")) return "autonomous";
+  if (activePresetIds.includes("git-safe")) return "collaborator";
+  if (activePresetIds.includes("read-only")) return "observer";
+  return "custom";
+}
+
 /**
  * TrustTierBadge — shows current trust level in sidebar footer.
- * Fetches active presets from API and maps to tier.
+ * Fetches active presets from API and allows switching tiers.
  */
 export function TrustTierBadge() {
   const [tier, setTier] = useState<TrustTier>("observer");
   const [loading, setLoading] = useState(true);
+  const [switching, setSwitching] = useState(false);
+  const [open, setOpen] = useState(false);
 
-  useEffect(() => {
-    fetch("/api/settings/presets")
+  const fetchTier = () => {
+    fetch("/api/permissions/presets")
       .then((res) => res.json())
-      .then((data: { activePresets: string[] }) => {
-        const presets = data.activePresets ?? [];
-        // Highest tier wins
-        if (presets.includes("full-auto")) setTier("autonomous");
-        else if (presets.includes("git-safe")) setTier("collaborator");
-        else if (presets.includes("read-only")) setTier("observer");
-        else setTier("custom");
+      .then((data: { presets: { id: string; active: boolean }[] }) => {
+        const activeIds = (data.presets ?? [])
+          .filter((p) => p.active)
+          .map((p) => p.id);
+        setTier(deriveTierFromPresets(activeIds));
       })
       .catch(() => {})
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchTier();
   }, []);
+
+  const handleSwitch = async (target: TierInfo) => {
+    if (target.id === tier || switching) return;
+    setSwitching(true);
+
+    try {
+      // Remove current preset first (if it maps to a known tier)
+      const currentTierInfo = TIERS.find((t) => t.id === tier);
+      if (currentTierInfo) {
+        await fetch("/api/permissions/presets", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ presetId: currentTierInfo.presetId }),
+        });
+      }
+
+      // Apply the new preset
+      await fetch("/api/permissions/presets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ presetId: target.presetId }),
+      });
+
+      setTier(target.id);
+      setOpen(false);
+    } catch {
+      // Re-fetch to get the actual state on error
+      fetchTier();
+    } finally {
+      setSwitching(false);
+    }
+  };
 
   const info = TIERS.find((t) => t.id === tier) ?? {
     id: "custom" as TrustTier,
@@ -78,6 +125,7 @@ export function TrustTierBadge() {
     description: "Custom permission configuration",
     icon: Shield,
     variant: "outline" as const,
+    presetId: "",
   };
 
   if (loading) return null;
@@ -85,7 +133,7 @@ export function TrustTierBadge() {
   const Icon = info.icon;
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
           className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
@@ -107,21 +155,32 @@ export function TrustTierBadge() {
             </Badge>
           </div>
           <p className="text-xs text-muted-foreground">{info.description}</p>
-          <div className="space-y-1.5 pt-1 border-t border-border">
-            {TIERS.map((t) => (
-              <div
-                key={t.id}
-                className={`flex items-center gap-2 text-xs py-1 ${
-                  t.id === tier ? "text-foreground font-medium" : "text-muted-foreground"
-                }`}
-              >
-                <t.icon className="h-3 w-3" />
-                <span>{t.label}</span>
-                {t.id === tier && (
-                  <span className="ml-auto text-primary">●</span>
-                )}
-              </div>
-            ))}
+          <div className="space-y-0.5 pt-1 border-t border-border">
+            {TIERS.map((t) => {
+              const isActive = t.id === tier;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  disabled={switching || isActive}
+                  onClick={() => handleSwitch(t)}
+                  className={`flex items-center gap-2 text-xs py-1.5 px-1.5 w-full rounded-md transition-colors ${
+                    isActive
+                      ? "text-foreground font-medium bg-accent/50"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/30 cursor-pointer"
+                  } disabled:opacity-50`}
+                >
+                  <t.icon className="h-3 w-3 shrink-0" />
+                  <span>{t.label}</span>
+                  {isActive && (
+                    <span className="ml-auto text-primary">●</span>
+                  )}
+                  {switching && !isActive && (
+                    <Loader2 className="ml-auto h-3 w-3 animate-spin" />
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       </PopoverContent>

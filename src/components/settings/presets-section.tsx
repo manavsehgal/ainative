@@ -102,7 +102,7 @@ export function PresetsSection({ onPresetChange }: { onPresetChange?: () => void
               return (
                 <div
                   key={preset.id}
-                  className={`rounded-lg border p-4 space-y-3 transition-colors ${
+                  className={`rounded-lg border p-4 flex flex-col gap-3 transition-colors ${
                     preset.active
                       ? "border-primary/50 bg-primary/5"
                       : "border-border"
@@ -138,7 +138,7 @@ export function PresetsSection({ onPresetChange }: { onPresetChange?: () => void
                   <Button
                     variant={preset.active ? "outline" : "default"}
                     size="sm"
-                    className="w-full"
+                    className="w-full mt-auto"
                     disabled={isToggling}
                     onClick={() => handleToggle(preset.id, preset.active)}
                   >
