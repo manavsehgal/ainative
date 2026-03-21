@@ -1,8 +1,6 @@
-import Link from "next/link";
 import { db } from "@/lib/db";
 import { projects } from "@/lib/db/schema";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { PageShell } from "@/components/shared/page-shell";
 import { WorkflowConfirmationView } from "@/components/workflows/workflow-confirmation-view";
 import { listProfiles } from "@/lib/agents/profiles/registry";
 
@@ -20,16 +18,8 @@ export default async function WorkflowFromAssistPage() {
   }));
 
   return (
-    <div className="bg-background min-h-screen p-6">
-      <div>
-        <Link href="/tasks/new?restore=1">
-          <Button variant="ghost" size="sm" className="mb-4">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Task
-          </Button>
-        </Link>
-        <WorkflowConfirmationView projects={allProjects} profiles={profiles} />
-      </div>
-    </div>
+    <PageShell backHref="/tasks/new?restore=1" backLabel="Back to Task">
+      <WorkflowConfirmationView projects={allProjects} profiles={profiles} />
+    </PageShell>
   );
 }

@@ -1,8 +1,6 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { getProfile, isBuiltin } from "@/lib/agents/profiles/registry";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { PageShell } from "@/components/shared/page-shell";
 import { ProfileFormView } from "@/components/profiles/profile-form-view";
 
 export const dynamic = "force-dynamic";
@@ -24,16 +22,11 @@ export default async function EditProfilePage({
   if (isBuiltin(id) && duplicate !== "true") notFound();
 
   return (
-    <div className="bg-background min-h-screen p-6">
-      <div className="">
-        <Link href={duplicate === "true" ? "/profiles" : `/profiles/${id}`}>
-          <Button variant="ghost" size="sm" className="mb-4">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            {duplicate === "true" ? "Back to Profiles" : "Back to Profile"}
-          </Button>
-        </Link>
-        <ProfileFormView profileId={id} duplicate={duplicate === "true"} />
-      </div>
-    </div>
+    <PageShell
+      backHref={duplicate === "true" ? "/profiles" : `/profiles/${id}`}
+      backLabel={duplicate === "true" ? "Back to Profiles" : "Back to Profile"}
+    >
+      <ProfileFormView profileId={id} duplicate={duplicate === "true"} />
+    </PageShell>
   );
 }

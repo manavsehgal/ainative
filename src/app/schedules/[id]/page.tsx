@@ -1,10 +1,8 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { db } from "@/lib/db";
 import { schedules } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { PageShell } from "@/components/shared/page-shell";
 import { ScheduleDetailView } from "@/components/schedules/schedule-detail-view";
 
 export const dynamic = "force-dynamic";
@@ -34,14 +32,8 @@ export default async function ScheduleDetailPage({
   };
 
   return (
-    <div className="bg-background min-h-screen p-6">
-      <Link href="/schedules">
-        <Button variant="ghost" size="sm" className="mb-4">
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Back to Schedules
-        </Button>
-      </Link>
+    <PageShell backHref="/schedules" backLabel="Back to Schedules">
       <ScheduleDetailView scheduleId={id} initialSchedule={initialSchedule} />
-    </div>
+    </PageShell>
   );
 }

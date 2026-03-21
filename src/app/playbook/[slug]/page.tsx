@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getDocBySlug, getManifest } from "@/lib/docs/reader";
 import { getAdoptionMap } from "@/lib/docs/adoption";
+import { PageShell } from "@/components/shared/page-shell";
 import { PlaybookDetailView } from "@/components/playbook/playbook-detail-view";
 
 export const dynamic = "force-dynamic";
@@ -62,15 +63,13 @@ export default async function PlaybookDetailPage({
   ];
 
   return (
-    <div className="bg-background min-h-[100dvh] p-4 sm:p-6">
-      <div className="surface-page-shell rounded-xl p-6">
-        <PlaybookDetailView
-          doc={doc}
-          relatedSections={relatedSections}
-          adoption={adoption}
-          allSlugs={allSlugs}
-        />
-      </div>
-    </div>
+    <PageShell>
+      <PlaybookDetailView
+        doc={doc}
+        relatedSections={relatedSections}
+        adoption={adoption}
+        allSlugs={allSlugs}
+      />
+    </PageShell>
   );
 }

@@ -1,8 +1,11 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface PageShellProps {
-  title: string;
+  title?: string;
   description?: string;
   actions?: ReactNode;
   filters?: ReactNode;
@@ -11,6 +14,12 @@ interface PageShellProps {
   className?: string;
   /** Full-bleed mode skips the surface-page-shell wrapper (for pages with custom layout) */
   fullBleed?: boolean;
+  /** When set, renders a ghost back-button above the title row */
+  backHref?: string;
+  /** Label for the back button (defaults to "Back") */
+  backLabel?: string;
+  /** Optional max-width constraint on the inner surface div (e.g. "max-w-5xl") */
+  maxWidth?: string;
 }
 
 /**
@@ -36,21 +45,36 @@ export function PageShell({
   children,
   className,
   fullBleed = false,
+  backHref,
+  backLabel = "Back",
+  maxWidth,
 }: PageShellProps) {
   const content = (
     <>
+      {/* Back navigation */}
+      {backHref && (
+        <Link href={backHref}>
+          <Button variant="ghost" size="sm" className="mb-4">
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            {backLabel}
+          </Button>
+        </Link>
+      )}
+
       {/* Title row */}
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
-          {description && (
-            <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
+      {title && (
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
+            {description && (
+              <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
+            )}
+          </div>
+          {actions && (
+            <div className="flex items-center gap-2 mt-2 sm:mt-0">{actions}</div>
           )}
         </div>
-        {actions && (
-          <div className="flex items-center gap-2 mt-2 sm:mt-0">{actions}</div>
-        )}
-      </div>
+      )}
 
       {/* Filter row */}
       {filters && <div className="mt-4">{filters}</div>}
@@ -79,7 +103,7 @@ export function PageShell({
 
   return (
     <div className={cn("bg-background min-h-screen p-4 sm:p-6", className)}>
-      <div className="surface-page-shell rounded-xl p-5 sm:p-6">
+      <div className={cn("surface-page-shell rounded-xl p-5 sm:p-6", maxWidth, maxWidth && "mx-auto")}>
         {content}
       </div>
     </div>

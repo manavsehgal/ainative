@@ -1,8 +1,6 @@
-import Link from "next/link";
 import { db } from "@/lib/db";
 import { projects } from "@/lib/db/schema";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { PageShell } from "@/components/shared/page-shell";
 import { TaskCreatePanel } from "@/components/tasks/task-create-panel";
 
 export const dynamic = "force-dynamic";
@@ -19,17 +17,11 @@ export default async function NewTaskPage({
     .orderBy(projects.name);
 
   return (
-    <div className="bg-background min-h-screen p-6">
-      <Link href="/dashboard">
-        <Button variant="ghost" size="sm" className="mb-4">
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Back to Dashboard
-        </Button>
-      </Link>
+    <PageShell backHref="/dashboard" backLabel="Back to Dashboard">
       <TaskCreatePanel
         projects={allProjects}
         defaultProjectId={params.project}
       />
-    </div>
+    </PageShell>
   );
 }

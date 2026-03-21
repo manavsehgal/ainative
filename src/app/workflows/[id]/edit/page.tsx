@@ -1,10 +1,8 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { db } from "@/lib/db";
 import { projects, workflows } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { PageShell } from "@/components/shared/page-shell";
 import { WorkflowFormView } from "@/components/workflows/workflow-form-view";
 import { listProfiles } from "@/lib/agents/profiles/registry";
 
@@ -46,21 +44,16 @@ export default async function EditWorkflowPage({
   };
 
   return (
-    <div className="bg-background min-h-screen p-6">
-      <div className="">
-        <Link href={clone === "true" ? "/workflows" : `/workflows/${id}`}>
-          <Button variant="ghost" size="sm" className="mb-4">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            {clone === "true" ? "Back to Workflows" : "Back to Workflow"}
-          </Button>
-        </Link>
-        <WorkflowFormView
-          workflow={workflowData}
-          projects={allProjects}
-          profiles={profiles}
-          clone={clone === "true"}
-        />
-      </div>
-    </div>
+    <PageShell
+      backHref={clone === "true" ? "/workflows" : `/workflows/${id}`}
+      backLabel={clone === "true" ? "Back to Workflows" : "Back to Workflow"}
+    >
+      <WorkflowFormView
+        workflow={workflowData}
+        projects={allProjects}
+        profiles={profiles}
+        clone={clone === "true"}
+      />
+    </PageShell>
   );
 }

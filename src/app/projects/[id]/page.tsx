@@ -1,13 +1,11 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { db } from "@/lib/db";
 import { projects, tasks } from "@/lib/db/schema";
 import { eq, count } from "drizzle-orm";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
 import { COLUMN_ORDER } from "@/lib/constants/task-status";
+import { PageShell } from "@/components/shared/page-shell";
 import { ProjectDetailClient } from "@/components/projects/project-detail";
 import { Sparkline } from "@/components/charts/sparkline";
 import { getProjectCompletionTrend } from "@/lib/queries/chart-data";
@@ -56,25 +54,17 @@ export default async function ProjectDetailPage({
   };
 
   return (
-    <div className="bg-background min-h-screen p-6">
-      <div className="mb-6">
-        <Link href="/projects">
-          <Button variant="ghost" size="sm" className="mb-2">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Projects
-          </Button>
-        </Link>
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold">{project.name}</h1>
-          <Badge variant={statusVariant[project.status] ?? "secondary"}>
-            {project.status}
-          </Badge>
-        </div>
-        {project.description && (
-          <p className="text-muted-foreground mt-1">{project.description}</p>
-        )}
-      </div>
-
+    <PageShell
+      backHref="/projects"
+      backLabel="Back to Projects"
+      title={project.name}
+      description={project.description ?? undefined}
+      actions={
+        <Badge variant={statusVariant[project.status] ?? "secondary"}>
+          {project.status}
+        </Badge>
+      }
+    >
       {/* Status breakdown */}
       <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-6">
         {COLUMN_ORDER.map((status) => (
@@ -129,6 +119,6 @@ export default async function ProjectDetailPage({
       )}
 
       <ProjectDetailClient tasks={serializedTasks} projectId={id} />
-    </div>
+    </PageShell>
   );
 }

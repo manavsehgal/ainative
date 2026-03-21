@@ -1,8 +1,6 @@
-import Link from "next/link";
 import { db } from "@/lib/db";
 import { projects } from "@/lib/db/schema";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { PageShell } from "@/components/shared/page-shell";
 import { WorkflowFormView } from "@/components/workflows/workflow-form-view";
 import { listProfiles } from "@/lib/agents/profiles/registry";
 
@@ -21,16 +19,8 @@ export default async function NewWorkflowPage() {
   }));
 
   return (
-    <div className="bg-background min-h-screen p-6">
-      <div className="">
-        <Link href="/workflows">
-          <Button variant="ghost" size="sm" className="mb-4">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Workflows
-          </Button>
-        </Link>
-        <WorkflowFormView projects={allProjects} profiles={profiles} />
-      </div>
-    </div>
+    <PageShell backHref="/workflows" backLabel="Back to Workflows">
+      <WorkflowFormView projects={allProjects} profiles={profiles} />
+    </PageShell>
   );
 }

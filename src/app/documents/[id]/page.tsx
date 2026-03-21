@@ -1,10 +1,8 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { db } from "@/lib/db";
 import { documents } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { PageShell } from "@/components/shared/page-shell";
 import { DocumentDetailView } from "@/components/documents/document-detail-view";
 
 export const dynamic = "force-dynamic";
@@ -33,16 +31,8 @@ export default async function DocumentDetailPage({
   };
 
   return (
-    <div className="bg-background min-h-screen p-6">
-      <div className="surface-page-shell rounded-xl p-6 max-w-5xl mx-auto">
-        <Link href="/documents">
-          <Button variant="ghost" size="sm" className="mb-4">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Documents
-          </Button>
-        </Link>
-        <DocumentDetailView documentId={id} initialDocument={initialDoc} />
-      </div>
-    </div>
+    <PageShell backHref="/documents" backLabel="Back to Documents" maxWidth="max-w-5xl">
+      <DocumentDetailView documentId={id} initialDocument={initialDoc} />
+    </PageShell>
   );
 }

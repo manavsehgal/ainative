@@ -1,10 +1,8 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { db } from "@/lib/db";
 import { workflows } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { PageShell } from "@/components/shared/page-shell";
 import { WorkflowStatusView } from "@/components/workflows/workflow-status-view";
 
 export const dynamic = "force-dynamic";
@@ -24,14 +22,8 @@ export default async function WorkflowDetailPage({
   if (!workflow) notFound();
 
   return (
-    <div className="bg-background min-h-screen p-6">
-      <Link href="/workflows">
-        <Button variant="ghost" size="sm" className="mb-4">
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Back to Workflows
-        </Button>
-      </Link>
+    <PageShell backHref="/workflows" backLabel="Back to Workflows">
       <WorkflowStatusView workflowId={id} />
-    </div>
+    </PageShell>
   );
 }
