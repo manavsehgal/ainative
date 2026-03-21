@@ -29,6 +29,8 @@ const makeTask = (overrides: Partial<TaskItem> = {}): TaskItem => ({
   agentProfile: null,
   projectId: "project-1",
   projectName: "Project A",
+  workflowId: null,
+  scheduleId: null,
   result: null,
   sessionId: null,
   resumeCount: 0,
@@ -42,7 +44,7 @@ const defaultProjects = [
   { id: "project-2", name: "Project B" },
 ];
 
-describe("kanban board persistence", () => {
+describe("kanban board rendering", () => {
   beforeAll(() => {
     vi.stubGlobal("ResizeObserver", ResizeObserverMock);
   });
@@ -56,45 +58,37 @@ describe("kanban board persistence", () => {
     sessionStorage.clear();
   });
 
-  it("resets stale project filter to 'all'", () => {
-    // Pre-set a project ID that doesn't exist in the projects list
-    localStorage.setItem("stagent-project-filter", "deleted-project-999");
-
+  it("renders tasks correctly with filter props from parent", () => {
     render(
       <KanbanBoard
         initialTasks={[makeTask()]}
         projects={defaultProjects}
+        projectFilter="all"
+        statusFilter="all"
+        sortOrder="priority"
       />
     );
 
-    // The task should be visible (not filtered out by a stale project ID)
+    // The task should be visible
     expect(screen.getByText("Test task")).toBeInTheDocument();
   });
 
-  it("includes ?project= in New Task link when project is filtered", () => {
-    localStorage.setItem("stagent-project-filter", "project-1");
-
+  it("filters tasks by project when projectFilter is set", () => {
     render(
       <KanbanBoard
-        initialTasks={[makeTask()]}
+        initialTasks={[
+          makeTask({ id: "t1", title: "Task in P1", projectId: "project-1" }),
+          makeTask({ id: "t2", title: "Task in P2", projectId: "project-2" }),
+        ]}
         projects={defaultProjects}
+        projectFilter="project-1"
+        statusFilter="all"
+        sortOrder="priority"
       />
     );
 
-    const newTaskLink = screen.getByRole("link", { name: /new task/i });
-    expect(newTaskLink).toHaveAttribute("href", "/tasks/new?project=project-1");
-  });
-
-  it("has plain /tasks/new link when filter is 'all'", () => {
-    render(
-      <KanbanBoard
-        initialTasks={[makeTask()]}
-        projects={defaultProjects}
-      />
-    );
-
-    const newTaskLink = screen.getByRole("link", { name: /new task/i });
-    expect(newTaskLink).toHaveAttribute("href", "/tasks/new");
+    expect(screen.getByText("Task in P1")).toBeInTheDocument();
+    expect(screen.queryByText("Task in P2")).not.toBeInTheDocument();
   });
 });
 

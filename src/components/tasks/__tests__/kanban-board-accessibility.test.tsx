@@ -46,6 +46,9 @@ describe("kanban board accessibility", () => {
           },
         ]}
         projects={[{ id: "project-1", name: "Stagent" }]}
+        projectFilter="all"
+        statusFilter="all"
+        sortOrder="priority"
       />
     );
 

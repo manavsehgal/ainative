@@ -2,7 +2,6 @@
 
 import { useId, useState, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import {
   DndContext,
   DragEndEvent,
@@ -14,15 +13,7 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { ArrowUpDown, ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { KanbanColumn } from "./kanban-column";
 import { TaskCard, type TaskItem } from "./task-card";
@@ -30,12 +21,11 @@ import { TaskEditDialog } from "./task-edit-dialog";
 import { EmptyBoard } from "./empty-board";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { COLUMN_ORDER, isValidDragTransition, type TaskStatus } from "@/lib/constants/task-status";
-import { usePersistedState } from "@/hooks/use-persisted-state";
 import type { WorkflowKanbanItem } from "@/components/workflows/workflow-kanban-card";
 
-type SortOrder = "priority" | "created-desc" | "created-asc" | "title-asc";
+export type SortOrder = "priority" | "created-desc" | "created-asc" | "title-asc";
 
-const SORT_OPTIONS: { value: SortOrder; label: string }[] = [
+export const SORT_OPTIONS: { value: SortOrder; label: string }[] = [
   { value: "priority", label: "Priority" },
   { value: "created-desc", label: "Newest first" },
   { value: "created-asc", label: "Oldest first" },
@@ -80,9 +70,20 @@ interface KanbanBoardProps {
   initialTasks: TaskItem[];
   initialWorkflows?: WorkflowKanbanItem[];
   projects: { id: string; name: string }[];
+  /** Filter state — controlled by parent (TaskSurface) */
+  projectFilter: string;
+  statusFilter: string;
+  sortOrder: SortOrder;
 }
 
-export function KanbanBoard({ initialTasks, initialWorkflows = [], projects }: KanbanBoardProps) {
+export function KanbanBoard({
+  initialTasks,
+  initialWorkflows = [],
+  projects,
+  projectFilter,
+  statusFilter,
+  sortOrder,
+}: KanbanBoardProps) {
   const dndId = useId();
   const router = useRouter();
   const [tasks, setTasks] = useState<TaskItem[]>(() => {
@@ -100,9 +101,6 @@ export function KanbanBoard({ initialTasks, initialWorkflows = [], projects }: K
   const [workflowItems] = useState<WorkflowKanbanItem[]>(initialWorkflows);
   const [exitingIds, setExitingIds] = useState<Set<string>>(new Set());
   const [activeTask, setActiveTask] = useState<TaskItem | null>(null);
-  const [projectFilter, setProjectFilter] = usePersistedState("stagent-project-filter", "all");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [sortOrder, setSortOrder] = usePersistedState<SortOrder>("stagent-sort-order", "priority");
 
   const totalItems = tasks.length + workflowItems.length;
   const [announcement, setAnnouncement] = useState(
@@ -116,7 +114,7 @@ export function KanbanBoard({ initialTasks, initialWorkflows = [], projects }: K
   // Bulk delete confirmation
   const [bulkDeleteIds, setBulkDeleteIds] = useState<string[] | null>(null);
 
-  // I5: Scroll indicators
+  // Scroll indicators
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -136,13 +134,6 @@ export function KanbanBoard({ initialTasks, initialWorkflows = [], projects }: K
     observer.observe(el);
     return () => observer.disconnect();
   }, [updateScrollIndicators, tasks]);
-
-  // Reset stale project filter (e.g. project was deleted between sessions)
-  useEffect(() => {
-    if (projectFilter !== "all" && !projects.some((p) => p.id === projectFilter)) {
-      setProjectFilter("all");
-    }
-  }, [projectFilter, projects, setProjectFilter]);
 
   // Ghost card exit animation
   useEffect(() => {
@@ -172,12 +163,7 @@ export function KanbanBoard({ initialTasks, initialWorkflows = [], projects }: K
 
   // Filter workflows by project and status (mapped to column)
   const filteredWorkflows = workflowItems.filter((w) => {
-    if (projectFilter !== "all") {
-      // Workflows don't have projectId on the kanban item directly,
-      // but we pass projectName — filter by checking if name matches
-      // For now, skip project filter for workflows (they show in all)
-      // TODO: add projectId to WorkflowKanbanItem if needed
-    }
+    if (projectFilter !== "all" && w.projectId !== projectFilter) return false;
     if (statusFilter !== "all" && workflowStatusToColumn(w.status) !== statusFilter) return false;
     return true;
   });
@@ -264,7 +250,6 @@ export function KanbanBoard({ initialTasks, initialWorkflows = [], projects }: K
         toast.success("Task deleted");
         setAnnouncement("Task deleted.");
       } else if (res.status === 404) {
-        // Already gone — keep optimistic removal
         toast.success("Task deleted");
       } else {
         setTasks(prevTasks);
@@ -299,7 +284,6 @@ export function KanbanBoard({ initialTasks, initialWorkflows = [], projects }: K
     } else if (failed.length < ids.length) {
       const succeeded = ids.length - failed.length;
       toast.error(`Deleted ${succeeded}/${ids.length}, ${failed.length} failed`);
-      // Refresh to get accurate state
       refresh();
     } else {
       setTasks(prevTasks);
@@ -333,7 +317,7 @@ export function KanbanBoard({ initialTasks, initialWorkflows = [], projects }: K
       toast.success(`${taskIds.length} task${taskIds.length === 1 ? "" : "s"} moved to ${newStatus}`);
     } else {
       toast.error(`${failed.length} of ${taskIds.length} updates failed`);
-      refresh(); // Refresh to reconcile
+      refresh();
     }
   }, [tasks, refresh]);
 
@@ -363,83 +347,12 @@ export function KanbanBoard({ initialTasks, initialWorkflows = [], projects }: K
     {} as Record<TaskStatus, WorkflowKanbanItem[]>
   );
 
-  const filterBar = (
-    <div className="flex items-center gap-2">
-      {projects.length > 0 && (
-        <Select value={projectFilter} onValueChange={setProjectFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="All projects" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All projects</SelectItem>
-            {projects.map((p) => (
-              <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      )}
-      <Select value={statusFilter} onValueChange={setStatusFilter}>
-        <SelectTrigger className="w-[150px]">
-          <SelectValue placeholder="All statuses" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All statuses</SelectItem>
-          {COLUMN_ORDER.map((s) => (
-            <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Select value={sortOrder} onValueChange={(v) => setSortOrder(v as SortOrder)}>
-        <SelectTrigger className="w-[150px]">
-          <ArrowUpDown className="h-3.5 w-3.5 mr-1.5 shrink-0" />
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {SORT_OPTIONS.map((opt) => (
-            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-  );
-
-  const newTaskHref = projectFilter !== "all"
-    ? `/tasks/new?project=${projectFilter}`
-    : "/tasks/new";
-
-  const newTaskButton = (
-    <Link href={newTaskHref}>
-      <Button>
-        <Plus className="h-4 w-4 mr-2" />
-        New Task
-      </Button>
-    </Link>
-  );
-
   if (tasks.length === 0 && workflowItems.length === 0) {
-    return (
-      <div>
-        <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <div className="flex items-center gap-3">
-            {filterBar}
-            {newTaskButton}
-          </div>
-        </div>
-        <EmptyBoard />
-      </div>
-    );
+    return <EmptyBoard />;
   }
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        <div className="flex items-center gap-3">
-          {filterBar}
-          {newTaskButton}
-        </div>
-      </div>
       <p id={`${dndId}-announcements`} className="sr-only" aria-live="polite" aria-atomic="true">
         {announcement}
       </p>

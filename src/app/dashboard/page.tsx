@@ -7,7 +7,6 @@ import { TaskSurface } from "@/components/tasks/task-surface";
 import { SkeletonBoard } from "@/components/tasks/skeleton-board";
 import type { TaskItem } from "@/components/tasks/task-card";
 import type { WorkflowKanbanItem } from "@/components/workflows/workflow-kanban-card";
-import { PageShell } from "@/components/shared/page-shell";
 
 export const dynamic = "force-dynamic";
 
@@ -78,10 +77,12 @@ async function BoardContent() {
           return "sequence";
         }
       })(),
+      projectId: w.projectId,
       projectName: w.projectId ? projectMap.get(w.projectId) ?? undefined : undefined,
       stepProgress,
       currentStepName,
       createdAt: w.createdAt.toISOString(),
+      updatedAt: w.updatedAt.toISOString(),
     };
   });
 
@@ -96,10 +97,12 @@ async function BoardContent() {
 
 export default function DashboardPage() {
   return (
-    <PageShell title="Tasks" description="Board and table view of all tasks and workflows" fullBleed>
-      <Suspense fallback={<SkeletonBoard />}>
-        <BoardContent />
-      </Suspense>
-    </PageShell>
+    <div className="bg-background min-h-screen p-4 sm:p-6">
+      <div className="surface-page-shell rounded-xl p-5 sm:p-6">
+        <Suspense fallback={<SkeletonBoard />}>
+          <BoardContent />
+        </Suspense>
+      </div>
+    </div>
   );
 }

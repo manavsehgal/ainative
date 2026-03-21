@@ -42,6 +42,10 @@ interface DataTableProps<TData> {
   showDensityToggle?: boolean;
   /** Initial density */
   defaultDensity?: Density;
+  /** Controlled density from parent — overrides internal state */
+  controlledDensity?: Density;
+  /** Hide the toolbar entirely (when parent renders its own controls) */
+  hideToolbar?: boolean;
   /** Page size options */
   pageSizeOptions?: number[];
   /** Hide pagination */
@@ -73,12 +77,16 @@ export function DataTable<TData>({
   toolbarContent,
   showDensityToggle = true,
   defaultDensity = "comfortable",
+  controlledDensity,
+  hideToolbar = false,
   pageSizeOptions = [10, 25, 50, 100],
   hidePagination = false,
   getRowId,
 }: DataTableProps<TData>) {
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [density, setDensity] = useState<Density>(defaultDensity);
+  const [internalDensity, setInternalDensity] = useState<Density>(defaultDensity);
+  const density = controlledDensity ?? internalDensity;
+  const setDensity = setInternalDensity;
   const [internalRowSelection, setInternalRowSelection] =
     useState<RowSelectionState>({});
 
@@ -103,16 +111,18 @@ export function DataTable<TData>({
 
   return (
     <div className="space-y-3">
-      <DataTableToolbar
-        density={density}
-        onDensityChange={setDensity}
-        showDensityToggle={showDensityToggle}
-        selectedCount={
-          selectable ? Object.keys(rowSelection).length : undefined
-        }
-      >
-        {toolbarContent}
-      </DataTableToolbar>
+      {!hideToolbar && (
+        <DataTableToolbar
+          density={density}
+          onDensityChange={setDensity}
+          showDensityToggle={showDensityToggle}
+          selectedCount={
+            selectable ? Object.keys(rowSelection).length : undefined
+          }
+        >
+          {toolbarContent}
+        </DataTableToolbar>
+      )}
 
       <div className="rounded-lg border border-border overflow-hidden">
         <Table>

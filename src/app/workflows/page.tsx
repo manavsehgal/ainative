@@ -13,7 +13,7 @@ export default async function WorkflowsPage() {
     .orderBy(projects.name);
 
   return (
-    <PageShell title="Workflows" actions={<WorkflowPageActions />} fullBleed>
+    <PageShell title="Workflows" actions={<WorkflowPageActions />}>
       <WorkflowList projects={allProjects} />
     </PageShell>
   );

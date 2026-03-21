@@ -40,7 +40,7 @@ export default async function PlaybookPage() {
     new Date(lastGenerated) > new Date(lastVisit);
 
   return (
-    <PageShell title="Playbook" fullBleed>
+    <PageShell title="Playbook">
       <PlaybookHomepage
         manifest={manifest}
         stage={stage}
