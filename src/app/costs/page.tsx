@@ -235,7 +235,6 @@ export default async function CostsPage({
     <PageShell
       title="Cost & Usage"
       description="Track current spend pacing, provider mix, and the execution history behind paid runtime work without juggling a second budgeting model."
-      fullBleed
     >
       <CostDashboard
         filters={{

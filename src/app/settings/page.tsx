@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default function SettingsPage() {
   return (
-    <PageShell title="Settings" description="Manage your Stagent configuration" fullBleed>
+    <PageShell title="Settings" description="Manage your Stagent configuration">
       <div className="space-y-6">
         <AuthConfigSection />
         <OpenAIRuntimeSection />

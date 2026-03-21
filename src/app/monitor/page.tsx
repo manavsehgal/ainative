@@ -19,7 +19,6 @@ export default async function MonitorPage() {
     <PageShell
       title="Monitor"
       actions={<MonitorRefreshButton />}
-      fullBleed
     >
       <Suspense
         fallback={

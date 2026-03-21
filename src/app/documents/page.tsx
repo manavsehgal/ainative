@@ -39,7 +39,7 @@ export default async function DocumentsPage() {
     .from(projects);
 
   return (
-    <PageShell title="Documents" fullBleed>
+    <PageShell title="Documents">
       <DocumentBrowser initialDocuments={docs} projects={projectList} />
     </PageShell>
   );

@@ -12,10 +12,12 @@ export interface WorkflowKanbanItem {
   name: string;
   status: string;
   pattern: string;
+  projectId?: string | null;
   projectName?: string;
   stepProgress: { current: number; total: number };
   currentStepName?: string;
   createdAt: string;
+  updatedAt?: string;
 }
 
 interface WorkflowKanbanCardProps {
