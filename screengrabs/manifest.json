@@ -1,0 +1,399 @@
+{
+  "generated": "2026-03-21T21:00:00Z",
+  "viewport": "1440x900",
+  "mode": "full",
+  "screenshots": [
+    {
+      "file": "home-list.png",
+      "page": "home",
+      "view": "list",
+      "route": "/",
+      "type": "default",
+      "features": ["homepage-dashboard", "app-shell"],
+      "description": "Home page with sidebar expanded showing navigation and stat cards"
+    },
+    {
+      "file": "home-below-fold.png",
+      "page": "home",
+      "view": "below-fold",
+      "route": "/",
+      "type": "alternate",
+      "features": ["homepage-dashboard"],
+      "description": "Home page scrolled down showing additional content below the fold"
+    },
+    {
+      "file": "dashboard-list.png",
+      "page": "dashboard",
+      "view": "list",
+      "route": "/dashboard",
+      "type": "default",
+      "features": ["task-board", "kanban-board-operations", "micro-visualizations"],
+      "description": "Dashboard default kanban board view with task cards grouped by status"
+    },
+    {
+      "file": "dashboard-table.png",
+      "page": "dashboard",
+      "view": "table",
+      "route": "/dashboard",
+      "type": "alternate",
+      "features": ["task-board", "ui-density-refinement"],
+      "description": "Dashboard table view with sortable columns and task data"
+    },
+    {
+      "file": "dashboard-filtered.png",
+      "page": "dashboard",
+      "view": "filtered",
+      "route": "/dashboard",
+      "type": "alternate",
+      "features": ["task-board", "operational-surface-foundation"],
+      "description": "Dashboard table view filtered by running status"
+    },
+    {
+      "file": "dashboard-detail.png",
+      "page": "dashboard",
+      "view": "detail",
+      "route": "/dashboard",
+      "type": "detail",
+      "features": ["task-board", "detail-view-redesign"],
+      "description": "Task edit dialog opened from kanban card"
+    },
+    {
+      "file": "dashboard-create-form-empty.png",
+      "page": "dashboard",
+      "view": "create-form-empty",
+      "route": "/tasks/new",
+      "type": "form",
+      "features": ["task-board", "task-definition-ai"],
+      "description": "New task creation form with empty fields"
+    },
+    {
+      "file": "dashboard-create-form-filled.png",
+      "page": "dashboard",
+      "view": "create-form-filled",
+      "route": "/tasks/new",
+      "type": "form",
+      "features": ["task-board", "task-definition-ai", "multi-agent-routing"],
+      "description": "New task form filled with realistic data including project and agent profile selections"
+    },
+    {
+      "file": "dashboard-create-form-ai-assist.png",
+      "page": "dashboard",
+      "view": "ai-assist",
+      "route": "/tasks/new",
+      "type": "form",
+      "features": ["task-definition-ai"],
+      "description": "Task form showing AI Assist suggestions for improved description"
+    },
+    {
+      "file": "dashboard-create-form-ai-applied.png",
+      "page": "dashboard",
+      "view": "ai-applied",
+      "route": "/tasks/new",
+      "type": "form",
+      "features": ["task-definition-ai"],
+      "description": "Task form after applying AI-improved description"
+    },
+    {
+      "file": "inbox-list.png",
+      "page": "inbox",
+      "view": "list",
+      "route": "/inbox",
+      "type": "default",
+      "features": ["inbox-notifications", "ambient-approval-toast"],
+      "description": "Inbox notification list with unread badges and category grouping"
+    },
+    {
+      "file": "inbox-expanded.png",
+      "page": "inbox",
+      "view": "expanded",
+      "route": "/inbox",
+      "type": "alternate",
+      "features": ["inbox-notifications", "content-handling"],
+      "description": "Inbox with first notification expanded showing content preview"
+    },
+    {
+      "file": "inbox-fully-expanded.png",
+      "page": "inbox",
+      "view": "fully-expanded",
+      "route": "/inbox",
+      "type": "alternate",
+      "features": ["inbox-notifications", "content-handling"],
+      "description": "Inbox notification fully expanded after clicking Show More"
+    },
+    {
+      "file": "projects-list.png",
+      "page": "projects",
+      "view": "list",
+      "route": "/projects",
+      "type": "default",
+      "features": ["project-management"],
+      "description": "Projects list showing active projects with descriptions"
+    },
+    {
+      "file": "projects-detail.png",
+      "page": "projects",
+      "view": "detail",
+      "route": "/projects/[id]",
+      "type": "detail",
+      "features": ["project-management", "detail-view-redesign"],
+      "description": "Project detail page showing Investment Portfolio Analysis with task list"
+    },
+    {
+      "file": "projects-create-form-empty.png",
+      "page": "projects",
+      "view": "create-form-empty",
+      "route": "/projects",
+      "type": "form",
+      "features": ["project-management"],
+      "description": "Create Project dialog with empty fields"
+    },
+    {
+      "file": "projects-create-form-filled.png",
+      "page": "projects",
+      "view": "create-form-filled",
+      "route": "/projects",
+      "type": "form",
+      "features": ["project-management"],
+      "description": "Create Project dialog filled with Q4 Product Launch Campaign data"
+    },
+    {
+      "file": "workflows-list.png",
+      "page": "workflows",
+      "view": "list",
+      "route": "/workflows",
+      "type": "default",
+      "features": ["workflow-engine", "workflow-blueprints"],
+      "description": "Workflows list showing All tab with workflow cards"
+    },
+    {
+      "file": "workflows-templates.png",
+      "page": "workflows",
+      "view": "templates",
+      "route": "/workflows",
+      "type": "alternate",
+      "features": ["workflow-blueprints"],
+      "description": "Workflows Templates tab showing template workflows"
+    },
+    {
+      "file": "workflows-runs.png",
+      "page": "workflows",
+      "view": "runs",
+      "route": "/workflows",
+      "type": "alternate",
+      "features": ["workflow-engine"],
+      "description": "Workflows Runs tab showing active and completed workflow runs"
+    },
+    {
+      "file": "workflows-detail.png",
+      "page": "workflows",
+      "view": "detail",
+      "route": "/workflows/[id]",
+      "type": "detail",
+      "features": ["workflow-engine", "detail-view-redesign"],
+      "description": "Workflow detail page showing Content Review Pipeline"
+    },
+    {
+      "file": "workflows-create-form-empty.png",
+      "page": "workflows",
+      "view": "create-form-empty",
+      "route": "/workflows/new",
+      "type": "form",
+      "features": ["workflow-engine", "ai-assist-workflow-creation"],
+      "description": "New Workflow creation page with empty fields and step builder"
+    },
+    {
+      "file": "workflows-create-form-filled.png",
+      "page": "workflows",
+      "view": "create-form-filled",
+      "route": "/workflows/new",
+      "type": "form",
+      "features": ["workflow-engine", "ai-assist-workflow-creation"],
+      "description": "New Workflow form filled with Customer Onboarding Pipeline data"
+    },
+    {
+      "file": "documents-list.png",
+      "page": "documents",
+      "view": "list",
+      "route": "/documents",
+      "type": "default",
+      "features": ["document-manager", "file-attachment-data-layer"],
+      "description": "Documents table view with file listing"
+    },
+    {
+      "file": "documents-grid.png",
+      "page": "documents",
+      "view": "grid",
+      "route": "/documents",
+      "type": "alternate",
+      "features": ["document-manager"],
+      "description": "Documents grid view with file cards"
+    },
+    {
+      "file": "documents-upload-form.png",
+      "page": "documents",
+      "view": "upload-form",
+      "route": "/documents",
+      "type": "form",
+      "features": ["document-manager", "file-attachment-data-layer"],
+      "description": "Upload Documents dialog with file drop zone"
+    },
+    {
+      "file": "monitor-list.png",
+      "page": "monitor",
+      "view": "list",
+      "route": "/monitor",
+      "type": "default",
+      "features": ["monitoring-dashboard"],
+      "description": "Monitor page showing agent activity logs"
+    },
+    {
+      "file": "profiles-list.png",
+      "page": "profiles",
+      "view": "list",
+      "route": "/profiles",
+      "type": "default",
+      "features": ["agent-profile-catalog", "multi-agent-routing"],
+      "description": "Agent Profiles list showing available profile cards"
+    },
+    {
+      "file": "schedules-list.png",
+      "page": "schedules",
+      "view": "list",
+      "route": "/schedules",
+      "type": "default",
+      "features": ["scheduled-prompt-loops"],
+      "description": "Schedules list showing configured scheduled tasks"
+    },
+    {
+      "file": "schedules-create-form-empty.png",
+      "page": "schedules",
+      "view": "create-form-empty",
+      "route": "/schedules",
+      "type": "form",
+      "features": ["scheduled-prompt-loops"],
+      "description": "Create Schedule dialog with empty fields"
+    },
+    {
+      "file": "schedules-create-form-filled.png",
+      "page": "schedules",
+      "view": "create-form-filled",
+      "route": "/schedules",
+      "type": "form",
+      "features": ["scheduled-prompt-loops"],
+      "description": "Create Schedule dialog filled with Daily Portfolio Health Check data"
+    },
+    {
+      "file": "cost-usage-list.png",
+      "page": "cost-usage",
+      "view": "list",
+      "route": "/costs",
+      "type": "default",
+      "features": ["cost-and-usage-dashboard", "usage-metering-ledger", "spend-budget-guardrails"],
+      "description": "Cost & Usage dashboard showing spend tracking and budget meters"
+    },
+    {
+      "file": "playbook-list.png",
+      "page": "playbook",
+      "view": "list",
+      "route": "/playbook",
+      "type": "default",
+      "features": ["playbook-documentation"],
+      "description": "Playbook page showing documentation articles"
+    },
+    {
+      "file": "settings-list.png",
+      "page": "settings",
+      "view": "list",
+      "route": "/settings",
+      "type": "default",
+      "features": ["tool-permission-persistence", "provider-runtime-abstraction"],
+      "description": "Settings page top section with authentication and runtime config"
+    },
+    {
+      "file": "settings-budget.png",
+      "page": "settings",
+      "view": "budget",
+      "route": "/settings",
+      "type": "alternate",
+      "features": ["spend-budget-guardrails"],
+      "description": "Settings spend cap and budget split configuration"
+    },
+    {
+      "file": "settings-presets.png",
+      "page": "settings",
+      "view": "presets",
+      "route": "/settings",
+      "type": "alternate",
+      "features": ["tool-permission-presets"],
+      "description": "Settings permission presets with Read Only, Git Safe, and Full Auto tiers"
+    },
+    {
+      "file": "settings-data.png",
+      "page": "settings",
+      "view": "data",
+      "route": "/settings",
+      "type": "alternate",
+      "features": ["tool-permission-persistence"],
+      "description": "Settings bottom section with data management options"
+    },
+    {
+      "file": "trust-tier-popover.png",
+      "page": "home",
+      "view": "trust-tier",
+      "route": "/",
+      "type": "alternate",
+      "features": ["tool-permission-presets"],
+      "description": "Trust Tier badge popover showing Collaborator tier details"
+    },
+    {
+      "file": "command-palette-empty.png",
+      "page": "global",
+      "view": "command-palette-empty",
+      "route": "/",
+      "type": "alternate",
+      "features": ["command-palette-enhancement"],
+      "description": "Command palette open with recent items showing"
+    },
+    {
+      "file": "command-palette-search.png",
+      "page": "global",
+      "view": "command-palette-search",
+      "route": "/",
+      "type": "alternate",
+      "features": ["command-palette-enhancement"],
+      "description": "Command palette with search results for dashboard"
+    },
+    {
+      "file": "journey-task-detail.png",
+      "page": "journey",
+      "view": "task-detail",
+      "route": "/tasks/[id]",
+      "type": "journey",
+      "features": ["task-board", "detail-view-redesign"],
+      "description": "Task detail page showing a running task with bento grid layout"
+    },
+    {
+      "file": "journey-project-tasks.png",
+      "page": "journey",
+      "view": "project-tasks",
+      "route": "/projects/[id]",
+      "type": "journey",
+      "features": ["project-management"],
+      "description": "Project detail showing Investment Portfolio Analysis with associated tasks"
+    },
+    {
+      "file": "journey-inbox-action.png",
+      "page": "journey",
+      "view": "inbox-action",
+      "route": "/inbox",
+      "type": "journey",
+      "features": ["inbox-notifications", "ambient-approval-toast"],
+      "description": "Inbox showing expanded permission-required notification with action buttons"
+    }
+  ],
+  "coverage": {
+    "routesCaptured": 12,
+    "formsCaptured": 10,
+    "journeysCaptured": 3
+  }
+}

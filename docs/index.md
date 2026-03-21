@@ -1,53 +1,49 @@
 ---
 title: "Stagent Documentation"
 category: "index"
-lastUpdated: "2026-03-18"
+lastUpdated: "2026-03-21"
 ---
 
 # Stagent Documentation
 
-Stagent is a governed AI agent workspace where every run is visible, every profile is reusable, and every approval is auditable. Run it locally with `npx stagent` and own your data from day one.
+Stagent is a governed AI agent workspace that lets you create, execute, and monitor AI-powered tasks locally. It provides supervised execution with human-in-the-loop approvals, multi-step workflows, document management, and cost governance across multiple AI providers.
 
 ## Getting Started
-
-- [Quick Start Guide](./getting-started.md) — install, configure, and run your first task
+- [Quick Start Guide](./getting-started.md)
 
 ## User Journeys
 
 | Guide | Difficulty | Time | Description |
 |-------|-----------|------|-------------|
-| [Personal Use](./journeys/personal-use.md) | Beginner | ~20 min | Solo productivity: create project, add tasks, track progress |
-| [Work Use](./journeys/work-use.md) | Intermediate | ~24 min | Team context: organize projects, manage documents, schedule automations, track costs |
-| [Power User](./journeys/power-user.md) | Advanced | ~24 min | Advanced: custom profiles, build workflows, autonomous loops, monitor execution |
-| [Developer](./journeys/developer.md) | Advanced | ~20 min | Technical: CLI setup, auth config, provider runtimes, extending profiles |
+| [Personal Use](./journeys/personal-use.md) | Beginner | ~20 min | Solo productivity with AI tasks |
+| [Work Use](./journeys/work-use.md) | Intermediate | ~24 min | Team collaboration and document management |
+| [Power User](./journeys/power-user.md) | Advanced | ~24 min | Advanced workflows and automation |
+| [Developer](./journeys/developer.md) | Advanced | ~20 min | Platform configuration and CLI usage |
 
 ## Feature Reference
 
-### Core
+| Section | Route | Key Features |
+|---------|-------|-------------|
+| [Home & Workspace](./features/home-workspace.md) | `/` | Stat cards, activity feed, navigation |
+| [Dashboard & Kanban](./features/dashboard-kanban.md) | `/dashboard` | Task board, AI Assist, drag-and-drop |
+| [Inbox & Notifications](./features/inbox-notifications.md) | `/inbox` | Approvals, rich content, progressive disclosure |
+| [Projects](./features/projects.md) | `/projects` | Workspaces, task grouping, file context |
+| [Workflows](./features/workflows.md) | `/workflows` | 6 patterns, step builder, templates |
+| [Documents](./features/documents.md) | `/documents` | Upload, preprocessing, agent context |
+| [Monitor](./features/monitoring.md) | `/monitor` | Activity logs, execution tracking |
+| [Profiles](./features/profiles.md) | `/profiles` | 21 agent profiles, auto-routing |
+| [Schedules](./features/schedules.md) | `/schedules` | Recurring tasks, autonomous loops |
+| [Cost & Usage](./features/cost-usage.md) | `/costs` | Spend tracking, budget guardrails |
+| [Settings](./features/settings.md) | `/settings` | Auth, runtimes, permissions, budgets |
+| [Playbook](./features/playbook.md) | `/playbook` | In-app documentation |
 
-| Section | Route | Key Capabilities |
-|---------|-------|-----------------|
-| [Home Workspace](./features/home-workspace.md) | `/` | Workspace briefing, active work, pending reviews, live activity, micro-visualizations |
-| [Dashboard & Kanban](./features/dashboard-kanban.md) | `/dashboard` | Task board, AI assist, inline editing, bulk operations, workflow creation |
-| [Inbox & Approvals](./features/inbox-notifications.md) | `/inbox` | Tool approval, agent questions, batch proposals, ambient toasts |
-| [Monitoring](./features/monitoring.md) | `/monitor` | Live log streaming, event filters, task navigation |
-| [Projects](./features/projects.md) | `/projects` | Portfolio organization, working directories, task scoping |
+## Cross-Cutting Features
 
-### Operations
-
-| Section | Route | Key Capabilities |
-|---------|-------|-----------------|
-| [Workflows](./features/workflows.md) | `/workflows` | 6 orchestration patterns, blueprints, step retry, parallel + swarm |
-| [Documents](./features/documents.md) | `/documents` | Upload, preview, text extraction, agent context injection |
-| [Agent Profiles](./features/profiles.md) | `/profiles` | 13+ specialist profiles, catalog, testing, learned context |
-| [Schedules](./features/schedules.md) | `/schedules` | Cron + human-friendly intervals, one-shot, recurring, pause/resume |
-| [Cost & Usage](./features/cost-usage.md) | `/costs` | Token metering, spend tracking, budgets, provider breakdowns |
-| [Settings](./features/settings.md) | `/settings` | Authentication, permissions, presets, data management |
-
-### Cross-Cutting
-
-| Section | Scope | Key Capabilities |
-|---------|-------|-----------------|
-| [Provider Runtimes](./features/provider-runtimes.md) | All execution | Claude Code + OpenAI Codex shared registry, runtime selection |
-| [Agent Intelligence](./features/agent-intelligence.md) | AI features | Multi-agent routing, AI assist, autonomous loops, swarms, self-improvement |
-| [Tool Permissions](./features/tool-permissions.md) | Governance | Always Allow patterns, layered presets, ambient approvals |
+| Topic | Description |
+|-------|-------------|
+| [Provider Runtimes](./features/provider-runtimes.md) | Claude + Codex runtime architecture |
+| [Agent Intelligence](./features/agent-intelligence.md) | AI Assist, routing, swarms, loops |
+| [Tool Permissions](./features/tool-permissions.md) | Trust tiers, presets, approval flow |
+| [Design System](./features/design-system.md) | Calm Ops visual language |
+| [Keyboard & Navigation](./features/keyboard-navigation.md) | Command palette, accessibility |
+| [Shared Components](./features/shared-components.md) | Reusable UI component library |

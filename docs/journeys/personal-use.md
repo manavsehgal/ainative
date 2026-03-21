@@ -1,158 +1,157 @@
 ---
 title: "Personal Use Guide"
 category: "user-journey"
-persona: "personal-use"
+persona: "solo-developer"
 difficulty: "beginner"
 estimatedTime: "20 minutes"
-sections: ["home", "dashboard", "projects"]
-tags: [getting-started, solo, productivity, first-run]
-lastUpdated: "2026-03-20"
+sections: ["Home", "Dashboard", "Projects"]
+tags: ["getting-started", "solo", "ai-assist", "kanban", "command-palette"]
+lastUpdated: "2026-03-21"
 ---
 
 # Personal Use Guide
 
-You are a solo user — maybe a freelancer, a student, or someone who just wants an AI assistant that actually stays organized. You have heard about AI agents but never had a workspace that lets you govern what they do, track what they produce, and keep everything in one place. Stagent is that workspace. In the next twenty minutes you will install Stagent, create your first project, delegate your first task to an AI agent, and learn how to use the home workspace as your daily command center.
+Meet Alex, a solo developer who just discovered Stagent. Alex has a side project that needs planning and execution help, but has never used an AI agent workspace before. In this journey, Alex will set up a personal project, create tasks with AI assistance, and track progress on the kanban board -- all in about 20 minutes.
 
 ## Prerequisites
 
-- **Node.js 18 or later** installed on your machine
-- A terminal application (Terminal on macOS, PowerShell or WSL on Windows)
-- An Anthropic API key or Claude Max subscription for agent execution
-- About 20 minutes of uninterrupted time
+- Stagent installed and running locally (`npm run dev`)
+- An Anthropic API key configured in `.env.local`
+- A project idea in mind (we will use a "Portfolio Website" as our example)
 
 ## Journey Steps
 
-### Step 1 — Install and Launch Stagent
-*Estimated time: 2 minutes*
+### Step 1: Explore the Home Screen
 
-Every journey begins with a single command. Open your terminal and run:
+Alex opens Stagent for the first time and lands on the home screen. The home view provides a high-level snapshot of recent activity, active tasks, and quick-access navigation cards. This is the launchpad for everything in Stagent.
 
-```bash
-npx stagent
-```
+![Home screen showing activity overview and navigation cards](../screengrabs/home-list.png)
 
-Stagent installs its dependencies, initializes a local SQLite database at `~/.stagent/stagent.db`, and opens your browser to `http://localhost:3000`. There is no account to create, no cloud service to configure. Everything runs on your machine, and your data stays on your machine.
+1. Open Stagent at `http://localhost:3000`
+2. Review the **activity feed** showing recent task and agent updates
+3. Scan the **navigation cards** for quick access to Projects, Dashboard, and other sections
 
-> **Tip**: If port 3000 is already in use, Stagent will automatically find the next available port and tell you in the terminal output.
+> **Tip:** The home screen updates in real time. As you create projects and tasks, you will see them reflected here immediately.
 
----
+### Step 2: Open the Command Palette
 
-### Step 2 — Explore the Home Workspace
-*Estimated time: 2 minutes*
+Before diving in, Alex learns the fastest way to navigate Stagent -- the Command Palette. This keyboard-driven search lets you jump to any page, project, or task instantly.
 
-The first screen you see is the Home workspace — your daily briefing surface. It shows a compact summary of everything happening across your projects: active tasks, recent agent activity, pending approvals, and upcoming schedules.
+![Command palette with search results](../screengrabs/command-palette-search.png)
 
-![Home workspace showing the daily briefing with active tasks and recent activity](../../screengrabs/home-list.png)
+1. Press `Cmd+K` (Mac) or `Ctrl+K` (Windows/Linux) to open the Command Palette
+2. Type a few characters to filter available actions and pages
+3. Use arrow keys to highlight a result and press `Enter` to navigate
+4. Press `Escape` to dismiss without selecting
 
-Take a moment to scan the layout. The left sidebar is your navigation hub — it lists every major section of Stagent: Dashboard, Inbox, Monitor, Projects, Workflows, Documents, Profiles, Schedules, Cost & Usage, Playbook, and Settings. The home view itself is organized into cards that surface the most important information without requiring you to click into each section.
+> **Tip:** The Command Palette searches across projects, tasks, workflows, and navigation pages. It becomes more useful as your workspace grows.
 
-> **Tip**: The home workspace is not just a landing page. Think of it as your morning standup — glance at it when you start your day to see what needs attention.
+### Step 3: Navigate to Projects
 
----
+Alex decides to start by creating a project to organize all the portfolio website work. Projects in Stagent are containers that group related tasks, documents, and agent activity.
 
-### Step 3 — Create Your First Project
-*Estimated time: 2 minutes*
+![Projects list showing existing projects](../screengrabs/projects-list.png)
 
-Before you can create tasks, you need a project to hold them. Click **Projects** in the sidebar. You will see the projects list — currently empty if this is a fresh install.
+1. Click **Projects** in the sidebar under the **Work** group
+2. Review the projects list -- it may be empty if this is a fresh install
+3. Click the **Create Project** button in the top-right corner
 
-Click the **New Project** button. Give your project a name like "Personal Website Redesign" or "Research Notes." Add a short description that reminds you what this project is about. If you want the AI agent to work with files on your machine, set a **Working Directory** — this tells the agent where to read and write files.
+> **Tip:** You can also reach this page by typing "Projects" in the Command Palette.
 
-![Projects list showing created projects with status and task counts](../../screengrabs/projects-list.png)
+### Step 4: Create a New Project
 
-Click **Create** and your project appears in the list. Projects in Stagent are containers — they group tasks, documents, and workflows together so that your work stays organized as it grows.
+Alex fills in the project details for the portfolio website. The create form captures the essential information an AI agent needs to understand the project scope.
 
-> **Tip**: The working directory is powerful. If you point it at a code repository, the agent can read your codebase, edit files, and run commands — all governed by the permissions you set in Settings.
+![Project creation form with fields filled in](../screengrabs/projects-create-form-filled.png)
 
----
+1. Enter a **Project Name** such as "Portfolio Website"
+2. Add a **Description** explaining the project goals: "Personal developer portfolio with blog, project showcase, and contact form"
+3. Set the **Working Directory** to the local path where code lives (e.g., `~/Developer/portfolio`)
+4. Click **Create Project** to save
 
-### Step 4 — Navigate to the Dashboard
-*Estimated time: 1 minute*
+> **Tip:** The working directory is important -- when agents execute tasks for this project, they will use this path as their current directory. Make sure the folder exists.
 
-Click **Dashboard** in the sidebar. The dashboard is a kanban board that shows all your tasks organized by status: Planned, In Progress, Completed, and Failed. Right now it is empty — you are about to change that.
+### Step 5: Open the Dashboard
 
-![Dashboard kanban board showing tasks organized by status columns](../../screengrabs/dashboard-list.png)
+With the project created, Alex heads to the Dashboard to start creating tasks. The Dashboard is the main task management view, offering both kanban and table layouts.
 
-The dashboard supports multiple views. You can filter by project, by priority, by agent profile, or by status. For now, the default view showing all tasks is exactly what you need.
+![Dashboard showing the kanban board with task columns](../screengrabs/dashboard-list.png)
 
----
+1. Click **Dashboard** in the sidebar under the **Work** group
+2. Review the kanban board layout with columns for each task status (Planned, In Progress, Completed, etc.)
+3. Toggle between **Board** and **Table** views using the view switcher in the header
 
-### Step 5 — Create Your First Task
-*Estimated time: 2 minutes*
+> **Tip:** The kanban board gives a visual overview of task progress. Drag tasks between columns to update their status.
 
-Click the **Create Task** button in the top right corner of the dashboard. A form opens with fields for the task title, description, project assignment, priority, and complexity.
+### Step 6: Create a Task
 
-![Create Task form showing title, description, project, priority, and complexity fields](../../screengrabs/dashboard-create-form-filled.png)
+Alex creates the first task for the portfolio project. Tasks are the atomic units of work that agents can execute.
 
-Start by typing a clear, specific title. Instead of "Write something," try "Draft a 500-word introduction for my personal website that highlights my background in data science." The more specific your prompt, the better the agent will perform.
+![Task creation form with details filled in](../screengrabs/dashboard-create-form-filled.png)
 
-Select your project from the dropdown. Set the priority to **Medium** and the complexity to **Low** — this is a straightforward writing task. You can leave the agent profile as the default General profile for now.
+1. Click the **Create Task** button
+2. Enter a **Title** such as "Set up Next.js project with Tailwind CSS"
+3. Write a **Description** with enough context for an AI agent: "Initialize a new Next.js 15 project with TypeScript, Tailwind CSS v4, and the app router. Include a basic layout component and home page."
+4. Assign the task to the **Portfolio Website** project using the project dropdown
+5. Set **Priority** to High and **Status** to Planned
 
-> **Tip**: Think of the task title as the instruction you would give a capable colleague. Be specific about what you want, how long it should be, and what tone to use.
+> **Tip:** The more specific your task description, the better the AI agent will perform. Include technical requirements, constraints, and expected outcomes.
 
----
+### Step 7: Use AI Assist for Task Refinement
 
-### Step 6 — Use AI Assist to Refine Your Task
-*Estimated time: 2 minutes*
+Alex discovers the AI Assist feature, which helps refine task descriptions with agent-ready detail. This is one of Stagent's standout features for solo developers who want to move fast.
 
-Before you submit, notice the **AI Assist** button on the form. This is one of Stagent's most useful features for beginners. Click it and watch what happens.
+![AI Assist button and generated suggestions](../screengrabs/dashboard-create-form-ai-assist.png)
 
-![AI Assist button on the Create Task form generating description and metadata suggestions](../../screengrabs/dashboard-create-form-ai-assist.png)
+1. On the task creation form, click the **AI Assist** button
+2. Review the AI-generated suggestions for improving the task description
+3. The assistant may add acceptance criteria, break down subtasks, or clarify ambiguous requirements
+4. Click **Apply** to merge the suggestions into your task description
+5. Review the updated description and adjust as needed before saving
 
-AI Assist analyzes your task title and generates a detailed description, suggests an appropriate complexity level, recommends a priority, and even proposes which agent profile would be best suited for the job. It turns your one-line instruction into a well-structured task specification.
+> **Tip:** AI Assist works best when you provide a clear initial description. It enhances rather than replaces your intent -- think of it as a pair-programming partner for task planning.
 
-Review the suggestions. You can accept them wholesale, edit individual fields, or dismiss suggestions you disagree with. AI Assist is a collaborator, not a dictator — you always have the final say.
+### Step 8: Review Task Details
 
----
+After creating the task, Alex opens the detail view to verify everything looks right before execution.
 
-### Step 7 — View Your Task on the Board
-*Estimated time: 2 minutes*
+![Task detail view showing full task information](../screengrabs/journey-task-detail.png)
 
-Click **Create Task** to submit. Your task appears on the dashboard kanban board in the **Planned** column. From here you have two choices: run the task manually by clicking into it and hitting **Execute**, or let it sit in the queue for a scheduled run.
+1. Click on the task card in the kanban board to open the **Detail Pane**
+2. Review the **Description**, **Priority**, **Status**, and **Project** assignment
+3. Check the **Agent Profile** assignment (defaults to General if not set)
+4. Note the **Created** timestamp and task ID for reference
 
-For your first task, click into it and hit **Execute**. The task card moves to the **In Progress** column and the agent begins working. You can watch the execution in real-time by clicking through to the Monitor view, but for now, stay on the dashboard and watch the status update.
+> **Tip:** The detail pane slides in from the right without leaving the dashboard. Press `Escape` to close it and return to the board view.
 
-When the agent finishes, the card moves to **Completed**. Click into the task to see the full output — the agent's response, any files it created or modified, and a log of every tool it used during execution.
+### Step 9: Explore the Kanban Board
 
-> **Tip**: If the agent needs to use a tool you have not approved yet (like writing to the filesystem), it will pause and send a notification to your Inbox. More on that in the next step.
+With a few tasks created, Alex explores the kanban board to understand the workflow. The board provides a visual pipeline of task lifecycle stages.
 
----
+![Dashboard kanban board with tasks in various columns](../screengrabs/dashboard-list.png)
 
-### Step 8 — Check Your Inbox for Notifications
-*Estimated time: 2 minutes*
+1. Create 2-3 more tasks for the portfolio project (e.g., "Design hero section", "Implement blog with MDX", "Deploy to Vercel")
+2. Observe how tasks appear in the **Planned** column by default
+3. Click and drag a task to **In Progress** to simulate starting work
+4. Use the **Filter** controls in the header to filter by project or priority
 
-Click **Inbox** in the sidebar. The inbox is where Stagent surfaces anything that needs your attention: tool approval requests, agent questions, batch proposals, and status change notifications.
+> **Tip:** The kanban board supports filtering by project, status, and priority. When you have many tasks, filters help you focus on what matters right now.
 
-If your agent needed permission to use a tool during execution, you will see an approval request here. You can approve, deny, or approve with an "Always Allow" flag that remembers your preference for future runs. This is the "human-in-the-loop" governance that makes Stagent different from running an AI agent in a bare terminal.
+### Step 10: Return Home and Review Progress
 
-> **Tip**: The inbox is also where learned context proposals appear. As the agent works, it discovers patterns and preferences. It proposes these as "learned context" entries that you can accept or reject — teaching the agent to work better for you over time.
+Alex returns to the home screen to see how the workspace has changed after creating a project and several tasks.
 
----
+![Home screen with updated activity](../screengrabs/home-list.png)
 
-### Step 9 — Return to the Home Workspace
-*Estimated time: 2 minutes*
+1. Click **Home** in the sidebar or press `Cmd+K` and type "Home"
+2. Review the updated **activity feed** showing your recent project and task creation
+3. Check the **quick stats** for task counts and project status
+4. Celebrate -- you have set up your first governed AI agent workspace!
 
-Click the Stagent logo or **Home** in the sidebar to return to the home workspace. Notice how it has changed — it now shows your active project, your completed task, and a summary of recent agent activity. The home workspace updates dynamically as your work progresses.
-
-This is your daily starting point. Each morning, open Stagent, glance at the home workspace, and you will know exactly what happened overnight (if you have scheduled tasks running), what needs your attention, and what is coming up next.
-
----
-
-### Step 10 — Next Steps
-*Estimated time: 1 minute*
-
-You have completed the essentials: installing Stagent, creating a project, delegating a task with AI Assist, and navigating the core workspace. Here is where to go from here:
-
-- **Add more tasks** to your project — try different types like research, code generation, or document writing
-- **Explore Documents** — upload reference files that your agent can use as context during task execution
-- **Set up a Schedule** — automate recurring tasks like daily summaries or weekly reports
-- **Browse Profiles** — discover specialized agent personas beyond the default General profile
+> **Tip:** Make it a habit to start each session from the home screen. It gives you an instant summary of what needs attention.
 
 ## What's Next
 
-- [Work Use Guide](./work-use.md) — organize projects, manage documents, schedule automations, and control costs
-- [Power User Guide](./power-user.md) — custom profiles, multi-step workflows, and autonomous loops
-- [Developer Guide](./developer.md) — technical setup, runtime configuration, and extending Stagent
-
----
-
-*You have taken your first steps with governed AI. The agent works for you, within the boundaries you set, and everything it does is logged, reviewable, and reversible. Welcome to Stagent.*
+- [Work Use Guide](./work-use.md) -- Learn how to manage team projects, documents, and scheduled tasks
+- [Power User Guide](./power-user.md) -- Build advanced workflows and autonomous agent loops
+- [Developer Guide](./developer.md) -- Configure settings, authentication, and CLI tooling

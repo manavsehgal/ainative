@@ -1,14 +1,14 @@
 {
-  "generated": "2026-03-21T03:52:00Z",
+  "generated": "2026-03-21T21:00:00Z",
   "version": 1,
   "sections": [
     {
       "slug": "home-workspace",
-      "title": "Home Workspace",
+      "title": "Home & Workspace",
       "category": "feature-reference",
       "path": "features/home-workspace.md",
       "route": "/",
-      "tags": ["home", "workspace", "briefing", "micro-visualizations"],
+      "tags": ["home", "workspace", "briefing", "stat-cards", "activity-feed"],
       "features": ["homepage-dashboard", "micro-visualizations"],
       "screengrabCount": 2
     },
@@ -18,29 +18,19 @@
       "category": "feature-reference",
       "path": "features/dashboard-kanban.md",
       "route": "/dashboard",
-      "tags": ["kanban", "tasks", "ai-assist", "board", "execution"],
+      "tags": ["kanban", "tasks", "ai-assist", "board", "drag-and-drop"],
       "features": ["task-board", "task-definition-ai", "kanban-board-operations", "board-context-persistence", "ai-assist-workflow-creation", "detail-view-redesign"],
-      "screengrabCount": 3
+      "screengrabCount": 4
     },
     {
       "slug": "inbox-notifications",
-      "title": "Inbox & Approvals",
+      "title": "Inbox & Notifications",
       "category": "feature-reference",
       "path": "features/inbox-notifications.md",
       "route": "/inbox",
-      "tags": ["inbox", "approvals", "notifications", "human-in-the-loop"],
-      "features": ["inbox-notifications", "ambient-approval-toast"],
-      "screengrabCount": 1
-    },
-    {
-      "slug": "monitoring",
-      "title": "Monitoring",
-      "category": "feature-reference",
-      "path": "features/monitoring.md",
-      "route": "/monitor",
-      "tags": ["monitoring", "logs", "streaming", "real-time"],
-      "features": ["monitoring-dashboard"],
-      "screengrabCount": 1
+      "tags": ["inbox", "approvals", "notifications", "human-in-the-loop", "progressive-disclosure"],
+      "features": ["inbox-notifications", "ambient-approval-toast", "rich-content-rendering"],
+      "screengrabCount": 2
     },
     {
       "slug": "projects",
@@ -48,9 +38,9 @@
       "category": "feature-reference",
       "path": "features/projects.md",
       "route": "/projects",
-      "tags": ["projects", "portfolio", "organization"],
-      "features": ["project-management"],
-      "screengrabCount": 2
+      "tags": ["projects", "workspaces", "task-grouping", "file-context"],
+      "features": ["project-management", "working-directory-context"],
+      "screengrabCount": 3
     },
     {
       "slug": "workflows",
@@ -58,7 +48,7 @@
       "category": "feature-reference",
       "path": "features/workflows.md",
       "route": "/workflows",
-      "tags": ["workflows", "orchestration", "blueprints", "parallel", "swarm", "loop"],
+      "tags": ["workflows", "orchestration", "blueprints", "parallel", "swarm", "step-builder"],
       "features": ["workflow-engine", "workflow-blueprints", "parallel-research-fork-join", "multi-agent-swarm", "autonomous-loop-execution", "workflow-ux-overhaul"],
       "screengrabCount": 5
     },
@@ -68,17 +58,27 @@
       "category": "feature-reference",
       "path": "features/documents.md",
       "route": "/documents",
-      "tags": ["documents", "upload", "preprocessing", "context"],
+      "tags": ["documents", "upload", "preprocessing", "agent-context", "extraction"],
       "features": ["document-manager", "file-attachment-data-layer", "document-preprocessing", "agent-document-context", "document-output-generation"],
+      "screengrabCount": 3
+    },
+    {
+      "slug": "monitoring",
+      "title": "Monitor",
+      "category": "feature-reference",
+      "path": "features/monitoring.md",
+      "route": "/monitor",
+      "tags": ["monitoring", "logs", "streaming", "execution-tracking"],
+      "features": ["monitoring-dashboard", "live-log-streaming"],
       "screengrabCount": 2
     },
     {
       "slug": "profiles",
-      "title": "Agent Profiles",
+      "title": "Profiles",
       "category": "feature-reference",
       "path": "features/profiles.md",
       "route": "/profiles",
-      "tags": ["profiles", "agents", "routing", "self-improvement", "catalog"],
+      "tags": ["profiles", "agents", "routing", "catalog", "auto-routing"],
       "features": ["multi-agent-routing", "agent-profile-catalog", "agent-self-improvement", "learned-context-ux-completion", "cross-provider-profile-compatibility", "profile-surface-stability"],
       "screengrabCount": 3
     },
@@ -88,8 +88,8 @@
       "category": "feature-reference",
       "path": "features/schedules.md",
       "route": "/schedules",
-      "tags": ["schedules", "cron", "recurring", "automation"],
-      "features": ["scheduled-prompt-loops"],
+      "tags": ["schedules", "cron", "recurring", "autonomous-loops", "automation"],
+      "features": ["scheduled-prompt-loops", "autonomous-loop-execution"],
       "screengrabCount": 3
     },
     {
@@ -98,9 +98,9 @@
       "category": "feature-reference",
       "path": "features/cost-usage.md",
       "route": "/costs",
-      "tags": ["cost", "usage", "metering", "budgets", "spending"],
+      "tags": ["cost", "usage", "metering", "budgets", "guardrails"],
       "features": ["usage-metering-ledger", "spend-budget-guardrails", "cost-and-usage-dashboard"],
-      "screengrabCount": 1
+      "screengrabCount": 2
     },
     {
       "slug": "settings",
@@ -108,39 +108,79 @@
       "category": "feature-reference",
       "path": "features/settings.md",
       "route": "/settings",
-      "tags": ["settings", "authentication", "permissions", "presets"],
-      "features": ["session-management", "tool-permission-persistence", "tool-permission-presets"],
+      "tags": ["settings", "authentication", "permissions", "presets", "budgets"],
+      "features": ["session-management", "tool-permission-persistence", "tool-permission-presets", "data-management"],
+      "screengrabCount": 2
+    },
+    {
+      "slug": "playbook",
+      "title": "Playbook",
+      "category": "feature-reference",
+      "path": "features/playbook.md",
+      "route": "/playbook",
+      "tags": ["playbook", "documentation", "in-app-help"],
+      "features": ["in-app-documentation"],
       "screengrabCount": 1
     },
     {
       "slug": "provider-runtimes",
       "title": "Provider Runtimes",
-      "category": "feature-reference",
+      "category": "cross-cutting",
       "path": "features/provider-runtimes.md",
       "route": "cross-cutting",
-      "tags": ["runtimes", "claude", "openai", "codex", "providers"],
+      "tags": ["runtimes", "claude", "openai", "codex", "providers", "architecture"],
       "features": ["provider-runtime-abstraction", "openai-codex-app-server", "agent-integration"],
-      "screengrabCount": 0
+      "screengrabCount": 1
     },
     {
       "slug": "agent-intelligence",
       "title": "Agent Intelligence",
-      "category": "feature-reference",
+      "category": "cross-cutting",
       "path": "features/agent-intelligence.md",
       "route": "cross-cutting",
-      "tags": ["ai", "routing", "loops", "swarm", "self-improvement"],
+      "tags": ["ai", "routing", "loops", "swarm", "self-improvement", "ai-assist"],
       "features": ["multi-agent-routing", "autonomous-loop-execution", "multi-agent-swarm", "agent-self-improvement", "workflow-context-batching", "ai-assist-workflow-creation"],
-      "screengrabCount": 0
+      "screengrabCount": 2
     },
     {
       "slug": "tool-permissions",
       "title": "Tool Permissions",
-      "category": "feature-reference",
+      "category": "cross-cutting",
       "path": "features/tool-permissions.md",
       "route": "cross-cutting",
-      "tags": ["permissions", "approvals", "presets", "governance"],
+      "tags": ["permissions", "approvals", "presets", "governance", "trust-tiers"],
       "features": ["tool-permission-persistence", "tool-permission-presets", "ambient-approval-toast"],
-      "screengrabCount": 0
+      "screengrabCount": 1
+    },
+    {
+      "slug": "design-system",
+      "title": "Design System",
+      "category": "cross-cutting",
+      "path": "features/design-system.md",
+      "route": "cross-cutting",
+      "tags": ["design-system", "calm-ops", "tokens", "components", "visual-language"],
+      "features": ["calm-ops-design-system", "oklch-tokens", "elevation-system"],
+      "screengrabCount": 2
+    },
+    {
+      "slug": "keyboard-navigation",
+      "title": "Keyboard & Navigation",
+      "category": "cross-cutting",
+      "path": "features/keyboard-navigation.md",
+      "route": "cross-cutting",
+      "tags": ["keyboard", "navigation", "command-palette", "accessibility", "shortcuts"],
+      "features": ["command-palette", "keyboard-shortcuts", "focus-management"],
+      "screengrabCount": 1
+    },
+    {
+      "slug": "shared-components",
+      "title": "Shared Components",
+      "category": "cross-cutting",
+      "path": "features/shared-components.md",
+      "route": "cross-cutting",
+      "tags": ["components", "reusable", "page-shell", "detail-pane", "status-chip", "data-table"],
+      "features": ["page-shell", "detail-pane", "status-chip", "data-table", "empty-state", "error-state"],
+      "screengrabCount": 2
     }
   ],
   "journeys": [
@@ -177,14 +217,14 @@
       "persona": "developer",
       "difficulty": "advanced",
       "path": "journeys/developer.md",
-      "sections": ["settings", "monitoring", "profiles"],
+      "sections": ["settings", "provider-runtimes", "monitoring", "profiles"],
       "stepCount": 10
     }
   ],
   "metadata": {
-    "totalDocs": 21,
-    "totalScreengrabs": 25,
-    "featuresCovered": 45,
-    "appSections": 11
+    "totalDocs": 24,
+    "totalScreengrabs": 43,
+    "featuresCovered": 50,
+    "appSections": 12
   }
 }

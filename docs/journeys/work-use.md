@@ -1,229 +1,193 @@
 ---
 title: "Work Use Guide"
 category: "user-journey"
-persona: "work-use"
+persona: "team-lead"
 difficulty: "intermediate"
 estimatedTime: "24 minutes"
-sections: ["projects", "documents", "schedules", "cost-usage", "inbox"]
-tags: [team, documents, automation, budgets, oversight, operations]
-lastUpdated: "2026-03-18"
+sections: ["Projects", "Documents", "Schedules", "Costs", "Inbox"]
+tags: ["team", "documents", "schedules", "cost-management", "trust-tiers", "inbox"]
+lastUpdated: "2026-03-21"
 ---
 
 # Work Use Guide
 
-You are a team lead or operations-minded professional who needs more than a simple task runner. Your work involves multiple projects running in parallel, reference documents that agents need to understand, recurring tasks that should happen on a schedule, budgets that cannot be exceeded, and approval gates that keep humans in control. Stagent handles all of this. In the next twenty-four minutes you will set up a work project with document context, configure scheduled automations, establish cost guardrails, and learn the approval workflow that keeps everything governed.
+Meet Jordan, a team lead managing a cross-functional product team. Jordan needs to organize work across multiple contributors, provide agents with project context through documents, set up recurring automated reports, keep an eye on API costs, and handle permission requests from running agents. This journey covers the core workflow for team-oriented use of Stagent.
 
 ## Prerequisites
 
-- Stagent running at `localhost:3000` (run `npx stagent` to start)
-- An AI provider configured in Settings (Anthropic API key or Claude Max OAuth)
-- Familiarity with basic Stagent navigation (see [Personal Use Guide](./personal-use.md))
-- Reference documents ready to upload (PDFs, Word docs, spreadsheets, or plain text)
+- Stagent installed and running locally (`npm run dev`)
+- An Anthropic API key configured in `.env.local`
+- At least one project already created (see [Personal Use Guide](./personal-use.md) if starting fresh)
+- A document to upload (PDF, text file, or image -- any format works)
 
 ## Journey Steps
 
-### Step 1 — Create a Work Project with a Working Directory
-*Estimated time: 2 minutes*
+### Step 1: Review the Projects List
 
-Work projects are different from personal experiments. They need structure, and they need a connection to your actual codebase or file system.
+Jordan starts the day by reviewing the team's active projects. The projects list provides a bird's-eye view of all workstreams with status indicators and task counts.
 
-Navigate to **Projects** in the sidebar and click **New Project**. Name it something meaningful like "Q2 API Migration" or "Client Onboarding Automation." Write a description that captures the project's goal — agents will see this description as context when working on tasks within the project.
+![Projects list showing multiple team projects](../screengrabs/projects-list.png)
 
-![Create Project form with name, description, and working directory fields](../../screengrabs/projects-create-form-filled.png)
+1. Click **Projects** in the sidebar under the **Work** group
+2. Scan the project cards for status, task count, and last activity
+3. Identify which projects need attention today based on their progress indicators
 
-Set the **Working Directory** to the relevant folder on your machine. For a code project, point it at the repository root. For a documentation project, point it at the folder where output files should land. The working directory is the agent's home base — it determines where file operations happen.
+> **Tip:** Projects with tasks in a "waiting" state often need human input. Check those first to unblock agent execution.
 
-> **Tip**: Every task within this project inherits the working directory. You do not need to specify file paths in every task prompt — the agent already knows where to look.
+### Step 2: Create a Team Project
 
----
+Jordan sets up a new project for the upcoming quarterly planning cycle. A well-structured project gives agents the context they need to produce relevant output.
 
-### Step 2 — Upload Reference Documents
-*Estimated time: 2 minutes*
+![Project creation form filled with team project details](../screengrabs/projects-create-form-filled.png)
 
-Agents work better with context. Instead of pasting long specifications into task prompts, upload them as documents and let Stagent handle the rest.
+1. Click **Create Project** from the projects list
+2. Enter a **Project Name** such as "Q2 2026 Product Planning"
+3. Write a detailed **Description** covering scope, stakeholders, and deliverables
+4. Set the **Working Directory** to the shared team repository path
+5. Click **Create Project** to save
 
-Navigate to **Documents** in the sidebar. Click **Upload** and select your reference files — API specifications, design documents, compliance checklists, meeting notes, or anything the agent might need to reference.
+> **Tip:** Include team conventions in the project description -- for example, "All output should follow our RFC template format." Agents reference this description when executing tasks.
 
-![Documents table view showing files with name, size, direction, task, project, status, and date columns](../../screengrabs/documents-list.png)
+### Step 3: Navigate to Documents
 
-Stagent automatically processes each upload: it extracts text from PDFs, parses Word documents, reads spreadsheets, and measures image dimensions. The extracted content becomes searchable and injectable into agent prompts. Assign each document to the appropriate project using the project dropdown.
+Jordan needs to upload reference documents that agents can use for context during task execution. The documents section manages all files associated with the workspace.
 
-> **Tip**: You can upload multiple files at once. Stagent supports PDF, Word (.docx), Excel (.xlsx), PowerPoint (.pptx), plain text, images, and more.
+![Documents list view with filter bar and file entries](../screengrabs/documents-list.png)
 
----
+1. Click **Documents** in the sidebar under the **Manage** group
+2. Review existing documents in the list view
+3. Use the **FilterBar** at the top to narrow by file type, project, or upload date
+4. Toggle between **List** and **Grid** views using the view switcher
 
-### Step 3 — Browse Documents in Grid View
-*Estimated time: 2 minutes*
+> **Tip:** The FilterBar supports multiple simultaneous filters. Combine file type and project filters to quickly find specific documents in a large workspace.
 
-Switch to the grid view to see your document library visually.
+### Step 4: Upload Project Documents
 
-![Documents grid view showing file cards with type icons, size, status badges, and direction labels](../../screengrabs/documents-grid.png)
+Jordan uploads the product requirements document and competitive analysis that agents will reference during planning tasks.
 
-The grid view displays document cards with type icons, file sizes, and processing status indicators. Click any card to open the document detail sheet, where you can see the extracted text, edit metadata, or reassign the document to a different project.
+![Document upload form with file selection and metadata](../screengrabs/documents-upload-form.png)
 
-For large libraries, use the search bar to filter by name or type. You can also bulk-select documents for batch operations like deletion or project reassignment.
+1. Click the **Upload** button in the documents header
+2. Select one or more files from the file picker (supports PDF, text, images, Office documents, and spreadsheets)
+3. Assign the documents to the **Q2 2026 Product Planning** project
+4. Add optional tags for easier filtering later
+5. Click **Upload** to process and store the files
 
----
+> **Tip:** Stagent automatically extracts text from uploaded documents. PDFs, Word docs, and even images (via OCR) are processed so agents can search and reference their contents during task execution.
 
-### Step 4 — Link Documents to Tasks
-*Estimated time: 2 minutes*
+### Step 5: Set Up a Scheduled Report
 
-Now create a task that leverages your uploaded documents.
+Jordan wants a weekly status summary generated automatically every Monday morning. Schedules let you configure recurring agent tasks that run on autopilot.
 
-Navigate to the **Dashboard** and click **Create Task**. Title it something like "Review the API specification and identify all breaking changes from v2 to v3." In the document attachment section, link the relevant API spec you uploaded earlier.
+![Schedule creation form with interval and task configuration](../screengrabs/schedules-create-form-filled.png)
 
-When the agent executes this task, the document's extracted text is automatically injected into the agent's context window. The agent can reference specific sections, quote passages, and build its analysis on your actual documentation — not hallucinated assumptions.
+1. Click **Schedules** in the sidebar under the **Manage** group
+2. Click **Create Schedule** to open the form
+3. Enter a **Name** such as "Weekly Status Report"
+4. Set the **Interval** to "every Monday at 9am" (natural language is supported)
+5. Configure the **Task Template** -- title, description, project, and agent profile
+6. Enable the schedule toggle and click **Create**
 
-Choose the **Code Reviewer** profile for analytical tasks like this, or the **Researcher** profile for broader investigation work.
+> **Tip:** The interval parser understands natural language like "every weekday at 9am", "every 2 hours", or "daily at 5pm". You do not need to write cron expressions.
 
----
+### Step 6: Monitor API Costs
 
-### Step 5 — Set Up a Recurring Schedule
-*Estimated time: 2 minutes*
+With multiple agents running tasks and scheduled jobs, Jordan checks the cost dashboard to ensure the team stays within budget. Governed AI means keeping spend visible and controlled.
 
-Some tasks should run without you clicking Execute every time. Schedules automate this.
+![Cost and usage dashboard showing API spend breakdown](../screengrabs/cost-usage-list.png)
 
-![Schedules management page showing active and paused schedules with intervals](../../screengrabs/schedules-list.png)
+1. Click **Costs & Usage** in the sidebar under the **Configure** group
+2. Review the **total spend** for the current billing period
+3. Examine the **per-project breakdown** to see which workstreams consume the most tokens
+4. Check the **per-model breakdown** for cost distribution across different Claude models
+5. Note any spending trends that might require budget adjustments
 
-Navigate to **Schedules** in the sidebar and click **New Schedule**. Configure it:
+> **Tip:** If costs are climbing faster than expected, check for tasks with very large document contexts or autonomous loops with high iteration counts. Both are common sources of unexpected spend.
 
-1. **Name**: "Daily Dependency Audit"
-2. **Prompt**: "Check all npm dependencies for known vulnerabilities and outdated versions. Report findings as a prioritized list."
-3. **Interval**: Enter `1d` for daily, `12h` for twice daily, or use cron syntax like `0 9 * * 1-5` for weekday mornings at 9am
-4. **Project**: Select your work project
-5. **Profile**: Choose the most appropriate agent profile
-6. **Max Firings**: Set a limit like 30 to cap the total number of runs
+### Step 7: Check the Inbox
 
-Click **Create** and the schedule becomes active immediately. Each firing creates a child task on the Dashboard, so all results flow through the same kanban board you already use.
+Jordan's agents have been running tasks in the background, and some have hit permission boundaries. The Inbox is Stagent's human-in-the-loop control center -- where agents pause and wait for approval before taking sensitive actions.
 
-> **Tip**: You can pause and resume schedules without deleting them. Useful during holidays or project freezes.
+![Inbox showing pending notifications and permission requests](../screengrabs/inbox-list.png)
 
----
+1. Click **Inbox** in the sidebar under the **Work** group
+2. Review the notification list -- each entry represents an agent requesting human input
+3. Notifications are sorted by urgency, with permission requests at the top
+4. Scan the **summary** column to understand what each agent needs
 
-### Step 6 — Configure Budget Guardrails
-*Estimated time: 2 minutes*
+> **Tip:** A badge on the Inbox sidebar item shows the count of unread notifications. Check this regularly when agents are actively running.
 
-Running agents costs tokens, and tokens cost money. Before scaling up your automations, set spending limits.
+### Step 8: Handle a Permission Request
 
-Navigate to **Settings** and find the budget configuration section. You can set:
+One of Jordan's agents needs permission to execute a shell command as part of a deployment task. Stagent's trust tier system ensures agents cannot take dangerous actions without explicit approval.
 
-- **Global budget**: A monthly ceiling across all projects
-- **Per-project budgets**: Different limits for different workstreams
-- **Warning threshold**: Get notified when spending reaches a percentage of the limit
-- **Enforcement mode**: Choose between **warn** (notification only) or **block** (halt execution when limit is reached)
+![Inbox action view showing permission approval dialog](../screengrabs/journey-inbox-action.png)
 
-Start with a conservative global limit and adjust as you learn your usage patterns. The Cost & Usage dashboard will help you calibrate.
+1. Click on a **permission request** notification to expand it
+2. Review the **action details** -- what the agent wants to do, which tool it needs, and the specific arguments
+3. Choose **Approve** to let the agent proceed, or **Deny** to block the action
+4. Optionally add a note explaining your decision for the audit log
 
----
+> **Tip:** When you approve a one-time action, the agent continues immediately. For actions you trust repeatedly, use the "Always Allow" option to grant standing permission (see Step 9).
 
-### Step 7 — Monitor Spending
-*Estimated time: 2 minutes*
+### Step 9: Understand Trust Tiers
 
-Navigate to **Cost & Usage** in the sidebar to see where your budget is going.
+Jordan wants to reduce notification noise for routine actions. The trust tier system lets you pre-authorize categories of tool usage so agents can work more autonomously within safe boundaries.
 
-![Cost and Usage dashboard showing monthly spend, daily budget, remaining headroom, active providers, and pricing tables](../../screengrabs/cost-usage-list.png)
+![Trust tier popover showing permission levels](../screengrabs/trust-tier-popover.png)
 
-The dashboard breaks down spending by:
+1. When approving a permission request, notice the **Trust Tier** indicator
+2. Click the trust tier badge to see the permission hierarchy:
+   - **Ask Every Time** -- agent pauses for each invocation (most restrictive)
+   - **Ask Once Per Session** -- approve once and it applies for the current execution
+   - **Always Allow** -- standing permission for this tool across all future executions
+3. Adjust the tier based on the risk level of the action
+4. Higher trust tiers reduce interruptions but require careful consideration
 
-- **Provider**: How much is going to Claude vs. OpenAI Codex
-- **Project**: Which projects are most expensive
-- **Time period**: Daily, weekly, and monthly trends
-- **Token type**: Input tokens vs. output tokens (output is typically more expensive)
+> **Tip:** Start with restrictive tiers and gradually open up as you build confidence in agent behavior. You can always tighten permissions later from the Settings page.
 
-Use this data to optimize. If a research task is burning through tokens, consider giving it a more focused prompt. If one project dominates spending, it might need a tighter per-project budget or a less expensive agent profile.
+### Step 10: Review Project-Specific Tasks
 
-> **Tip**: Scheduled tasks can silently accumulate costs. Check Cost & Usage weekly to make sure no schedule is running away with your budget.
+Jordan checks in on the planning project to see how agent-generated tasks are progressing and whether any need manual adjustment.
 
----
+![Projects list with task counts and status indicators](../screengrabs/projects-list.png)
 
-### Step 8 — Handle Inbox Approvals
-*Estimated time: 2 minutes*
+1. Navigate to **Projects** and click on the **Q2 2026 Product Planning** project
+2. Review the task list within the project context
+3. Check for tasks that agents have completed and verify their output quality
+4. Reassign or update any tasks that need course correction
 
-With multiple projects and schedules running, your Inbox becomes the control center for human oversight.
+> **Tip:** Project-scoped views filter out noise from other workstreams. Use them when you need to focus on a single initiative.
 
-![Inbox showing pending approval requests and notification cards](../../screengrabs/inbox-list.png)
+### Step 11: Revisit Schedules for Verification
 
-Navigate to **Inbox** to see pending items. Each notification card tells you:
+After the first scheduled run completes, Jordan checks back to verify the automation is working as expected.
 
-- **What** the agent wants to do (e.g., run a shell command, write a file)
-- **Why** it needs permission (the tool name and arguments)
-- **Which task** triggered the request
-- **When** the request was made
+![Schedules list showing active and completed schedule entries](../screengrabs/schedules-list.png)
 
-You have three response options:
+1. Return to **Schedules** in the sidebar
+2. Find the "Weekly Status Report" schedule entry
+3. Check the **Last Run** and **Next Run** timestamps
+4. Click on the schedule to review the history of generated tasks
+5. Adjust the interval or task template if the output needs refinement
 
-1. **Allow Once** — approve this specific request only
-2. **Always Allow** — save the pattern so future identical requests auto-approve
-3. **Deny** — reject the request; the agent will try an alternative approach or report the limitation
+> **Tip:** Schedules create real tasks each time they fire. You can find the generated tasks on the Dashboard, filtered by the schedule's project.
 
----
+### Step 12: End-of-Day Inbox Sweep
 
-### Step 9 — Review Batch Proposals
-*Estimated time: 2 minutes*
+Jordan finishes the day by clearing the inbox of any remaining notifications. A clean inbox means no agents are blocked and all permissions are resolved.
 
-After workflows or multi-task runs complete, the agent often proposes **learned context** — behavioral patterns it discovered that could improve future performance.
+![Inbox with notification entries and action buttons](../screengrabs/inbox-list.png)
 
-These proposals arrive in your Inbox as a batch. Each one describes a rule the agent wants to remember, such as "This codebase uses Drizzle ORM instead of raw SQL" or "The client prefers bullet-point summaries over prose paragraphs."
+1. Return to the **Inbox** for a final sweep
+2. Process any remaining permission requests or status notifications
+3. Archive resolved notifications to keep the inbox clean
+4. Confirm that no agents are blocked waiting for input
 
-Review each proposal carefully:
-
-- **Accept** proposals that capture genuine patterns you want the agent to follow
-- **Edit** proposals that are directionally correct but need refinement
-- **Reject** proposals that are too specific, incorrect, or not useful
-
-Accepted proposals become part of the agent's context for future tasks in the same project, making it progressively smarter about your work.
-
----
-
-### Step 10 — Check Project Health
-*Estimated time: 2 minutes*
-
-Return to the project detail view to see how your work project is progressing.
-
-Click your project in the **Projects** list. The detail view shows:
-
-![Project detail view showing task breakdown by status, completion bar, and activity sparkline](../../screengrabs/projects-detail.png)
-
-- **Task breakdown by status**: How many tasks are planned, in progress, completed, or failed
-- **Completion percentage**: A progress indicator across all tasks
-- **Activity sparkline**: A 14-day trend of task activity
-- **Recent tasks**: The latest tasks with their statuses and assigned profiles
-
-This is your project-level health check. If completion rates are low or failure rates are high, investigate the failing tasks in Monitor to understand what went wrong.
-
----
-
-### Step 11 — Track Costs by Provider
-*Estimated time: 2 minutes*
-
-If you use both Claude and OpenAI Codex, understanding per-provider costs helps you make routing decisions.
-
-Return to **Cost & Usage** and examine the provider breakdown. Claude and Codex have different pricing models and different strengths. You might discover that:
-
-- Research tasks are cheaper on one provider
-- Code generation tasks are faster on another
-- Some profiles work better with specific providers
-
-Use these insights to assign profiles and providers strategically across your projects, balancing cost against quality.
-
----
-
-### Step 12 — Next Steps
-*Estimated time: 1 minute*
-
-You have set up a complete work environment: projects with document context, scheduled automations, cost guardrails, and an approval workflow that keeps you in control. Here is where to go deeper:
-
-- **Create more schedules** — automate weekly reports, daily standups, or periodic audits
-- **Upload more documents** — build a reference library that agents can draw from
-- **Explore bulk operations** — select multiple tasks on the Dashboard for batch status changes
-- **Set up per-project budgets** — give high-value projects more runway while constraining experiments
+> **Tip:** A zero-notification inbox at the end of the day means your agents have everything they need to work overnight. Pair this with scheduled tasks for maximum asynchronous productivity.
 
 ## What's Next
 
-- [Power User Guide](./power-user.md) — custom profiles, workflow blueprints, autonomous loops, and swarm orchestration
-- [Developer Guide](./developer.md) — runtime configuration, API integration, CLI usage, and extending Stagent
-- [Personal Use Guide](./personal-use.md) — revisit the basics if you need a refresher on core concepts
-
----
-
-*Your workspace is now operational. Documents provide context, schedules provide consistency, budgets provide safety, and approvals provide governance. The agents work within the system you have built.*
+- [Power User Guide](./power-user.md) -- Build multi-step workflows and autonomous agent loops
+- [Developer Guide](./developer.md) -- Configure authentication, runtime settings, and CLI tooling
+- [Personal Use Guide](./personal-use.md) -- Review the basics of project and task creation

@@ -31,7 +31,7 @@ AI agents are powerful — but production use breaks down when teams cannot see 
 - **Local-first** — SQLite database, no cloud dependency, `npx stagent` and go
 - **Multi-provider** — Claude Code + OpenAI Codex App Server behind one runtime registry
 - **Human-in-the-loop** — Inbox approvals, ambient toasts, tool permission policies
-- **Reusable profiles** — 13+ agent profiles with instructions, tool policies, and runtime tuning
+- **Reusable profiles** — 21 agent profiles with instructions, tool policies, and runtime tuning
 - **Workflow orchestration** — 6 patterns (sequence, planner-executor, checkpoint, parallel, loop, swarm)
 - **Cost governance** — Usage metering, budgets, and spend visibility per provider and model
 
