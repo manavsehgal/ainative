@@ -1,6 +1,6 @@
 {
   "name": "stagent",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Governed AI agent workspace for supervised local execution, workflows, documents, and provider runtimes.",
   "keywords": [
     "ai",

@@ -113,6 +113,22 @@ Features that enhance the product but aren't essential for first use — homepag
 | [spend-budget-guardrails](spend-budget-guardrails.md) | P1 | completed | usage-metering-ledger, inbox-notifications, provider-runtime-abstraction |
 | [cost-and-usage-dashboard](cost-and-usage-dashboard.md) | P2 | completed | usage-metering-ledger, spend-budget-guardrails, micro-visualizations |
 
+### Environment Onboarding (Control Plane)
+
+| Feature | Priority | Status | Dependencies |
+|---------|----------|--------|--------------|
+| [environment-scanner](environment-scanner.md) | P0 | planned | — |
+| [environment-cache](environment-cache.md) | P0 | planned | environment-scanner |
+| [environment-dashboard](environment-dashboard.md) | P0 | planned | environment-cache |
+| [git-checkpoint-manager](git-checkpoint-manager.md) | P1 | planned | environment-cache |
+| [environment-sync-engine](environment-sync-engine.md) | P1 | planned | git-checkpoint-manager |
+| [project-onboarding-flow](project-onboarding-flow.md) | P2 | planned | environment-dashboard |
+| [environment-templates](environment-templates.md) | P2 | planned | environment-sync-engine |
+| [cross-project-comparison](cross-project-comparison.md) | P2 | planned | environment-cache |
+| [skill-portfolio](skill-portfolio.md) | P2 | planned | environment-cache |
+| [environment-health-scoring](environment-health-scoring.md) | P3 | planned | environment-cache |
+| [agent-profile-from-environment](agent-profile-from-environment.md) | P3 | planned | environment-cache, multi-agent-routing |
+
 ## Dependency Graph
 
 Critical path through the MVP:
@@ -142,6 +158,22 @@ content-handling (MVP, completed)
             │       └── agent-document-context (P1)
             │               └── document-output-generation (P3)
             └── agent-document-context (P1)
+```
+
+Environment onboarding chain:
+
+```
+environment-scanner
+    └── environment-cache
+            ├── environment-dashboard
+            │       └── project-onboarding-flow
+            ├── git-checkpoint-manager
+            │       └── environment-sync-engine
+            │               └── environment-templates
+            ├── cross-project-comparison
+            ├── skill-portfolio
+            ├── environment-health-scoring
+            └── agent-profile-from-environment
 ```
 
 - **Critical path**: database-schema → project-management → task-board → agent-integration → inbox-notifications / monitoring-dashboard

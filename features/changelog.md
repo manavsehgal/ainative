@@ -1,5 +1,19 @@
 # Feature Changelog
 
+## 2026-03-21
+
+### Groomed
+- Extracted 11 environment onboarding features from brainstorming session (EXPAND mode)
+- Feature set makes Stagent a control plane for Claude Code and Codex CLI environments
+- 3 personas: Claude Code only, Codex only, both tools in same project
+- Progressive adoption funnel: Visibility → Sync → Orchestration
+- Architecture: Scanner + Cache with git-based checkpoints and bidirectional sync
+- Core features (P0): environment-scanner, environment-cache, environment-dashboard
+- Safety + sync (P1): git-checkpoint-manager, environment-sync-engine
+- Productivity (P2): project-onboarding-flow, environment-templates, cross-project-comparison, skill-portfolio
+- Governance (P3): environment-health-scoring, agent-profile-from-environment
+- Updated roadmap with new "Environment Onboarding" section and dependency chain
+
 ## 2026-03-20
 
 ### Completed

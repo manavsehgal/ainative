@@ -30,18 +30,8 @@ coverage/
 
 # project management (local only)
 ideas/
-features/
-wireframes/
 methods/
 output/
-
-# claude code config
-.claude/*
-!.claude/skills/
-.claude/skills/*
-
-# local agent context
-MEMORY.md
 
 # local package artifacts
 stagent-*.tgz
