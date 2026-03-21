@@ -1,5 +1,5 @@
 {
-  "generated": "2026-03-21T21:00:00Z",
+  "generated": "2026-03-21T22:59:00Z",
   "viewport": "1440x900",
   "mode": "full",
   "screenshots": [
@@ -364,6 +364,87 @@
       "description": "Command palette with search results for dashboard"
     },
     {
+      "file": "workflows-blueprints.png",
+      "page": "workflows",
+      "view": "blueprints",
+      "route": "/workflows/blueprints",
+      "type": "alternate",
+      "features": ["workflow-blueprints"],
+      "description": "Blueprint gallery with searchable template cards and domain filter tabs"
+    },
+    {
+      "file": "inbox-permissions.png",
+      "page": "inbox",
+      "view": "permissions",
+      "route": "/inbox",
+      "type": "alternate",
+      "features": ["inbox-notifications", "tool-permission-persistence"],
+      "description": "Inbox filtered to Permissions tab showing permission-required notifications with governance stats"
+    },
+    {
+      "file": "profiles-create-form-filled.png",
+      "page": "profiles",
+      "view": "create-form-filled",
+      "route": "/profiles/new",
+      "type": "form",
+      "features": ["agent-profile-catalog"],
+      "description": "Create Profile form filled with Deployment Guardian profile data including tools, tags, and SKILL.md instructions"
+    },
+    {
+      "file": "profiles-detail.png",
+      "page": "profiles",
+      "view": "detail",
+      "route": "/profiles/[id]",
+      "type": "detail",
+      "features": ["agent-profile-catalog", "multi-agent-routing"],
+      "description": "Code Reviewer profile detail with bento grid showing Identity, Configuration, Runtime Coverage, and Tools & Policy"
+    },
+    {
+      "file": "schedules-detail.png",
+      "page": "schedules",
+      "view": "detail",
+      "route": "/schedules/[id]",
+      "type": "detail",
+      "features": ["scheduled-prompt-loops"],
+      "description": "Daily Standup Summary schedule detail showing info cards, prompt, and firing history"
+    },
+    {
+      "file": "documents-detail.png",
+      "page": "documents",
+      "view": "detail",
+      "route": "/documents/[id]",
+      "type": "detail",
+      "features": ["document-manager", "document-preprocessing"],
+      "description": "Document detail for portfolio-holdings.xlsx with chip bar metadata and content renderer"
+    },
+    {
+      "file": "dashboard-card-edit.png",
+      "page": "dashboard",
+      "view": "card-edit",
+      "route": "/dashboard",
+      "type": "form",
+      "features": ["task-board", "kanban-board-operations"],
+      "description": "Edit Task dialog with title, description, priority, runtime, and agent profile fields"
+    },
+    {
+      "file": "dashboard-bulk-select.png",
+      "page": "dashboard",
+      "view": "bulk-select",
+      "route": "/dashboard",
+      "type": "alternate",
+      "features": ["task-board", "kanban-board-operations"],
+      "description": "Kanban board in select mode with 3 tasks selected and bulk action toolbar visible"
+    },
+    {
+      "file": "dashboard-workflow-confirm.png",
+      "page": "dashboard",
+      "view": "workflow-confirm",
+      "route": "/workflows/from-assist",
+      "type": "form",
+      "features": ["ai-assist-workflow-creation", "workflow-engine"],
+      "description": "Create Workflow from AI Assist confirmation view with pattern selector and 5 generated steps"
+    },
+    {
       "file": "journey-task-detail.png",
       "page": "journey",
       "view": "task-detail",
@@ -392,8 +473,8 @@
     }
   ],
   "coverage": {
-    "routesCaptured": 12,
-    "formsCaptured": 10,
+    "routesCaptured": 14,
+    "formsCaptured": 13,
     "journeysCaptured": 3
   }
 }
