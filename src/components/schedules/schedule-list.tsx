@@ -145,8 +145,8 @@ export function ScheduleList({ projects }: ScheduleListProps) {
               }}
             >
               <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base font-medium">
+                <div className="flex items-center justify-between gap-2 min-w-0">
+                  <CardTitle className="min-w-0 truncate text-base font-medium">
                     {sched.name}
                   </CardTitle>
                   <ScheduleStatusBadge status={sched.status} />

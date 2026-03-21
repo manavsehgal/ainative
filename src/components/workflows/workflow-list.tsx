@@ -165,7 +165,7 @@ export function WorkflowList({ projects }: WorkflowListProps) {
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); router.push(`/workflows/${wf.id}`); } }}
               >
                 <CardHeader className="pb-2">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
                     <IconCircle icon={wfIcon.icon} colors={wfIcon.colors} />
                     <CardTitle className="min-w-0 truncate text-base font-medium">{wf.name}</CardTitle>
                   </div>

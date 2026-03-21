@@ -26,8 +26,8 @@ export function ProjectCard({ project, onEdit }: ProjectCardProps) {
         tabIndex={0}
         className="surface-card cursor-pointer transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl"
       >
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-base font-medium">{project.name}</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+          <CardTitle className="min-w-0 truncate text-base font-medium">{project.name}</CardTitle>
           <div className="flex items-center gap-1.5">
             <Button
               variant="ghost"

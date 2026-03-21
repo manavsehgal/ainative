@@ -52,7 +52,7 @@ export function RecentProjects({ projects }: RecentProjectsProps) {
             <Link key={project.id} href={`/projects/${project.id}`}>
               <Card className="surface-card cursor-pointer transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl">
                 <CardHeader className="pb-2">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
                     <DonutRing
                       value={pct}
                       size={28}
@@ -60,7 +60,7 @@ export function RecentProjects({ projects }: RecentProjectsProps) {
                       color="var(--chart-2)"
                       label={`${project.name}: ${pct}% complete`}
                     />
-                    <CardTitle className="text-base font-medium">{project.name}</CardTitle>
+                    <CardTitle className="min-w-0 truncate text-base font-medium">{project.name}</CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent>
