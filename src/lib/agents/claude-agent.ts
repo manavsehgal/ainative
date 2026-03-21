@@ -207,6 +207,7 @@ async function processAgentStream(
 ): Promise<void> {
   let sessionId: string | null = null;
   let receivedResult = false;
+  let turnCount = 0;
 
   for await (const raw of response) {
     const message = raw as AgentStreamMessage;
@@ -261,6 +262,7 @@ async function processAgentStream(
 
     // Handle assistant messages (tool use starts)
     if (message.type === "assistant" && message.message?.content) {
+      turnCount++;
       for (const block of message.message.content) {
         if (block.type === "tool_use") {
           await db.insert(agentLogs).values({
@@ -346,11 +348,15 @@ async function processAgentStream(
   // Safety net: if stream ended without a result frame, fail the task
   // instead of leaving it stuck in "running" forever
   if (!receivedResult) {
+    const errorDetail = turnCount > 0
+      ? `Agent exhausted its turn limit (${turnCount} turns used) without producing a final result. The task may need fewer sub-queries or a higher maxTurns setting.`
+      : "Agent stream ended without producing a result";
+
     await db
       .update(tasks)
       .set({
         status: "failed",
-        result: "Agent stream ended without producing a result",
+        result: errorDetail,
         updatedAt: new Date(),
       })
       .where(eq(tasks.id, taskId));
@@ -360,7 +366,7 @@ async function processAgentStream(
       taskId,
       type: "task_failed",
       title: `Task failed: ${taskTitle}`,
-      body: "Agent stream ended unexpectedly without a result",
+      body: errorDetail,
       createdAt: new Date(),
     });
 
