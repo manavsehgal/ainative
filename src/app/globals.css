@@ -355,6 +355,12 @@
   border: 1px solid var(--border-subtle);
 }
 
+/* Fade-to-transparent mask for progressive disclosure */
+.mask-fade-bottom {
+  mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
+}
+
 /* Document reader surface */
 .prose-reader-surface {
   background: oklch(1 0 0);

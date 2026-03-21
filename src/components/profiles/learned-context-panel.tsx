@@ -19,7 +19,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { LightMarkdown } from "@/components/shared/light-markdown";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { PROSE_NOTIFICATION } from "@/lib/constants/prose-styles";
 import { formatTimestamp } from "@/lib/utils/format-timestamp";
 import type { LearnedContextRow } from "@/lib/db/schema";
 import {
@@ -325,17 +327,17 @@ export function LearnedContextPanel({ profileId }: LearnedContextPanelProps) {
                       </div>
 
                       {snapshotContent ? (
-                        <LightMarkdown
-                          content={snapshotContent}
-                          maxHeight="max-h-28"
-                          className="rounded-md bg-background/50 p-2"
-                        />
+                        <div className={`${PROSE_NOTIFICATION} max-h-28 overflow-auto rounded-md bg-background/50 p-2`}>
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {snapshotContent}
+                          </ReactMarkdown>
+                        </div>
                       ) : row.diff ? (
-                        <LightMarkdown
-                          content={row.diff}
-                          maxHeight="max-h-24"
-                          className="rounded-md bg-background/50 p-2"
-                        />
+                        <div className={`${PROSE_NOTIFICATION} max-h-24 overflow-auto rounded-md bg-background/50 p-2`}>
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {row.diff}
+                          </ReactMarkdown>
+                        </div>
                       ) : null}
 
                       {canShowDiff && diffExpanded && derivedDiff && (

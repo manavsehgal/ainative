@@ -21,8 +21,6 @@ import {
   Clock3,
   GitBranch,
   MessageSquareMore,
-  ChevronDown,
-  ChevronRight,
   FileText,
   Paperclip,
 } from "lucide-react";
@@ -33,7 +31,7 @@ import { workflowStatusVariant, patternLabels } from "@/lib/constants/status-col
 import { IconCircle, getWorkflowIconFromName } from "@/lib/constants/card-icons";
 import { LoopStatusView } from "./loop-status-view";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
-import { LightMarkdown } from "@/components/shared/light-markdown";
+import { PROSE_NOTIFICATION } from "@/lib/constants/prose-styles";
 import { SwarmDashboard } from "./swarm-dashboard";
 import { WorkflowFullOutput } from "./workflow-full-output";
 import type { LoopState, LoopConfig, SwarmConfig } from "@/lib/workflows/types";
@@ -89,7 +87,7 @@ const stepStatusIcons: Record<string, React.ReactNode> = {
   waiting_dependencies: <Clock3 className="h-4 w-4 text-status-warning" />,
 };
 
-/** Expandable step result: collapsed LightMarkdown preview + full markdown on expand */
+/** Expandable step result with gradient fade progressive disclosure */
 export function ExpandableResult({ result }: { result: string }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -97,36 +95,25 @@ export function ExpandableResult({ result }: { result: string }) {
 
   return (
     <div className="mt-2">
-      {expanded ? (
-        <>
-          <div className="prose prose-sm dark:prose-invert max-w-none max-h-96 overflow-auto rounded-md border bg-muted/30 p-3">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{result}</ReactMarkdown>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="mt-1 h-6 text-xs text-muted-foreground"
-            onClick={() => setExpanded(false)}
-          >
-            <ChevronDown className="h-3 w-3 mr-1" />
-            Collapse
-          </Button>
-        </>
-      ) : (
-        <>
-          <LightMarkdown content={result.slice(0, 500)} lineClamp={2} />
-          {result.length > 200 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="mt-1 h-6 text-xs text-muted-foreground"
-              onClick={() => setExpanded(true)}
-            >
-              <ChevronRight className="h-3 w-3 mr-1" />
-              Expand
-            </Button>
-          )}
-        </>
+      <div
+        className={`${PROSE_NOTIFICATION} ${
+          expanded
+            ? "max-h-96 overflow-auto"
+            : result.length > 200
+              ? "max-h-20 overflow-hidden mask-fade-bottom"
+              : ""
+        }`}
+      >
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{result}</ReactMarkdown>
+      </div>
+      {result.length > 200 && (
+        <button
+          type="button"
+          className="mt-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          onClick={() => setExpanded(!expanded)}
+        >
+          {expanded ? "Show less" : "Show more"}
+        </button>
       )}
     </div>
   );

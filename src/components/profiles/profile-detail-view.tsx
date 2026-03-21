@@ -6,7 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LightMarkdown } from "@/components/shared/light-markdown";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { PROSE_NOTIFICATION } from "@/lib/constants/prose-styles";
 import {
   Copy,
   Pencil,
@@ -426,11 +428,11 @@ export function ProfileDetailView({ profileId, isBuiltin, initialProfile }: Prof
               <span className="text-muted-foreground text-xs group-open:rotate-90 transition-transform">▶</span>
             </summary>
             <div className="surface-panel mt-2 rounded-lg p-4">
-              <LightMarkdown
-                content={profile.skillMd}
-                maxHeight="max-h-64"
-                className="surface-scroll rounded-lg p-4"
-              />
+              <div className={`${PROSE_NOTIFICATION} max-h-64 overflow-auto surface-scroll rounded-lg p-4`}>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {profile.skillMd}
+                </ReactMarkdown>
+              </div>
             </div>
           </details>
         )}

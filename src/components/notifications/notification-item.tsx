@@ -2,9 +2,11 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Shield, MessageCircle, CheckCircle, XCircle, Eye, EyeOff, Trash2, Wallet, Brain, ChevronRight, ChevronDown } from "lucide-react";
+import { Shield, MessageCircle, CheckCircle, XCircle, Eye, EyeOff, Trash2, Wallet, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { LightMarkdown } from "@/components/shared/light-markdown";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { PROSE_NOTIFICATION } from "@/lib/constants/prose-styles";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PermissionAction } from "./permission-action";
@@ -208,40 +210,27 @@ export function NotificationItem({ notification, onUpdated }: NotificationItemPr
             notification.type !== "permission_required" &&
             notification.type !== "agent_message" && (
               <div className="mt-1" onClick={(e) => e.stopPropagation()}>
-                {expanded ? (
-                  <>
-                    <div className="prose prose-sm dark:prose-invert max-w-none max-h-96 overflow-auto rounded-md border bg-muted/30 p-3">
-                      <LightMarkdown content={notification.body} textSize="sm" />
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="mt-1 h-6 text-xs text-muted-foreground"
-                      onClick={(e) => { e.stopPropagation(); setExpanded(false); }}
-                    >
-                      <ChevronDown className="h-3 w-3 mr-1" />
-                      Collapse
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <LightMarkdown
-                      content={notification.body}
-                      lineClamp={2}
-                      textSize="sm"
-                    />
-                    {notification.body.length > 200 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="mt-1 h-6 text-xs text-muted-foreground"
-                        onClick={(e) => { e.stopPropagation(); setExpanded(true); }}
-                      >
-                        <ChevronRight className="h-3 w-3 mr-1" />
-                        Expand
-                      </Button>
-                    )}
-                  </>
+                <div
+                  className={`${PROSE_NOTIFICATION} ${
+                    expanded
+                      ? "max-h-96 overflow-auto"
+                      : notification.body.length > 200
+                        ? "max-h-20 overflow-hidden mask-fade-bottom"
+                        : ""
+                  }`}
+                >
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {notification.body}
+                  </ReactMarkdown>
+                </div>
+                {notification.body.length > 200 && (
+                  <button
+                    type="button"
+                    className="mt-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
+                  >
+                    {expanded ? "Show less" : "Show more"}
+                  </button>
                 )}
               </div>
             )}

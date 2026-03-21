@@ -14,7 +14,9 @@ import {
 import { PermissionResponseActions } from "@/components/notifications/permission-response-actions";
 import { ContextProposalReview } from "@/components/profiles/context-proposal-review";
 import { BatchProposalReview } from "@/components/notifications/batch-proposal-review";
-import { LightMarkdown } from "@/components/shared/light-markdown";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { PROSE_NOTIFICATION } from "@/lib/constants/prose-styles";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -149,7 +151,11 @@ function PendingApprovalDetail({
           selected.notificationType !== "context_proposal" &&
           selected.notificationType !== "context_proposal_batch" && (
           <div className="mt-3">
-            <LightMarkdown content={selected.body} textSize="sm" />
+            <div className={PROSE_NOTIFICATION}>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {selected.body}
+              </ReactMarkdown>
+            </div>
           </div>
         )}
         <p className="mt-3 text-xs text-muted-foreground">

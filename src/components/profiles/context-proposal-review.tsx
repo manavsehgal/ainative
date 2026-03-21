@@ -6,7 +6,9 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { LightMarkdown } from "@/components/shared/light-markdown";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { PROSE_NOTIFICATION } from "@/lib/constants/prose-styles";
 
 interface ContextProposalReviewProps {
   notificationId: string;
@@ -100,12 +102,11 @@ export function ContextProposalReview({
             placeholder="Edit the proposed context additions..."
           />
         ) : (
-          <LightMarkdown
-            content={proposedAdditions}
-            maxHeight="max-h-48"
-            stripBracketTags
-            className="rounded-lg bg-background/50 p-3"
-          />
+          <div className={`${PROSE_NOTIFICATION} max-h-48 overflow-auto rounded-lg bg-background/50 p-3`}>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {proposedAdditions.replace(/\s*\[.*?\]\s*/g, " ").trim()}
+            </ReactMarkdown>
+          </div>
         )}
       </div>
 
