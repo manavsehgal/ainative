@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Globe, RefreshCw, GitCompareArrows, Wrench } from "lucide-react";
+import { Globe, RefreshCw, GitCompareArrows, Wrench, FolderSearch } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/shared/empty-state";
 import type { EnvironmentScanRow, EnvironmentArtifactRow, EnvironmentCheckpointRow, EnvironmentTemplateRow } from "@/lib/db/schema";
@@ -18,6 +18,7 @@ import { TemplateList } from "./template-list";
 import { HealthScoreCard } from "./health-score-card";
 import { SuggestedProfiles } from "./suggested-profiles";
 import type { HealthScore } from "@/lib/environment/health-scoring";
+import { DiscoverWorkspaceDialog } from "@/components/workspace/discover-workspace-dialog";
 
 interface EnvironmentDashboardProps {
   scan: EnvironmentScanRow | null;
@@ -45,6 +46,7 @@ export function EnvironmentDashboard({
   const [toolFilter, setToolFilter] = useState<string | null>(null);
   const [scopeFilter, setScopeFilter] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [discoverOpen, setDiscoverOpen] = useState(false);
 
   const handleScan = useCallback(async () => {
     setScanning(true);
@@ -99,6 +101,10 @@ export function EnvironmentDashboard({
               Compare
             </Button>
           </Link>
+          <Button variant="outline" size="sm" onClick={() => setDiscoverOpen(true)}>
+            <FolderSearch className="h-3.5 w-3.5 mr-1.5" />
+            Discover
+          </Button>
         </div>
       </div>
 
@@ -178,6 +184,12 @@ export function EnvironmentDashboard({
         onOpenChange={(open) => {
           if (!open) setSelectedArtifact(null);
         }}
+      />
+
+      <DiscoverWorkspaceDialog
+        open={discoverOpen}
+        onOpenChange={setDiscoverOpen}
+        onComplete={() => router.refresh()}
       />
     </div>
   );

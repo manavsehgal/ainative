@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import { FolderKanban } from "lucide-react";
+import { FolderKanban, FolderSearch } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { ProjectCard } from "./project-card";
 import { ProjectCreateDialog } from "./project-create-dialog";
 import { ProjectEditDialog } from "./project-edit-dialog";
+import { DiscoverWorkspaceDialog } from "@/components/workspace/discover-workspace-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
 import { SectionHeading } from "@/components/shared/section-heading";
 
@@ -21,6 +23,7 @@ export function ProjectList({ initialProjects }: { initialProjects: Project[] })
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [editProject, setEditProject] = useState<Project | null>(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [discoverOpen, setDiscoverOpen] = useState(false);
   const restoreFocusRef = useRef<HTMLElement | null>(null);
   const activeProjects = projects.filter((project) => project.status === "active").length;
   const totalTasks = projects.reduce((sum, project) => sum + project.taskCount, 0);
@@ -41,7 +44,11 @@ export function ProjectList({ initialProjects }: { initialProjects: Project[] })
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" onClick={() => setDiscoverOpen(true)}>
+          <FolderSearch className="h-4 w-4 mr-1.5" />
+          Discover Workspace
+        </Button>
         <ProjectCreateDialog onCreated={refresh} />
       </div>
 
@@ -75,7 +82,13 @@ export function ProjectList({ initialProjects }: { initialProjects: Project[] })
           <EmptyState
             icon={FolderKanban}
             heading="No projects yet"
-            description="Create your first project to organize your tasks."
+            description="Create your first project or discover existing workspaces."
+            action={
+              <Button variant="outline" onClick={() => setDiscoverOpen(true)}>
+                <FolderSearch className="h-4 w-4 mr-1.5" />
+                Discover Workspace
+              </Button>
+            }
           />
         ) : (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -96,6 +109,12 @@ export function ProjectList({ initialProjects }: { initialProjects: Project[] })
         onOpenChange={setEditOpen}
         onUpdated={refresh}
         restoreFocusElement={restoreFocusRef.current}
+      />
+
+      <DiscoverWorkspaceDialog
+        open={discoverOpen}
+        onOpenChange={setDiscoverOpen}
+        onComplete={refresh}
       />
     </div>
   );
