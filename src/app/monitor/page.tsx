@@ -6,6 +6,7 @@ import { MonitorRefreshButton } from "@/components/monitoring/monitor-overview-w
 import { LogStream } from "@/components/monitoring/log-stream";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageShell } from "@/components/shared/page-shell";
+import { getWorkspaceContext } from "@/lib/environment/workspace-context";
 
 export const dynamic = "force-dynamic";
 
@@ -15,9 +16,12 @@ export default async function MonitorPage() {
     .from(tasks)
     .orderBy(tasks.createdAt);
 
+  const workspace = getWorkspaceContext();
+
   return (
     <PageShell
       title="Monitor"
+      description={`${workspace.parentPath}/${workspace.folderName}${workspace.gitBranch ? ` · ${workspace.gitBranch}` : ""}`}
       actions={<MonitorRefreshButton />}
     >
       <Suspense

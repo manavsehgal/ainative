@@ -36,6 +36,7 @@ import { TrustTierBadge } from "@/components/shared/trust-tier-badge";
 import { UnreadBadge } from "@/components/notifications/unread-badge";
 import { AuthStatusDot } from "@/components/settings/auth-status-dot";
 import { StagentLogo } from "@/components/shared/stagent-logo";
+import { WorkspaceIndicator } from "@/components/shared/workspace-indicator";
 
 interface NavItem {
   title: string;
@@ -129,6 +130,9 @@ export function AppSidebar() {
         <NavGroup label="Configure" items={configureItems} pathname={pathname} />
       </SidebarContent>
       <SidebarFooter className="px-4 py-3">
+        <div className="group-data-[collapsible=icon]:hidden mb-2">
+          <WorkspaceIndicator variant="sidebar" />
+        </div>
         <div className="flex items-center justify-between group-data-[collapsible=icon]:justify-center">
           <div className="flex items-center gap-3 group-data-[collapsible=icon]:hidden">
             <AuthStatusDot />
