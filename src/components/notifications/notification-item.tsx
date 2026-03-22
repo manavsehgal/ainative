@@ -114,18 +114,18 @@ export function NotificationItem({ notification, onUpdated }: NotificationItemPr
   const parsedToolInput = parseNotificationToolInput(notification.toolInput);
   const isNavigable = !!notification.taskId && navigableTypes.has(notification.type);
 
-  async function handleNavigate() {
+  function handleNavigate() {
     if (!isNavigable) return;
-    // Mark as read on click-through
+    // Navigate immediately — don't block on mark-as-read
+    router.push(`/tasks/${notification.taskId}`);
+    // Fire-and-forget: mark as read in the background
     if (isUnread) {
-      await fetch(`/api/notifications/${notification.id}`, {
+      fetch(`/api/notifications/${notification.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ read: true }),
-      });
-      onUpdated();
+      }).then(() => onUpdated());
     }
-    router.push(`/tasks/${notification.taskId}`);
   }
 
   async function toggleRead() {
