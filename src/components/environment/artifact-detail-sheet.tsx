@@ -13,6 +13,7 @@ import { Copy, ExternalLink } from "lucide-react";
 import type { EnvironmentArtifactRow } from "@/lib/db/schema";
 import { PersonaIndicator } from "./persona-indicator";
 import { CATEGORY_META } from "./summary-cards-row";
+import { SyncActionButtons } from "./sync-action-buttons";
 
 interface ArtifactDetailSheetProps {
   artifact: EnvironmentArtifactRow | null;
@@ -69,6 +70,9 @@ export function ArtifactDetailSheet({
               {formatSize(artifact.sizeBytes)}
             </Badge>
           </div>
+
+          {/* Sync actions */}
+          <SyncActionButtons artifact={artifact} />
 
           {/* File path */}
           <div className="space-y-1">

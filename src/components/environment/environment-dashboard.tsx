@@ -2,7 +2,8 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Globe, RefreshCw } from "lucide-react";
+import Link from "next/link";
+import { Globe, RefreshCw, GitCompareArrows } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/shared/empty-state";
 import type { EnvironmentScanRow, EnvironmentArtifactRow, EnvironmentCheckpointRow } from "@/lib/db/schema";
@@ -75,7 +76,15 @@ export function EnvironmentDashboard({
 
   return (
     <div className="space-y-6">
-      <ScanStatusBar scan={scan} scanning={scanning} onScan={handleScan} />
+      <div className="flex items-center justify-between">
+        <ScanStatusBar scan={scan} scanning={scanning} onScan={handleScan} />
+        <Link href="/environment/compare">
+          <Button variant="outline" size="sm" className="shrink-0 ml-3">
+            <GitCompareArrows className="h-3.5 w-3.5 mr-1.5" />
+            Compare Projects
+          </Button>
+        </Link>
+      </div>
 
       <SummaryCardsRow
         categoryCounts={categoryCounts}
