@@ -217,6 +217,8 @@ interface TaskTableViewProps {
   statusFilter: string;
   sortOrder: SortOrder;
   density: Density;
+  /** Open task detail sheet instead of navigating to full page */
+  onTaskSelect?: (taskId: string) => void;
 }
 
 /** Map workflow status to task-equivalent for status filtering */
@@ -237,6 +239,7 @@ export function TaskTableView({
   statusFilter,
   sortOrder,
   density,
+  onTaskSelect,
 }: TaskTableViewProps) {
   const router = useRouter();
   const [editingTask, setEditingTask] = useState<TaskItem | null>(null);
@@ -300,11 +303,11 @@ export function TaskTableView({
   // Action handlers
   const handleView = useCallback((row: DashboardRow) => {
     if (isTaskRow(row)) {
-      router.push(`/tasks/${row.id}`);
+      onTaskSelect ? onTaskSelect(row.id) : router.push(`/tasks/${row.id}`);
     } else {
       router.push(`/workflows/${row.id}`);
     }
-  }, [router]);
+  }, [router, onTaskSelect]);
 
   const handleEdit = useCallback((row: DashboardRow) => {
     if (isTaskRow(row)) {

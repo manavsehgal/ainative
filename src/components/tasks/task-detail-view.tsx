@@ -1,17 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { TaskAttachments } from "./task-attachments";
 import { TaskChipBar } from "./task-chip-bar";
 import { TaskBentoGrid } from "./task-bento-grid";
 import { TaskResultRenderer } from "./task-result-renderer";
 import { TaskEditDialog } from "./task-edit-dialog";
+import { useTaskDetail } from "@/hooks/use-task-detail";
 import type { TaskItem } from "./task-card";
-import type { DocumentRow } from "@/lib/db/schema";
 
 interface TaskDetailViewProps {
   taskId: string;
@@ -20,159 +18,34 @@ interface TaskDetailViewProps {
 
 export function TaskDetailView({ taskId, initialTask }: TaskDetailViewProps) {
   const router = useRouter();
-  const [task, setTask] = useState<TaskItem | null>(initialTask ?? null);
-  const [loaded, setLoaded] = useState(!!initialTask);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [confirmCancel, setConfirmCancel] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [editOpen, setEditOpen] = useState(false);
-  const [docs, setDocs] = useState<DocumentRow[]>([]);
 
-  const fetchDocs = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/documents?taskId=${taskId}`);
-      if (res.ok) {
-        setDocs(await res.json());
-      }
-    } catch {
-      // silent — attachments are supplementary
-    }
-  }, [taskId]);
-
-  const refresh = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/tasks/${taskId}`);
-      if (res.ok) {
-        setTask(await res.json());
-      }
-    } catch {
-      // silent
-    }
-    await fetchDocs();
-    setLoaded(true);
-  }, [taskId, fetchDocs]);
-
-  useEffect(() => {
-    if (!initialTask) refresh();
-    fetchDocs();
-  }, [refresh, fetchDocs, initialTask]);
-
-  // Poll while running
-  useEffect(() => {
-    if (task?.status !== "running") return;
-    const interval = setInterval(refresh, 5_000);
-    return () => clearInterval(interval);
-  }, [task?.status, refresh]);
-
-  async function handleStatusChange(newStatus: string) {
-    if (!task) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/tasks/${task.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
-      });
-      if (res.ok) {
-        toast.success(`Task ${newStatus === "queued" ? "queued" : "updated"}`);
-        refresh();
-      } else {
-        const data = await res.json().catch(() => null);
-        setError(data?.error ?? `Failed to update status (${res.status})`);
-      }
-    } catch {
-      setError("Network error — could not reach server");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleExecute() {
-    if (!task) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/tasks/${task.id}/execute`, {
-        method: "POST",
-      });
-      if (res.ok) {
-        toast.success("Task execution started");
-        refresh();
-      } else {
-        const data = await res.json().catch(() => null);
-        setError(data?.error ?? `Failed to execute task (${res.status})`);
-      }
-    } catch {
-      setError("Network error — could not reach server");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleResume() {
-    if (!task) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/tasks/${task.id}/resume`, {
-        method: "POST",
-      });
-      if (res.ok) {
-        toast.success("Task resumed with previous context");
-        refresh();
-      } else {
-        const data = await res.json().catch(() => null);
-        setError(data?.error ?? `Failed to resume task (${res.status})`);
-      }
-    } catch {
-      setError("Network error — could not reach server");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleCancel() {
-    if (!task) return;
-    setConfirmCancel(false);
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/tasks/${task.id}/cancel`, { method: "POST" });
-      if (res.ok) {
-        toast.success("Task cancelled");
-        refresh();
-      } else {
-        setError("Failed to cancel task");
-      }
-    } catch {
-      setError("Network error — could not reach server");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleDelete() {
-    if (!task) return;
-    setConfirmDelete(false);
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/tasks/${task.id}`, { method: "DELETE" });
-      if (res.ok || res.status === 404) {
-        sessionStorage.setItem("deletedTask", JSON.stringify(task));
-        toast.success("Task deleted");
-        router.push("/dashboard");
-      } else {
-        setError("Failed to delete task");
-      }
-    } catch {
-      setError("Network error — could not reach server");
-    } finally {
-      setLoading(false);
-    }
-  }
+  const {
+    task,
+    docs,
+    loaded,
+    loading,
+    error,
+    refresh,
+    fetchDocs,
+    handleStatusChange,
+    handleExecute,
+    handleResume,
+    handleCancel,
+    handleDelete,
+    confirmCancel,
+    setConfirmCancel,
+    confirmDelete,
+    setConfirmDelete,
+    editOpen,
+    setEditOpen,
+    performCancel,
+    performDelete,
+  } = useTaskDetail({
+    taskId,
+    initialTask,
+    enabled: true,
+    onDeleted: () => router.push("/dashboard"),
+  });
 
   if (!loaded) {
     return (
@@ -201,10 +74,10 @@ export function TaskDetailView({ taskId, initialTask }: TaskDetailViewProps) {
         onEdit={() => setEditOpen(true)}
         onQueue={() => handleStatusChange("queued")}
         onRun={handleExecute}
-        onCancel={() => setConfirmCancel(true)}
+        onCancel={handleCancel}
         onResume={handleResume}
         onRetry={() => handleStatusChange("queued")}
-        onDelete={() => setConfirmDelete(true)}
+        onDelete={handleDelete}
       />
 
       <TaskBentoGrid task={task} docs={docs} />
@@ -243,7 +116,7 @@ export function TaskDetailView({ taskId, initialTask }: TaskDetailViewProps) {
         description="This will stop the running agent. Any partial progress may be lost."
         confirmLabel="Cancel Task"
         destructive
-        onConfirm={handleCancel}
+        onConfirm={performCancel}
       />
       <ConfirmDialog
         open={confirmDelete}
@@ -252,7 +125,7 @@ export function TaskDetailView({ taskId, initialTask }: TaskDetailViewProps) {
         description="This action cannot be undone. The task and its history will be permanently deleted."
         confirmLabel="Delete Task"
         destructive
-        onConfirm={handleDelete}
+        onConfirm={performDelete}
       />
       <TaskEditDialog
         task={task}

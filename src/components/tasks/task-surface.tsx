@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { TaskDetailSheet } from "@/components/tasks/task-detail-sheet";
 import { KanbanBoard, type SortOrder, SORT_OPTIONS } from "@/components/tasks/kanban-board";
 import { TaskTableView } from "@/components/tasks/task-table-view";
 import { TaskViewToggle, useTaskView } from "@/components/tasks/task-view-toggle";
@@ -36,7 +38,9 @@ export function TaskSurface({
   initialWorkflows,
   projects,
 }: TaskSurfaceProps) {
+  const router = useRouter();
   const [view, setView] = useTaskView();
+  const [sheetTaskId, setSheetTaskId] = useState<string | null>(null);
   const [projectFilter, setProjectFilter] = usePersistedState("stagent-project-filter", "all");
   const [statusFilter, setStatusFilter] = usePersistedState("stagent-status-filter", "all");
   const [sortOrder, setSortOrder] = usePersistedState<SortOrder>("stagent-sort-order", "priority");
@@ -123,6 +127,7 @@ export function TaskSurface({
           projectFilter={projectFilter}
           statusFilter={statusFilter}
           sortOrder={sortOrder}
+          onTaskSelect={setSheetTaskId}
         />
       ) : (
         <TaskTableView
@@ -133,8 +138,17 @@ export function TaskSurface({
           statusFilter={statusFilter}
           sortOrder={sortOrder}
           density={density}
+          onTaskSelect={setSheetTaskId}
         />
       )}
+
+      <TaskDetailSheet
+        taskId={sheetTaskId}
+        open={sheetTaskId !== null}
+        onOpenChange={(open) => { if (!open) setSheetTaskId(null); }}
+        onDeleted={() => { setSheetTaskId(null); router.refresh(); }}
+        onUpdated={() => router.refresh()}
+      />
     </div>
   );
 }

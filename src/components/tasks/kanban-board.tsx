@@ -74,6 +74,8 @@ interface KanbanBoardProps {
   projectFilter: string;
   statusFilter: string;
   sortOrder: SortOrder;
+  /** Open task detail sheet instead of navigating to full page */
+  onTaskSelect?: (taskId: string) => void;
 }
 
 export function KanbanBoard({
@@ -83,6 +85,7 @@ export function KanbanBoard({
   projectFilter,
   statusFilter,
   sortOrder,
+  onTaskSelect,
 }: KanbanBoardProps) {
   const dndId = useId();
   const router = useRouter();
@@ -322,7 +325,7 @@ export function KanbanBoard({
   }, [tasks, refresh]);
 
   function handleTaskClick(task: TaskItem) {
-    router.push(`/tasks/${task.id}`);
+    onTaskSelect ? onTaskSelect(task.id) : router.push(`/tasks/${task.id}`);
   }
 
   const sortedTasks = [...filteredTasks].sort((a, b) => compareTasks(a, b, sortOrder));
