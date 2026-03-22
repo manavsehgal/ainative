@@ -19,7 +19,12 @@ import {
   updateConversation,
 } from "@/lib/data/chat";
 import { buildChatContext } from "./context-builder";
-import { detectEntities } from "./entity-detector";
+import {
+  detectEntities,
+  extractToolResultEntities,
+  deduplicateByEntityId,
+  type ToolResultCapture,
+} from "./entity-detector";
 import type { ChatStreamEvent, ChatQuestion } from "./types";
 import { getProviderForRuntime, DEFAULT_CHAT_MODEL } from "./types";
 import {
@@ -162,7 +167,11 @@ export async function* sendMessage(
     }
 
     // Create in-process MCP server for Stagent CRUD tools
-    const stagentServer = createStagentMcpServer(conversation.projectId);
+    const toolResults: ToolResultCapture[] = [];
+    const stagentServer = createStagentMcpServer(
+      conversation.projectId,
+      (toolName, result) => { toolResults.push({ toolName, result }); }
+    );
 
     const response = query({
       prompt: generatePrompt(fullPrompt),
@@ -314,22 +323,22 @@ export async function* sendMessage(
     await updateMessageContent(assistantMsg.id, fullText);
     await updateMessageStatus(assistantMsg.id, "complete");
 
-    // Save usage metadata
+    // Detect entities for Quick Access pills (tool results + text matching)
+    const toolEntities = extractToolResultEntities(toolResults);
+    const textEntities = await detectEntities(fullText, conversation.projectId);
+    const quickAccess = deduplicateByEntityId([...toolEntities, ...textEntities]);
+
+    // Save usage metadata + quick access links
     const metadata = JSON.stringify({
       modelId: usage.modelId ?? conversation.modelId,
       inputTokens: usage.inputTokens,
       outputTokens: usage.outputTokens,
+      ...(quickAccess.length > 0 ? { quickAccess } : {}),
     });
     await db
       .update(chatMessages)
       .set({ metadata })
       .where(eq(chatMessages.id, assistantMsg.id));
-
-    // Detect entities for Quick Access pills
-    const quickAccess = await detectEntities(
-      fullText,
-      conversation.projectId
-    );
 
     // Record usage
     await recordUsageLedgerEntry({

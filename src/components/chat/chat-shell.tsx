@@ -224,7 +224,14 @@ export function ChatShell({
                 setMessages((prev) =>
                   prev.map((m) =>
                     m.id === assistantMsgId
-                      ? { ...m, id: event.messageId, status: "complete" }
+                      ? {
+                          ...m,
+                          id: event.messageId,
+                          status: "complete",
+                          metadata: event.quickAccess?.length
+                            ? JSON.stringify({ quickAccess: event.quickAccess })
+                            : m.metadata,
+                        }
                       : m
                   )
                 );

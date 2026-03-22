@@ -37,8 +37,14 @@ function err(message: string) {
 /**
  * Create an in-process MCP server exposing Stagent CRUD tools.
  * The `projectId` closure auto-scopes operations to the active project.
+ * `onToolResult` is called after each successful CRUD operation with the
+ * tool name and returned entity data — used by the entity detector to
+ * generate deterministic Quick Access navigation links.
  */
-export function createStagentMcpServer(projectId?: string | null) {
+export function createStagentMcpServer(
+  projectId?: string | null,
+  onToolResult?: (toolName: string, result: unknown) => void
+) {
   return createSdkMcpServer({
     name: "stagent",
     version: "1.0.0",
@@ -114,6 +120,7 @@ export function createStagentMcpServer(projectId?: string | null) {
               .from(projects)
               .where(eq(projects.id, id));
 
+            onToolResult?.("create_project", project);
             return ok(project);
           } catch (e) {
             return err(e instanceof Error ? e.message : "Failed to create project");
@@ -207,6 +214,7 @@ export function createStagentMcpServer(projectId?: string | null) {
               .from(tasks)
               .where(eq(tasks.id, id));
 
+            onToolResult?.("create_task", task);
             return ok(task);
           } catch (e) {
             return err(e instanceof Error ? e.message : "Failed to create task");
@@ -263,6 +271,7 @@ export function createStagentMcpServer(projectId?: string | null) {
               .from(tasks)
               .where(eq(tasks.id, args.taskId));
 
+            onToolResult?.("update_task", task);
             return ok(task);
           } catch (e) {
             return err(e instanceof Error ? e.message : "Failed to update task");
@@ -285,6 +294,7 @@ export function createStagentMcpServer(projectId?: string | null) {
               .get();
 
             if (!task) return err(`Task not found: ${args.taskId}`);
+            onToolResult?.("get_task", task);
             return ok(task);
           } catch (e) {
             return err(e instanceof Error ? e.message : "Failed to get task");

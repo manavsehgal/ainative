@@ -2,6 +2,12 @@ import { db } from "@/lib/db";
 import { projects, tasks, workflows, documents, schedules } from "@/lib/db/schema";
 import type { QuickAccessItem } from "./types";
 
+/** Captured tool result from an MCP server callback */
+export interface ToolResultCapture {
+  toolName: string;
+  result: unknown;
+}
+
 /**
  * Scan assistant response text for references to known entities.
  * Returns QuickAccessItem[] for rendering as navigation pills.
@@ -44,7 +50,7 @@ export async function detectEntities(
         entityType: "task",
         entityId: t.id,
         label: t.title,
-        href: `/dashboard`,
+        href: `/tasks/${t.id}`,
       });
     }
   }
@@ -82,7 +88,74 @@ export async function detectEntities(
     }
   }
 
-  // Deduplicate by entityId
+  return deduplicateByEntityId(items);
+}
+
+/**
+ * Extract Quick Access links from CRUD tool results.
+ * Deterministic — uses exact entity IDs from tool return values.
+ */
+export function extractToolResultEntities(
+  captures: ToolResultCapture[]
+): QuickAccessItem[] {
+  const items: QuickAccessItem[] = [];
+
+  for (const { toolName, result } of captures) {
+    if (!result || typeof result !== "object") continue;
+    const entity = result as Record<string, unknown>;
+
+    if (
+      toolName === "create_task" ||
+      toolName === "update_task" ||
+      toolName === "get_task"
+    ) {
+      const id = entity.id as string;
+      const title = (entity.title as string) ?? "Task";
+      items.push({
+        entityType: "task",
+        entityId: id,
+        label: title,
+        href: `/tasks/${id}`,
+      });
+      items.push({
+        entityType: "task",
+        entityId: `dashboard-${id}`,
+        label: "Dashboard",
+        href: "/dashboard",
+      });
+      if (entity.projectId) {
+        items.push({
+          entityType: "project",
+          entityId: entity.projectId as string,
+          label: "View Project",
+          href: `/projects/${entity.projectId}`,
+        });
+      }
+    } else if (toolName === "create_project") {
+      const id = entity.id as string;
+      const name = (entity.name as string) ?? "Project";
+      items.push({
+        entityType: "project",
+        entityId: id,
+        label: name,
+        href: `/projects/${id}`,
+      });
+      items.push({
+        entityType: "project",
+        entityId: `dashboard-${id}`,
+        label: "Dashboard",
+        href: "/dashboard",
+      });
+    }
+  }
+
+  return deduplicateByEntityId(items);
+}
+
+/** Remove duplicate Quick Access items by entityId (first occurrence wins) */
+export function deduplicateByEntityId(
+  items: QuickAccessItem[]
+): QuickAccessItem[] {
   const seen = new Set<string>();
   return items.filter((item) => {
     if (seen.has(item.entityId)) return false;

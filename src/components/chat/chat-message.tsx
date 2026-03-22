@@ -5,8 +5,9 @@ import { cn } from "@/lib/utils";
 import { ChatMessageMarkdown } from "./chat-message-markdown";
 import { ChatPermissionRequest } from "./chat-permission-request";
 import { ChatQuestionInline } from "./chat-question";
+import { ChatQuickAccess } from "./chat-quick-access";
 import { AlertCircle } from "lucide-react";
-import type { ChatQuestion } from "@/lib/chat/types";
+import type { ChatQuestion, QuickAccessItem } from "@/lib/chat/types";
 
 interface ChatMessageProps {
   message: ChatMessageRow;
@@ -71,6 +72,17 @@ export function ChatMessage({ message, isStreaming, conversationId }: ChatMessag
   // Skip rendering system messages without valid metadata
   if (isSystem) return null;
 
+  // Extract Quick Access pills from completed assistant messages
+  let quickAccess: QuickAccessItem[] = [];
+  if (!isUser && message.status === "complete" && message.metadata) {
+    try {
+      const meta = JSON.parse(message.metadata);
+      if (Array.isArray(meta.quickAccess)) quickAccess = meta.quickAccess;
+    } catch {
+      // Invalid metadata — no pills
+    }
+  }
+
   return (
     <div>
       {/* Message bubble */}
@@ -106,6 +118,7 @@ export function ChatMessage({ message, isStreaming, conversationId }: ChatMessag
             {isStreaming && message.content && (
               <span className="inline-block w-0.5 h-4 bg-foreground animate-pulse ml-0.5 align-text-bottom" />
             )}
+            <ChatQuickAccess items={quickAccess} />
           </div>
         )}
       </div>
