@@ -26,13 +26,16 @@ export function getProviderForRuntime(runtimeId: string): "anthropic" | "openai"
   return runtimeId === "openai-codex-app-server" ? "openai" : "anthropic";
 }
 
-/** Available chat models by provider */
+/** Available chat models by provider (fallback when SDKs are unreachable) */
 export const CHAT_MODELS: ChatModelOption[] = [
+  // Anthropic — Claude 4.5/4.6 family
   { id: "claude-haiku-4-5", label: "Haiku 4.5", provider: "anthropic", tier: "Fast", costLabel: "$" },
   { id: "claude-sonnet-4-6", label: "Sonnet 4.6", provider: "anthropic", tier: "Balanced", costLabel: "$$" },
   { id: "claude-opus-4-6", label: "Opus 4.6", provider: "anthropic", tier: "Best", costLabel: "$$$" },
-  { id: "gpt-4o-mini", label: "GPT-4o mini", provider: "openai", tier: "Fast", costLabel: "$" },
-  { id: "gpt-4o", label: "GPT-4o", provider: "openai", tier: "Balanced", costLabel: "$$" },
+  // OpenAI — GPT-5.x / Codex family
+  { id: "gpt-5.3-codex-spark", label: "Codex Spark", provider: "openai", tier: "Fast", costLabel: "$" },
+  { id: "gpt-5.3-codex", label: "Codex 5.3", provider: "openai", tier: "Balanced", costLabel: "$$" },
+  { id: "gpt-5.4", label: "GPT-5.4", provider: "openai", tier: "Best", costLabel: "$$$" },
 ];
 
 export const DEFAULT_CHAT_MODEL = "claude-haiku-4-5";

@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import type { ConversationRow, ChatMessageRow } from "@/lib/db/schema";
 import type { PromptCategory } from "@/lib/chat/types";
-import { DEFAULT_CHAT_MODEL, getRuntimeForModel } from "@/lib/chat/types";
+import { DEFAULT_CHAT_MODEL, CHAT_MODELS, getRuntimeForModel, type ChatModelOption } from "@/lib/chat/types";
 import { ConversationList } from "./conversation-list";
 import { ChatMessageList } from "./chat-message-list";
 import { ChatInput } from "./chat-input";
@@ -31,15 +31,23 @@ export function ChatShell({
   const [mobileListOpen, setMobileListOpen] = useState(false);
   const [hoverPreview, setHoverPreview] = useState<string | null>(null);
   const [modelId, setModelId] = useState(DEFAULT_CHAT_MODEL);
+  const [availableModels, setAvailableModels] = useState<ChatModelOption[]>(CHAT_MODELS);
 
   const activeConversation = conversations.find((c) => c.id === activeId);
 
-  // Fetch default model from settings on mount
+  // Fetch default model and available models on mount
   useEffect(() => {
     fetch("/api/settings/chat")
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
         if (data?.defaultModel) setModelId(data.defaultModel);
+      })
+      .catch(() => {});
+
+    fetch("/api/chat/models")
+      .then((r) => r.ok ? r.json() : null)
+      .then((models) => {
+        if (models?.length) setAvailableModels(models);
       })
       .catch(() => {});
   }, []);
@@ -352,6 +360,7 @@ export function ChatShell({
                 previewText={hoverPreview}
                 modelId={modelId}
                 onModelChange={handleModelChange}
+                availableModels={availableModels}
               />
             </ChatEmptyState>
           </div>
@@ -370,6 +379,7 @@ export function ChatShell({
               isHeroMode={false}
               modelId={modelId}
               onModelChange={handleModelChange}
+              availableModels={availableModels}
             />
           </>
         )}

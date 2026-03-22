@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 interface ChatModelSelectorProps {
   modelId: string;
   onModelChange: (modelId: string) => void;
+  models?: ChatModelOption[];
 }
 
 const tierEmoji: Record<string, string> = {
@@ -28,13 +29,14 @@ const tierEmoji: Record<string, string> = {
 export function ChatModelSelector({
   modelId,
   onModelChange,
+  models = CHAT_MODELS,
 }: ChatModelSelectorProps) {
-  const current = CHAT_MODELS.find((m) => m.id === modelId) ?? CHAT_MODELS[0];
+  const current = models.find((m) => m.id === modelId) ?? models[0];
 
-  const anthropicModels = CHAT_MODELS.filter(
+  const anthropicModels = models.filter(
     (m) => m.provider === "anthropic"
   );
-  const openaiModels = CHAT_MODELS.filter((m) => m.provider === "openai");
+  const openaiModels = models.filter((m) => m.provider === "openai");
 
   return (
     <DropdownMenu>

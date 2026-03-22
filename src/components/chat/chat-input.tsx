@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowUp, Square } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ChatModelSelector } from "./chat-model-selector";
+import type { ChatModelOption } from "@/lib/chat/types";
 
 interface ChatInputProps {
   onSend: (content: string) => void;
@@ -14,6 +15,7 @@ interface ChatInputProps {
   previewText?: string | null;
   modelId?: string;
   onModelChange?: (modelId: string) => void;
+  availableModels?: ChatModelOption[];
 }
 
 export function ChatInput({
@@ -24,6 +26,7 @@ export function ChatInput({
   previewText,
   modelId,
   onModelChange,
+  availableModels,
 }: ChatInputProps) {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -112,6 +115,7 @@ export function ChatInput({
                 <ChatModelSelector
                   modelId={modelId}
                   onModelChange={onModelChange}
+                  models={availableModels}
                 />
               )}
             </div>
