@@ -1,17 +1,17 @@
 ---
 title: "Power User Guide"
 category: "user-journey"
-persona: "devops-engineer"
+persona: "power-user"
 difficulty: "advanced"
-estimatedTime: "24 minutes"
-sections: ["Profiles", "Workflows", "Schedules", "Monitor"]
-tags: ["workflows", "profiles", "automation", "autonomous-loops", "monitoring", "keyboard-shortcuts"]
-lastUpdated: "2026-03-21"
+estimatedTime: "30 minutes"
+sections: ["dashboard-kanban", "profiles", "chat", "workflows", "schedules", "monitoring"]
+tags: ["advanced", "automation", "workflows", "profiles", "schedules", "monitoring", "bulk-operations"]
+lastUpdated: "2026-03-22"
 ---
 
 # Power User Guide
 
-Meet Sam, a DevOps engineer who automates everything. Sam has been using Stagent for basic task execution and is ready to unlock its full potential -- agent profiles for specialized behavior, multi-step workflows for complex pipelines, autonomous execution loops, and real-time monitoring. This journey covers the advanced automation layer that turns Stagent into a hands-off operations engine.
+Meet Sam, a DevOps engineer who automates everything that can be automated -- and most things that people assume cannot. Sam has already completed the Personal Use Guide and runs Stagent daily for task management. Now Sam is ready to go deeper: specialized agent profiles, multi-step workflow pipelines, scheduled autonomous loops, bulk operations, and real-time monitoring. This guide covers the advanced automation layer that transforms Stagent from a task manager into a hands-off operations engine.
 
 ## Prerequisites
 
@@ -22,191 +22,227 @@ Meet Sam, a DevOps engineer who automates everything. Sam has been using Stagent
 
 ## Journey Steps
 
-### Step 1: Master the Command Palette
+### Step 1: Master Keyboard Navigation
 
-Sam starts every session with the keyboard. The Command Palette is the fastest way to navigate, search, and execute actions without reaching for the mouse.
+Sam refuses to reach for the mouse when a keystroke will do. The Command Palette is the nerve center of keyboard-driven navigation -- it searches across every entity in the workspace and launches actions instantly.
 
-![Command palette in empty state showing available commands](../screengrabs/command-palette-empty.png)
+![Command palette overlay showing available commands and navigation](../screengrabs/command-palette-empty.png)
 
-1. Press `Cmd+K` (Mac) or `Ctrl+K` (Windows/Linux) to open the Command Palette
-2. Without typing anything, review the **recent items** and **suggested actions** shown by default
-3. Type a partial name to filter across projects, tasks, workflows, pages, and actions
-4. Press `Enter` to execute the highlighted action immediately
+1. Press **Cmd+K** (Mac) or **Ctrl+K** (Windows/Linux) to open the Command Palette
+2. Without typing anything, scan the **recent items** and **suggested actions** that appear by default
+3. Type a partial name -- "deploy," "nightly," "code review" -- to filter across projects, tasks, workflows, schedules, and pages
+4. Use **arrow keys** to highlight an item and press **Enter** to navigate or execute immediately
+5. Press **Escape** to dismiss the palette and return focus to the current page
 
-> **Tip:** Power users rarely click sidebar links. Learn these keyboard shortcuts: `Cmd+K` for the palette, `Escape` to close any pane, and arrow keys for list navigation. Speed compounds across hundreds of daily interactions.
+> **Tip:** The Command Palette is contextual. It surfaces results from every section of Stagent, so you never need to remember which sidebar group a feature lives under. Power users open the palette dozens of times per session -- muscle memory for Cmd+K pays for itself on day one.
 
 ### Step 2: Explore Agent Profiles
 
-Before building workflows, Sam reviews the available agent profiles. Each profile configures an agent's behavior, system prompt, and tool permissions for a specific role.
+Before building any automation, Sam reviews the available agent profiles. Each profile shapes an agent's personality, system prompt, and tool permissions for a specific role -- assigning the right profile to the right task is the single biggest lever for output quality.
 
-![Agent profiles list showing available behavioral profiles](../screengrabs/profiles-list.png)
+![Agent profiles grid showing available behavioral profiles with work and personal tabs](../screengrabs/profiles-list.png)
 
-1. Click **Profiles** in the sidebar under the **Manage** group (or use `Cmd+K` and type "Profiles")
-2. Review the **profile cards** -- each displays the profile name, description, and capability summary
-3. Note the four built-in profiles:
+1. Open the Command Palette and type **"Profiles"**, or click **Profiles** in the sidebar under the **Manage** group
+2. Browse the **profile cards** in the grid -- each displays the profile name, a short description, and a capability summary
+3. Switch between the **Work** and **Personal** tabs to see profiles organized by context
+4. Note the built-in profiles:
    - **General** -- balanced, all-purpose agent behavior
    - **Code Reviewer** -- focused on code quality, security, and best practices
    - **Researcher** -- optimized for information gathering and synthesis
    - **Document Writer** -- tuned for long-form content generation
-4. Click on a profile to view its full configuration including system prompt and tool permissions
+5. Click any profile card to open its full detail page
 
-> **Tip:** Agent profiles are the behavioral layer of Stagent. Assigning the right profile to a task dramatically improves output quality. A code review task assigned to the Researcher profile will produce analysis, not actionable review comments.
+> **Tip:** Think of profiles the way you think of IAM roles -- least privilege, purpose-fit. A task assigned to the Code Reviewer profile will produce actionable review comments with line references. The same task on the General profile will produce a softer, less specific summary.
 
-### Step 3: Navigate to Workflows
+### Step 3: Deep-Dive into Profile Configuration
 
-Sam is ready to build a multi-step automation. Workflows chain multiple tasks into a pipeline where each step can depend on the output of previous steps.
+Sam opens a profile detail page to understand exactly what an agent will do when assigned this profile. The detail view exposes the system prompt, tool permissions, and capability badges that govern agent behavior.
 
-![Workflows list showing existing workflow definitions](../screengrabs/workflows-list.png)
+![Profile detail page showing capabilities, tools, and full configuration](../screengrabs/profiles-detail.png)
 
-1. Click **Workflows** in the sidebar under the **Work** group
-2. Review existing workflows in the list view
-3. Each workflow card shows the step count, last run status, and trigger configuration
-4. Click **Create Workflow** to start building a new pipeline
+1. From the profiles grid, click a profile card (e.g., **Code Reviewer**) to open the detail page
+2. Read the **system prompt** section -- this is the instruction set the agent receives before every task
+3. Review the **capabilities** list to see which tools and actions the profile permits
+4. Check the **tool permissions** section for any tools that are explicitly allowed or denied
+5. Use the back button or Command Palette to return to the profiles grid
 
-> **Tip:** Workflows are templates, not one-shot executions. Once defined, a workflow can be triggered manually, by schedule, or by another workflow's completion.
+> **Tip:** When a workflow step produces unexpected output, the profile detail page is the first place to investigate. Nine times out of ten, the system prompt or tool permissions explain the behavior. Small prompt refinements compound across every execution.
 
-### Step 4: Design a Multi-Step Workflow
+### Step 4: Optimize Chat with Model Selection
 
-Sam builds a "Deploy & Verify" workflow that runs tests, deploys to staging, and verifies the deployment -- three steps, each depending on the previous one succeeding.
+Sam uses Chat strategically, switching between models based on query complexity. Model selection is the primary cost optimization lever -- the right model for the right question can cut chat costs dramatically.
 
-![Workflow creation form with steps and configuration](../screengrabs/workflows-create-form-filled.png)
+![Chat model selector dropdown showing available models with cost tier indicators](../screengrabs/chat-model-selector.png)
 
-1. Enter a **Workflow Name** such as "Deploy & Verify Pipeline"
-2. Add a **Description** explaining the pipeline purpose and expected behavior
-3. Configure **Step 1**: "Run Test Suite"
-   - Set the agent profile to **Code Reviewer**
-   - Define the task description: "Run the full test suite and report any failures"
-4. Configure **Step 2**: "Deploy to Staging"
-   - Set the agent profile to **General**
-   - Define: "Deploy the current main branch to the staging environment"
-   - Set dependency on Step 1 (only runs if tests pass)
-5. Configure **Step 3**: "Verify Deployment"
-   - Set the agent profile to **Researcher**
-   - Define: "Verify the staging deployment by checking all critical endpoints and reporting status"
-   - Set dependency on Step 2
-6. Click **Create Workflow** to save the pipeline
+1. Navigate to **Chat** in the sidebar under the **Work** group
+2. Click the **model selector** in the input composer area to reveal the dropdown
+3. Review the available models -- each displays a **cost tier indicator** ($ to $$$) alongside the model name
+4. Select **Haiku ($)** for quick factual queries like "list my active schedules" or "how many tasks failed this week"
+5. Switch to **Opus ($$$)** for multi-step reasoning like "analyze the error patterns across my last 10 workflow runs and suggest architectural fixes"
+6. Notice the cost tier badge update as you switch between models
 
-> **Tip:** Each step in a workflow can use a different agent profile. Match the profile to the step's purpose -- Code Reviewer for testing, General for execution, Researcher for verification. This specialization improves reliability.
+> **Tip:** Haiku is 10-20x cheaper per token than Opus. Sam's rule of thumb: if the answer requires recalling a fact, use Haiku. If the answer requires *thinking*, use Opus. This habit alone can reduce monthly chat spend by 80% without sacrificing quality where it matters.
 
-### Step 5: Review Workflow Configuration
+### Step 5: Use Chat for Complex Queries
 
-After creating the workflow, Sam inspects the detail view to verify step ordering, dependencies, and profile assignments before running it.
+Sam sends a query and discovers that Chat responses include Quick Access pills -- interactive links that connect chat answers directly to the entities they reference. No more copy-pasting IDs to look up a task.
 
-![Workflow detail view showing steps and dependency graph](../screengrabs/workflows-detail.png)
+![Chat message with Quick Access entity navigation pills linking to tasks and projects](../screengrabs/chat-quick-access.png)
 
-1. Click on the **Deploy & Verify Pipeline** workflow to open the detail view
-2. Verify the **step sequence** and dependency chain
-3. Confirm each step has the correct **agent profile** assigned
-4. Review the **trigger configuration** (manual, scheduled, or event-based)
-5. Check the **estimated execution time** based on step complexity
+1. Type a complex query such as **"Which tasks in the Infrastructure project are blocked, and what's blocking them?"**
+2. Read the agent's response -- it synthesizes information from across your workspace
+3. Notice the **Quick Access pills** embedded in the response -- colored badges that link to specific tasks, projects, or workflows
+4. Click a Quick Access pill to navigate directly to that entity's detail page
+5. Use the browser back button or Command Palette to return to the chat conversation
 
-> **Tip:** The workflow detail view shows the dependency graph visually. Look for any steps that could run in parallel (no dependency between them) -- Stagent will execute independent steps concurrently to save time.
+> **Tip:** Quick Access pills turn Chat into a navigation hub. Instead of manually browsing the sidebar to find a specific task the agent mentioned, click the pill. Sam often starts a session by asking Chat "what needs my attention today?" and then clicking through the linked entities.
 
-### Step 6: Execute and Monitor a Workflow Run
+### Step 6: Browse Workflow Blueprints
 
-Sam triggers the workflow manually for the first time and watches it execute in real time through the monitoring interface.
+Sam wants to build a multi-step automation pipeline but does not want to start from scratch. The Blueprint Gallery offers pre-built workflow templates designed for common DevOps patterns.
 
-![Workflow runs showing execution history and status](../screengrabs/workflows-runs.png)
+![Workflow blueprint gallery showing pre-built templates for common automation patterns](../screengrabs/workflows-blueprints.png)
 
-1. From the workflow detail view, click **Run Workflow**
-2. Confirm the execution parameters and click **Start**
-3. Watch the step status indicators update as each step begins and completes
-4. Click on individual steps to view their agent logs in real time
-5. If a step fails, review the error output and decide whether to retry or abort
+1. Navigate to **Workflows** in the sidebar under the **Work** group
+2. Click the **Blueprints** tab (or navigate directly to the blueprint gallery)
+3. Browse the available templates -- each blueprint includes a name, description, step count, and recommended profile assignments
+4. Look for templates that match your use case: deploy pipelines, code review chains, research synthesis, documentation generation
+5. Click a blueprint to preview its step configuration before creating a workflow from it
+6. Click **Use Blueprint** to create a new workflow pre-populated with the template's steps
 
-> **Tip:** Workflow runs create real tasks for each step. You can find these tasks on the Dashboard, and their full agent logs are available in the Monitor section.
+> **Tip:** Blueprints encode best practices. Even if you plan to customize heavily, starting from a blueprint ensures you get the step ordering, dependency chains, and profile assignments right. Sam always starts from a blueprint and then adjusts -- it is faster than building from zero.
 
-### Step 7: Set Up an Autonomous Schedule
+### Step 7: Build a Multi-Step Workflow
 
-Sam wants the deploy pipeline to run automatically every evening. Combining workflows with schedules creates fully autonomous operation loops.
+Sam customizes a workflow for a "Deploy & Verify" pipeline -- three steps, each depending on the previous one succeeding, each assigned to the right agent profile.
 
-![Schedules list showing configured recurring jobs](../screengrabs/schedules-list.png)
+![Workflows list showing existing workflow definitions with tabs for All, Templates, and Runs](../screengrabs/workflows-list.png)
 
-1. Navigate to **Schedules** in the sidebar
+1. From the Workflows page, click **Create Workflow** (or customize a blueprint from Step 6)
+2. Enter a **Workflow Name** such as "Nightly Deploy & Verify"
+3. Add a description explaining the pipeline's purpose
+4. Configure **Step 1 -- Run Tests**: assign the **Code Reviewer** profile, set the prompt to "Run the full test suite and report failures with root cause analysis"
+5. Configure **Step 2 -- Deploy to Staging**: assign the **General** profile, set dependency on Step 1
+6. Configure **Step 3 -- Verify Deployment**: assign the **Researcher** profile, set dependency on Step 2, prompt it to "Check all critical endpoints and report status"
+7. Save the workflow
+
+> **Tip:** Each step in a workflow can use a different agent profile. This is the key insight: match the profile to the step's purpose. Code Reviewer for testing, General for execution, Researcher for verification. Profile specialization across steps is what makes workflows more reliable than running a single general-purpose agent.
+
+### Step 8: Inspect Workflow Execution
+
+After triggering a run, Sam opens the workflow detail view to track step-by-step progress, inspect outputs, and diagnose any failures in the pipeline.
+
+![Workflow detail page showing steps, dependency graph, and execution status](../screengrabs/workflows-detail.png)
+
+1. Click on a workflow (e.g., "Nightly Deploy & Verify") to open the detail view
+2. Review the **step sequence** and dependency chain displayed visually
+3. Check each step's **status indicator** -- queued, running, completed, or failed
+4. Click on a completed step to read its full output and see which tools the agent used
+5. If a step failed, expand its error output to diagnose the issue
+6. Use the **Run Workflow** button to trigger a new execution
+
+> **Tip:** Independent steps (those without dependencies between them) execute concurrently. Sam designs workflows to maximize parallelism -- if two verification checks do not depend on each other, they run simultaneously and the pipeline finishes faster.
+
+### Step 9: Batch-Manage Tasks on the Kanban
+
+Sam switches to the Dashboard to clean up the task board. Bulk select mode lets you queue, reassign, or delete multiple tasks in a single action -- essential when autonomous workflows generate dozens of tasks overnight.
+
+![Kanban board in bulk select mode with checkboxes and bulk action toolbar](../screengrabs/dashboard-bulk-select.png)
+
+1. Navigate to the **Dashboard** (kanban board view)
+2. Click the **Select** button in the toolbar to enter bulk select mode
+3. Check the boxes on multiple task cards across any status column
+4. Use the **bulk action toolbar** that appears at the top to:
+   - **Queue** selected tasks for agent execution
+   - **Move** selected tasks to a different status column
+   - **Delete** selected tasks that are no longer needed
+5. Confirm the bulk action and exit select mode
+
+> **Tip:** After a weekend of autonomous loop runs, Sam's first Monday task is always a bulk cleanup. Enter select mode, check all the "completed" tasks that need archiving, and clear the board in one action. Keeping the kanban clean prevents cognitive overload as automation scales.
+
+### Step 10: Schedule Automated Prompt Loops
+
+Sam sets up a recurring schedule so the Deploy & Verify workflow runs every evening without manual intervention. Combining workflows with schedules creates fully autonomous operation loops.
+
+![Schedules list showing configured recurring jobs with status, frequency, and next firing time](../screengrabs/schedules-list.png)
+
+1. Navigate to **Schedules** in the sidebar under the **Manage** group
 2. Click **Create Schedule**
 3. Enter a **Name** such as "Nightly Deploy Pipeline"
-4. Set the **Interval** to "every day at 10pm"
-5. Link the schedule to the **Deploy & Verify Pipeline** workflow
-6. Configure **stop conditions** -- maximum iterations, timeout, or failure threshold
+4. Set the **Interval** using natural language: "every day at 10pm" or "every 6 hours"
+5. Link the schedule to the **Nightly Deploy & Verify** workflow
+6. Configure **stop conditions** to prevent runaway execution:
+   - **Max iterations**: 1 per trigger (each night = one full pipeline run)
+   - **Timeout**: 30 minutes per iteration
+   - **Failure threshold**: 1 (pause after first failure for investigation)
 7. Enable the schedule and click **Create**
 
-> **Tip:** Autonomous loops support four stop conditions: max iterations, time limit, consecutive failures, and manual pause. Always set at least one to prevent runaway execution. A nightly deploy with max 1 iteration and a 30-minute timeout is a safe starting point.
+> **Tip:** Always set at least one stop condition. Sam's rule: max iterations prevents infinite loops, timeout prevents hung agents, and failure threshold prevents burning tokens on a broken pipeline. All three together form a safety net for unattended operation.
 
-### Step 8: Configure Autonomous Loop Parameters
+### Step 11: Monitor Schedule Execution
 
-Sam fine-tunes the autonomous execution settings to ensure the loop behaves predictably and stays within safety boundaries.
+Sam checks in on the nightly schedule to verify it fired correctly, review its execution history, and confirm the next scheduled run.
 
-![Schedules list with active autonomous loop configuration](../screengrabs/schedules-list.png)
+![Schedule detail sheet showing configuration, stop conditions, and firing history](../screengrabs/schedules-detail.png)
 
-1. Click on the **Nightly Deploy Pipeline** schedule to edit
-2. Review the **Stop Conditions** section:
-   - **Max Iterations**: Set to 1 for nightly runs (each night = one iteration)
-   - **Timeout**: Set to 30 minutes per iteration
-   - **Failure Threshold**: Set to 1 (stop after first failure for investigation)
-3. Enable **Iteration Context** so each run can reference the previous run's output
-4. Toggle **Pause/Resume** controls for manual intervention capability
-5. Save the updated configuration
+1. From the Schedules list, click on **Nightly Deploy Pipeline** to open the detail sheet
+2. Review the **firing history** -- a list of past executions with timestamps and outcomes
+3. Check the **next firing time** to confirm the schedule is correctly queued
+4. Verify the **stop conditions** are configured as intended
+5. Toggle **Pause/Resume** if you need to temporarily disable the schedule (e.g., during a maintenance window)
+6. Close the detail sheet to return to the schedules list
 
-> **Tip:** Iteration context is powerful for improvement loops. Each run sees what the previous run produced, enabling agents to self-correct. For deploy pipelines, this means a failed verification can inform the next deployment attempt.
+> **Tip:** Iteration context is a powerful feature for improvement loops. When enabled, each run can reference the previous run's output. For deploy pipelines, this means a failed verification can inform the next deployment attempt -- agents learn from their own history.
 
-### Step 9: Monitor Agent Execution
+### Step 12: Watch Agent Execution in Real-Time
 
-With workflows and schedules running, Sam checks the Monitor section for a unified view of all agent activity across the workspace.
+Sam opens the Monitor section for a unified view of all agent activity across the workspace -- every task execution, workflow step, and scheduled run appears here with full trace logs.
 
-![Monitor showing real-time agent execution logs](../screengrabs/monitor-list.png)
+![Agent monitoring dashboard showing real-time execution logs and activity feed](../screengrabs/monitor-list.png)
 
 1. Click **Monitor** in the sidebar under the **Manage** group
-2. Review the **execution log** showing all recent agent activity
-3. Filter by **project**, **workflow**, or **agent profile** to focus on specific activity
-4. Click on any log entry to view the full execution trace including tool calls, outputs, and timing
-5. Watch for **error patterns** that might indicate configuration issues
+2. Review the **execution log** showing all recent agent activity in reverse chronological order
+3. Filter by **project**, **workflow**, or **agent profile** to focus on specific activity streams
+4. Click on any log entry to expand the full execution trace -- tool calls, outputs, token counts, and timing
+5. Watch for **error patterns** such as repeated failures on the same tool or profile
+6. Use the monitor to verify that scheduled runs are completing within expected time bounds
 
-> **Tip:** The Monitor is your operational dashboard. Bookmark it for quick access. When something goes wrong in an autonomous loop, the monitor's execution traces are the fastest way to diagnose the issue.
+> **Tip:** The Monitor is Sam's operational dashboard. When something goes wrong in an autonomous loop at 3am, the monitor's execution traces are the fastest path to diagnosis. Sam bookmarks this page and checks it first thing every morning.
 
-### Step 10: Use Keyboard Shortcuts for Rapid Navigation
+### Step 13: Use Chat Suggested Prompts
 
-Sam demonstrates the keyboard-first workflow that makes power use practical. Efficient navigation across sections is critical when managing multiple workflows and schedules.
+Sam returns to Chat and discovers the suggested prompts feature -- tabbed categories of pre-written prompts that cover common operations. Instead of typing from scratch, Sam picks a prompt and edits it.
 
-![Command palette showing search across all entities](../screengrabs/command-palette-empty.png)
+![Chat suggested prompts with Create tab selected showing categorized prompt templates](../screengrabs/chat-create-tab.png)
 
-1. Press `Cmd+K` and type "monitor" to jump to the Monitor section
-2. Press `Escape` to close any open detail pane
-3. Press `Cmd+K` and type the name of a specific workflow to jump directly to it
-4. Use `Tab` and `Shift+Tab` to navigate between interactive elements on any page
-5. Press `Enter` on focused cards or buttons to activate them
+1. Navigate to **Chat** (or open a new conversation)
+2. Below the input composer, notice the **suggested prompt tabs** -- categories like Create, Analyze, Manage, and more
+3. Click the **Create** tab to see prompts related to creating new entities (tasks, workflows, schedules)
+4. Click a suggested prompt to populate the input composer with pre-written text
+5. Edit the prompt to match your specific needs, then send it
+6. Try other tabs to discover prompts for analysis, troubleshooting, and status checks
 
-> **Tip:** Combine the Command Palette with section-specific keyboard navigation for a fully keyboard-driven workflow. Power users can manage an entire fleet of autonomous agents without touching the mouse.
+> **Tip:** Suggested prompts are not just shortcuts -- they are examples of how to phrase requests for the best agent response. Sam reads through them to learn the phrasing patterns that produce the most useful output, then adapts those patterns for custom queries.
 
-### Step 11: Review Profile-Workflow Integration
+### Step 14: Chain Workflows and Schedules
 
-Sam circles back to verify that the right agent profiles are producing the right outputs across workflow steps. Profile-workflow alignment is the key to reliable automation.
+Sam connects the dots: workflows define *what* to automate, schedules define *when* to automate, and profiles define *how* each step behaves. Chaining all three creates autonomous loops that run, learn, and improve without human intervention.
 
-![Profiles list showing behavioral configuration for each agent type](../screengrabs/profiles-list.png)
+![Workflows list showing automation pipelines ready for scheduling](../screengrabs/workflows-list.png)
 
-1. Navigate to **Profiles** and review which profiles are used across your workflows
-2. Check that the **Code Reviewer** profile is handling all testing and review steps
-3. Verify that the **Researcher** profile is assigned to verification and analysis steps
-4. Consider whether any workflow steps would benefit from a profile change
-5. Note any patterns where a custom profile might improve output quality
+1. Review your existing workflows and identify which ones should run on a schedule
+2. For each workflow, create a corresponding schedule with appropriate intervals and stop conditions
+3. Assign specialized profiles to each workflow step for maximum output quality
+4. Enable **iteration context** on schedules where the agent should learn from previous runs
+5. Set up the Monitor as your oversight layer -- check it daily to catch issues early
+6. Gradually increase automation scope: start with one nightly workflow, then add weekly research sweeps, then continuous monitoring loops
 
-> **Tip:** If you find yourself frequently adjusting agent output from a specific profile, that is a signal to refine the profile's system prompt. Small prompt improvements compound across every workflow execution.
+> **Tip:** Sam's automation philosophy: start small, observe, then expand. Run a workflow manually three times before scheduling it. Confirm the schedule fires correctly for a week before enabling iteration context. Trust builds incrementally -- and so should autonomy.
 
-### Step 12: Validate End-to-End Automation
+### Step 15: What's Next
 
-Sam performs a final check across all automation surfaces to confirm everything is connected and running as expected.
+Sam's Stagent workspace is now a fully autonomous operations engine -- specialized agent profiles handling different task types, multi-step workflows executing complex pipelines, schedules firing on cadence, and the Monitor providing real-time oversight. The next step is going deeper into the platform layer.
 
-![Monitor showing execution traces across workflows](../screengrabs/monitor-list.png)
-
-1. Check **Schedules** for any failed or paused entries
-2. Check **Monitor** for error-level log entries in the last 24 hours
-3. Verify that workflow runs are completing within expected time bounds
-4. Confirm that autonomous loops have not hit their stop conditions unexpectedly
-5. Review the **Inbox** for any pending permission requests that might be blocking execution
-
-> **Tip:** A healthy automation setup has zero pending inbox items, all schedules showing recent successful runs, and monitor logs free of repeated errors. Aim for this state before leaving agents to run overnight.
-
-## What's Next
-
-- [Developer Guide](./developer.md) -- Configure authentication, runtime settings, and CLI tooling
-- [Work Use Guide](./work-use.md) -- Learn team collaboration features and document management
-- [Personal Use Guide](./personal-use.md) -- Review the basics if you need a refresher
+- [Developer Guide](./developer.md) -- Configure authentication methods, runtime settings, CLI tooling, and permission presets
+- [Work Use Guide](./work-use.md) -- Explore team collaboration features, document management, and cost governance
+- [Personal Use Guide](./personal-use.md) -- Review the basics if you need a refresher on projects, tasks, and the inbox

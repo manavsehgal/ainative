@@ -27,6 +27,7 @@ Stagent is a governed AI agent workspace that lets you create, execute, and moni
 | [Home & Workspace](./features/home-workspace.md) | `/` | Stat cards, activity feed, navigation |
 | [Dashboard & Kanban](./features/dashboard-kanban.md) | `/dashboard` | Task board, AI Assist, drag-and-drop |
 | [Inbox & Notifications](./features/inbox-notifications.md) | `/inbox` | Approvals, rich content, progressive disclosure |
+| [Chat](./features/chat.md) | /chat | Conversations, model selection, suggested prompts, Quick Access |
 | [Projects](./features/projects.md) | `/projects` | Workspaces, task grouping, file context |
 | [Workflows](./features/workflows.md) | `/workflows` | 6 patterns, step builder, templates |
 | [Documents](./features/documents.md) | `/documents` | Upload, preprocessing, agent context |

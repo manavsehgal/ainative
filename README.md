@@ -58,6 +58,7 @@ Stagent ships a shared runtime registry that routes tasks, schedules, and workfl
 | ⏰ | **[Schedules](#schedules)** | Recurring and one-shot automations with cadence, expiry, and firing controls |
 | 📄 | **[Documents](#document-management)** | Upload, preprocess, inspect, and link files to tasks and projects |
 | 📥 | **[Human-in-the-Loop Inbox](#inbox--human-in-the-loop)** | Approve tool use, answer questions, and review results from one queue |
+| 💬 | **[Chat](#chat)** | Conversational AI with model selection, suggested prompts, and entity-aware responses |
 | 👀 | **[Monitoring](#monitoring)** | Live runtime visibility with log streaming, filters, and health signals |
 | 🔁 | **[Provider Runtimes](#provider-runtimes)** | Shared runtime layer with Claude Code and OpenAI Codex App Server adapters |
 | 🧪 | **[Parallel + Swarm Workflows](#parallel--swarm-workflows)** | Bounded fork/join and swarm orchestration without a free-form graph editor |
@@ -265,6 +266,15 @@ When an agent needs approval or input, a notification appears in your inbox. Rev
 |:-:|:-:|
 | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/inbox-expanded.png" alt="Inbox notification expanded" width="580" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/inbox-fully-expanded.png" alt="Inbox notification fully expanded with context" width="580" /> |
 
+#### Chat
+Conversational control plane for all workspace primitives — projects, tasks, workflows, documents, and profiles are all reachable from the chat surface. Progressive 5-tier context injection (~53K token budget) builds workspace awareness from lightweight summaries up to full document content. Multi-provider model selection with cost tiers ($, $$, $$$) spans Claude Haiku through Opus and GPT-5.x models, with a Settings-level default preference. Claude.ai-style tabbed suggested prompts (Explore, Create, Analyze) with hover preview help new users discover workspace capabilities. Quick Access navigation pills in responses provide entity deep-linking — click a mentioned project or task to jump directly to its detail view. Stagent CRUD tools let you create, update, and delete projects, tasks, and workflows through natural language. Streaming responses render in real time with full markdown support.
+
+<img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/chat-conversation.png" alt="Stagent chat conversation with Quick Access navigation pills" width="1200" />
+
+| Empty State & Suggested Prompts | Model Selector | Quick Access Pills |
+|:-:|:-:|:-:|
+| <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/chat-list.png" alt="Chat empty state with suggested prompts" width="380" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/chat-model-selector.png" alt="Chat model selector with cost tiers" width="380" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/chat-quick-access.png" alt="Chat Quick Access navigation pills" width="380" /> |
+
 #### Monitoring
 Real-time agent log streaming via Server-Sent Events. Filter by task or event type, click entries to jump to task details, and auto-pause polling when the tab is hidden (Page Visibility API).
 
@@ -286,7 +296,7 @@ Configuration hub with provider-aware sections: Claude authentication (API key o
 The `npx stagent` entry point boots a Next.js server from the published npm package. It is built from `bin/cli.ts` into `dist/cli.js` using tsup, and serves as the primary distribution channel — no clone required.
 
 #### Database
-SQLite with WAL mode via better-sqlite3 + Drizzle ORM. Ten tables: `projects`, `tasks`, `workflows`, `agent_logs`, `notifications`, `documents`, `schedules`, `settings`, `learned_context`, `usage_ledger`. Self-healing bootstrap — tables are created on startup if missing.
+SQLite with WAL mode via better-sqlite3 + Drizzle ORM. Twelve tables: `projects`, `tasks`, `workflows`, `agent_logs`, `notifications`, `documents`, `schedules`, `settings`, `learned_context`, `usage_ledger`, `conversations`, `chat_messages`. Self-healing bootstrap — tables are created on startup if missing.
 
 #### Command Palette
 Global `⌘K` command palette for fast navigation and search across tasks, projects, workflows, and settings. Recent items, fuzzy search, and keyboard-driven navigation.
@@ -296,7 +306,7 @@ Global `⌘K` command palette for fast navigation and search across tasks, proje
 | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/command-palette-empty.png" alt="Command palette empty state" width="580" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/command-palette-search.png" alt="Command palette search results" width="580" /> |
 
 #### App Shell
-Responsive sidebar with collapsible icon-only mode, custom Stagent logo, tooltip navigation, dark/light/system theme, and OKLCH hue 250 blue-indigo color palette. Built on shadcn/ui (New York style) with PWA manifest and app icons. Routes: Home, Dashboard, Inbox, Monitor, Projects, Workflows, Documents, Profiles, Schedules, Cost & Usage, Playbook, Settings.
+Responsive sidebar with collapsible icon-only mode, custom Stagent logo, tooltip navigation, dark/light/system theme, and OKLCH hue 250 blue-indigo color palette. Built on shadcn/ui (New York style) with PWA manifest and app icons. Routes: Home, Dashboard, Inbox, Chat, Monitor, Projects, Workflows, Documents, Profiles, Schedules, Cost & Usage, Playbook, Settings.
 
 #### E2E Test Automation
 API-level end-to-end test suite built on Vitest with 120-second timeouts and sequential execution. Five test files cover single-task execution, sequence workflows, parallel workflows, blueprints, and cross-runtime scenarios across both Claude and Codex backends. Tests skip gracefully when runtimes are not configured, preventing CI failures. Run with `npm run test:e2e`.
@@ -346,6 +356,7 @@ src/
 │   ├── schedules/        # Schedule management
 │   ├── costs/            # Cost & usage dashboard
 │   ├── playbook/         # Documentation & learning journeys
+│   ├── chat/             # Conversational AI
 │   ├── inbox/            # Notifications
 │   ├── monitor/          # Log streaming
 │   └── settings/         # Configuration
@@ -359,6 +370,7 @@ src/
 │   ├── playbook/         # Playbook docs + journeys + adoption
 │   ├── schedules/        # Schedule management
 │   ├── monitoring/       # Log viewer
+│   ├── chat/             # Chat shell, messages, input composer
 │   ├── notifications/    # Inbox + permission actions
 │   ├── settings/         # Auth, permissions, budgets, data mgmt
 │   ├── shared/           # App shell, sidebar
@@ -371,6 +383,7 @@ src/
     ├── workflows/        # Engine + types + blueprints
     ├── schedules/        # Scheduler engine + interval parser
     ├── settings/         # Auth, permissions, helpers
+    ├── chat/             # Chat engine, context builder, model discovery
     ├── usage/            # Metering ledger + pricing registry
     ├── constants/        # Status transitions, colors
     ├── queries/          # Chart data aggregation
@@ -378,7 +391,7 @@ src/
     └── utils/            # Shared helpers
 ```
 
-### API Endpoints (52 routes)
+### API Endpoints (58 routes)
 
 | Domain | Endpoint | Method | Purpose |
 |--------|----------|--------|---------|
@@ -430,6 +443,12 @@ src/
 | **Context** | `/api/context/batch` | POST | Batch approve/reject context proposals |
 | **Monitoring** | `/api/logs/stream` | GET | SSE agent log stream |
 | **Playbook** | `/api/playbook/status` | GET | Playbook adoption status and usage stage |
+| **Chat** | `/api/chat/conversations` | GET/POST | List and create conversations |
+| | `/api/chat/conversations/[id]` | GET/PATCH/DELETE | Conversation detail, update, delete |
+| | `/api/chat/conversations/[id]/messages` | GET/POST | List messages and send new message (SSE streaming) |
+| | `/api/chat/models` | GET | Available models with cost tiers |
+| | `/api/chat/suggested-prompts` | GET | Context-aware suggested prompt categories |
+| | `/api/chat/conversations/[id]/respond` | POST | Respond to permission or question prompt |
 | **Platform** | `/api/command-palette/recent` | GET | Recent command palette items |
 | | `/api/data/clear` | POST | Clear all data |
 | | `/api/data/seed` | POST | Seed sample data |
@@ -448,7 +467,7 @@ All 14 features shipped across three layers:
 | **Core** | Project management, task board, agent integration, inbox notifications, monitoring dashboard |
 | **Polish** | Homepage dashboard, UX fixes, workflow engine, AI task assist, content handling, session management |
 
-### Post-MVP — 31 features shipped
+### Post-MVP — 37 features shipped
 
 | Category | Features |
 |----------|---------|
@@ -459,6 +478,7 @@ All 14 features shipped across three layers:
 | **Platform** (8) | Scheduled prompt loops, tool permissions, provider runtimes, OpenAI Codex runtime, cross-provider profiles, parallel fork/join, tool permission presets, npm publish (deferred) |
 | **Runtime Quality** (2) | SDK runtime hardening, E2E test automation |
 | **Governance** (3) | Usage metering ledger, spend budget guardrails, cost & usage dashboard |
+| **Chat** (6) | Chat data layer, chat engine (5-tier context, CRUD tools), API routes (SSE streaming), UI shell, message rendering (Quick Access pills), input composer (model selector, suggested prompts) |
 
 ### In Progress
 

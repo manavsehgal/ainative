@@ -33,6 +33,16 @@
       "screengrabCount": 2
     },
     {
+      "slug": "chat",
+      "title": "Chat",
+      "category": "feature-reference",
+      "path": "features/chat.md",
+      "route": "/chat",
+      "tags": ["chat", "conversations", "ai", "model-selection", "suggested-prompts", "quick-access"],
+      "features": ["chat-data-layer", "chat-engine", "chat-api-routes", "chat-ui-shell", "chat-message-rendering", "chat-input-composer"],
+      "screengrabCount": 5
+    },
+    {
       "slug": "projects",
       "title": "Projects",
       "category": "feature-reference",
@@ -190,8 +200,8 @@
       "persona": "personal",
       "difficulty": "beginner",
       "path": "journeys/personal-use.md",
-      "sections": ["home-workspace", "dashboard-kanban", "projects"],
-      "stepCount": 10
+      "sections": ["home-workspace", "chat", "dashboard-kanban", "projects", "playbook"],
+      "stepCount": 14
     },
     {
       "slug": "work-use",
@@ -199,8 +209,8 @@
       "persona": "work",
       "difficulty": "intermediate",
       "path": "journeys/work-use.md",
-      "sections": ["projects", "documents", "schedules", "cost-usage", "inbox-notifications"],
-      "stepCount": 12
+      "sections": ["projects", "chat", "documents", "workflows", "schedules", "cost-usage", "inbox-notifications"],
+      "stepCount": 15
     },
     {
       "slug": "power-user",
@@ -208,8 +218,8 @@
       "persona": "power-user",
       "difficulty": "advanced",
       "path": "journeys/power-user.md",
-      "sections": ["profiles", "workflows", "schedules", "monitoring"],
-      "stepCount": 12
+      "sections": ["dashboard-kanban", "profiles", "chat", "workflows", "schedules", "monitoring"],
+      "stepCount": 15
     },
     {
       "slug": "developer",
@@ -217,14 +227,14 @@
       "persona": "developer",
       "difficulty": "advanced",
       "path": "journeys/developer.md",
-      "sections": ["settings", "provider-runtimes", "monitoring", "profiles"],
-      "stepCount": 10
+      "sections": ["settings", "environment", "chat", "monitoring", "profiles", "workflows", "schedules"],
+      "stepCount": 14
     }
   ],
   "metadata": {
-    "totalDocs": 24,
-    "totalScreengrabs": 43,
-    "featuresCovered": 50,
-    "appSections": 12
+    "totalDocs": 25,
+    "totalScreengrabs": 37,
+    "featuresCovered": 56,
+    "appSections": 13
   }
 }
