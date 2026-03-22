@@ -85,7 +85,7 @@ Produce a 7-dimension health dashboard with green/yellow/red signals.
 | **Ideas** | 3+ unprocessed ideas in `ideas/` | 1-2 ideas | 0 ideas (dry pipeline) |
 | **Quality Debt** | All completed features have passing tests | Some features lack test coverage | Multiple features shipped without tests |
 | **Design Consistency** | Design system tokens used consistently, no forbidden patterns | Minor inconsistencies | Hardcoded colors, missing tokens, forbidden patterns |
-| **Documentation** | README, changelog, and roadmap current | 1 artifact stale | Multiple artifacts out of date |
+| **Documentation** | README, changelog, roadmap current AND all features have journey coverage | 1 artifact stale OR <5 features missing journey coverage | Multiple artifacts stale OR >5 features missing journey coverage OR entire feature family missing from journeys |
 | **Playbook Sync** | All three timestamps (`screengrabs/.last-run`, `docs/.last-generated`, `public/readme/.last-synced`) within 24h | One layer >24h stale | Missing timestamps or broken references |
 
 ### Process
@@ -95,6 +95,7 @@ Produce a 7-dimension health dashboard with green/yellow/red signals.
 3. **Identify top concern** — the dimension most urgently needing attention
 4. **Recommend action** — specific skill invocation to address the top concern
 5. **Write report** — output to `features/supervisor-report.md`
+6. **Read journey coverage data** — check `docs/.coverage-gaps.json` if it exists. Factor the gap count into the Documentation dimension score. If the file doesn't exist, check `screengrabs/manifest.json` features against `docs/journeys/*.md` references manually.
 
 ### Health Check Output
 
@@ -470,6 +471,7 @@ mode: [health-check | next-steps | sprint-planning | vision-alignment | retrospe
 | Need to check library usage | "Look up [API] usage" | `/refer` |
 | Screenshots captured but docs/playbook not synced | "Sync playbook with latest screengrabs" | `/playbook-sync` |
 | Docs regenerated but playbook images stale | "Sync playbook images and validate references" | `/playbook-sync` |
+| Journey coverage gaps detected | "Regenerate journeys to cover N missing features" | `/doc-generator` (reads `.coverage-gaps.json`) |
 
 ### What Supervisor Does NOT Do
 
@@ -502,14 +504,17 @@ Some skills produce artifacts consumed by other skills. When the supervisor dete
 ### Documentation Pipeline
 
 ```
-/screengrab → /doc-generator → /playbook-sync
+/screengrab → /doc-generator (with coverage analysis) → /playbook-sync (validates + writes .coverage-gaps.json)
+                    ↑                                              │
+                    └──────────── if gaps remain ──────────────────┘
 ```
 
 - `/screengrab` produces `screengrabs/*.png` + `screengrabs/manifest.json`
-- `/doc-generator` reads screengrabs manifest, writes `docs/journeys/*.md` and `docs/features/*.md`
-- `/playbook-sync` copies images to `public/readme/`, validates references, audits content alignment
+- `/doc-generator` reads screengrab manifest, runs journey coverage analysis (Phase 4.5), writes `docs/journeys/*.md` and `docs/features/*.md` with 100% feature coverage target
+- `/playbook-sync` copies images to `public/readme/`, validates references, audits content alignment, writes `docs/.coverage-gaps.json`
+- **Feedback loop:** If `/playbook-sync` detects coverage gaps, recommend re-running `/doc-generator` which reads `.coverage-gaps.json` and remediates journey content
 - **Staleness signal:** Compare `screengrabs/.last-run` vs `docs/.last-generated` vs `public/readme/.last-synced`
-- **Auto-cascade:** After `/screengrab`, recommend `/doc-generator` if docs reference changed screenshots. After `/doc-generator`, recommend `/playbook-sync`.
+- **Coverage signal:** Check `docs/.coverage-gaps.json` — if `summary.gapCount > 0`, the Documentation dimension is degraded
 
 ### Freshness Checks (Health Check mode)
 

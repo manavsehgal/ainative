@@ -18,6 +18,12 @@ Reconciliation skill that ensures the three-layer documentation pipeline stays c
 Playbook UI → /playbook route renders journeys with /readme/ images
 ```
 
+```
+/screengrab → /doc-generator (with coverage analysis) → /playbook-sync (validates + writes .coverage-gaps.json)
+                    ↑                                              │
+                    └──────────── if gaps remain ──────────────────┘
+```
+
 The playbook UI resolves images from `public/readme/*.png` via path rewriting (`screengrabs/` → `/readme/`). This skill closes the gap between where screenshots are captured and where the UI expects them.
 
 ## Role Boundaries
@@ -273,6 +279,51 @@ Report as:
 
 This ensures the playbook eventually covers all captured interactions and no new feature falls through the cracks.
 
+### 4e-ii. Machine-Readable Gap Output
+
+Write the coverage gaps to `docs/.coverage-gaps.json` for consumption by `/doc-generator`:
+
+```json
+{
+  "generated": "ISO-timestamp",
+  "gaps": [
+    {
+      "feature": "environment-scanner",
+      "category": "Environment Onboarding",
+      "screenshots": ["environment-list.png"],
+      "journeyCoverage": [],
+      "suggestedPersona": "developer"
+    }
+  ],
+  "unusedScreenshots": ["some-file.png"],
+  "summary": {
+    "totalFeatures": 66,
+    "coveredFeatures": 39,
+    "gapCount": 27,
+    "unusedScreenshotCount": 0
+  }
+}
+```
+
+Use the same persona mapping as `/doc-generator` Phase 4.5d for the `suggestedPersona` field:
+
+| Feature Category | Suggested Persona |
+|-----------------|------------------|
+| Foundation/Core | personal |
+| Documents | work |
+| Agent Intelligence | power-user |
+| Agent Profiles | power-user |
+| UI Enhancement | personal |
+| Platform/Runtime | developer |
+| Governance/Cost | work |
+| Environment | developer |
+| Chat | personal |
+| Workflows | power-user |
+| Schedules | power-user |
+| Runtime Quality | developer |
+
+This file enables the closed feedback loop: `/playbook-sync` detects gaps → `/doc-generator` reads gaps and remediates journeys.
+
 ---
 
 ## Phase 5: Sync Report
@@ -314,6 +365,7 @@ Based on findings, recommend specific actions:
 | STALE mismatches | Run `/screengrab` to recapture, then `/playbook-sync` again |
 | Orphaned images | Review manually — delete if unused, or add references if needed |
 | Docs older than screengrabs | Run `/doc-generator` to pick up new screenshots |
+| Feature coverage gaps > 0 | Run `/doc-generator` to regenerate journeys with coverage gap remediation — it will read `docs/.coverage-gaps.json` and insert missing features into appropriate persona journeys |
 
 ---
 
@@ -359,6 +411,7 @@ Based on findings, recommend specific actions:
 - [ ] Phase 4: Toolbar state alignment checked
 - [ ] Phase 4: Mismatch report with suggested fixes generated
 - [ ] Phase 4e: New feature coverage gaps reported
+- [ ] Phase 4e: `.coverage-gaps.json` written with feature gap data
 - [ ] Phase 5: Summary with overall sync status
 - [ ] Phase 5: `.last-synced` timestamp written
 - [ ] Phase 5: Next-action recommendations provided

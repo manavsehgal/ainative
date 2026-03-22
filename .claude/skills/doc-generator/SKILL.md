@@ -202,7 +202,80 @@ Different screenshot types serve different documentation purposes. Use this mapp
 
 ---
 
+## Phase 4.5: Journey Coverage Analysis
+
+Before generating or updating journey guides, analyze which features and screenshots lack journey representation. This ensures every completed feature appears in at least one user guide.
+
+### 4.5a. Build Feature-to-Journey Map
+
+For each existing journey file in `docs/journeys/*.md`:
+1. Extract all screenshot references (`../screengrabs/{file}.png`)
+2. Map each screenshot → its tagged features via `screengrabs/manifest.json`
+3. Build a set of features represented in each journey
+
+### 4.5b. Build Screenshot-to-Journey Map
+
+For each screenshot in `screengrabs/manifest.json`:
+1. Check if it's referenced in at least one journey file
+2. Flag unreferenced screenshots as candidates for journey insertion
+
+### 4.5c. Compute Coverage Gaps
+
+For each completed feature in `features/roadmap.md`:
+1. Check if it appears in the feature-to-journey map from 4.5a
+2. Features with zero journey coverage → **coverage gap**
+3. Group gaps by feature category (from roadmap section headers)
+
+### 4.5d. Map Gaps to Personas
+
+Use this decision matrix to assign uncovered features to the most appropriate journey persona:
+
+| Feature Category | Primary Persona | Secondary Persona |
+|-----------------|----------------|-------------------|
+| Foundation/Core | Personal Use | — |
+| Documents | Work Use | — |
+| Agent Intelligence | Power User | — |
+| Agent Profiles | Power User | Developer |
+| UI Enhancement | Personal Use | Work Use |
+| Platform/Runtime | Developer | — |
+| Governance/Cost | Work Use | Developer |
+| Environment | Developer | — |
+| Chat | Personal Use | Work Use |
+| Workflows | Power User | Work Use |
+| Schedules | Power User | Work Use |
+| Runtime Quality | Developer | — |
+
+### 4.5e. Coverage Report
+
+Output a summary consumed by Phase 5:
+
+```
+### Journey Coverage Analysis
+
+| Metric | Value |
+|--------|-------|
+| Total completed features | N |
+| Features with journey coverage | M |
+| Features without journey coverage | K |
+| Screenshots referenced in journeys | X / Y |
+
+#### Coverage Gaps by Persona
+
+| Persona | Features to Add | Screenshots to Embed |
+|---------|----------------|---------------------|
+| Personal Use | [list] | [list] |
+| Work Use | [list] | [list] |
+| Power User | [list] | [list] |
+| Developer | [list] | [list] |
+```
+
+If `docs/.coverage-gaps.json` exists from a previous `/playbook-sync` run, read it and merge those findings into this analysis rather than duplicating effort.
+
+---
+
 ## Phase 5: User Journey Generation
+
+Before generating journeys, read the coverage analysis from Phase 4.5. In incremental mode, focus journey updates on the features and screenshots identified as coverage gaps. In full mode, ensure the generated journeys collectively cover all features and screenshots.
 
 Generate 4 journey guides in `docs/journeys/`:
 
@@ -271,6 +344,12 @@ lastUpdated: "{ISO date}"
 - **Prefer `journey-*.png` screenshots** when available from screengrab captures
 - **Never duplicate** the same image within a single journey
 - **Estimate time** based on step count: ~2 min per step
+- **Every completed feature** from the roadmap MUST appear in at least one journey guide
+- **Every screenshot** in `screengrabs/manifest.json` MUST be referenced in at least one journey
+- Coverage gaps from Phase 4.5 MUST be resolved during journey generation
+- When adding features to journeys, insert steps at **narratively appropriate positions** (not appended to the end)
+- After generating all journeys, **re-run coverage check** to confirm 100% feature and screenshot coverage
+- Log a **WARNING** if any feature or screenshot still lacks journey coverage after generation
 
 ### Persona Data Profiles
 
