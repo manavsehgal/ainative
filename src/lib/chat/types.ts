@@ -2,7 +2,19 @@
 export type ChatStreamEvent =
   | { type: "delta"; content: string }
   | { type: "done"; messageId: string; quickAccess: QuickAccessItem[] }
-  | { type: "error"; message: string };
+  | { type: "error"; message: string }
+  | { type: "permission_request"; requestId: string; messageId: string; toolName: string; toolInput: Record<string, unknown> }
+  | { type: "question"; requestId: string; messageId: string; questions: ChatQuestion[] };
+
+/** Structured question from AskUserQuestion tool */
+export interface ChatQuestion {
+  id?: string;
+  question: string;
+  header: string;
+  options?: { label: string; description: string }[];
+  multiSelect?: boolean;
+  isSecret?: boolean;
+}
 
 /** Entity link detected in an assistant response */
 export interface QuickAccessItem {

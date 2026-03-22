@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Plus, MoreHorizontal, Pencil, Trash2, MessageCircle } from "lucide-react";
+import { Plus, MoreHorizontal, Pencil, Trash2, MessageCircle, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ConversationListProps {
@@ -47,6 +47,13 @@ export function ConversationList({
 }: ConversationListProps) {
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredConversations = searchQuery.trim()
+    ? conversations.filter((c) =>
+        (c.title || "New Chat").toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : conversations;
 
   const handleRenameStart = (id: string, currentTitle: string) => {
     setRenamingId(id);
@@ -62,26 +69,36 @@ export function ConversationList({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-3 border-b border-border">
+      <div className="flex items-center gap-2 px-2 py-1.5 border-b border-border">
         <Button
           onClick={onNewChat}
-          variant="outline"
-          className="w-full justify-start gap-2"
-          size="sm"
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 shrink-0"
+          title="New Chat"
         >
           <Plus className="h-4 w-4" />
-          New Chat
         </Button>
+        <div className="flex items-center flex-1 min-w-0 gap-1.5 rounded-md bg-muted/50 px-2 h-7">
+          <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search chats..."
+            className="flex-1 min-w-0 bg-transparent text-xs outline-none placeholder:text-muted-foreground"
+          />
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {conversations.length === 0 ? (
+        {filteredConversations.length === 0 ? (
           <div className="p-4 text-center text-sm text-muted-foreground">
             No conversations yet
           </div>
         ) : (
           <div className="py-1">
-            {conversations.map((conv) => (
+            {filteredConversations.map((conv) => (
               <div
                 key={conv.id}
                 className={cn(

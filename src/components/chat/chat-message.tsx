@@ -3,40 +3,85 @@
 import type { ChatMessageRow } from "@/lib/db/schema";
 import { cn } from "@/lib/utils";
 import { ChatMessageMarkdown } from "./chat-message-markdown";
-import { Bot, User, AlertCircle } from "lucide-react";
+import { ChatPermissionRequest } from "./chat-permission-request";
+import { ChatQuestionInline } from "./chat-question";
+import { AlertCircle } from "lucide-react";
+import type { ChatQuestion } from "@/lib/chat/types";
 
 interface ChatMessageProps {
   message: ChatMessageRow;
   isStreaming: boolean;
+  conversationId?: string;
 }
 
-export function ChatMessage({ message, isStreaming }: ChatMessageProps) {
+interface PermissionMetadata {
+  type: "permission_request";
+  requestId: string;
+  toolName: string;
+  toolInput: Record<string, unknown>;
+}
+
+interface QuestionMetadata {
+  type: "question";
+  requestId: string;
+  questions: ChatQuestion[];
+}
+
+type SystemMetadata = PermissionMetadata | QuestionMetadata;
+
+export function ChatMessage({ message, isStreaming, conversationId }: ChatMessageProps) {
   const isUser = message.role === "user";
+  const isSystem = message.role === "system";
   const isError = message.status === "error";
 
-  return (
-    <div
-      className={cn(
-        "flex gap-3",
-        isUser ? "justify-end" : "justify-start"
-      )}
-    >
-      {/* Assistant avatar */}
-      {!isUser && (
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 mt-0.5">
-          <Bot className="h-4 w-4 text-primary" />
-        </div>
-      )}
+  // Handle system messages (permission requests, questions)
+  if (isSystem && message.metadata && conversationId) {
+    try {
+      const meta = JSON.parse(message.metadata) as SystemMetadata;
 
+      if (meta.type === "permission_request") {
+        return (
+          <ChatPermissionRequest
+            conversationId={conversationId}
+            requestId={meta.requestId}
+            messageId={message.id}
+            toolName={meta.toolName}
+            toolInput={meta.toolInput}
+            status={message.status ?? "pending"}
+          />
+        );
+      }
+
+      if (meta.type === "question") {
+        return (
+          <ChatQuestionInline
+            conversationId={conversationId}
+            requestId={meta.requestId}
+            messageId={message.id}
+            questions={meta.questions}
+            status={message.status ?? "pending"}
+          />
+        );
+      }
+    } catch {
+      // Invalid metadata — fall through to default rendering
+    }
+  }
+
+  // Skip rendering system messages without valid metadata
+  if (isSystem) return null;
+
+  return (
+    <div>
       {/* Message bubble */}
       <div
         className={cn(
-          "rounded-xl px-4 py-2.5 max-w-[65%] sm:max-w-[85%] lg:max-w-[65%]",
+          "rounded-xl px-4 py-2.5",
           isUser
-            ? "bg-primary text-primary-foreground rounded-br-sm"
+            ? "bg-muted text-foreground"
             : cn(
-                "bg-card border border-border elevation-1 rounded-bl-sm",
-                isError && "border-destructive/50"
+                "bg-card",
+                isError && "border border-destructive/50"
               )
         )}
       >
@@ -64,13 +109,6 @@ export function ChatMessage({ message, isStreaming }: ChatMessageProps) {
           </div>
         )}
       </div>
-
-      {/* User avatar */}
-      {isUser && (
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted mt-0.5">
-          <User className="h-4 w-4 text-muted-foreground" />
-        </div>
-      )}
     </div>
   );
 }

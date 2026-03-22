@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, Square } from "lucide-react";
+import { Square } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ChatModelSelector } from "./chat-model-selector";
 import type { ChatModelOption } from "@/lib/chat/types";
@@ -75,7 +75,7 @@ export function ChatInput({
       className={cn(
         isHeroMode
           ? "w-full"
-          : "sticky bottom-0 bg-background border-t border-border pb-[env(safe-area-inset-bottom)]"
+          : "sticky bottom-0 bg-background pb-[env(safe-area-inset-bottom)]"
       )}
     >
       <div
@@ -102,9 +102,9 @@ export function ChatInput({
             placeholder={placeholder}
             className={cn(
               "w-full resize-none bg-transparent text-sm outline-none placeholder:text-muted-foreground max-h-[200px] px-4 pt-3",
-              isHeroMode ? "min-h-[80px]" : "min-h-[24px]"
+              isHeroMode ? "min-h-[80px]" : "min-h-[72px]"
             )}
-            rows={isHeroMode ? 3 : 1}
+            rows={isHeroMode ? 3 : 3}
             disabled={isStreaming}
           />
 
@@ -128,17 +128,6 @@ export function ChatInput({
                   onClick={onStop}
                 >
                   <Square className="h-3.5 w-3.5" />
-                </Button>
-              )}
-              {!isStreaming && !isHeroMode && (
-                <Button
-                  variant="default"
-                  size="icon"
-                  className="h-8 w-8 shrink-0 rounded-lg"
-                  onClick={handleSend}
-                  disabled={!value.trim()}
-                >
-                  <ArrowUp className="h-4 w-4" />
                 </Button>
               )}
             </div>

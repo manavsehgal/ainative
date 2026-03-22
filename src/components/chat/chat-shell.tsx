@@ -243,6 +243,23 @@ export function ChatShell({
                     }
                   })
                   .catch(() => {});
+              } else if (event.type === "permission_request" || event.type === "question") {
+                // Insert system message for inline permission/question UI
+                const systemMsg = {
+                  id: event.messageId,
+                  conversationId: conversationId!,
+                  role: "system" as const,
+                  content: event.type === "permission_request"
+                    ? `Permission required: ${event.toolName}`
+                    : "Agent has a question",
+                  metadata: JSON.stringify(event.type === "permission_request"
+                    ? { type: "permission_request", requestId: event.requestId, toolName: event.toolName, toolInput: event.toolInput }
+                    : { type: "question", requestId: event.requestId, questions: event.questions }
+                  ),
+                  status: "pending" as const,
+                  createdAt: new Date(),
+                };
+                setMessages((prev) => [...prev, systemMsg]);
               } else if (event.type === "error") {
                 setMessages((prev) =>
                   prev.map((m) =>
@@ -368,7 +385,7 @@ export function ChatShell({
           <>
             {/* Messages */}
             <div className="flex-1 overflow-hidden">
-              <ChatMessageList messages={messages} isStreaming={isStreaming} />
+              <ChatMessageList messages={messages} isStreaming={isStreaming} conversationId={activeId ?? undefined} />
             </div>
 
             {/* Docked input */}

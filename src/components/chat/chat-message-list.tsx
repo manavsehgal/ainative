@@ -9,11 +9,13 @@ import { ArrowDown } from "lucide-react";
 interface ChatMessageListProps {
   messages: ChatMessageRow[];
   isStreaming: boolean;
+  conversationId?: string;
 }
 
 export function ChatMessageList({
   messages,
   isStreaming,
+  conversationId,
 }: ChatMessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -58,6 +60,7 @@ export function ChatMessageList({
             key={msg.id}
             message={msg}
             isStreaming={isStreaming && msg.status === "streaming"}
+            conversationId={conversationId}
           />
         ))}
         <div ref={bottomRef} />

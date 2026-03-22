@@ -20,14 +20,38 @@ import {
 } from "@/lib/data/chat";
 import { buildChatContext } from "./context-builder";
 import { detectEntities } from "./entity-detector";
-import type { ChatStreamEvent, QuickAccessItem } from "./types";
+import type { ChatStreamEvent, ChatQuestion } from "./types";
 import { getProviderForRuntime, DEFAULT_CHAT_MODEL } from "./types";
+import {
+  createSideChannel,
+  emitSideChannelEvent,
+  createPendingRequest,
+  cleanupConversation,
+  type ToolPermissionResponse,
+} from "./permission-bridge";
+import { isToolAllowed } from "@/lib/settings/permissions";
+import { createStagentMcpServer } from "./stagent-tools";
+
+// ── Streaming input wrapper (required for MCP tools) ─────────────────
+
+async function* generatePrompt(text: string) {
+  yield {
+    type: "user" as const,
+    message: { role: "user" as const, content: text },
+    parent_tool_use_id: null,
+    session_id: crypto.randomUUID(),
+  };
+}
 
 // ── Public API ─────────────────────────────────────────────────────────
 
 /**
  * Send a user message and stream the assistant response.
  * Returns an async iterable of ChatStreamEvent for SSE bridging.
+ *
+ * The generator merges two event sources:
+ *   1. SDK stream events (text deltas, results)
+ *   2. Side-channel events from canUseTool (permission requests, questions)
  */
 export async function* sendMessage(
   conversationId: string,
@@ -119,6 +143,9 @@ export async function* sendMessage(
     status: "streaming",
   });
 
+  // Create side channel for canUseTool → SSE bridge communication
+  const sideChannel = createSideChannel(conversationId);
+
   const startedAt = new Date();
   let usage: UsageSnapshot = {};
   let fullText = "";
@@ -134,15 +161,75 @@ export async function* sendMessage(
       });
     }
 
+    // Create in-process MCP server for Stagent CRUD tools
+    const stagentServer = createStagentMcpServer(conversation.projectId);
+
     const response = query({
-      prompt: fullPrompt,
+      prompt: generatePrompt(fullPrompt),
       options: {
-        model: conversation.modelId || undefined, // only pass if explicitly set; SDK uses its own default
+        model: conversation.modelId || undefined,
         abortController,
         includePartialMessages: true,
         cwd: cwd ?? process.cwd(),
         env: buildClaudeSdkEnv(authEnv),
-        // No allowedTools restriction — SDK uses default tools with permission mode
+        mcpServers: { stagent: stagentServer },
+        allowedTools: ["mcp__stagent__*"],
+        // @ts-expect-error Agent SDK canUseTool types are incomplete — our async handler is compatible at runtime
+        canUseTool: async (
+          toolName: string,
+          input: Record<string, unknown>
+        ): Promise<ToolPermissionResponse> => {
+          // Auto-allow Stagent CRUD tools (handled by in-process MCP server)
+          if (toolName.startsWith("mcp__stagent__")) {
+            return { behavior: "allow", updatedInput: input };
+          }
+
+          const isQuestion = toolName === "AskUserQuestion";
+
+          // Layer 1: Check saved user permissions (skip for questions)
+          if (!isQuestion) {
+            if (await isToolAllowed(toolName, input)) {
+              return { behavior: "allow", updatedInput: input };
+            }
+          }
+
+          // Persist the request as a system message
+          const requestId = crypto.randomUUID();
+          const systemMsg = await addMessage({
+            conversationId,
+            role: "system",
+            content: isQuestion
+              ? `Agent has a question`
+              : `Permission required: ${toolName}`,
+            status: "pending",
+            metadata: JSON.stringify(
+              isQuestion
+                ? { type: "question", requestId, questions: (input as { questions?: ChatQuestion[] }).questions ?? [] }
+                : { type: "permission_request", requestId, toolName, toolInput: input }
+            ),
+          });
+
+          // Emit event through side channel to SSE bridge
+          if (isQuestion) {
+            emitSideChannelEvent(conversationId, {
+              type: "question",
+              requestId,
+              messageId: systemMsg.id,
+              questions: (input as { questions?: ChatQuestion[] }).questions ?? [],
+            });
+          } else {
+            emitSideChannelEvent(conversationId, {
+              type: "permission_request",
+              requestId,
+              messageId: systemMsg.id,
+              toolName,
+              toolInput: input,
+            });
+          }
+
+          // Block until user responds via the respond API
+          return createPendingRequest(requestId, conversationId);
+        },
       },
     });
 
@@ -150,6 +237,11 @@ export async function* sendMessage(
       Record<string, unknown>
     >) {
       if (signal?.aborted) break;
+
+      // Drain any side-channel events (from canUseTool) before processing SDK event
+      for (const sideEvent of sideChannel.drain()) {
+        yield sideEvent;
+      }
 
       usage = mergeUsageSnapshot(usage, extractUsageSnapshot(raw));
 
@@ -205,6 +297,11 @@ export async function* sendMessage(
         }
         break;
       }
+    }
+
+    // Drain any remaining side-channel events
+    for (const sideEvent of sideChannel.drain()) {
+      yield sideEvent;
     }
 
     // Safety net: if SDK reported output tokens but no text was captured
@@ -281,5 +378,7 @@ export async function* sendMessage(
     });
 
     yield { type: "error", message: errorMessage };
+  } finally {
+    cleanupConversation(conversationId);
   }
 }

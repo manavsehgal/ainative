@@ -2,10 +2,11 @@ import { db } from "@/lib/db";
 import { projects, tasks, workflows, documents, schedules } from "@/lib/db/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { getMessages } from "@/lib/data/chat";
+import { STAGENT_SYSTEM_PROMPT } from "./system-prompt";
 
 // ── Token budget constants ─────────────────────────────────────────────
 
-const TIER_0_BUDGET = 500; // System identity, time, workspace
+const TIER_0_BUDGET = 1500; // System identity, tool catalog, intent routing
 const TIER_1_BUDGET = 8_000; // Conversation history (sliding window)
 const TIER_2_BUDGET = 5_000; // Project summary data
 // Tiers 3-4 are reserved for future on-demand entity/document expansion
@@ -25,8 +26,9 @@ function truncateToTokenBudget(text: string, budget: number): string {
 
 function buildTier0(projectName?: string | null, cwd?: string | null): string {
   const parts = [
+    STAGENT_SYSTEM_PROMPT,
+    "",
     `Current time: ${new Date().toISOString()}`,
-    `You are an AI assistant in the Stagent workspace.`,
   ];
   if (projectName) parts.push(`Active project: ${projectName}`);
   if (cwd) parts.push(`Working directory: ${cwd}`);
