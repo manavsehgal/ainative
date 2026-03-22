@@ -39,7 +39,7 @@ export function ProjectDetailClient({ tasks }: ProjectDetailClientProps) {
   return (
     <div>
       <SectionHeading>Tasks ({tasks.length})</SectionHeading>
-      <div className="space-y-2">
+      <div className="flex flex-col gap-3">
         {tasks.map((task) => (
           <Link key={task.id} href={`/tasks/${task.id}`}>
             <Card className="p-3 cursor-pointer transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl">

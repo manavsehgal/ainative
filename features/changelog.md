@@ -1,5 +1,19 @@
 # Feature Changelog
 
+## 2026-03-22
+
+### Groomed
+- Extracted 6 chat features from HOLD-mode brainstorming session
+- Chat as "conversational control plane" for all stagent primitives
+- Non-agentic by default (maxTurns: 1, no tools) — Haiku 4.5 default for cost efficiency
+- Progressive 5-tier context injection (Tier 0: workspace → Tier 4: full documents, ~53K token budget)
+- Quick Access navigation pills in responses for entity deep-linking
+- Model selector with cost/capability tiers ($, $$, $$$) + Settings default preference
+- Decisions confirmed: sidebar after Inbox, full-bleed hero, free-floating conversations, user-managed deletion
+- Foundation (P0): chat-data-layer, chat-engine, chat-api-routes
+- UI (P1): chat-ui-shell, chat-message-rendering, chat-input-composer
+- Updated roadmap with new "Chat Conversation" section and Sprints 21-24
+
 ## 2026-03-21
 
 ### Groomed

@@ -129,6 +129,17 @@ Features that enhance the product but aren't essential for first use — homepag
 | [environment-health-scoring](environment-health-scoring.md) | P3 | completed | environment-cache |
 | [agent-profile-from-environment](agent-profile-from-environment.md) | P3 | completed | environment-cache, multi-agent-routing |
 
+### Chat Conversation
+
+| Feature | Priority | Status | Dependencies |
+|---------|----------|--------|--------------|
+| [chat-data-layer](chat-data-layer.md) | P0 | planned | database-schema, provider-runtime-abstraction |
+| [chat-engine](chat-engine.md) | P0 | planned | chat-data-layer, provider-runtime-abstraction, multi-agent-routing |
+| [chat-api-routes](chat-api-routes.md) | P0 | planned | chat-data-layer, chat-engine |
+| [chat-ui-shell](chat-ui-shell.md) | P1 | planned | chat-api-routes, app-shell, operational-surface-foundation |
+| [chat-message-rendering](chat-message-rendering.md) | P1 | planned | chat-ui-shell, chat-api-routes |
+| [chat-input-composer](chat-input-composer.md) | P1 | planned | chat-ui-shell, chat-api-routes |
+
 ## Dependency Graph
 
 Critical path through the MVP:
@@ -221,6 +232,19 @@ workflow-engine + multi-agent-routing
                           └── AI assist guidance
 ```
 
+Chat conversation chain:
+
+```
+database-schema + provider-runtime-abstraction + multi-agent-routing
+                                │
+                                └── chat-data-layer (P0)
+                                        └── chat-engine (P0)
+                                                └── chat-api-routes (P0)
+                                                        ├── chat-ui-shell (P1)
+                                                        ├── chat-message-rendering (P1)
+                                                        └── chat-input-composer (P1)
+```
+
 ## Recommended Build Order
 
 1. **Sprint 1 — Foundation**: cli-bootstrap + database-schema + app-shell (parallel)
@@ -245,6 +269,11 @@ workflow-engine + multi-agent-routing
 20. **Sprint 20 — Detail Polish**: detail-view-redesign (P2, completed) + playbook-documentation (P2, completed) + learned-context-ux-completion (P2, completed)
 
 > All sprints above are completed or deferred. The Environment Onboarding initiative (11 features) is fully shipped.
+
+21. **Sprint 21 — Chat Data Layer**: chat-data-layer (P0) — DB tables, schema, data access
+22. **Sprint 22 — Chat Engine**: chat-engine (P0) — context builder, SDK streaming, entity detection
+23. **Sprint 23 — Chat API**: chat-api-routes (P0) — REST + SSE endpoints
+24. **Sprint 24 — Chat UI**: chat-ui-shell (P1) + chat-input-composer (P1) + chat-message-rendering (P1) — page layout, input, messages (partially parallel)
 
 ## Open Questions
 
