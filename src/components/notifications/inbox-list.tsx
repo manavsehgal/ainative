@@ -142,7 +142,7 @@ export function InboxList({
         </div>
       </div>
 
-      <div className="elevation-0 space-y-3" aria-live="polite">
+      <div className="space-y-3" aria-live="polite">
         {filtered.length === 0 ? (
           <EmptyState
             icon={Inbox}

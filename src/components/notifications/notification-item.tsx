@@ -2,7 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Shield, MessageCircle, CheckCircle, XCircle, Eye, EyeOff, Trash2, Wallet, Brain } from "lucide-react";
+import { Shield, MessageCircle, CheckCircle, XCircle, Eye, EyeOff, Trash2, Wallet, Brain, ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -157,10 +157,14 @@ export function NotificationItem({ notification, onUpdated }: NotificationItemPr
   return (
     <Card
       className={`p-4 ${
+        isNavigable
+          ? "border-l-4 border-l-primary cursor-pointer hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          : ""
+      } ${
         isUnread
-          ? "surface-card border-l-4 border-l-primary"
+          ? "surface-card"
           : "surface-card-muted"
-      }${isNavigable ? " cursor-pointer hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" : ""}`}
+      }`}
       role="article"
       aria-label={`${typeLabels[notification.type] ?? "Notification"}: ${notification.title}${isUnread ? " (unread)" : ""}`}
       tabIndex={isNavigable ? 0 : undefined}
@@ -278,7 +282,18 @@ export function NotificationItem({ notification, onUpdated }: NotificationItemPr
             )}
           </p>
         </div>
-        <div className="flex flex-col gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+          {isNavigable && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-primary"
+              onClick={handleNavigate}
+              aria-label="View task details"
+            >
+              <ArrowUpRight className="h-4 w-4" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
