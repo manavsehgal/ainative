@@ -87,8 +87,12 @@ export function EnvironmentDashboard({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <ScanStatusBar scan={scan} scanning={scanning} onScan={handleScan} />
+        <ScanStatusBar scan={scan} />
         <div className="flex items-center gap-2 shrink-0 ml-3">
+          <Button variant="outline" size="sm" onClick={handleScan} disabled={scanning}>
+            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${scanning ? "animate-spin" : ""}`} />
+            {scanning ? "Scanning..." : "Scan Now"}
+          </Button>
           <Link href="/environment/skills">
             <Button variant="outline" size="sm">
               <Wrench className="h-3.5 w-3.5 mr-1.5" />
