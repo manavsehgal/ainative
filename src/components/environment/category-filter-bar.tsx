@@ -57,7 +57,7 @@ export function CategoryFilterBar({
             <Badge
               key={category}
               variant={isActive ? "default" : "outline"}
-              className="cursor-pointer hover:bg-accent transition-colors"
+              className={`cursor-pointer transition-colors ${isActive ? "hover:bg-primary/80" : "hover:bg-accent"}`}
               onClick={() => onCategoryChange(isActive ? null : category)}
             >
               {meta.label} ({count})
@@ -74,7 +74,7 @@ export function CategoryFilterBar({
             <Badge
               key={tool}
               variant={isActive ? "default" : "secondary"}
-              className="cursor-pointer hover:bg-accent transition-colors"
+              className={`cursor-pointer transition-colors ${isActive ? "hover:bg-primary/80" : "hover:bg-accent"}`}
               onClick={() => onToolChange(isActive ? null : tool)}
             >
               {TOOL_LABELS[tool] || tool} ({count})
@@ -91,7 +91,7 @@ export function CategoryFilterBar({
             <Badge
               key={scope}
               variant={isActive ? "default" : "outline"}
-              className="cursor-pointer hover:bg-accent transition-colors"
+              className={`cursor-pointer transition-colors ${isActive ? "hover:bg-primary/80" : "hover:bg-accent"}`}
               onClick={() => onScopeChange(isActive ? null : scope)}
             >
               {SCOPE_LABELS[scope]}

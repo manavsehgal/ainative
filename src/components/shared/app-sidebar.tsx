@@ -30,6 +30,7 @@ import {
   SidebarHeader,
   SidebarTrigger,
   SidebarRail,
+  SidebarSeparator,
 } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { TrustTierBadge } from "@/components/shared/trust-tier-badge";
@@ -133,7 +134,8 @@ export function AppSidebar() {
         <div className="group-data-[collapsible=icon]:hidden mb-2">
           <WorkspaceIndicator variant="sidebar" />
         </div>
-        <div className="flex items-center justify-between group-data-[collapsible=icon]:justify-center">
+        <SidebarSeparator className="!-mx-4 !w-[calc(100%+2rem)] group-data-[collapsible=icon]:hidden" />
+        <div className="flex items-center justify-between group-data-[collapsible=icon]:justify-center mt-2">
           <div className="flex items-center gap-3 group-data-[collapsible=icon]:hidden">
             <AuthStatusDot />
             <TrustTierBadge />
