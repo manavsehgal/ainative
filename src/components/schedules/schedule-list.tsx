@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { ScheduleCreateDialog } from "./schedule-create-dialog";
+import { ScheduleCreateSheet } from "./schedule-create-sheet";
+import { ScheduleDetailSheet } from "./schedule-detail-sheet";
 import { ScheduleStatusBadge } from "./schedule-status-badge";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -31,13 +31,17 @@ interface Schedule {
 
 interface ScheduleListProps {
   projects: { id: string; name: string }[];
+  initialSelectedId?: string;
 }
 
-export function ScheduleList({ projects }: ScheduleListProps) {
-  const router = useRouter();
+export function ScheduleList({ projects, initialSelectedId }: ScheduleListProps) {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [selectedScheduleId, setSelectedScheduleId] = useState<string | null>(
+    initialSelectedId ?? null
+  );
+  const [createOpen, setCreateOpen] = useState(false);
 
   const refresh = useCallback(async () => {
     const res = await fetch("/api/schedules");
@@ -101,7 +105,10 @@ export function ScheduleList({ projects }: ScheduleListProps) {
   return (
     <div>
       <div className="flex justify-end mb-4">
-        <ScheduleCreateDialog projects={projects} onCreated={refresh} />
+        <Button onClick={() => setCreateOpen(true)}>
+          <Clock className="h-4 w-4 mr-2" />
+          New Schedule
+        </Button>
       </div>
 
       {!loaded ? (
@@ -136,11 +143,11 @@ export function ScheduleList({ projects }: ScheduleListProps) {
               key={sched.id}
               tabIndex={0}
               className="elevation-1 cursor-pointer transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl"
-              onClick={() => router.push(`/schedules/${sched.id}`)}
+              onClick={() => setSelectedScheduleId(sched.id)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
-                  router.push(`/schedules/${sched.id}`);
+                  setSelectedScheduleId(sched.id);
                 }
               }}
             >
@@ -224,6 +231,23 @@ export function ScheduleList({ projects }: ScheduleListProps) {
           ))}
         </div>
       )}
+
+      <ScheduleCreateSheet
+        projects={projects}
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onCreated={refresh}
+      />
+
+      <ScheduleDetailSheet
+        scheduleId={selectedScheduleId}
+        open={selectedScheduleId !== null}
+        onOpenChange={(open) => {
+          if (!open) setSelectedScheduleId(null);
+        }}
+        onDeleted={refresh}
+        onUpdated={refresh}
+      />
 
       <ConfirmDialog
         open={confirmDeleteId !== null}

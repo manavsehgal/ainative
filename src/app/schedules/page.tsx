@@ -5,7 +5,12 @@ import { PageShell } from "@/components/shared/page-shell";
 
 export const dynamic = "force-dynamic";
 
-export default async function SchedulesPage() {
+export default async function SchedulesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ selected?: string }>;
+}) {
+  const { selected } = await searchParams;
   const allProjects = await db
     .select({ id: projects.id, name: projects.name })
     .from(projects)
@@ -13,7 +18,7 @@ export default async function SchedulesPage() {
 
   return (
     <PageShell title="Schedules">
-      <ScheduleList projects={allProjects} />
+      <ScheduleList projects={allProjects} initialSelectedId={selected} />
     </PageShell>
   );
 }

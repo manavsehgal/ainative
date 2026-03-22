@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import { FolderKanban, FolderSearch } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProjectCard } from "./project-card";
-import { ProjectCreateDialog } from "./project-create-dialog";
-import { ProjectEditDialog } from "./project-edit-dialog";
+import { ProjectFormSheet } from "./project-form-sheet";
 import { DiscoverWorkspaceDialog } from "@/components/workspace/discover-workspace-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
 import { SectionHeading } from "@/components/shared/section-heading";
@@ -21,10 +20,10 @@ interface Project {
 
 export function ProjectList({ initialProjects }: { initialProjects: Project[] }) {
   const [projects, setProjects] = useState<Project[]>(initialProjects);
-  const [editProject, setEditProject] = useState<Project | null>(null);
-  const [editOpen, setEditOpen] = useState(false);
+  const [sheetMode, setSheetMode] = useState<"create" | "edit">("create");
+  const [sheetProject, setSheetProject] = useState<Project | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [discoverOpen, setDiscoverOpen] = useState(false);
-  const restoreFocusRef = useRef<HTMLElement | null>(null);
   const activeProjects = projects.filter((project) => project.status === "active").length;
   const totalTasks = projects.reduce((sum, project) => sum + project.taskCount, 0);
 
@@ -33,12 +32,18 @@ export function ProjectList({ initialProjects }: { initialProjects: Project[] })
     if (res.ok) setProjects(await res.json());
   }, []);
 
-  function handleEdit(id: string, trigger: HTMLElement | null) {
+  function handleCreate() {
+    setSheetMode("create");
+    setSheetProject(null);
+    setSheetOpen(true);
+  }
+
+  function handleEdit(id: string, _trigger: HTMLElement | null) {
     const project = projects.find((p) => p.id === id);
     if (project) {
-      restoreFocusRef.current = trigger;
-      setEditProject(project);
-      setEditOpen(true);
+      setSheetMode("edit");
+      setSheetProject(project);
+      setSheetOpen(true);
     }
   }
 
@@ -49,7 +54,10 @@ export function ProjectList({ initialProjects }: { initialProjects: Project[] })
           <FolderSearch className="h-4 w-4 mr-1.5" />
           Discover Workspace
         </Button>
-        <ProjectCreateDialog onCreated={refresh} />
+        <Button onClick={handleCreate}>
+          <FolderKanban className="h-4 w-4 mr-2" />
+          New Project
+        </Button>
       </div>
 
       <div className="grid gap-3 md:grid-cols-3">
@@ -103,12 +111,12 @@ export function ProjectList({ initialProjects }: { initialProjects: Project[] })
         )}
       </section>
 
-      <ProjectEditDialog
-        project={editProject}
-        open={editOpen}
-        onOpenChange={setEditOpen}
-        onUpdated={refresh}
-        restoreFocusElement={restoreFocusRef.current}
+      <ProjectFormSheet
+        mode={sheetMode}
+        project={sheetProject}
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        onSaved={refresh}
       />
 
       <DiscoverWorkspaceDialog
