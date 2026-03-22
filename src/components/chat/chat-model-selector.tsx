@@ -31,7 +31,7 @@ export function ChatModelSelector({
   onModelChange,
   models = CHAT_MODELS,
 }: ChatModelSelectorProps) {
-  const current = models.find((m) => m.id === modelId) ?? models[0];
+  const current = models.find((m) => m.id === modelId) ?? models[0] ?? { id: modelId, label: modelId, provider: "anthropic" as const, tier: "Balanced", costLabel: "$$" };
 
   const anthropicModels = models.filter(
     (m) => m.provider === "anthropic"

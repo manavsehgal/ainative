@@ -137,7 +137,7 @@ export async function* sendMessage(
     const response = query({
       prompt: fullPrompt,
       options: {
-        model: conversation.modelId || DEFAULT_CHAT_MODEL,
+        model: conversation.modelId || undefined, // only pass if explicitly set; SDK uses its own default
         abortController,
         includePartialMessages: true,
         cwd: cwd ?? process.cwd(),
@@ -159,6 +159,15 @@ export async function* sendMessage(
         if (delta?.type === "text_delta" && typeof delta.text === "string") {
           fullText += delta.text;
           yield { type: "delta", content: delta.text };
+        }
+      } else if (raw.type === "assistant" && raw.content) {
+        // Handle assistant message with content blocks (alternate SDK response format)
+        const blocks = raw.content as Array<Record<string, unknown>>;
+        for (const block of blocks) {
+          if (block.type === "text" && typeof block.text === "string") {
+            fullText += block.text;
+            yield { type: "delta", content: block.text };
+          }
         }
       } else if (raw.type === "result" && "result" in raw) {
         if (raw.is_error) {
@@ -183,6 +192,12 @@ export async function* sendMessage(
         }
         break;
       }
+    }
+
+    // Safety net: if SDK reported output tokens but no text was captured
+    if (!fullText && usage.outputTokens && usage.outputTokens > 0) {
+      fullText = "(Response was generated but could not be captured. Please try again.)";
+      yield { type: "delta", content: fullText };
     }
 
     // Finalize assistant message
