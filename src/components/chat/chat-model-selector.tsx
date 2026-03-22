@@ -1,6 +1,6 @@
 "use client";
 
-import { CHAT_MODELS, type ChatModelOption } from "@/lib/chat/types";
+import { CHAT_MODELS, DEFAULT_CHAT_MODEL, type ChatModelOption } from "@/lib/chat/types";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -46,7 +46,7 @@ export function ChatModelSelector({
           size="sm"
           className="h-7 gap-1 rounded-md border border-border px-2 text-xs text-muted-foreground hover:text-foreground"
         >
-          {current.label}
+          {current.label}{modelId === DEFAULT_CHAT_MODEL ? " (Default)" : ""}
           <ChevronDown className="h-3 w-3" />
         </Button>
       </DropdownMenuTrigger>

@@ -32,13 +32,15 @@ async function discoverClaudeModels(): Promise<ChatModelOption[]> {
     abortController.abort(); // Clean up session
     clearTimeout(timeout);
 
-    return models.map((m) => ({
-      id: m.value,
-      label: m.displayName,
-      provider: "anthropic" as const,
-      tier: inferTier(m.value),
-      costLabel: inferCost(m.value),
-    }));
+    return models
+      .filter((m) => m.value !== "default") // exclude meta-option
+      .map((m) => ({
+        id: m.value,
+        label: m.displayName,
+        provider: "anthropic" as const,
+        tier: inferTier(m.value),
+        costLabel: inferCost(m.value),
+      }));
   } catch {
     return CHAT_MODELS.filter((m) => m.provider === "anthropic");
   }

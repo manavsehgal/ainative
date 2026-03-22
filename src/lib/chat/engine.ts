@@ -142,8 +142,7 @@ export async function* sendMessage(
         includePartialMessages: true,
         cwd: cwd ?? process.cwd(),
         env: buildClaudeSdkEnv(authEnv),
-        allowedTools: [],
-        maxTurns: 1,
+        // No allowedTools restriction — SDK uses default tools with permission mode
       },
     });
 
@@ -154,29 +153,43 @@ export async function* sendMessage(
 
       usage = mergeUsageSnapshot(usage, extractUsageSnapshot(raw));
 
-      if (raw.type === "content_block_delta") {
+      if (raw.type === "stream_event") {
+        // SDK wraps Anthropic API events inside stream_event.event
+        const innerEvent = raw.event as Record<string, unknown> | undefined;
+        if (innerEvent?.type === "content_block_delta") {
+          const delta = innerEvent.delta as Record<string, unknown> | undefined;
+          if (delta?.type === "text_delta" && typeof delta.text === "string") {
+            fullText += delta.text;
+            yield { type: "delta", content: delta.text };
+          }
+        }
+      } else if (raw.type === "content_block_delta") {
         const delta = raw.delta as Record<string, unknown> | undefined;
         if (delta?.type === "text_delta" && typeof delta.text === "string") {
           fullText += delta.text;
           yield { type: "delta", content: delta.text };
         }
-      } else if (raw.type === "assistant" && raw.content) {
-        // Handle assistant message with content blocks (alternate SDK response format)
-        const blocks = raw.content as Array<Record<string, unknown>>;
-        for (const block of blocks) {
-          if (block.type === "text" && typeof block.text === "string") {
-            fullText += block.text;
-            yield { type: "delta", content: block.text };
+      } else if (raw.type === "assistant") {
+        // Handle assistant message with content blocks
+        const msg = raw.message as Record<string, unknown> | undefined;
+        const blocks = (msg?.content ?? raw.content) as Array<Record<string, unknown>> | undefined;
+        if (blocks) {
+          for (const block of blocks) {
+            if (block.type === "text" && typeof block.text === "string" && !fullText.includes(block.text)) {
+              fullText += block.text;
+              yield { type: "delta", content: block.text };
+            }
           }
         }
       } else if (raw.type === "result" && "result" in raw) {
-        if (raw.is_error) {
+        if (raw.is_error && raw.subtype !== "error_max_turns") {
           throw new Error(
             typeof raw.result === "string"
               ? raw.result
               : "Agent SDK returned an error"
           );
         }
+        // For max_turns errors, use whatever text was accumulated
         const result = raw.result;
         if (typeof result === "string" && result.length > 0) {
           // If result has content not yet streamed, emit the remainder

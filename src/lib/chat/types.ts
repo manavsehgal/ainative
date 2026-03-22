@@ -26,24 +26,29 @@ export function getProviderForRuntime(runtimeId: string): "anthropic" | "openai"
   return runtimeId === "openai-codex-app-server" ? "openai" : "anthropic";
 }
 
-/** Available chat models by provider (fallback when SDKs are unreachable) */
+/** Available chat models by provider (fallback when SDKs are unreachable).
+ *  IDs must match what the SDKs actually accept:
+ *  - Claude SDK: "haiku", "sonnet", "opus" (short names)
+ *  - Codex App Server: "gpt-5.4", "gpt-5.3-codex", etc. */
 export const CHAT_MODELS: ChatModelOption[] = [
-  // Anthropic — Claude 4.5/4.6 family
-  { id: "claude-haiku-4-5", label: "Haiku 4.5", provider: "anthropic", tier: "Fast", costLabel: "$" },
-  { id: "claude-sonnet-4-6", label: "Sonnet 4.6", provider: "anthropic", tier: "Balanced", costLabel: "$$" },
-  { id: "claude-opus-4-6", label: "Opus 4.6", provider: "anthropic", tier: "Best", costLabel: "$$$" },
+  // Anthropic — uses SDK short names
+  { id: "haiku", label: "Haiku", provider: "anthropic", tier: "Fast", costLabel: "$" },
+  { id: "sonnet", label: "Sonnet", provider: "anthropic", tier: "Balanced", costLabel: "$$" },
+  { id: "opus", label: "Opus", provider: "anthropic", tier: "Best", costLabel: "$$$" },
   // OpenAI — GPT-5.x / Codex family
   { id: "gpt-5.3-codex-spark", label: "Codex Spark", provider: "openai", tier: "Fast", costLabel: "$" },
   { id: "gpt-5.3-codex", label: "Codex 5.3", provider: "openai", tier: "Balanced", costLabel: "$$" },
   { id: "gpt-5.4", label: "GPT-5.4", provider: "openai", tier: "Best", costLabel: "$$$" },
 ];
 
-export const DEFAULT_CHAT_MODEL = "claude-haiku-4-5";
+export const DEFAULT_CHAT_MODEL = "haiku";
 
-/** Model → runtime mapping (derived from model's provider) */
+/** Model → runtime mapping (derived from model's provider or ID prefix) */
 export function getRuntimeForModel(modelId: string): string {
   const model = CHAT_MODELS.find((m) => m.id === modelId);
-  return model?.provider === "openai" ? "openai-codex-app-server" : "claude-code";
+  if (model) return model.provider === "openai" ? "openai-codex-app-server" : "claude-code";
+  // Fallback: OpenAI models start with "gpt" or "o"
+  return /^(gpt|o\d)/.test(modelId) ? "openai-codex-app-server" : "claude-code";
 }
 
 /** Suggested prompt category with expandable sub-prompts */
