@@ -1,6 +1,6 @@
 ---
 title: Git Checkpoint Manager
-status: planned
+status: completed
 priority: P1
 milestone: post-mvp
 source: ideas/environment-onboarding-plan.md

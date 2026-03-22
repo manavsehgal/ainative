@@ -16,6 +16,7 @@ import { ArtifactDetailSheet } from "./artifact-detail-sheet";
 import { CheckpointList } from "./checkpoint-list";
 import { TemplateList } from "./template-list";
 import { HealthScoreCard } from "./health-score-card";
+import { SuggestedProfiles } from "./suggested-profiles";
 import type { HealthScore } from "@/lib/environment/health-scoring";
 
 interface EnvironmentDashboardProps {
@@ -167,6 +168,9 @@ export function EnvironmentDashboard({
           <TemplateList templates={templates} scanId={scan?.id} />
         </TabsContent>
       </Tabs>
+
+      {/* Suggested profiles from environment artifacts */}
+      <SuggestedProfiles scanId={scan?.id} />
 
       <ArtifactDetailSheet
         artifact={selectedArtifact}

@@ -83,7 +83,7 @@ Features that enhance the product but aren't essential for first use — homepag
 | [board-context-persistence](board-context-persistence.md)           | P2       | completed | task-board, kanban-board-operations                                                                      |
 | [detail-view-redesign](detail-view-redesign.md)                     | P2       | completed | task-board, document-manager, workflow-engine, ui-density-refinement                                     |
 | [playbook-documentation](playbook-documentation.md)                 | P2       | completed | app-shell, command-palette-enhancement                                                                   |
-| [workflow-ux-overhaul](workflow-ux-overhaul.md)                     | P1       | in-progress | workflow-engine, ai-assist-workflow-creation, agent-document-context, document-output-generation        |
+| [workflow-ux-overhaul](workflow-ux-overhaul.md)                     | P1       | completed | workflow-engine, ai-assist-workflow-creation, agent-document-context, document-output-generation        |
 
 ### Platform
 
@@ -117,17 +117,17 @@ Features that enhance the product but aren't essential for first use — homepag
 
 | Feature | Priority | Status | Dependencies |
 |---------|----------|--------|--------------|
-| [environment-scanner](environment-scanner.md) | P0 | planned | — |
-| [environment-cache](environment-cache.md) | P0 | planned | environment-scanner |
-| [environment-dashboard](environment-dashboard.md) | P0 | planned | environment-cache |
-| [git-checkpoint-manager](git-checkpoint-manager.md) | P1 | planned | environment-cache |
-| [environment-sync-engine](environment-sync-engine.md) | P1 | planned | git-checkpoint-manager |
-| [project-onboarding-flow](project-onboarding-flow.md) | P2 | planned | environment-dashboard |
-| [environment-templates](environment-templates.md) | P2 | planned | environment-sync-engine |
-| [cross-project-comparison](cross-project-comparison.md) | P2 | planned | environment-cache |
-| [skill-portfolio](skill-portfolio.md) | P2 | planned | environment-cache |
-| [environment-health-scoring](environment-health-scoring.md) | P3 | planned | environment-cache |
-| [agent-profile-from-environment](agent-profile-from-environment.md) | P3 | planned | environment-cache, multi-agent-routing |
+| [environment-scanner](environment-scanner.md) | P0 | completed | — |
+| [environment-cache](environment-cache.md) | P0 | completed | environment-scanner |
+| [environment-dashboard](environment-dashboard.md) | P0 | completed | environment-cache |
+| [git-checkpoint-manager](git-checkpoint-manager.md) | P1 | completed | environment-cache |
+| [environment-sync-engine](environment-sync-engine.md) | P1 | completed | git-checkpoint-manager |
+| [project-onboarding-flow](project-onboarding-flow.md) | P2 | completed | environment-dashboard |
+| [environment-templates](environment-templates.md) | P2 | completed | environment-sync-engine |
+| [cross-project-comparison](cross-project-comparison.md) | P2 | completed | environment-cache |
+| [skill-portfolio](skill-portfolio.md) | P2 | completed | environment-cache |
+| [environment-health-scoring](environment-health-scoring.md) | P3 | completed | environment-cache |
+| [agent-profile-from-environment](agent-profile-from-environment.md) | P3 | completed | environment-cache, multi-agent-routing |
 
 ## Dependency Graph
 
@@ -214,7 +214,7 @@ workflow-engine + multi-agent-routing
                 │
                 ├── parallel-research-fork-join
                 │         └── multi-agent-swarm
-                └── workflow-ux-overhaul (in-progress)
+                └── workflow-ux-overhaul (completed)
                           ├── doc context propagation
                           ├── output readability ✓
                           ├── dashboard visibility ✓
@@ -244,7 +244,7 @@ workflow-engine + multi-agent-routing
 19. **Sprint 19 — npm Publish Readiness**: npm-publish-readiness (P3, deferred)
 20. **Sprint 20 — Detail Polish**: detail-view-redesign (P2, completed) + playbook-documentation (P2, completed) + learned-context-ux-completion (P2, completed)
 
-> All sprints above are completed or deferred except `workflow-ux-overhaul` (P1, in-progress — chunks 2 & 3 shipped, chunks 1 & 4 remaining).
+> All sprints above are completed or deferred. The Environment Onboarding initiative (11 features) is fully shipped.
 
 ## Open Questions
 

@@ -1,6 +1,6 @@
 ---
 title: Environment Sync Engine
-status: planned
+status: completed
 priority: P1
 milestone: post-mvp
 source: ideas/environment-onboarding-plan.md

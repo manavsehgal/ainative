@@ -1,6 +1,6 @@
 ---
 title: Project Onboarding Flow
-status: planned
+status: completed
 priority: P2
 milestone: post-mvp
 source: ideas/environment-onboarding-plan.md

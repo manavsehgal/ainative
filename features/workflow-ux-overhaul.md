@@ -1,6 +1,6 @@
 ---
 title: Workflow UX Overhaul
-status: in-progress
+status: completed
 priority: P1
 milestone: post-mvp
 source: conversation/2026-03-17-workflow-issues

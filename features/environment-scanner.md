@@ -1,6 +1,6 @@
 ---
 title: Environment Scanner
-status: planned
+status: completed
 priority: P0
 milestone: post-mvp
 source: ideas/environment-onboarding-plan.md

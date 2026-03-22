@@ -1,6 +1,6 @@
 ---
 title: Agent Profile from Environment
-status: planned
+status: completed
 priority: P3
 milestone: post-mvp
 source: ideas/environment-onboarding-plan.md
