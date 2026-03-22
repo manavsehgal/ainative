@@ -16,6 +16,7 @@ import {
   BookMarked,
   Globe,
   Settings,
+  MessageCircle,
 } from "lucide-react";
 import {
   Sidebar,
@@ -50,6 +51,7 @@ interface NavItem {
 const workItems: NavItem[] = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard, alsoMatches: ["/tasks"] },
   { title: "Inbox", href: "/inbox", icon: Inbox, badge: true },
+  { title: "Chat", href: "/chat", icon: MessageCircle },
   { title: "Projects", href: "/projects", icon: FolderKanban },
   { title: "Workflows", href: "/workflows", icon: Workflow },
   { title: "Documents", href: "/documents", icon: FileText },

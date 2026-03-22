@@ -15,6 +15,8 @@ import {
   environmentArtifacts,
   environmentScans,
   environmentTemplates,
+  chatMessages,
+  conversations,
 } from "@/lib/db/schema";
 import { readdirSync, unlinkSync, mkdirSync } from "fs";
 import { join } from "path";
@@ -40,6 +42,10 @@ export function clearAllData() {
   const envArtifactsDeleted = db.delete(environmentArtifacts).run().changes;
   const envScansDeleted = db.delete(environmentScans).run().changes;
   const envTemplatesDeleted = db.delete(environmentTemplates).run().changes;
+
+  // Chat tables (messages before conversations — FK safety)
+  const chatMessagesDeleted = db.delete(chatMessages).run().changes;
+  const conversationsDeleted = db.delete(conversations).run().changes;
 
   const viewsDeleted = db.delete(views).run().changes;
   const usageLedgerDeleted = db.delete(usageLedger).run().changes;
@@ -81,6 +87,8 @@ export function clearAllData() {
     environmentArtifacts: envArtifactsDeleted,
     environmentScans: envScansDeleted,
     environmentTemplates: envTemplatesDeleted,
+    chatMessages: chatMessagesDeleted,
+    conversations: conversationsDeleted,
     files: filesDeleted,
   };
 }

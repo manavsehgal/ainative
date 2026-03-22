@@ -226,6 +226,7 @@ export const usageLedger = sqliteTable(
         "profile_test",
         "pattern_extraction",
         "context_summarization",
+        "chat_turn",
       ],
     }).notNull(),
     runtimeId: text("runtime_id").notNull(),
@@ -406,6 +407,57 @@ export const environmentTemplates = sqliteTable(
   (table) => [index("idx_env_templates_scope").on(table.scope)]
 );
 
+// ── Chat conversation tables ───────────────────────────────────────────
+
+export const conversations = sqliteTable(
+  "conversations",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id").references(() => projects.id),
+    title: text("title"),
+    runtimeId: text("runtime_id").notNull(),
+    modelId: text("model_id"),
+    status: text("status", { enum: ["active", "archived"] })
+      .default("active")
+      .notNull(),
+    sessionId: text("session_id"),
+    contextScope: text("context_scope"), // JSON: context config overrides
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_conversations_project_id").on(table.projectId),
+    index("idx_conversations_status").on(table.status),
+    index("idx_conversations_updated_at").on(table.updatedAt),
+  ]
+);
+
+export const chatMessages = sqliteTable(
+  "chat_messages",
+  {
+    id: text("id").primaryKey(),
+    conversationId: text("conversation_id")
+      .references(() => conversations.id)
+      .notNull(),
+    role: text("role", { enum: ["user", "assistant", "system"] }).notNull(),
+    content: text("content").notNull(),
+    metadata: text("metadata"), // JSON: token counts, model used, etc.
+    status: text("status", {
+      enum: ["pending", "streaming", "complete", "error"],
+    })
+      .default("complete")
+      .notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_chat_messages_conversation_id").on(table.conversationId),
+    index("idx_chat_messages_conversation_created").on(
+      table.conversationId,
+      table.createdAt
+    ),
+  ]
+);
+
 // Shared types derived from schema — use these in components instead of `as any`
 export type ProjectRow = InferSelectModel<typeof projects>;
 export type TaskRow = InferSelectModel<typeof tasks>;
@@ -423,3 +475,5 @@ export type EnvironmentArtifactRow = InferSelectModel<typeof environmentArtifact
 export type EnvironmentCheckpointRow = InferSelectModel<typeof environmentCheckpoints>;
 export type EnvironmentSyncOpRow = InferSelectModel<typeof environmentSyncOps>;
 export type EnvironmentTemplateRow = InferSelectModel<typeof environmentTemplates>;
+export type ConversationRow = InferSelectModel<typeof conversations>;
+export type ChatMessageRow = InferSelectModel<typeof chatMessages>;

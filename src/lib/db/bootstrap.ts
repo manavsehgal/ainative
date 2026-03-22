@@ -18,6 +18,8 @@ const STAGENT_TABLES = [
   "environment_checkpoints",
   "environment_sync_ops",
   "environment_templates",
+  "conversations",
+  "chat_messages",
 ] as const;
 
 export function bootstrapStagentDatabase(sqlite: Database.Database): void {
@@ -328,6 +330,50 @@ export function bootstrapStagentDatabase(sqlite: Database.Database): void {
     );
 
     CREATE INDEX IF NOT EXISTS idx_env_templates_scope ON environment_templates(scope);
+  `);
+
+  // ── Chat conversation tables ────────────────────────────────────────────
+  // Drop legacy conversations/messages tables (incompatible schema from earlier attempt)
+  const legacyConv = sqlite.prepare(
+    `SELECT sql FROM sqlite_master WHERE type='table' AND name='conversations'`
+  ).get() as { sql: string } | undefined;
+  if (legacyConv && !legacyConv.sql.includes("runtime_id")) {
+    sqlite.exec(`DROP TABLE IF EXISTS messages`);
+    sqlite.exec(`DROP TABLE IF EXISTS conversations`);
+  }
+
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS conversations (
+      id TEXT PRIMARY KEY NOT NULL,
+      project_id TEXT,
+      title TEXT,
+      runtime_id TEXT NOT NULL,
+      model_id TEXT,
+      status TEXT DEFAULT 'active' NOT NULL,
+      session_id TEXT,
+      context_scope TEXT,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      FOREIGN KEY (project_id) REFERENCES projects(id) ON UPDATE NO ACTION ON DELETE NO ACTION
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_conversations_project_id ON conversations(project_id);
+    CREATE INDEX IF NOT EXISTS idx_conversations_status ON conversations(status);
+    CREATE INDEX IF NOT EXISTS idx_conversations_updated_at ON conversations(updated_at);
+
+    CREATE TABLE IF NOT EXISTS chat_messages (
+      id TEXT PRIMARY KEY NOT NULL,
+      conversation_id TEXT NOT NULL,
+      role TEXT NOT NULL,
+      content TEXT NOT NULL,
+      metadata TEXT,
+      status TEXT DEFAULT 'complete' NOT NULL,
+      created_at INTEGER NOT NULL,
+      FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON UPDATE NO ACTION ON DELETE NO ACTION
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_chat_messages_conversation_id ON chat_messages(conversation_id);
+    CREATE INDEX IF NOT EXISTS idx_chat_messages_conversation_created ON chat_messages(conversation_id, created_at);
   `);
 }
 

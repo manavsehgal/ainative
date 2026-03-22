@@ -17,7 +17,8 @@ export type UsageActivityType =
   | "task_assist"
   | "profile_test"
   | "pattern_extraction"
-  | "context_summarization";
+  | "context_summarization"
+  | "chat_turn";
 
 export type UsageLedgerStatus =
   | "completed"
