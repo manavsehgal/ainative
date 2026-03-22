@@ -37,6 +37,12 @@ export const CHAT_MODELS: ChatModelOption[] = [
 
 export const DEFAULT_CHAT_MODEL = "claude-haiku-4-5";
 
+/** Model → runtime mapping (derived from model's provider) */
+export function getRuntimeForModel(modelId: string): string {
+  const model = CHAT_MODELS.find((m) => m.id === modelId);
+  return model?.provider === "openai" ? "openai-codex-app-server" : "claude-code";
+}
+
 /** Suggested prompt category with expandable sub-prompts */
 export interface PromptCategory {
   id: string;

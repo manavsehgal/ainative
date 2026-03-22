@@ -21,7 +21,7 @@ import {
 import { buildChatContext } from "./context-builder";
 import { detectEntities } from "./entity-detector";
 import type { ChatStreamEvent, QuickAccessItem } from "./types";
-import { getProviderForRuntime } from "./types";
+import { getProviderForRuntime, DEFAULT_CHAT_MODEL } from "./types";
 
 // ── Public API ─────────────────────────────────────────────────────────
 
@@ -137,6 +137,7 @@ export async function* sendMessage(
     const response = query({
       prompt: fullPrompt,
       options: {
+        model: conversation.modelId || DEFAULT_CHAT_MODEL,
         abortController,
         includePartialMessages: true,
         cwd: cwd ?? process.cwd(),

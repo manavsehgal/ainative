@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowUp, Square } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ChatModelSelector } from "./chat-model-selector";
 
 interface ChatInputProps {
   onSend: (content: string) => void;
@@ -11,6 +12,8 @@ interface ChatInputProps {
   isStreaming: boolean;
   isHeroMode: boolean;
   previewText?: string | null;
+  modelId?: string;
+  onModelChange?: (modelId: string) => void;
 }
 
 export function ChatInput({
@@ -19,6 +22,8 @@ export function ChatInput({
   isStreaming,
   isHeroMode,
   previewText,
+  modelId,
+  onModelChange,
 }: ChatInputProps) {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -78,12 +83,11 @@ export function ChatInput({
       >
         <div
           className={cn(
-            "flex gap-2 elevation-2 border border-border bg-background",
-            isHeroMode
-              ? "items-start rounded-2xl p-4"
-              : "items-end rounded-xl p-3"
+            "flex flex-col elevation-2 border border-border bg-background",
+            isHeroMode ? "rounded-2xl" : "rounded-xl"
           )}
         >
+          {/* Textarea */}
           <textarea
             ref={textareaRef}
             value={value}
@@ -94,33 +98,47 @@ export function ChatInput({
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             className={cn(
-              "flex-1 resize-none bg-transparent text-sm outline-none placeholder:text-muted-foreground max-h-[200px]",
+              "w-full resize-none bg-transparent text-sm outline-none placeholder:text-muted-foreground max-h-[200px] px-4 pt-3",
               isHeroMode ? "min-h-[80px]" : "min-h-[24px]"
             )}
             rows={isHeroMode ? 3 : 1}
             disabled={isStreaming}
           />
-          {isStreaming && (
-            <Button
-              variant="destructive"
-              size="icon"
-              className="h-8 w-8 shrink-0 rounded-lg"
-              onClick={onStop}
-            >
-              <Square className="h-3.5 w-3.5" />
-            </Button>
-          )}
-          {!isStreaming && !isHeroMode && (
-            <Button
-              variant="default"
-              size="icon"
-              className="h-8 w-8 shrink-0 rounded-lg"
-              onClick={handleSend}
-              disabled={!value.trim()}
-            >
-              <ArrowUp className="h-4 w-4" />
-            </Button>
-          )}
+
+          {/* Toolbar row */}
+          <div className="flex items-center justify-between px-3 pb-2 pt-1">
+            <div className="flex items-center gap-1">
+              {modelId && onModelChange && (
+                <ChatModelSelector
+                  modelId={modelId}
+                  onModelChange={onModelChange}
+                />
+              )}
+            </div>
+            <div className="flex items-center gap-1">
+              {isStreaming && (
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  className="h-8 w-8 shrink-0 rounded-lg"
+                  onClick={onStop}
+                >
+                  <Square className="h-3.5 w-3.5" />
+                </Button>
+              )}
+              {!isStreaming && !isHeroMode && (
+                <Button
+                  variant="default"
+                  size="icon"
+                  className="h-8 w-8 shrink-0 rounded-lg"
+                  onClick={handleSend}
+                  disabled={!value.trim()}
+                >
+                  <ArrowUp className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

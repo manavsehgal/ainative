@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import type { ConversationRow, ChatMessageRow } from "@/lib/db/schema";
 import type { PromptCategory } from "@/lib/chat/types";
+import { DEFAULT_CHAT_MODEL, getRuntimeForModel } from "@/lib/chat/types";
 import { ConversationList } from "./conversation-list";
 import { ChatMessageList } from "./chat-message-list";
 import { ChatInput } from "./chat-input";
@@ -29,8 +30,19 @@ export function ChatShell({
     useState<AbortController | null>(null);
   const [mobileListOpen, setMobileListOpen] = useState(false);
   const [hoverPreview, setHoverPreview] = useState<string | null>(null);
+  const [modelId, setModelId] = useState(DEFAULT_CHAT_MODEL);
 
   const activeConversation = conversations.find((c) => c.id === activeId);
+
+  // Fetch default model from settings on mount
+  useEffect(() => {
+    fetch("/api/settings/chat")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.defaultModel) setModelId(data.defaultModel);
+      })
+      .catch(() => {});
+  }, []);
 
   // ── Conversation Management ──────────────────────────────────────────
 
@@ -39,7 +51,7 @@ export function ChatShell({
       const res = await fetch("/api/chat/conversations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ runtimeId: "claude-code" }),
+        body: JSON.stringify({ runtimeId: getRuntimeForModel(modelId), modelId }),
       });
       if (!res.ok) return;
       const conversation = await res.json();
@@ -119,7 +131,7 @@ export function ChatShell({
           const res = await fetch("/api/chat/conversations", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ runtimeId: "claude-code" }),
+            body: JSON.stringify({ runtimeId: getRuntimeForModel(modelId), modelId }),
           });
           if (!res.ok) return;
           const conversation = await res.json();
@@ -275,6 +287,21 @@ export function ChatShell({
     [handleSend]
   );
 
+  const handleModelChange = useCallback(
+    async (newModelId: string) => {
+      setModelId(newModelId);
+      // If there's an active conversation, update its modelId
+      if (activeId) {
+        await fetch(`/api/chat/conversations/${activeId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ modelId: newModelId }),
+        }).catch(() => {});
+      }
+    },
+    [activeId]
+  );
+
   // ── Render ───────────────────────────────────────────────────────────
 
   const conversationListContent = (
@@ -323,6 +350,8 @@ export function ChatShell({
                 isStreaming={isStreaming}
                 isHeroMode
                 previewText={hoverPreview}
+                modelId={modelId}
+                onModelChange={handleModelChange}
               />
             </ChatEmptyState>
           </div>
@@ -339,6 +368,8 @@ export function ChatShell({
               onStop={handleStop}
               isStreaming={isStreaming}
               isHeroMode={false}
+              modelId={modelId}
+              onModelChange={handleModelChange}
             />
           </>
         )}

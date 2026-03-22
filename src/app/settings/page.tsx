@@ -3,6 +3,7 @@ import { OpenAIRuntimeSection } from "@/components/settings/openai-runtime-secti
 import { PermissionsSections } from "@/components/settings/permissions-sections";
 import { DataManagementSection } from "@/components/settings/data-management-section";
 import { BudgetGuardrailsSection } from "@/components/settings/budget-guardrails-section";
+import { ChatSettingsSection } from "@/components/settings/chat-settings-section";
 import { PageShell } from "@/components/shared/page-shell";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +14,7 @@ export default function SettingsPage() {
       <div className="space-y-6">
         <AuthConfigSection />
         <OpenAIRuntimeSection />
+        <ChatSettingsSection />
         <BudgetGuardrailsSection />
         <PermissionsSections />
         <DataManagementSection />

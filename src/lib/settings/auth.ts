@@ -24,7 +24,7 @@ export async function getAuthSettings(): Promise<AuthSettings> {
   const hasEnvKey = !!process.env.ANTHROPIC_API_KEY;
 
   let apiKeySource: ApiKeySource;
-  if (storedSource) {
+  if (storedSource && storedSource !== "unknown") {
     apiKeySource = storedSource;
   } else if (hasDbKey) {
     apiKeySource = "db";
