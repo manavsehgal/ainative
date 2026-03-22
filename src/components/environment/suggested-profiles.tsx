@@ -65,8 +65,8 @@ export function SuggestedProfiles({ scanId }: SuggestedProfilesProps) {
               </p>
 
               <div className="flex flex-wrap gap-1">
-                {suggestion.matchedArtifacts.map((a) => (
-                  <Badge key={a.id} variant="secondary" className="text-[10px] px-1.5 py-0">
+                {suggestion.matchedArtifacts.map((a, i) => (
+                  <Badge key={`${a.id}-${i}`} variant="secondary" className="text-[10px] px-1.5 py-0">
                     {a.name}
                   </Badge>
                 ))}
