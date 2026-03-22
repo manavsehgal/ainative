@@ -1,4 +1,6 @@
 import { getLatestScan, getArtifacts, getArtifactCounts, getToolCounts, getCheckpoints } from "@/lib/environment/data";
+import { listTemplates } from "@/lib/environment/templates";
+import { calculateHealthScore } from "@/lib/environment/health-scoring";
 import { EnvironmentDashboard } from "@/components/environment/environment-dashboard";
 import { PageShell } from "@/components/shared/page-shell";
 
@@ -24,6 +26,8 @@ export default async function EnvironmentPage() {
   const categoryCounts = getArtifactCounts(scan.id);
   const toolCounts = getToolCounts(scan.id);
   const checkpoints = getCheckpoints();
+  const templates = listTemplates();
+  const healthScore = calculateHealthScore(scan, artifacts);
 
   return (
     <PageShell title="Environment">
@@ -33,6 +37,8 @@ export default async function EnvironmentPage() {
         categoryCounts={categoryCounts}
         toolCounts={toolCounts}
         checkpoints={checkpoints}
+        templates={templates}
+        healthScore={healthScore}
       />
     </PageShell>
   );

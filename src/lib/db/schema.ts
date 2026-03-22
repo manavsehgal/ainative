@@ -389,6 +389,23 @@ export const environmentSyncOps = sqliteTable(
   (table) => [index("idx_env_sync_ops_checkpoint_id").on(table.checkpointId)]
 );
 
+export const environmentTemplates = sqliteTable(
+  "environment_templates",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    description: text("description"),
+    manifest: text("manifest").notNull(), // JSON: { skills, mcpServers, permissions, instructions }
+    scope: text("scope", { enum: ["user", "shared"] })
+      .default("user")
+      .notNull(),
+    artifactCount: integer("artifact_count").default(0).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [index("idx_env_templates_scope").on(table.scope)]
+);
+
 // Shared types derived from schema — use these in components instead of `as any`
 export type ProjectRow = InferSelectModel<typeof projects>;
 export type TaskRow = InferSelectModel<typeof tasks>;
@@ -405,3 +422,4 @@ export type EnvironmentScanRow = InferSelectModel<typeof environmentScans>;
 export type EnvironmentArtifactRow = InferSelectModel<typeof environmentArtifacts>;
 export type EnvironmentCheckpointRow = InferSelectModel<typeof environmentCheckpoints>;
 export type EnvironmentSyncOpRow = InferSelectModel<typeof environmentSyncOps>;
+export type EnvironmentTemplateRow = InferSelectModel<typeof environmentTemplates>;

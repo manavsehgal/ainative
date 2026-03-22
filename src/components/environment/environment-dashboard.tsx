@@ -3,10 +3,10 @@
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Globe, RefreshCw, GitCompareArrows } from "lucide-react";
+import { Globe, RefreshCw, GitCompareArrows, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/shared/empty-state";
-import type { EnvironmentScanRow, EnvironmentArtifactRow, EnvironmentCheckpointRow } from "@/lib/db/schema";
+import type { EnvironmentScanRow, EnvironmentArtifactRow, EnvironmentCheckpointRow, EnvironmentTemplateRow } from "@/lib/db/schema";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScanStatusBar } from "./scan-status-bar";
 import { SummaryCardsRow } from "./summary-cards-row";
@@ -14,6 +14,9 @@ import { CategoryFilterBar } from "./category-filter-bar";
 import { ArtifactCard } from "./artifact-card";
 import { ArtifactDetailSheet } from "./artifact-detail-sheet";
 import { CheckpointList } from "./checkpoint-list";
+import { TemplateList } from "./template-list";
+import { HealthScoreCard } from "./health-score-card";
+import type { HealthScore } from "@/lib/environment/health-scoring";
 
 interface EnvironmentDashboardProps {
   scan: EnvironmentScanRow | null;
@@ -21,6 +24,8 @@ interface EnvironmentDashboardProps {
   categoryCounts: Array<{ category: string; count: number }>;
   toolCounts: Array<{ tool: string; count: number }>;
   checkpoints?: EnvironmentCheckpointRow[];
+  templates?: EnvironmentTemplateRow[];
+  healthScore?: HealthScore | null;
 }
 
 export function EnvironmentDashboard({
@@ -29,6 +34,8 @@ export function EnvironmentDashboard({
   categoryCounts,
   toolCounts,
   checkpoints = [],
+  templates = [],
+  healthScore,
 }: EnvironmentDashboardProps) {
   const router = useRouter();
   const [scanning, setScanning] = useState(false);
@@ -78,27 +85,45 @@ export function EnvironmentDashboard({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <ScanStatusBar scan={scan} scanning={scanning} onScan={handleScan} />
-        <Link href="/environment/compare">
-          <Button variant="outline" size="sm" className="shrink-0 ml-3">
-            <GitCompareArrows className="h-3.5 w-3.5 mr-1.5" />
-            Compare Projects
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2 shrink-0 ml-3">
+          <Link href="/environment/skills">
+            <Button variant="outline" size="sm">
+              <Wrench className="h-3.5 w-3.5 mr-1.5" />
+              Skill Portfolio
+            </Button>
+          </Link>
+          <Link href="/environment/compare">
+            <Button variant="outline" size="sm">
+              <GitCompareArrows className="h-3.5 w-3.5 mr-1.5" />
+              Compare
+            </Button>
+          </Link>
+        </div>
       </div>
 
-      <SummaryCardsRow
-        categoryCounts={categoryCounts}
-        toolCounts={toolCounts}
-        totalArtifacts={artifacts.length}
-        onCategoryClick={(cat) =>
-          setCategoryFilter(categoryFilter === cat ? null : cat)
-        }
-      />
+      <div className="flex gap-4 items-start">
+        <div className="flex-1 min-w-0">
+          <SummaryCardsRow
+            categoryCounts={categoryCounts}
+            toolCounts={toolCounts}
+            totalArtifacts={artifacts.length}
+            onCategoryClick={(cat) =>
+              setCategoryFilter(categoryFilter === cat ? null : cat)
+            }
+          />
+        </div>
+        {healthScore && (
+          <div className="w-[280px] shrink-0">
+            <HealthScoreCard health={healthScore} />
+          </div>
+        )}
+      </div>
 
       <Tabs defaultValue="artifacts" className="space-y-4">
         <TabsList>
           <TabsTrigger value="artifacts">Artifacts ({artifacts.length})</TabsTrigger>
           <TabsTrigger value="checkpoints">Checkpoints ({checkpoints.length})</TabsTrigger>
+          <TabsTrigger value="templates">Templates ({templates.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="artifacts" className="space-y-4">
@@ -136,6 +161,10 @@ export function EnvironmentDashboard({
 
         <TabsContent value="checkpoints">
           <CheckpointList checkpoints={checkpoints} />
+        </TabsContent>
+
+        <TabsContent value="templates">
+          <TemplateList templates={templates} scanId={scan?.id} />
         </TabsContent>
       </Tabs>
 

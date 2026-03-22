@@ -17,6 +17,7 @@ const STAGENT_TABLES = [
   "environment_artifacts",
   "environment_checkpoints",
   "environment_sync_ops",
+  "environment_templates",
 ] as const;
 
 export function bootstrapStagentDatabase(sqlite: Database.Database): void {
@@ -314,6 +315,19 @@ export function bootstrapStagentDatabase(sqlite: Database.Database): void {
     );
 
     CREATE INDEX IF NOT EXISTS idx_env_sync_ops_checkpoint_id ON environment_sync_ops(checkpoint_id);
+
+    CREATE TABLE IF NOT EXISTS environment_templates (
+      id TEXT PRIMARY KEY NOT NULL,
+      name TEXT NOT NULL,
+      description TEXT,
+      manifest TEXT NOT NULL,
+      scope TEXT DEFAULT 'user' NOT NULL,
+      artifact_count INTEGER DEFAULT 0 NOT NULL,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_env_templates_scope ON environment_templates(scope);
   `);
 }
 

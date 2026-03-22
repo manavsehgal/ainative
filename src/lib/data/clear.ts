@@ -14,6 +14,7 @@ import {
   environmentCheckpoints,
   environmentArtifacts,
   environmentScans,
+  environmentTemplates,
 } from "@/lib/db/schema";
 import { readdirSync, unlinkSync, mkdirSync } from "fs";
 import { join } from "path";
@@ -38,6 +39,7 @@ export function clearAllData() {
   const envCheckpointsDeleted = db.delete(environmentCheckpoints).run().changes;
   const envArtifactsDeleted = db.delete(environmentArtifacts).run().changes;
   const envScansDeleted = db.delete(environmentScans).run().changes;
+  const envTemplatesDeleted = db.delete(environmentTemplates).run().changes;
 
   const viewsDeleted = db.delete(views).run().changes;
   const usageLedgerDeleted = db.delete(usageLedger).run().changes;
@@ -78,6 +80,7 @@ export function clearAllData() {
     environmentCheckpoints: envCheckpointsDeleted,
     environmentArtifacts: envArtifactsDeleted,
     environmentScans: envScansDeleted,
+    environmentTemplates: envTemplatesDeleted,
     files: filesDeleted,
   };
 }
