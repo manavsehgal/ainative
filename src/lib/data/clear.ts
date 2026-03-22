@@ -10,6 +10,10 @@ import {
   projects,
   usageLedger,
   views,
+  environmentSyncOps,
+  environmentCheckpoints,
+  environmentArtifacts,
+  environmentScans,
 } from "@/lib/db/schema";
 import { readdirSync, unlinkSync, mkdirSync } from "fs";
 import { join } from "path";
@@ -29,6 +33,12 @@ export function clearAllData() {
   const sampleProfilesDeleted = clearSampleProfiles();
 
   // Delete in FK-safe order: children before parents
+  // Environment tables (sync_ops → checkpoints → artifacts → scans)
+  const envSyncOpsDeleted = db.delete(environmentSyncOps).run().changes;
+  const envCheckpointsDeleted = db.delete(environmentCheckpoints).run().changes;
+  const envArtifactsDeleted = db.delete(environmentArtifacts).run().changes;
+  const envScansDeleted = db.delete(environmentScans).run().changes;
+
   const viewsDeleted = db.delete(views).run().changes;
   const usageLedgerDeleted = db.delete(usageLedger).run().changes;
   const logsDeleted = db.delete(agentLogs).run().changes;
@@ -64,6 +74,10 @@ export function clearAllData() {
     notifications: notificationsDeleted,
     documents: documentsDeleted,
     learnedContext: learnedContextDeleted,
+    environmentSyncOps: envSyncOpsDeleted,
+    environmentCheckpoints: envCheckpointsDeleted,
+    environmentArtifacts: envArtifactsDeleted,
+    environmentScans: envScansDeleted,
     files: filesDeleted,
   };
 }

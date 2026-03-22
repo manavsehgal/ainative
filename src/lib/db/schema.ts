@@ -280,6 +280,115 @@ export const views = sqliteTable(
   ]
 );
 
+// ── Environment onboarding tables ──────────────────────────────────────
+
+export const environmentScans = sqliteTable(
+  "environment_scans",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id").references(() => projects.id),
+    scanPath: text("scan_path").notNull(),
+    persona: text("persona").notNull(), // JSON array of ToolPersona[]
+    scanStatus: text("scan_status", {
+      enum: ["running", "completed", "failed"],
+    })
+      .default("running")
+      .notNull(),
+    artifactCount: integer("artifact_count").default(0).notNull(),
+    durationMs: integer("duration_ms"),
+    errors: text("errors"), // JSON array of ScanError[]
+    scannedAt: integer("scanned_at", { mode: "timestamp" }).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_env_scans_project_id").on(table.projectId),
+    index("idx_env_scans_scanned_at").on(table.scannedAt),
+  ]
+);
+
+export const environmentArtifacts = sqliteTable(
+  "environment_artifacts",
+  {
+    id: text("id").primaryKey(),
+    scanId: text("scan_id")
+      .references(() => environmentScans.id)
+      .notNull(),
+    tool: text("tool").notNull(), // ToolPersona
+    category: text("category").notNull(), // ArtifactCategory
+    scope: text("scope").notNull(), // ArtifactScope
+    name: text("name").notNull(),
+    relPath: text("rel_path").notNull(),
+    absPath: text("abs_path").notNull(),
+    contentHash: text("content_hash").notNull(),
+    preview: text("preview"),
+    metadata: text("metadata"), // JSON
+    sizeBytes: integer("size_bytes").default(0).notNull(),
+    modifiedAt: integer("modified_at").notNull(), // epoch ms
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_env_artifacts_scan_id").on(table.scanId),
+    index("idx_env_artifacts_category").on(table.category),
+    index("idx_env_artifacts_tool").on(table.tool),
+    index("idx_env_artifacts_scan_tool").on(table.scanId, table.tool),
+    index("idx_env_artifacts_scan_category").on(table.scanId, table.category),
+  ]
+);
+
+export const environmentCheckpoints = sqliteTable(
+  "environment_checkpoints",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id").references(() => projects.id),
+    label: text("label").notNull(),
+    checkpointType: text("checkpoint_type", {
+      enum: ["pre-sync", "manual", "pre-onboard"],
+    }).notNull(),
+    gitTag: text("git_tag"),
+    gitCommitSha: text("git_commit_sha"),
+    backupPath: text("backup_path"),
+    filesCount: integer("files_count").default(0).notNull(),
+    status: text("status", {
+      enum: ["active", "rolled_back", "superseded"],
+    })
+      .default("active")
+      .notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_env_checkpoints_project_status").on(
+      table.projectId,
+      table.status
+    ),
+  ]
+);
+
+export const environmentSyncOps = sqliteTable(
+  "environment_sync_ops",
+  {
+    id: text("id").primaryKey(),
+    checkpointId: text("checkpoint_id")
+      .references(() => environmentCheckpoints.id)
+      .notNull(),
+    artifactId: text("artifact_id").references(() => environmentArtifacts.id),
+    operation: text("operation", {
+      enum: ["create", "update", "delete", "sync"],
+    }).notNull(),
+    targetTool: text("target_tool").notNull(),
+    targetPath: text("target_path").notNull(),
+    diffPreview: text("diff_preview"),
+    status: text("status", {
+      enum: ["pending", "applied", "failed", "rolled_back"],
+    })
+      .default("pending")
+      .notNull(),
+    error: text("error"),
+    appliedAt: integer("applied_at", { mode: "timestamp" }),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [index("idx_env_sync_ops_checkpoint_id").on(table.checkpointId)]
+);
+
 // Shared types derived from schema — use these in components instead of `as any`
 export type ProjectRow = InferSelectModel<typeof projects>;
 export type TaskRow = InferSelectModel<typeof tasks>;
@@ -292,3 +401,7 @@ export type SettingsRow = InferSelectModel<typeof settings>;
 export type LearnedContextRow = InferSelectModel<typeof learnedContext>;
 export type UsageLedgerRow = InferSelectModel<typeof usageLedger>;
 export type ViewRow = InferSelectModel<typeof views>;
+export type EnvironmentScanRow = InferSelectModel<typeof environmentScans>;
+export type EnvironmentArtifactRow = InferSelectModel<typeof environmentArtifacts>;
+export type EnvironmentCheckpointRow = InferSelectModel<typeof environmentCheckpoints>;
+export type EnvironmentSyncOpRow = InferSelectModel<typeof environmentSyncOps>;

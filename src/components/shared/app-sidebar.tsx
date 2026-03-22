@@ -14,6 +14,7 @@ import {
   Clock,
   Wallet,
   BookMarked,
+  Globe,
   Settings,
 } from "lucide-react";
 import {
@@ -61,6 +62,7 @@ const manageItems: NavItem[] = [
 
 const configureItems: NavItem[] = [
   { title: "Playbook", href: "/playbook", icon: BookMarked },
+  { title: "Environment", href: "/environment", icon: Globe },
   { title: "Settings", href: "/settings", icon: Settings },
 ];
 
