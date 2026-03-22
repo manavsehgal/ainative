@@ -5,7 +5,7 @@ section: "workflows"
 route: "/workflows"
 tags: [workflows, patterns, sequence, parallel, swarm, autonomous, templates, multi-step]
 features: ["workflow-engine", "workflow-blueprints", "ai-assist-workflow-creation", "workflow-context-batching"]
-screengrabCount: 6
+screengrabCount: 2
 lastUpdated: "2026-03-21"
 ---
 
@@ -18,20 +18,8 @@ Workflows let you orchestrate multi-step agent operations using six built-in pat
 ![Workflows list view](../screengrabs/workflows-list.png)
 *Workflow cards showing name, pattern type, step count, and status*
 
-![Workflows templates tab](../screengrabs/workflows-templates.png)
-*Templates tab showing reusable workflow patterns ready to instantiate*
-
-![Workflows runs tab](../screengrabs/workflows-runs.png)
-*Runs tab showing active and completed workflow executions*
-
 ![Workflow detail view](../screengrabs/workflows-detail.png)
 *Workflow detail page with step-by-step breakdown and execution status*
-
-![Create workflow form empty](../screengrabs/workflows-create-form-empty.png)
-*Empty workflow creation form with pattern type selector and step builder*
-
-![Create workflow form filled](../screengrabs/workflows-create-form-filled.png)
-*Filled workflow creation form with multiple steps configured*
 
 ## Key Features
 

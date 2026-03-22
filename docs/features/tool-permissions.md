@@ -5,7 +5,7 @@ section: "tool-permissions"
 route: "cross-cutting"
 tags: [permissions, trust, safety, approval, human-in-the-loop, presets]
 features: ["tool-permission-persistence", "tool-permission-presets", "ambient-approval-toast"]
-screengrabCount: 2
+screengrabCount: 1
 lastUpdated: "2026-03-21"
 ---
 
@@ -17,9 +17,6 @@ Stagent provides a layered permission system that balances agent autonomy with h
 
 ![Permission presets in settings](../screengrabs/settings-presets.png)
 *Settings page showing the three trust tier presets — Read Only, Git Safe, and Full Auto.*
-
-![Trust tier popover in sidebar](../screengrabs/trust-tier-popover.png)
-*The trust tier badge in the sidebar footer with popover showing current permission level.*
 
 ## Key Features
 

@@ -5,7 +5,7 @@ section: "agent-intelligence"
 route: "cross-cutting"
 tags: [ai-assist, routing, autonomous, swarm, self-improvement, context, parallel]
 features: ["task-definition-ai", "multi-agent-routing", "autonomous-loop-execution", "multi-agent-swarm", "agent-self-improvement", "workflow-context-batching", "parallel-research-fork-join"]
-screengrabCount: 2
+screengrabCount: 0
 lastUpdated: "2026-03-21"
 ---
 
@@ -14,12 +14,6 @@ lastUpdated: "2026-03-21"
 Stagent layers several AI-powered capabilities on top of basic task execution. From one-click description improvement to multi-agent coordination, these features reduce manual effort and improve output quality across the workspace.
 
 ## Screenshots
-
-![AI Assist button in task creation form](../screengrabs/dashboard-create-form-ai-assist.png)
-*The AI Assist button analyzes the task title and generates an improved description.*
-
-![Task form after AI Assist applies suggestions](../screengrabs/dashboard-create-form-ai-applied.png)
-*After applying AI Assist, the description is expanded with actionable detail.*
 
 ## Key Features
 

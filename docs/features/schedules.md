@@ -5,7 +5,7 @@ section: "schedules"
 route: "/schedules"
 tags: [schedules, automation, loops, recurring, intervals, autonomous]
 features: ["scheduled-prompt-loops", "autonomous-loop-execution"]
-screengrabCount: 3
+screengrabCount: 1
 lastUpdated: "2026-03-21"
 ---
 
@@ -17,12 +17,6 @@ Schedule recurring agent tasks with configurable intervals and autonomous loop e
 
 ![Schedules list showing active and paused schedules](../screengrabs/schedules-list.png)
 *The schedules list displays all configured schedules with their status, interval, next run time, and associated project.*
-
-![Empty schedule creation form](../screengrabs/schedules-create-form-empty.png)
-*The schedule creation form with fields for name, interval, prompt, project context, runtime, and agent profile.*
-
-![Filled schedule creation form](../screengrabs/schedules-create-form-filled.png)
-*A completed schedule form ready for submission, showing a configured recurring task with all fields populated.*
 
 ## Key Features
 

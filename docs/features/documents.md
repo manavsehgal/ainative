@@ -5,7 +5,7 @@ section: "documents"
 route: "/documents"
 tags: [documents, upload, preprocessing, pdf, office, text-extraction, agent-context]
 features: ["document-manager", "file-attachment-data-layer", "document-preprocessing", "agent-document-context", "document-output-generation"]
-screengrabCount: 3
+screengrabCount: 2
 lastUpdated: "2026-03-21"
 ---
 
@@ -20,9 +20,6 @@ The Document Library is where you upload, manage, and organize files that agents
 
 ![Documents grid view](../screengrabs/documents-grid.png)
 *Grid view displaying document thumbnails and metadata cards*
-
-![Document upload form](../screengrabs/documents-upload-form.png)
-*Upload dialog with drag-and-drop zone and file type support indicators*
 
 ## Key Features
 

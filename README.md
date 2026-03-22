@@ -106,9 +106,9 @@ Status-driven execution board with five columns: Planned → Queued → Running 
 
 <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/dashboard-list.png" alt="Stagent kanban board" width="1200" />
 
-| Table View | Filtered by Project | Task Detail |
-|:-:|:-:|:-:|
-| <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/dashboard-table.png" alt="Dashboard table view" width="380" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/dashboard-filtered.png" alt="Dashboard filtered by project" width="380" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/dashboard-detail.png" alt="Task detail sheet" width="380" /> |
+| Table View |
+|:-:|
+| <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/dashboard-table.png" alt="Dashboard table view" width="580" /> |
 
 #### Projects
 Create and organize projects as containers for related tasks. Each project can specify a working directory — agent tasks resolve `cwd` from the project's path, enabling agents to operate on external codebases. Server-rendered project cards with task counts, status badges, and a detail view at `/projects/[id]`.
@@ -116,10 +116,6 @@ Create and organize projects as containers for related tasks. Each project can s
 | Project Cards | Project Detail |
 |:-:|:-:|
 | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/projects-list.png" alt="Project cards overview" width="580" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/projects-detail.png" alt="Project detail view" width="580" /> |
-
-| Create Project — Empty | Create Project — Filled |
-|:-:|:-:|
-| <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/projects-create-form-empty.png" alt="Empty project creation form" width="580" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/projects-create-form-filled.png" alt="Filled project creation form" width="580" /> |
 
 ### Agent
 
@@ -162,12 +158,6 @@ Both patterns preserve the same governed task model, runtime selection, monitori
 #### AI Task Assist
 AI-powered task creation: generate improved descriptions, break tasks into sub-tasks, recommend workflow patterns, and estimate complexity through the shared runtime task-assist layer. Claude and OpenAI task assist now both route through the provider runtime abstraction.
 
-| Task Creation Form | AI Suggestions | AI Applied |
-|:-:|:-:|:-:|
-| <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/dashboard-create-form-empty.png" alt="Empty task creation form" width="380" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/dashboard-create-form-ai-assist.png" alt="AI Assist suggestions panel" width="380" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/dashboard-create-form-ai-applied.png" alt="AI suggestions applied to form" width="380" /> |
-
-<img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/dashboard-create-form-filled.png" alt="Completed task creation form" width="1200" />
-
 #### AI Assist → Workflow Creation
 Bridge from AI task assist to workflow engine: when task assist recommends a multi-step plan, a "Create as Workflow" button converts the recommendation into a validated workflow definition with per-step profile assignments, dependency ordering, and pattern selection across all six workflow types. The `WorkflowConfirmationSheet` lets operators review and edit steps, profiles, and configuration before creating the workflow. A keyword-based profile suggestion fallback ensures steps get reasonable profile assignments even without the AI classifier.
 
@@ -191,22 +181,18 @@ Pre-configured workflow templates across work and personal domains. Browse bluep
 
 <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/workflows-list.png" alt="Stagent workflows with keyword-inferred icon circles" width="1200" />
 
-| Workflow Detail | Execution Runs | Blueprint Templates |
-|:-:|:-:|:-:|
-| <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/workflows-detail.png" alt="Workflow detail with steps and status" width="380" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/workflows-runs.png" alt="Workflow execution run history" width="380" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/workflows-templates.png" alt="Workflow blueprint templates gallery" width="380" /> |
-
-| Create Workflow — Empty | Create Workflow — Filled |
-|:-:|:-:|
-| <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/workflows-create-form-empty.png" alt="Empty workflow creation form" width="580" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/workflows-create-form-filled.png" alt="Filled workflow creation form" width="580" /> |
+| Workflow Detail |
+|:-:|
+| <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/workflows-detail.png" alt="Workflow detail with steps and status" width="580" /> |
 
 ### Documents
 
 #### Document Management
 Full document browser at `/documents` with table and grid views. Upload files with drag-and-drop, preview images/PDFs/markdown/code inline, search by filename and extracted text, and filter by processing status or project. Bulk delete, link/unlink to projects and tasks.
 
-| Table View | Grid View | Upload Dialog |
-|:-:|:-:|:-:|
-| <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/documents-list.png" alt="Documents table view" width="380" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/documents-grid.png" alt="Documents grid view" width="380" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/documents-upload-form.png" alt="Document upload dialog" width="380" /> |
+| Table View | Grid View |
+|:-:|:-:|
+| <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/documents-list.png" alt="Documents table view" width="580" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/documents-grid.png" alt="Documents grid view" width="580" /> |
 
 #### Document Preprocessing
 Automatic text extraction on upload for five file types: text, PDF (pdf-parse), images (image-size), Office documents (mammoth/jszip), and spreadsheets (xlsx). Extracted text, processed paths, and processing errors are tracked per document.
@@ -221,16 +207,10 @@ Built-in documentation system at `/playbook` with usage-stage awareness that ada
 
 <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/playbook-list.png" alt="Stagent playbook documentation" width="1200" />
 
-| Project Tasks Journey | Task Detail Journey | Inbox Action Journey |
-|:-:|:-:|:-:|
-| <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/journey-project-tasks.png" alt="Playbook journey — project tasks" width="380" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/journey-task-detail.png" alt="Playbook journey — task detail" width="380" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/journey-inbox-action.png" alt="Playbook journey — inbox action" width="380" /> |
-
 ### Platform
 
 #### Tool Permission Persistence
 "Always Allow" option for agent tool permissions. When you approve a tool, you can save it as a pattern (e.g., `Bash(command:git *)`, `Read`, `mcp__server__tool`). Saved patterns are checked before creating notifications — trusted tools are auto-approved instantly. Manage patterns from the Settings page. `AskUserQuestion` always requires human input.
-
-<img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/trust-tier-popover.png" alt="Trust tier popover with permission levels" width="600" />
 
 #### Ambient Approvals
 Pending permission requests now surface through a shell-level approval presenter on any route, so operators can respond without leaving the page they are working on. Inbox remains the durable queue and source of truth, while the ambient surface provides the fast path for active supervision.
@@ -242,10 +222,6 @@ Pre-configured permission bundles that reduce friction for common tool approval 
 Time-based scheduling for agent tasks with human-friendly intervals (`5m`, `2h`, `1d`) and raw 5-field cron expressions. One-shot and recurring modes with pause/resume lifecycle, expiry limits, and max firings. Each firing creates a child task through the shared execution pipeline, and schedules can now target a runtime explicitly. Scheduler runs as a poll-based engine started via Next.js instrumentation hook.
 
 <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/schedules-list.png" alt="Stagent schedules" width="1200" />
-
-| Create Schedule — Empty | Create Schedule — Filled |
-|:-:|:-:|
-| <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/schedules-create-form-empty.png" alt="Empty schedule creation form" width="580" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/schedules-create-form-filled.png" alt="Filled schedule creation form" width="580" /> |
 
 #### Micro-Visualizations
 Pure SVG chart primitives (Sparkline, MiniBar, DonutRing) with zero charting dependencies. Integrated into: homepage stats cards (7-day trends), activity feed (24h bar chart), project cards (completion donuts), monitor overview (success rate), and project detail (stacked status + 14-day sparkline). Full accessibility with `role="img"` and `aria-label`.
@@ -262,9 +238,9 @@ When an agent needs approval or input, a notification appears in your inbox. Rev
 
 <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/inbox-list.png" alt="Stagent inbox approval flow" width="1200" />
 
-| Expanded Notification | Fully Expanded Detail |
-|:-:|:-:|
-| <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/inbox-expanded.png" alt="Inbox notification expanded" width="580" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/inbox-fully-expanded.png" alt="Inbox notification fully expanded with context" width="580" /> |
+| Expanded Notification |
+|:-:|
+| <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/inbox-expanded.png" alt="Inbox notification expanded" width="580" /> |
 
 #### Chat
 Conversational control plane for all workspace primitives — projects, tasks, workflows, documents, and profiles are all reachable from the chat surface. Progressive 5-tier context injection (~53K token budget) builds workspace awareness from lightweight summaries up to full document content. Multi-provider model selection with cost tiers ($, $$, $$$) spans Claude Haiku through Opus and GPT-5.x models, with a Settings-level default preference. Claude.ai-style tabbed suggested prompts (Explore, Create, Analyze) with hover preview help new users discover workspace capabilities. Quick Access navigation pills in responses provide entity deep-linking — click a mentioned project or task to jump directly to its detail view. Stagent CRUD tools let you create, update, and delete projects, tasks, and workflows through natural language. Streaming responses render in real time with full markdown support.

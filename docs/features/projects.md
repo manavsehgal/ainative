@@ -5,7 +5,7 @@ section: "projects"
 route: "/projects"
 tags: [projects, workspaces, tasks, working-directory, organization]
 features: ["project-management", "detail-view-redesign"]
-screengrabCount: 5
+screengrabCount: 2
 lastUpdated: "2026-03-21"
 ---
 
@@ -20,15 +20,6 @@ Projects are workspaces that group related tasks, workflows, and documents under
 
 ![Project detail view](../screengrabs/projects-detail.png)
 *Project detail page with associated tasks, workflows, and documents*
-
-![Create project form empty](../screengrabs/projects-create-form-empty.png)
-*Empty project creation dialog with name, description, and working directory fields*
-
-![Create project form filled](../screengrabs/projects-create-form-filled.png)
-*Filled project creation dialog ready to submit*
-
-![Project tasks journey](../screengrabs/journey-project-tasks.png)
-*Project detail showing its linked tasks in context*
 
 ## Key Features
 

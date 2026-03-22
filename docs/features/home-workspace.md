@@ -5,7 +5,7 @@ section: "home-workspace"
 route: "/"
 tags: [dashboard, home, workspace, navigation, sidebar, trust-tier]
 features: ["homepage-dashboard", "app-shell"]
-screengrabCount: 3
+screengrabCount: 2
 lastUpdated: "2026-03-21"
 ---
 
@@ -20,9 +20,6 @@ The Home Workspace is your landing page when you open Stagent. It provides a rea
 
 ![Home workspace below the fold](../screengrabs/home-below-fold.png)
 *Scrolled view showing additional recent activity and workspace context*
-
-![Trust tier popover](../screengrabs/trust-tier-popover.png)
-*Trust tier badge in the sidebar footer showing the current permission level*
 
 ## Key Features
 

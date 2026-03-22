@@ -5,7 +5,7 @@ section: "dashboard-kanban"
 route: "/dashboard"
 tags: [tasks, kanban, board, table, filter, create, ai-assist, drag-and-drop]
 features: ["task-board", "kanban-board-operations", "micro-visualizations", "task-definition-ai", "detail-view-redesign", "ui-density-refinement"]
-screengrabCount: 6
+screengrabCount: 2
 lastUpdated: "2026-03-21"
 ---
 
@@ -20,18 +20,6 @@ The Dashboard is your primary task management surface. It presents all tasks as 
 
 ![Dashboard table view](../screengrabs/dashboard-table.png)
 *Table view with sortable columns for title, status, priority, project, and timestamps*
-
-![Dashboard filtered view](../screengrabs/dashboard-filtered.png)
-*Filter bar narrowing tasks by project, status, or priority*
-
-![Task detail view](../screengrabs/dashboard-detail.png)
-*Task detail panel showing full description, status history, and agent logs*
-
-![Create task form empty](../screengrabs/dashboard-create-form-empty.png)
-*Empty task creation form at /tasks/new with all available fields*
-
-![Create task form filled](../screengrabs/dashboard-create-form-filled.png)
-*Filled task creation form with AI Assist enhanced description*
 
 ## Key Features
 

@@ -5,7 +5,7 @@ section: "inbox-notifications"
 route: "/inbox"
 tags: [inbox, notifications, permissions, approval, human-in-the-loop, toast]
 features: ["inbox-notifications", "ambient-approval-toast", "content-handling"]
-screengrabCount: 4
+screengrabCount: 2
 lastUpdated: "2026-03-21"
 ---
 
@@ -20,12 +20,6 @@ The Inbox is your notification center for all agent activity that needs awarenes
 
 ![Inbox expanded notification](../screengrabs/inbox-expanded.png)
 *Expanded notification revealing additional context via Show More*
-
-![Inbox fully expanded](../screengrabs/inbox-fully-expanded.png)
-*Fully expanded notification with rich Markdown content and action buttons*
-
-![Inbox action journey](../screengrabs/journey-inbox-action.png)
-*Permission-required notification with Approve and Deny action buttons*
 
 ## Key Features
 
