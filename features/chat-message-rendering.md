@@ -1,6 +1,6 @@
 ---
 title: Chat Message Rendering
-status: planned
+status: completed
 priority: P1
 milestone: post-mvp
 source: brainstorm (2026-03-22)

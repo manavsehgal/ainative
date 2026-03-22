@@ -133,12 +133,12 @@ Features that enhance the product but aren't essential for first use — homepag
 
 | Feature | Priority | Status | Dependencies |
 |---------|----------|--------|--------------|
-| [chat-data-layer](chat-data-layer.md) | P0 | planned | database-schema, provider-runtime-abstraction |
-| [chat-engine](chat-engine.md) | P0 | planned | chat-data-layer, provider-runtime-abstraction, multi-agent-routing |
-| [chat-api-routes](chat-api-routes.md) | P0 | planned | chat-data-layer, chat-engine |
-| [chat-ui-shell](chat-ui-shell.md) | P1 | planned | chat-api-routes, app-shell, operational-surface-foundation |
-| [chat-message-rendering](chat-message-rendering.md) | P1 | planned | chat-ui-shell, chat-api-routes |
-| [chat-input-composer](chat-input-composer.md) | P1 | planned | chat-ui-shell, chat-api-routes |
+| [chat-data-layer](chat-data-layer.md) | P0 | completed | database-schema, provider-runtime-abstraction |
+| [chat-engine](chat-engine.md) | P0 | completed | chat-data-layer, provider-runtime-abstraction, multi-agent-routing |
+| [chat-api-routes](chat-api-routes.md) | P0 | completed | chat-data-layer, chat-engine |
+| [chat-ui-shell](chat-ui-shell.md) | P1 | completed | chat-api-routes, app-shell, operational-surface-foundation |
+| [chat-message-rendering](chat-message-rendering.md) | P1 | completed | chat-ui-shell, chat-api-routes |
+| [chat-input-composer](chat-input-composer.md) | P1 | completed | chat-ui-shell, chat-api-routes |
 
 ## Dependency Graph
 
@@ -270,10 +270,12 @@ database-schema + provider-runtime-abstraction + multi-agent-routing
 
 > All sprints above are completed or deferred. The Environment Onboarding initiative (11 features) is fully shipped.
 
-21. **Sprint 21 — Chat Data Layer**: chat-data-layer (P0) — DB tables, schema, data access
-22. **Sprint 22 — Chat Engine**: chat-engine (P0) — context builder, SDK streaming, entity detection
-23. **Sprint 23 — Chat API**: chat-api-routes (P0) — REST + SSE endpoints
-24. **Sprint 24 — Chat UI**: chat-ui-shell (P1) + chat-input-composer (P1) + chat-message-rendering (P1) — page layout, input, messages (partially parallel)
+21. **Sprint 21 — Chat Data Layer**: chat-data-layer (P0, completed) — DB tables, schema, data access
+22. **Sprint 22 — Chat Engine**: chat-engine (P0, completed) — context builder, SDK streaming, entity detection
+23. **Sprint 23 — Chat API**: chat-api-routes (P0, completed) — REST + SSE endpoints
+24. **Sprint 24 — Chat UI**: chat-ui-shell (P1, completed) + chat-input-composer (P1, completed) + chat-message-rendering (P1, completed) — page layout, input, messages
+
+> Chat Conversation initiative (6 features) fully shipped 2026-03-22. All sprints 21-24 completed.
 
 ## Open Questions
 

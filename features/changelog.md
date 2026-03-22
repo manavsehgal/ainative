@@ -2,6 +2,18 @@
 
 ## 2026-03-22
 
+### Completed
+- `chat-data-layer` (P0) — conversations + chat_messages tables, Drizzle schema, full CRUD data access with cursor-based pagination
+- `chat-engine` (P0) — progressive 5-tier context injection (~53K token budget), streaming response handling, entity detection, model discovery, permission bridge, Stagent CRUD tools (list/create/update/delete for projects, tasks, workflows), intent disambiguation, system prompt with workspace awareness
+- `chat-api-routes` (P0) — conversations CRUD, SSE message streaming with keepalive pings, model catalog endpoint, context-aware suggested prompts endpoint, permission/question response endpoint
+- `chat-ui-shell` (P1) — ChatShell layout with conversation list sidebar, responsive design, empty state hero with suggested prompt chips
+- `chat-message-rendering` (P1) — ReactMarkdown + GFM rendering, Quick Access navigation pills for entity deep-linking, permission request UI, question rendering with options
+- `chat-input-composer` (P1) — model selector with cost tiers ($, $$, $$$), Claude.ai-style tabbed suggested prompts with hover preview, settings default model preference
+- Multi-provider support: Claude SDK (Haiku/Sonnet/Opus) + Codex App Server (GPT-5.3/5.4)
+- Dynamic model discovery with runtime-aware cost tier classification
+- Fixed blank chat responses (stream_event wrapper handling, multi-turn context)
+- Version bump needed for chat feature inclusion
+
 ### Groomed
 - Extracted 6 chat features from HOLD-mode brainstorming session
 - Chat as "conversational control plane" for all stagent primitives

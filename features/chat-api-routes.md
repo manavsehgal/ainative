@@ -1,6 +1,6 @@
 ---
 title: Chat API Routes
-status: planned
+status: completed
 priority: P0
 milestone: post-mvp
 source: brainstorm (2026-03-22)
