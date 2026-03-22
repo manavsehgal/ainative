@@ -1,4 +1,4 @@
-import { getLatestScan, getArtifacts, getArtifactCounts, getToolCounts } from "@/lib/environment/data";
+import { getLatestScan, getArtifacts, getArtifactCounts, getToolCounts, getCheckpoints } from "@/lib/environment/data";
 import { EnvironmentDashboard } from "@/components/environment/environment-dashboard";
 import { PageShell } from "@/components/shared/page-shell";
 
@@ -23,6 +23,7 @@ export default async function EnvironmentPage() {
   const artifacts = getArtifacts({ scanId: scan.id });
   const categoryCounts = getArtifactCounts(scan.id);
   const toolCounts = getToolCounts(scan.id);
+  const checkpoints = getCheckpoints();
 
   return (
     <PageShell title="Environment">
@@ -31,6 +32,7 @@ export default async function EnvironmentPage() {
         artifacts={artifacts}
         categoryCounts={categoryCounts}
         toolCounts={toolCounts}
+        checkpoints={checkpoints}
       />
     </PageShell>
   );

@@ -9,6 +9,7 @@ import { PageShell } from "@/components/shared/page-shell";
 import { ProjectDetailClient } from "@/components/projects/project-detail";
 import { Sparkline } from "@/components/charts/sparkline";
 import { getProjectCompletionTrend } from "@/lib/queries/chart-data";
+import { EnvironmentSummaryCard } from "@/components/environment/environment-summary-card";
 
 export const dynamic = "force-dynamic";
 
@@ -115,6 +116,16 @@ export default async function ProjectDetailPage({
               className="flex-1"
             />
           </div>
+        </div>
+      )}
+
+      {/* Environment summary */}
+      {project.workingDirectory && (
+        <div className="mb-6">
+          <EnvironmentSummaryCard
+            projectId={id}
+            workingDirectory={project.workingDirectory}
+          />
         </div>
       )}
 

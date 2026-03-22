@@ -536,10 +536,28 @@ export function WorkflowStatusView({ workflowId }: WorkflowStatusViewProps) {
                             </Badge>
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground truncate mt-0.5">
-                          {step.prompt.slice(0, 100)}
-                          {step.prompt.length > 100 ? "..." : ""}
-                        </p>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <p className="text-xs text-muted-foreground truncate">
+                            {step.prompt.slice(0, 100)}
+                            {step.prompt.length > 100 ? "..." : ""}
+                          </p>
+                          {step.state.taskId && (
+                            <a
+                              href={`/tasks/${step.state.taskId}`}
+                              className="text-[10px] text-primary hover:underline shrink-0"
+                            >
+                              view task
+                            </a>
+                          )}
+                        </div>
+                        {/* Parent document context indicator */}
+                        {data.parentDocuments && data.parentDocuments.length > 0 && index === 0 && (
+                          <div className="flex items-center gap-1 mt-1">
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                              {data.parentDocuments.length} doc{data.parentDocuments.length !== 1 ? "s" : ""} attached
+                            </Badge>
+                          </div>
+                        )}
                         {step.state.error && (
                           <p className="text-xs text-destructive mt-1">
                             {step.state.error}

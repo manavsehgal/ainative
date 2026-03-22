@@ -205,42 +205,63 @@ export function AIAssistPanel({
         </CardContent>
       </Card>
 
-      {/* Reasoning + Workflow CTA combined callout */}
-      {(result.reasoning || showWorkflowCTA) && (
-        <div className="rounded-md border bg-muted/50 p-3 space-y-2.5">
-          {result.reasoning && (
-            <div className="flex gap-2">
-              <Info className="h-3.5 w-3.5 mt-0.5 shrink-0 text-muted-foreground" />
+      {/* Reasoning callout */}
+      {result.reasoning && (
+        <div className="rounded-md border border-primary/20 bg-primary/5 p-3">
+          <div className="flex gap-2">
+            <Info className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-primary">Analysis</p>
               <p className="text-xs text-muted-foreground">
                 {result.reasoning}
-                {result.complexity === "complex" && result.recommendedPattern !== "single"
-                  ? " Complex tasks benefit from workflow execution — each step builds on the previous result."
-                  : ""}
               </p>
             </div>
-          )}
-          {showWorkflowCTA && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="w-full justify-start h-auto py-2 border-primary/50 bg-background"
-              onClick={() => onCreateWorkflow(result)}
-            >
-              <div className="text-left flex-1">
-                <div className="flex items-center gap-1.5">
-                  <GitBranch className="h-3 w-3" />
-                  <span className="text-xs font-medium">Create as Workflow</span>
-                  <Badge variant="default" className="text-[10px] h-4 px-1">
-                    Recommended
-                  </Badge>
-                </div>
-                <div className="text-[11px] text-muted-foreground font-normal mt-0.5">
-                  Runs as {patternLabels[result.recommendedPattern]?.toLowerCase() ?? result.recommendedPattern} — each step receives prior output
-                </div>
+          </div>
+        </div>
+      )}
+
+      {/* Workflow CTA with guidance */}
+      {showWorkflowCTA && (
+        <div className="rounded-md border bg-muted/50 p-3 space-y-2.5">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-full justify-start h-auto py-2.5 border-primary/50 bg-background"
+            onClick={() => onCreateWorkflow(result)}
+          >
+            <div className="text-left flex-1">
+              <div className="flex items-center gap-1.5">
+                <GitBranch className="h-3.5 w-3.5" />
+                <span className="text-sm font-medium">Create as Workflow</span>
+                <Badge variant="default" className="text-[10px] h-4 px-1">
+                  Recommended
+                </Badge>
               </div>
-            </Button>
-          )}
+              <div className="text-[11px] text-muted-foreground font-normal mt-1">
+                Runs as {patternLabels[result.recommendedPattern]?.toLowerCase() ?? result.recommendedPattern} — each step receives prior output
+              </div>
+            </div>
+          </Button>
+
+          {/* Pattern guidance */}
+          <div className="text-[11px] text-muted-foreground space-y-1 pl-1">
+            {result.recommendedPattern === "sequence" && (
+              <p>Step 1 output → Step 2 input → Step 2 output → ... Each step builds on the previous result.</p>
+            )}
+            {result.recommendedPattern === "planner-executor" && (
+              <p>A planning step generates a strategy, then executor steps carry it out with full context.</p>
+            )}
+            {result.recommendedPattern === "parallel" && (
+              <p>Branches run concurrently, then a synthesis step combines all results.</p>
+            )}
+            {result.recommendedPattern === "checkpoint" && (
+              <p>Steps run sequentially with approval gates — you review before each continues.</p>
+            )}
+            {result.complexity === "complex" && (
+              <p>Each step has a $5.00 budget. Attached documents flow to all steps automatically.</p>
+            )}
+          </div>
         </div>
       )}
 

@@ -5,18 +5,21 @@ import { useRouter } from "next/navigation";
 import { Globe, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/shared/empty-state";
-import type { EnvironmentScanRow, EnvironmentArtifactRow } from "@/lib/db/schema";
+import type { EnvironmentScanRow, EnvironmentArtifactRow, EnvironmentCheckpointRow } from "@/lib/db/schema";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScanStatusBar } from "./scan-status-bar";
 import { SummaryCardsRow } from "./summary-cards-row";
 import { CategoryFilterBar } from "./category-filter-bar";
 import { ArtifactCard } from "./artifact-card";
 import { ArtifactDetailSheet } from "./artifact-detail-sheet";
+import { CheckpointList } from "./checkpoint-list";
 
 interface EnvironmentDashboardProps {
   scan: EnvironmentScanRow | null;
   artifacts: EnvironmentArtifactRow[];
   categoryCounts: Array<{ category: string; count: number }>;
   toolCounts: Array<{ tool: string; count: number }>;
+  checkpoints?: EnvironmentCheckpointRow[];
 }
 
 export function EnvironmentDashboard({
@@ -24,6 +27,7 @@ export function EnvironmentDashboard({
   artifacts,
   categoryCounts,
   toolCounts,
+  checkpoints = [],
 }: EnvironmentDashboardProps) {
   const router = useRouter();
   const [scanning, setScanning] = useState(false);
@@ -82,36 +86,49 @@ export function EnvironmentDashboard({
         }
       />
 
-      <CategoryFilterBar
-        categoryCounts={categoryCounts}
-        toolCounts={toolCounts}
-        categoryFilter={categoryFilter}
-        toolFilter={toolFilter}
-        scopeFilter={scopeFilter}
-        searchQuery={searchQuery}
-        onCategoryChange={setCategoryFilter}
-        onToolChange={setToolFilter}
-        onScopeChange={setScopeFilter}
-        onSearchChange={setSearchQuery}
-      />
+      <Tabs defaultValue="artifacts" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="artifacts">Artifacts ({artifacts.length})</TabsTrigger>
+          <TabsTrigger value="checkpoints">Checkpoints ({checkpoints.length})</TabsTrigger>
+        </TabsList>
 
-      {filtered.length === 0 ? (
-        <EmptyState
-          icon={Globe}
-          heading="No artifacts match"
-          description="Try adjusting your filters or search query."
-        />
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((artifact) => (
-            <ArtifactCard
-              key={artifact.id}
-              artifact={artifact}
-              onClick={() => setSelectedArtifact(artifact)}
+        <TabsContent value="artifacts" className="space-y-4">
+          <CategoryFilterBar
+            categoryCounts={categoryCounts}
+            toolCounts={toolCounts}
+            categoryFilter={categoryFilter}
+            toolFilter={toolFilter}
+            scopeFilter={scopeFilter}
+            searchQuery={searchQuery}
+            onCategoryChange={setCategoryFilter}
+            onToolChange={setToolFilter}
+            onScopeChange={setScopeFilter}
+            onSearchChange={setSearchQuery}
+          />
+
+          {filtered.length === 0 ? (
+            <EmptyState
+              icon={Globe}
+              heading="No artifacts match"
+              description="Try adjusting your filters or search query."
             />
-          ))}
-        </div>
-      )}
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filtered.map((artifact) => (
+                <ArtifactCard
+                  key={artifact.id}
+                  artifact={artifact}
+                  onClick={() => setSelectedArtifact(artifact)}
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="checkpoints">
+          <CheckpointList checkpoints={checkpoints} />
+        </TabsContent>
+      </Tabs>
 
       <ArtifactDetailSheet
         artifact={selectedArtifact}

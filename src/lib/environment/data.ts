@@ -7,8 +7,12 @@ import { db } from "@/lib/db";
 import {
   environmentScans,
   environmentArtifacts,
+  environmentCheckpoints,
+  environmentSyncOps,
   type EnvironmentScanRow,
   type EnvironmentArtifactRow,
+  type EnvironmentCheckpointRow,
+  type EnvironmentSyncOpRow,
 } from "@/lib/db/schema";
 import { eq, desc, and, like, sql } from "drizzle-orm";
 import type { ScanResult, ArtifactCategory, ToolPersona, ArtifactScope } from "./types";
@@ -168,5 +172,124 @@ export function getToolCounts(
     .from(environmentArtifacts)
     .where(eq(environmentArtifacts.scanId, scanId))
     .groupBy(environmentArtifacts.tool)
+    .all();
+}
+
+// ── Checkpoint CRUD ──────────────────────────────────────────────────
+
+/** Insert a new checkpoint record. */
+export function insertCheckpoint(data: {
+  projectId?: string;
+  label: string;
+  checkpointType: "pre-sync" | "manual" | "pre-onboard";
+  gitTag?: string;
+  gitCommitSha?: string;
+  backupPath?: string;
+  filesCount: number;
+}): EnvironmentCheckpointRow {
+  const id = crypto.randomUUID();
+  const now = new Date();
+
+  db.insert(environmentCheckpoints)
+    .values({
+      id,
+      projectId: data.projectId || null,
+      label: data.label,
+      checkpointType: data.checkpointType,
+      gitTag: data.gitTag || null,
+      gitCommitSha: data.gitCommitSha || null,
+      backupPath: data.backupPath || null,
+      filesCount: data.filesCount,
+      status: "active",
+      createdAt: now,
+    })
+    .run();
+
+  return db
+    .select()
+    .from(environmentCheckpoints)
+    .where(eq(environmentCheckpoints.id, id))
+    .get()!;
+}
+
+/** Get checkpoints for a project (or all if no projectId). */
+export function getCheckpoints(
+  projectId?: string
+): EnvironmentCheckpointRow[] {
+  const conditions = [];
+  if (projectId) {
+    conditions.push(eq(environmentCheckpoints.projectId, projectId));
+  }
+
+  return db
+    .select()
+    .from(environmentCheckpoints)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(desc(environmentCheckpoints.createdAt))
+    .all();
+}
+
+/** Get a single checkpoint by ID. */
+export function getCheckpointById(
+  id: string
+): EnvironmentCheckpointRow | undefined {
+  return db
+    .select()
+    .from(environmentCheckpoints)
+    .where(eq(environmentCheckpoints.id, id))
+    .get();
+}
+
+/** Update checkpoint status (e.g., mark as rolled_back or superseded). */
+export function updateCheckpointStatus(
+  id: string,
+  status: "active" | "rolled_back" | "superseded"
+): void {
+  db.update(environmentCheckpoints)
+    .set({ status })
+    .where(eq(environmentCheckpoints.id, id))
+    .run();
+}
+
+/** Insert a sync operation record. */
+export function insertSyncOp(data: {
+  checkpointId: string;
+  artifactId?: string;
+  operation: "create" | "update" | "delete" | "sync";
+  targetTool: string;
+  targetPath: string;
+  diffPreview?: string;
+}): EnvironmentSyncOpRow {
+  const id = crypto.randomUUID();
+  const now = new Date();
+
+  db.insert(environmentSyncOps)
+    .values({
+      id,
+      checkpointId: data.checkpointId,
+      artifactId: data.artifactId || null,
+      operation: data.operation,
+      targetTool: data.targetTool,
+      targetPath: data.targetPath,
+      diffPreview: data.diffPreview || null,
+      status: "pending",
+      createdAt: now,
+    })
+    .run();
+
+  return db
+    .select()
+    .from(environmentSyncOps)
+    .where(eq(environmentSyncOps.id, id))
+    .get()!;
+}
+
+/** Get sync operations for a checkpoint. */
+export function getSyncOps(checkpointId: string): EnvironmentSyncOpRow[] {
+  return db
+    .select()
+    .from(environmentSyncOps)
+    .where(eq(environmentSyncOps.checkpointId, checkpointId))
+    .orderBy(desc(environmentSyncOps.createdAt))
     .all();
 }

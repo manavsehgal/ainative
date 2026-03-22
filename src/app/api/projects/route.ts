@@ -3,6 +3,8 @@ import { db } from "@/lib/db";
 import { projects, tasks } from "@/lib/db/schema";
 import { eq, count } from "drizzle-orm";
 import { createProjectSchema } from "@/lib/validators/project";
+import { scanEnvironment } from "@/lib/environment/scanner";
+import { createScan } from "@/lib/environment/data";
 
 export async function GET() {
   const result = await db
@@ -48,6 +50,18 @@ export async function POST(req: NextRequest) {
     .select()
     .from(projects)
     .where(eq(projects.id, id));
+
+  // Auto-scan environment if workingDirectory is set
+  if (parsed.data.workingDirectory) {
+    try {
+      const scanResult = scanEnvironment({
+        projectDir: parsed.data.workingDirectory,
+      });
+      createScan(scanResult, parsed.data.workingDirectory, id);
+    } catch {
+      // Scan failure shouldn't block project creation
+    }
+  }
 
   return NextResponse.json(project, { status: 201 });
 }
