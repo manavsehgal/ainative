@@ -1,19 +1,19 @@
 import { listConversations } from "@/lib/data/chat";
-import { getSuggestedPrompts } from "@/lib/chat/suggested-prompts";
+import { getPromptCategories } from "@/lib/chat/suggested-prompts";
 import { ChatShell } from "@/components/chat/chat-shell";
 
 export const dynamic = "force-dynamic";
 
 export default async function ChatPage() {
-  const [conversations, suggestedPrompts] = await Promise.all([
+  const [conversations, promptCategories] = await Promise.all([
     listConversations({ status: "active" }),
-    getSuggestedPrompts(),
+    getPromptCategories(),
   ]);
 
   return (
     <ChatShell
       initialConversations={conversations}
-      suggestedPrompts={suggestedPrompts}
+      promptCategories={promptCategories}
     />
   );
 }

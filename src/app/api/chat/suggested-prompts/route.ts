@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { getSuggestedPrompts } from "@/lib/chat/suggested-prompts";
+import { getPromptCategories } from "@/lib/chat/suggested-prompts";
 
 /**
  * GET /api/chat/suggested-prompts
- * Return context-aware chat suggestions.
+ * Return context-aware prompt categories with sub-prompts.
  */
 export async function GET() {
-  const prompts = await getSuggestedPrompts();
-  return NextResponse.json(prompts);
+  const categories = await getPromptCategories();
+  return NextResponse.json(categories);
 }

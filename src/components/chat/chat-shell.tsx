@@ -2,8 +2,7 @@
 
 import { useState, useCallback } from "react";
 import type { ConversationRow, ChatMessageRow } from "@/lib/db/schema";
-import type { SuggestedPrompt } from "@/lib/chat/suggested-prompts";
-import type { QuickAccessItem } from "@/lib/chat/types";
+import type { PromptCategory } from "@/lib/chat/types";
 import { ConversationList } from "./conversation-list";
 import { ChatMessageList } from "./chat-message-list";
 import { ChatInput } from "./chat-input";
@@ -14,12 +13,12 @@ import { MessageCircle, PanelRightOpen } from "lucide-react";
 
 interface ChatShellProps {
   initialConversations: ConversationRow[];
-  suggestedPrompts: SuggestedPrompt[];
+  promptCategories: PromptCategory[];
 }
 
 export function ChatShell({
   initialConversations,
-  suggestedPrompts,
+  promptCategories,
 }: ChatShellProps) {
   const [conversations, setConversations] =
     useState<ConversationRow[]>(initialConversations);
@@ -29,6 +28,7 @@ export function ChatShell({
   const [abortController, setAbortController] =
     useState<AbortController | null>(null);
   const [mobileListOpen, setMobileListOpen] = useState(false);
+  const [hoverPreview, setHoverPreview] = useState<string | null>(null);
 
   const activeConversation = conversations.find((c) => c.id === activeId);
 
@@ -313,14 +313,16 @@ export function ChatShell({
           /* Hero mode: vertically centered greeting + input + chips */
           <div className="flex-1 flex items-center justify-center overflow-hidden">
             <ChatEmptyState
-              suggestedPrompts={suggestedPrompts}
+              promptCategories={promptCategories}
               onSuggestionClick={handleSuggestionClick}
+              onHoverPreview={setHoverPreview}
             >
               <ChatInput
                 onSend={handleSend}
                 onStop={handleStop}
                 isStreaming={isStreaming}
                 isHeroMode
+                previewText={hoverPreview}
               />
             </ChatEmptyState>
           </div>

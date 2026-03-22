@@ -10,6 +10,7 @@ interface ChatInputProps {
   onStop: () => void;
   isStreaming: boolean;
   isHeroMode: boolean;
+  previewText?: string | null;
 }
 
 export function ChatInput({
@@ -17,6 +18,7 @@ export function ChatInput({
   onStop,
   isStreaming,
   isHeroMode,
+  previewText,
 }: ChatInputProps) {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -31,7 +33,6 @@ export function ChatInput({
     if (!trimmed || isStreaming) return;
     onSend(trimmed);
     setValue("");
-    // Reset textarea height
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
@@ -57,6 +58,9 @@ export function ChatInput({
     textarea.style.height = "auto";
     textarea.style.height = Math.min(textarea.scrollHeight, 200) + "px";
   }, []);
+
+  // Show preview text in placeholder when hovering a suggestion
+  const placeholder = previewText || "Ask anything about your projects...";
 
   return (
     <div
@@ -88,7 +92,7 @@ export function ChatInput({
               handleInput();
             }}
             onKeyDown={handleKeyDown}
-            placeholder="Ask anything about your projects..."
+            placeholder={placeholder}
             className={cn(
               "flex-1 resize-none bg-transparent text-sm outline-none placeholder:text-muted-foreground max-h-[200px]",
               isHeroMode ? "min-h-[80px]" : "min-h-[24px]"
@@ -96,7 +100,7 @@ export function ChatInput({
             rows={isHeroMode ? 3 : 1}
             disabled={isStreaming}
           />
-          {isStreaming ? (
+          {isStreaming && (
             <Button
               variant="destructive"
               size="icon"
@@ -105,7 +109,8 @@ export function ChatInput({
             >
               <Square className="h-3.5 w-3.5" />
             </Button>
-          ) : (
+          )}
+          {!isStreaming && !isHeroMode && (
             <Button
               variant="default"
               size="icon"

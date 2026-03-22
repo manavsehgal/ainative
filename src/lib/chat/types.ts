@@ -36,3 +36,17 @@ export const CHAT_MODELS: ChatModelOption[] = [
 ];
 
 export const DEFAULT_CHAT_MODEL = "claude-haiku-4-5";
+
+/** Suggested prompt category with expandable sub-prompts */
+export interface PromptCategory {
+  id: string;
+  label: string;
+  icon: string; // Lucide icon name
+  prompts: SuggestedPrompt[];
+}
+
+/** Individual suggested prompt with short label and detailed text */
+export interface SuggestedPrompt {
+  label: string;  // Short display text for dropdown (~40 chars)
+  prompt: string; // Full detailed prompt text for hover preview and fill
+}
