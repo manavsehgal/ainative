@@ -13,6 +13,7 @@ import {
   Bot,
   Clock,
   Wallet,
+  BookOpen,
   BookMarked,
   Globe,
   Settings,
@@ -62,6 +63,10 @@ const manageItems: NavItem[] = [
   { title: "Profiles", href: "/profiles", icon: Bot },
   { title: "Schedules", href: "/schedules", icon: Clock },
   { title: "Cost & Usage", href: "/costs", icon: Wallet },
+];
+
+const learnItems: NavItem[] = [
+  { title: "AI Native Book", href: "/book", icon: BookOpen },
 ];
 
 const configureItems: NavItem[] = [
@@ -130,6 +135,7 @@ export function AppSidebar() {
       <SidebarContent>
         <NavGroup label="Work" items={workItems} pathname={pathname} />
         <NavGroup label="Manage" items={manageItems} pathname={pathname} />
+        <NavGroup label="Learn" items={learnItems} pathname={pathname} />
         <NavGroup label="Configure" items={configureItems} pathname={pathname} />
       </SidebarContent>
       <SidebarFooter className="px-4 py-3">

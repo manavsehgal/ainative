@@ -89,6 +89,7 @@
     "remark-gfm": "^4.0.1",
     "smol-toml": "^1.6.0",
     "sonner": "^2.0.7",
+    "sugar-high": "^1.0.0",
     "tailwind-merge": "^3",
     "tailwindcss": "^4",
     "tw-animate-css": "^1",
