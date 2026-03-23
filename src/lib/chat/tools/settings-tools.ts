@@ -28,6 +28,7 @@ export function settingsTools(_ctx: ToolContext) {
           const keys = [
             "auth_method",
             "default_runtime",
+            "runtime.sdkTimeoutSeconds",
             "budget_max_tokens_per_task",
             "budget_max_cost_per_task",
             "budget_max_daily_cost",

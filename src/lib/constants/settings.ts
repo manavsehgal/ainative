@@ -8,6 +8,7 @@ export const SETTINGS_KEYS = {
   BUDGET_POLICY: "usage.budgetPolicy",
   BUDGET_WARNING_STATE: "usage.budgetWarningState",
   PRICING_REGISTRY: "usage.pricingRegistry",
+  SDK_TIMEOUT_SECONDS: "runtime.sdkTimeoutSeconds",
 } as const;
 
 export type AuthMethod = "api_key" | "oauth";

@@ -9,6 +9,9 @@ import { resolveProfileRuntimePayload } from "@/lib/agents/profiles/compatibilit
 import { executeClaudeTask, resumeClaudeTask } from "@/lib/agents/claude-agent";
 import { getRuntimeCapabilities, getRuntimeCatalogEntry } from "./catalog";
 import { buildClaudeSdkEnv } from "./claude-sdk";
+import { getLaunchCwd } from "@/lib/environment/workspace-context";
+import { getSetting } from "@/lib/settings/helpers";
+import { SETTINGS_KEYS } from "@/lib/constants/settings";
 import type {
   AgentRuntimeAdapter,
   RuntimeConnectionResult,
@@ -88,6 +91,21 @@ async function collectResultText(
   return { resultText, usage };
 }
 
+/** Read the user-configurable SDK timeout (in ms). Falls back to 60s. */
+async function getSdkTimeout(): Promise<number> {
+  const raw = await getSetting(SETTINGS_KEYS.SDK_TIMEOUT_SECONDS);
+  const seconds = raw ? parseInt(raw, 10) : 60;
+  return (isNaN(seconds) || seconds < 10 ? 60 : seconds) * 1000;
+}
+
+/** Check if an error is an abort/timeout error from the SDK. */
+function isAbortError(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    (error.name === "AbortError" || error.message.includes("aborted"))
+  );
+}
+
 async function runSingleProfileTest(
   profileId: string,
   test: { task: string; expectedKeywords: string[] }
@@ -105,7 +123,8 @@ async function runSingleProfileTest(
   const prompt = `${payload.instructions}\n\n---\n\nTask: ${test.task}\n\nProvide a brief analysis (2-3 paragraphs max). Include specific terminology relevant to your domain.`;
   const authEnv = await getAuthEnv();
   const abortController = new AbortController();
-  const timeout = setTimeout(() => abortController.abort(), 30_000);
+  const sdkTimeoutMs = await getSdkTimeout();
+  const timeout = setTimeout(() => abortController.abort(), sdkTimeoutMs);
   const startedAt = new Date();
   let usage: UsageSnapshot = {};
   let ledgerRecorded = false;
@@ -264,7 +283,8 @@ export async function runMetaCompletion(input: {
   const startedAt = new Date();
   let usage: UsageSnapshot = {};
   const abortController = new AbortController();
-  const timeout = setTimeout(() => abortController.abort(), 60_000);
+  const sdkTimeoutMs = await getSdkTimeout();
+  const timeout = setTimeout(() => abortController.abort(), sdkTimeoutMs);
 
   try {
     const response = query({
@@ -272,7 +292,7 @@ export async function runMetaCompletion(input: {
       options: {
         abortController,
         includePartialMessages: true,
-        cwd: process.cwd(),
+        cwd: getLaunchCwd(),
         env: buildClaudeSdkEnv(authEnv),
         allowedTools: [],
         maxTurns: 1,
@@ -311,6 +331,9 @@ export async function runMetaCompletion(input: {
       startedAt,
       finishedAt: new Date(),
     });
+    if (isAbortError(error)) {
+      throw new Error("Request timed out. You can increase the timeout in Settings → Runtime.");
+    }
     throw error;
   } finally {
     clearTimeout(timeout);
@@ -335,7 +358,8 @@ async function runClaudeTaskAssist(
   let usage: UsageSnapshot = {};
 
   const abortController = new AbortController();
-  const timeout = setTimeout(() => abortController.abort(), 30_000);
+  const sdkTimeoutMs = await getSdkTimeout();
+  const timeout = setTimeout(() => abortController.abort(), sdkTimeoutMs);
 
   try {
     const response = query({
@@ -343,7 +367,7 @@ async function runClaudeTaskAssist(
       options: {
         abortController,
         includePartialMessages: true,
-        cwd: process.cwd(),
+        cwd: getLaunchCwd(),
         env: buildClaudeSdkEnv(authEnv),
         allowedTools: [],   // No tool use — pure text completion
         maxTurns: 1,        // Single turn only — no agentic loop
@@ -393,6 +417,9 @@ async function runClaudeTaskAssist(
       startedAt,
       finishedAt: new Date(),
     });
+    if (isAbortError(error)) {
+      throw new Error("Request timed out. You can increase the timeout in Settings → Runtime.");
+    }
     throw error;
   } finally {
     clearTimeout(timeout);
@@ -411,7 +438,7 @@ async function testClaudeConnection(): Promise<RuntimeConnectionResult> {
         abortController,
         maxTurns: 1,
         includePartialMessages: false,
-        cwd: process.cwd(),
+        cwd: getLaunchCwd(),
         env: buildClaudeSdkEnv(authEnv),
       },
     });
