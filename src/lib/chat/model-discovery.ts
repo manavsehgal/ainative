@@ -2,6 +2,7 @@ import { query } from "@anthropic-ai/claude-agent-sdk";
 import { getAuthEnv } from "@/lib/settings/auth";
 import { buildClaudeSdkEnv } from "@/lib/agents/runtime/claude-sdk";
 import { CHAT_MODELS, type ChatModelOption } from "./types";
+import { getLaunchCwd } from "@/lib/environment/workspace-context";
 
 // ── Cache ──────────────────────────────────────────────────────────────
 
@@ -21,7 +22,7 @@ async function discoverClaudeModels(): Promise<ChatModelOption[]> {
       prompt: "",
       options: {
         abortController,
-        cwd: process.cwd(),
+        cwd: getLaunchCwd(),
         env: buildClaudeSdkEnv(authEnv),
         allowedTools: [],
         maxTurns: 1,

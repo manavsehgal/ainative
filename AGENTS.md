@@ -59,6 +59,14 @@ These 7 directives apply to all skills, all code, and all reviews. They are the 
 6. **DRY with judgment** — extract on third use, not first. Three similar lines of code is better than a premature abstraction. When you do extract, the abstraction must earn its weight.
 7. **Permission to scrap** — if a better approach emerges mid-implementation, table current work and switch. Sunk cost is not a reason to continue a suboptimal path.
 
+## Worktree Context
+
+- Dogfooding worktrees use isolated data dirs via `STAGENT_DATA_DIR` in `.env.local`. Never share a DB between instances.
+- Migration files: use `XXXX_` prefix during development, renumber to next sequential at PR time.
+- Run `/worktree-production` for setup, sync, seed, and migration procedures.
+- In a dogfooding worktree: focus on using the app. Report bugs — don't fix them here.
+- On main: normal FLOW.md lifecycle. Check dogfooding feedback before picking next work.
+
 ## Cross-Tool Compatibility
 
 - `MEMORY.md` is the shared evolving context file for this project.

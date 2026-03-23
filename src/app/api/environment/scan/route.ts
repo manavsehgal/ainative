@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { scanEnvironment } from "@/lib/environment/scanner";
+import { getLaunchCwd } from "@/lib/environment/workspace-context";
 import {
   createScan,
   getLatestScan,
@@ -11,7 +12,7 @@ import {
 /** POST: Trigger a new environment scan. */
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
-  const projectDir = (body as { projectDir?: string }).projectDir || process.cwd();
+  const projectDir = (body as { projectDir?: string }).projectDir || getLaunchCwd();
   const projectId = (body as { projectId?: string }).projectId;
 
   const result = scanEnvironment({ projectDir });

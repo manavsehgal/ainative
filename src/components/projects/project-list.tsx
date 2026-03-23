@@ -28,7 +28,7 @@ export function ProjectList({ initialProjects }: { initialProjects: Project[] })
   const totalTasks = projects.reduce((sum, project) => sum + project.taskCount, 0);
 
   const refresh = useCallback(async () => {
-    const res = await fetch("/api/projects");
+    const res = await fetch("/api/projects", { cache: "no-store" });
     if (res.ok) setProjects(await res.json());
   }, []);
 

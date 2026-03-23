@@ -20,6 +20,7 @@ import {
 } from "@/lib/settings/openai-auth";
 import { isToolAllowed } from "@/lib/settings/permissions";
 import { getRuntimeCatalogEntry } from "./catalog";
+import { getLaunchCwd } from "@/lib/environment/workspace-context";
 import { CodexAppServerClient } from "./codex-app-server-client";
 import type {
   AgentRuntimeAdapter,
@@ -158,7 +159,7 @@ async function resolveTaskExecutionContext(
     .filter(Boolean)
     .join("\n\n");
 
-  let cwd = process.cwd();
+  let cwd = getLaunchCwd();
   if (task.projectId) {
     const [project] = await db
       .select({ workingDirectory: projects.workingDirectory })
@@ -1013,7 +1014,7 @@ async function runOpenAITaskAssist(
     const result = await runAssistTurn({
       prompt,
       developerInstructions: TASK_ASSIST_SYSTEM_PROMPT,
-      cwd: process.cwd(),
+      cwd: getLaunchCwd(),
     });
     usage = result.usage;
     const parsed = extractJsonObject(result.text);
@@ -1062,7 +1063,7 @@ async function testOpenAIConnection(): Promise<RuntimeConnectionResult> {
   let client: CodexAppServerClient | null = null;
   try {
     client = await CodexAppServerClient.connect({
-      cwd: process.cwd(),
+      cwd: getLaunchCwd(),
       env: { OPENAI_API_KEY: apiKey },
     });
     await initializeOpenAIClient(client, apiKey);

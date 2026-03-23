@@ -7,6 +7,7 @@ import { createGitCheckpoint, isGitRepo, getCurrentCommit } from "@/lib/environm
 import { backupFiles, backupDirectory } from "@/lib/environment/backup-manager";
 import { homedir } from "os";
 import { join } from "path";
+import { getLaunchCwd } from "@/lib/environment/workspace-context";
 
 /** GET: List checkpoints, optionally filtered by projectId. */
 export async function GET(req: NextRequest) {
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
 
   const label = body.label || `Manual checkpoint ${new Date().toISOString()}`;
   const checkpointType = body.checkpointType || "manual";
-  const projectDir = body.projectDir || process.cwd();
+  const projectDir = body.projectDir || getLaunchCwd();
 
   let gitTag: string | undefined;
   let gitCommitSha: string | undefined;

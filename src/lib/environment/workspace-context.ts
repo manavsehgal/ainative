@@ -4,6 +4,11 @@ import { execFileSync } from "child_process";
 import { statSync } from "fs";
 import { join } from "path";
 
+/** The directory the user launched stagent from (falls back to process.cwd()). */
+export function getLaunchCwd(): string {
+  return process.env.STAGENT_LAUNCH_CWD || process.cwd();
+}
+
 export interface WorkspaceContext {
   cwd: string;
   folderName: string;
@@ -13,7 +18,7 @@ export interface WorkspaceContext {
 }
 
 export function getWorkspaceContext(): WorkspaceContext {
-  const cwd = process.cwd();
+  const cwd = getLaunchCwd();
   const home = homedir();
   const folderName = basename(cwd);
   const parent = dirname(cwd);

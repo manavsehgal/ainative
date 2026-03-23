@@ -60,6 +60,7 @@ For non-trivial features (multi-file, new architecture, cross-cutting concerns):
 | `/skill-creator` | Meta: evolve the lifecycle | New or improved skill definitions |
 | `/code-review` | Verify: standalone reviews | Usually delegated by `/quality-manager` |
 | `/supervisor` | Meta: project health + next steps | `features/supervisor-report.md` |
+| `/worktree-production` | Dogfooding: run app in worktree | Setup, sync, seed, migration rules |
 
 ## Feedback Loops
 
@@ -76,5 +77,6 @@ Evaluate findings route back into earlier phases:
 |-----------|---------|
 | `ideas/` | Raw ideas + `/capture`d articles with frontmatter |
 | `features/` | Structured feature specs + `roadmap.md` + `changelog.md` |
-| `.claude/skills/` | All skill definitions (13 skills) |
+| `.claude/skills/` | All skill definitions (14 skills) |
 | `.claude/reference/` | Captured docs — populate via `/capture`, look up via `/refer` |
+| `bin/sync-worktree.sh` | Worktree sync script — rebase + conditional `npm install` |

@@ -9,7 +9,17 @@ function docsDir(): string {
 
 /** Read and parse docs/manifest.json */
 export function getManifest(): DocManifest {
-  const raw = readFileSync(join(docsDir(), "manifest.json"), "utf-8");
+  const manifestPath = join(docsDir(), "manifest.json");
+  if (!existsSync(manifestPath)) {
+    return {
+      generated: "",
+      version: 1,
+      sections: [],
+      journeys: [],
+      metadata: { totalDocs: 0, totalScreengrabs: 0, featuresCovered: 0, appSections: 0 },
+    };
+  }
+  const raw = readFileSync(manifestPath, "utf-8");
   return JSON.parse(raw) as DocManifest;
 }
 

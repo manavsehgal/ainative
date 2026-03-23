@@ -9,6 +9,7 @@ import { homedir } from "os";
 import type { EnvironmentArtifact, ScanOptions, ScanResult, ToolPersona } from "./types";
 import { scanClaudeCode } from "./scanners/claude-code";
 import { scanCodex } from "./scanners/codex";
+import { getLaunchCwd } from "./workspace-context";
 
 /** Detect which tool personas are present on this system. */
 function detectPersonas(userHome: string, projectDir: string): ToolPersona[] {
@@ -76,7 +77,7 @@ export function scanEnvironment(options?: Partial<ScanOptions>): ScanResult {
   const start = performance.now();
 
   const userHome = options?.userHome || homedir();
-  const projectDir = options?.projectDir || process.cwd();
+  const projectDir = options?.projectDir || getLaunchCwd();
   const personas = detectPersonas(userHome, projectDir);
 
   let allArtifacts: EnvironmentArtifact[] = [];

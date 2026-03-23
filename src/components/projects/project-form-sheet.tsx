@@ -127,10 +127,14 @@ export function ProjectFormSheet({
     setConfirmDelete(false);
     setLoading(true);
     try {
-      await fetch(`/api/projects/${project.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/projects/${project.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        toast.error("Failed to delete project");
+        return;
+      }
       toast.success("Project deleted");
       onOpenChange(false);
-      onSaved();
+      await onSaved();
     } finally {
       setLoading(false);
     }

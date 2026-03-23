@@ -8,6 +8,7 @@ import { dirname } from "path";
 import { getArtifactById, insertCheckpoint, insertSyncOp } from "./data";
 import { createGitCheckpoint, isGitRepo } from "./git-manager";
 import { backupFiles } from "./backup-manager";
+import { getLaunchCwd } from "./workspace-context";
 import { generateDiff, generateNewFileDiff } from "./diff";
 import { prepareSkillSync, executeSkillSync } from "./sync/skill-sync";
 import { prepareMcpSync } from "./sync/mcp-sync";
@@ -127,7 +128,7 @@ export function executeSync(
   const checkpointLabel = label || `Sync ${previews.length} artifact(s)`;
 
   // Step 1: Create checkpoint
-  const projectDir = process.cwd();
+  const projectDir = getLaunchCwd();
   let gitTag: string | undefined;
   let gitCommitSha: string | undefined;
   let backupPath: string | undefined;

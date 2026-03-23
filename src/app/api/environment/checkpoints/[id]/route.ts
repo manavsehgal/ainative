@@ -6,6 +6,7 @@ import {
 } from "@/lib/environment/data";
 import { rollbackToCheckpoint, getCheckpointDiff } from "@/lib/environment/git-manager";
 import { restoreFromBackup } from "@/lib/environment/backup-manager";
+import { getLaunchCwd } from "@/lib/environment/workspace-context";
 
 /** GET: Get checkpoint details with sync operations. */
 export async function GET(
@@ -24,7 +25,7 @@ export async function GET(
   // Get current diff if git checkpoint exists
   let diff: string | null = null;
   if (checkpoint.gitCommitSha) {
-    diff = getCheckpointDiff(process.cwd(), checkpoint.gitCommitSha);
+    diff = getCheckpointDiff(getLaunchCwd(), checkpoint.gitCommitSha);
   }
 
   return NextResponse.json({ checkpoint, syncOps, diff });
@@ -53,7 +54,7 @@ export async function POST(
 
   // Rollback git changes if applicable
   if (checkpoint.gitCommitSha) {
-    const projectDir = process.cwd();
+    const projectDir = getLaunchCwd();
     const gitResult = rollbackToCheckpoint(
       projectDir,
       checkpoint.gitCommitSha,

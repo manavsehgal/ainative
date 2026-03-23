@@ -17,6 +17,7 @@ import { resolveProfileRuntimePayload, type ResolvedProfileRuntimePayload } from
 import type { CanUseToolPolicy } from "./profiles/types";
 import { buildClaudeSdkEnv } from "./runtime/claude-sdk";
 import { getActiveLearnedContext } from "./learned-context";
+import { getLaunchCwd } from "@/lib/environment/workspace-context";
 import { analyzeForLearnedPatterns } from "./pattern-extractor";
 import { processSweepResult } from "./sweep";
 import {
@@ -419,8 +420,8 @@ async function buildTaskQueryContext(
     .filter(Boolean)
     .join("\n\n");
 
-  // Resolve working directory: project's workingDirectory > process.cwd()
-  let cwd = process.cwd();
+  // Resolve working directory: project's workingDirectory > launch cwd
+  let cwd = getLaunchCwd();
   if (task.projectId) {
     const [project] = await db
       .select({ workingDirectory: projects.workingDirectory })

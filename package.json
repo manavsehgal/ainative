@@ -1,6 +1,6 @@
 {
   "name": "stagent",
-  "version": "0.3.1",
+  "version": "0.3.6",
   "description": "Governed AI agent workspace for supervised local execution, workflows, documents, and provider runtimes.",
   "keywords": [
     "ai",
@@ -20,6 +20,7 @@
   },
   "files": [
     "dist/",
+    "docs/",
     "src/",
     "public/icon.svg",
     "public/icon-512.png",
@@ -49,6 +50,7 @@
     "test:e2e": "vitest run --config vitest.config.e2e.ts",
     "test:ui": "vitest --ui",
     "validate:tokens": "npx tsx design-system/validate-tokens.ts",
+    "sync-worktree": "bash bin/sync-worktree.sh",
     "prepublishOnly": "npm run build:cli"
   },
   "engines": {

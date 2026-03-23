@@ -10,6 +10,7 @@ import { safeReadFile } from "../parsers/utils";
 import { parseTOML } from "../parsers/toml";
 import type { EnvironmentArtifactRow } from "@/lib/db/schema";
 import type { SyncOperation } from "./skill-sync";
+import { getLaunchCwd } from "../workspace-context";
 
 interface McpServerEntry {
   command?: string;
@@ -33,7 +34,7 @@ export function prepareMcpToClaude(
   const targetPath =
     scope === "user"
       ? join(homedir(), ".claude", ".mcp.json")
-      : join(projectDir || process.cwd(), ".claude", ".mcp.json");
+      : join(projectDir || getLaunchCwd(), ".claude", ".mcp.json");
 
   const existing = safeReadFile(targetPath);
   let config: { mcpServers: Record<string, McpServerEntry> };

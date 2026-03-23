@@ -30,15 +30,18 @@ import {
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const appDir = join(__dirname, "..");
-const DATA_DIR = getStagentDataDir();
-const dbPath = getStagentDbPath();
+const launchCwd = process.cwd();
 const pkg = JSON.parse(readFileSync(join(appDir, "package.json"), "utf-8"));
-const HELP_TEXT = `
+
+function getHelpText() {
+  const dir = getStagentDataDir();
+  const db = getStagentDbPath();
+  return `
 Data:
-  Directory        ${DATA_DIR}
-  Database         ${dbPath}
-  Sessions         ${join(DATA_DIR, "sessions")}
-  Logs             ${join(DATA_DIR, "logs")}
+  Directory        ${dir}
+  Database         ${db}
+  Sessions         ${join(dir, "sessions")}
+  Logs             ${join(dir, "logs")}
 
 Environment variables:
   STAGENT_DATA_DIR Custom data directory for the web app
@@ -47,20 +50,30 @@ Environment variables:
 
 Examples:
   node dist/cli.js --port 3210 --no-open
-  STAGENT_DATA_DIR=/tmp/stagent node dist/cli.js --reset
+  node dist/cli.js --data-dir ~/.stagent-dogfood --port 3100
 `;
+}
 
 program
   .name("stagent")
   .description("Governed AI agent workspace")
   .version(pkg.version)
-  .addHelpText("after", HELP_TEXT)
+  .addHelpText("after", getHelpText)
   .option("-p, --port <number>", "port to start on", "3000")
+  .option("--data-dir <path>", "custom data directory (overrides STAGENT_DATA_DIR)")
   .option("--reset", "delete the local database before starting")
   .option("--no-open", "don't auto-open browser")
   .parse();
 
 const opts = program.opts();
+
+// Apply --data-dir before resolving paths
+if (opts.dataDir) {
+  process.env.STAGENT_DATA_DIR = opts.dataDir;
+}
+
+const DATA_DIR = getStagentDataDir();
+const dbPath = getStagentDbPath();
 const requestedPort = Number.parseInt(opts.port, 10);
 
 if (Number.isNaN(requestedPort) || requestedPort <= 0) {
@@ -138,7 +151,7 @@ async function main() {
       const candidate = join(searchDir, "node_modules", "next", "package.json");
       if (existsSync(candidate)) {
         const hoistedRoot = searchDir;
-        for (const name of ["src", "public"]) {
+        for (const name of ["src", "public", "docs"]) {
           const dest = join(hoistedRoot, name);
           const src = join(appDir, name);
           if (!existsSync(dest) && existsSync(src)) {
@@ -187,6 +200,7 @@ async function main() {
     env: {
       ...process.env,
       STAGENT_DATA_DIR: DATA_DIR,
+      STAGENT_LAUNCH_CWD: launchCwd,
       PORT: String(actualPort),
     },
   });
