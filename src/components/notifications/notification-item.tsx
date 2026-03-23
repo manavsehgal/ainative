@@ -241,7 +241,6 @@ export function NotificationItem({ notification, onUpdated }: NotificationItemPr
 
           {/* Actions based on type */}
           {notification.type === "permission_required" &&
-            notification.taskId &&
             parsedToolInput && (
               <PermissionAction
                 taskId={notification.taskId}

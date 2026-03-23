@@ -867,6 +867,16 @@ async function waitForApproval(
     await new Promise((resolve) => setTimeout(resolve, pollInterval));
   }
 
+  // Timeout — mark the notification as denied so it clears from pending list
+  await db
+    .update(notifications)
+    .set({
+      response: JSON.stringify({ behavior: "deny", message: "Timed out waiting for approval" }),
+      respondedAt: new Date(),
+      read: true,
+    })
+    .where(eq(notifications.id, notificationId));
+
   return false; // Timeout — treat as denied
 }
 

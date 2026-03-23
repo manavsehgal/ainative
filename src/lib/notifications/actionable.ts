@@ -93,11 +93,20 @@ export async function listPendingApprovalPayloads(
     const isBatchProposal = row.type === "context_proposal_batch";
     const parsedInput = parseNotificationToolInput(row.toolInput);
 
+    // For checkpoint notifications (taskId is null), extract workflowId from toolInput
+    let effectiveWorkflowId = row.workflowId;
+    if (!row.taskId && row.toolName === "WorkflowCheckpoint" && row.toolInput) {
+      try {
+        const parsed = typeof row.toolInput === "string" ? JSON.parse(row.toolInput) : row.toolInput;
+        effectiveWorkflowId = parsed.workflowId ?? null;
+      } catch { /* ignore parse errors */ }
+    }
+
     return {
       channel: "in_app",
       notificationId: row.notificationId,
       taskId: row.taskId,
-      workflowId: row.workflowId,
+      workflowId: effectiveWorkflowId,
       toolName: row.toolName,
       permissionLabel: isBatchProposal
         ? "Workflow Learning"
@@ -113,7 +122,7 @@ export async function listPendingApprovalPayloads(
         ? "/inbox"
         : isContextProposal
           ? `/profiles/${row.toolName}`
-          : buildDeepLink(row.taskId, row.workflowId),
+          : buildDeepLink(row.taskId, effectiveWorkflowId),
       supportedActionIds: (isContextProposal || isBatchProposal)
         ? (["allow_once", "deny"] as ApprovalActionId[])
         : [...APPROVAL_ACTION_IDS],

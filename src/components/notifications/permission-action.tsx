@@ -4,7 +4,7 @@ import { PermissionResponseActions } from "@/components/notifications/permission
 import type { PermissionToolInput } from "@/lib/notifications/permissions";
 
 interface PermissionActionProps {
-  taskId: string;
+  taskId?: string | null;
   notificationId: string;
   toolName: string;
   toolInput: PermissionToolInput;

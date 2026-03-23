@@ -189,7 +189,7 @@ function PendingApprovalDetail({
             toolInput={selected.toolInput}
           />
 
-          {selected.taskId && selected.toolName && selected.toolInput && (
+          {selected.toolName && selected.toolInput && (
             <PermissionResponseActions
               taskId={selected.taskId}
               notificationId={selected.notificationId}
@@ -469,7 +469,7 @@ export function PendingApprovalHost() {
               />
             </div>
           ) : (
-            primary.taskId && primary.toolName && primary.toolInput && (
+            primary.toolName && primary.toolInput && (
               <PermissionResponseActions
                 taskId={primary.taskId}
                 notificationId={primary.notificationId}

@@ -13,7 +13,7 @@ import {
 } from "@/lib/notifications/permissions";
 
 interface PermissionResponseActionsProps {
-  taskId: string;
+  taskId?: string | null;
   notificationId: string;
   toolName: string;
   toolInput: PermissionToolInput;
@@ -55,7 +55,7 @@ export function PermissionResponseActions({
         ? buildPermissionPattern(toolName, toolInput)
         : undefined;
 
-      const res = await fetch(`/api/tasks/${taskId}/respond`, {
+      const res = await fetch(`/api/tasks/${taskId ?? "_checkpoint"}/respond`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
