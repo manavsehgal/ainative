@@ -61,7 +61,7 @@ const navigationItems = [
   { title: "Profiles", href: "/profiles", icon: Bot, keywords: "agents configuration" },
   { title: "Schedules", href: "/schedules", icon: Clock, keywords: "cron recurring timer" },
   { title: "Cost & Usage", href: "/costs", icon: Wallet, keywords: "spend tokens metering budget analytics" },
-  { title: "Playbook", href: "/playbook", icon: BookOpen, keywords: "docs guide documentation help" },
+  { title: "User Guide", href: "/user-guide", icon: BookOpen, keywords: "docs guide documentation help playbook" },
   { title: "Settings", href: "/settings", icon: Settings, keywords: "preferences configuration" },
 ];
 
@@ -229,15 +229,15 @@ export function CommandPalette() {
 
         <CommandSeparator />
 
-        {/* Playbook */}
+        {/* User Guide */}
         {playbookItems.length > 0 && (
           <>
-            <CommandGroup heading="Playbook">
+            <CommandGroup heading="User Guide">
               {playbookItems.map((item) => (
                 <CommandItem
                   key={`playbook-${item.slug}`}
                   value={`playbook-${item.title}`}
-                  onSelect={() => navigate(`/playbook/${item.slug}`)}
+                  onSelect={() => navigate(`/user-guide/${item.slug}`)}
                   keywords={["docs", "guide", ...item.tags]}
                 >
                   <BookOpen className="h-4 w-4" />

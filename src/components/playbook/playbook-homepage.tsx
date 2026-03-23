@@ -117,7 +117,7 @@ export function PlaybookHomepage({
             </div>
           </div>
           <Button asChild>
-            <Link href={`/playbook/${config.ctaSlug}`}>
+            <Link href={`/user-guide/${config.ctaSlug}`}>
               {config.ctaLabel}
               <ArrowRight className="h-4 w-4 ml-1" />
             </Link>

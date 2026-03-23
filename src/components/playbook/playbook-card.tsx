@@ -42,7 +42,7 @@ export function PlaybookCard({ section, adoption }: PlaybookCardProps) {
 
   return (
     <Link
-      href={`/playbook/${section.slug}`}
+      href={`/user-guide/${section.slug}`}
       className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl"
     >
       <Card className="surface-card group h-full transition-colors hover:border-border-strong hover:bg-accent/50 rounded-lg">

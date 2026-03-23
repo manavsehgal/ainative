@@ -15,7 +15,7 @@ Reconciliation skill that ensures the three-layer documentation pipeline stays c
 /playbook-sync → public/readme/*.png (copies from screengrabs/, committed to git)
                 + validates refs + audits content alignment
      ↓
-Playbook UI → /playbook route renders journeys with GitHub raw URLs
+User Guide UI → /user-guide route renders journeys with GitHub raw URLs
               (public/readme/ is excluded from npm package)
 
 ```
@@ -26,7 +26,7 @@ Playbook UI → /playbook route renders journeys with GitHub raw URLs
                     └──────────── if gaps remain ──────────────────┘
 ```
 
-The playbook UI resolves images from `public/readme/*.png` via GitHub raw URLs (`screengrabs/` → `https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/`). This skill closes the gap between where screenshots are captured and where GitHub serves them.
+The user guide UI resolves images from `public/readme/*.png` via GitHub raw URLs (`screengrabs/` → `https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/`). This skill closes the gap between where screenshots are captured and where GitHub serves them.
 
 > **npm exclusion:** `public/readme/` is committed to git (needed for GitHub raw URLs) but excluded from the npm package via `package.json` `"files"`. Do NOT re-add `"public/"` to the files array — only specific non-readme assets are shipped.
 

@@ -7,7 +7,7 @@ export function PlaybookUpdatedBadge() {
   const [hasUpdates, setHasUpdates] = useState(false);
 
   useEffect(() => {
-    fetch("/api/playbook/status")
+    fetch("/api/user-guide/status")
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data?.hasUpdates) setHasUpdates(true);

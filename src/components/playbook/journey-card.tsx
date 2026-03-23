@@ -41,7 +41,7 @@ export function JourneyCard({
 
   return (
     <Link
-      href={`/playbook/${journey.slug}`}
+      href={`/user-guide/${journey.slug}`}
       className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl"
     >
       <Card className="surface-card group h-full transition-colors hover:border-border-strong hover:bg-accent/50 rounded-lg">

@@ -55,7 +55,7 @@ export function AdoptionHeatmap({
           return (
             <Link
               key={section.slug}
-              href={`/playbook/${section.slug}`}
+              href={`/user-guide/${section.slug}`}
               className={`rounded-lg border px-4 py-3 text-sm font-medium transition-colors hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${depthStyles[entry.depth]}`}
               title={depthLabels[entry.depth]}
             >

@@ -133,7 +133,7 @@ Generate docs for 11 app sections + 3 cross-cutting feature groups:
 | Schedules | `docs/features/schedules.md` | `/schedules` |
 | Cost & Usage | `docs/features/cost-usage.md` | `/costs` |
 | Settings | `docs/features/settings.md` | `/settings` |
-| Playbook | `docs/features/playbook.md` | `/playbook` |
+| User Guide | `docs/features/playbook.md` | `/user-guide` |
 | Provider Runtimes | `docs/features/provider-runtimes.md` | cross-cutting |
 | Agent Intelligence | `docs/features/agent-intelligence.md` | cross-cutting |
 | Tool Permissions | `docs/features/tool-permissions.md` | cross-cutting |

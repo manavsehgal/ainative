@@ -69,7 +69,7 @@ export function PlaybookDetailView({
         const hashSuffix = fragment ? `#${fragment}` : "";
         return (
           <Link
-            href={`/playbook/${slug}${hashSuffix}`}
+            href={`/user-guide/${slug}${hashSuffix}`}
             className="text-primary underline underline-offset-4 hover:text-primary/80"
           >
             {children}
@@ -79,7 +79,7 @@ export function PlaybookDetailView({
     }
 
     // App routes → action buttons
-    if (href.startsWith("/") && !href.startsWith("/playbook")) {
+    if (href.startsWith("/") && !href.startsWith("/user-guide")) {
       return (
         <Link
           href={href}
@@ -156,9 +156,9 @@ export function PlaybookDetailView({
       {/* Back nav */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" asChild>
-          <Link href="/playbook">
+          <Link href="/user-guide">
             <ArrowLeft className="h-4 w-4 mr-1" />
-            Playbook
+            User Guide
           </Link>
         </Button>
         {route && route !== "cross-cutting" && (

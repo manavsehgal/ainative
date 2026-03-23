@@ -67,10 +67,10 @@ const manageItems: NavItem[] = [
 
 const learnItems: NavItem[] = [
   { title: "AI Native Book", href: "/book", icon: BookOpen },
+  { title: "User Guide", href: "/user-guide", icon: BookMarked },
 ];
 
 const configureItems: NavItem[] = [
-  { title: "Playbook", href: "/playbook", icon: BookMarked },
   { title: "Environment", href: "/environment", icon: Globe },
   { title: "Settings", href: "/settings", icon: Settings },
 ];

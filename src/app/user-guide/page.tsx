@@ -9,7 +9,7 @@ import { PageShell } from "@/components/shared/page-shell";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Playbook | Stagent",
+  title: "User Guide | Stagent",
 };
 
 export default async function PlaybookPage() {
@@ -40,7 +40,7 @@ export default async function PlaybookPage() {
     new Date(lastGenerated) > new Date(lastVisit);
 
   return (
-    <PageShell title="Playbook">
+    <PageShell title="User Guide">
       <PlaybookHomepage
         manifest={manifest}
         stage={stage}
