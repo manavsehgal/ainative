@@ -35,6 +35,7 @@ import {
   type ToolPermissionResponse,
 } from "./permission-bridge";
 import { isToolAllowed } from "@/lib/settings/permissions";
+import { getLaunchCwd } from "@/lib/environment/workspace-context";
 import { createStagentMcpServer } from "./stagent-tools";
 
 // ── Streaming input wrapper (required for MCP tools) ─────────────────
@@ -179,7 +180,7 @@ export async function* sendMessage(
         model: conversation.modelId || undefined,
         abortController,
         includePartialMessages: true,
-        cwd: cwd ?? process.cwd(),
+        cwd: cwd ?? getLaunchCwd(),
         env: buildClaudeSdkEnv(authEnv),
         mcpServers: { stagent: stagentServer },
         allowedTools: ["mcp__stagent__*"],
@@ -188,8 +189,15 @@ export async function* sendMessage(
           toolName: string,
           input: Record<string, unknown>
         ): Promise<ToolPermissionResponse> => {
-          // Auto-allow Stagent CRUD tools (handled by in-process MCP server)
-          if (toolName.startsWith("mcp__stagent__")) {
+          // Auto-allow safe Stagent tools; gate dangerous ones through permission bridge
+          const PERMISSION_GATED_TOOLS = new Set([
+            "mcp__stagent__execute_task",
+            "mcp__stagent__cancel_task",
+            "mcp__stagent__execute_workflow",
+            "mcp__stagent__delete_workflow",
+            "mcp__stagent__delete_schedule",
+          ]);
+          if (toolName.startsWith("mcp__stagent__") && !PERMISSION_GATED_TOOLS.has(toolName)) {
             return { behavior: "allow", updatedInput: input };
           }
 

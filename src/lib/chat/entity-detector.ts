@@ -146,6 +146,60 @@ export function extractToolResultEntities(
         label: "Dashboard",
         href: "/dashboard",
       });
+    } else if (
+      toolName === "create_workflow" ||
+      toolName === "update_workflow" ||
+      toolName === "get_workflow" ||
+      toolName === "get_workflow_status" ||
+      toolName === "execute_workflow"
+    ) {
+      const id = (entity.id ?? entity.workflowId) as string;
+      const name = (entity.name as string) ?? "Workflow";
+      if (id) {
+        items.push({
+          entityType: "workflow",
+          entityId: id,
+          label: name,
+          href: `/workflows/${id}`,
+        });
+      }
+    } else if (
+      toolName === "create_schedule" ||
+      toolName === "update_schedule" ||
+      toolName === "get_schedule"
+    ) {
+      const id = entity.id as string;
+      const name = (entity.name as string) ?? "Schedule";
+      if (id) {
+        items.push({
+          entityType: "schedule",
+          entityId: id,
+          label: name,
+          href: `/schedules`,
+        });
+      }
+    } else if (toolName === "get_document") {
+      const id = entity.id as string;
+      const name = (entity.originalName as string) ?? "Document";
+      if (id) {
+        items.push({
+          entityType: "document",
+          entityId: id,
+          label: name,
+          href: `/documents`,
+        });
+      }
+    } else if (toolName === "execute_task") {
+      const id = (entity.taskId ?? entity.id) as string;
+      const title = (entity.title as string) ?? "Task";
+      if (id) {
+        items.push({
+          entityType: "task",
+          entityId: id,
+          label: title,
+          href: `/tasks/${id}`,
+        });
+      }
     }
   }
 
