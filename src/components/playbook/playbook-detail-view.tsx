@@ -126,12 +126,14 @@ export function PlaybookDetailView({
   }) {
     if (!src) return null;
 
-    // Resolve ../screengrabs/ paths to /readme/ (images live in public/readme/)
+    // Resolve image paths to GitHub raw URLs (public/readme/ excluded from npm package)
+    const GITHUB_RAW_BASE =
+      "https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme";
     let resolvedSrc = src;
     if (src.includes("screengrabs/")) {
-      resolvedSrc = `/readme/${src.split("screengrabs/").pop()}`;
+      resolvedSrc = `${GITHUB_RAW_BASE}/${src.split("screengrabs/").pop()}`;
     } else if (src.startsWith("./")) {
-      resolvedSrc = `/docs/${src.replace("./", "")}`;
+      resolvedSrc = `${GITHUB_RAW_BASE}/${src.replace("./", "")}`;
     }
 
     return (

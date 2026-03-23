@@ -1,6 +1,6 @@
 {
   "name": "stagent",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Governed AI agent workspace for supervised local execution, workflows, documents, and provider runtimes.",
   "keywords": [
     "ai",
@@ -21,7 +21,10 @@
   "files": [
     "dist/",
     "src/",
-    "public/",
+    "public/icon.svg",
+    "public/icon-512.png",
+    "public/stagent-s-64.png",
+    "public/stagent-s-128.png",
     "next.config.mjs",
     "tsconfig.json",
     "postcss.config.mjs",

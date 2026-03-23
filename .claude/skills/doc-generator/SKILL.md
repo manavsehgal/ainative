@@ -183,7 +183,7 @@ lastUpdated: "{ISO date}"
 
 - **Rewrite** technical specs into user-facing language (no P1, SDK, Drizzle, ORM, etc.)
 - **Only embed screenshots** that exist in the inventory (max 6 per doc)
-- **Use relative paths**: `../screengrabs/{filename}` for images
+- **Use relative paths**: `../screengrabs/{filename}` for images (the playbook viewer resolves these to GitHub raw URLs at runtime; `public/readme/` is excluded from the npm package)
 - **Derive How-To steps** from component form fields + spec acceptance criteria
 - **Never overwrite** docs with `manual: true` in frontmatter
 - **Cross-cutting docs** (Provider Runtimes, Agent Intelligence, Tool Permissions) aggregate content from multiple sections and reference those section docs
