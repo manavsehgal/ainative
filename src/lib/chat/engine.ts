@@ -35,7 +35,7 @@ import {
   type ToolPermissionResponse,
 } from "./permission-bridge";
 import { isToolAllowed } from "@/lib/settings/permissions";
-import { getLaunchCwd } from "@/lib/environment/workspace-context";
+import { getLaunchCwd, getWorkspaceContext } from "@/lib/environment/workspace-context";
 import { createStagentMcpServer } from "./stagent-tools";
 
 // ── Streaming input wrapper (required for MCP tools) ─────────────────
@@ -90,7 +90,7 @@ export async function* sendMessage(
 
   // Build context BEFORE persisting user message to avoid double-send
   let projectName: string | null = null;
-  let cwd: string | null = null;
+  let projectCwd: string | null = null;
   if (conversation.projectId) {
     const project = await db
       .select()
@@ -99,15 +99,21 @@ export async function* sendMessage(
       .get();
     if (project) {
       projectName = project.name;
-      cwd = project.workingDirectory ?? null;
+      projectCwd = project.workingDirectory ?? null;
     }
+  }
+
+  // Build workspace context — project workingDirectory overrides launch cwd
+  const workspace = getWorkspaceContext();
+  if (projectCwd) {
+    workspace.cwd = projectCwd;
   }
 
   const context = await buildChatContext({
     conversationId,
     projectId: conversation.projectId,
     projectName,
-    cwd,
+    workspace,
   });
 
   // Persist user message (after context is built so it won't appear in history)
@@ -180,7 +186,7 @@ export async function* sendMessage(
         model: conversation.modelId || undefined,
         abortController,
         includePartialMessages: true,
-        cwd: cwd ?? getLaunchCwd(),
+        cwd: workspace.cwd,
         env: buildClaudeSdkEnv(authEnv),
         mcpServers: { stagent: stagentServer },
         allowedTools: ["mcp__stagent__*"],

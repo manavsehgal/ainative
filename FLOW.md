@@ -62,6 +62,8 @@ For non-trivial features (multi-file, new architecture, cross-cutting concerns):
 | `/supervisor` | Meta: project health + next steps | `features/supervisor-report.md` |
 | `/worktree-production` | Dogfooding: run app in worktree | Setup, sync, seed, migration rules |
 
+> **Worktree pre-flight**: Always commit or stash uncommitted changes on main before `git worktree add`. Worktrees snapshot from the last commit, not the working directory — uncommitted cross-file changes will cause broken imports.
+
 ## Feedback Loops
 
 Evaluate findings route back into earlier phases:

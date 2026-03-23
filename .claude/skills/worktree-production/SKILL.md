@@ -48,26 +48,34 @@ Create and configure a new dogfooding worktree.
 
 **Steps:**
 
-1. Create the worktree (if it doesn't exist):
+1. **Pre-flight: commit or stash uncommitted changes on main.**
+   `git worktree add` snapshots from the last **commit**, not the working directory. If main has unstaged changes, the worktree will get stale code — and cross-file dependencies (e.g., a new export in module A imported by module B) will break at build time.
    ```bash
    cd ~/Developer/stagent
+   git status -s                # anything modified?
+   # If yes: commit or stash before proceeding
+   git add <files> && git commit -m "..." # or: git stash
+   ```
+
+2. Create the worktree (if it doesn't exist):
+   ```bash
    git worktree add ../stagent-worktrees/<name> -b <branch-name>
    ```
 
-2. Create `.env.local` in the worktree:
+3. Create `.env.local` in the worktree:
    ```env
    STAGENT_DATA_DIR=~/.stagent-dogfood
    PORT=3100
    ANTHROPIC_API_KEY=<copy from main's .env.local>
    ```
 
-3. Install dependencies:
+4. Install dependencies:
    ```bash
    cd ~/Developer/stagent-worktrees/<name>
    npm install
    ```
 
-4. Start the app and seed data:
+5. Start the app and seed data:
    ```bash
    npm run dev
    # In another terminal, or after app starts:

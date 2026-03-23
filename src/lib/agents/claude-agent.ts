@@ -17,7 +17,7 @@ import { resolveProfileRuntimePayload, type ResolvedProfileRuntimePayload } from
 import type { CanUseToolPolicy } from "./profiles/types";
 import { buildClaudeSdkEnv } from "./runtime/claude-sdk";
 import { getActiveLearnedContext } from "./learned-context";
-import { getLaunchCwd } from "@/lib/environment/workspace-context";
+import { getLaunchCwd, getWorkspaceContext } from "@/lib/environment/workspace-context";
 import { analyzeForLearnedPatterns } from "./pattern-extractor";
 import { processSweepResult } from "./sweep";
 import {
@@ -415,11 +415,6 @@ async function buildTaskQueryContext(
     ? `## Learned Context\nPatterns and insights learned from previous tasks:\n\n${learnedCtx}`
     : "";
 
-  // F1: Separate system instructions from user content
-  const systemInstructions = [profileInstructions, learnedCtxBlock, docContext, outputInstructions]
-    .filter(Boolean)
-    .join("\n\n");
-
   // Resolve working directory: project's workingDirectory > launch cwd
   let cwd = getLaunchCwd();
   if (task.projectId) {
@@ -431,6 +426,17 @@ async function buildTaskQueryContext(
       cwd = project.workingDirectory;
     }
   }
+
+  // Add worktree guidance when running inside a git worktree
+  const ws = getWorkspaceContext();
+  const worktreeNote = ws.isWorktree
+    ? `## Workspace Note\nYou are operating inside a git worktree (branch: ${ws.gitBranch ?? "unknown"}). All file operations MUST use paths relative to the working directory: ${cwd}. Do NOT navigate to or create files in the main repository directory.`
+    : "";
+
+  // F1: Separate system instructions from user content
+  const systemInstructions = [worktreeNote, profileInstructions, learnedCtxBlock, docContext, outputInstructions]
+    .filter(Boolean)
+    .join("\n\n");
 
   // F9: Use profile maxTurns or fall back to default
   const maxTurns = profile?.maxTurns ?? DEFAULT_MAX_TURNS;

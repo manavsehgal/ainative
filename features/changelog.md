@@ -1,5 +1,10 @@
 # Feature Changelog
 
+## 2026-03-23
+
+### Groomed
+- `workspace-context-awareness` (P1) — surface existing workspace context (cwd, git branch, worktree status) to chat agents and task execution; discovered during worktree dogfooding when agent created files in main repo instead of worktree
+
 ## 2026-03-22
 
 ### Completed

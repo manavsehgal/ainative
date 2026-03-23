@@ -3,6 +3,7 @@ import { projects, tasks, workflows, documents, schedules } from "@/lib/db/schem
 import { eq, desc, and } from "drizzle-orm";
 import { getMessages } from "@/lib/data/chat";
 import { STAGENT_SYSTEM_PROMPT } from "./system-prompt";
+import type { WorkspaceContext } from "@/lib/environment/workspace-context";
 
 // ── Token budget constants ─────────────────────────────────────────────
 
@@ -24,14 +25,27 @@ function truncateToTokenBudget(text: string, budget: number): string {
 
 // ── Tier 0: System identity ────────────────────────────────────────────
 
-function buildTier0(projectName?: string | null, cwd?: string | null): string {
+function buildTier0(
+  projectName?: string | null,
+  workspace?: WorkspaceContext | null
+): string {
   const parts = [
     STAGENT_SYSTEM_PROMPT,
     "",
     `Current time: ${new Date().toISOString()}`,
   ];
   if (projectName) parts.push(`Active project: ${projectName}`);
-  if (cwd) parts.push(`Working directory: ${cwd}`);
+  if (workspace?.cwd) parts.push(`Working directory: ${workspace.cwd}`);
+  if (workspace?.gitBranch) parts.push(`Git branch: ${workspace.gitBranch}`);
+  if (workspace?.isWorktree) {
+    parts.push("");
+    parts.push(
+      "## Workspace Note\n" +
+        "You are operating inside a git worktree. All file reads and writes MUST use paths " +
+        "relative to the working directory shown above. Do NOT navigate to or create files " +
+        "in the main repository directory. The working directory IS the correct project root."
+    );
+  }
   return parts.join("\n");
 }
 
@@ -145,14 +159,14 @@ export async function buildChatContext(opts: {
   conversationId: string;
   projectId?: string | null;
   projectName?: string | null;
-  cwd?: string | null;
+  workspace?: WorkspaceContext | null;
 }): Promise<ChatContext> {
   const [history, tier2] = await Promise.all([
     buildTier1(opts.conversationId),
     buildTier2(opts.projectId),
   ]);
 
-  const tier0 = buildTier0(opts.projectName, opts.cwd);
+  const tier0 = buildTier0(opts.projectName, opts.workspace);
 
   const systemParts = [tier0];
   if (tier2) systemParts.push(tier2);

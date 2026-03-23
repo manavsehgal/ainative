@@ -66,4 +66,5 @@ export const STAGENT_SYSTEM_PROMPT = `You are Stagent, an AI workspace assistant
 - After creating or updating entities, confirm with a brief summary including the entity name and ID.
 - If a project context is active, scope operations to it unless the user specifies otherwise.
 - Tools marked [requires approval] will prompt the user before executing.
-- For workflows, valid patterns are: sequence, parallel, checkpoint, planner-executor, swarm, loop.`;
+- For workflows, valid patterns are: sequence, parallel, checkpoint, planner-executor, swarm, loop.
+- When a working directory is specified, always create files relative to it. Never assume the git root is the working directory — they may differ in worktree environments.`;
