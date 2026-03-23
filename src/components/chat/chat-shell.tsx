@@ -1,13 +1,16 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import type { ConversationRow, ChatMessageRow } from "@/lib/db/schema";
 import type { PromptCategory } from "@/lib/chat/types";
 import { DEFAULT_CHAT_MODEL, CHAT_MODELS, getRuntimeForModel, type ChatModelOption } from "@/lib/chat/types";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import { ConversationList } from "./conversation-list";
 import { ChatMessageList } from "./chat-message-list";
 import { ChatInput } from "./chat-input";
 import { ChatEmptyState } from "./chat-empty-state";
+import { ChatActivityIndicator } from "./chat-activity-indicator";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { MessageCircle, PanelRightOpen } from "lucide-react";
@@ -15,12 +18,15 @@ import { MessageCircle, PanelRightOpen } from "lucide-react";
 interface ChatShellProps {
   initialConversations: ConversationRow[];
   promptCategories: PromptCategory[];
+  initialActiveId?: string | null;
 }
 
 export function ChatShell({
   initialConversations,
   promptCategories,
+  initialActiveId,
 }: ChatShellProps) {
+  const router = useRouter();
   const [conversations, setConversations] =
     useState<ConversationRow[]>(initialConversations);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -33,7 +39,60 @@ export function ChatShell({
   const [modelId, setModelId] = useState(DEFAULT_CHAT_MODEL);
   const [availableModels, setAvailableModels] = useState<ChatModelOption[]>(CHAT_MODELS);
 
+  // Persistence via localStorage fallback
+  const [persistedActiveId, setPersistedActiveId] = usePersistedState<string>("stagent-active-chat", "");
+
   const activeConversation = conversations.find((c) => c.id === activeId);
+
+  // Restore active conversation on mount
+  useEffect(() => {
+    const restoredId = initialActiveId || persistedActiveId || null;
+    if (restoredId && conversations.some((c) => c.id === restoredId)) {
+      setActiveId(restoredId);
+      // Fetch messages for restored conversation
+      fetch(`/api/chat/conversations/${restoredId}/messages`)
+        .then((r) => r.ok ? r.json() : [])
+        .then((msgs) => setMessages(msgs))
+        .catch(() => setMessages([]));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Sync activeId to URL and localStorage
+  const updateActiveId = useCallback((id: string | null) => {
+    setActiveId(id);
+    setPersistedActiveId(id ?? "");
+    if (id) {
+      router.replace(`/chat?c=${id}`, { scroll: false });
+    } else {
+      router.replace("/chat", { scroll: false });
+    }
+  }, [router, setPersistedActiveId]);
+
+  // Extract spawned task IDs from messages (execute_task tool results)
+  const spawnedTaskIds = useMemo(() => {
+    const taskIds: string[] = [];
+    for (const msg of messages) {
+      if (msg.metadata) {
+        try {
+          const meta = typeof msg.metadata === "string" ? JSON.parse(msg.metadata) : msg.metadata;
+          // Check for execute_task tool result in metadata
+          if (meta.type === "permission_request" && meta.toolName === "mcp__stagent__execute_task") {
+            const input = meta.toolInput;
+            if (input?.taskId) taskIds.push(input.taskId);
+          }
+        } catch {
+          // Ignore parse errors
+        }
+      }
+      // Also scan assistant message content for task execution confirmations
+      if (msg.role === "assistant" && msg.content) {
+        const taskIdMatch = msg.content.match(/Execution started.*?taskId["\s:]+([a-f0-9-]{36})/i);
+        if (taskIdMatch) taskIds.push(taskIdMatch[1]);
+      }
+    }
+    return [...new Set(taskIds)];
+  }, [messages]);
 
   // Fetch default model and available models on mount
   useEffect(() => {
@@ -64,16 +123,16 @@ export function ChatShell({
       if (!res.ok) return;
       const conversation = await res.json();
       setConversations((prev) => [conversation, ...prev]);
-      setActiveId(conversation.id);
+      updateActiveId(conversation.id);
       setMessages([]);
       setMobileListOpen(false);
     } catch {
       // Handle error silently
     }
-  }, []);
+  }, [modelId, updateActiveId]);
 
   const handleSelectConversation = useCallback(async (id: string) => {
-    setActiveId(id);
+    updateActiveId(id);
     setMobileListOpen(false);
     try {
       const res = await fetch(
@@ -86,7 +145,7 @@ export function ChatShell({
     } catch {
       setMessages([]);
     }
-  }, []);
+  }, [updateActiveId]);
 
   const handleDeleteConversation = useCallback(
     async (id: string) => {
@@ -96,14 +155,14 @@ export function ChatShell({
         });
         setConversations((prev) => prev.filter((c) => c.id !== id));
         if (activeId === id) {
-          setActiveId(null);
+          updateActiveId(null);
           setMessages([]);
         }
       } catch {
         // Handle error silently
       }
     },
-    [activeId]
+    [activeId, updateActiveId]
   );
 
   const handleRenameConversation = useCallback(
@@ -144,7 +203,7 @@ export function ChatShell({
           if (!res.ok) return;
           const conversation = await res.json();
           setConversations((prev) => [conversation, ...prev]);
-          setActiveId(conversation.id);
+          updateActiveId(conversation.id);
           conversationId = conversation.id;
         } catch {
           return;
@@ -305,7 +364,7 @@ export function ChatShell({
         setAbortController(null);
       }
     },
-    [activeId]
+    [activeId, modelId, updateActiveId]
   );
 
   const handleStop = useCallback(() => {
@@ -394,6 +453,11 @@ export function ChatShell({
             <div className="flex-1 overflow-hidden">
               <ChatMessageList messages={messages} isStreaming={isStreaming} conversationId={activeId ?? undefined} />
             </div>
+
+            {/* Background activity indicator */}
+            {spawnedTaskIds.length > 0 && (
+              <ChatActivityIndicator taskIds={spawnedTaskIds} />
+            )}
 
             {/* Docked input */}
             <ChatInput

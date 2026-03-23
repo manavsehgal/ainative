@@ -2,7 +2,7 @@
 title: Agent Document API Access
 status: pending
 priority: P2
-layer: Platform
+milestone: post-mvp
 dependencies:
   - document-preprocessing
   - file-attachment-data-layer
@@ -86,27 +86,38 @@ Removes a document and optionally cascade-deletes task associations.
 
 ### API Routes
 
-Add three new routes to `src/app/api/documents/`:
+PATCH and DELETE already exist at `src/app/api/documents/[id]/route.ts` — they will be extended. POST is new.
 
-| Route | Method | Purpose | Input |
-|-------|--------|---------|-------|
-| `/api/documents` | POST | Upload document | `{ file_path, taskId?, projectId?, direction?, metadata? }` |
-| `/api/documents/[id]` | PATCH | Update metadata/reprocess | `{ metadata?, reprocess? }` |
-| `/api/documents/[id]` | DELETE | Delete with cascade safety | `{ cascadeDelete? }` |
+| Route | Method | Status | Changes |
+|-------|--------|--------|---------|
+| `/api/documents` | POST | **New** | Server-side upload from `file_path` (distinct from user-facing `/api/uploads/` multipart flow) |
+| `/api/documents/[id]` | PATCH | **Extend** | Add `metadata` merge + `reprocess` flag (currently only handles `taskId`, `projectId`, `category`) |
+| `/api/documents/[id]` | DELETE | **Extend** | Add `cascadeDelete` safety check (currently deletes unconditionally) |
 
-### Tool Registry Integration
+### Tool Registration (MCP Server Pattern)
 
-Update `src/lib/agents/tools-registry.ts`:
-- Add three new tools with descriptions (so Claude knows when to invoke)
-- Route through `canUseTool` permission pre-check (reuse existing system from `tool-permission-persistence`)
-- Auto-approve document mutations for "document:*" patterns; default-deny until user approves
+Tools are defined in `src/lib/chat/tools/document-tools.ts` as functions returning `tool()` arrays from `@anthropic-ai/claude-agent-sdk`, assembled into the Stagent MCP server via `src/lib/chat/stagent-tools.ts`. The existing `document-tools.ts` already has `list_documents` and `get_document` — extend it with the three new mutation tools.
 
-### Permissions Model
+Each tool definition includes a description string that Claude uses to decide when to invoke the tool, input schema via Zod, and an async handler function.
 
-Extend `src/lib/settings/permissions.ts`:
-- Add permission patterns: `"Stagent(tool:upload_document)"`, `"Stagent(tool:delete_document)"`, etc.
-- Agent execution context includes task/project ID — validate document mutations against task ownership
-- Audit log entry: agent ID, tool, documentId, result, timestamp
+### Permission Gating
+
+Add the three new tool names to the `PERMISSION_GATED_TOOLS` set in `src/lib/chat/engine.ts` (line 199):
+
+```typescript
+const PERMISSION_GATED_TOOLS = new Set([
+  "mcp__stagent__execute_task",
+  "mcp__stagent__cancel_task",
+  // ... existing entries
+  "mcp__stagent__upload_document",   // NEW
+  "mcp__stagent__update_document",   // NEW
+  "mcp__stagent__delete_document",   // NEW
+]);
+```
+
+Non-gated `mcp__stagent__*` tools auto-approve (line 206). Gated tools trigger the `canUseTool` → notification → user approval flow. Users can "Always Allow" via patterns like `"mcp__stagent__upload_document"` stored in the settings table.
+
+Audit log entry: agent ID, tool, documentId, result, timestamp — via existing `agent_logs` table.
 
 ### Key Design Decisions
 
@@ -120,23 +131,28 @@ Extend `src/lib/settings/permissions.ts`:
 
 **Metadata merge, not replace**: Agents can augment metadata (e.g., `{ chapter: 1, draft: false }`) without wiping user-added fields.
 
+### Output Scanner Relationship
+
+`src/lib/documents/output-scanner.ts` already auto-scans task output directories after execution and creates document records for files found there. The new `upload_document` tool provides a complementary **programmatic** path — agents can explicitly register documents during execution rather than relying on post-execution filesystem scanning. Both paths coexist: auto-scan catches files agents write to disk without explicit upload; `upload_document` gives agents intentional control over what gets registered and with what metadata.
+
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `src/app/api/documents/route.ts` | POST (upload) + other handlers |
-| `src/app/api/documents/[id]/route.ts` | PATCH (update) + DELETE |
-| `src/lib/agents/tools-registry.ts` | Register three new tools with descriptions |
-| `src/lib/settings/permissions.ts` | Add "document:*" permission types |
-| `src/lib/documents/output-scanner.ts` | Reuse for auto-upload output files (future) |
+| `src/lib/chat/tools/document-tools.ts` | Add 3 new tool definitions alongside existing `list_documents` / `get_document` |
+| `src/lib/chat/engine.ts` | Add 3 tool names to `PERMISSION_GATED_TOOLS` set (line 199) |
+| `src/app/api/documents/route.ts` | Add POST handler for server-side file upload |
+| `src/app/api/documents/[id]/route.ts` | Extend PATCH (metadata merge, reprocess) + DELETE (cascade check) |
+| `src/lib/chat/stagent-tools.ts` | Reference — assembles tool arrays into MCP server |
+| `src/lib/documents/output-scanner.ts` | Reference — complementary auto-scan path for output documents |
 
 ## Acceptance Criteria
 
 - [ ] `upload_document` tool accepts file_path + optional taskId/projectId/metadata
 - [ ] `update_document` tool merges metadata without replacing existing fields
 - [ ] `delete_document` tool requires explicit cascadeDelete flag if document linked to tasks
-- [ ] All document mutations go through `canUseTool` permission check
-- [ ] Agents can auto-approve "document:*" patterns with "Always Allow"
+- [ ] All document mutations gated via `PERMISSION_GATED_TOOLS` in `engine.ts`
+- [ ] Agents can "Always Allow" via `mcp__stagent__upload_document` pattern in settings
 - [ ] API validates file exists, copies to `~/.stagent/uploads/`, creates DB record
 - [ ] Async preprocessing triggered (reuse `processDocument` from document-preprocessing)
 - [ ] All mutations audited in `agent_logs` with agent ID, timestamp, document ID

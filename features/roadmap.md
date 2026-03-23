@@ -84,6 +84,7 @@ Features that enhance the product but aren't essential for first use — homepag
 | [detail-view-redesign](detail-view-redesign.md)                     | P2       | completed | task-board, document-manager, workflow-engine, ui-density-refinement                                     |
 | [playbook-documentation](playbook-documentation.md)                 | P2       | completed | app-shell, command-palette-enhancement                                                                   |
 | [workflow-ux-overhaul](workflow-ux-overhaul.md)                     | P1       | completed | workflow-engine, ai-assist-workflow-creation, agent-document-context, document-output-generation        |
+| [settings-interactive-controls](settings-interactive-controls.md)   | P2       | pending   | —                                                                                                        |
 
 ### Platform
 
@@ -98,6 +99,8 @@ Features that enhance the product but aren't essential for first use — homepag
 | [parallel-research-fork-join](parallel-research-fork-join.md) | P2 | completed | workflow-engine, multi-agent-routing |
 | [tool-permission-presets](tool-permission-presets.md) | P2 | completed | tool-permission-persistence |
 | [workspace-context-awareness](workspace-context-awareness.md) | P1 | planned | chat-engine, environment-scanner |
+| [task-hierarchy-clarity](task-hierarchy-clarity.md) | P1 | pending | workflow-engine, task-board, project-management |
+| [agent-document-api-access](agent-document-api-access.md) | P2 | pending | document-preprocessing, file-attachment-data-layer, tool-permission-persistence |
 
 ### Runtime Quality
 
@@ -140,6 +143,7 @@ Features that enhance the product but aren't essential for first use — homepag
 | [chat-ui-shell](chat-ui-shell.md) | P1 | completed | chat-api-routes, app-shell, operational-surface-foundation |
 | [chat-message-rendering](chat-message-rendering.md) | P1 | completed | chat-ui-shell, chat-api-routes |
 | [chat-input-composer](chat-input-composer.md) | P1 | completed | chat-ui-shell, chat-api-routes |
+| [chat-conversation-persistence](chat-conversation-persistence.md) | P1 | pending | chat-data-layer, chat-ui-shell |
 
 ## Dependency Graph
 

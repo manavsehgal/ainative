@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { documents, tasks, projects } from "@/lib/db/schema";
 import { eq, and, like, or, desc, sql } from "drizzle-orm";
+import { access, stat, copyFile, mkdir } from "fs/promises";
+import { basename, extname, join } from "path";
+import crypto from "crypto";
+import { getStagentUploadsDir } from "@/lib/utils/stagent-paths";
+import { processDocument } from "@/lib/documents/processor";
+import { z } from "zod/v4";
 
 const VALID_DOC_STATUSES = ["uploaded", "processing", "ready", "error"] as const;
 const VALID_DOC_DIRECTIONS = ["input", "output"] as const;
@@ -75,4 +81,89 @@ export async function GET(req: NextRequest) {
     .orderBy(desc(documents.createdAt));
 
   return NextResponse.json(result);
+}
+
+const MIME_TYPES: Record<string, string> = {
+  ".md": "text/markdown",
+  ".txt": "text/plain",
+  ".json": "application/json",
+  ".csv": "text/csv",
+  ".html": "text/html",
+  ".pdf": "application/pdf",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".gif": "image/gif",
+  ".webp": "image/webp",
+  ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+};
+
+const uploadSchema = z.object({
+  file_path: z.string().min(1),
+  taskId: z.string().optional(),
+  projectId: z.string().optional(),
+  direction: z.enum(["input", "output"]).optional().default("output"),
+  metadata: z.record(z.string(), z.string()).optional(),
+});
+
+export async function POST(req: NextRequest) {
+  const raw = await req.json();
+  const parsed = uploadSchema.safeParse(raw);
+
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Invalid request body", details: parsed.error.issues },
+      { status: 400 }
+    );
+  }
+
+  const body = parsed.data;
+
+  try {
+    await access(body.file_path);
+  } catch {
+    return NextResponse.json({ error: `File not found: ${body.file_path}` }, { status: 400 });
+  }
+
+  const stats = await stat(body.file_path);
+  if (!stats.isFile()) {
+    return NextResponse.json({ error: `Not a file: ${body.file_path}` }, { status: 400 });
+  }
+
+  const originalName = basename(body.file_path);
+  const ext = extname(originalName).toLowerCase();
+  const mimeType = MIME_TYPES[ext] ?? "application/octet-stream";
+  const id = crypto.randomUUID();
+  const filename = `${id}${ext}`;
+
+  const uploadsDir = getStagentUploadsDir();
+  await mkdir(uploadsDir, { recursive: true });
+  const storagePath = join(uploadsDir, filename);
+  await copyFile(body.file_path, storagePath);
+
+  const now = new Date();
+  await db.insert(documents).values({
+    id,
+    taskId: body.taskId ?? null,
+    projectId: body.projectId ?? null,
+    filename,
+    originalName,
+    mimeType,
+    size: stats.size,
+    storagePath,
+    version: 1,
+    direction: body.direction,
+    status: "uploaded",
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  // Fire-and-forget preprocessing
+  processDocument(id).catch(() => {});
+
+  return NextResponse.json(
+    { documentId: id, status: "uploaded", processingStatus: "queued", originalName, mimeType, size: stats.size },
+    { status: 201 }
+  );
 }

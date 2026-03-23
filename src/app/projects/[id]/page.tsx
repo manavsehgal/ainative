@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
-import { projects, tasks } from "@/lib/db/schema";
-import { eq, count } from "drizzle-orm";
+import { projects, tasks, workflows } from "@/lib/db/schema";
+import { eq, count, getTableColumns } from "drizzle-orm";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { COLUMN_ORDER } from "@/lib/constants/task-status";
@@ -28,25 +28,40 @@ export default async function ProjectDetailPage({
   if (!project) notFound();
 
   const projectTasks = await db
-    .select()
+    .select({
+      ...getTableColumns(tasks),
+      workflowName: workflows.name,
+      workflowStatus: workflows.status,
+    })
     .from(tasks)
+    .leftJoin(workflows, eq(tasks.workflowId, workflows.id))
     .where(eq(tasks.projectId, id))
     .orderBy(tasks.priority, tasks.createdAt);
 
-  // Status breakdown
+  // Status breakdown (standalone tasks only for headline metrics)
   const statusCounts: Record<string, number> = {};
+  const standaloneForCounts = projectTasks.filter((t) => !t.workflowId);
   for (const status of COLUMN_ORDER) {
-    statusCounts[status] = projectTasks.filter((t) => t.status === status).length;
+    statusCounts[status] = standaloneForCounts.filter((t) => t.status === status).length;
   }
 
   const completionTrend = await getProjectCompletionTrend(id, 14);
-  const totalTasks = projectTasks.length;
+  const totalTasks = standaloneForCounts.length;
+
+  const standaloneTasks = projectTasks.filter((t) => !t.workflowId);
+  const workflowTasks = projectTasks.filter((t) => t.workflowId);
 
   const serializedTasks = projectTasks.map((t) => ({
     ...t,
     createdAt: t.createdAt.toISOString(),
     updatedAt: t.updatedAt.toISOString(),
+    workflowName: t.workflowName ?? null,
+    workflowStatus: t.workflowStatus ?? null,
   }));
+
+  const standaloneCount = standaloneTasks.length;
+  const workflowCount = workflowTasks.length;
+  const workflowGroupCount = new Set(workflowTasks.map((t) => t.workflowId)).size;
 
   const statusVariant: Record<string, "default" | "secondary" | "outline"> = {
     active: "default",
@@ -127,6 +142,16 @@ export default async function ProjectDetailPage({
             workingDirectory={project.workingDirectory}
           />
         </div>
+      )}
+
+      {/* Task count summary */}
+      {(standaloneCount > 0 || workflowCount > 0) && (
+        <p className="text-xs text-muted-foreground mb-4">
+          {standaloneCount} standalone task{standaloneCount !== 1 ? "s" : ""}
+          {workflowCount > 0 && (
+            <> &middot; {workflowCount} workflow task{workflowCount !== 1 ? "s" : ""} across {workflowGroupCount} workflow{workflowGroupCount !== 1 ? "s" : ""}</>
+          )}
+        </p>
       )}
 
       <ProjectDetailClient tasks={serializedTasks} projectId={id} />

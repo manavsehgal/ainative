@@ -9,6 +9,7 @@ export const SETTINGS_KEYS = {
   BUDGET_WARNING_STATE: "usage.budgetWarningState",
   PRICING_REGISTRY: "usage.pricingRegistry",
   SDK_TIMEOUT_SECONDS: "runtime.sdkTimeoutSeconds",
+  MAX_TURNS: "runtime.maxTurns",
 } as const;
 
 export type AuthMethod = "api_key" | "oauth";

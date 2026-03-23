@@ -5,10 +5,14 @@ import { eq } from "drizzle-orm";
 import { unlink } from "fs/promises";
 import { z } from "zod/v4";
 
+import { processDocument } from "@/lib/documents/processor";
+
 const documentPatchSchema = z.object({
   taskId: z.string().uuid().nullable().optional(),
   projectId: z.string().uuid().nullable().optional(),
   category: z.string().max(100).optional(),
+  metadata: z.record(z.string(), z.string()).optional(),
+  reprocess: z.boolean().optional(),
 });
 
 export async function GET(
@@ -81,12 +85,30 @@ export async function PATCH(
 
   if ("taskId" in body) updates.taskId = body.taskId;
   if ("projectId" in body) updates.projectId = body.projectId;
-  if ("category" in body) updates.category = body.category;
+  if ("category" in body && typeof body.category === "string") updates.category = body.category;
+
+  // Merge metadata into category field (JSON)
+  if (body.metadata) {
+    const existing = doc.category ? (() => { try { return JSON.parse(doc.category); } catch { return {}; } })() : {};
+    updates.category = JSON.stringify({ ...existing, ...body.metadata });
+  }
+
+  // Reprocess: clear extracted fields and re-run
+  if (body.reprocess) {
+    updates.extractedText = null;
+    updates.processedPath = null;
+    updates.processingError = null;
+    updates.status = "processing";
+  }
 
   await db
     .update(documents)
     .set(updates)
     .where(eq(documents.id, id));
+
+  if (body.reprocess) {
+    processDocument(id).catch(() => {});
+  }
 
   const [updated] = await db
     .select()
@@ -97,10 +119,12 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const url = new URL(req.url);
+  const cascadeDelete = url.searchParams.get("cascadeDelete") === "true";
 
   const [doc] = await db
     .select()
@@ -109,6 +133,14 @@ export async function DELETE(
 
   if (!doc) {
     return NextResponse.json({ error: "Document not found" }, { status: 404 });
+  }
+
+  // Cascade safety: if linked to a task and cascadeDelete not set, reject
+  if (doc.taskId && !cascadeDelete) {
+    return NextResponse.json(
+      { error: `Document is linked to task ${doc.taskId}. Add ?cascadeDelete=true to confirm.` },
+      { status: 409 }
+    );
   }
 
   try {

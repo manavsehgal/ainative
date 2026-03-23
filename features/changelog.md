@@ -3,6 +3,11 @@
 ## 2026-03-23
 
 ### Groomed
+- Split `kitchen-sink-03-23` into 3 standalone feature specs:
+  - `chat-conversation-persistence` (P1) — persist activeConversationId via URL search param + localStorage; background subagent activity indicator showing running/completed tasks spawned from chat, survives navigation
+  - `settings-interactive-controls` (P2) — upgrade SDK Timeout and Max Turns to sliders with contextual guidance labels, recommended range indicators, and hover tooltips
+  - `task-hierarchy-clarity` (P1) — distinguish standalone vs workflow-bound tasks in project detail; section grouping, workflow badges, cross-links, deduplicated status counts. Option C (Keep Separate but Link Clearly) selected
+- Refined `agent-document-api-access` (P2) — corrected tool registration architecture (MCP server pattern via document-tools.ts, not tools-registry.ts), fixed permission pattern format (mcp__stagent__* convention matching PERMISSION_GATED_TOOLS set), noted existing PATCH/DELETE routes to extend, clarified output-scanner relationship
 - `workspace-context-awareness` (P1) — surface existing workspace context (cwd, git branch, worktree status) to chat agents and task execution; discovered during worktree dogfooding when agent created files in main repo instead of worktree
 
 ## 2026-03-22

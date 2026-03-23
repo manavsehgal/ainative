@@ -202,6 +202,9 @@ export async function* sendMessage(
             "mcp__stagent__execute_workflow",
             "mcp__stagent__delete_workflow",
             "mcp__stagent__delete_schedule",
+            "mcp__stagent__upload_document",
+            "mcp__stagent__update_document",
+            "mcp__stagent__delete_document",
           ]);
           if (toolName.startsWith("mcp__stagent__") && !PERMISSION_GATED_TOOLS.has(toolName)) {
             return { behavior: "allow", updatedInput: input };
