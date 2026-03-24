@@ -12,6 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Plus, MoreHorizontal, Pencil, Trash2, MessageCircle, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { resolveModelLabel } from "@/lib/chat/types";
 
 interface ConversationListProps {
   conversations: ConversationRow[];
@@ -136,8 +137,13 @@ export function ConversationList({
                       <div className="text-sm truncate">
                         {conv.title || "New Chat"}
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {formatRelativeTime(conv.updatedAt)}
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <span>{formatRelativeTime(conv.updatedAt)}</span>
+                        {conv.modelId && (
+                          <span className="text-[10px] text-muted-foreground/50">
+                            {resolveModelLabel(conv.modelId)}
+                          </span>
+                        )}
                       </div>
                     </>
                   )}

@@ -56,6 +56,12 @@ export const CHAT_MODELS: ChatModelOption[] = [
 
 export const DEFAULT_CHAT_MODEL = "haiku";
 
+/** Resolve a model ID to its display label (e.g., "opus" → "Opus", "gpt-5.4" → "GPT-5.4") */
+export function resolveModelLabel(modelId: string): string {
+  const model = CHAT_MODELS.find((m) => m.id === modelId);
+  return model?.label ?? modelId;
+}
+
 /** Model → runtime mapping (derived from model's provider or ID prefix) */
 export function getRuntimeForModel(modelId: string): string {
   const model = CHAT_MODELS.find((m) => m.id === modelId);

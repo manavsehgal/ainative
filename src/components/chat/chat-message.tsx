@@ -7,7 +7,7 @@ import { ChatPermissionRequest } from "./chat-permission-request";
 import { ChatQuestionInline } from "./chat-question";
 import { ChatQuickAccess } from "./chat-quick-access";
 import { AlertCircle } from "lucide-react";
-import type { ChatQuestion, QuickAccessItem } from "@/lib/chat/types";
+import { resolveModelLabel, type ChatQuestion, type QuickAccessItem } from "@/lib/chat/types";
 
 interface ChatMessageProps {
   message: ChatMessageRow;
@@ -75,14 +75,16 @@ export function ChatMessage({ message, isStreaming, conversationId, onStatusChan
   // Skip rendering system messages without valid metadata
   if (isSystem) return null;
 
-  // Extract Quick Access pills from completed assistant messages
+  // Extract Quick Access pills and model label from completed assistant messages
   let quickAccess: QuickAccessItem[] = [];
+  let modelLabel: string | null = null;
   if (!isUser && message.status === "complete" && message.metadata) {
     try {
       const meta = JSON.parse(message.metadata);
       if (Array.isArray(meta.quickAccess)) quickAccess = meta.quickAccess;
+      if (meta.modelId) modelLabel = resolveModelLabel(meta.modelId);
     } catch {
-      // Invalid metadata — no pills
+      // Invalid metadata
     }
   }
 
@@ -130,6 +132,12 @@ export function ChatMessage({ message, isStreaming, conversationId, onStatusChan
           </div>
         )}
       </div>
+      {/* Model label for completed assistant messages */}
+      {!isUser && !isStreaming && modelLabel && (
+        <span className="text-[10px] text-muted-foreground/50 mt-0.5 ml-1">
+          {modelLabel}
+        </span>
+      )}
     </div>
   );
 }
