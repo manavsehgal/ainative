@@ -15,6 +15,7 @@ interface ChatQuestionProps {
   messageId: string;
   questions: ChatQuestionType[];
   status: string; // "pending" | "complete" | "error"
+  onStatusChange?: (status: string) => void;
 }
 
 export function ChatQuestionInline({
@@ -23,6 +24,7 @@ export function ChatQuestionInline({
   messageId,
   questions,
   status,
+  onStatusChange,
 }: ChatQuestionProps) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [otherTexts, setOtherTexts] = useState<Record<string, string>>({});
@@ -72,6 +74,7 @@ export function ChatQuestionInline({
       );
       if (res.ok) {
         setSubmitted(true);
+        onStatusChange?.("complete");
       }
     } finally {
       setLoading(false);

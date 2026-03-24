@@ -78,11 +78,20 @@ export async function discoverModels(): Promise<ChatModelOption[]> {
   try {
     const claudeModels = await discoverClaudeModels();
 
+    // Merge discovered models with hardcoded Anthropic models so that
+    // models like Opus always appear even if the SDK doesn't enumerate them
+    const hardcodedAnthropic = CHAT_MODELS.filter((m) => m.provider === "anthropic");
+    const discoveredIds = new Set(claudeModels.map((m) => m.id));
+    const mergedClaude = [
+      ...claudeModels,
+      ...hardcodedAnthropic.filter((m) => !discoveredIds.has(m.id)),
+    ];
+
     // OpenAI models: use hardcoded list for now
     // (Codex model/list requires spawning app-server, too heavy for discovery)
     const openaiModels = CHAT_MODELS.filter((m) => m.provider === "openai");
 
-    const models = [...claudeModels, ...openaiModels];
+    const models = [...mergedClaude, ...openaiModels];
 
     // Only cache if we got real results
     if (models.length > 0) {

@@ -12,6 +12,7 @@ interface ChatPermissionRequestProps {
   toolName: string;
   toolInput: Record<string, unknown>;
   status: string; // "pending" | "complete" | "error"
+  onStatusChange?: (status: string) => void;
 }
 
 export function ChatPermissionRequest({
@@ -21,6 +22,7 @@ export function ChatPermissionRequest({
   toolName,
   toolInput,
   status,
+  onStatusChange,
 }: ChatPermissionRequestProps) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<"allowed" | "denied" | null>(
@@ -53,6 +55,7 @@ export function ChatPermissionRequest({
       );
       if (res.ok) {
         setResult(behavior === "allow" ? "allowed" : "denied");
+        onStatusChange?.(behavior === "allow" ? "complete" : "error");
       }
     } finally {
       setLoading(false);

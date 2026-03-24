@@ -45,10 +45,17 @@ export function ChatShell({
   const activeConversation = conversations.find((c) => c.id === activeId);
 
   // Restore active conversation on mount
+  // Read localStorage synchronously to avoid race with usePersistedState's async useEffect
   useEffect(() => {
-    const restoredId = initialActiveId || persistedActiveId || null;
+    let restoredId = initialActiveId || null;
+    if (!restoredId) {
+      try {
+        restoredId = localStorage.getItem("stagent-active-chat") || null;
+      } catch { /* localStorage unavailable */ }
+    }
     if (restoredId && conversations.some((c) => c.id === restoredId)) {
       setActiveId(restoredId);
+      setPersistedActiveId(restoredId);
       // Fetch messages for restored conversation
       fetch(`/api/chat/conversations/${restoredId}/messages`)
         .then((r) => r.ok ? r.json() : [])
@@ -271,7 +278,15 @@ export function ChatShell({
             const json = line.slice(6);
             try {
               const event = JSON.parse(json);
-              if (event.type === "delta") {
+              if (event.type === "status") {
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantMsgId
+                      ? { ...m, metadata: JSON.stringify({ statusPhase: event.phase, statusMessage: event.message }) }
+                      : m
+                  )
+                );
+              } else if (event.type === "delta") {
                 setMessages((prev) =>
                   prev.map((m) =>
                     m.id === assistantMsgId
@@ -378,6 +393,19 @@ export function ChatShell({
     [handleSend]
   );
 
+  const handleMessageStatusChange = useCallback(
+    (messageId: string, status: string) => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === messageId
+            ? { ...m, status: status as "pending" | "streaming" | "complete" | "error" }
+            : m
+        )
+      );
+    },
+    []
+  );
+
   const handleModelChange = useCallback(
     async (newModelId: string) => {
       setModelId(newModelId);
@@ -451,7 +479,7 @@ export function ChatShell({
           <>
             {/* Messages */}
             <div className="flex-1 overflow-hidden">
-              <ChatMessageList messages={messages} isStreaming={isStreaming} conversationId={activeId ?? undefined} />
+              <ChatMessageList messages={messages} isStreaming={isStreaming} conversationId={activeId ?? undefined} onMessageStatusChange={handleMessageStatusChange} />
             </div>
 
             {/* Background activity indicator */}

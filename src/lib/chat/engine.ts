@@ -88,6 +88,8 @@ export async function* sendMessage(
     return;
   }
 
+  yield { type: "status", phase: "preparing", message: "Preparing context..." };
+
   // Build context BEFORE persisting user message to avoid double-send
   let projectName: string | null = null;
   let projectCwd: string | null = null;
@@ -179,6 +181,8 @@ export async function* sendMessage(
       conversation.projectId,
       (toolName, result) => { toolResults.push({ toolName, result }); }
     );
+
+    yield { type: "status", phase: "connecting", message: "Connecting to model..." };
 
     const response = query({
       prompt: generatePrompt(fullPrompt),

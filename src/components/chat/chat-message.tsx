@@ -13,6 +13,7 @@ interface ChatMessageProps {
   message: ChatMessageRow;
   isStreaming: boolean;
   conversationId?: string;
+  onStatusChange?: (messageId: string, status: string) => void;
 }
 
 interface PermissionMetadata {
@@ -30,7 +31,7 @@ interface QuestionMetadata {
 
 type SystemMetadata = PermissionMetadata | QuestionMetadata;
 
-export function ChatMessage({ message, isStreaming, conversationId }: ChatMessageProps) {
+export function ChatMessage({ message, isStreaming, conversationId, onStatusChange }: ChatMessageProps) {
   const isUser = message.role === "user";
   const isSystem = message.role === "system";
   const isError = message.status === "error";
@@ -49,6 +50,7 @@ export function ChatMessage({ message, isStreaming, conversationId }: ChatMessag
             toolName={meta.toolName}
             toolInput={meta.toolInput}
             status={message.status ?? "pending"}
+            onStatusChange={onStatusChange ? (status) => onStatusChange(message.id, status) : undefined}
           />
         );
       }
@@ -61,6 +63,7 @@ export function ChatMessage({ message, isStreaming, conversationId }: ChatMessag
             messageId={message.id}
             questions={meta.questions}
             status={message.status ?? "pending"}
+            onStatusChange={onStatusChange ? (status) => onStatusChange(message.id, status) : undefined}
           />
         );
       }
@@ -111,8 +114,13 @@ export function ChatMessage({ message, isStreaming, conversationId }: ChatMessag
             {message.content ? (
               <ChatMessageMarkdown content={message.content} />
             ) : isStreaming ? (
-              <span className="text-muted-foreground text-xs">
-                Thinking...
+              <span className="text-muted-foreground text-xs animate-pulse">
+                {(() => {
+                  try {
+                    const meta = message.metadata ? JSON.parse(message.metadata) : null;
+                    return meta?.statusMessage || "Thinking...";
+                  } catch { return "Thinking..."; }
+                })()}
               </span>
             ) : null}
             {isStreaming && message.content && (

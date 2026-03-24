@@ -10,12 +10,14 @@ interface ChatMessageListProps {
   messages: ChatMessageRow[];
   isStreaming: boolean;
   conversationId?: string;
+  onMessageStatusChange?: (messageId: string, status: string) => void;
 }
 
 export function ChatMessageList({
   messages,
   isStreaming,
   conversationId,
+  onMessageStatusChange,
 }: ChatMessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -61,6 +63,7 @@ export function ChatMessageList({
             message={msg}
             isStreaming={isStreaming && msg.status === "streaming"}
             conversationId={conversationId}
+            onStatusChange={onMessageStatusChange}
           />
         ))}
         <div ref={bottomRef} />

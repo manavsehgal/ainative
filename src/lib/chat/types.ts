@@ -1,6 +1,7 @@
 /** Chat stream event types sent to the client via SSE */
 export type ChatStreamEvent =
   | { type: "delta"; content: string }
+  | { type: "status"; phase: string; message: string }
   | { type: "done"; messageId: string; quickAccess: QuickAccessItem[] }
   | { type: "error"; message: string }
   | { type: "permission_request"; requestId: string; messageId: string; toolName: string; toolInput: Record<string, unknown> }
