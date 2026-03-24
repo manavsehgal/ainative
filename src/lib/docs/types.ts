@@ -40,6 +40,15 @@ export interface ParsedDoc {
   slug: string;
 }
 
+export interface BookDoc extends ParsedDoc {
+  chapter: number;
+  part: number;
+  readingTime: number;
+  relatedDocs: string[];
+  relatedJourney?: string;
+  lastGeneratedBy?: string | null;
+}
+
 export type UsageStage = "new" | "early" | "active" | "power";
 
 export interface AdoptionEntry {

@@ -27,6 +27,10 @@ import { CHAPTERS, PARTS, getChaptersByPart } from "@/lib/book/content";
 import type { BookChapter, ReaderPreferences, ReadingProgress, Bookmark } from "@/lib/book/types";
 import { DEFAULT_READER_PREFS } from "@/lib/book/types";
 import { ContentBlockRenderer } from "./content-blocks";
+import { TryItNow } from "./try-it-now";
+import { PathSelector } from "./path-selector";
+import { PathProgress } from "./path-progress";
+import { getReadingPath, getNextPathChapter, isChapterInPath } from "@/lib/book/reading-paths";
 
 const PREFS_KEY = "stagent-book-prefs";
 const PROGRESS_KEY = "stagent-book-progress";
@@ -79,6 +83,8 @@ export function BookReader() {
   const [tocOpen, setTocOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [tocTab, setTocTab] = useState<"chapters" | "bookmarks">("chapters");
+  const [activePath, setActivePath] = useState<string | null>(null);
+  const [recommendedPath, setRecommendedPath] = useState<string | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -118,6 +124,28 @@ export function BookReader() {
       .then((r) => r.json())
       .then((bms: Bookmark[]) => setBookmarks(bms))
       .catch(() => {});
+  }, []);
+
+  // Load reading path preference and fetch recommendation
+  useEffect(() => {
+    const saved = localStorage.getItem("stagent-book-path");
+    if (saved) setActivePath(saved);
+
+    fetch("/api/book/stage")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.recommendedPath) setRecommendedPath(data.recommendedPath);
+      })
+      .catch(() => {}); // Silently fail — recommendation is optional
+  }, []);
+
+  const handlePathChange = useCallback((pathId: string | null) => {
+    setActivePath(pathId);
+    if (pathId) {
+      localStorage.setItem("stagent-book-path", pathId);
+    } else {
+      localStorage.removeItem("stagent-book-path");
+    }
   }, []);
 
   // Track scroll progress
@@ -256,8 +284,27 @@ export function BookReader() {
   const currentChapterBookmarks = bookmarks.filter((b) => b.chapterId === currentChapter.id);
 
   const currentIndex = CHAPTERS.findIndex((ch) => ch.id === currentChapter.id);
-  const prevChapter = currentIndex > 0 ? CHAPTERS[currentIndex - 1] : null;
-  const nextChapter = currentIndex < CHAPTERS.length - 1 ? CHAPTERS[currentIndex + 1] : null;
+
+  // Path-aware navigation: when a path is active, prev/next follow the path order
+  const prevChapter = (() => {
+    if (!activePath) {
+      return currentIndex > 0 ? CHAPTERS[currentIndex - 1] : null;
+    }
+    const path = getReadingPath(activePath);
+    if (!path) return currentIndex > 0 ? CHAPTERS[currentIndex - 1] : null;
+    const pathIdx = path.chapterIds.indexOf(currentChapter.id);
+    if (pathIdx <= 0) return null;
+    return CHAPTERS.find((ch) => ch.id === path.chapterIds[pathIdx - 1]) ?? null;
+  })();
+
+  const nextChapter = (() => {
+    if (!activePath) {
+      return currentIndex < CHAPTERS.length - 1 ? CHAPTERS[currentIndex + 1] : null;
+    }
+    const nextId = getNextPathChapter(activePath, currentChapter.id);
+    if (!nextId) return null;
+    return CHAPTERS.find((ch) => ch.id === nextId) ?? null;
+  })();
 
   // Keyboard navigation: Left/Right arrow keys for chapter nav
   useEffect(() => {
@@ -357,6 +404,13 @@ export function BookReader() {
 
                 {tocTab === "chapters" ? (
                   <div className="space-y-6">
+                    {/* Reading path selector */}
+                    <PathSelector
+                      activePath={activePath}
+                      recommendedPath={recommendedPath}
+                      onSelectPath={handlePathChange}
+                    />
+
                     {PARTS.map((part) => (
                       <div key={part.number}>
                         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
@@ -369,6 +423,7 @@ export function BookReader() {
                           {(chaptersByPart.get(part.number) ?? []).map((ch) => {
                             const chProgress = progress[ch.id]?.progress ?? 0;
                             const chPct = Math.round(chProgress * 100);
+                            const inPath = !activePath || isChapterInPath(activePath, ch.id);
                             return (
                               <button
                                 key={ch.id}
@@ -377,7 +432,8 @@ export function BookReader() {
                                   "w-full text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer",
                                   ch.id === currentChapter.id
                                     ? "bg-primary/10 text-primary font-medium"
-                                    : "hover:bg-muted"
+                                    : "hover:bg-muted",
+                                  !inPath && "opacity-40"
                                 )}
                               >
                                 <div className="flex items-center justify-between">
@@ -385,6 +441,9 @@ export function BookReader() {
                                     {ch.number}. {ch.title}
                                   </span>
                                   <span className="flex items-center gap-1.5">
+                                    {!inPath && (
+                                      <span className="text-[10px] text-muted-foreground">Not in path</span>
+                                    )}
                                     {chProgress >= 0.9 ? (
                                       <Check className="h-3.5 w-3.5 text-status-completed" />
                                     ) : chProgress > 0 ? (
@@ -469,18 +528,24 @@ export function BookReader() {
             {currentChapter.readingTime} min
           </span>
 
-          {/* Overall progress */}
-          <div className="hidden sm:flex items-center gap-2 mr-2">
-            <div className="w-20 h-1.5 rounded-full bg-muted overflow-hidden">
-              <div
-                className="h-full bg-primary rounded-full transition-all"
-                style={{ width: `${overallProgress * 100}%` }}
-              />
+          {/* Overall progress or path progress */}
+          {activePath ? (
+            <div className="hidden sm:flex mr-2">
+              <PathProgress pathId={activePath} progress={progress} />
             </div>
-            <span className="text-xs text-muted-foreground">
-              {Math.round(overallProgress * 100)}%
-            </span>
-          </div>
+          ) : (
+            <div className="hidden sm:flex items-center gap-2 mr-2">
+              <div className="w-20 h-1.5 rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full bg-primary rounded-full transition-all"
+                  style={{ width: `${overallProgress * 100}%` }}
+                />
+              </div>
+              <span className="text-xs text-muted-foreground">
+                {Math.round(overallProgress * 100)}%
+              </span>
+            </div>
+          )}
 
           {/* Bookmark button */}
           <Button
@@ -640,6 +705,35 @@ export function BookReader() {
               </div>
             </section>
           ))}
+
+          {/* Chapter generation footer */}
+          <footer className="mt-12 pt-6 border-t border-border/30 text-xs text-muted-foreground/60 flex items-center justify-between">
+            <span>
+              Chapter {currentChapter.number} of {CHAPTERS.length}
+            </span>
+            <button
+              onClick={() => {
+                fetch("/api/book/regenerate", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ chapterId: currentChapter.id }),
+                }).then(() => {
+                  // TODO: Show toast notification
+                });
+              }}
+              className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors underline-offset-2 hover:underline"
+            >
+              Regenerate chapter
+            </button>
+          </footer>
+
+          {/* Try It Now — related Playbook docs */}
+          {currentChapter.relatedDocs && currentChapter.relatedDocs.length > 0 && (
+            <TryItNow
+              relatedDocs={currentChapter.relatedDocs}
+              relatedJourney={currentChapter.relatedJourney}
+            />
+          )}
 
           {/* Chapter navigation */}
           <nav className="flex items-center justify-between border-t border-border/50 pt-8 mt-16">

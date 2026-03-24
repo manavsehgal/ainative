@@ -7,6 +7,7 @@ import {
   Lightbulb,
   AlertTriangle,
   BookOpen,
+  PenLine,
   ArrowRight,
   ChevronDown,
   Copy,
@@ -56,6 +57,9 @@ export function ContentBlockRenderer({ block }: { block: ContentBlock }) {
           variant={block.variant}
           title={block.title}
           markdown={block.markdown}
+          imageSrc={block.imageSrc}
+          imageAlt={block.imageAlt}
+          defaultCollapsed={block.defaultCollapsed}
         />
       );
     case "interactive":
@@ -198,38 +202,77 @@ const calloutConfig = {
     icon: BookOpen,
     className: "book-callout-lesson",
   },
+  "authors-note": {
+    icon: PenLine,
+    className: "book-callout-authors-note",
+  },
 };
 
 function CalloutBlockView({
   variant,
   title,
   markdown,
+  imageSrc,
+  imageAlt,
+  defaultCollapsed,
 }: {
-  variant: "tip" | "warning" | "info" | "lesson";
+  variant: "tip" | "warning" | "info" | "lesson" | "authors-note";
   title?: string;
   markdown: string;
+  imageSrc?: string;
+  imageAlt?: string;
+  defaultCollapsed?: boolean;
 }) {
   const config = calloutConfig[variant];
   const Icon = config.icon;
+
+  const content = (
+    <div className="flex items-start gap-3">
+      <Icon className="book-callout-icon h-5 w-5 mt-0.5 shrink-0" />
+      <div className="min-w-0 flex-1">
+        {title && !defaultCollapsed && (
+          <p className="book-callout-title font-semibold text-sm mb-2">
+            {title}
+          </p>
+        )}
+        <div className="text-sm leading-relaxed [&_p]:mb-0 [&_strong]:font-semibold [&_code]:text-xs [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded book-callout-body">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{markdown}</ReactMarkdown>
+        </div>
+        {imageSrc && (
+          <img
+            src={imageSrc}
+            alt={imageAlt || ""}
+            loading="lazy"
+            className="mt-3 w-full rounded-lg border border-border"
+          />
+        )}
+      </div>
+    </div>
+  );
+
+  // Authors-note variant: collapsible by default
+  if (defaultCollapsed) {
+    return (
+      <details
+        className={cn("book-callout my-8 rounded-lg border-l-4", config.className)}
+        role="note"
+      >
+        <summary className="flex items-center gap-2 cursor-pointer p-5 select-none text-sm font-semibold">
+          <Icon className="book-callout-icon h-4 w-4 shrink-0" />
+          {title || "Author\u2019s Note"}
+          <ChevronDown className="h-4 w-4 ml-auto transition-transform [[open]>&]:rotate-180" />
+        </summary>
+        <div className="px-5 pb-5">{content}</div>
+      </details>
+    );
+  }
 
   return (
     <aside
       className={cn("book-callout my-8 rounded-lg border-l-4 p-5", config.className)}
       role="note"
     >
-      <div className="flex items-start gap-3">
-        <Icon className="book-callout-icon h-5 w-5 mt-0.5 shrink-0" />
-        <div className="min-w-0 flex-1">
-          {title && (
-            <p className="book-callout-title font-semibold text-sm mb-2">
-              {title}
-            </p>
-          )}
-          <div className="text-sm leading-relaxed [&_p]:mb-0 [&_strong]:font-semibold [&_code]:text-xs [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded book-callout-body">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{markdown}</ReactMarkdown>
-          </div>
-        </div>
-      </div>
+      {content}
     </aside>
   );
 }

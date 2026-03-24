@@ -29,9 +29,15 @@ export interface ImageBlock {
 
 export interface CalloutBlock {
   type: "callout";
-  variant: "tip" | "warning" | "info" | "lesson";
+  variant: "tip" | "warning" | "info" | "lesson" | "authors-note";
   title?: string;
   markdown: string;
+  /** Image source for authors-note variant */
+  imageSrc?: string;
+  /** Image alt text for authors-note variant */
+  imageAlt?: string;
+  /** Start collapsed? Default false. Used by authors-note variant */
+  defaultCollapsed?: boolean;
 }
 
 export interface InteractiveLinkBlock {
@@ -86,6 +92,10 @@ export interface BookChapter {
   sections: BookSection[];
   /** Estimated reading time in minutes */
   readingTime: number;
+  /** Related Playbook feature doc slugs */
+  relatedDocs?: string[];
+  /** Related Playbook journey slug */
+  relatedJourney?: string;
 }
 
 /** Three-part structure of the book */

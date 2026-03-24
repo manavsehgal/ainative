@@ -71,7 +71,7 @@ function parseMarkdown(content: string, slug: string): ParsedDoc {
 
 /** Read a single doc by slug (searches features/ then journeys/ then root) */
 export function getDocBySlug(slug: string): ParsedDoc | null {
-  const dirs = ["features", "journeys", ""];
+  const dirs = ["features", "journeys", "book", ""];
   for (const dir of dirs) {
     const filePath = join(docsDir(), dir, `${slug}.md`);
     if (existsSync(filePath)) {
@@ -85,7 +85,7 @@ export function getDocBySlug(slug: string): ParsedDoc | null {
 /** Read all docs from features/ and journeys/ */
 export function getAllDocs(): ParsedDoc[] {
   const docs: ParsedDoc[] = [];
-  const subDirs = ["features", "journeys"];
+  const subDirs = ["features", "journeys", "book"];
 
   for (const dir of subDirs) {
     const dirPath = join(docsDir(), dir);
