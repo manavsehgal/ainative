@@ -5,7 +5,7 @@ import {
   type ConversationRow,
   type ChatMessageRow,
 } from "@/lib/db/schema";
-import { eq, and, desc, gt } from "drizzle-orm";
+import { eq, and, desc, gt, like, sql, count } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -225,4 +225,85 @@ export async function updateMessageContent(
     .update(chatMessages)
     .set({ content })
     .where(eq(chatMessages.id, id));
+}
+
+// ── Search / History ──────────────────────────────────────────────────
+
+export async function searchConversations(opts: {
+  search?: string;
+  projectId?: string;
+  status?: "active" | "archived";
+  limit?: number;
+}): Promise<(ConversationRow & { messageCount: number })[]> {
+  const conditions = [];
+  if (opts.projectId) {
+    conditions.push(eq(conversations.projectId, opts.projectId));
+  }
+  if (opts.status) {
+    conditions.push(eq(conversations.status, opts.status));
+  }
+  if (opts.search) {
+    conditions.push(like(conversations.title, `%${opts.search}%`));
+  }
+
+  const rows = await db
+    .select({
+      conversation: conversations,
+      messageCount: count(chatMessages.id),
+    })
+    .from(conversations)
+    .leftJoin(chatMessages, eq(chatMessages.conversationId, conversations.id))
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .groupBy(conversations.id)
+    .orderBy(desc(conversations.updatedAt))
+    .limit(Math.min(opts.limit ?? 20, 50))
+    .all();
+
+  return rows.map((r) => ({
+    ...r.conversation,
+    messageCount: r.messageCount,
+  }));
+}
+
+export async function searchMessages(opts: {
+  query: string;
+  projectId?: string;
+  limit?: number;
+}): Promise<
+  Array<{
+    conversationId: string;
+    conversationTitle: string | null;
+    messageId: string;
+    role: string;
+    content: string;
+    createdAt: Date;
+  }>
+> {
+  const conditions = [
+    like(chatMessages.content, `%${opts.query}%`),
+    // Exclude system messages from search results
+    sql`${chatMessages.role} != 'system'`,
+  ];
+
+  if (opts.projectId) {
+    conditions.push(eq(conversations.projectId, opts.projectId));
+  }
+
+  const rows = await db
+    .select({
+      conversationId: chatMessages.conversationId,
+      conversationTitle: conversations.title,
+      messageId: chatMessages.id,
+      role: chatMessages.role,
+      content: chatMessages.content,
+      createdAt: chatMessages.createdAt,
+    })
+    .from(chatMessages)
+    .innerJoin(conversations, eq(conversations.id, chatMessages.conversationId))
+    .where(and(...conditions))
+    .orderBy(desc(chatMessages.createdAt))
+    .limit(Math.min(opts.limit ?? 20, 50))
+    .all();
+
+  return rows;
 }

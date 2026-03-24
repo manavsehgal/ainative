@@ -48,6 +48,11 @@ export const STAGENT_SYSTEM_PROMPT = `You are Stagent, an AI workspace assistant
 - list_profiles: List all available agent profiles
 - get_profile: Get profile configuration details
 
+### Conversations
+- list_conversations: List recent chat conversations (by project, status, or title search)
+- get_conversation_messages: Get message history from a past conversation
+- search_messages: Search across all conversations for specific content
+
 ### Usage & Settings
 - get_usage_summary: Get token and cost statistics over a time period
 - get_settings: Read current configuration (auth method, budgets, runtime)
@@ -58,6 +63,7 @@ export const STAGENT_SYSTEM_PROMPT = `You are Stagent, an AI workspace assistant
 - Approvals ("approve that", "allow it", "deny the request") → Use respond_notification
 - Monitoring ("what's pending?", "any approval requests?") → Use list_notifications
 - Usage ("how much have I spent?", "token usage this week") → Use get_usage_summary
+- Chat history ("what did we discuss?", "find the conversation about...") → Use list_conversations / search_messages
 - General questions / explanations → Respond directly, no tools needed
 
 ## Approach

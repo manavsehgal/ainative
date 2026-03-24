@@ -9,6 +9,7 @@ import { notificationTools } from "./tools/notification-tools";
 import { profileTools } from "./tools/profile-tools";
 import { usageTools } from "./tools/usage-tools";
 import { settingsTools } from "./tools/settings-tools";
+import { chatHistoryTools } from "./tools/chat-history-tools";
 
 /**
  * Create an in-process MCP server exposing all Stagent tools.
@@ -36,6 +37,7 @@ export function createStagentMcpServer(
       ...profileTools(ctx),
       ...usageTools(ctx),
       ...settingsTools(ctx),
+      ...chatHistoryTools(ctx),
     ],
   });
 }
