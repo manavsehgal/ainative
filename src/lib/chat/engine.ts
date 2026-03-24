@@ -263,10 +263,19 @@ export async function* sendMessage(
       },
     });
 
+    let firstEvent = true;
+    let hasStreamedDeltas = false;
+
     for await (const raw of response as AsyncIterable<
       Record<string, unknown>
     >) {
       if (signal?.aborted) break;
+
+      // Signal that the model has connected and is processing
+      if (firstEvent) {
+        firstEvent = false;
+        yield { type: "status", phase: "generating", message: "Generating response..." };
+      }
 
       // Drain any side-channel events (from canUseTool) before processing SDK event
       for (const sideEvent of sideChannel.drain()) {
@@ -282,6 +291,7 @@ export async function* sendMessage(
           const delta = innerEvent.delta as Record<string, unknown> | undefined;
           if (delta?.type === "text_delta" && typeof delta.text === "string") {
             fullText += delta.text;
+            hasStreamedDeltas = true;
             yield { type: "delta", content: delta.text };
           }
         }
@@ -289,10 +299,15 @@ export async function* sendMessage(
         const delta = raw.delta as Record<string, unknown> | undefined;
         if (delta?.type === "text_delta" && typeof delta.text === "string") {
           fullText += delta.text;
+          hasStreamedDeltas = true;
           yield { type: "delta", content: delta.text };
         }
       } else if (raw.type === "assistant") {
-        // Handle assistant message with content blocks
+        // Skip if we're already receiving streaming deltas — assistant events
+        // are redundant partial messages from includePartialMessages: true
+        // and their cumulative text blocks cause duplicate rendering
+        if (hasStreamedDeltas) continue;
+        // Fallback for non-streaming: extract text from content blocks
         const msg = raw.message as Record<string, unknown> | undefined;
         const blocks = (msg?.content ?? raw.content) as Array<Record<string, unknown>> | undefined;
         if (blocks) {
