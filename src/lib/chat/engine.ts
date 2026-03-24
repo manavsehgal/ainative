@@ -225,6 +225,13 @@ export async function* sendMessage(
             "mcp__stagent__delete_document",
           ]);
           if (toolName.startsWith("mcp__stagent__") && !PERMISSION_GATED_TOOLS.has(toolName)) {
+            // Emit tool-use status so the user sees what the model is doing
+            const shortName = toolName.replace("mcp__stagent__", "").replace(/_/g, " ");
+            emitSideChannelEvent(conversationId, {
+              type: "status",
+              phase: "tool_use",
+              message: `Using ${shortName}...`,
+            });
             return { behavior: "allow", updatedInput: input };
           }
 
