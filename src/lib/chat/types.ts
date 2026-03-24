@@ -49,7 +49,7 @@ export const CHAT_MODELS: ChatModelOption[] = [
   { id: "sonnet", label: "Sonnet", provider: "anthropic", tier: "Balanced", costLabel: "$$" },
   { id: "opus", label: "Opus", provider: "anthropic", tier: "Best", costLabel: "$$$" },
   // OpenAI — GPT-5.x / Codex family
-  { id: "gpt-5.3-codex-spark", label: "Codex Spark", provider: "openai", tier: "Fast", costLabel: "$" },
+  { id: "gpt-5.4-mini", label: "GPT-5.4 Mini", provider: "openai", tier: "Fast", costLabel: "$" },
   { id: "gpt-5.3-codex", label: "Codex 5.3", provider: "openai", tier: "Balanced", costLabel: "$$" },
   { id: "gpt-5.4", label: "GPT-5.4", provider: "openai", tier: "Best", costLabel: "$$$" },
 ];

@@ -43,7 +43,7 @@ async function discoverClaudeModels(): Promise<ChatModelOption[]> {
         costLabel: inferCost(m.value),
       }));
   } catch {
-    return CHAT_MODELS.filter((m) => m.provider === "anthropic");
+    return CHAT_MODELS;
   }
 }
 
@@ -87,10 +87,9 @@ export async function discoverModels(): Promise<ChatModelOption[]> {
       ...hardcodedAnthropic.filter((m) => !discoveredIds.has(m.id)),
     ];
 
-    // OpenAI models: use hardcoded list for now
-    // (Codex model/list requires spawning app-server, too heavy for discovery)
+    // OpenAI models: use hardcoded list (Codex model/list requires
+    // spawning app-server, too heavy for discovery)
     const openaiModels = CHAT_MODELS.filter((m) => m.provider === "openai");
-
     const models = [...mergedClaude, ...openaiModels];
 
     // Only cache if we got real results

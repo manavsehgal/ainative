@@ -11,6 +11,8 @@ import {
   type UsageSnapshot,
 } from "@/lib/usage/ledger";
 import { enforceBudgetGuardrails } from "@/lib/settings/budget-guardrails";
+import { getSetting } from "@/lib/settings/helpers";
+import { SETTINGS_KEYS } from "@/lib/constants/settings";
 import {
   getConversation,
   addMessage,
@@ -67,6 +69,13 @@ export async function* sendMessage(
   const conversation = await getConversation(conversationId);
   if (!conversation) {
     yield { type: "error", message: "Conversation not found" };
+    return;
+  }
+
+  // Route to Codex App Server for OpenAI models
+  if (conversation.runtimeId === "openai-codex-app-server") {
+    const { sendCodexMessage } = await import("./codex-engine");
+    yield* sendCodexMessage(conversationId, userContent, signal);
     return;
   }
 
@@ -184,10 +193,15 @@ export async function* sendMessage(
 
     yield { type: "status", phase: "connecting", message: "Connecting to model..." };
 
+    // Read user-configured max turns (Settings → Runtime)
+    const maxTurnsSetting = await getSetting(SETTINGS_KEYS.MAX_TURNS);
+    const maxTurns = maxTurnsSetting ? parseInt(maxTurnsSetting, 10) || 10 : 10;
+
     const response = query({
       prompt: generatePrompt(fullPrompt),
       options: {
         model: conversation.modelId || undefined,
+        maxTurns,
         abortController,
         includePartialMessages: true,
         cwd: workspace.cwd,
@@ -326,18 +340,21 @@ export async function* sendMessage(
               : "Agent SDK returned an error"
           );
         }
-        // For max_turns errors, use whatever text was accumulated
-        const result = raw.result;
-        if (typeof result === "string" && result.length > 0) {
-          // If result has content not yet streamed, emit the remainder
-          if (result !== fullText) {
-            const remainder = result.startsWith(fullText)
-              ? result.slice(fullText.length)
-              : result;
-            if (remainder) {
-              yield { type: "delta" as const, content: remainder };
+        // Only emit result text as fallback when streaming didn't deliver content.
+        // When deltas were active, fullText is already complete — re-emitting
+        // the result would duplicate the entire response.
+        if (!hasStreamedDeltas || !fullText) {
+          const result = raw.result;
+          if (typeof result === "string" && result.length > 0) {
+            if (result !== fullText) {
+              const remainder = result.startsWith(fullText)
+                ? result.slice(fullText.length)
+                : result;
+              if (remainder) {
+                yield { type: "delta" as const, content: remainder };
+              }
+              fullText = result;
             }
-            fullText = result;
           }
         }
         break;
@@ -400,29 +417,54 @@ export async function* sendMessage(
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";
 
-    // Update message status to error
-    await updateMessageContent(
-      assistantMsg.id,
-      fullText || errorMessage
-    );
-    await updateMessageStatus(assistantMsg.id, "error");
+    if (fullText && fullText.length > 50) {
+      // Substantial content was already streamed — complete gracefully with warning
+      const warning = `\n\n---\n\n*Response may be incomplete: ${errorMessage}*`;
+      fullText += warning;
+      yield { type: "delta", content: warning };
 
-    // Record failed usage
-    await recordUsageLedgerEntry({
-      projectId: conversation.projectId,
-      activityType: "chat_turn",
-      runtimeId,
-      providerId,
-      modelId: usage.modelId ?? conversation.modelId ?? null,
-      inputTokens: usage.inputTokens ?? null,
-      outputTokens: usage.outputTokens ?? null,
-      totalTokens: usage.totalTokens ?? null,
-      status: signal?.aborted ? "cancelled" : "failed",
-      startedAt,
-      finishedAt: new Date(),
-    });
+      await updateMessageContent(assistantMsg.id, fullText);
+      await updateMessageStatus(assistantMsg.id, "complete");
 
-    yield { type: "error", message: errorMessage };
+      await recordUsageLedgerEntry({
+        projectId: conversation.projectId,
+        activityType: "chat_turn",
+        runtimeId,
+        providerId,
+        modelId: usage.modelId ?? conversation.modelId ?? null,
+        inputTokens: usage.inputTokens ?? null,
+        outputTokens: usage.outputTokens ?? null,
+        totalTokens: usage.totalTokens ?? null,
+        status: "completed",
+        startedAt,
+        finishedAt: new Date(),
+      });
+
+      yield { type: "done", messageId: assistantMsg.id, quickAccess: [] };
+    } else {
+      // No meaningful content — show as error
+      await updateMessageContent(
+        assistantMsg.id,
+        fullText || errorMessage
+      );
+      await updateMessageStatus(assistantMsg.id, "error");
+
+      await recordUsageLedgerEntry({
+        projectId: conversation.projectId,
+        activityType: "chat_turn",
+        runtimeId,
+        providerId,
+        modelId: usage.modelId ?? conversation.modelId ?? null,
+        inputTokens: usage.inputTokens ?? null,
+        outputTokens: usage.outputTokens ?? null,
+        totalTokens: usage.totalTokens ?? null,
+        status: signal?.aborted ? "cancelled" : "failed",
+        startedAt,
+        finishedAt: new Date(),
+      });
+
+      yield { type: "error", message: errorMessage };
+    }
   } finally {
     cleanupConversation(conversationId);
   }
