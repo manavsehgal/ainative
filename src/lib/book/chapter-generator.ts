@@ -13,6 +13,8 @@ interface ChapterContext {
   partTitle: string;
   readingTime: number;
   slug: string;
+  relatedDocs: string[];
+  relatedJourney: string | undefined;
   currentMarkdown: string | null;
   sourceContents: string[];
   strategy: string | null;
@@ -60,6 +62,8 @@ export function gatherChapterContext(chapterId: string): ChapterContext {
     partTitle: chapter.part.title,
     readingTime: chapter.readingTime,
     slug,
+    relatedDocs: chapter.relatedDocs ?? [],
+    relatedJourney: chapter.relatedJourney,
     currentMarkdown,
     sourceContents,
     strategy,
@@ -161,6 +165,8 @@ export function buildChapterRegenerationPrompt(chapterId: string): string {
     `part: ${ctx.partNumber}`,
     `readingTime: ${ctx.readingTime}`,
     `lastGeneratedBy: "${now}"`,
+    ...(ctx.relatedDocs.length > 0 ? [`relatedDocs: ${JSON.stringify(ctx.relatedDocs)}`] : []),
+    ...(ctx.relatedJourney ? [`relatedJourney: "${ctx.relatedJourney}"`] : []),
     "---",
     "```",
     "",
