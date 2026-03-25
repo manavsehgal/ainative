@@ -1,14 +1,16 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { tasks } from "@/lib/db/schema";
 import { getChapter } from "@/lib/book/content";
-import { getChapterStaleness } from "@/lib/book/update-detector";
+import { getChapterStaleness, detectStaleChapters } from "@/lib/book/update-detector";
 import { buildChapterRegenerationPrompt } from "@/lib/book/chapter-generator";
+import { executeTaskWithAgent } from "@/lib/agents/router";
 
 export const dynamic = "force-dynamic";
 
 /**
  * POST /api/book/regenerate
- * Trigger chapter regeneration. Returns the prompt and staleness info.
- * In a full implementation, this would create a workflow task.
+ * Create a task to generate/regenerate a book chapter using the document-writer agent.
  */
 export async function POST(request: Request) {
   try {
@@ -36,27 +38,43 @@ export async function POST(request: Request) {
     // Build the regeneration prompt
     const prompt = buildChapterRegenerationPrompt(chapterId);
 
-    // In a full implementation, this would:
-    // 1. Create a workflow instance with the planner-executor pattern
-    // 2. Assign the document-writer agent profile
-    // 3. Create a review task for human approval
-    // For now, return the prompt and staleness info for manual use
+    const isNew = chapter.sections.length === 0;
+    const verb = isNew ? "Generate" : "Regenerate";
+
+    // Create a real task with the document-writer profile
+    const taskId = crypto.randomUUID();
+    const now = new Date();
+
+    await db.insert(tasks).values({
+      id: taskId,
+      title: `${verb} Chapter ${chapter.number}: ${chapter.title}`,
+      description: prompt,
+      agentProfile: "document-writer",
+      assignedAgent: "claude-code",
+      status: "queued",
+      priority: 1,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // Fire-and-forget execution
+    executeTaskWithAgent(taskId, "claude-code");
 
     return NextResponse.json(
       {
+        taskId,
         chapterId,
         chapterTitle: chapter.title,
+        chapterNumber: chapter.number,
+        isNew,
         staleness,
-        prompt,
-        message:
-          "Chapter regeneration prompt generated. In production, this would create a workflow task for the document-writer agent.",
       },
       { status: 202 }
     );
   } catch (error) {
     console.error("Regenerate error:", error);
     return NextResponse.json(
-      { error: "Failed to generate regeneration prompt" },
+      { error: "Failed to start chapter generation" },
       { status: 500 }
     );
   }
@@ -64,13 +82,23 @@ export async function POST(request: Request) {
 
 /**
  * GET /api/book/regenerate
- * Check staleness for all chapters.
+ * Check staleness. Supports ?chapterId=X for a single chapter.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const { detectStaleChapters } = await import(
-      "@/lib/book/update-detector"
-    );
+    const chapterId = request.nextUrl.searchParams.get("chapterId");
+
+    if (chapterId) {
+      const staleness = getChapterStaleness(chapterId);
+      if (!staleness) {
+        return NextResponse.json(
+          { error: `Chapter not found: ${chapterId}` },
+          { status: 404 }
+        );
+      }
+      return NextResponse.json(staleness);
+    }
+
     const staleness = detectStaleChapters();
     return NextResponse.json({ chapters: staleness });
   } catch (error) {

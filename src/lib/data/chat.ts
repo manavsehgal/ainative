@@ -108,7 +108,7 @@ export async function updateConversation(
   updates: Partial<
     Pick<
       ConversationRow,
-      "title" | "status" | "sessionId" | "modelId" | "contextScope"
+      "title" | "status" | "sessionId" | "modelId" | "runtimeId" | "contextScope"
     >
   >
 ): Promise<ConversationRow | null> {

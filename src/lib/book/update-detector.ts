@@ -33,7 +33,7 @@ function getLastGenerated(chapterId: string): string | null {
   const slug = CHAPTER_SLUGS[chapterId];
   if (!slug) return null;
 
-  const mdPath = join(process.cwd(), "docs", "book", `${slug}.md`);
+  const mdPath = join(process.cwd(), "book", "chapters", `${slug}.md`);
   if (!existsSync(mdPath)) return null;
 
   const content = readFileSync(mdPath, "utf-8");

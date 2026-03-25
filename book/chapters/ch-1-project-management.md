@@ -24,7 +24,7 @@ The answer surprised us. It was not about making AI do what humans already do. I
 > **The Meta Insight**
 > Stagent is building itself using itself. The project management features described in this chapter were planned, tracked, and executed within Stagent's own project management system. When you read about agent profiles and task schemas, know that those same structures were used to build the features you are reading about. This recursive quality — a tool shaping its own creation — turns out to be one of the most powerful validation mechanisms we have found.
 
-![Stagent generating book reader components via code-generation workflow](/book/images/code-generation-book-components.png "The screenshot below captures a moment from our own development process — Stagent generating the book reader components you are using right now to read this chapter. The agent created React components, set up the routing, and structured the reading experience, all tracked as tasks within the system described in this chapter.")
+![Stagent generating book reader components via code-generation workflow](/book/images/code-generation-book-components.png "The screenshot above captures a moment from our own development process — Stagent generating the book reader components you are using right now to read this chapter. The agent created React components, set up the routing, and structured the reading experience, all tracked as tasks within the system described in this chapter.")
 
 ## The AI-Native Approach
 

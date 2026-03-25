@@ -42,7 +42,7 @@ export async function PATCH(
 ) {
   const { id } = await params;
   const body = await req.json();
-  const { title, status, modelId } = body;
+  const { title, status, modelId, runtimeId } = body;
 
   const existing = await getConversation(id);
   if (!existing) {
@@ -64,6 +64,7 @@ export async function PATCH(
     updates.status = status;
   }
   if (modelId !== undefined) updates.modelId = modelId;
+  if (runtimeId !== undefined) updates.runtimeId = runtimeId;
 
   const updated = await updateConversation(id, updates);
   return NextResponse.json(updated);

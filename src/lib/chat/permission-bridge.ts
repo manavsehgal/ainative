@@ -9,6 +9,7 @@
  */
 
 import type { ChatStreamEvent } from "./types";
+import { updateMessageStatus } from "@/lib/data/chat";
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -22,6 +23,7 @@ interface PendingRequest {
   resolve: (response: ToolPermissionResponse) => void;
   reject: (reason: Error) => void;
   conversationId: string;
+  messageId?: string;
 }
 
 // ── In-memory stores ─────────────────────────────────────────────────
@@ -113,16 +115,22 @@ export function emitSideChannelEvent(conversationId: string, event: ChatStreamEv
  */
 export function createPendingRequest(
   requestId: string,
-  conversationId: string
+  conversationId: string,
+  messageId?: string
 ): Promise<ToolPermissionResponse> {
   return new Promise<ToolPermissionResponse>((resolve, reject) => {
-    pendingRequests.set(requestId, { resolve, reject, conversationId });
+    pendingRequests.set(requestId, { resolve, reject, conversationId, messageId });
 
     // Auto-deny after 120 seconds (safety net)
     setTimeout(() => {
       if (pendingRequests.has(requestId)) {
+        const pending = pendingRequests.get(requestId)!;
         pendingRequests.delete(requestId);
         resolve({ behavior: "deny", message: "Permission request timed out" });
+        // Update DB so the message shows as expired on reload
+        if (pending.messageId) {
+          updateMessageStatus(pending.messageId, "error").catch(() => {});
+        }
       }
     }, 120_000);
   });
@@ -161,6 +169,10 @@ export function cleanupConversation(conversationId: string) {
     if (pending.conversationId === conversationId) {
       pending.resolve({ behavior: "deny", message: "Conversation ended" });
       pendingRequests.delete(id);
+      // Update DB so the message shows as expired on reload
+      if (pending.messageId) {
+        updateMessageStatus(pending.messageId, "error").catch(() => {});
+      }
     }
   }
 

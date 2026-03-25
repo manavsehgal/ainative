@@ -279,7 +279,7 @@ export async function* sendMessage(
           }
 
           // Block until user responds via the respond API
-          return createPendingRequest(requestId, conversationId);
+          return createPendingRequest(requestId, conversationId, systemMsg.id);
         },
       },
     });

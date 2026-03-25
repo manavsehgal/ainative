@@ -11,6 +11,7 @@ import {
   Settings2,
   Clock,
   Check,
+  Sparkles,
   Bookmark as BookmarkIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -26,8 +27,10 @@ import { cn } from "@/lib/utils";
 import { PARTS } from "@/lib/book/content";
 import type { BookChapter, ReaderPreferences, ReadingProgress, Bookmark } from "@/lib/book/types";
 import { DEFAULT_READER_PREFS } from "@/lib/book/types";
+import { useRouter } from "next/navigation";
 import { ContentBlockRenderer } from "./content-blocks";
 import { TryItNow } from "./try-it-now";
+import { ChapterGenerationBar } from "./chapter-generation-bar";
 import { PathSelector } from "./path-selector";
 import { PathProgress } from "./path-progress";
 import { getReadingPath, getNextPathChapter, isChapterInPath } from "@/lib/book/reading-paths";
@@ -76,6 +79,7 @@ function syncProgressToDb(chapterId: string, pct: number, scrollPosition: number
 }
 
 export function BookReader({ chapters: CHAPTERS }: { chapters: BookChapter[] }) {
+  const router = useRouter();
   const [currentChapter, setCurrentChapter] = useState<BookChapter>(CHAPTERS[0]);
   const [prefs, setPrefs] = useState<ReaderPreferences>(DEFAULT_READER_PREFS);
   const [progress, setProgress] = useState<Record<string, ReadingProgress>>({});
@@ -87,6 +91,14 @@ export function BookReader({ chapters: CHAPTERS }: { chapters: BookChapter[] }) 
   const [recommendedPath, setRecommendedPath] = useState<string | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Sync currentChapter when chapters prop refreshes (e.g., after regeneration)
+  useEffect(() => {
+    const refreshed = CHAPTERS.find((ch) => ch.id === currentChapter.id);
+    if (refreshed && refreshed !== currentChapter) {
+      setCurrentChapter(refreshed);
+    }
+  }, [CHAPTERS]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load progress from DB first, fall back to localStorage
   useEffect(() => {
@@ -452,7 +464,9 @@ export function BookReader({ chapters: CHAPTERS }: { chapters: BookChapter[] }) 
                                     {!inPath && (
                                       <span className="text-[10px] text-muted-foreground">Not in path</span>
                                     )}
-                                    {chProgress >= 0.9 ? (
+                                    {ch.sections.length === 0 ? (
+                                      <Sparkles className="h-3.5 w-3.5 text-muted-foreground/40" />
+                                    ) : chProgress >= 0.9 ? (
                                       <Check className="h-3.5 w-3.5 text-status-completed" />
                                     ) : chProgress > 0 ? (
                                       <span className="text-xs text-muted-foreground">{chPct}%</span>
@@ -697,42 +711,48 @@ export function BookReader({ chapters: CHAPTERS }: { chapters: BookChapter[] }) 
                 </span>
               )}
             </div>
+
+            {/* Chapter generation bar */}
+            <ChapterGenerationBar
+              chapterId={currentChapter.id}
+              chapterTitle={currentChapter.title}
+              chapterNumber={currentChapter.number}
+              hasContent={currentChapter.sections.length > 0}
+              onComplete={() => router.refresh()}
+            />
+
             <hr className="mt-8 border-border/50" />
           </header>
 
-          {/* Sections */}
-          {currentChapter.sections.map((section) => (
-            <section key={section.id} id={section.id} className="mb-12">
-              <h2 className="text-2xl font-semibold tracking-tight mb-6">
-                {section.title}
-              </h2>
-              <div className="space-y-2">
-                {section.content.map((block, i) => (
-                  <ContentBlockRenderer key={i} block={block} />
-                ))}
-              </div>
-            </section>
-          ))}
+          {/* Sections or empty state */}
+          {currentChapter.sections.length > 0 ? (
+            currentChapter.sections.map((section) => (
+              <section key={section.id} id={section.id} className="mb-12">
+                <h2 className="text-2xl font-semibold tracking-tight mb-6">
+                  {section.title}
+                </h2>
+                <div className="space-y-2">
+                  {section.content.map((block, i) => (
+                    <ContentBlockRenderer key={i} block={block} />
+                  ))}
+                </div>
+              </section>
+            ))
+          ) : (
+            <div className="text-center py-16 space-y-4">
+              <Sparkles className="h-12 w-12 text-muted-foreground/30 mx-auto" />
+              <h3 className="text-lg font-medium">This chapter hasn&apos;t been written yet</h3>
+              <p className="text-muted-foreground text-sm max-w-md mx-auto">
+                Generate it from the source material using the button above.
+              </p>
+            </div>
+          )}
 
-          {/* Chapter generation footer */}
-          <footer className="mt-12 pt-6 border-t border-border/30 text-xs text-muted-foreground/60 flex items-center justify-between">
+          {/* Chapter footer */}
+          <footer className="mt-12 pt-6 border-t border-border/30 text-xs text-muted-foreground/60">
             <span>
               Chapter {currentChapter.number} of {CHAPTERS.length}
             </span>
-            <button
-              onClick={() => {
-                fetch("/api/book/regenerate", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ chapterId: currentChapter.id }),
-                }).then(() => {
-                  // TODO: Show toast notification
-                });
-              }}
-              className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors underline-offset-2 hover:underline"
-            >
-              Regenerate chapter
-            </button>
           </footer>
 
           {/* Try It Now — related Playbook docs */}

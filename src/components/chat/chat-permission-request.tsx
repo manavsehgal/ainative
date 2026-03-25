@@ -53,7 +53,8 @@ export function ChatPermissionRequest({
           }),
         }
       );
-      if (res.ok) {
+      if (res.ok || res.status === 404) {
+        // Success or stale request (expired/HMR) — update UI either way
         setResult(behavior === "allow" ? "allowed" : "denied");
         onStatusChange?.(behavior === "allow" ? "complete" : "error");
       }

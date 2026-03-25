@@ -145,6 +145,16 @@ Features that enhance the product but aren't essential for first use — homepag
 | [chat-input-composer](chat-input-composer.md) | P1 | completed | chat-ui-shell, chat-api-routes |
 | [chat-conversation-persistence](chat-conversation-persistence.md) | P1 | pending | chat-data-layer, chat-ui-shell |
 
+### Living Book
+
+| Feature | Priority | Status | Dependencies |
+|---------|----------|--------|--------------|
+| [living-book-content-merge](living-book-content-merge.md) | P1 | planned | playbook-documentation |
+| [living-book-authors-notes](living-book-authors-notes.md) | P2 | planned | living-book-content-merge |
+| [living-book-reading-paths](living-book-reading-paths.md) | P2 | planned | living-book-content-merge, playbook-documentation |
+| [living-book-markdown-pipeline](living-book-markdown-pipeline.md) | P2 | planned | living-book-content-merge, playbook-documentation |
+| [living-book-self-updating](living-book-self-updating.md) | P3 | planned | living-book-markdown-pipeline, workflow-engine, ai-assist-workflow-creation, agent-document-context |
+
 ## Dependency Graph
 
 Critical path through the MVP:
@@ -250,6 +260,18 @@ database-schema + provider-runtime-abstraction + multi-agent-routing
                                                         └── chat-input-composer (P1)
 ```
 
+Living Book chain:
+
+```
+playbook-documentation (completed)
+    └── living-book-content-merge (P1)
+            ├── living-book-authors-notes (P2)
+            ├── living-book-reading-paths (P2)
+            └── living-book-markdown-pipeline (P2)
+                    └── living-book-self-updating (P3)
+                            ▲ also depends on: workflow-engine, ai-assist-workflow-creation, agent-document-context
+```
+
 ## Recommended Build Order
 
 1. **Sprint 1 — Foundation**: cli-bootstrap + database-schema + app-shell (parallel)
@@ -281,6 +303,11 @@ database-schema + provider-runtime-abstraction + multi-agent-routing
 24. **Sprint 24 — Chat UI**: chat-ui-shell (P1, completed) + chat-input-composer (P1, completed) + chat-message-rendering (P1, completed) — page layout, input, messages
 
 > Chat Conversation initiative (6 features) fully shipped 2026-03-22. All sprints 21-24 completed.
+
+25. **Sprint 25 — Living Book Foundation**: living-book-content-merge (P1) — map Playbook docs into Book chapters, fill 6 stubs
+26. **Sprint 26 — Living Book Enrich**: living-book-authors-notes (P2) + living-book-reading-paths (P2) (parallel) — dogfooding proof + persona paths
+27. **Sprint 27 — Living Book Pipeline**: living-book-markdown-pipeline (P2) — migrate content.ts to markdown files
+28. **Sprint 28 — Living Book Autonomy**: living-book-self-updating (P3) — auto-regeneration workflow, the capstone demo
 
 ## Open Questions
 

@@ -1,5 +1,16 @@
 # Feature Changelog
 
+## 2026-03-24
+
+### Groomed
+- Created **Living Book** initiative — 5 features that unify the Book, Playbook, and ai-native-notes into a single flagship content experience:
+  - `living-book-content-merge` (P1) — map Playbook's 19 feature docs + 4 journey guides into Book's 9-chapter structure; "Try It Now" sections; fills 6 stub chapters
+  - `living-book-authors-notes` (P2) — embed ai-native-notes screenshots as collapsible "Author's Notes" callouts; new `authors-note` callout variant; dogfooding proof
+  - `living-book-reading-paths` (P2) — 4 persona-based reading paths (Getting Started, Team Lead, Power User, Developer); stage-aware recommendation; path-scoped progress
+  - `living-book-markdown-pipeline` (P2) — migrate content.ts to docs/book/*.md files; extend reader.ts for unified manifest; markdown-to-ContentBlock parser
+  - `living-book-self-updating` (P3) — planner-executor workflow that auto-regenerates stale chapters; human review gate; "Stagent writes its own Book" capstone
+- Added Living Book section to roadmap with dependency chain and sprints 25-28
+
 ## 2026-03-23
 
 ### Groomed

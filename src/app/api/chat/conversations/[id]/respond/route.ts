@@ -40,25 +40,23 @@ export async function POST(
     );
   }
 
-  if (!hasPendingRequest(requestId)) {
-    return NextResponse.json(
-      { error: "No pending request found (may have timed out)" },
-      { status: 404 }
-    );
-  }
+  // Resolve the in-memory Promise if it still exists (unblocks SDK).
+  // The request may already be gone (timeout, HMR restart, connection drop)
+  // — that's fine, we still update DB and UI below.
+  const isPending = hasPendingRequest(requestId);
+  if (isPending) {
+    const resolved = resolvePendingRequest(requestId, {
+      behavior,
+      updatedInput: behavior === "allow" ? updatedInput : undefined,
+      message: behavior === "deny" ? (message ?? "User denied this action") : undefined,
+    });
 
-  // Resolve the in-memory Promise — this unblocks the SDK
-  const resolved = resolvePendingRequest(requestId, {
-    behavior,
-    updatedInput: behavior === "allow" ? updatedInput : undefined,
-    message: behavior === "deny" ? (message ?? "User denied this action") : undefined,
-  });
-
-  if (!resolved) {
-    return NextResponse.json(
-      { error: "Failed to resolve request" },
-      { status: 500 }
-    );
+    if (!resolved) {
+      return NextResponse.json(
+        { error: "Failed to resolve request" },
+        { status: 500 }
+      );
+    }
   }
 
   // If "Always Allow" was selected, persist the permission pattern
@@ -71,10 +69,11 @@ export async function POST(
     }
   }
 
-  // Update the system message status to reflect the response
+  // Always update the system message status — even for stale requests
+  // so the UI reflects the user's action on reload
   if (messageId) {
     await updateMessageStatus(messageId, behavior === "allow" ? "complete" : "error");
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, stale: !isPending });
 }

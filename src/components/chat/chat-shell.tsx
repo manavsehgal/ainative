@@ -142,12 +142,22 @@ export function ChatShell({
     updateActiveId(id);
     setMobileListOpen(false);
     try {
-      const res = await fetch(
-        `/api/chat/conversations/${id}/messages`
-      );
-      if (res.ok) {
-        const msgs = await res.json();
-        setMessages(msgs);
+      const [msgRes, convRes] = await Promise.all([
+        fetch(`/api/chat/conversations/${id}/messages`),
+        fetch(`/api/chat/conversations/${id}`),
+      ]);
+      if (msgRes.ok) {
+        const msgs = await msgRes.json();
+        // Clean up stale "streaming" messages from interrupted sessions
+        setMessages(
+          msgs.map((m: ChatMessageRow) =>
+            m.status === "streaming" ? { ...m, status: "complete" as const } : m
+          )
+        );
+      }
+      if (convRes.ok) {
+        const conv = await convRes.json();
+        if (conv.modelId) setModelId(conv.modelId);
       }
     } catch {
       setMessages([]);
@@ -409,13 +419,22 @@ export function ChatShell({
   const handleModelChange = useCallback(
     async (newModelId: string) => {
       setModelId(newModelId);
-      // If there's an active conversation, update its modelId
+      // If there's an active conversation, update both modelId and runtimeId
       if (activeId) {
+        const newRuntimeId = getRuntimeForModel(newModelId);
         await fetch(`/api/chat/conversations/${activeId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ modelId: newModelId }),
+          body: JSON.stringify({ modelId: newModelId, runtimeId: newRuntimeId }),
         }).catch(() => {});
+        // Update local state so conversation list reflects the change
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id === activeId
+              ? { ...c, modelId: newModelId, runtimeId: newRuntimeId }
+              : c
+          )
+        );
       }
     },
     [activeId]
