@@ -149,11 +149,11 @@ Features that enhance the product but aren't essential for first use — homepag
 
 | Feature | Priority | Status | Dependencies |
 |---------|----------|--------|--------------|
-| [living-book-content-merge](living-book-content-merge.md) | P1 | planned | playbook-documentation |
-| [living-book-authors-notes](living-book-authors-notes.md) | P2 | planned | living-book-content-merge |
-| [living-book-reading-paths](living-book-reading-paths.md) | P2 | planned | living-book-content-merge, playbook-documentation |
-| [living-book-markdown-pipeline](living-book-markdown-pipeline.md) | P2 | planned | living-book-content-merge, playbook-documentation |
-| [living-book-self-updating](living-book-self-updating.md) | P3 | planned | living-book-markdown-pipeline, workflow-engine, ai-assist-workflow-creation, agent-document-context |
+| [living-book-content-merge](living-book-content-merge.md) | P1 | **completed** | playbook-documentation |
+| [living-book-authors-notes](living-book-authors-notes.md) | P2 | **completed** | living-book-content-merge |
+| [living-book-reading-paths](living-book-reading-paths.md) | P2 | **completed** | living-book-content-merge, playbook-documentation |
+| [living-book-markdown-pipeline](living-book-markdown-pipeline.md) | P2 | **completed** | living-book-content-merge, playbook-documentation |
+| [living-book-self-updating](living-book-self-updating.md) | P3 | **completed** | living-book-markdown-pipeline, workflow-engine, ai-assist-workflow-creation, agent-document-context |
 
 ## Dependency Graph
 
@@ -264,12 +264,11 @@ Living Book chain:
 
 ```
 playbook-documentation (completed)
-    └── living-book-content-merge (P1)
-            ├── living-book-authors-notes (P2)
-            ├── living-book-reading-paths (P2)
-            └── living-book-markdown-pipeline (P2)
-                    └── living-book-self-updating (P3)
-                            ▲ also depends on: workflow-engine, ai-assist-workflow-creation, agent-document-context
+    └── living-book-content-merge (completed)
+            ├── living-book-authors-notes (completed)
+            ├── living-book-reading-paths (completed)
+            └── living-book-markdown-pipeline (completed)
+                    └── living-book-self-updating (completed)
 ```
 
 ## Recommended Build Order
@@ -304,10 +303,12 @@ playbook-documentation (completed)
 
 > Chat Conversation initiative (6 features) fully shipped 2026-03-22. All sprints 21-24 completed.
 
-25. **Sprint 25 — Living Book Foundation**: living-book-content-merge (P1) — map Playbook docs into Book chapters, fill 6 stubs
-26. **Sprint 26 — Living Book Enrich**: living-book-authors-notes (P2) + living-book-reading-paths (P2) (parallel) — dogfooding proof + persona paths
-27. **Sprint 27 — Living Book Pipeline**: living-book-markdown-pipeline (P2) — migrate content.ts to markdown files
-28. **Sprint 28 — Living Book Autonomy**: living-book-self-updating (P3) — auto-regeneration workflow, the capstone demo
+> Living Book initiative (5 features) fully shipped 2026-03-24. All sprints 25-28 completed.
+
+25. **Sprint 25 — Living Book Foundation** (shipped 2026-03-24): living-book-content-merge — Try It Now cards, chapter-mapping.ts, 9 chapters with playbook cross-references
+26. **Sprint 26 — Living Book Enrich** (shipped 2026-03-24): living-book-authors-notes + living-book-reading-paths — collapsible Author's Notes callout, 4 persona-based reading paths with progress tracking
+27. **Sprint 27 — Living Book Pipeline** (shipped 2026-03-24): living-book-markdown-pipeline — all chapters migrated to `book/chapters/*.md` with frontmatter, markdown parser, content blocks
+28. **Sprint 28 — Living Book Autonomy** (shipped 2026-03-24): living-book-self-updating — chapter regeneration via document-writer agent, git-based staleness detection, live SSE progress streaming, ChapterGenerationBar UI
 
 ## Open Questions
 

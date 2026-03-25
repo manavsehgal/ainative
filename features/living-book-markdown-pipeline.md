@@ -1,6 +1,6 @@
 ---
 title: Living Book Markdown Pipeline
-status: planned
+status: completed
 priority: P2
 milestone: post-mvp
 source: conversation/2026-03-24-living-book-synthesis

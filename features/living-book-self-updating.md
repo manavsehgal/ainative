@@ -1,6 +1,6 @@
 ---
 title: Living Book Self-Updating Workflow
-status: planned
+status: completed
 priority: P3
 milestone: post-mvp
 source: conversation/2026-03-24-living-book-synthesis

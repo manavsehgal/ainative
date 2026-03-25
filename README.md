@@ -73,6 +73,7 @@ Stagent ships a shared runtime registry that routes tasks, schedules, and workfl
 | 🧪 | **[E2E Test Automation](#e2e-test-automation)** | API-level end-to-end test suite covering both runtimes, 4 profiles, and 4 workflow patterns |
 | ⌨️ | **[Command Palette](#command-palette)** | Global `⌘K` search for fast navigation across tasks, projects, workflows, and settings |
 | 📖 | **[Playbook](#playbook)** | Built-in documentation with usage-stage awareness, adoption heatmap, and guided learning journeys |
+| 📚 | **[Living Book](#living-book)** | AI-native book reader with 9 chapters, agent-powered regeneration, staleness detection, and reading paths |
 
 ---
 
@@ -206,6 +207,16 @@ Documents linked to a task are automatically injected into the agent's prompt as
 Built-in documentation system at `/playbook` with usage-stage awareness that adapts content to your experience level (new, early, active, power user). Browse feature reference docs and guided learning journeys organized by persona (Personal, Work, Power User, Developer). Adoption heatmap tracks which features you've explored, while journey cards show progress through multi-step learning paths. Markdown rendering with automatic internal link resolution, table of contents, related docs, and screengrab embedding.
 
 <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/playbook-list.png" alt="Stagent playbook documentation" width="1200" />
+
+#### Living Book
+AI-native book reader at `/book` with 9 chapters across 3 parts (Foundation, Intelligence, Autonomy). Each chapter is generated from Stagent's own source code and feature docs by the document-writer agent — making this a book that writes itself.
+
+- **Chapter regeneration** — one-click regeneration via the document-writer agent profile with fire-and-forget task execution
+- **Staleness detection** — git-based change tracking compares source file timestamps against `lastGeneratedBy` frontmatter to show when chapters need updating
+- **Live progress streaming** — SSE subscription shows real-time agent steps during generation (Reading files → Planning → Composing → Writing) with fade-in animation
+- **Reading paths** — 4 persona-based paths (Getting Started, Team Lead, Power User, Developer) filter chapter navigation
+- **Try It Now** — each chapter links to related Playbook feature docs and user journeys
+- **Author's Notes** — collapsible callout blocks with behind-the-scenes commentary
 
 ### Platform
 

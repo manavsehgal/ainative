@@ -1,6 +1,6 @@
 ---
 title: Living Book Content Merge
-status: planned
+status: completed
 priority: P1
 milestone: post-mvp
 source: conversation/2026-03-24-living-book-synthesis

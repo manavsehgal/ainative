@@ -2,6 +2,20 @@
 
 ## 2026-03-24
 
+### Completed
+- **Living Book initiative fully shipped** — all 5 features completed in a single sprint:
+  - `living-book-content-merge` — Try It Now Playbook section cards in each chapter, chapter-mapping.ts wiring 9 chapters to 19 feature docs + 4 journey guides
+  - `living-book-authors-notes` — collapsible Author's Notes callout variant with themed styling across light/sepia/dark modes
+  - `living-book-reading-paths` — 4 persona-based paths (Getting Started, Team Lead, Power User, Developer) with PathSelector, PathProgress, stage-aware recommendation
+  - `living-book-markdown-pipeline` — all 9 chapters migrated to `book/chapters/*.md` with frontmatter schema, markdown-to-ContentBlock parser, GitHub raw URL image resolution
+  - `living-book-self-updating` — chapter regeneration via document-writer agent profile, git-based staleness detection (`update-detector.ts`), `ChapterGenerationBar` with generate/regenerate button + staleness badge
+- **Chapter regeneration pipeline**: `POST /api/book/regenerate` creates a task with document-writer profile, fires `executeTaskWithAgent` for fire-and-forget execution, returns taskId for client polling
+- **Live progress streaming**: SSE subscription via `EventSource` to `/api/logs/stream?taskId=X` shows real-time agent steps (Reading files → Planning structure → Composing content → Writing chapter) with fade-in animation
+- **Staleness detection UI**: Badge showing "Sources updated N days ago" when chapter source files have changed since last generation
+- **Empty chapter state**: Sparkle icon placeholder with "Generate chapter" CTA for chapters without markdown content; TOC sparkle indicators for unwritten chapters
+- Fixed regenerated chapters losing Try It Now section — added `relatedDocs` and `relatedJourney` to frontmatter template
+- Fixed path inconsistencies: `docs/book/` → `book/chapters/` in chapter-generator.ts and update-detector.ts
+
 ### Groomed
 - Created **Living Book** initiative — 5 features that unify the Book, Playbook, and ai-native-notes into a single flagship content experience:
   - `living-book-content-merge` (P1) — map Playbook's 19 feature docs + 4 journey guides into Book's 9-chapter structure; "Try It Now" sections; fills 6 stub chapters
