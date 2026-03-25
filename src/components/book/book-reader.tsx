@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/sheet";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
-import { CHAPTERS, PARTS, getChaptersByPart } from "@/lib/book/content";
+import { PARTS } from "@/lib/book/content";
 import type { BookChapter, ReaderPreferences, ReadingProgress, Bookmark } from "@/lib/book/types";
 import { DEFAULT_READER_PREFS } from "@/lib/book/types";
 import { ContentBlockRenderer } from "./content-blocks";
@@ -75,7 +75,7 @@ function syncProgressToDb(chapterId: string, pct: number, scrollPosition: number
   });
 }
 
-export function BookReader() {
+export function BookReader({ chapters: CHAPTERS }: { chapters: BookChapter[] }) {
   const [currentChapter, setCurrentChapter] = useState<BookChapter>(CHAPTERS[0]);
   const [prefs, setPrefs] = useState<ReaderPreferences>(DEFAULT_READER_PREFS);
   const [progress, setProgress] = useState<Record<string, ReadingProgress>>({});
@@ -322,7 +322,15 @@ export function BookReader() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [prevChapter, nextChapter, goToChapter]);
 
-  const chaptersByPart = getChaptersByPart();
+  const chaptersByPart = (() => {
+    const grouped = new Map<number, BookChapter[]>();
+    for (const ch of CHAPTERS) {
+      const part = ch.part.number;
+      if (!grouped.has(part)) grouped.set(part, []);
+      grouped.get(part)!.push(ch);
+    }
+    return grouped;
+  })();
 
   const fontFamilyClass =
     prefs.fontFamily === "serif"

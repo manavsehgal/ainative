@@ -142,6 +142,8 @@ function CodeBlockView({
 
 /* ─── ImageBlock ─── */
 
+const BOOK_IMAGE_BASE = "https://raw.githubusercontent.com/manavsehgal/stagent/main/book/images";
+
 function ImageBlockView({
   src,
   alt,
@@ -153,25 +155,20 @@ function ImageBlockView({
   caption?: string;
   width?: number;
 }) {
-  const [loaded, setLoaded] = useState(false);
+  // Resolve /book/images/ paths to GitHub raw URLs (images excluded from npm package)
+  const resolvedSrc = src.startsWith("/book/images/")
+    ? `${BOOK_IMAGE_BASE}/${src.split("/book/images/")[1]}`
+    : src;
 
   return (
-    <figure className="my-8">
-      <div className="relative mx-auto" style={width ? { maxWidth: width } : undefined}>
-        {/* Skeleton placeholder */}
-        {!loaded && (
-          <div className="book-image-skeleton w-full aspect-video rounded-xl animate-pulse" />
-        )}
+    <figure className="book-image-breakout my-8">
+      <div className="mx-auto" style={width ? { maxWidth: width } : undefined}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={src}
+          src={resolvedSrc}
           alt={alt}
           loading="lazy"
-          onLoad={() => setLoaded(true)}
-          className={cn(
-            "book-image rounded-xl mx-auto w-full transition-opacity duration-300",
-            loaded ? "opacity-100" : "opacity-0 absolute inset-0"
-          )}
+          className="book-image rounded-xl mx-auto w-full"
         />
       </div>
       {caption && (
@@ -230,7 +227,7 @@ function CalloutBlockView({
     <div className="flex items-start gap-3">
       <Icon className="book-callout-icon h-5 w-5 mt-0.5 shrink-0" />
       <div className="min-w-0 flex-1">
-        {title && !defaultCollapsed && (
+        {title && (
           <p className="book-callout-title font-semibold text-sm mb-2">
             {title}
           </p>
@@ -239,6 +236,7 @@ function CalloutBlockView({
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{markdown}</ReactMarkdown>
         </div>
         {imageSrc && (
+          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={imageSrc}
             alt={imageAlt || ""}
@@ -250,7 +248,7 @@ function CalloutBlockView({
     </div>
   );
 
-  // Authors-note variant: collapsible by default
+  // Collapsible callout (e.g. for non-authors-note variants that request it)
   if (defaultCollapsed) {
     return (
       <details
@@ -259,7 +257,7 @@ function CalloutBlockView({
       >
         <summary className="flex items-center gap-2 cursor-pointer p-5 select-none text-sm font-semibold">
           <Icon className="book-callout-icon h-4 w-4 shrink-0" />
-          {title || "Author\u2019s Note"}
+          {title || "Note"}
           <ChevronDown className="h-4 w-4 ml-auto transition-transform [[open]>&]:rotate-180" />
         </summary>
         <div className="px-5 pb-5">{content}</div>
