@@ -300,5 +300,42 @@ export function documentTools(ctx: ToolContext) {
         }
       }
     ),
+    tool(
+      "read_document_content",
+      "Read the full extracted text content of a document. Use this when you need to analyze, summarize, or answer questions about a document's contents.",
+      {
+        documentId: z.string().describe("The document ID to read"),
+      },
+      async (args) => {
+        try {
+          const doc = await db
+            .select({
+              id: documents.id,
+              originalName: documents.originalName,
+              status: documents.status,
+              extractedText: documents.extractedText,
+            })
+            .from(documents)
+            .where(eq(documents.id, args.documentId))
+            .get();
+
+          if (!doc) return err(`Document not found: ${args.documentId}`);
+          if (doc.status !== "ready")
+            return err(`Document not ready (status: ${doc.status}). Wait for preprocessing to complete.`);
+          if (!doc.extractedText)
+            return err("No extracted text available for this document.");
+
+          return ok({
+            documentId: doc.id,
+            originalName: doc.originalName,
+            content: doc.extractedText,
+          });
+        } catch (e) {
+          return err(
+            e instanceof Error ? e.message : "Failed to read document content"
+          );
+        }
+      }
+    ),
   ];
 }

@@ -4,11 +4,18 @@ import { projects, tasks, workflows, documents, schedules } from "@/lib/db/schem
 import { like, desc } from "drizzle-orm";
 import { listProfiles } from "@/lib/agents/profiles/registry";
 
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1048576).toFixed(1)} MB`;
+}
+
 interface EntityResult {
   entityType: string;
   entityId: string;
   label: string;
   status?: string;
+  description?: string;
 }
 
 export async function GET(request: Request) {
@@ -29,13 +36,13 @@ export async function GET(request: Request) {
   const [projectRows, taskRows, workflowRows, documentRows, scheduleRows] =
     await Promise.all([
       db
-        .select({ id: projects.id, name: projects.name, status: projects.status })
+        .select({ id: projects.id, name: projects.name, status: projects.status, description: projects.description })
         .from(projects)
         .where(like(projects.name, pattern))
         .orderBy(desc(projects.updatedAt))
         .limit(perType),
       db
-        .select({ id: tasks.id, title: tasks.title, status: tasks.status })
+        .select({ id: tasks.id, title: tasks.title, status: tasks.status, description: tasks.description })
         .from(tasks)
         .where(like(tasks.title, pattern))
         .orderBy(desc(tasks.updatedAt))
@@ -47,7 +54,7 @@ export async function GET(request: Request) {
         .orderBy(desc(workflows.updatedAt))
         .limit(perType),
       db
-        .select({ id: documents.id, name: documents.originalName, status: documents.status })
+        .select({ id: documents.id, name: documents.originalName, status: documents.status, mimeType: documents.mimeType, size: documents.size })
         .from(documents)
         .where(like(documents.originalName, pattern))
         .orderBy(desc(documents.createdAt))
@@ -61,16 +68,16 @@ export async function GET(request: Request) {
     ]);
 
   for (const p of projectRows) {
-    results.push({ entityType: "project", entityId: p.id, label: p.name, status: p.status });
+    results.push({ entityType: "project", entityId: p.id, label: p.name, status: p.status, description: p.description?.slice(0, 120) || undefined });
   }
   for (const t of taskRows) {
-    results.push({ entityType: "task", entityId: t.id, label: t.title, status: t.status });
+    results.push({ entityType: "task", entityId: t.id, label: t.title, status: t.status, description: t.description?.slice(0, 120) || undefined });
   }
   for (const w of workflowRows) {
     results.push({ entityType: "workflow", entityId: w.id, label: w.name, status: w.status });
   }
   for (const d of documentRows) {
-    results.push({ entityType: "document", entityId: d.id, label: d.name, status: d.status });
+    results.push({ entityType: "document", entityId: d.id, label: d.name, status: d.status, description: `${d.mimeType}, ${formatBytes(d.size)}` });
   }
   for (const s of scheduleRows) {
     results.push({ entityType: "schedule", entityId: s.id, label: s.name, status: s.status });

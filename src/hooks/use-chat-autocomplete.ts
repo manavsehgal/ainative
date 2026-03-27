@@ -16,6 +16,7 @@ export interface EntitySearchResult {
   entityId: string;
   label: string;
   status?: string;
+  description?: string;
 }
 
 export interface AutocompleteState {
@@ -127,8 +128,8 @@ export function useChatAutocomplete(): ChatAutocompleteReturn {
       // Look backward from cursor for a trigger character
       const textBeforeCursor = value.substring(0, cursorPos);
 
-      // Check for "/" trigger — must be at position 0 or after newline
-      const slashMatch = textBeforeCursor.match(/(?:^|\n)(\/[^\n]*)$/);
+      // Check for "/" trigger — at position 0 or after whitespace (works mid-prompt)
+      const slashMatch = textBeforeCursor.match(/(?:^|\s)(\/[^\s]*)$/);
       if (slashMatch) {
         const triggerIndex = cursorPos - slashMatch[1].length;
         const query = slashMatch[1].substring(1); // text after "/"

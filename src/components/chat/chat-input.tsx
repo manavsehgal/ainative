@@ -1,14 +1,13 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Square } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ChatModelSelector } from "./chat-model-selector";
 import { ChatCommandPopover } from "./chat-command-popover";
 import { useChatAutocomplete, type MentionReference } from "@/hooks/use-chat-autocomplete";
-import { getSlashCommands } from "@/lib/chat/slash-commands";
+import { getToolCatalog } from "@/lib/chat/tool-catalog";
 import type { ChatModelOption } from "@/lib/chat/types";
 
 interface ChatInputProps {
@@ -34,7 +33,6 @@ export function ChatInput({
 }: ChatInputProps) {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const router = useRouter();
   const autocomplete = useChatAutocomplete();
 
   // Sync textarea ref with autocomplete hook
@@ -106,20 +104,14 @@ export function ChatInput({
       entityId?: string;
     }) => {
       if (item.type === "slash") {
-        const cmd = getSlashCommands().find((c) => c.id === item.id);
-        if (cmd?.behavior === "navigate" && cmd.href) {
+        const entry = getToolCatalog({ includeBrowser: true }).find((t) => t.name === item.id);
+        if (entry?.behavior === "execute_immediately") {
           autocomplete.close();
-          router.push(cmd.href);
-          setValue("");
-          return;
-        }
-        if (cmd?.behavior === "execute_immediately") {
-          autocomplete.close();
-          if (cmd.id === "toggle_theme") {
+          if (entry.name === "toggle_theme") {
             const isDark = document.documentElement.classList.contains("dark");
             document.documentElement.classList.toggle("dark");
             localStorage.setItem("stagent-theme", isDark ? "light" : "dark");
-          } else if (cmd.id === "mark_all_read") {
+          } else if (entry.name === "mark_all_read") {
             fetch("/api/notifications/mark-all-read", { method: "PATCH" });
           }
           setValue("");
@@ -138,11 +130,11 @@ export function ChatInput({
         });
       }
     },
-    [autocomplete, router, handleInput]
+    [autocomplete, handleInput]
   );
 
   // Show preview text in placeholder when hovering a suggestion
-  const placeholder = previewText || "Ask anything... (/ for commands, @ for mentions)";
+  const placeholder = previewText || "Ask anything... (/ for tools, @ for mentions)";
 
   return (
     <div

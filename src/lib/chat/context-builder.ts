@@ -10,7 +10,7 @@ import type { WorkspaceContext } from "@/lib/environment/workspace-context";
 const TIER_0_BUDGET = 1500; // System identity, tool catalog, intent routing
 const TIER_1_BUDGET = 8_000; // Conversation history (sliding window)
 const TIER_2_BUDGET = 5_000; // Project summary data
-const TIER_3_BUDGET = 3_000; // On-demand entity expansion via @mentions
+const TIER_3_BUDGET = 8_000; // On-demand entity expansion via @mentions (sized for document content)
 
 /** Rough token estimate: ~4 chars per token */
 function estimateTokens(text: string): number {
@@ -225,7 +225,17 @@ async function buildTier3(mentions: MentionReference[]): Promise<string> {
           parts.push(`\n### Document: ${doc.originalName}`);
           parts.push(`Type: ${doc.mimeType}, Size: ${doc.size} bytes, Status: ${doc.status}`);
           if (doc.extractedText) {
-            parts.push(`Content preview: ${doc.extractedText.slice(0, 1000)}`);
+            // Progressive disclosure: inline small docs, hint for large ones
+            if (doc.extractedText.length <= 8000) {
+              parts.push(`\nContent:\n${doc.extractedText}`);
+            } else {
+              parts.push(`\nContent preview:\n${doc.extractedText.slice(0, 2000)}`);
+              parts.push(`\n...(${doc.extractedText.length} chars total — use the read_document_content tool with documentId "${doc.id}" to read the full text)`);
+            }
+          } else if (doc.status === "processing") {
+            parts.push("Content: Document is still being processed. Check back shortly.");
+          } else {
+            parts.push("Content: No extracted text available.");
           }
         }
         break;

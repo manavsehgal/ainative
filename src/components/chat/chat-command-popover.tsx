@@ -20,7 +20,13 @@ import {
   Loader2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { getSlashCommands, type SlashCommand } from "@/lib/chat/slash-commands";
+import {
+  getToolCatalog,
+  groupToolCatalog,
+  TOOL_GROUP_ICONS,
+  TOOL_GROUP_ORDER,
+  type ToolCatalogEntry,
+} from "@/lib/chat/tool-catalog";
 import type { AutocompleteMode, EntitySearchResult } from "@/hooks/use-chat-autocomplete";
 
 interface ChatCommandPopoverProps {
@@ -68,15 +74,6 @@ function groupByType(results: EntitySearchResult[]): Record<string, EntitySearch
   return groups;
 }
 
-function groupSlashCommands(commands: SlashCommand[]): Record<string, SlashCommand[]> {
-  const groups: Record<string, SlashCommand[]> = {};
-  for (const cmd of commands) {
-    if (!groups[cmd.group]) groups[cmd.group] = [];
-    groups[cmd.group].push(cmd);
-  }
-  return groups;
-}
-
 export function ChatCommandPopover({
   open,
   mode,
@@ -109,7 +106,7 @@ export function ChatCommandPopover({
     left: Math.max(8, anchorRect.left),
     bottom: window.innerHeight - anchorRect.top + 4,
     zIndex: 50,
-    width: 320,
+    width: 360,
   };
 
   const content = (
@@ -125,12 +122,12 @@ export function ChatCommandPopover({
           <CommandInput value={query} />
         </div>
 
-        <CommandList className="max-h-[280px]">
+        <CommandList className="max-h-[320px]">
           <CommandEmpty>
-            {mode === "slash" ? "No matching commands" : "No matching entities"}
+            {mode === "slash" ? "No matching tools" : "No matching entities"}
           </CommandEmpty>
 
-          {mode === "slash" && <SlashCommandItems onSelect={onSelect} />}
+          {mode === "slash" && <ToolCatalogItems onSelect={onSelect} />}
 
           {mode === "mention" && (
             <MentionItems
@@ -148,42 +145,49 @@ export function ChatCommandPopover({
   return createPortal(content, document.body);
 }
 
-function SlashCommandItems({
+function ToolCatalogItems({
   onSelect,
 }: {
   onSelect: ChatCommandPopoverProps["onSelect"];
 }) {
-  const commands = getSlashCommands();
-  const groups = groupSlashCommands(commands);
-  const groupOrder = ["Actions", "Navigation", "Create", "Utility"];
+  const catalog = getToolCatalog({ includeBrowser: true });
+  const groups = groupToolCatalog(catalog);
 
   return (
     <>
-      {groupOrder.map((groupName) => {
+      {TOOL_GROUP_ORDER.map((groupName) => {
         const items = groups[groupName];
         if (!items?.length) return null;
+        const GroupIcon = TOOL_GROUP_ICONS[groupName];
         return (
           <CommandGroup key={groupName} heading={groupName}>
-            {items.map((cmd) => (
+            {items.map((entry) => (
               <CommandItem
-                key={cmd.id}
-                value={`${cmd.label} ${cmd.keywords.join(" ")}`}
+                key={entry.name}
+                value={`${entry.name} ${entry.description} ${entry.group}`}
                 onSelect={() =>
                   onSelect({
                     type: "slash",
-                    id: cmd.id,
-                    label: cmd.label,
-                    text: cmd.template ?? cmd.label,
+                    id: entry.name,
+                    label: entry.name,
+                    text: entry.behavior === "execute_immediately"
+                      ? entry.name
+                      : `Use ${entry.name} to `,
                   })
                 }
               >
-                <cmd.icon className="h-4 w-4 shrink-0" />
+                <GroupIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <div className="flex flex-col min-w-0">
-                  <span className="truncate text-sm">{cmd.label}</span>
+                  <span className="truncate text-sm font-medium">{entry.name}</span>
                   <span className="truncate text-xs text-muted-foreground">
-                    {cmd.description}
+                    {entry.description}
                   </span>
                 </div>
+                {entry.paramHint && (
+                  <span className="ml-auto shrink-0 text-[10px] text-muted-foreground/60 font-mono">
+                    {entry.paramHint}
+                  </span>
+                )}
               </CommandItem>
             ))}
           </CommandGroup>
@@ -250,9 +254,16 @@ function MentionItems({
                 }
               >
                 <Icon className="h-4 w-4 shrink-0" />
-                <span className="flex-1 truncate">{entity.label}</span>
+                <div className="flex flex-col min-w-0">
+                  <span className="flex-1 truncate">{entity.label}</span>
+                  {entity.description && (
+                    <span className="truncate text-xs text-muted-foreground">
+                      {entity.description}
+                    </span>
+                  )}
+                </div>
                 {entity.status && (
-                  <span className="text-xs text-muted-foreground">
+                  <span className="ml-auto shrink-0 text-xs text-muted-foreground">
                     {entity.status}
                   </span>
                 )}
