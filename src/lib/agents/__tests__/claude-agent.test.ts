@@ -132,6 +132,9 @@ vi.mock("@/lib/agents/pattern-extractor", () => ({
 vi.mock("@/lib/agents/sweep", () => ({
   processSweepResult: mockProcessSweepResult,
 }));
+vi.mock("@/lib/agents/browser-mcp", () => ({
+  getBrowserMcpServers: vi.fn().mockResolvedValue({}),
+}));
 
 // Static imports (works because vi.mock is hoisted)
 import { query } from "@anthropic-ai/claude-agent-sdk";

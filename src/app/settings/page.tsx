@@ -5,6 +5,7 @@ import { DataManagementSection } from "@/components/settings/data-management-sec
 import { BudgetGuardrailsSection } from "@/components/settings/budget-guardrails-section";
 import { ChatSettingsSection } from "@/components/settings/chat-settings-section";
 import { RuntimeTimeoutSection } from "@/components/settings/runtime-timeout-section";
+import { BrowserToolsSection } from "@/components/settings/browser-tools-section";
 import { PageShell } from "@/components/shared/page-shell";
 
 export const dynamic = "force-dynamic";
@@ -17,6 +18,7 @@ export default function SettingsPage() {
         <OpenAIRuntimeSection />
         <ChatSettingsSection />
         <RuntimeTimeoutSection />
+        <BrowserToolsSection />
         <BudgetGuardrailsSection />
         <PermissionsSections />
         <DataManagementSection />

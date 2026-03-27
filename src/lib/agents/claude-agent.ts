@@ -20,6 +20,7 @@ import { getActiveLearnedContext } from "./learned-context";
 import { getLaunchCwd, getWorkspaceContext } from "@/lib/environment/workspace-context";
 import { analyzeForLearnedPatterns } from "./pattern-extractor";
 import { processSweepResult } from "./sweep";
+import { getBrowserMcpServers } from "./browser-mcp";
 import {
   extractUsageSnapshot,
   mergeUsageSnapshot,
@@ -470,6 +471,11 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
     await prepareTaskOutputDirectory(taskId, { clearExisting: true });
     const ctx = await buildTaskQueryContext(task, agentProfileId);
 
+    // Merge browser MCP servers when enabled globally
+    const browserServers = await getBrowserMcpServers();
+    const profileMcpServers = ctx.payload?.mcpServers ?? {};
+    const mergedMcpServers = { ...profileMcpServers, ...browserServers };
+
     const authEnv = await getAuthEnv();
     const response = query({
       prompt: ctx.userPrompt,
@@ -487,10 +493,9 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
         // F4: Per-execution budget cap
         maxBudgetUsd: DEFAULT_MAX_BUDGET_USD,
         ...(ctx.payload?.allowedTools && { allowedTools: ctx.payload.allowedTools }),
-        ...(ctx.payload?.mcpServers &&
-          Object.keys(ctx.payload.mcpServers).length > 0 && {
-            mcpServers: ctx.payload.mcpServers,
-          }),
+        ...(Object.keys(mergedMcpServers).length > 0 && {
+          mcpServers: mergedMcpServers,
+        }),
         // @ts-expect-error Agent SDK canUseTool types are incomplete — our async handler is compatible at runtime
         canUseTool: async (
           toolName: string,
@@ -576,6 +581,11 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
     await prepareTaskOutputDirectory(taskId);
     const ctx = await buildTaskQueryContext(task, profileId);
 
+    // Merge browser MCP servers when enabled globally
+    const browserServers = await getBrowserMcpServers();
+    const profileMcpServers = ctx.payload?.mcpServers ?? {};
+    const mergedMcpServers = { ...profileMcpServers, ...browserServers };
+
     const authEnv = await getAuthEnv();
     const response = query({
       prompt: ctx.userPrompt,
@@ -594,10 +604,9 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
         // F4: Per-execution budget cap
         maxBudgetUsd: DEFAULT_MAX_BUDGET_USD,
         ...(ctx.payload?.allowedTools && { allowedTools: ctx.payload.allowedTools }),
-        ...(ctx.payload?.mcpServers &&
-          Object.keys(ctx.payload.mcpServers).length > 0 && {
-            mcpServers: ctx.payload.mcpServers,
-          }),
+        ...(Object.keys(mergedMcpServers).length > 0 && {
+          mcpServers: mergedMcpServers,
+        }),
         // @ts-expect-error Agent SDK canUseTool types are incomplete — our async handler is compatible at runtime
         canUseTool: async (
           toolName: string,

@@ -39,6 +39,12 @@ import {
 import { isToolAllowed } from "@/lib/settings/permissions";
 import { getLaunchCwd, getWorkspaceContext } from "@/lib/environment/workspace-context";
 import { createStagentMcpServer } from "./stagent-tools";
+import {
+  getBrowserMcpServers,
+  getBrowserAllowedToolPatterns,
+  isBrowserTool,
+  isBrowserReadOnly,
+} from "@/lib/agents/browser-mcp";
 
 // ── Streaming input wrapper (required for MCP tools) ─────────────────
 
@@ -197,6 +203,10 @@ export async function* sendMessage(
     const maxTurnsSetting = await getSetting(SETTINGS_KEYS.MAX_TURNS);
     const maxTurns = maxTurnsSetting ? parseInt(maxTurnsSetting, 10) || 10 : 10;
 
+    // Merge browser MCP servers when enabled in settings
+    const browserServers = await getBrowserMcpServers();
+    const browserToolPatterns = await getBrowserAllowedToolPatterns();
+
     const response = query({
       prompt: generatePrompt(fullPrompt),
       options: {
@@ -206,8 +216,8 @@ export async function* sendMessage(
         includePartialMessages: true,
         cwd: workspace.cwd,
         env: buildClaudeSdkEnv(authEnv),
-        mcpServers: { stagent: stagentServer },
-        allowedTools: ["mcp__stagent__*"],
+        mcpServers: { stagent: stagentServer, ...browserServers },
+        allowedTools: ["mcp__stagent__*", ...browserToolPatterns],
         // @ts-expect-error Agent SDK canUseTool types are incomplete — our async handler is compatible at runtime
         canUseTool: async (
           toolName: string,
@@ -233,6 +243,23 @@ export async function* sendMessage(
               message: `Using ${shortName}...`,
             });
             return { behavior: "allow", updatedInput: input };
+          }
+
+          // Browser tools: auto-allow read-only, gate mutations
+          if (isBrowserTool(toolName)) {
+            if (isBrowserReadOnly(toolName)) {
+              const shortName = toolName
+                .replace("mcp__chrome-devtools__", "")
+                .replace("mcp__playwright__", "")
+                .replace(/_/g, " ");
+              emitSideChannelEvent(conversationId, {
+                type: "status",
+                phase: "tool_use",
+                message: `Browser: ${shortName}...`,
+              });
+              return { behavior: "allow", updatedInput: input };
+            }
+            // Mutation browser tools fall through to permission check below
           }
 
           const isQuestion = toolName === "AskUserQuestion";

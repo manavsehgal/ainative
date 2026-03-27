@@ -86,6 +86,12 @@ Features that enhance the product but aren't essential for first use — homepag
 | [workflow-ux-overhaul](workflow-ux-overhaul.md)                     | P1       | completed | workflow-engine, ai-assist-workflow-creation, agent-document-context, document-output-generation        |
 | [settings-interactive-controls](settings-interactive-controls.md)   | P2       | pending   | —                                                                                                        |
 
+### Browser & Automation
+
+| Feature | Priority | Status | Dependencies |
+|---------|----------|--------|--------------|
+| [browser-use](browser-use.md) | P1 | planned | chat-engine, agent-integration, tool-permission-persistence |
+
 ### Platform
 
 | Feature | Priority | Status | Dependencies |
@@ -309,6 +315,16 @@ playbook-documentation (completed)
 26. **Sprint 26 — Living Book Enrich** (shipped 2026-03-24): living-book-authors-notes + living-book-reading-paths — collapsible Author's Notes callout, 4 persona-based reading paths with progress tracking
 27. **Sprint 27 — Living Book Pipeline** (shipped 2026-03-24): living-book-markdown-pipeline — all chapters migrated to `book/chapters/*.md` with frontmatter, markdown parser, content blocks
 28. **Sprint 28 — Living Book Autonomy** (shipped 2026-03-24): living-book-self-updating — chapter regeneration via document-writer agent, git-based staleness detection, live SSE progress streaming, ChapterGenerationBar UI
+
+Browser automation chain:
+
+```
+chat-engine + agent-integration + tool-permission-persistence
+                                │
+                                └── browser-use
+                                        ├── Chrome DevTools MCP (CDP, live Chrome)
+                                        └── Playwright MCP (headless, accessibility snapshots)
+```
 
 ## Open Questions
 

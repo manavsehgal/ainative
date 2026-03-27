@@ -1,5 +1,10 @@
 # Feature Changelog
 
+## 2026-03-27
+
+### Groomed
+- `browser-use` (P1) — enable Chrome DevTools MCP (29 CDP tools) and Playwright MCP (50+ accessibility-snapshot tools) as browser automation tool sources for chat and task execution; settings-driven toggles, permission tiering (read-only auto-approve, mutations gated), profile-level deny support
+
 ## 2026-03-24
 
 ### Completed
