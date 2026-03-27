@@ -27,8 +27,9 @@ import {
   deduplicateByEntityId,
   type ToolResultCapture,
 } from "./entity-detector";
-import type { ChatStreamEvent, ChatQuestion } from "./types";
+import type { ChatStreamEvent, ChatQuestion, ScreenshotAttachment } from "./types";
 import { getProviderForRuntime, DEFAULT_CHAT_MODEL } from "./types";
+import { persistScreenshot, SCREENSHOT_TOOL_NAMES } from "@/lib/screenshots/persist";
 import {
   createSideChannel,
   emitSideChannelEvent,
@@ -314,6 +315,10 @@ export async function* sendMessage(
     let firstEvent = true;
     let hasStreamedDeltas = false;
 
+    // Screenshot interception state
+    const pendingScreenshotTools = new Set<string>(); // tool_use IDs for screenshot tools
+    const screenshotAttachments: ScreenshotAttachment[] = [];
+
     for await (const raw of response as AsyncIterable<
       Record<string, unknown>
     >) {
@@ -351,18 +356,64 @@ export async function* sendMessage(
           yield { type: "delta", content: delta.text };
         }
       } else if (raw.type === "assistant") {
+        // Track screenshot tool_use IDs (before the streaming skip)
+        const assistantMsg = raw.message as Record<string, unknown> | undefined;
+        const assistantBlocks = (assistantMsg?.content ?? raw.content) as Array<Record<string, unknown>> | undefined;
+        if (assistantBlocks) {
+          for (const block of assistantBlocks) {
+            if (
+              block.type === "tool_use" &&
+              typeof block.name === "string" &&
+              SCREENSHOT_TOOL_NAMES.has(block.name) &&
+              typeof block.id === "string"
+            ) {
+              pendingScreenshotTools.add(block.id);
+            }
+          }
+        }
+
         // Skip if we're already receiving streaming deltas — assistant events
         // are redundant partial messages from includePartialMessages: true
         // and their cumulative text blocks cause duplicate rendering
         if (hasStreamedDeltas) continue;
         // Fallback for non-streaming: extract text from content blocks
-        const msg = raw.message as Record<string, unknown> | undefined;
-        const blocks = (msg?.content ?? raw.content) as Array<Record<string, unknown>> | undefined;
-        if (blocks) {
-          for (const block of blocks) {
+        if (assistantBlocks) {
+          for (const block of assistantBlocks) {
             if (block.type === "text" && typeof block.text === "string" && !fullText.includes(block.text)) {
               fullText += block.text;
               yield { type: "delta", content: block.text };
+            }
+          }
+        }
+      } else if (raw.type === "user" && pendingScreenshotTools.size > 0) {
+        // Intercept tool results that contain screenshot image data
+        const userMsg = raw.message as Record<string, unknown> | undefined;
+        const userContent = userMsg?.content as Array<Record<string, unknown>> | undefined;
+        if (userContent) {
+          for (const block of userContent) {
+            if (block.type === "tool_result" && typeof block.tool_use_id === "string" && pendingScreenshotTools.has(block.tool_use_id)) {
+              pendingScreenshotTools.delete(block.tool_use_id);
+              // Extract base64 image data from the tool result content
+              const resultContent = block.content as Array<Record<string, unknown>> | undefined;
+              if (resultContent) {
+                for (const item of resultContent) {
+                  if (item.type === "image" && typeof item.source === "object" && item.source !== null) {
+                    const source = item.source as Record<string, unknown>;
+                    if (source.type === "base64" && typeof source.data === "string") {
+                      const attachment = await persistScreenshot(source.data, {
+                        conversationId,
+                        messageId: assistantMsg.id,
+                        projectId: conversation.projectId ?? undefined,
+                        toolName: `screenshot_${block.tool_use_id}`,
+                      });
+                      if (attachment) {
+                        screenshotAttachments.push(attachment);
+                        yield { type: "screenshot" as const, ...attachment };
+                      }
+                    }
+                  }
+                }
+              }
             }
           }
         }
@@ -415,12 +466,13 @@ export async function* sendMessage(
     const textEntities = await detectEntities(fullText, conversation.projectId);
     const quickAccess = deduplicateByEntityId([...toolEntities, ...textEntities]);
 
-    // Save usage metadata + quick access links
+    // Save usage metadata + quick access links + screenshot attachments
     const metadata = JSON.stringify({
       modelId: usage.modelId ?? conversation.modelId,
       inputTokens: usage.inputTokens,
       outputTokens: usage.outputTokens,
       ...(quickAccess.length > 0 ? { quickAccess } : {}),
+      ...(screenshotAttachments.length > 0 ? { attachments: screenshotAttachments } : {}),
     });
     await db
       .update(chatMessages)

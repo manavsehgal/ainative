@@ -21,6 +21,7 @@ import { getLaunchCwd, getWorkspaceContext } from "@/lib/environment/workspace-c
 import { analyzeForLearnedPatterns } from "./pattern-extractor";
 import { processSweepResult } from "./sweep";
 import { getBrowserMcpServers } from "./browser-mcp";
+import { persistScreenshot, SCREENSHOT_TOOL_NAMES } from "@/lib/screenshots/persist";
 import {
   extractUsageSnapshot,
   mergeUsageSnapshot,
@@ -211,6 +212,9 @@ async function processAgentStream(
   let receivedResult = false;
   let turnCount = 0;
 
+  // Screenshot interception state
+  const pendingScreenshotTools = new Set<string>();
+
   for await (const raw of response) {
     const message = raw as AgentStreamMessage;
     applyUsageSnapshot(usageState, raw);
@@ -267,6 +271,10 @@ async function processAgentStream(
       turnCount++;
       for (const block of message.message.content) {
         if (block.type === "tool_use") {
+          // Track screenshot tool_use IDs for result interception
+          if (typeof block.name === "string" && SCREENSHOT_TOOL_NAMES.has(block.name) && typeof block.id === "string") {
+            pendingScreenshotTools.add(block.id);
+          }
           await db.insert(agentLogs).values({
             id: crypto.randomUUID(),
             taskId,
@@ -278,6 +286,47 @@ async function processAgentStream(
             }),
             timestamp: new Date(),
           });
+        }
+      }
+    }
+
+    // Intercept tool results containing screenshot image data
+    if (message.type === "user" && pendingScreenshotTools.size > 0) {
+      const userMsg = (raw as Record<string, unknown>).message as Record<string, unknown> | undefined;
+      const userContent = userMsg?.content as Array<Record<string, unknown>> | undefined;
+      if (userContent) {
+        for (const block of userContent) {
+          if (block.type === "tool_result" && typeof block.tool_use_id === "string" && pendingScreenshotTools.has(block.tool_use_id)) {
+            pendingScreenshotTools.delete(block.tool_use_id);
+            const resultContent = block.content as Array<Record<string, unknown>> | undefined;
+            if (resultContent) {
+              for (const item of resultContent) {
+                if (item.type === "image" && typeof item.source === "object" && item.source !== null) {
+                  const source = item.source as Record<string, unknown>;
+                  if (source.type === "base64" && typeof source.data === "string") {
+                    const attachment = await persistScreenshot(source.data, {
+                      taskId,
+                      toolName: `screenshot_${block.tool_use_id}`,
+                    });
+                    if (attachment) {
+                      await db.insert(agentLogs).values({
+                        id: crypto.randomUUID(),
+                        taskId,
+                        agentType: agentProfileId,
+                        event: "screenshot",
+                        payload: JSON.stringify({
+                          documentId: attachment.documentId,
+                          thumbnailUrl: attachment.thumbnailUrl,
+                          toolName: `screenshot_${block.tool_use_id}`,
+                        }),
+                        timestamp: new Date(),
+                      });
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
       }
     }

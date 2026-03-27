@@ -242,6 +242,11 @@ export function bootstrapStagentDatabase(sqlite: Database.Database): void {
   addColumnIfMissing(`ALTER TABLE projects ADD COLUMN working_directory TEXT;`);
   addColumnIfMissing(`ALTER TABLE schedules ADD COLUMN assigned_agent TEXT;`);
   addColumnIfMissing(`ALTER TABLE documents ADD COLUMN version INTEGER NOT NULL DEFAULT 1;`);
+  addColumnIfMissing(`ALTER TABLE documents ADD COLUMN source TEXT DEFAULT 'upload';`);
+  addColumnIfMissing(`ALTER TABLE documents ADD COLUMN conversation_id TEXT REFERENCES conversations(id);`);
+  addColumnIfMissing(`ALTER TABLE documents ADD COLUMN message_id TEXT;`);
+  sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_documents_source ON documents(source);`);
+  sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_documents_conversation_id ON documents(conversation_id);`);
 
   // ── Environment onboarding tables ──────────────────────────────────────
   sqlite.exec(`

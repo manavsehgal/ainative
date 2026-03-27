@@ -351,6 +351,23 @@ export function ChatShell({
                   createdAt: new Date(),
                 };
                 setMessages((prev) => [...prev, systemMsg]);
+              } else if (event.type === "screenshot") {
+                // Append screenshot attachment to assistant message metadata
+                setMessages((prev) =>
+                  prev.map((m) => {
+                    if (m.id !== assistantMsgId) return m;
+                    const meta = m.metadata ? (() => { try { return JSON.parse(m.metadata!); } catch { return {}; } })() : {};
+                    const attachments = Array.isArray(meta.attachments) ? meta.attachments : [];
+                    attachments.push({
+                      documentId: event.documentId,
+                      thumbnailUrl: event.thumbnailUrl,
+                      originalUrl: event.originalUrl,
+                      width: event.width,
+                      height: event.height,
+                    });
+                    return { ...m, metadata: JSON.stringify({ ...meta, attachments }) };
+                  })
+                );
               } else if (event.type === "error") {
                 setMessages((prev) =>
                   prev.map((m) =>

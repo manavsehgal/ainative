@@ -11,12 +11,14 @@ export async function GET(
 ) {
   const { id } = await params;
   const inline = req.nextUrl.searchParams.get("inline") === "1";
+  const thumb = req.nextUrl.searchParams.get("thumb") === "1";
 
   const [doc] = await db
     .select({
       originalName: documents.originalName,
       mimeType: documents.mimeType,
       storagePath: documents.storagePath,
+      processedPath: documents.processedPath,
     })
     .from(documents)
     .where(eq(documents.id, id));
@@ -26,7 +28,8 @@ export async function GET(
   }
 
   try {
-    const data = await readFile(doc.storagePath);
+    const filePath = (thumb && doc.processedPath) ? doc.processedPath : doc.storagePath;
+    const data = await readFile(filePath);
     const filename = basename(doc.originalName);
     const canInline =
       inline && (doc.mimeType.startsWith("image/") || doc.mimeType === "application/pdf");

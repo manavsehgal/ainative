@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -37,8 +38,20 @@ interface WorkflowGroup {
 const priorityLabels = ["P0", "P1", "P2", "P3"];
 
 function TaskCard({ task }: { task: Task }) {
+  const router = useRouter();
+
   return (
-    <Link href={`/tasks/${task.id}`}>
+    <div
+      role="link"
+      tabIndex={0}
+      onClick={() => router.push(`/tasks/${task.id}`)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          router.push(`/tasks/${task.id}`);
+        }
+      }}
+    >
       <Card className="p-3 cursor-pointer transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl">
         <div className="flex items-center gap-3">
           <span className="text-xs font-mono text-muted-foreground w-6">
@@ -71,7 +84,7 @@ function TaskCard({ task }: { task: Task }) {
           </Badge>
         </div>
       </Card>
-    </Link>
+    </div>
   );
 }
 

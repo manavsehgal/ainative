@@ -25,10 +25,9 @@ import { join } from "path";
 import { homedir } from "os";
 import { clearSampleProfiles } from "./seed-data/profiles";
 
-const uploadsDir = join(
-  process.env.STAGENT_DATA_DIR || join(homedir(), ".stagent"),
-  "uploads"
-);
+const dataDir = process.env.STAGENT_DATA_DIR || join(homedir(), ".stagent");
+const uploadsDir = join(dataDir, "uploads");
+const screenshotsDir = join(dataDir, "screenshots");
 
 /**
  * Wipe all data tables (FK-safe order) and uploaded files.
@@ -76,6 +75,18 @@ export function clearAllData() {
     // Directory may not exist yet — that's fine
   }
 
+  // Wipe screenshot files
+  let screenshotsDeleted = 0;
+  try {
+    mkdirSync(screenshotsDir, { recursive: true });
+    for (const file of readdirSync(screenshotsDir)) {
+      unlinkSync(join(screenshotsDir, file));
+      screenshotsDeleted++;
+    }
+  } catch {
+    // Directory may not exist yet — that's fine
+  }
+
   return {
     sampleProfiles: sampleProfilesDeleted,
     views: viewsDeleted,
@@ -98,5 +109,6 @@ export function clearAllData() {
     bookmarks: bookmarksDeleted,
     readingProgress: readingProgressDeleted,
     files: filesDeleted,
+    screenshots: screenshotsDeleted,
   };
 }

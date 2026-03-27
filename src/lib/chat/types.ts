@@ -1,3 +1,12 @@
+/** Screenshot attachment metadata stored in message metadata.attachments */
+export interface ScreenshotAttachment {
+  documentId: string;
+  thumbnailUrl: string;
+  originalUrl: string;
+  width: number;
+  height: number;
+}
+
 /** Chat stream event types sent to the client via SSE */
 export type ChatStreamEvent =
   | { type: "delta"; content: string }
@@ -5,7 +14,8 @@ export type ChatStreamEvent =
   | { type: "done"; messageId: string; quickAccess: QuickAccessItem[] }
   | { type: "error"; message: string }
   | { type: "permission_request"; requestId: string; messageId: string; toolName: string; toolInput: Record<string, unknown> }
-  | { type: "question"; requestId: string; messageId: string; questions: ChatQuestion[] };
+  | { type: "question"; requestId: string; messageId: string; questions: ChatQuestion[] }
+  | { type: "screenshot"; documentId: string; thumbnailUrl: string; originalUrl: string; width: number; height: number };
 
 /** Structured question from AskUserQuestion tool */
 export interface ChatQuestion {

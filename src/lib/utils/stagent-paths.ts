@@ -16,3 +16,7 @@ export function getStagentUploadsDir(): string {
 export function getStagentBlueprintsDir(): string {
   return join(getStagentDataDir(), "blueprints");
 }
+
+export function getStagentScreenshotsDir(): string {
+  return join(getStagentDataDir(), "screenshots");
+}

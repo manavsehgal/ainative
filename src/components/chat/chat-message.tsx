@@ -6,8 +6,9 @@ import { ChatMessageMarkdown } from "./chat-message-markdown";
 import { ChatPermissionRequest } from "./chat-permission-request";
 import { ChatQuestionInline } from "./chat-question";
 import { ChatQuickAccess } from "./chat-quick-access";
+import { ScreenshotGallery } from "./screenshot-gallery";
 import { AlertCircle } from "lucide-react";
-import { resolveModelLabel, type ChatQuestion, type QuickAccessItem } from "@/lib/chat/types";
+import { resolveModelLabel, type ChatQuestion, type QuickAccessItem, type ScreenshotAttachment } from "@/lib/chat/types";
 
 interface ChatMessageProps {
   message: ChatMessageRow;
@@ -75,13 +76,15 @@ export function ChatMessage({ message, isStreaming, conversationId, onStatusChan
   // Skip rendering system messages without valid metadata
   if (isSystem) return null;
 
-  // Extract Quick Access pills and model label from completed assistant messages
+  // Extract Quick Access pills, model label, and screenshot attachments from assistant messages
   let quickAccess: QuickAccessItem[] = [];
+  let attachments: ScreenshotAttachment[] = [];
   let modelLabel: string | null = null;
-  if (!isUser && message.status === "complete" && message.metadata) {
+  if (!isUser && message.metadata) {
     try {
       const meta = JSON.parse(message.metadata);
       if (Array.isArray(meta.quickAccess)) quickAccess = meta.quickAccess;
+      if (Array.isArray(meta.attachments)) attachments = meta.attachments;
       if (meta.modelId) modelLabel = resolveModelLabel(meta.modelId);
     } catch {
       // Invalid metadata
@@ -125,6 +128,9 @@ export function ChatMessage({ message, isStreaming, conversationId, onStatusChan
                 })()}
               </span>
             ) : null}
+            {attachments.length > 0 && (
+              <ScreenshotGallery attachments={attachments} />
+            )}
             {isStreaming && message.content && (
               <span className="inline-block w-0.5 h-4 bg-foreground animate-pulse ml-0.5 align-text-bottom" />
             )}

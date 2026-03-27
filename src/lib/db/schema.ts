@@ -130,12 +130,17 @@ export const documents = sqliteTable(
     extractedText: text("extracted_text"),
     processedPath: text("processed_path"),
     processingError: text("processing_error"),
+    source: text("source").default("upload"),
+    conversationId: text("conversation_id").references(() => conversations.id),
+    messageId: text("message_id"),
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
   },
   (table) => [
     index("idx_documents_task_id").on(table.taskId),
     index("idx_documents_project_id").on(table.projectId),
+    index("idx_documents_source").on(table.source),
+    index("idx_documents_conversation_id").on(table.conversationId),
   ]
 );
 
