@@ -35,11 +35,22 @@ export function ScreenshotLightbox({
   // Reset state when dialog opens/closes
   useEffect(() => {
     if (open) {
-      setZoom(1);
+      // Calculate zoom to fill the 60vw modal width
+      const containerWidth = window.innerWidth * 0.58;
+      const containerHeight = window.innerHeight * 0.85;
+      const imgAspect = width / height;
+      const containerAspect = containerWidth / containerHeight;
+      let fillZoom: number;
+      if (imgAspect > containerAspect) {
+        fillZoom = 1; // wider image already fills width at zoom=1
+      } else {
+        fillZoom = containerWidth / (containerHeight * imgAspect);
+      }
+      setZoom(Math.min(Math.max(fillZoom, 1), 3));
       setPan({ x: 0, y: 0 });
       setLoaded(false);
     }
-  }, [open]);
+  }, [open, width, height]);
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
@@ -73,7 +84,7 @@ export function ScreenshotLightbox({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 gap-0 overflow-hidden bg-black/95 border-none">
+      <DialogContent showCloseButton={false} className="max-w-[60vw] max-h-[90vh] p-0 gap-0 overflow-hidden bg-black/95 border-none">
         <VisuallyHidden>
           <DialogTitle>Screenshot Preview</DialogTitle>
         </VisuallyHidden>
@@ -83,7 +94,7 @@ export function ScreenshotLightbox({
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10"
+            className="h-8 w-8 text-white hover:text-white bg-black/50 hover:bg-black/70 rounded-full"
             onClick={() => window.open(imageUrl, "_blank")}
           >
             <ExternalLink className="h-4 w-4" />
@@ -91,7 +102,7 @@ export function ScreenshotLightbox({
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10"
+            className="h-8 w-8 text-white hover:text-white bg-black/50 hover:bg-black/70 rounded-full"
             onClick={onClose}
           >
             <X className="h-4 w-4" />
@@ -100,7 +111,7 @@ export function ScreenshotLightbox({
 
         {/* Image container */}
         <div
-          className="flex items-center justify-center w-full h-[90vh] overflow-hidden select-none"
+          className="flex items-center justify-center w-full h-[85vh] overflow-hidden select-none"
           onWheel={handleWheel}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}

@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/tooltip";
 
 const DEFAULT_TIMEOUT = 60;
-const DEFAULT_MAX_TURNS = 10;
+const DEFAULT_MAX_TURNS = 30;
 
 export function RuntimeTimeoutSection() {
   const [timeout, setTimeout_] = useState(DEFAULT_TIMEOUT);
@@ -142,8 +142,8 @@ export function RuntimeTimeoutSection() {
                 <div
                   className="absolute top-1/2 -translate-y-1/2 h-1.5 rounded-full bg-primary/10"
                   style={{
-                    left: `${((5 - 1) / (50 - 1)) * 100}%`,
-                    width: `${((20 - 5) / (50 - 1)) * 100}%`,
+                    left: `${((15 - 1) / (50 - 1)) * 100}%`,
+                    width: `${((40 - 15) / (50 - 1)) * 100}%`,
                   }}
                 />
                 <Slider
@@ -158,7 +158,7 @@ export function RuntimeTimeoutSection() {
               </div>
               <div className="flex justify-center">
                 <span className="text-xs text-muted-foreground">
-                  Recommended: 5–20 turns
+                  Recommended: 15–40 turns
                 </span>
               </div>
             </div>

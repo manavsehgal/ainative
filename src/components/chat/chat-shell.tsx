@@ -313,9 +313,15 @@ export function ChatShell({
                           ...m,
                           id: event.messageId,
                           status: "complete",
-                          metadata: event.quickAccess?.length
-                            ? JSON.stringify({ quickAccess: event.quickAccess })
-                            : m.metadata,
+                          metadata: (() => {
+                            const existing = m.metadata
+                              ? (() => { try { return JSON.parse(m.metadata!); } catch { return {}; } })()
+                              : {};
+                            if (event.quickAccess?.length) {
+                              existing.quickAccess = event.quickAccess;
+                            }
+                            return JSON.stringify(existing);
+                          })(),
                         }
                       : m
                   )

@@ -204,7 +204,7 @@ export async function* sendMessage(
 
     // Read user-configured max turns (Settings → Runtime)
     const maxTurnsSetting = await getSetting(SETTINGS_KEYS.MAX_TURNS);
-    const maxTurns = maxTurnsSetting ? parseInt(maxTurnsSetting, 10) || 10 : 10;
+    const maxTurns = maxTurnsSetting ? parseInt(maxTurnsSetting, 10) || 30 : 30;
 
     // Merge browser MCP servers when enabled in settings
     const browserServers = await getBrowserMcpServers();

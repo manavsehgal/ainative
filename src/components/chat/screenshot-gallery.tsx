@@ -9,7 +9,7 @@ interface ScreenshotGalleryProps {
   attachments: ScreenshotAttachment[];
 }
 
-const COLLAPSED_LIMIT = 4;
+const COLLAPSED_LIMIT = 2;
 
 export function ScreenshotGallery({ attachments }: ScreenshotGalleryProps) {
   const [lightbox, setLightbox] = useState<ScreenshotAttachment | null>(null);
@@ -22,20 +22,19 @@ export function ScreenshotGallery({ attachments }: ScreenshotGalleryProps) {
 
   return (
     <>
-      <div className="flex flex-wrap gap-2 mt-2">
+      <div className="flex flex-col gap-3 mt-2">
         {visible.map((att) => (
           <button
             key={att.documentId}
             type="button"
-            className="relative rounded-lg overflow-hidden border border-border hover:border-primary transition-colors cursor-pointer group"
-            style={{ maxWidth: 200, maxHeight: 150 }}
+            className="relative rounded-lg overflow-hidden border border-border hover:border-primary transition-colors cursor-pointer group w-full"
             onClick={() => setLightbox(att)}
           >
             <img
               src={att.thumbnailUrl}
               alt={`Screenshot ${att.width}×${att.height}`}
-              className="object-cover w-full h-full"
-              style={{ maxWidth: 200, maxHeight: 150 }}
+              className="object-contain w-full"
+              style={{ maxHeight: 400 }}
               loading="lazy"
               onError={(e) => {
                 // Fallback to original if thumbnail fails
