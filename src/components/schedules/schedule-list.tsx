@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { ScheduleCreateSheet } from "./schedule-create-sheet";
 import { ScheduleDetailSheet } from "./schedule-detail-sheet";
+import { ScheduleEditSheet } from "./schedule-edit-sheet";
 import { ScheduleStatusBadge } from "./schedule-status-badge";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -42,6 +43,7 @@ export function ScheduleList({ projects, initialSelectedId }: ScheduleListProps)
     initialSelectedId ?? null
   );
   const [createOpen, setCreateOpen] = useState(false);
+  const [editingScheduleId, setEditingScheduleId] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     const res = await fetch("/api/schedules");
@@ -246,6 +248,20 @@ export function ScheduleList({ projects, initialSelectedId }: ScheduleListProps)
           if (!open) setSelectedScheduleId(null);
         }}
         onDeleted={refresh}
+        onUpdated={refresh}
+        onEdit={(id) => {
+          setSelectedScheduleId(null);
+          setEditingScheduleId(id);
+        }}
+      />
+
+      <ScheduleEditSheet
+        scheduleId={editingScheduleId}
+        projects={projects}
+        open={editingScheduleId !== null}
+        onOpenChange={(open) => {
+          if (!open) setEditingScheduleId(null);
+        }}
         onUpdated={refresh}
       />
 

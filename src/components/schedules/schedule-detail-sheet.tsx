@@ -15,7 +15,7 @@ import { ScheduleStatusBadge } from "./schedule-status-badge";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { describeCron } from "@/lib/schedules/interval-parser";
 import { taskStatusVariant } from "@/lib/constants/status-colors";
-import { Pause, Play, Trash2, Clock, Zap, Hash } from "lucide-react";
+import { Pause, Play, Trash2, Clock, Zap, Hash, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
@@ -51,6 +51,7 @@ interface ScheduleDetailSheetProps {
   onOpenChange: (open: boolean) => void;
   onDeleted?: () => void;
   onUpdated?: () => void;
+  onEdit?: (scheduleId: string) => void;
 }
 
 export function ScheduleDetailSheet({
@@ -59,6 +60,7 @@ export function ScheduleDetailSheet({
   onOpenChange,
   onDeleted,
   onUpdated,
+  onEdit,
 }: ScheduleDetailSheetProps) {
   const router = useRouter();
   const [schedule, setSchedule] = useState<ScheduleDetail | null>(null);
@@ -156,26 +158,40 @@ export function ScheduleDetailSheet({
                 <div className="flex items-center gap-2">
                   <ScheduleStatusBadge status={schedule.status} />
                   {(schedule.status === "active" || schedule.status === "paused") && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handlePauseResume}
-                      aria-label={
-                        schedule.status === "active" ? "Pause schedule" : "Resume schedule"
-                      }
-                    >
-                      {schedule.status === "active" ? (
-                        <>
-                          <Pause className="h-3.5 w-3.5 mr-1" />
-                          Pause
-                        </>
-                      ) : (
-                        <>
-                          <Play className="h-3.5 w-3.5 mr-1" />
-                          Resume
-                        </>
-                      )}
-                    </Button>
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          onOpenChange(false);
+                          onEdit?.(schedule.id);
+                        }}
+                        aria-label="Edit schedule"
+                      >
+                        <Pencil className="h-3.5 w-3.5 mr-1" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handlePauseResume}
+                        aria-label={
+                          schedule.status === "active" ? "Pause schedule" : "Resume schedule"
+                        }
+                      >
+                        {schedule.status === "active" ? (
+                          <>
+                            <Pause className="h-3.5 w-3.5 mr-1" />
+                            Pause
+                          </>
+                        ) : (
+                          <>
+                            <Play className="h-3.5 w-3.5 mr-1" />
+                            Resume
+                          </>
+                        )}
+                      </Button>
+                    </>
                   )}
                   <Button
                     variant="outline"
