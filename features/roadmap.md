@@ -150,6 +150,7 @@ Features that enhance the product but aren't essential for first use — homepag
 | [chat-message-rendering](chat-message-rendering.md) | P1 | completed | chat-ui-shell, chat-api-routes |
 | [chat-input-composer](chat-input-composer.md) | P1 | completed | chat-ui-shell, chat-api-routes |
 | [chat-conversation-persistence](chat-conversation-persistence.md) | P1 | pending | chat-data-layer, chat-ui-shell |
+| [chat-command-mentions](chat-command-mentions.md) | P1 | planned | chat-input-composer, chat-engine, command-palette-enhancement |
 
 ### Living Book
 

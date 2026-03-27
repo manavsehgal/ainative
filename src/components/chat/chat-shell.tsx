@@ -9,6 +9,7 @@ import { usePersistedState } from "@/hooks/use-persisted-state";
 import { ConversationList } from "./conversation-list";
 import { ChatMessageList } from "./chat-message-list";
 import { ChatInput } from "./chat-input";
+import type { MentionReference } from "@/hooks/use-chat-autocomplete";
 import { ChatEmptyState } from "./chat-empty-state";
 import { ChatActivityIndicator } from "./chat-activity-indicator";
 import { Button } from "@/components/ui/button";
@@ -206,7 +207,7 @@ export function ChatShell({
   // ── Message Sending ──────────────────────────────────────────────────
 
   const handleSend = useCallback(
-    async (content: string) => {
+    async (content: string, mentions?: MentionReference[]) => {
       let conversationId = activeId;
 
       // Create conversation on first message if none active
@@ -262,7 +263,7 @@ export function ChatShell({
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ content }),
+            body: JSON.stringify({ content, mentions }),
             signal: controller.signal,
           }
         );

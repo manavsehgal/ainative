@@ -20,7 +20,7 @@ import {
   updateMessageContent,
   updateConversation,
 } from "@/lib/data/chat";
-import { buildChatContext } from "./context-builder";
+import { buildChatContext, type MentionReference } from "./context-builder";
 import {
   detectEntities,
   extractToolResultEntities,
@@ -71,7 +71,8 @@ async function* generatePrompt(text: string) {
 export async function* sendMessage(
   conversationId: string,
   userContent: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  mentions?: MentionReference[]
 ): AsyncGenerator<ChatStreamEvent> {
   const conversation = await getConversation(conversationId);
   if (!conversation) {
@@ -132,6 +133,7 @@ export async function* sendMessage(
     projectId: conversation.projectId,
     projectName,
     workspace,
+    mentions,
   });
 
   // Persist user message (after context is built so it won't appear in history)

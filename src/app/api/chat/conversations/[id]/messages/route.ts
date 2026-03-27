@@ -39,7 +39,7 @@ export async function POST(
 ) {
   const { id } = await params;
   const body = await req.json();
-  const { content } = body;
+  const { content, mentions } = body;
 
   if (!content || typeof content !== "string") {
     return NextResponse.json(
@@ -73,7 +73,8 @@ export async function POST(
         for await (const event of sendMessage(
           id,
           content,
-          req.signal
+          req.signal,
+          mentions
         )) {
           const data = `data: ${JSON.stringify(event)}\n\n`;
           controller.enqueue(encoder.encode(data));

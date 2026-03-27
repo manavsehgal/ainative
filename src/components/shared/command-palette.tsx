@@ -13,17 +13,8 @@ import {
   CommandShortcut,
 } from "@/components/ui/command";
 import {
-  Home,
   LayoutDashboard,
-  Inbox,
-  Activity,
   FolderKanban,
-  GitBranch,
-  FileText,
-  Bot,
-  Clock,
-  Wallet,
-  Settings,
   Plus,
   Sun,
   Moon,
@@ -31,6 +22,7 @@ import {
   Loader2,
   BookOpen,
 } from "lucide-react";
+import { navigationItems, createItems } from "@/lib/chat/command-data";
 
 interface RecentProject {
   id: string;
@@ -50,27 +42,6 @@ interface PlaybookItem {
   tags: string[];
 }
 
-const navigationItems = [
-  { title: "Home", href: "/", icon: Home, keywords: "landing welcome" },
-  { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard, keywords: "tasks kanban board" },
-  { title: "Inbox", href: "/inbox", icon: Inbox, keywords: "notifications messages" },
-  { title: "Monitor", href: "/monitor", icon: Activity, keywords: "logs agents streaming" },
-  { title: "Projects", href: "/projects", icon: FolderKanban, keywords: "manage" },
-  { title: "Workflows", href: "/workflows", icon: GitBranch, keywords: "automation steps sequence" },
-  { title: "Documents", href: "/documents", icon: FileText, keywords: "files uploads attachments" },
-  { title: "Profiles", href: "/profiles", icon: Bot, keywords: "agents configuration" },
-  { title: "Schedules", href: "/schedules", icon: Clock, keywords: "cron recurring timer" },
-  { title: "Cost & Usage", href: "/costs", icon: Wallet, keywords: "spend tokens metering budget analytics" },
-  { title: "User Guide", href: "/user-guide", icon: BookOpen, keywords: "docs guide documentation help playbook" },
-  { title: "Settings", href: "/settings", icon: Settings, keywords: "preferences configuration" },
-];
-
-const createItems = [
-  { title: "New Task", href: "/dashboard?create=task", keywords: "create add task" },
-  { title: "New Project", href: "/projects?create=project", keywords: "create add project" },
-  { title: "New Workflow", href: "/workflows/new", keywords: "create add workflow automation" },
-  { title: "New Profile", href: "/profiles/new", keywords: "create add agent profile" },
-];
 
 function statusColorClass(status: string): string {
   switch (status) {

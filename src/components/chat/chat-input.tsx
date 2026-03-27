@@ -1,14 +1,18 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Square } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ChatModelSelector } from "./chat-model-selector";
+import { ChatCommandPopover } from "./chat-command-popover";
+import { useChatAutocomplete, type MentionReference } from "@/hooks/use-chat-autocomplete";
+import { getSlashCommands } from "@/lib/chat/slash-commands";
 import type { ChatModelOption } from "@/lib/chat/types";
 
 interface ChatInputProps {
-  onSend: (content: string) => void;
+  onSend: (content: string, mentions?: MentionReference[]) => void;
   onStop: () => void;
   isStreaming: boolean;
   isHeroMode: boolean;
@@ -30,6 +34,13 @@ export function ChatInput({
 }: ChatInputProps) {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const router = useRouter();
+  const autocomplete = useChatAutocomplete();
+
+  // Sync textarea ref with autocomplete hook
+  useEffect(() => {
+    autocomplete.setTextareaRef(textareaRef.current);
+  }, [autocomplete.setTextareaRef]);
 
   // Auto-focus on mount and after sending
   useEffect(() => {
@@ -39,15 +50,20 @@ export function ChatInput({
   const handleSend = useCallback(() => {
     const trimmed = value.trim();
     if (!trimmed || isStreaming) return;
-    onSend(trimmed);
+    onSend(trimmed, autocomplete.mentions.length > 0 ? autocomplete.mentions : undefined);
     setValue("");
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
-  }, [value, isStreaming, onSend]);
+  }, [value, isStreaming, onSend, autocomplete.mentions]);
 
   const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      // Let autocomplete handle keys first when popover is open
+      if (autocomplete.handleKeyDown(e)) {
+        return;
+      }
+
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         handleSend();
@@ -56,7 +72,7 @@ export function ChatInput({
         textareaRef.current?.blur();
       }
     },
-    [handleSend]
+    [handleSend, autocomplete.handleKeyDown]
   );
 
   // Auto-resize textarea
@@ -67,8 +83,66 @@ export function ChatInput({
     textarea.style.height = Math.min(textarea.scrollHeight, 200) + "px";
   }, []);
 
+  const handleChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      const newValue = e.target.value;
+      setValue(newValue);
+      handleInput();
+      // Notify autocomplete of text changes (must happen after setValue so selectionStart is current)
+      requestAnimationFrame(() => {
+        autocomplete.handleChange(newValue, textareaRef.current);
+      });
+    },
+    [handleInput, autocomplete.handleChange]
+  );
+
+  const handlePopoverSelect = useCallback(
+    (item: {
+      type: "slash" | "mention";
+      id: string;
+      label: string;
+      text?: string;
+      entityType?: string;
+      entityId?: string;
+    }) => {
+      if (item.type === "slash") {
+        const cmd = getSlashCommands().find((c) => c.id === item.id);
+        if (cmd?.behavior === "navigate" && cmd.href) {
+          autocomplete.close();
+          router.push(cmd.href);
+          setValue("");
+          return;
+        }
+        if (cmd?.behavior === "execute_immediately") {
+          autocomplete.close();
+          if (cmd.id === "toggle_theme") {
+            const isDark = document.documentElement.classList.contains("dark");
+            document.documentElement.classList.toggle("dark");
+            localStorage.setItem("stagent-theme", isDark ? "light" : "dark");
+          } else if (cmd.id === "mark_all_read") {
+            fetch("/api/notifications/mark-all-read", { method: "PATCH" });
+          }
+          setValue("");
+          return;
+        }
+      }
+
+      // For insert_template slash commands and mentions, update textarea value
+      const newValue = autocomplete.handleSelect(item);
+      if (newValue !== undefined) {
+        setValue(newValue);
+        handleInput();
+        // Refocus textarea
+        requestAnimationFrame(() => {
+          textareaRef.current?.focus();
+        });
+      }
+    },
+    [autocomplete, router, handleInput]
+  );
+
   // Show preview text in placeholder when hovering a suggestion
-  const placeholder = previewText || "Ask anything about your projects...";
+  const placeholder = previewText || "Ask anything... (/ for commands, @ for mentions)";
 
   return (
     <div
@@ -94,10 +168,7 @@ export function ChatInput({
           <textarea
             ref={textareaRef}
             value={value}
-            onChange={(e) => {
-              setValue(e.target.value);
-              handleInput();
-            }}
+            onChange={handleChange}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             className={cn(
@@ -134,6 +205,18 @@ export function ChatInput({
           </div>
         </div>
       </div>
+
+      {/* Autocomplete popover — rendered via portal */}
+      <ChatCommandPopover
+        open={autocomplete.state.open}
+        mode={autocomplete.state.mode}
+        query={autocomplete.state.query}
+        anchorRect={autocomplete.state.anchorRect}
+        entityResults={autocomplete.entityResults}
+        entityLoading={autocomplete.entityLoading}
+        onSelect={handlePopoverSelect}
+        onClose={autocomplete.close}
+      />
     </div>
   );
 }

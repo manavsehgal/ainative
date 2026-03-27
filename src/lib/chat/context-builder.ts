@@ -10,7 +10,7 @@ import type { WorkspaceContext } from "@/lib/environment/workspace-context";
 const TIER_0_BUDGET = 1500; // System identity, tool catalog, intent routing
 const TIER_1_BUDGET = 8_000; // Conversation history (sliding window)
 const TIER_2_BUDGET = 5_000; // Project summary data
-// Tiers 3-4 are reserved for future on-demand entity/document expansion
+const TIER_3_BUDGET = 3_000; // On-demand entity expansion via @mentions
 
 /** Rough token estimate: ~4 chars per token */
 function estimateTokens(text: string): number {
@@ -144,6 +144,117 @@ async function buildTier2(projectId?: string | null): Promise<string> {
   return truncateToTokenBudget(text, TIER_2_BUDGET);
 }
 
+// ── Tier 3: Mentioned entity expansion ────────────────────────────────
+
+export interface MentionReference {
+  entityType: string;
+  entityId: string;
+  label: string;
+}
+
+async function buildTier3(mentions: MentionReference[]): Promise<string> {
+  if (!mentions.length) return "";
+
+  const parts: string[] = ["## Referenced Entities"];
+
+  for (const mention of mentions) {
+    switch (mention.entityType) {
+      case "project": {
+        const project = await db
+          .select()
+          .from(projects)
+          .where(eq(projects.id, mention.entityId))
+          .get();
+        if (project) {
+          parts.push(`\n### Project: ${project.name}`);
+          if (project.description) parts.push(`Description: ${project.description}`);
+          parts.push(`Status: ${project.status}`);
+          if (project.workingDirectory) parts.push(`Directory: ${project.workingDirectory}`);
+          // Include recent tasks for this project
+          const projectTasks = await db
+            .select({ id: tasks.id, title: tasks.title, status: tasks.status })
+            .from(tasks)
+            .where(eq(tasks.projectId, mention.entityId))
+            .orderBy(desc(tasks.updatedAt))
+            .limit(5);
+          if (projectTasks.length > 0) {
+            parts.push("Tasks:");
+            for (const t of projectTasks) {
+              parts.push(`  - [${t.status}] ${t.title}`);
+            }
+          }
+        }
+        break;
+      }
+      case "task": {
+        const task = await db
+          .select()
+          .from(tasks)
+          .where(eq(tasks.id, mention.entityId))
+          .get();
+        if (task) {
+          parts.push(`\n### Task: ${task.title}`);
+          parts.push(`Status: ${task.status}, Priority: ${task.priority}`);
+          if (task.description) parts.push(`Description: ${task.description}`);
+          if (task.result) parts.push(`Result: ${task.result.slice(0, 500)}`);
+        }
+        break;
+      }
+      case "workflow": {
+        const workflow = await db
+          .select()
+          .from(workflows)
+          .where(eq(workflows.id, mention.entityId))
+          .get();
+        if (workflow) {
+          parts.push(`\n### Workflow: ${workflow.name}`);
+          parts.push(`Status: ${workflow.status}`);
+          if (workflow.definition) {
+            parts.push(`Definition: ${workflow.definition.slice(0, 500)}`);
+          }
+        }
+        break;
+      }
+      case "document": {
+        const doc = await db
+          .select()
+          .from(documents)
+          .where(eq(documents.id, mention.entityId))
+          .get();
+        if (doc) {
+          parts.push(`\n### Document: ${doc.originalName}`);
+          parts.push(`Type: ${doc.mimeType}, Size: ${doc.size} bytes, Status: ${doc.status}`);
+          if (doc.extractedText) {
+            parts.push(`Content preview: ${doc.extractedText.slice(0, 1000)}`);
+          }
+        }
+        break;
+      }
+      case "schedule": {
+        const schedule = await db
+          .select()
+          .from(schedules)
+          .where(eq(schedules.id, mention.entityId))
+          .get();
+        if (schedule) {
+          parts.push(`\n### Schedule: ${schedule.name}`);
+          parts.push(`Status: ${schedule.status}, Cron: ${schedule.cronExpression}`);
+          if (schedule.prompt) parts.push(`Prompt: ${schedule.prompt}`);
+        }
+        break;
+      }
+      case "profile": {
+        parts.push(`\n### Profile: ${mention.label}`);
+        parts.push(`Profile ID: ${mention.entityId}`);
+        break;
+      }
+    }
+  }
+
+  const text = parts.join("\n");
+  return truncateToTokenBudget(text, TIER_3_BUDGET);
+}
+
 // ── Public API ─────────────────────────────────────────────────────────
 
 export interface ChatContext {
@@ -153,22 +264,25 @@ export interface ChatContext {
 
 /**
  * Build the full context for a chat turn.
- * Returns a system prompt (Tier 0 + Tier 2) and conversation history (Tier 1).
+ * Returns a system prompt (Tier 0 + Tier 2 + Tier 3) and conversation history (Tier 1).
  */
 export async function buildChatContext(opts: {
   conversationId: string;
   projectId?: string | null;
   projectName?: string | null;
   workspace?: WorkspaceContext | null;
+  mentions?: MentionReference[];
 }): Promise<ChatContext> {
-  const [history, tier2] = await Promise.all([
+  const [history, tier2, tier3] = await Promise.all([
     buildTier1(opts.conversationId),
     buildTier2(opts.projectId),
+    buildTier3(opts.mentions ?? []),
   ]);
 
   const tier0 = buildTier0(opts.projectName, opts.workspace);
 
   const systemParts = [tier0];
+  if (tier3) systemParts.push(tier3);
   if (tier2) systemParts.push(tier2);
 
   return {

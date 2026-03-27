@@ -3,6 +3,7 @@
 ## 2026-03-27
 
 ### Groomed
+- `chat-command-mentions` (P1) — "/" slash commands for tools/actions access and "@" mentions for entity references in chat prompt box; reuses cmdk primitives from Cmd+K palette; Tier 3 context injection for mentioned entities; 5 phases (shared data, hook+popover, input integration, entity search API, context injection)
 - `browser-use` (P1) — enable Chrome DevTools MCP (29 CDP tools) and Playwright MCP (50+ accessibility-snapshot tools) as browser automation tool sources for chat and task execution; settings-driven toggles, permission tiering (read-only auto-approve, mutations gated), profile-level deny support
 
 ## 2026-03-24
