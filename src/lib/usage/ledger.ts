@@ -18,7 +18,8 @@ export type UsageActivityType =
   | "profile_test"
   | "pattern_extraction"
   | "context_summarization"
-  | "chat_turn";
+  | "chat_turn"
+  | "profile_assist";
 
 export type UsageLedgerStatus =
   | "completed"

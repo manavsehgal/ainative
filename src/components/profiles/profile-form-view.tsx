@@ -24,10 +24,16 @@ import {
   Wrench,
   FileCode,
   Cpu,
+  FlaskConical,
 } from "lucide-react";
 import { toast } from "sonner";
 import { FormSectionCard } from "@/components/shared/form-section-card";
+import { TagInput } from "@/components/shared/tag-input";
+import { SmokeTestEditor, type SmokeTestDraft } from "@/components/profiles/smoke-test-editor";
+import { ProfileAssistPanel, type ProfileAssistResult } from "@/components/profiles/profile-assist-panel";
 import { listRuntimeCatalog } from "@/lib/agents/runtime/catalog";
+import { useTagSuggestions } from "@/hooks/use-tag-suggestions";
+import { KNOWN_TOOLS } from "@/lib/constants/known-tools";
 import type { AgentProfile } from "@/lib/agents/profiles/types";
 
 interface ProfileFormViewProps {
@@ -55,6 +61,8 @@ export function ProfileFormView({
 }: ProfileFormViewProps) {
   const runtimeOptions = listRuntimeCatalog();
   const router = useRouter();
+  const { suggestions: tagSuggestions } = useTagSuggestions();
+  const toolSuggestions = [...KNOWN_TOOLS] as string[];
   const isEdit = !!profileId && !duplicate;
 
   const [fetching, setFetching] = useState(!!profileId);
@@ -73,6 +81,8 @@ export function ProfileFormView({
   const [maxTurns, setMaxTurns] = useState(30);
   const [outputFormat, setOutputFormat] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [originalVersion, setOriginalVersion] = useState<string | null>(null);
+  const [tests, setTests] = useState<SmokeTestDraft[]>([]);
 
   // Fetch existing profile for edit/duplicate
   useEffect(() => {
@@ -84,7 +94,21 @@ export function ProfileFormView({
         setName(duplicate ? `${profile.name} (Copy)` : profile.name);
         setId(duplicate ? `${profile.id}-copy` : profile.id);
         setDomain(profile.domain as "work" | "personal");
-        setVersion(profile.version ?? "1.0.0");
+
+        // Auto-increment patch version on edit
+        const ver = profile.version ?? "1.0.0";
+        if (isEdit) {
+          setOriginalVersion(ver);
+          const parts = ver.split(".").map(Number);
+          if (parts.length === 3 && parts.every((n) => !isNaN(n))) {
+            setVersion(`${parts[0]}.${parts[1]}.${parts[2] + 1}`);
+          } else {
+            setVersion(ver);
+          }
+        } else {
+          setVersion(duplicate ? "1.0.0" : ver);
+        }
+
         setAuthor(profile.author ?? "");
         setTags(profile.tags.join(", "));
         setSkillMd(profile.skillMd ?? "");
@@ -95,12 +119,31 @@ export function ProfileFormView({
         setAllowedTools(profile.allowedTools?.join(", ") ?? "");
         setMaxTurns(profile.maxTurns ?? 30);
         setOutputFormat(profile.outputFormat ?? "");
+        if (profile.tests?.length) {
+          setTests(
+            profile.tests.map((t: { task: string; expectedKeywords: string[] }) => ({
+              task: t.task,
+              expectedKeywords: t.expectedKeywords.join(", "),
+            }))
+          );
+        }
       })
       .catch(() => {
         toast.error("Failed to load profile");
       })
       .finally(() => setFetching(false));
-  }, [profileId, duplicate]);
+  }, [profileId, duplicate, isEdit]);
+
+  // Default author to system username for new profiles
+  useEffect(() => {
+    if (profileId || author) return;
+    fetch("/api/settings/author-default")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.author) setAuthor(data.author);
+      })
+      .catch(() => {});
+  }, [profileId, author]);
 
   // Auto-slug from name (only for create/duplicate)
   const handleNameChange = useCallback(
@@ -112,6 +155,33 @@ export function ProfileFormView({
     },
     [isEdit]
   );
+
+  // AI Assist handlers
+  const handleAssistApplyAll = useCallback((result: ProfileAssistResult) => {
+    handleNameChange(result.name);
+    setDomain(result.domain);
+    setTags(result.tags.join(", "));
+    setSkillMd(result.skillMd);
+    setAllowedTools(result.allowedTools.join(", "));
+    setMaxTurns(result.maxTurns);
+    setOutputFormat(result.outputFormat);
+    setSupportedRuntimes(result.supportedRuntimes);
+    setTests(result.tests);
+  }, [handleNameChange]);
+
+  const handleAssistApplyField = useCallback((field: keyof ProfileAssistResult, value: unknown) => {
+    switch (field) {
+      case "name": handleNameChange(value as string); break;
+      case "domain": setDomain(value as "work" | "personal"); break;
+      case "tags": setTags((value as string[]).join(", ")); break;
+      case "skillMd": setSkillMd(value as string); break;
+      case "allowedTools": setAllowedTools((value as string[]).join(", ")); break;
+      case "maxTurns": setMaxTurns(value as number); break;
+      case "outputFormat": setOutputFormat(value as string); break;
+      case "supportedRuntimes": setSupportedRuntimes(value as string[]); break;
+      case "tests": setTests(value as SmokeTestDraft[]); break;
+    }
+  }, [handleNameChange]);
 
   const handleSubmit = async () => {
     if (!name.trim() || !id.trim()) {
@@ -145,6 +215,15 @@ export function ProfileFormView({
       allowedTools: parseCommaSeparated(allowedTools),
       maxTurns,
       outputFormat: outputFormat.trim() || undefined,
+      tests: tests
+        .filter((t) => t.task.trim())
+        .map((t) => ({
+          task: t.task.trim(),
+          expectedKeywords: t.expectedKeywords
+            .split(",")
+            .map((k) => k.trim())
+            .filter(Boolean),
+        })),
     };
 
     try {
@@ -194,8 +273,6 @@ export function ProfileFormView({
       ? "Duplicate Profile"
       : "Create Profile";
 
-  const parsedTags = parseCommaSeparated(tags);
-  const parsedTools = parseCommaSeparated(allowedTools);
   const lineCount = skillMd.split("\n").length;
 
   function toggleRuntime(runtimeId: string, checked: boolean) {
@@ -212,6 +289,15 @@ export function ProfileFormView({
     <div className="space-y-4">
       <h2 className="text-xl font-semibold">{title}</h2>
 
+      {/* AI Assist Panel */}
+      <ProfileAssistPanel
+        onApplyAll={handleAssistApplyAll}
+        onApplyField={handleAssistApplyField}
+        isEdit={isEdit}
+        existingSkillMd={skillMd}
+        existingTags={parseCommaSeparated(tags)}
+      />
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Identity */}
         <FormSectionCard icon={User} title="Identity">
@@ -224,7 +310,7 @@ export function ProfileFormView({
                 onChange={(e) => handleNameChange(e.target.value)}
                 placeholder="My Custom Agent"
               />
-              <p className="text-xs text-muted-foreground">Display name for this agent</p>
+              <p className="text-xs text-muted-foreground">Display name shown in profile selector and task assignment dropdowns.</p>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="profile-id">ID</Label>
@@ -235,7 +321,7 @@ export function ProfileFormView({
                 placeholder="my-custom-agent"
                 disabled={isEdit}
               />
-              <p className="text-xs text-muted-foreground">Auto-generated slug</p>
+              <p className="text-xs text-muted-foreground">Unique slug used in filenames and API references. Auto-generated from name.</p>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="profile-domain">Domain</Label>
@@ -251,7 +337,7 @@ export function ProfileFormView({
                   <SelectItem value="personal">Personal</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">Sets default tool permissions</p>
+              <p className="text-xs text-muted-foreground">Work profiles enforce stricter tool approvals. Personal profiles are more permissive.</p>
             </div>
           </div>
         </FormSectionCard>
@@ -267,7 +353,12 @@ export function ProfileFormView({
                 onChange={(e) => setVersion(e.target.value)}
                 placeholder="1.0.0"
               />
-              <p className="text-xs text-muted-foreground">Semantic version number</p>
+              <p className="text-xs text-muted-foreground">
+                Bump when you change SKILL.md or configuration. Used for import comparison.
+                {isEdit && originalVersion && version !== originalVersion && (
+                  <span className="text-primary ml-1">(bumped from {originalVersion})</span>
+                )}
+              </p>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="profile-author">Author</Label>
@@ -277,26 +368,18 @@ export function ProfileFormView({
                 onChange={(e) => setAuthor(e.target.value)}
                 placeholder="Optional"
               />
-              <p className="text-xs text-muted-foreground">Profile creator attribution</p>
+              <p className="text-xs text-muted-foreground">Displayed in profile cards and exported metadata. Defaults to your system username.</p>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="profile-tags">Tags</Label>
-              <Input
+              <TagInput
                 id="profile-tags"
                 value={tags}
-                onChange={(e) => setTags(e.target.value)}
+                onChange={setTags}
+                suggestions={tagSuggestions}
                 placeholder="coding, review, analysis"
               />
-              <p className="text-xs text-muted-foreground">Comma-separated categories</p>
-              {parsedTags.length > 0 && (
-                <div className="flex flex-wrap gap-1 pt-1">
-                  {parsedTags.map((tag, i) => (
-                    <Badge key={i} variant="outline" className="text-xs">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-              )}
+              <p className="text-xs text-muted-foreground">Used for search and filtering. Also matched when AI recommends profiles for tasks.</p>
             </div>
           </div>
         </FormSectionCard>
@@ -319,7 +402,7 @@ export function ProfileFormView({
                 value={[maxTurns]}
                 onValueChange={([v]) => setMaxTurns(v)}
               />
-              <p className="text-xs text-muted-foreground">Max agent-tool cycles per execution</p>
+              <p className="text-xs text-muted-foreground">Each turn = one AI response + tool call. Low (5–10) for quick answers, high (30–60) for complex work.</p>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="profile-format">Output Format</Label>
@@ -329,7 +412,7 @@ export function ProfileFormView({
                 onChange={(e) => setOutputFormat(e.target.value)}
                 placeholder="e.g., markdown, json"
               />
-              <p className="text-xs text-muted-foreground">Preferred response format</p>
+              <p className="text-xs text-muted-foreground">Hint injected into agent context (e.g. &quot;markdown&quot;, &quot;json&quot;, &quot;structured-findings&quot;).</p>
             </div>
           </div>
         </FormSectionCard>
@@ -366,22 +449,14 @@ export function ProfileFormView({
         <FormSectionCard icon={Wrench} title="Tools" className="lg:col-span-1 md:col-span-2">
           <div className="space-y-1.5">
             <Label htmlFor="profile-tools">Allowed Tools</Label>
-            <Input
+            <TagInput
               id="profile-tools"
               value={allowedTools}
-              onChange={(e) => setAllowedTools(e.target.value)}
+              onChange={setAllowedTools}
+              suggestions={toolSuggestions}
               placeholder="Read, Edit, Bash, Grep"
             />
-            <p className="text-xs text-muted-foreground">Leave empty to allow all tools</p>
-            {parsedTools.length > 0 && (
-              <div className="flex flex-wrap gap-1 pt-1">
-                {parsedTools.map((tool, i) => (
-                  <Badge key={i} variant="outline" className="text-xs">
-                    {tool}
-                  </Badge>
-                ))}
-              </div>
-            )}
+            <p className="text-xs text-muted-foreground">Restricts which tools the agent can call. Leave empty for unrestricted access.</p>
           </div>
         </FormSectionCard>
 
@@ -410,6 +485,20 @@ export function ProfileFormView({
           </FormSectionCard>
         )}
 
+        {/* Smoke Tests */}
+        <FormSectionCard
+          icon={FlaskConical}
+          title="Smoke Tests"
+          hint="Define tasks to verify this profile behaves correctly. Run tests from the profile detail page after creation."
+          className="md:col-span-2 lg:col-span-1"
+        >
+          <SmokeTestEditor
+            tests={tests}
+            onChange={setTests}
+            keywordSuggestions={parseCommaSeparated(tags)}
+          />
+        </FormSectionCard>
+
         {/* SKILL.md */}
         <FormSectionCard
           icon={FileCode}
@@ -431,7 +520,7 @@ export function ProfileFormView({
               className="font-mono"
               rows={12}
             />
-            <p className="text-xs text-muted-foreground">Markdown instructions defining agent behavior</p>
+            <p className="text-xs text-muted-foreground">Behavioral instructions injected as the agent&apos;s system prompt. Start with a role statement, add guidelines, define output format.</p>
           </div>
         </FormSectionCard>
 

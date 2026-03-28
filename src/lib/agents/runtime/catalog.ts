@@ -14,6 +14,7 @@ export interface RuntimeCapabilities {
   mcpServers: boolean;
   profileTests: boolean;
   taskAssist: boolean;
+  profileAssist: boolean;
   authHealthCheck: boolean;
 }
 
@@ -38,6 +39,7 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
       mcpServers: true,
       profileTests: true,
       taskAssist: true,
+      profileAssist: true,
       authHealthCheck: true,
     },
   },
@@ -53,6 +55,7 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
       mcpServers: false, // Not yet wired — configs not passed to codex subprocess
       profileTests: false,
       taskAssist: true,
+      profileAssist: false,
       authHealthCheck: true,
     },
   },

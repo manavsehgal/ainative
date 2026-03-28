@@ -340,6 +340,207 @@ export async function runMetaCompletion(input: {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Profile AI Assist
+// ---------------------------------------------------------------------------
+
+function buildProfileAssistSystemPrompt(existingProfileIds: string[]): string {
+  const profileList = existingProfileIds.length > 0
+    ? `Existing profiles (avoid duplicating): ${existingProfileIds.join(", ")}`
+    : "No existing profiles.";
+
+  return `You are a Stagent profile generation assistant. Given a user's goal description, generate a complete agent profile configuration.
+
+Return ONLY a JSON object (no markdown, no code fences) with this exact schema:
+{
+  "name": "Display Name",
+  "description": "One-line description",
+  "domain": "work" or "personal",
+  "tags": ["tag1", "tag2"],
+  "skillMd": "Full SKILL.md content (see best practices below)",
+  "allowedTools": ["Read", "Grep"] or [] for unrestricted,
+  "canUseToolPolicy": { "autoApprove": ["Read"], "autoDeny": [] },
+  "maxTurns": 30,
+  "outputFormat": "markdown" or other format hint,
+  "supportedRuntimes": ["claude-code"],
+  "tests": [{"task": "...", "expectedKeywords": ["kw1", "kw2"]}],
+  "reasoning": "Why these choices were made"
+}
+
+## SKILL.md Best Practices
+
+The skillMd field must follow Claude Code / Codex skill conventions:
+
+1. Start with YAML frontmatter:
+   ---
+   name: profile-id
+   description: One-line description
+   ---
+
+2. Open with a clear role statement: "You are a [role]. Your job is to [primary capability]."
+
+3. Include a "## Guidelines" section with numbered priorities.
+
+4. Include a "## Output Format" section defining structured output expectations.
+
+5. Keep instructions concrete and actionable. Avoid vague directives.
+
+6. Use markdown formatting: headers, numbered lists, bold for emphasis.
+
+7. Target 15-40 lines for most profiles. Complex profiles may be longer.
+
+## Available Tools (for allowedTools field)
+
+Core: Read, Write, Edit, Bash, Grep, Glob
+Extended: WebSearch, WebFetch
+Notebook: NotebookEdit, NotebookRead
+Task: TodoRead, TodoWrite
+
+Tool selection guidelines:
+- Read-only agents: [Read, Grep, Glob]
+- Read-write agents: [Read, Write, Edit, Bash, Grep, Glob]
+- Research agents: [Read, WebSearch, WebFetch, Grep]
+- Leave empty array [] to allow all tools
+
+## canUseToolPolicy Guidelines
+
+- autoApprove: Tools safe to run without confirmation (typically Read, Grep, Glob)
+- autoDeny: Tools that should never run (e.g., deny Write for read-only agents)
+- Personal domain agents should autoDeny [Bash, Write, Edit] by default
+
+## maxTurns Guidelines
+
+- Simple Q&A: 5-10
+- Analysis/review: 15-25
+- Multi-step execution: 25-40
+- Complex research/sweep: 40-60
+
+## Test Generation
+
+Generate 1-3 smoke tests:
+- Realistic task description the agent would receive
+- 3-5 expectedKeywords that a good response would contain
+- Cover the primary use case
+
+${profileList}`;
+}
+
+function buildRefineSkillMdPrompt(): string {
+  return `You are a SKILL.md improvement assistant. Given an existing SKILL.md and the user's goal, return an improved version.
+
+Return ONLY a JSON object with:
+{
+  "skillMd": "The improved SKILL.md content",
+  "reasoning": "What was changed and why"
+}
+
+Follow the same SKILL.md best practices: YAML frontmatter, role statement, guidelines section, output format section.`;
+}
+
+function buildSuggestTestsPrompt(): string {
+  return `You are a test generation assistant. Given an existing SKILL.md, generate smoke tests to verify the profile works correctly.
+
+Return ONLY a JSON object with:
+{
+  "tests": [{"task": "...", "expectedKeywords": ["kw1", "kw2", "kw3"]}],
+  "reasoning": "Why these tests cover the profile's key behaviors"
+}
+
+Generate 2-4 tests covering different aspects of the profile's capabilities. Each test should have a realistic task and 3-5 keywords.`;
+}
+
+async function runClaudeProfileAssist(
+  input: import("./profile-assist-types").ProfileAssistRequest
+): Promise<import("./profile-assist-types").ProfileAssistResponse> {
+  const authEnv = await getAuthEnv();
+  const startedAt = new Date();
+  let usage: UsageSnapshot = {};
+
+  let systemPrompt: string;
+  let userMessage: string;
+
+  if (input.mode === "refine-skillmd") {
+    systemPrompt = buildRefineSkillMdPrompt();
+    userMessage = `Goal: ${input.goal}\n\nExisting SKILL.md:\n${input.existingSkillMd ?? "(empty)"}`;
+  } else if (input.mode === "suggest-tests") {
+    systemPrompt = buildSuggestTestsPrompt();
+    userMessage = `SKILL.md:\n${input.existingSkillMd ?? "(empty)"}\n\nTags: ${input.existingTags?.join(", ") ?? "none"}`;
+  } else {
+    const profileIds = listProfiles().map((p) => p.id);
+    systemPrompt = buildProfileAssistSystemPrompt(profileIds);
+    userMessage = `Goal: ${input.goal}${input.domain ? `\nPreferred domain: ${input.domain}` : ""}`;
+  }
+
+  const prompt = `${systemPrompt}\n\n${userMessage}`;
+  const abortController = new AbortController();
+  const sdkTimeoutMs = await getSdkTimeout();
+  const timeout = setTimeout(() => abortController.abort(), sdkTimeoutMs);
+
+  try {
+    const response = query({
+      prompt,
+      options: {
+        abortController,
+        includePartialMessages: true,
+        cwd: getLaunchCwd(),
+        env: buildClaudeSdkEnv(authEnv),
+        allowedTools: [],
+        maxTurns: 1,
+      },
+    });
+
+    const collected = await collectResultText(
+      response as AsyncIterable<Record<string, unknown>>
+    );
+    usage = collected.usage;
+
+    if (!collected.resultText) {
+      throw new Error("No result from AI");
+    }
+
+    const jsonMatch = collected.resultText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error("Could not parse AI response");
+    }
+
+    const parsed = JSON.parse(jsonMatch[0]);
+
+    await recordUsageLedgerEntry({
+      activityType: "profile_assist",
+      runtimeId: "claude-code",
+      providerId: "anthropic",
+      modelId: usage.modelId ?? null,
+      inputTokens: usage.inputTokens ?? null,
+      outputTokens: usage.outputTokens ?? null,
+      totalTokens: usage.totalTokens ?? null,
+      status: "completed",
+      startedAt,
+      finishedAt: new Date(),
+    });
+
+    return parsed;
+  } catch (error) {
+    await recordUsageLedgerEntry({
+      activityType: "profile_assist",
+      runtimeId: "claude-code",
+      providerId: "anthropic",
+      modelId: usage.modelId ?? null,
+      inputTokens: usage.inputTokens ?? null,
+      outputTokens: usage.outputTokens ?? null,
+      totalTokens: usage.totalTokens ?? null,
+      status: "failed",
+      startedAt,
+      finishedAt: new Date(),
+    });
+    if (isAbortError(error)) {
+      throw new Error("Request timed out. You can increase the timeout in Settings → Runtime.");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function runClaudeTaskAssist(
   input: TaskAssistInput
 ): Promise<TaskAssistResponse> {
@@ -501,6 +702,9 @@ export const claudeRuntimeAdapter: AgentRuntimeAdapter = {
   },
   runTaskAssist(input: TaskAssistInput) {
     return runClaudeTaskAssist(input);
+  },
+  runProfileAssist(input: import("./profile-assist-types").ProfileAssistRequest) {
+    return runClaudeProfileAssist(input);
   },
   runProfileTests(profileId: string) {
     return runClaudeProfileTests(profileId);

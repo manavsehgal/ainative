@@ -18,6 +18,7 @@ import type {
 } from "./types";
 import type { ProfileTestReport } from "@/lib/agents/profiles/test-types";
 import type { TaskAssistResponse } from "./task-assist-types";
+import type { ProfileAssistRequest, ProfileAssistResponse } from "./profile-assist-types";
 import {
   enforceBudgetGuardrails,
   enforceTaskBudgetGuardrails,
@@ -106,6 +107,21 @@ export async function runTaskAssistWithRuntime(
     throw new Error(`Runtime "${adapter.metadata.id}" does not implement task assist`);
   }
   return adapter.runTaskAssist(input);
+}
+
+export async function runProfileAssistWithRuntime(
+  input: ProfileAssistRequest,
+  runtimeId?: string | null
+): Promise<ProfileAssistResponse> {
+  await enforceBudgetGuardrails({
+    runtimeId: resolveAgentRuntime(runtimeId),
+    activityType: "profile_assist",
+  });
+  const adapter = assertCapability(runtimeId, "profileAssist");
+  if (!adapter.runProfileAssist) {
+    throw new Error(`Runtime "${adapter.metadata.id}" does not implement profile assist`);
+  }
+  return adapter.runProfileAssist(input);
 }
 
 export async function runProfileTestsWithRuntime(

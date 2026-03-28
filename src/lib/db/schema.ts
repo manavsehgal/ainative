@@ -232,6 +232,7 @@ export const usageLedger = sqliteTable(
         "pattern_extraction",
         "context_summarization",
         "chat_turn",
+        "profile_assist",
       ],
     }).notNull(),
     runtimeId: text("runtime_id").notNull(),

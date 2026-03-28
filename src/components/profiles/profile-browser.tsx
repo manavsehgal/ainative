@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Search, Bot, Download } from "lucide-react";
+import { Plus, Search, Bot, Download, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -27,6 +27,9 @@ export function ProfileBrowser({ initialProfiles }: ProfileBrowserProps) {
     "all" | "work" | "personal"
   >("all");
   const [showImport, setShowImport] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
+
+  const builtinProfiles = profiles.filter((p) => p.isBuiltin);
 
   const filteredProfiles = useMemo(() => {
     const q = search.toLowerCase();
@@ -45,6 +48,10 @@ export function ProfileBrowser({ initialProfiles }: ProfileBrowserProps) {
     <div className="space-y-6">
       {/* Action buttons (title now provided by PageShell) */}
       <div className="flex items-center justify-end gap-2">
+        <Button variant="outline" onClick={() => setShowTemplates(!showTemplates)}>
+          <Copy className="mr-2 h-4 w-4" />
+          Start from Template
+        </Button>
         <Button variant="outline" onClick={() => setShowImport(true)}>
           <Download className="mr-2 h-4 w-4" />
           Import
@@ -54,6 +61,36 @@ export function ProfileBrowser({ initialProfiles }: ProfileBrowserProps) {
           Create Profile
         </Button>
       </div>
+
+      {/* Template picker */}
+      {showTemplates && builtinProfiles.length > 0 && (
+        <div className="surface-panel rounded-2xl p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium">Use a built-in profile as a starting point</p>
+            <Button variant="ghost" size="sm" onClick={() => setShowTemplates(false)}>
+              <span className="text-xs">Close</span>
+            </Button>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+            {builtinProfiles.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                className="surface-card-muted text-left rounded-lg border border-border/60 p-3 hover:border-primary/40 transition-colors"
+                onClick={() => {
+                  setShowTemplates(false);
+                  router.push(`/profiles/${p.id}/edit?duplicate=true`);
+                }}
+              >
+                <p className="text-sm font-medium truncate">{p.name}</p>
+                <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
+                  {p.description}
+                </p>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Search + Domain Filter */}
       <div className="surface-panel flex flex-col gap-4 rounded-2xl p-4 sm:flex-row sm:items-center">
