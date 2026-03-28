@@ -3,83 +3,138 @@ title: "Settings"
 category: "feature-reference"
 section: "settings"
 route: "/settings"
-tags: [settings, authentication, budget, permissions, data, providers, oauth, api-key, codex]
-features: ["tool-permission-persistence", "provider-runtime-abstraction", "spend-budget-guardrails", "tool-permission-presets", "openai-codex-app-server"]
-screengrabCount: 4
-lastUpdated: "2026-03-21"
+tags: ["settings", "configuration", "auth", "runtime", "browser-tools", "permissions", "budget"]
+features: ["session-management", "tool-permission-persistence", "tool-permission-presets", "browser-use", "spend-budget-guardrails", "settings-interactive-controls"]
+screengrabCount: 5
+lastUpdated: "2026-03-27"
 ---
 
 # Settings
 
-Configure authentication, budgets, tool permissions, and data management from a single settings page. Settings supports two provider runtimes -- Claude (Agent SDK with OAuth or API key) and Codex (App Server with WebSocket JSON-RPC) -- along with budget guardrails, permission presets with risk-level badges, and data management tools for clearing or exporting workspace data.
+The Settings page is the central configuration hub for Stagent. From a single scrollable page you can manage authentication for both Claude and Codex runtimes, tune how long agents are allowed to run, pick a default chat model, enable browser automation, set monthly cost caps, choose permission presets, review individually approved tools, and reset workspace data. Each section saves changes immediately with confirmation feedback.
 
 ## Screenshots
 
-![Settings page overview with authentication section](../screengrabs/settings-list.png)
-*The settings page showing the authentication section with provider configuration, OAuth vs API key selection, and connection test.*
+![Settings page overview showing authentication and runtime sections](../screengrabs/settings-list.png)
+*Full settings page with authentication, Codex runtime, chat defaults, runtime configuration, and browser tools sections visible.*
 
-![Budget settings section](../screengrabs/settings-budget.png)
-*Budget configuration with overall spend cap, monthly split, OAuth billing indicator, and current pacing meter.*
+![Browser tools section with Chrome DevTools and Playwright toggles](../screengrabs/settings-browser-tools.png)
+*Browser Tools section showing independent toggles for Chrome DevTools and Playwright browser automation.*
 
-![Permission presets section](../screengrabs/settings-presets.png)
-*Tool permission presets showing Read Only, Git Safe, and Full Auto tiers with risk-level badges.*
+![Budget guardrails section with spend caps and split configuration](../screengrabs/settings-budget.png)
+*Cost and Usage Guardrails with overall spend cap, monthly split, billing indicator, and pacing meter.*
 
-![Data management section](../screengrabs/settings-data.png)
-*Data management section with clear data and export options.*
+![Permission presets with risk badges and toggle controls](../screengrabs/settings-presets.png)
+*Permission Presets showing Read Only, Git Safe, and Full Auto tiers with color-coded risk badges.*
+
+![Data management section with clear and populate options](../screengrabs/settings-data.png)
+*Data Management section for resetting or populating workspace data.*
 
 ## Key Features
 
 ### Authentication
-Configure how Stagent authenticates with provider runtimes. For Claude, choose between OAuth (uses your Max subscription with no additional API charges) and API Key (uses your Anthropic API key from `.env.local`). For Codex, configure the App Server connection endpoint. A connection test button validates that your credentials and endpoints are working.
 
-### Provider Runtime Abstraction
-Two provider runtimes are supported out of the box. Claude uses the Anthropic Agent SDK and supports both OAuth and API key authentication modes. Codex connects via the App Server using WebSocket JSON-RPC for real-time communication. The runtime abstraction means tasks and profiles work identically regardless of which provider executes them.
+Choose how Stagent connects to Claude. **OAuth** uses your existing Max subscription at no additional API cost. **API Key** uses the Anthropic key stored in your environment. A **Test Connection** button validates whichever method you select. A separate section configures the Codex App Server endpoint for tasks that run through the Codex runtime.
 
-### Budget Configuration
-Set an overall spend cap to limit total workspace costs. Configure monthly splits to distribute the budget across billing periods. The OAuth billing indicator shows whether the current authentication method incurs API charges. A pacing meter visualizes current spend against the budget, with color-coded status for healthy, warning, and critical spend levels.
+### Runtime Configuration
+
+Two controls govern how agents behave during execution:
+
+- **SDK Timeout** -- how many seconds an individual agent call is allowed to run before timing out. Lower values return faster; higher values give the agent more time for complex reasoning.
+- **Max Turns** -- how many back-and-forth tool-use cycles the agent can perform in a single run. Fewer turns suit quick lookups; more turns allow extended multi-step work.
+
+Both controls are planned for an upgrade to interactive sliders with contextual labels and recommended-range indicators (see the Settings Interactive Controls feature, currently pending).
+
+### Chat Defaults
+
+Pick the default model for new chat conversations. The selector shows available Claude and Codex models with relative cost tiers so you can balance capability against spend before starting a conversation.
+
+### Browser Tools
+
+Enable browser automation for chat and task execution without leaving Stagent. Two independent toggles control complementary capabilities:
+
+- **Chrome DevTools** -- connects to a running Chrome window. Useful for debugging your own app, inspecting network traffic, running performance audits, and taking screenshots of live pages.
+- **Playwright** -- launches its own headless browser. Useful for autonomous web research, page scraping, structured analysis, and cross-browser testing.
+
+When enabled, read-only browser actions (screenshots, page snapshots, console reads) are auto-approved. Actions that change page state (clicking, typing, navigating) go through the normal permission approval flow. Both toggles are off by default -- no background processes are spawned when unused.
+
+### Cost and Usage Guardrails
+
+Set spend caps to prevent runaway costs from autonomous agent work:
+
+- **Overall spend cap** -- a hard monthly ceiling across all providers.
+- **Monthly split** -- distribute the budget across billing periods.
+- **Per-provider caps** -- optional daily and monthly limits for Claude and Codex independently, with advanced token-level overrides.
+
+A pacing meter shows current spend against the cap with color-coded health (green, amber, red). When usage crosses 80% of a configured cap an inbox notification is sent. After the cap is exceeded, new agent work is blocked with an explicit message -- already-running tasks are allowed to finish. The next reset time is displayed so you know when the budget window rolls over.
 
 ### Permission Presets
-Three permission tiers control what tools agents are allowed to use. **Read Only** grants access to file reading and search tools with no write permissions -- the lowest risk tier. **Git Safe** adds version-controlled write operations (file edits, git commits) with moderate risk. **Full Auto** enables all tools including shell commands, network access, and file system writes -- the highest risk tier. Each tier displays a risk badge for clear visibility.
 
-### Tool Permission Persistence
-The "Always Allow" feature remembers tool permission decisions across sessions. When you approve a tool for a given permission tier, the decision is stored in the settings table so agents do not prompt for the same permission again.
+Three one-click bundles set tool permissions in bulk, reducing first-run friction:
+
+| Preset | What it allows | Risk |
+|--------|---------------|------|
+| **Read Only** | File reading, search, directory listing | Lowest |
+| **Git Safe** | Everything in Read Only plus file edits and git commands | Medium |
+| **Full Auto** | All tools except direct user questions | Highest |
+
+Each preset shows a color-coded risk badge. Presets are additive -- enabling Git Safe automatically includes Read Only tools. Disabling a preset removes only its unique additions without affecting tools you approved individually.
+
+### Tool Permissions
+
+Below the presets, a list shows every individually approved tool pattern. Patterns follow the format used by Claude Code:
+
+- **Tool-level**: `Read`, `Write` -- blanket approval for any invocation.
+- **Pattern-level**: `Bash(command:git *)` -- approve only when the command starts with `git`.
+- **Browser tools**: `mcp__playwright__browser_snapshot` -- approve a specific browser action.
+
+Each pattern has a **Revoke** button. Revoking a pattern means the agent will prompt for permission again the next time it tries to use that tool. The special `AskUserQuestion` tool is never auto-approved regardless of presets or saved patterns.
 
 ### Data Management
-Clear workspace data or export it for backup. The clear data function removes tasks, logs, documents, and other workspace content while preserving settings. Export creates a snapshot of your workspace data for external storage or migration.
+
+Two operations for managing workspace content:
+
+- **Clear Data** -- removes tasks, logs, documents, schedules, and other workspace content. Settings and permissions are preserved.
+- **Populate Sample Data** -- seeds the workspace with example projects, tasks, and documents for exploration or demo purposes.
 
 ## How To
 
-### Configure Claude Authentication
-1. Navigate to `/settings` from the sidebar under the **Configure** group.
-2. In the **Authentication** section, select either **OAuth** or **API Key** for the Claude runtime.
-3. For OAuth, ensure you have an active Claude Max subscription. For API Key, verify that `ANTHROPIC_API_KEY` is set in `.env.local`.
-4. Click **Test Connection** to validate the configuration.
+### Enable Browser Automation
 
-### Set Up Codex Runtime
-1. Open the **Authentication** section in settings.
-2. Locate the Codex App Server configuration.
-3. Enter the WebSocket endpoint for the Codex App Server.
-4. Test the connection to verify connectivity.
+1. Open **Settings** from the sidebar (under the Configure group).
+2. Scroll to the **Browser Tools** section.
+3. Toggle **Chrome DevTools** on if you want to debug pages in your running Chrome browser.
+4. Toggle **Playwright** on if you want agents to launch their own headless browser for research and scraping.
+5. Both can be enabled at the same time. Changes take effect immediately for the next chat message or task execution.
 
-### Configure Budget Guardrails
-1. Navigate to the **Budget** section in settings.
-2. Enter the overall spend cap amount.
-3. Set the monthly split to distribute the budget.
-4. Monitor the pacing meter to track spend against the cap.
-5. Alerts will notify you when spend approaches the limit.
+### Set a Monthly Budget
 
-### Choose a Permission Preset
-1. Open the **Permission Presets** section in settings.
-2. Review the three tiers: Read Only, Git Safe, and Full Auto.
-3. Note the risk badge on each tier to understand the permission scope.
-4. Select the tier that matches your risk tolerance for agent operations.
+1. Open **Settings** and scroll to **Cost & Usage Guardrails**.
+2. Enter an overall monthly spend cap (in dollars).
+3. Optionally set per-provider daily or monthly caps for finer control.
+4. Watch the pacing meter to track spend throughout the month.
+5. You will receive an inbox notification at 80% usage and a hard stop at 100%.
+
+### Configure Permission Presets
+
+1. Open **Settings** and scroll to **Permission Presets**.
+2. Review the three tiers and their risk badges.
+3. Toggle on the preset that matches your comfort level -- Read Only for cautious use, Git Safe for development workflows, Full Auto for fully autonomous operation.
+4. The preset's tools are added to your approved list immediately. You can still revoke individual tools below if needed.
+
+### Change the Default Chat Model
+
+1. Open **Settings** and find the **Chat Defaults** section.
+2. Select a model from the dropdown. Cost tier labels help you compare options.
+3. New conversations will use this model by default. You can still switch models per-conversation from the chat input bar.
 
 ### Clear Workspace Data
-1. Scroll to the **Data Management** section in settings.
-2. Click **Clear Data** to remove workspace content (tasks, logs, documents).
-3. Confirm the action. Settings are preserved; only workspace data is cleared.
+
+1. Scroll to **Data Management** at the bottom of Settings.
+2. Click **Clear Data**.
+3. Confirm the action. All tasks, logs, documents, and schedules are removed. Your settings, permissions, and authentication configuration are preserved.
 
 ## Related
+
 - [Cost & Usage](./cost-usage.md)
 - [Tool Permissions](./tool-permissions.md)
-- [Provider Runtimes](./provider-runtimes.md)

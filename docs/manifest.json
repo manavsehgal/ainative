@@ -1,5 +1,5 @@
 {
-  "generated": "2026-03-21T21:00:00Z",
+  "generated": "2026-03-27T17:45:00Z",
   "version": 1,
   "sections": [
     {
@@ -38,7 +38,7 @@
       "category": "feature-reference",
       "path": "features/chat.md",
       "route": "/chat",
-      "tags": ["chat", "conversations", "ai", "model-selection", "suggested-prompts", "quick-access"],
+      "tags": ["chat", "conversations", "ai", "tool-catalog", "mentions", "model-selection"],
       "features": ["chat-data-layer", "chat-engine", "chat-api-routes", "chat-ui-shell", "chat-message-rendering", "chat-input-composer"],
       "screengrabCount": 5
     },
@@ -118,9 +118,9 @@
       "category": "feature-reference",
       "path": "features/settings.md",
       "route": "/settings",
-      "tags": ["settings", "authentication", "permissions", "presets", "budgets"],
-      "features": ["session-management", "tool-permission-persistence", "tool-permission-presets", "data-management"],
-      "screengrabCount": 2
+      "tags": ["settings", "authentication", "permissions", "presets", "budgets", "browser-tools"],
+      "features": ["session-management", "tool-permission-persistence", "tool-permission-presets", "browser-use", "spend-budget-guardrails"],
+      "screengrabCount": 5
     },
     {
       "slug": "playbook",
@@ -233,8 +233,8 @@
   ],
   "metadata": {
     "totalDocs": 25,
-    "totalScreengrabs": 37,
-    "featuresCovered": 56,
-    "appSections": 13
+    "totalScreengrabs": 44,
+    "featuresCovered": 58,
+    "appSections": 15
   }
 }

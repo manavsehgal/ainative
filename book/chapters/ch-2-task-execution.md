@@ -4,7 +4,7 @@ subtitle: "Single-Agent to Multi-Agent Task Orchestration"
 chapter: 2
 part: 1
 readingTime: 15
-lastGeneratedBy: "2026-03-25T03:03:33.295Z"
+lastGeneratedBy: "2026-03-27"
 ---
 
 ## The Problem
@@ -450,6 +450,10 @@ The chat interface uses a different mechanism — an in-memory `AsyncQueue` and 
 This three-tier cascade implements what we think of as progressive autonomy in practice. A new user starts with maximum safety — every unfamiliar tool triggers a human review. As they build confidence in the system, they click "Always Allow" for tools they trust, optionally with pattern constraints. Over time, the system becomes increasingly autonomous *on their terms*, with the autonomy boundary shaped by their actual experience rather than an abstract trust setting.
 
 [Try: Execute a Task](/tasks)
+
+## Chat as a Conversational Task Interface
+
+Chat provides a conversational alternative to the task board for creating and managing tasks. The tool catalog organizes workspace capabilities into five categories -- Explore, Create, Debug, Automate, and Smart Picks -- with multi-provider model selection across Claude and Codex models. @ mentions inject document context directly into prompts, while slash commands offer quick access to tools and actions. Tasks created through chat land in the same governed pipeline as board-created tasks, flowing through the same fire-and-forget execution, the same permission cascade, and the same log streaming infrastructure described above. The chat interface does not bypass any of the safety mechanisms -- it is a different entry point to the same system, optimized for users who think conversationally rather than in terms of forms and boards.
 
 ## Lessons Learned
 

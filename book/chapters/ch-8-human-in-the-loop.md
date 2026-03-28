@@ -5,6 +5,7 @@ chapter: 8
 part: 3
 readingTime: 12
 relatedDocs: [inbox-notifications, tool-permissions, settings]
+lastGeneratedBy: "2026-03-27"
 ---
 
 ## The Problem
@@ -104,6 +105,8 @@ export function matchesPermission(
 }
 ```
 *Pattern matching with glob support — scoped permissions for dangerous tools, blanket permissions for safe ones*
+
+Browser automation introduces a new dimension to permission governance. Chrome DevTools MCP (29 tools) and Playwright MCP (50+ tools) can be enabled from Settings with independent toggles. Permission tiering automatically approves read-only browser operations like taking screenshots or reading page content, while mutation operations — clicking buttons, filling forms, navigating pages — flow through the inbox approval queue. This preserves the human-in-the-loop guarantee even when agents interact with external web applications.
 
 ### Layer 2: Workflow-Level Checkpoints
 

@@ -5,6 +5,7 @@ chapter: 5
 part: 2
 readingTime: 11
 relatedDocs: [schedules, monitoring]
+lastGeneratedBy: "2026-03-27"
 ---
 
 ## The Problem
@@ -172,6 +173,8 @@ The highest level is a schedule that fires an agent which creates new schedules.
 ## Lessons Learned
 
 **Pause and Resume Is Essential.** I initially built schedules with only two states: active and expired. Within a week of using the system, I needed a third: paused. Sometimes you want to stop a schedule temporarily — during a deployment, over a holiday, while you rethink the prompt — without losing its configuration. Pausing preserves the schedule's interval, prompt, stop conditions, and firing history. Resuming recomputes the next fire time from the current moment. It sounds trivial, but the absence of pause-and-resume forced me to delete and recreate schedules, which meant losing firing history and iteration context. State machines matter even for simple entities.
+
+**Editing Completes the Lifecycle.** Schedules can now be fully edited after creation through a dedicated edit dialog. Operators can modify the schedule name, prompt text, interval, runtime provider, and agent profile without recreating the schedule. The edit form shares the same validation and field layout as the creation form, maintaining consistency. Combined with pause/resume lifecycle controls and firing history tracking, this makes schedules a first-class managed resource rather than fire-and-forget automations. The progression from create-only to full CRUD may seem obvious in retrospect, but it reflects a broader lesson: any entity that lives long enough to accumulate history must eventually become editable, or users will destroy history to make corrections.
 
 **The Interval Parser Saves Time.** I tracked how users create schedules during testing. Over 80% used the shorthand format — `30m`, `2h`, `1d` — rather than raw cron expressions. The parser is maybe 60 lines of code, and it eliminates the most common friction point in schedule creation. Not every convenience feature justifies its complexity, but this one has an exceptional ratio of user value to implementation cost.
 

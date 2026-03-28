@@ -3,66 +3,72 @@ title: "Schedules"
 category: "feature-reference"
 section: "schedules"
 route: "/schedules"
-tags: [schedules, automation, loops, recurring, intervals, autonomous]
-features: ["scheduled-prompt-loops", "autonomous-loop-execution"]
-screengrabCount: 1
-lastUpdated: "2026-03-21"
+tags: ["schedules", "automation", "recurring", "prompts"]
+features: ["scheduled-prompt-loops"]
+screengrabCount: 3
+lastUpdated: "2026-03-27"
 ---
 
 # Schedules
 
-Schedule recurring agent tasks with configurable intervals and autonomous loop execution. The scheduler engine manages the full execution lifecycle, running prompts on a cadence you define with preset intervals or custom timing. Autonomous loops add intelligent stop conditions so agents can iterate toward a goal and stop when done.
+Automate recurring AI prompts on configurable intervals. Define what you want an agent to do, set a schedule, and let it run unattended. Each firing creates a tracked task with full execution history, so you always know what ran, when it ran, and what it produced. Pause, resume, or edit schedules at any time without losing history.
 
 ## Screenshots
 
-![Schedules list showing active and paused schedules](../screengrabs/schedules-list.png)
-*The schedules list displays all configured schedules with their status, interval, next run time, and associated project.*
+![Schedules list showing active and paused schedules with status, frequency, and next firing time](../screengrabs/schedules-list.png)
+*The schedules list displays all configured schedules with their current status, interval, next run time, and associated project.*
+
+![Schedule detail sheet showing configuration and firing history](../screengrabs/schedules-detail.png)
+*The schedule detail sheet shows the full configuration, execution statistics, and a chronological firing history with results from each run.*
+
+![Schedule edit dialog with name, prompt, interval, runtime, and profile fields](../screengrabs/schedules-edit-form.png)
+*The edit dialog lets you modify a schedule's name, prompt, interval, runtime provider, and agent profile without recreating it.*
 
 ## Key Features
 
-### Preset Intervals
-Choose from six built-in interval presets for common scheduling patterns: every 5 minutes, 15 minutes, 30 minutes, hourly, every 2 hours, or daily at 9 AM. Presets cover the most common automation cadences without requiring manual configuration.
+### Schedule Management
+Create, edit, pause, resume, and delete schedules from a single list view. Each schedule captures a complete execution context: a descriptive name, the prompt to send to the agent, the execution interval, a project for scoping, the provider runtime, and the agent profile that governs behavior. Schedules persist in the database and survive server restarts.
 
-### Custom Intervals
-Define custom intervals beyond the presets using the interval parser. Specify any duration to match your exact automation needs, from rapid polling to weekly recurring tasks.
+### Schedule Editing
+Edit any schedule after creation using the edit dialog. Update the schedule name, prompt text, execution interval, runtime provider (Claude or Codex), and agent profile without deleting and recreating the schedule. All changes take effect on the next firing.
 
-### Schedule Configuration
-Each schedule captures a complete execution context: a descriptive name, the execution interval, the prompt to send to the agent, the project context for scoping, the provider runtime (Claude or Codex), and the agent profile that governs behavior.
+### Firing History
+Every schedule firing creates a tracked child task. The detail view shows a chronological history of all past executions with their results, making it easy to audit what the agent did on each run and spot patterns over time.
 
-### Scheduler Engine
-The scheduler engine runs as a background process initialized via the Next.js instrumentation hook. It tracks all active schedules, calculates next run times, triggers executions on cadence, and manages the lifecycle of each schedule through active, paused, and completed states.
+### Flexible Intervals
+Choose from six built-in presets (every 5 minutes, 15 minutes, 30 minutes, hourly, every 2 hours, or daily at 9 AM) or define a custom interval. Advanced users can enter standard 5-field cron expressions for precise control. Human-friendly shorthand like `5m`, `2h`, or `1d` is also accepted.
 
-### Autonomous Loop Execution
-Autonomous loops extend scheduled execution with intelligent stop conditions. Four stop condition types are available: max iterations (stop after N runs), time limit (stop after a duration), goal achieved (agent determines the objective is met), and error threshold (stop after too many failures). The loop executor passes iteration context between runs so the agent can build on previous results.
+### Runtime and Profile Selection
+Choose which AI provider runtime (Claude or Codex) and which agent profile each schedule uses. This lets you match the right model and behavioral profile to each automation task, whether it needs a code reviewer, researcher, or general assistant.
 
 ### Pause and Resume
-Schedules can be paused and resumed without losing their configuration or execution history. Pausing a schedule suspends future runs while preserving the next-run calculation, so resuming picks up right where it left off.
+Suspend a schedule without losing its configuration or execution history. Pausing stops future runs while preserving the next-run calculation, so resuming picks up right where it left off.
 
 ## How To
 
-### Create a Recurring Schedule
-1. Navigate to `/schedules` from the sidebar under the **Manage** group.
+### Create a New Schedule
+1. Navigate to **Schedules** from the sidebar under the Manage group.
 2. Click the **Create Schedule** button to open the creation form.
 3. Enter a descriptive name for the schedule.
-4. Select an interval from the presets (5min, 15min, 30min, hourly, 2h, daily 9AM) or define a custom interval.
+4. Select an interval from the presets or define a custom interval.
 5. Write the prompt that the agent will execute on each run.
 6. Optionally select a project for context scoping.
 7. Choose the provider runtime and agent profile.
 8. Save the schedule. It begins executing on the configured cadence.
 
-### Set Up an Autonomous Loop
-1. Create a schedule with your desired prompt and interval.
-2. Configure one or more stop conditions: set a max iteration count, a time limit, a goal description, or an error threshold.
-3. Start the schedule. The loop executor passes context from each iteration to the next.
-4. The loop automatically stops when any stop condition is met.
+### Edit an Existing Schedule
+1. Open the schedules list at **Schedules**.
+2. Select a schedule to open its detail view.
+3. Click the **Edit** button to open the edit dialog.
+4. Modify any combination of name, prompt, interval, runtime, or agent profile.
+5. Save your changes. They take effect on the next scheduled firing.
 
-### Pause or Resume a Schedule
-1. Open the schedules list at `/schedules`.
+### Pause and Resume a Schedule
+1. Open the schedules list at **Schedules**.
 2. Locate the schedule you want to control.
 3. Click the pause button to suspend future executions, or the resume button to reactivate a paused schedule.
-4. The schedule status updates to reflect the current state.
+4. The schedule status updates immediately and the list reflects the new state.
 
 ## Related
-- [Monitoring](./monitoring.md)
-- [Profiles](./profiles.md)
-- [Cost & Usage](./cost-usage.md)
+- [Profiles](./profiles.md) — Agent profiles used by schedule firings
+- [Monitor](./monitoring.md) — View execution logs from schedule firings

@@ -58,7 +58,7 @@ Stagent ships a shared runtime registry that routes tasks, schedules, and workfl
 | ⏰ | **[Schedules](#schedules)** | Recurring and one-shot automations with cadence, expiry, and firing controls |
 | 📄 | **[Documents](#document-management)** | Upload, preprocess, inspect, and link files to tasks and projects |
 | 📥 | **[Human-in-the-Loop Inbox](#inbox--human-in-the-loop)** | Approve tool use, answer questions, and review results from one queue |
-| 💬 | **[Chat](#chat)** | Conversational AI with model selection, suggested prompts, and entity-aware responses |
+| 💬 | **[Chat](#chat)** | Tool catalog with model selection, @ mentions, slash commands, and browser automation |
 | 👀 | **[Monitoring](#monitoring)** | Live runtime visibility with log streaming, filters, and health signals |
 | 🔁 | **[Provider Runtimes](#provider-runtimes)** | Shared runtime layer with Claude Code and OpenAI Codex App Server adapters |
 | 🧪 | **[Parallel + Swarm Workflows](#parallel--swarm-workflows)** | Bounded fork/join and swarm orchestration without a free-form graph editor |
@@ -74,6 +74,8 @@ Stagent ships a shared runtime registry that routes tasks, schedules, and workfl
 | ⌨️ | **[Command Palette](#command-palette)** | Global `⌘K` search for fast navigation across tasks, projects, workflows, and settings |
 | 📖 | **[Playbook](#playbook)** | Built-in documentation with usage-stage awareness, adoption heatmap, and guided learning journeys |
 | 📚 | **[Living Book](#living-book)** | AI-native book reader with 9 chapters, agent-powered regeneration, staleness detection, and reading paths |
+| 🌐 | **[Environment](#environment)** | Control plane for Claude Code and Codex CLI environments with scanning, caching, sync, and templates |
+| 🔧 | **[Browser Tools](#browser-tools)** | Chrome DevTools and Playwright MCP integration for browser automation in chat and task execution |
 
 ---
 
@@ -218,6 +220,28 @@ AI-native book reader at `/book` with 9 chapters across 3 parts (Foundation, Int
 - **Try It Now** — each chapter links to related Playbook feature docs and user journeys
 - **Author's Notes** — collapsible callout blocks with behind-the-scenes commentary
 
+### Environment
+
+#### Environment
+Stagent doubles as a **control plane for AI coding environments** — scanning, caching, and syncing configuration for Claude Code and Codex CLI across projects. The environment dashboard surfaces detected tools, active configurations, git checkpoint status, and health scores.
+
+- **Environment Scanner** — detects Claude Code and Codex CLI configurations, MCP servers, skills, and project settings
+- **Environment Cache** — persists scanned state for fast dashboard rendering without re-scanning
+- **Environment Dashboard** — unified view of all detected environments with health indicators
+- **Git Checkpoint Manager** — tracks environment state via git commits for rollback and comparison
+- **Environment Sync Engine** — bidirectional sync between local config and cached state
+- **Project Onboarding** — guided flow for setting up new projects with environment-aware defaults
+- **Environment Templates** — reusable environment configurations for common project types
+- **Cross-Project Comparison** — compare environment settings across projects
+- **Skill Portfolio** — aggregate view of skills across all detected environments
+- **Environment Health Scoring** — composite health score based on configuration completeness and freshness
+- **Agent Profile from Environment** — auto-generate agent profiles from detected environment capabilities
+
+<img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/environment-list.png" alt="Stagent environment dashboard" width="1200" />
+
+#### Browser Tools
+Enable browser automation in chat and task execution through two MCP integrations: **Chrome DevTools MCP** (29 tools for connecting to a running Chrome instance via CDP) and **Playwright MCP** (50+ tools for headless browser automation). Configure both from Settings with independent toggles and permission tiering — read-only operations auto-approve while mutations are gated through the inbox approval flow.
+
 ### Platform
 
 #### Tool Permission Persistence
@@ -254,13 +278,13 @@ When an agent needs approval or input, a notification appears in your inbox. Rev
 | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/inbox-expanded.png" alt="Inbox notification expanded" width="580" /> |
 
 #### Chat
-Conversational control plane for all workspace primitives — projects, tasks, workflows, documents, and profiles are all reachable from the chat surface. Progressive 5-tier context injection (~53K token budget) builds workspace awareness from lightweight summaries up to full document content. Multi-provider model selection with cost tiers ($, $$, $$$) spans Claude Haiku through Opus and GPT-5.x models, with a Settings-level default preference. Claude.ai-style tabbed suggested prompts (Explore, Create, Analyze) with hover preview help new users discover workspace capabilities. Quick Access navigation pills in responses provide entity deep-linking — click a mentioned project or task to jump directly to its detail view. Stagent CRUD tools let you create, update, and delete projects, tasks, and workflows through natural language. Streaming responses render in real time with full markdown support.
+Conversational control plane for all workspace primitives — projects, tasks, workflows, documents, and profiles are all reachable from the chat surface. The chat interface is organized as a **tool catalog** with five categories (Explore, Create, Debug, Automate, Smart Picks) that help discover workspace capabilities. Progressive 5-tier context injection (~53K token budget) builds workspace awareness from lightweight summaries up to full document content. **@ mentions** let you reference documents and entities directly in prompts with fuzzy search autocomplete, injecting their content as context. **Slash commands** (`/`) provide quick access to tools and actions. Multi-provider model selection with cost tiers ($, $$, $$$) spans Claude Haiku through Opus and GPT-5.x models. Browser automation via Chrome DevTools and Playwright MCP enables screenshot capture and web interaction from chat. Quick Access navigation pills in responses provide entity deep-linking. Stagent CRUD tools let you create, update, and delete workspace entities through natural language.
 
-<img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/chat-conversation.png" alt="Stagent chat conversation with Quick Access navigation pills" width="1200" />
+<img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/chat-conversation.png" alt="Stagent chat conversation with @ document context" width="1200" />
 
-| Empty State & Suggested Prompts | Model Selector | Quick Access Pills |
+| Tool Catalog | Model Selector | Create Tab |
 |:-:|:-:|:-:|
-| <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/chat-list.png" alt="Chat empty state with suggested prompts" width="380" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/chat-model-selector.png" alt="Chat model selector with cost tiers" width="380" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/chat-quick-access.png" alt="Chat Quick Access navigation pills" width="380" /> |
+| <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/chat-list.png" alt="Chat tool catalog with category tabs" width="380" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/chat-model-selector.png" alt="Chat model selector with cost tiers" width="380" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/chat-create-tab.png" alt="Chat Create category prompts" width="380" /> |
 
 #### Monitoring
 Real-time agent log streaming via Server-Sent Events. Filter by task or event type, click entries to jump to task details, and auto-pause polling when the tab is hidden (Page Visibility API).
@@ -271,19 +295,19 @@ Real-time agent log streaming via Server-Sent Events. Filter by task or event ty
 File upload with drag-and-drop in task creation. Type-aware content preview for text, markdown (via react-markdown), code, and JSON. Copy-to-clipboard and download-as-file for task outputs.
 
 #### Settings
-Configuration hub with provider-aware sections: Claude authentication (API key or OAuth), OpenAI Codex runtime API-key management, tool permissions (saved "Always Allow" patterns with revoke), permission presets, budget configuration, and data management.
+Configuration hub with provider-aware sections: Claude authentication (API key or OAuth), OpenAI Codex runtime API-key management, chat defaults (model selection), **browser tools** (Chrome DevTools and Playwright MCP toggles), runtime configuration (SDK timeout and max turns), tool permissions (saved "Always Allow" patterns with revoke), permission presets, budget guardrails, and data management.
 
 <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/settings-list.png" alt="Stagent settings" width="1200" />
 
-| Permission Presets | Budget Configuration | Data Management |
+| Browser Tools | Permission Presets | Budget Configuration |
 |:-:|:-:|:-:|
-| <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/settings-presets.png" alt="Tool permission presets" width="380" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/settings-budget.png" alt="Budget configuration" width="380" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/settings-data.png" alt="Data management" width="380" /> |
+| <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/settings-browser-tools.png" alt="Browser tools MCP toggles" width="380" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/settings-presets.png" alt="Tool permission presets" width="380" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/settings-budget.png" alt="Budget configuration" width="380" /> |
 
 #### CLI
 The `npx stagent` entry point boots a Next.js server from the published npm package. It is built from `bin/cli.ts` into `dist/cli.js` using tsup, and serves as the primary distribution channel — no clone required.
 
 #### Database
-SQLite with WAL mode via better-sqlite3 + Drizzle ORM. Twelve tables: `projects`, `tasks`, `workflows`, `agent_logs`, `notifications`, `documents`, `schedules`, `settings`, `learned_context`, `usage_ledger`, `conversations`, `chat_messages`. Self-healing bootstrap — tables are created on startup if missing.
+SQLite with WAL mode via better-sqlite3 + Drizzle ORM. Fourteen tables: `projects`, `tasks`, `workflows`, `agent_logs`, `notifications`, `documents`, `schedules`, `settings`, `learned_context`, `usage_ledger`, `conversations`, `chat_messages`, `environments`, `environment_configs`. Self-healing bootstrap — tables are created on startup if missing.
 
 #### Command Palette
 Global `⌘K` command palette for fast navigation and search across tasks, projects, workflows, and settings. Recent items, fuzzy search, and keyboard-driven navigation.
@@ -293,7 +317,7 @@ Global `⌘K` command palette for fast navigation and search across tasks, proje
 | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/command-palette-empty.png" alt="Command palette empty state" width="580" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/command-palette-search.png" alt="Command palette search results" width="580" /> |
 
 #### App Shell
-Responsive sidebar with collapsible icon-only mode, custom Stagent logo, tooltip navigation, dark/light/system theme, and OKLCH hue 250 blue-indigo color palette. Built on shadcn/ui (New York style) with PWA manifest and app icons. Routes: Home, Dashboard, Inbox, Chat, Monitor, Projects, Workflows, Documents, Profiles, Schedules, Cost & Usage, Playbook, Settings.
+Responsive sidebar with collapsible icon-only mode, custom Stagent logo, tooltip navigation, dark/light/system theme, and OKLCH hue 250 blue-indigo color palette. Built on shadcn/ui (New York style) with PWA manifest and app icons. Routes: Home, Dashboard, Inbox, Chat, Projects, Workflows, Documents, Monitor, Profiles, Schedules, Cost & Usage, AI Native Book, User Guide, Environment, Settings.
 
 #### E2E Test Automation
 API-level end-to-end test suite built on Vitest with 120-second timeouts and sequential execution. Five test files cover single-task execution, sequence workflows, parallel workflows, blueprints, and cross-runtime scenarios across both Claude and Codex backends. Tests skip gracefully when runtimes are not configured, preventing CI failures. Run with `npm run test:e2e`.
@@ -343,7 +367,9 @@ src/
 │   ├── schedules/        # Schedule management
 │   ├── costs/            # Cost & usage dashboard
 │   ├── playbook/         # Documentation & learning journeys
-│   ├── chat/             # Conversational AI
+│   ├── chat/             # Conversational AI (tool catalog)
+│   ├── book/             # AI Native Book reader
+│   ├── environment/      # Environment control plane
 │   ├── inbox/            # Notifications
 │   ├── monitor/          # Log streaming
 │   └── settings/         # Configuration
@@ -357,9 +383,11 @@ src/
 │   ├── playbook/         # Playbook docs + journeys + adoption
 │   ├── schedules/        # Schedule management
 │   ├── monitoring/       # Log viewer
-│   ├── chat/             # Chat shell, messages, input composer
+│   ├── chat/             # Chat shell, messages, input composer, tool catalog
+│   ├── book/             # Book reader, chapters, reading paths
+│   ├── environment/      # Environment dashboard, scanner, templates
 │   ├── notifications/    # Inbox + permission actions
-│   ├── settings/         # Auth, permissions, budgets, data mgmt
+│   ├── settings/         # Auth, permissions, budgets, browser tools, data mgmt
 │   ├── shared/           # App shell, sidebar
 │   └── ui/               # shadcn/ui primitives
 └── lib/
@@ -454,24 +482,32 @@ All 14 features shipped across three layers:
 | **Core** | Project management, task board, agent integration, inbox notifications, monitoring dashboard |
 | **Polish** | Homepage dashboard, UX fixes, workflow engine, AI task assist, content handling, session management |
 
-### Post-MVP — 37 features shipped
+### Post-MVP — 52 features shipped
 
 | Category | Features |
 |----------|---------|
 | **Documents** (5) | File attachments, preprocessing (5 formats), agent context injection, document browser, output generation |
 | **Agent Intelligence** (6) | Multi-agent routing, autonomous loops, multi-agent swarm, AI assist→workflows, agent self-improvement, workflow context batching |
-| **Agent Profiles** (2) | Agent profile catalog (13+ profiles), workflow blueprints (8 templates) |
-| **UI Enhancement** (13) | Ambient approvals, learned context UX, micro-visualizations, command palette, operational surface, profile surface, accessibility, UI density, kanban operations, board persistence, detail view redesign, playbook documentation, workflow UX overhaul (in-progress) |
+| **Agent Profiles** (2) | Agent profile catalog (21 profiles), workflow blueprints (8 templates) |
+| **UI Enhancement** (13) | Ambient approvals, learned context UX, micro-visualizations, command palette, operational surface, profile surface, accessibility, UI density, kanban operations, board persistence, detail view redesign, playbook documentation, workflow UX overhaul |
 | **Platform** (8) | Scheduled prompt loops, tool permissions, provider runtimes, OpenAI Codex runtime, cross-provider profiles, parallel fork/join, tool permission presets, npm publish (deferred) |
 | **Runtime Quality** (2) | SDK runtime hardening, E2E test automation |
 | **Governance** (3) | Usage metering ledger, spend budget guardrails, cost & usage dashboard |
-| **Chat** (6) | Chat data layer, chat engine (5-tier context, CRUD tools), API routes (SSE streaming), UI shell, message rendering (Quick Access pills), input composer (model selector, suggested prompts) |
+| **Chat** (6) | Chat data layer, chat engine (5-tier context, CRUD tools), API routes (SSE streaming), UI shell, message rendering (Quick Access pills), input composer (tool catalog, model selector) |
+| **Environment** (11) | Environment scanner, cache, dashboard, git checkpoint manager, sync engine, project onboarding, templates, cross-project comparison, skill portfolio, health scoring, agent profile from environment |
+| **Living Book** (5) | Content merge (chapters → playbook), author's notes, reading paths, markdown pipeline, self-updating chapters |
 
-### In Progress
+### Planned
 
-| Feature | Description |
-|---------|-------------|
-| Workflow UX Overhaul | Document context propagation, output readability, dashboard visibility, AI assist guidance |
+| Feature | Priority | Description |
+|---------|----------|-------------|
+| Browser Use | P1 | Chrome DevTools + Playwright MCP integration for browser automation |
+| Workspace Context Awareness | P1 | Surface cwd, git branch, worktree status to chat agents |
+| Chat Command Mentions | P1 | Slash commands for tools/actions + @ entity mentions |
+| Task Hierarchy Clarity | P1 | Distinguish standalone vs workflow-bound tasks |
+| Chat Conversation Persistence | P1 | URL/localStorage persistence for active conversations |
+| Settings Interactive Controls | P2 | Slider upgrades for SDK Timeout and Max Turns |
+| Agent Document API Access | P2 | MCP-based document tools for agent consumption |
 
 ---
 

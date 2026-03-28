@@ -5,6 +5,7 @@ chapter: 9
 part: 3
 readingTime: 18
 relatedDocs: [workflows, profiles, schedules]
+lastGeneratedBy: "2026-03-27"
 ---
 
 ## The Vision
@@ -105,6 +106,8 @@ The book is a living artifact. Not in the marketing sense of "we update it somet
 
 This is not a parlor trick. It is the strongest form of validation I know. If I claimed that Stagent could automate complex, multi-step business processes but could not automate the production of its own documentation, you should be skeptical. The fact that it can -- imperfectly, with human oversight, requiring exception handling and judgment calls -- is the most honest demonstration of what the autonomous organization looks like in practice. It is not flawless. It is not fully hands-off. But it is genuinely, measurably better than doing it manually.
 
+The Living Book exemplifies autonomous documentation — Stagent literally writes its own book. Each chapter is generated from source code and feature specs by the document-writer agent, with git-based staleness detection flagging when source files change. One-click regeneration fires a task through the standard execution pipeline, streaming progress in real time. The book that describes the system is maintained by the system itself.
+
 The recursive quality runs deeper than documentation. The agent profiles used to build Stagent's features were themselves managed as tasks in Stagent. The workflow patterns were designed using the workflow engine. The learned context that helps agents write better code was accumulated by agents writing code. This is the system eating its own tail -- not in the pathological sense, but in the generative sense. Each layer of capability enables the creation of the next layer.
 
 > [!lesson]
@@ -152,6 +155,8 @@ Today, Stagent operates within a single organization's boundary. Your agents, yo
 The next step is agents that can operate across organizational boundaries with appropriate trust and permission models. Your procurement agent negotiating with a vendor's sales agent. Your support agent querying a partner's knowledge base. This requires not just technical interoperability but trust infrastructure -- a way for organizations to define what external agents are allowed to see and do, with the same progressive autonomy model that governs internal operations.
 
 This frontier is the furthest out, and the most transformative. It is also where the regulatory and ethical questions become most acute. When an agent negotiates a contract on your behalf, who is liable for the terms? When an agent shares information with a partner's agent, how is confidentiality maintained? These are not technical questions. They are organizational, legal, and social questions that the technology is forcing us to confront.
+
+Environment Onboarding extends the autonomous vision beyond task execution to the developer tooling layer itself. Scanning Claude Code and Codex CLI configurations, caching state, tracking health scores, and supporting bidirectional sync transforms Stagent from a task runner into a full environment control plane. Agent profiles auto-generated from detected capabilities close the loop — the system not only executes work but discovers and adapts to its own operating environment.
 
 [Try: Explore the Full System](/)
 

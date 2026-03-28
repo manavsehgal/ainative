@@ -1,42 +1,64 @@
 ---
-generated: 2026-03-24
+generated: 2026-03-27
 mode: health-check
 ---
 
 # Supervisor Report
 
-## Project Health Check — 2026-03-24
+## Project Health Check — 2026-03-27
 
 ### Dashboard
 
 | Dimension | Status | Signal |
 |-----------|--------|--------|
-| Velocity | 🟢 green | Living Book initiative (5 features) shipped in single sprint; chapter regeneration feature completed same day |
-| Pipeline | 🟡 yellow | 3 pending features (chat-conversation-persistence, settings-interactive-controls, task-hierarchy-clarity); no new features planned beyond those |
-| Ideas | 🟢 green | 14 items in ideas/ directory including backlog and research subdirectories |
-| Quality Debt | 🟡 yellow | Chapter regeneration pipeline shipped without test coverage; regeneration hook and component untested |
-| Design Consistency | 🟢 green | All new components follow Calm Ops design system; OKLCH tokens, border elevation, no forbidden patterns |
-| Documentation | 🟢 green | Fixed: 5 feature specs updated planned→completed, roadmap updated, changelog updated, README updated with Living Book section |
-| Playbook Sync | 🟡 yellow | Book screenshots captured (6 new); full doc-generator and playbook-sync pipelines not run — `docs/features/book.md` doesn't exist yet |
-
-### Actions Taken
-
-1. **Feature specs** — Updated 5 living-book specs from `status: planned` → `status: completed`
-2. **Roadmap** — Marked Living Book Sprints 25-28 as shipped with dates and deliverable summaries
-3. **Changelog** — Added comprehensive 2026-03-24 Completed section covering all Living Book features, regeneration pipeline, SSE progress, staleness UI, and bug fixes
-4. **README.md** — Added Living Book to Feature Highlights table + Feature Deep Dive section
-5. **Screengrabs** — Captured 6 book-specific screenshots: reader, TOC, chapter header, Try It Now, navigation, settings
+| Velocity | 🟢 green | 26 commits in 7 days; Living Book (5 features), Chat (6 features), Environment (11 features) all shipped |
+| Pipeline | 🟡 yellow | 3 pending + 2 planned = 5 remaining features out of 72 total (92% complete) |
+| Ideas | 🟢 green | 14 idea files (6 groomed strategic, 8 raw/exploratory) |
+| Quality Debt | 🟢 green | E2E test automation completed, SDK runtime hardening done, 120s timeouts, 5 test files |
+| Design Consistency | 🟢 green | Calm Ops design system mature, OKLCH tokens, no forbidden patterns detected |
+| Documentation | 🟡 yellow | Docs last generated 2026-03-22 (5 days stale); missing Living Book, Environment, Chat updates |
+| Playbook Sync | 🟡 yellow | Screengrabs: 2026-03-25 (2d), Docs: 2026-03-22 (5d), Readme: 2026-03-22 (5d) — layers out of sync |
 
 ### Top Concern
 
-**Playbook Sync** is yellow — the book feature has no `docs/features/book.md` playbook doc, and the full doc-generator pipeline hasn't been run to create it. Journey docs may also need updating to reference book chapters.
+**Documentation** is yellow because 3 major feature families shipped since last doc generation:
+1. **Living Book** (5 features, 2026-03-24) — book reader, chapters, reading paths, author's notes, self-updating
+2. **Environment Onboarding** (11 features) — scanner, cache, dashboard, templates, health scoring, agent profiles
+3. **Chat Enhancements** (2026-03-25-27) — slash commands, @mentions, tool catalog redesign, browser screenshots, lightbox
 
-**Recommend:** invoke `/doc-generator` to create `docs/features/book.md` and update journey coverage, then `/playbook-sync` to copy new book screenshots to `public/readme/` and validate references.
+The screengrabs manifest (37 screenshots) was generated 2026-03-22 but `.last-run` shows 2026-03-25 — indicating partial capture without full manifest regeneration. No `.coverage-gaps.json` exists.
 
 ### Secondary Concerns
 
-- **Quality Debt**: `src/hooks/use-chapter-generation.ts` and `src/components/book/chapter-generation-bar.tsx` have no tests. Consider invoking `/quality-manager` for the book feature area.
-- **Pipeline**: Only 3 pending features remain. Consider invoking `/product-manager` to groom new features from the 14 items in `ideas/`.
+- **Pipeline**: Only 5 features remain. Consider grooming new features from ideas/ to maintain pipeline depth
+- **Playbook Sync**: 5-day gap between screengrabs and docs/readme — book and README may reference stale screenshots
+
+### Recent Velocity (Last 7 Days)
+
+| Area | Commits | Key Deliverables |
+|------|---------|-----------------|
+| Chat Engine | 18 | Tool catalog redesign, slash commands, @mentions, browser screenshots |
+| Living Book | 6 | Content merge, markdown pipeline, self-updating, chapter regeneration |
+| Environment | 7 | Dashboard, scanner, templates, health scoring |
+| Feature Tracking | 11 | Roadmap/changelog updates |
+
+### Hotspot Files
+
+| File | Commits | Notes |
+|------|---------|-------|
+| src/lib/chat/engine.ts | 18 | Active feature — chat redesign |
+| src/components/chat/chat-shell.tsx | 12 | Active feature — chat UI |
+| features/roadmap.md | 11 | Tracking updates |
+| src/lib/chat/types.ts | 10 | Active feature — chat types |
+| features/changelog.md | 10 | Tracking updates |
+
+### Recommended Action Sequence
+
+1. **`/screengrab`** — Full capture including Living Book, Environment, Chat updates
+2. **`/doc-generator`** — Regenerate all feature docs and journeys with coverage analysis
+3. **`/playbook-sync`** — Sync screenshots to public/readme, validate references
+4. **README update** — Reflect new feature families (Living Book, Environment, Chat enhancements)
+5. **AI Native Book update** — Update book chapters to reference new features
 
 ---
 

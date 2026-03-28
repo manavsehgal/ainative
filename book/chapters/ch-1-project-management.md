@@ -4,7 +4,7 @@ subtitle: "From Manual Planning to Autonomous Sprint Planning"
 chapter: 1
 part: 1
 readingTime: 12
-lastGeneratedBy: "2026-03-25T03:32:34.423Z"
+lastGeneratedBy: "2026-03-27"
 ---
 
 ## The Problem
@@ -288,6 +288,10 @@ Profiles compose. A task gets a profile, a project gets a working directory, a s
 Jira, Linear, and their peers are already adding AI features, and those features will get better over time. But they face a structural disadvantage: their data models were designed for human workflows. Adding AI to a schema built for humans is like adding power steering to a horse-drawn carriage — it helps, but it does not change the fundamental architecture. An AI-native schema, designed from the ground up with agent affordances, enables capabilities that bolt-on AI cannot match.
 
 This is not a permanent advantage. Eventually, traditional tools will evolve their schemas, or new competitors will emerge with AI-native foundations. But for now, the gap between "AI-assisted traditional PM" and "AI-native PM" is wide enough to be meaningful.
+
+### Environment Onboarding Changes the Starting Line
+
+Stagent now doubles as a control plane for AI coding environments. The Environment dashboard scans Claude Code and Codex CLI configurations across projects, caches detected state for fast rendering, tracks health scores, and supports bidirectional sync. Environment templates let teams standardize project setups, while the agent-profile-from-environment feature auto-generates reusable profiles from detected capabilities. This collapses the gap between "I installed the AI tools" and "my project is ready for agent-driven work" — environment onboarding becomes a managed, repeatable process rather than tribal knowledge passed between developers.
 
 ---
 
