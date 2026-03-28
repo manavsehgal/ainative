@@ -21,48 +21,47 @@ interface EntityResult {
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const query = url.searchParams.get("q") ?? "";
-  const limit = Math.min(parseInt(url.searchParams.get("limit") ?? "10", 10), 20);
+  const limit = Math.min(parseInt(url.searchParams.get("limit") ?? "20", 10), 30);
 
-  if (!query.trim()) {
-    return NextResponse.json({ results: [] });
-  }
-
-  const pattern = `%${query}%`;
+  const hasQuery = query.trim().length > 0;
+  const pattern = hasQuery ? `%${query}%` : "";
   const perType = Math.max(2, Math.floor(limit / 5));
 
   const results: EntityResult[] = [];
 
+  // Build queries — apply LIKE filter only when query is non-empty
+  const projectQuery = db
+    .select({ id: projects.id, name: projects.name, status: projects.status, description: projects.description })
+    .from(projects);
+  const taskQuery = db
+    .select({ id: tasks.id, title: tasks.title, status: tasks.status, description: tasks.description })
+    .from(tasks);
+  const workflowQuery = db
+    .select({ id: workflows.id, name: workflows.name, status: workflows.status })
+    .from(workflows);
+  const documentQuery = db
+    .select({ id: documents.id, name: documents.originalName, status: documents.status, mimeType: documents.mimeType, size: documents.size })
+    .from(documents);
+  const scheduleQuery = db
+    .select({ id: schedules.id, name: schedules.name, status: schedules.status })
+    .from(schedules);
+
   // Search in parallel across all entity types
   const [projectRows, taskRows, workflowRows, documentRows, scheduleRows] =
     await Promise.all([
-      db
-        .select({ id: projects.id, name: projects.name, status: projects.status, description: projects.description })
-        .from(projects)
-        .where(like(projects.name, pattern))
+      (hasQuery ? projectQuery.where(like(projects.name, pattern)) : projectQuery)
         .orderBy(desc(projects.updatedAt))
         .limit(perType),
-      db
-        .select({ id: tasks.id, title: tasks.title, status: tasks.status, description: tasks.description })
-        .from(tasks)
-        .where(like(tasks.title, pattern))
+      (hasQuery ? taskQuery.where(like(tasks.title, pattern)) : taskQuery)
         .orderBy(desc(tasks.updatedAt))
         .limit(perType),
-      db
-        .select({ id: workflows.id, name: workflows.name, status: workflows.status })
-        .from(workflows)
-        .where(like(workflows.name, pattern))
+      (hasQuery ? workflowQuery.where(like(workflows.name, pattern)) : workflowQuery)
         .orderBy(desc(workflows.updatedAt))
         .limit(perType),
-      db
-        .select({ id: documents.id, name: documents.originalName, status: documents.status, mimeType: documents.mimeType, size: documents.size })
-        .from(documents)
-        .where(like(documents.originalName, pattern))
+      (hasQuery ? documentQuery.where(like(documents.originalName, pattern)) : documentQuery)
         .orderBy(desc(documents.createdAt))
         .limit(perType),
-      db
-        .select({ id: schedules.id, name: schedules.name, status: schedules.status })
-        .from(schedules)
-        .where(like(schedules.name, pattern))
+      (hasQuery ? scheduleQuery.where(like(schedules.name, pattern)) : scheduleQuery)
         .orderBy(desc(schedules.updatedAt))
         .limit(perType),
     ]);
@@ -84,10 +83,12 @@ export async function GET(request: Request) {
   }
 
   // Search profiles in-memory (file-based registry)
-  const lowerQuery = query.toLowerCase();
-  const profileMatches = listProfiles()
-    .filter((p) => p.name.toLowerCase().includes(lowerQuery) || p.id.toLowerCase().includes(lowerQuery))
-    .slice(0, perType);
+  const allProfiles = listProfiles();
+  const profileMatches = hasQuery
+    ? allProfiles
+        .filter((p) => p.name.toLowerCase().includes(query.toLowerCase()) || p.id.toLowerCase().includes(query.toLowerCase()))
+        .slice(0, perType)
+    : allProfiles.slice(0, perType);
 
   for (const p of profileMatches) {
     results.push({ entityType: "profile", entityId: p.id, label: p.name });

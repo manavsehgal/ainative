@@ -116,7 +116,7 @@ export function ChatCommandPopover({
       data-chat-autocomplete=""
       className="rounded-lg border bg-popover text-popover-foreground shadow-lg animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2"
     >
-      <Command shouldFilter={mode === "slash"} loop>
+      <Command shouldFilter loop>
         {/* Hidden input for cmdk filtering — synced to query */}
         <div className="sr-only">
           <CommandInput value={query} />
@@ -133,7 +133,6 @@ export function ChatCommandPopover({
             <MentionItems
               results={entityResults}
               loading={entityLoading}
-              query={query}
               onSelect={onSelect}
             />
           )}
@@ -200,27 +199,17 @@ function ToolCatalogItems({
 function MentionItems({
   results,
   loading,
-  query,
   onSelect,
 }: {
   results: EntitySearchResult[];
   loading: boolean;
-  query: string;
   onSelect: ChatCommandPopoverProps["onSelect"];
 }) {
   if (loading && results.length === 0) {
     return (
       <div className="flex items-center gap-2 px-3 py-4 text-sm text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" />
-        Searching...
-      </div>
-    );
-  }
-
-  if (!query) {
-    return (
-      <div className="px-3 py-4 text-sm text-muted-foreground text-center">
-        Type to search entities...
+        Loading...
       </div>
     );
   }
@@ -228,7 +217,7 @@ function MentionItems({
   const grouped = groupByType(results);
   const entityTypes = Object.keys(grouped);
 
-  if (entityTypes.length === 0 && !loading) {
+  if (entityTypes.length === 0) {
     return null; // CommandEmpty will show
   }
 
@@ -242,7 +231,7 @@ function MentionItems({
             {grouped[type].map((entity) => (
               <CommandItem
                 key={`${entity.entityType}-${entity.entityId}`}
-                value={`${entity.entityType} ${entity.label}`}
+                value={`${entity.entityType} ${entity.label} ${entity.description ?? ""} ${entity.status ?? ""}`}
                 onSelect={() =>
                   onSelect({
                     type: "mention",

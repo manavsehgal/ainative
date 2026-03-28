@@ -59,8 +59,8 @@ export function useChatAutocomplete(): ChatAutocompleteReturn {
   const [entityLoading, setEntityLoading] = useState(false);
   const [mentions, setMentions] = useState<MentionReference[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const entityCacheRef = useRef<EntitySearchResult[] | null>(null);
   const getCaretCoordinates = useCaretPosition();
 
   // Ref to let the keyboard handler access current state synchronously
@@ -75,40 +75,39 @@ export function useChatAutocomplete(): ChatAutocompleteReturn {
     setState(CLOSED_STATE);
     setEntityResults([]);
     setEntityLoading(false);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
+    entityCacheRef.current = null;
     if (abortRef.current) abortRef.current.abort();
   }, []);
 
-  // Debounced entity search for "@" mode
-  const searchEntities = useCallback((query: string) => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (abortRef.current) abortRef.current.abort();
-
-    if (!query.trim()) {
-      setEntityResults([]);
-      setEntityLoading(false);
+  // Fetch all recent entities once on "@" trigger, cache for cmdk client-side filtering
+  const loadEntities = useCallback(() => {
+    if (entityCacheRef.current) {
+      // Already cached — use cached results
+      setEntityResults(entityCacheRef.current);
       return;
     }
 
+    if (abortRef.current) abortRef.current.abort();
+
     setEntityLoading(true);
-    debounceRef.current = setTimeout(async () => {
-      const controller = new AbortController();
-      abortRef.current = controller;
-      try {
-        const res = await fetch(
-          `/api/chat/entities/search?q=${encodeURIComponent(query)}&limit=10`,
-          { signal: controller.signal }
-        );
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    fetch("/api/chat/entities/search?q=&limit=20", { signal: controller.signal })
+      .then(async (res) => {
         if (res.ok) {
           const data = await res.json();
-          setEntityResults(data.results ?? []);
+          const results = data.results ?? [];
+          entityCacheRef.current = results;
+          setEntityResults(results);
         }
-      } catch {
+      })
+      .catch(() => {
         // Aborted or failed
-      } finally {
+      })
+      .finally(() => {
         setEntityLoading(false);
-      }
-    }, 200);
+      });
   }, []);
 
   // Detect triggers on every text change
@@ -157,7 +156,7 @@ export function useChatAutocomplete(): ChatAutocompleteReturn {
           triggerIndex,
           anchorRect: coords,
         });
-        searchEntities(query);
+        loadEntities();
         return;
       }
 
@@ -166,7 +165,7 @@ export function useChatAutocomplete(): ChatAutocompleteReturn {
         close();
       }
     },
-    [getCaretCoordinates, searchEntities, close]
+    [getCaretCoordinates, loadEntities, close]
   );
 
   /**
@@ -271,7 +270,6 @@ export function useChatAutocomplete(): ChatAutocompleteReturn {
   // Clean up on unmount
   useEffect(() => {
     return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
       if (abortRef.current) abortRef.current.abort();
     };
   }, []);
