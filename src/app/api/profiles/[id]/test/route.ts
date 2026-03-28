@@ -5,6 +5,7 @@ import {
   DEFAULT_AGENT_RUNTIME,
   resolveAgentRuntime,
 } from "@/lib/agents/runtime/catalog";
+import { saveProfileTestReport } from "@/lib/data/profile-test-results";
 
 /**
  * POST /api/profiles/[id]/test
@@ -31,6 +32,9 @@ export async function POST(
 
   try {
     const report = await runProfileTests(id, runtimeId);
+    if (!report.unsupported) {
+      saveProfileTestReport(report);
+    }
     return NextResponse.json(report);
   } catch (err: unknown) {
     if (err instanceof BudgetLimitExceededError) {

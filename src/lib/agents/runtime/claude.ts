@@ -106,7 +106,7 @@ function isAbortError(error: unknown): boolean {
   );
 }
 
-async function runSingleProfileTest(
+export async function runSingleProfileTest(
   profileId: string,
   test: { task: string; expectedKeywords: string[] }
 ): Promise<ProfileTestResult> {

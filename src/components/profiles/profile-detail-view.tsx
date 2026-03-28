@@ -84,6 +84,12 @@ export function ProfileDetailView({ profileId, isBuiltin, initialProfile }: Prof
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [testReport, setTestReport] = useState<TestReport | null>(null);
   const [runningTests, setRunningTests] = useState(false);
+  const [testProgress, setTestProgress] = useState<{
+    current: number;
+    total: number;
+    currentTask: string;
+    results: TestResult[];
+  } | null>(null);
   const [selectedTestRuntime, setSelectedTestRuntime] =
     useState<AgentRuntimeId>(DEFAULT_AGENT_RUNTIME);
 
@@ -104,6 +110,26 @@ export function ProfileDetailView({ profileId, isBuiltin, initialProfile }: Prof
     if (!initialProfile) refresh();
   }, [refresh, initialProfile]);
 
+  // Load persisted test results on mount and when runtime changes
+  useEffect(() => {
+    let cancelled = false;
+    async function loadPersistedResults() {
+      try {
+        const res = await fetch(
+          `/api/profiles/${profileId}/test-results?runtimeId=${selectedTestRuntime}`
+        );
+        if (res.ok && !cancelled) {
+          const report: TestReport = await res.json();
+          setTestReport(report);
+        }
+      } catch {
+        // silent — no persisted results
+      }
+    }
+    if (!runningTests) loadPersistedResults();
+    return () => { cancelled = true; };
+  }, [profileId, selectedTestRuntime, runningTests]);
+
   async function handleDelete() {
     setConfirmDelete(false);
     try {
@@ -123,32 +149,69 @@ export function ProfileDetailView({ profileId, isBuiltin, initialProfile }: Prof
   }
 
   async function handleRunTests() {
+    if (!profile?.tests || profile.tests.length === 0) return;
+
     setRunningTests(true);
     setTestReport(null);
+    const tests = profile.tests;
+    const total = tests.length;
+    const collectedResults: TestResult[] = [];
+
+    setTestProgress({ current: 0, total, currentTask: tests[0].task, results: [] });
+
     try {
-      const res = await fetch(`/api/profiles/${profileId}/test`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ runtimeId: selectedTestRuntime }),
-      });
-      if (res.ok) {
-        const report: TestReport = await res.json();
-        setTestReport(report);
-        if (report.unsupported) {
-          toast.warning(report.unsupportedReason ?? "This runtime cannot test the selected profile");
-        } else if (report.totalFailed === 0) {
-          toast.success(`All ${report.totalPassed} tests passed`);
+      for (let i = 0; i < total; i++) {
+        setTestProgress({
+          current: i,
+          total,
+          currentTask: tests[i].task,
+          results: [...collectedResults],
+        });
+
+        const res = await fetch(`/api/profiles/${profileId}/test-single`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ runtimeId: selectedTestRuntime, testIndex: i }),
+        });
+
+        if (res.ok) {
+          const result: TestResult = await res.json();
+          collectedResults.push(result);
         } else {
-          toast.warning(`${report.totalPassed} passed, ${report.totalFailed} failed`);
+          // Mark as failed on error
+          collectedResults.push({
+            task: tests[i].task,
+            expectedKeywords: tests[i].expectedKeywords,
+            foundKeywords: [],
+            missingKeywords: tests[i].expectedKeywords,
+            passed: false,
+          });
         }
+      }
+
+      const totalPassed = collectedResults.filter((r) => r.passed).length;
+      const totalFailed = collectedResults.filter((r) => !r.passed).length;
+      const report: TestReport = {
+        profileId,
+        profileName: profile.name,
+        runtimeId: selectedTestRuntime,
+        results: collectedResults,
+        totalPassed,
+        totalFailed,
+      };
+
+      setTestReport(report);
+
+      if (totalFailed === 0) {
+        toast.success(`All ${totalPassed} tests passed`);
       } else {
-        const data = await res.json().catch(() => null);
-        toast.error(data?.error ?? "Failed to run tests");
+        toast.warning(`${totalPassed} passed, ${totalFailed} failed`);
       }
     } catch {
       toast.error("Network error running tests");
     } finally {
       setRunningTests(false);
+      setTestProgress(null);
     }
   }
 
@@ -419,16 +482,19 @@ export function ProfileDetailView({ profileId, isBuiltin, initialProfile }: Prof
         {/* SKILL.md — collapsible */}
         {profile.skillMd && (
           <details className="group" open>
-            <summary className="surface-card flex cursor-pointer list-none items-center gap-2 rounded-lg p-3 text-sm font-medium transition-colors hover:bg-accent/50">
-              <FileCode className="h-4 w-4 text-muted-foreground" />
-              <span>SKILL.md</span>
-              <Badge variant="secondary" className="text-xs ml-auto">
-                {lineCount} lines
+            <summary className="surface-card flex cursor-pointer list-none items-center gap-3 rounded-lg p-3 transition-colors hover:bg-accent/50">
+              <FileCode className="h-4 w-4 text-muted-foreground shrink-0" />
+              <div className="flex flex-col min-w-0">
+                <span className="text-sm font-semibold truncate">{profile.name}</span>
+                <span className="text-xs text-muted-foreground truncate">{profile.description}</span>
+              </div>
+              <Badge variant="secondary" className="text-xs ml-auto shrink-0">
+                SKILL.md · {lineCount} lines
               </Badge>
-              <span className="text-muted-foreground text-xs group-open:rotate-90 transition-transform">▶</span>
+              <span className="text-muted-foreground text-xs group-open:rotate-90 transition-transform shrink-0">▶</span>
             </summary>
             <div className="surface-panel mt-2 rounded-lg p-4">
-              <div className={`${PROSE_NOTIFICATION} max-h-64 overflow-auto surface-scroll rounded-lg p-4`}>
+              <div className={`${PROSE_NOTIFICATION} max-h-[32rem] overflow-auto surface-scroll rounded-lg p-4`}>
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
                   {profile.skillMd}
                 </ReactMarkdown>
@@ -483,8 +549,22 @@ export function ProfileDetailView({ profileId, isBuiltin, initialProfile }: Prof
                     `${runtimeLabelMap.get(selectedTestRuntime) ?? selectedTestRuntime} cannot test this profile yet`}
                 </div>
               )}
-              {/* Test Summary Bar */}
-              {testReport && !testReport.unsupported && (
+              {/* Progress Bar — visible during test execution */}
+              {testProgress && (
+                <div className="space-y-1.5">
+                  <div className="flex h-2 rounded-full overflow-hidden bg-muted">
+                    <div
+                      className="bg-primary transition-all duration-500 ease-out"
+                      style={{ width: `${((testProgress.current + (testProgress.results.length > testProgress.current ? 1 : 0)) / testProgress.total) * 100}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground animate-pulse truncate">
+                    Running test {testProgress.current + 1}/{testProgress.total}: {testProgress.currentTask}
+                  </p>
+                </div>
+              )}
+              {/* Test Summary Bar — visible after completion */}
+              {testReport && !testReport.unsupported && !testProgress && (
                 <div className="space-y-1">
                   <div className="flex h-1.5 rounded-full overflow-hidden bg-muted">
                     <div
@@ -504,17 +584,23 @@ export function ProfileDetailView({ profileId, isBuiltin, initialProfile }: Prof
               {/* Test Items */}
               <div className="space-y-1.5">
                 {profile.tests.map((test, i) => {
-                  const result = testReport?.unsupported ? undefined : testReport?.results[i];
+                  // During progress, show live results; after completion, show final report
+                  const liveResult = testProgress?.results[i];
+                  const finalResult = testReport?.unsupported ? undefined : testReport?.results[i];
+                  const result = liveResult ?? finalResult;
+                  const isRunningThis = testProgress && i === testProgress.current;
                   return (
-                    <div key={i} className="surface-card-muted rounded-md border p-2 text-sm">
+                    <div key={i} className={`surface-card-muted rounded-md border p-2 text-sm ${isRunningThis ? "ring-1 ring-primary/40" : ""}`}>
                       <div className="flex items-start gap-2">
-                        {result && (
+                        {isRunningThis ? (
+                          <Loader2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary animate-spin" />
+                        ) : result ? (
                           result.passed ? (
                             <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-status-completed" />
                           ) : (
                             <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-status-failed" />
                           )
-                        )}
+                        ) : null}
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-medium truncate">{test.task}</p>
                           <div className="mt-1 flex flex-wrap gap-0.5">

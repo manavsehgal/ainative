@@ -19,6 +19,7 @@ import {
   conversations,
   readingProgress,
   bookmarks,
+  profileTestResults,
 } from "@/lib/db/schema";
 import { readdirSync, unlinkSync, mkdirSync } from "fs";
 import { join } from "path";
@@ -52,6 +53,7 @@ export function clearAllData() {
   const bookmarksDeleted = db.delete(bookmarks).run().changes;
   const readingProgressDeleted = db.delete(readingProgress).run().changes;
 
+  const profileTestResultsDeleted = db.delete(profileTestResults).run().changes;
   const viewsDeleted = db.delete(views).run().changes;
   const usageLedgerDeleted = db.delete(usageLedger).run().changes;
   const logsDeleted = db.delete(agentLogs).run().changes;
@@ -108,6 +110,7 @@ export function clearAllData() {
     conversations: conversationsDeleted,
     bookmarks: bookmarksDeleted,
     readingProgress: readingProgressDeleted,
+    profileTestResults: profileTestResultsDeleted,
     files: filesDeleted,
     screenshots: screenshotsDeleted,
   };

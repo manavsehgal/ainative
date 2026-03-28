@@ -22,6 +22,7 @@ const STAGENT_TABLES = [
   "chat_messages",
   "reading_progress",
   "bookmarks",
+  "profile_test_results",
 ] as const;
 
 export function bootstrapStagentDatabase(sqlite: Database.Database): void {
@@ -403,6 +404,21 @@ export function bootstrapStagentDatabase(sqlite: Database.Database): void {
     );
 
     CREATE INDEX IF NOT EXISTS idx_bookmarks_chapter_id ON bookmarks(chapter_id);
+  `);
+
+  // ── Profile test results ────────────────────────────────────────────
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS profile_test_results (
+      id TEXT PRIMARY KEY NOT NULL,
+      profile_id TEXT NOT NULL,
+      runtime_id TEXT NOT NULL,
+      report_json TEXT NOT NULL,
+      total_passed INTEGER DEFAULT 0 NOT NULL,
+      total_failed INTEGER DEFAULT 0 NOT NULL,
+      created_at INTEGER NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_profile_test_results_profile_runtime ON profile_test_results(profile_id, runtime_id);
   `);
 }
 

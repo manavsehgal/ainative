@@ -463,6 +463,27 @@ export const chatMessages = sqliteTable(
   ]
 );
 
+// ── Profile test results ──────────────────────────────────────────────────
+
+export const profileTestResults = sqliteTable(
+  "profile_test_results",
+  {
+    id: text("id").primaryKey(),
+    profileId: text("profile_id").notNull(),
+    runtimeId: text("runtime_id").notNull(),
+    reportJson: text("report_json").notNull(),
+    totalPassed: integer("total_passed").default(0).notNull(),
+    totalFailed: integer("total_failed").default(0).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_profile_test_results_profile_runtime").on(
+      table.profileId,
+      table.runtimeId
+    ),
+  ]
+);
+
 // ── Book reading progress & bookmarks ───────────────────────────────────
 
 export const readingProgress = sqliteTable("reading_progress", {
@@ -512,5 +533,6 @@ export type EnvironmentSyncOpRow = InferSelectModel<typeof environmentSyncOps>;
 export type EnvironmentTemplateRow = InferSelectModel<typeof environmentTemplates>;
 export type ConversationRow = InferSelectModel<typeof conversations>;
 export type ChatMessageRow = InferSelectModel<typeof chatMessages>;
+export type ProfileTestResultRow = InferSelectModel<typeof profileTestResults>;
 export type ReadingProgressRow = InferSelectModel<typeof readingProgress>;
 export type BookmarkRow = InferSelectModel<typeof bookmarks>;
