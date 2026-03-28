@@ -29,6 +29,7 @@ export function KanbanColumn({
   onEditTask,
   onBulkDelete,
   onBulkStatusChange,
+  onBulkExecute,
 }: {
   status: TaskStatus;
   tasks: TaskItem[];
@@ -40,6 +41,7 @@ export function KanbanColumn({
   onEditTask?: (task: TaskItem) => void;
   onBulkDelete?: (taskIds: string[]) => void;
   onBulkStatusChange?: (taskIds: string[], newStatus: TaskStatus) => void;
+  onBulkExecute?: (taskIds: string[]) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
   const label = columnLabels[status] ?? status;
@@ -89,12 +91,12 @@ export function KanbanColumn({
       } else if (action === "queue") {
         onBulkStatusChange?.(ids, "queued");
       } else if (action === "run") {
-        onBulkStatusChange?.(ids, "queued"); // queue first, then execute via board
+        onBulkExecute?.(ids);
       }
 
       exitSelectMode();
     },
-    [selectedIds, onBulkDelete, onBulkStatusChange, exitSelectMode]
+    [selectedIds, onBulkDelete, onBulkStatusChange, onBulkExecute, exitSelectMode]
   );
 
   // Determine which bulk action button to show

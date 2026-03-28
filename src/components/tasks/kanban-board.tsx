@@ -157,6 +157,11 @@ export function KanbanBoard({
     }
   }, []);
 
+  // Sync local state when server re-renders with fresh data (e.g. after router.refresh())
+  useEffect(() => {
+    setTasks(initialTasks);
+  }, [initialTasks]);
+
   // Filter tasks by project and status
   const filteredTasks = tasks.filter((t) => {
     if (projectFilter !== "all" && t.projectId !== projectFilter) return false;
@@ -324,6 +329,32 @@ export function KanbanBoard({
     }
   }, [tasks, refresh]);
 
+  // Bulk execute: actually run queued tasks via POST /execute
+  const handleBulkExecute = useCallback(async (taskIds: string[]) => {
+    const prevTasks = tasks;
+    setTasks((prev) =>
+      prev.map((t) => (taskIds.includes(t.id) ? { ...t, status: "running" as TaskStatus } : t))
+    );
+    setAnnouncement(`Running ${taskIds.length} task${taskIds.length === 1 ? "" : "s"}.`);
+
+    const results = await Promise.allSettled(
+      taskIds.map((id) =>
+        fetch(`/api/tasks/${id}/execute`, { method: "POST" })
+      )
+    );
+
+    const failed = results.filter(
+      (r) => r.status === "rejected" || (r.status === "fulfilled" && !r.value.ok)
+    );
+
+    if (failed.length === 0) {
+      toast.success(`${taskIds.length} task${taskIds.length === 1 ? "" : "s"} started`);
+    } else {
+      toast.error(`${failed.length} of ${taskIds.length} tasks failed to start`);
+      refresh();
+    }
+  }, [tasks, refresh]);
+
   function handleTaskClick(task: TaskItem) {
     onTaskSelect ? onTaskSelect(task.id) : router.push(`/tasks/${task.id}`);
   }
@@ -403,6 +434,7 @@ export function KanbanBoard({
                 onEditTask={setEditingTask}
                 onBulkDelete={(ids) => setBulkDeleteIds(ids)}
                 onBulkStatusChange={handleBulkStatusChange}
+                onBulkExecute={handleBulkExecute}
               />
             ))}
           </div>
