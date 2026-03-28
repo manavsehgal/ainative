@@ -84,14 +84,28 @@ export async function GET(request: Request) {
 
   // Search profiles in-memory (file-based registry)
   const allProfiles = listProfiles();
+  const q = query.toLowerCase();
   const profileMatches = hasQuery
     ? allProfiles
-        .filter((p) => p.name.toLowerCase().includes(query.toLowerCase()) || p.id.toLowerCase().includes(query.toLowerCase()))
+        .filter((p) =>
+          p.name.toLowerCase().includes(q) ||
+          p.id.toLowerCase().includes(q) ||
+          p.description?.toLowerCase().includes(q) ||
+          p.tags?.some((t) => t.toLowerCase().includes(q))
+        )
         .slice(0, perType)
     : allProfiles.slice(0, perType);
 
   for (const p of profileMatches) {
-    results.push({ entityType: "profile", entityId: p.id, label: p.name });
+    results.push({
+      entityType: "profile",
+      entityId: p.id,
+      label: p.name,
+      description: p.description
+        ? `${p.domain} · ${p.description.slice(0, 100)}`
+        : p.domain,
+      status: p.domain,
+    });
   }
 
   return NextResponse.json({ results: results.slice(0, limit) });

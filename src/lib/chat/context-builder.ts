@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { projects, tasks, workflows, documents, schedules } from "@/lib/db/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { getMessages } from "@/lib/data/chat";
+import { getProfile } from "@/lib/agents/profiles/registry";
 import { STAGENT_SYSTEM_PROMPT } from "./system-prompt";
 import type { WorkspaceContext } from "@/lib/environment/workspace-context";
 
@@ -254,8 +255,27 @@ async function buildTier3(mentions: MentionReference[]): Promise<string> {
         break;
       }
       case "profile": {
-        parts.push(`\n### Profile: ${mention.label}`);
-        parts.push(`Profile ID: ${mention.entityId}`);
+        const profile = getProfile(mention.entityId);
+        if (profile) {
+          parts.push(`\n### Agent Profile: ${profile.name}`);
+          parts.push(`Domain: ${profile.domain}`);
+          if (profile.description) parts.push(`Description: ${profile.description}`);
+          if (profile.tags?.length) parts.push(`Tags: ${profile.tags.join(", ")}`);
+          if (profile.allowedTools?.length) parts.push(`Allowed Tools: ${profile.allowedTools.join(", ")}`);
+          if (profile.maxTurns) parts.push(`Max Turns: ${profile.maxTurns}`);
+          if (profile.outputFormat) parts.push(`Output Format: ${profile.outputFormat}`);
+          if (profile.skillMd) {
+            if (profile.skillMd.length <= 4000) {
+              parts.push(`\nProfile Instructions (SKILL.md):\n${profile.skillMd}`);
+            } else {
+              parts.push(`\nProfile Instructions (SKILL.md, preview):\n${profile.skillMd.slice(0, 3000)}`);
+              parts.push(`\n...(truncated — use the get_profile tool with profileId "${profile.id}" for full content)`);
+            }
+          }
+        } else {
+          parts.push(`\n### Profile: ${mention.label}`);
+          parts.push(`Profile ID: ${mention.entityId} (not found in registry)`);
+        }
         break;
       }
     }
