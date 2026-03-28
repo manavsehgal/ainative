@@ -198,248 +198,246 @@ export function ProfileAssistPanel({
     setAppliedSections(new Set(["identity", "config", "skillmd", "tests"]));
   }
 
-  // Initial state — show goal input
-  if (!result) {
-    return (
-      <div className="surface-card-muted rounded-lg border border-primary/20 p-4 space-y-3">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-primary" />
-          <span className="text-sm font-medium">AI Assist</span>
-          <span className="text-xs text-muted-foreground">
-            Describe your agent and AI will generate the full profile
-          </span>
-        </div>
-
-        <Textarea
-          value={goal}
-          onChange={(e) => setGoal(e.target.value)}
-          placeholder="I want an agent that..."
-          rows={2}
-          className="text-sm"
-        />
-
-        {/* Example prompts for first-time users */}
-        {!goal && !isEdit && (
-          <div className="flex flex-wrap gap-1.5">
-            {EXAMPLE_PROMPTS.map((prompt) => (
-              <button
-                key={prompt}
-                type="button"
-                className="rounded-full border border-border/60 px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
-                onClick={() => setGoal(prompt)}
-              >
-                {prompt}
-              </button>
-            ))}
-          </div>
-        )}
-
-        <div className="flex items-center gap-2">
-          <Select
-            value={domain}
-            onValueChange={(v) => setDomain(v as "work" | "personal" | "auto")}
-          >
-            <SelectTrigger className="w-32 h-8 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="auto">Auto-detect</SelectItem>
-              <SelectItem value="work">Work</SelectItem>
-              <SelectItem value="personal">Personal</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => generate("generate")}
-            disabled={loading || !goal.trim()}
-          >
-            <Sparkles className="h-3 w-3 mr-1" />
-            Generate Profile
-          </Button>
-
-          {isEdit && (
-            <>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => generate("refine-skillmd")}
-                disabled={loading}
-              >
-                Refine SKILL.md
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => generate("suggest-tests")}
-                disabled={loading}
-              >
-                Suggest Tests
-              </Button>
-            </>
-          )}
-        </div>
-
-        <ProgressBar loading={loading} />
-        {error && <p className="text-xs text-destructive">{error}</p>}
-      </div>
-    );
-  }
-
-  // Results state
   return (
     <div className="surface-card-muted rounded-lg border border-primary/20 p-4 space-y-3">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-primary" />
-          <span className="text-sm font-medium">AI Suggestions</span>
-          {allApplied && (
-            <Badge variant="default" className="text-xs">
-              <Check className="h-3 w-3 mr-0.5" /> Applied
-            </Badge>
-          )}
-        </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="h-6 px-2"
-          onClick={() => setExpanded(!expanded)}
-        >
-          {expanded ? (
-            <ChevronUp className="h-3 w-3" />
-          ) : (
-            <ChevronDown className="h-3 w-3" />
-          )}
-        </Button>
+      <div className="flex items-center gap-2">
+        <Sparkles className="h-4 w-4 text-primary" />
+        <span className="text-sm font-medium">AI Assist</span>
+        {!result && (
+          <span className="text-xs text-muted-foreground">
+            Describe your agent and AI will generate the full profile
+          </span>
+        )}
+        {result && allApplied && (
+          <Badge variant="default" className="text-xs">
+            <Check className="h-3 w-3 mr-0.5" /> Applied
+          </Badge>
+        )}
       </div>
 
-      {expanded && (
-        <div className="space-y-3">
-          {/* Reasoning */}
-          {result.reasoning && (
-            <div className="rounded-md border border-primary/20 bg-primary/5 p-3">
-              <div className="flex gap-2">
-                <Info className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
-                <p className="text-xs text-muted-foreground">{result.reasoning}</p>
-              </div>
-            </div>
-          )}
+      {/* Goal input — always visible so user can edit & regenerate */}
+      <Textarea
+        value={goal}
+        onChange={(e) => setGoal(e.target.value)}
+        placeholder="I want an agent that..."
+        rows={2}
+        className="text-sm"
+      />
 
-          {/* Identity section */}
-          <SectionCard
-            title="Identity"
-            applied={appliedSections.has("identity")}
-            onApply={() => applySection("identity")}
-          >
-            <div className="text-sm space-y-1">
-              <p><span className="text-muted-foreground">Name:</span> {result.name}</p>
-              <p><span className="text-muted-foreground">Domain:</span> {result.domain}</p>
-              <div className="flex items-center gap-1 flex-wrap">
-                <span className="text-muted-foreground">Tags:</span>
-                {result.tags.map((tag) => (
-                  <Badge key={tag} variant="outline" className="text-xs">{tag}</Badge>
-                ))}
-              </div>
-            </div>
-          </SectionCard>
-
-          {/* Configuration section */}
-          <SectionCard
-            title="Configuration"
-            applied={appliedSections.has("config")}
-            onApply={() => applySection("config")}
-          >
-            <div className="text-sm space-y-1">
-              <p><span className="text-muted-foreground">Max Turns:</span> {result.maxTurns}</p>
-              <p><span className="text-muted-foreground">Output Format:</span> {result.outputFormat || "default"}</p>
-              <div className="flex items-center gap-1 flex-wrap">
-                <span className="text-muted-foreground">Tools:</span>
-                {result.allowedTools.length > 0 ? (
-                  result.allowedTools.map((tool) => (
-                    <Badge key={tool} variant="outline" className="text-xs">{tool}</Badge>
-                  ))
-                ) : (
-                  <span className="text-xs italic">unrestricted</span>
-                )}
-              </div>
-            </div>
-          </SectionCard>
-
-          {/* SKILL.md section */}
-          <SectionCard
-            title="SKILL.md"
-            applied={appliedSections.has("skillmd")}
-            onApply={() => applySection("skillmd")}
-          >
-            <div>
-              <button
-                type="button"
-                className="text-xs text-primary hover:underline"
-                onClick={() => setSkillMdExpanded(!skillMdExpanded)}
-              >
-                {skillMdExpanded ? "Collapse" : "Preview"} ({result.skillMd.split("\n").length} lines)
-              </button>
-              {skillMdExpanded && (
-                <pre className="mt-2 max-h-48 overflow-auto rounded-md bg-muted/50 p-3 text-xs font-mono whitespace-pre-wrap">
-                  {result.skillMd}
-                </pre>
-              )}
-            </div>
-          </SectionCard>
-
-          {/* Tests section */}
-          {result.tests.length > 0 && (
-            <SectionCard
-              title={`Smoke Tests (${result.tests.length})`}
-              applied={appliedSections.has("tests")}
-              onApply={() => applySection("tests")}
+      {/* Example prompts for first-time users */}
+      {!goal && !isEdit && !result && (
+        <div className="flex flex-wrap gap-1.5">
+          {EXAMPLE_PROMPTS.map((prompt) => (
+            <button
+              key={prompt}
+              type="button"
+              className="rounded-full border border-border/60 px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
+              onClick={() => setGoal(prompt)}
             >
-              <div className="space-y-1.5">
-                {result.tests.map((test, i) => (
-                  <div key={i} className="text-xs">
-                    <p className="font-medium">{i + 1}. {test.task}</p>
-                    <p className="text-muted-foreground ml-3">
-                      Keywords: {test.expectedKeywords}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </SectionCard>
-          )}
+              {prompt}
+            </button>
+          ))}
+        </div>
+      )}
 
-          {/* Action buttons */}
-          <div className="flex gap-2">
+      {/* Action buttons */}
+      <div className="flex items-center gap-2">
+        <Select
+          value={domain}
+          onValueChange={(v) => setDomain(v as "work" | "personal" | "auto")}
+        >
+          <SelectTrigger className="w-32 h-8 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="auto">Auto-detect</SelectItem>
+            <SelectItem value="work">Work</SelectItem>
+            <SelectItem value="personal">Personal</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Button
+          type="button"
+          size="sm"
+          onClick={() => generate("generate")}
+          disabled={loading || !goal.trim()}
+        >
+          <Sparkles className="h-3 w-3 mr-1" />
+          {result ? "Regenerate" : "Generate Profile"}
+        </Button>
+
+        {isEdit && (
+          <>
             <Button
               type="button"
+              variant="outline"
               size="sm"
-              onClick={handleApplyAll}
-              disabled={allApplied}
+              onClick={() => generate("refine-skillmd")}
+              disabled={loading}
             >
-              {allApplied ? (
-                <><Check className="h-3 w-3 mr-1" /> All Applied</>
-              ) : (
-                <><Sparkles className="h-3 w-3 mr-1" /> Apply All</>
-              )}
+              Refine SKILL.md
             </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => generate("suggest-tests")}
+              disabled={loading}
+            >
+              Suggest Tests
+            </Button>
+          </>
+        )}
+      </div>
+
+      <ProgressBar loading={loading} />
+      {error && <p className="text-xs text-destructive">{error}</p>}
+
+      {/* Results — collapsible */}
+      {result && (
+        <>
+          <div className="flex items-center justify-between border-t border-border/40 pt-3">
+            <span className="text-xs font-medium text-muted-foreground">Generated Profile</span>
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              onClick={() => {
-                setResult(null);
-                setGoal("");
-              }}
-              className="text-muted-foreground"
+              className="h-6 px-2"
+              onClick={() => setExpanded(!expanded)}
             >
-              <X className="h-3 w-3 mr-1" /> Dismiss
+              {expanded ? (
+                <ChevronUp className="h-3 w-3" />
+              ) : (
+                <ChevronDown className="h-3 w-3" />
+              )}
             </Button>
           </div>
-        </div>
+
+          {expanded && (
+            <div className="space-y-3">
+              {/* Reasoning */}
+              {result.reasoning && (
+                <div className="rounded-md border border-primary/20 bg-primary/5 p-3">
+                  <div className="flex gap-2">
+                    <Info className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
+                    <p className="text-xs text-muted-foreground">{result.reasoning}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Two-column layout for compact result sections */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {/* Identity section */}
+                <SectionCard
+                  title="Identity"
+                  applied={appliedSections.has("identity")}
+                  onApply={() => applySection("identity")}
+                >
+                  <div className="text-sm space-y-1">
+                    <p><span className="text-muted-foreground">Name:</span> {result.name}</p>
+                    <p><span className="text-muted-foreground">Domain:</span> {result.domain}</p>
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <span className="text-muted-foreground">Tags:</span>
+                      {result.tags.map((tag) => (
+                        <Badge key={tag} variant="outline" className="text-xs">{tag}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                </SectionCard>
+
+                {/* Configuration section */}
+                <SectionCard
+                  title="Configuration"
+                  applied={appliedSections.has("config")}
+                  onApply={() => applySection("config")}
+                >
+                  <div className="text-sm space-y-1">
+                    <p><span className="text-muted-foreground">Max Turns:</span> {result.maxTurns}</p>
+                    <p><span className="text-muted-foreground">Output:</span> {result.outputFormat || "default"}</p>
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <span className="text-muted-foreground">Tools:</span>
+                      {result.allowedTools.length > 0 ? (
+                        result.allowedTools.map((tool) => (
+                          <Badge key={tool} variant="outline" className="text-xs">{tool}</Badge>
+                        ))
+                      ) : (
+                        <span className="text-xs italic">unrestricted</span>
+                      )}
+                    </div>
+                  </div>
+                </SectionCard>
+              </div>
+
+              {/* SKILL.md section — full width */}
+              <SectionCard
+                title="SKILL.md"
+                applied={appliedSections.has("skillmd")}
+                onApply={() => applySection("skillmd")}
+              >
+                <div>
+                  <button
+                    type="button"
+                    className="text-xs text-primary hover:underline"
+                    onClick={() => setSkillMdExpanded(!skillMdExpanded)}
+                  >
+                    {skillMdExpanded ? "Collapse" : "Preview"} ({result.skillMd.split("\n").length} lines)
+                  </button>
+                  {skillMdExpanded && (
+                    <pre className="mt-2 max-h-48 overflow-auto rounded-md bg-muted/50 p-3 text-xs font-mono whitespace-pre-wrap">
+                      {result.skillMd}
+                    </pre>
+                  )}
+                </div>
+              </SectionCard>
+
+              {/* Tests section — full width */}
+              {result.tests.length > 0 && (
+                <SectionCard
+                  title={`Smoke Tests (${result.tests.length})`}
+                  applied={appliedSections.has("tests")}
+                  onApply={() => applySection("tests")}
+                >
+                  <div className="space-y-1.5">
+                    {result.tests.map((test, i) => (
+                      <div key={i} className="text-xs">
+                        <p className="font-medium">{i + 1}. {test.task}</p>
+                        <p className="text-muted-foreground ml-3">
+                          Keywords: {test.expectedKeywords}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </SectionCard>
+              )}
+
+              {/* Action buttons */}
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleApplyAll}
+                  disabled={allApplied}
+                >
+                  {allApplied ? (
+                    <><Check className="h-3 w-3 mr-1" /> All Applied</>
+                  ) : (
+                    <><Sparkles className="h-3 w-3 mr-1" /> Apply All</>
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setResult(null)}
+                  className="text-muted-foreground"
+                >
+                  <X className="h-3 w-3 mr-1" /> Dismiss
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

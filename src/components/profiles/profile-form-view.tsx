@@ -21,7 +21,6 @@ import {
   User,
   Tag,
   SlidersHorizontal,
-  Wrench,
   FileCode,
   Cpu,
   FlaskConical,
@@ -298,8 +297,8 @@ export function ProfileFormView({
         existingTags={parseCommaSeparated(tags)}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {/* Identity */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Row 1: Identity + Metadata — two tall, dense cards side by side */}
         <FormSectionCard icon={User} title="Identity">
           <div className="space-y-3">
             <div className="space-y-1.5">
@@ -342,7 +341,6 @@ export function ProfileFormView({
           </div>
         </FormSectionCard>
 
-        {/* Metadata */}
         <FormSectionCard icon={Tag} title="Metadata">
           <div className="space-y-3">
             <div className="space-y-1.5">
@@ -384,8 +382,8 @@ export function ProfileFormView({
           </div>
         </FormSectionCard>
 
-        {/* Model Tuning */}
-        <FormSectionCard icon={SlidersHorizontal} title="Model Tuning">
+        {/* Row 2: Compact cards — Model Tuning + Tools + Runtime in a 2-col layout */}
+        <FormSectionCard icon={SlidersHorizontal} title="Model Tuning & Tools">
           <div className="space-y-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -414,58 +412,65 @@ export function ProfileFormView({
               />
               <p className="text-xs text-muted-foreground">Hint injected into agent context (e.g. &quot;markdown&quot;, &quot;json&quot;, &quot;structured-findings&quot;).</p>
             </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="profile-tools">Allowed Tools</Label>
+              <TagInput
+                id="profile-tools"
+                value={allowedTools}
+                onChange={setAllowedTools}
+                suggestions={toolSuggestions}
+                placeholder="Read, Edit, Bash, Grep"
+              />
+              <p className="text-xs text-muted-foreground">Restricts which tools the agent can call. Leave empty for unrestricted access.</p>
+            </div>
           </div>
         </FormSectionCard>
 
-        {/* Runtime Coverage */}
-        <FormSectionCard icon={Cpu} title="Runtime Coverage">
-          <div className="space-y-3">
-            {runtimeOptions.map((runtime) => (
-              <div
-                key={runtime.id}
-                className="surface-card-muted flex items-center justify-between rounded-lg border border-border/60 px-3 py-2"
-              >
-                <div>
-                  <p className="text-sm font-medium">{runtime.label}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {runtime.id === "claude-code"
-                      ? "Shared SKILL.md instructions apply here by default"
-                      : "Enable when this profile should be selectable on Codex"}
-                  </p>
+        <FormSectionCard icon={Cpu} title="Runtime & Tests">
+          <div className="space-y-4">
+            {/* Runtime toggles */}
+            <div className="space-y-2">
+              {runtimeOptions.map((runtime) => (
+                <div
+                  key={runtime.id}
+                  className="surface-card-muted flex items-center justify-between rounded-lg border border-border/60 px-3 py-2"
+                >
+                  <div>
+                    <p className="text-sm font-medium">{runtime.label}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {runtime.id === "claude-code"
+                        ? "Shared SKILL.md instructions apply here by default"
+                        : "Enable when this profile should be selectable on Codex"}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={supportedRuntimes.includes(runtime.id)}
+                    onCheckedChange={(checked) => toggleRuntime(runtime.id, checked)}
+                  />
                 </div>
-                <Switch
-                  checked={supportedRuntimes.includes(runtime.id)}
-                  onCheckedChange={(checked) => toggleRuntime(runtime.id, checked)}
-                />
+              ))}
+            </div>
+            {/* Smoke tests inline */}
+            <div className="border-t border-border/40 pt-3">
+              <div className="flex items-center gap-2 mb-2">
+                <FlaskConical className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-xs font-medium">Smoke Tests</span>
               </div>
-            ))}
-            <p className="text-xs text-muted-foreground">
-              Runtime support is enforced across tasks, schedules, workflow steps, and profile tests.
-            </p>
+              <SmokeTestEditor
+                tests={tests}
+                onChange={setTests}
+                keywordSuggestions={parseCommaSeparated(tags)}
+              />
+            </div>
           </div>
         </FormSectionCard>
 
-        {/* Tools */}
-        <FormSectionCard icon={Wrench} title="Tools" className="lg:col-span-1 md:col-span-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="profile-tools">Allowed Tools</Label>
-            <TagInput
-              id="profile-tools"
-              value={allowedTools}
-              onChange={setAllowedTools}
-              suggestions={toolSuggestions}
-              placeholder="Read, Edit, Bash, Grep"
-            />
-            <p className="text-xs text-muted-foreground">Restricts which tools the agent can call. Leave empty for unrestricted access.</p>
-          </div>
-        </FormSectionCard>
-
-        {/* Codex Override */}
+        {/* Codex Override — only when codex runtime selected */}
         {supportedRuntimes.includes("openai-codex-app-server") && (
           <FormSectionCard
             icon={Cpu}
             title="Codex Override"
-            className="md:col-span-2 lg:col-span-1"
+            className="md:col-span-2"
           >
             <div className="space-y-1.5">
               <Label htmlFor="profile-codex-instructions">
@@ -476,7 +481,7 @@ export function ProfileFormView({
                 value={codexInstructions}
                 onChange={(e) => setCodexInstructions(e.target.value)}
                 placeholder="Optional runtime-specific override. Leave empty to reuse SKILL.md."
-                rows={8}
+                rows={6}
               />
               <p className="text-xs text-muted-foreground">
                 Optional provider-specific instructions for Codex. Shared tools and policies still apply unless overridden in profile metadata.
@@ -485,25 +490,11 @@ export function ProfileFormView({
           </FormSectionCard>
         )}
 
-        {/* Smoke Tests */}
-        <FormSectionCard
-          icon={FlaskConical}
-          title="Smoke Tests"
-          hint="Define tasks to verify this profile behaves correctly. Run tests from the profile detail page after creation."
-          className="md:col-span-2 lg:col-span-1"
-        >
-          <SmokeTestEditor
-            tests={tests}
-            onChange={setTests}
-            keywordSuggestions={parseCommaSeparated(tags)}
-          />
-        </FormSectionCard>
-
-        {/* SKILL.md */}
+        {/* SKILL.md — full width, the biggest card */}
         <FormSectionCard
           icon={FileCode}
           title="SKILL.md"
-          className="md:col-span-2 lg:col-span-2 lg:row-span-2"
+          className="md:col-span-2"
         >
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
@@ -518,7 +509,7 @@ export function ProfileFormView({
               onChange={(e) => setSkillMd(e.target.value)}
               placeholder="Behavioral instructions for the agent..."
               className="font-mono"
-              rows={12}
+              rows={14}
             />
             <p className="text-xs text-muted-foreground">Behavioral instructions injected as the agent&apos;s system prompt. Start with a role statement, add guidelines, define output format.</p>
           </div>
