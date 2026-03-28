@@ -8,6 +8,12 @@ export async function getSetting(key: string): Promise<string | null> {
   return rows[0]?.value ?? null;
 }
 
+/** Read a single setting from DB (synchronous — safe with better-sqlite3) */
+export function getSettingSync(key: string): string | null {
+  const rows = db.select().from(settings).where(eq(settings.key, key)).all();
+  return rows[0]?.value ?? null;
+}
+
 /** Upsert a setting in DB */
 export async function setSetting(key: string, value: string): Promise<void> {
   const now = new Date();

@@ -236,7 +236,7 @@ export function LearnedContextPanel({ profileId }: LearnedContextPanelProps) {
               <History className="h-3 w-3" />
               Version History
             </div>
-            <div className="max-h-72 space-y-2 overflow-y-auto">
+            <div className="max-h-[32rem] space-y-2 overflow-y-auto">
               {entries.map((entry) => {
                 const { row, snapshotContent, derivedDiff } = entry;
                 const badgeConfig = CHANGE_TYPE_BADGE[row.changeType] ?? {
@@ -327,13 +327,13 @@ export function LearnedContextPanel({ profileId }: LearnedContextPanelProps) {
                       </div>
 
                       {snapshotContent ? (
-                        <div className={`${PROSE_NOTIFICATION} max-h-28 overflow-auto rounded-md bg-background/50 p-2`}>
+                        <div className={`${PROSE_NOTIFICATION} max-h-48 overflow-auto rounded-md bg-background/50 p-2`}>
                           <ReactMarkdown remarkPlugins={[remarkGfm]}>
                             {snapshotContent}
                           </ReactMarkdown>
                         </div>
                       ) : row.diff ? (
-                        <div className={`${PROSE_NOTIFICATION} max-h-24 overflow-auto rounded-md bg-background/50 p-2`}>
+                        <div className={`${PROSE_NOTIFICATION} max-h-40 overflow-auto rounded-md bg-background/50 p-2`}>
                           <ReactMarkdown remarkPlugins={[remarkGfm]}>
                             {row.diff}
                           </ReactMarkdown>
@@ -353,7 +353,7 @@ export function LearnedContextPanel({ profileId }: LearnedContextPanelProps) {
                                 : `vs v${derivedDiff.previousVersion}`}
                             </span>
                           </div>
-                          <div className="max-h-44 space-y-1 overflow-y-auto font-mono text-xs">
+                          <div className="max-h-64 space-y-1 overflow-y-auto font-mono text-xs">
                             {derivedDiff.lines.map((line, index) => {
                               const toneClass =
                                 line.kind === "added"

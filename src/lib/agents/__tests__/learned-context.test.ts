@@ -77,6 +77,16 @@ vi.mock("../runtime/claude", () => ({
   runMetaCompletion: mockRunMetaCompletion,
 }));
 
+vi.mock("@/lib/settings/helpers", () => ({
+  getSettingSync: vi.fn().mockReturnValue(null),
+}));
+
+vi.mock("@/lib/constants/settings", () => ({
+  SETTINGS_KEYS: {
+    LEARNING_CONTEXT_CHAR_LIMIT: "learning.contextCharLimit",
+  },
+}));
+
 // ─── Import under test ────────────────────────────────────────────────
 
 import {

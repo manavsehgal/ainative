@@ -10,6 +10,7 @@ export const SETTINGS_KEYS = {
   PRICING_REGISTRY: "usage.pricingRegistry",
   SDK_TIMEOUT_SECONDS: "runtime.sdkTimeoutSeconds",
   MAX_TURNS: "runtime.maxTurns",
+  LEARNING_CONTEXT_CHAR_LIMIT: "learning.contextCharLimit",
   BROWSER_MCP_CHROME_DEVTOOLS_ENABLED: "browser.chromeDevtoolsEnabled",
   BROWSER_MCP_PLAYWRIGHT_ENABLED: "browser.playwrightEnabled",
   BROWSER_MCP_CHROME_DEVTOOLS_CONFIG: "browser.chromeDevtoolsConfig",

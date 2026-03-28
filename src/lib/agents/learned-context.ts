@@ -3,9 +3,27 @@ import { learnedContext, notifications } from "@/lib/db/schema";
 import { and, desc, eq } from "drizzle-orm";
 import type { LearnedContextRow } from "@/lib/db/schema";
 import { runMetaCompletion } from "./runtime/claude";
+import { getSettingSync } from "@/lib/settings/helpers";
+import { SETTINGS_KEYS } from "@/lib/constants/settings";
 
-const CONTEXT_CHAR_LIMIT = 8_000;
-const SUMMARIZATION_THRESHOLD = 6_000;
+const DEFAULT_CONTEXT_CHAR_LIMIT = 8_000;
+const SUMMARIZATION_RATIO = 0.75;
+
+function getContextLimits(): {
+  charLimit: number;
+  summarizationThreshold: number;
+} {
+  const raw = getSettingSync(SETTINGS_KEYS.LEARNING_CONTEXT_CHAR_LIMIT);
+  const parsed = raw ? parseInt(raw, 10) : DEFAULT_CONTEXT_CHAR_LIMIT;
+  const charLimit =
+    !isNaN(parsed) && parsed >= 2000 && parsed <= 32000
+      ? parsed
+      : DEFAULT_CONTEXT_CHAR_LIMIT;
+  return {
+    charLimit,
+    summarizationThreshold: Math.floor(charLimit * SUMMARIZATION_RATIO),
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Read helpers
@@ -241,23 +259,25 @@ export function checkContextSize(profileId: string): {
   limit: number;
   needsSummarization: boolean;
 } {
+  const { charLimit, summarizationThreshold } = getContextLimits();
   const content = getActiveLearnedContext(profileId);
   const currentSize = content?.length ?? 0;
   return {
     currentSize,
-    limit: CONTEXT_CHAR_LIMIT,
-    needsSummarization: currentSize > SUMMARIZATION_THRESHOLD,
+    limit: charLimit,
+    needsSummarization: currentSize > summarizationThreshold,
   };
 }
 
 /** Auto-condense context via LLM when it grows too large */
 export async function summarizeContext(profileId: string): Promise<void> {
+  const { summarizationThreshold } = getContextLimits();
   const content = getActiveLearnedContext(profileId);
-  if (!content || content.length <= SUMMARIZATION_THRESHOLD) return;
+  if (!content || content.length <= summarizationThreshold) return;
 
   const { text } = await runMetaCompletion({
     prompt: `You are condensing learned context for an AI agent profile "${profileId}".
-The current context has grown to ${content.length} characters and needs to be summarized to under ${SUMMARIZATION_THRESHOLD} characters while preserving all key patterns, best practices, and important insights.
+The current context has grown to ${content.length} characters and needs to be summarized to under ${summarizationThreshold} characters while preserving all key patterns, best practices, and important insights.
 
 Current learned context:
 ---
@@ -269,7 +289,7 @@ Produce a condensed version that:
 2. Merges related patterns into combined entries
 3. Removes redundant or superseded information
 4. Keeps the same format (bullet points or sections)
-5. Stays under ${SUMMARIZATION_THRESHOLD} characters
+5. Stays under ${summarizationThreshold} characters
 
 Output ONLY the condensed context, no preamble.`,
     activityType: "context_summarization",
