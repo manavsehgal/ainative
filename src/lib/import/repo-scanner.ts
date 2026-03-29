@@ -19,6 +19,7 @@ export interface DiscoveredSkill {
   hasProfileYaml: boolean;
   hasSkillMd: boolean;
   hasSkillMdTmpl: boolean;
+  hasReadme: boolean;
   description: string;
   frontmatter: Record<string, string>;
 }
@@ -29,6 +30,7 @@ export interface RepoScanResult {
   branch: string;
   commitSha: string;
   discoveredSkills: DiscoveredSkill[];
+  repoReadme: string;
   scanDurationMs: number;
 }
 
@@ -74,23 +76,27 @@ export async function scanRepo(repoUrl: string): Promise<RepoScanResult> {
   const filePaths = new Set(tree.filter((e: TreeEntry) => e.type === "blob").map((e: TreeEntry) => e.path));
 
   // Find all directories containing SKILL.md
-  const skillDirs = new Map<string, { hasSkillMd: boolean; hasSkillMdTmpl: boolean; hasProfileYaml: boolean }>();
+  const skillDirs = new Map<string, { hasSkillMd: boolean; hasSkillMdTmpl: boolean; hasProfileYaml: boolean; hasReadme: boolean }>();
 
   for (const filePath of filePaths) {
     const fileName = filePath.split("/").pop() ?? "";
     const dirPath = filePath.split("/").slice(0, -1).join("/");
 
     if (fileName === "SKILL.md") {
-      const entry = skillDirs.get(dirPath) ?? { hasSkillMd: false, hasSkillMdTmpl: false, hasProfileYaml: false };
+      const entry = skillDirs.get(dirPath) ?? { hasSkillMd: false, hasSkillMdTmpl: false, hasProfileYaml: false, hasReadme: false };
       entry.hasSkillMd = true;
       skillDirs.set(dirPath, entry);
     } else if (fileName === "SKILL.md.tmpl") {
-      const entry = skillDirs.get(dirPath) ?? { hasSkillMd: false, hasSkillMdTmpl: false, hasProfileYaml: false };
+      const entry = skillDirs.get(dirPath) ?? { hasSkillMd: false, hasSkillMdTmpl: false, hasProfileYaml: false, hasReadme: false };
       entry.hasSkillMdTmpl = true;
       skillDirs.set(dirPath, entry);
     } else if (fileName === "profile.yaml") {
-      const entry = skillDirs.get(dirPath) ?? { hasSkillMd: false, hasSkillMdTmpl: false, hasProfileYaml: false };
+      const entry = skillDirs.get(dirPath) ?? { hasSkillMd: false, hasSkillMdTmpl: false, hasProfileYaml: false, hasReadme: false };
       entry.hasProfileYaml = true;
+      skillDirs.set(dirPath, entry);
+    } else if (fileName.toLowerCase() === "readme.md") {
+      const entry = skillDirs.get(dirPath) ?? { hasSkillMd: false, hasSkillMdTmpl: false, hasProfileYaml: false, hasReadme: false };
+      entry.hasReadme = true;
       skillDirs.set(dirPath, entry);
     }
   }
@@ -123,6 +129,7 @@ export async function scanRepo(repoUrl: string): Promise<RepoScanResult> {
           hasProfileYaml: info.hasProfileYaml,
           hasSkillMd: info.hasSkillMd,
           hasSkillMdTmpl: info.hasSkillMdTmpl,
+          hasReadme: info.hasReadme,
           description: frontmatter.description ?? "",
           frontmatter,
         } satisfies DiscoveredSkill;
@@ -137,6 +144,14 @@ export async function scanRepo(repoUrl: string): Promise<RepoScanResult> {
     if (skill) skills.push(skill);
   }
 
+  // Fetch repo-level README.md for context
+  let repoReadme = "";
+  try {
+    repoReadme = await getFileContent(owner, repo, "README.md", branch);
+  } catch {
+    // No README.md — continue without it
+  }
+
   // Sort by path for consistent ordering
   skills.sort((a, b) => a.path.localeCompare(b.path));
 
@@ -146,6 +161,7 @@ export async function scanRepo(repoUrl: string): Promise<RepoScanResult> {
     branch,
     commitSha,
     discoveredSkills: skills,
+    repoReadme,
     scanDurationMs: Date.now() - start,
   };
 }
@@ -158,7 +174,7 @@ export async function fetchSkillContent(
   repo: string,
   branch: string,
   skill: DiscoveredSkill
-): Promise<{ skillMd: string; profileYaml: string | null }> {
+): Promise<{ skillMd: string; profileYaml: string | null; readme: string | null }> {
   const skillFile = skill.hasSkillMd ? "SKILL.md" : "SKILL.md.tmpl";
   const skillPath = skill.path ? `${skill.path}/${skillFile}` : skillFile;
 
@@ -174,5 +190,15 @@ export async function fetchSkillContent(
     }
   }
 
-  return { skillMd, profileYaml };
+  let readme: string | null = null;
+  if (skill.hasReadme) {
+    const readmePath = skill.path ? `${skill.path}/README.md` : "README.md";
+    try {
+      readme = await getFileContent(owner, repo, readmePath, branch);
+    } catch {
+      // README fetch failed — continue without it
+    }
+  }
+
+  return { skillMd, profileYaml, readme };
 }

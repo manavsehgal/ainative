@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getFileContent } from "@/lib/import/github-api";
-import { contentHash } from "@/lib/import/format-adapter";
+import { contentHash, enrichProfileFromContent, type ReadmeContext } from "@/lib/import/format-adapter";
 import {
   getProfile,
   updateProfile,
@@ -55,13 +55,34 @@ export async function POST(req: NextRequest) {
           meta.branch
         );
 
+        // Fetch README context for enrichment
+        let repoReadme = "";
+        try {
+          repoReadme = await getFileContent(meta.repoOwner, meta.repoName, "README.md", meta.branch);
+        } catch { /* no README */ }
+
+        let skillReadme: string | null = null;
+        if (meta.filePath) {
+          try {
+            skillReadme = await getFileContent(meta.repoOwner, meta.repoName, `${meta.filePath}/README.md`, meta.branch);
+          } catch { /* no per-skill README */ }
+        }
+
+        const readmeCtx: ReadmeContext = { skillReadme, repoReadme };
+        const dirName = meta.filePath.split("/").pop() ?? profile.id;
+
+        // Re-extract description and tags from updated content
+        const { enrichedSkillMd, tags } = enrichProfileFromContent(
+          newSkillMd, profile.tags, profile.name, dirName, readmeCtx
+        );
+
         // Build updated config
         const updatedConfig: ProfileConfig = {
           id: profile.id,
           name: profile.name,
           version: profile.version ?? "1.0.0",
           domain: profile.domain as "work" | "personal",
-          tags: profile.tags,
+          tags,
           allowedTools: profile.allowedTools,
           mcpServers: profile.mcpServers,
           canUseToolPolicy: profile.canUseToolPolicy,
@@ -79,7 +100,7 @@ export async function POST(req: NextRequest) {
           },
         };
 
-        updateProfile(update.profileId, updatedConfig, newSkillMd);
+        updateProfile(update.profileId, updatedConfig, enrichedSkillMd);
         applied++;
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "Update failed";

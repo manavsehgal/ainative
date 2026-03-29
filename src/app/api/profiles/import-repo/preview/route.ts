@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchSkillContent, type DiscoveredSkill } from "@/lib/import/repo-scanner";
-import { adaptSkillMdOnly, adaptStagentNative } from "@/lib/import/format-adapter";
+import { adaptSkillMdOnly, adaptStagentNative, type ReadmeContext } from "@/lib/import/format-adapter";
 import { checkDuplicates } from "@/lib/import/dedup";
 import { listProfiles } from "@/lib/agents/profiles/registry";
 
@@ -8,17 +8,18 @@ import { listProfiles } from "@/lib/agents/profiles/registry";
  * POST /api/profiles/import-repo/preview
  *
  * Fetch selected skills and run format adaptation + dedup.
- * Body: { owner, repo, branch, commitSha, repoUrl, skills: DiscoveredSkill[] }
+ * Body: { owner, repo, branch, commitSha, repoUrl, repoReadme, skills: DiscoveredSkill[] }
  */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { owner, repo, branch, commitSha, repoUrl, skills } = body as {
+    const { owner, repo, branch, commitSha, repoUrl, repoReadme, skills } = body as {
       owner: string;
       repo: string;
       branch: string;
       commitSha: string;
       repoUrl: string;
+      repoReadme?: string;
       skills: DiscoveredSkill[];
     };
 
@@ -32,11 +33,16 @@ export async function POST(req: NextRequest) {
     const fetchResults = await Promise.all(
       skills.map(async (skill) => {
         try {
-          const { skillMd, profileYaml } = await fetchSkillContent(owner, repo, branch, skill);
+          const { skillMd, profileYaml, readme } = await fetchSkillContent(owner, repo, branch, skill);
+
+          const readmeCtx: ReadmeContext = {
+            skillReadme: readme,
+            repoReadme: repoReadme ?? "",
+          };
 
           const adapted = skill.format === "stagent" && profileYaml
-            ? adaptStagentNative(skill, skillMd, profileYaml, repoMeta)
-            : adaptSkillMdOnly(skill, skillMd, repoMeta);
+            ? adaptStagentNative(skill, skillMd, profileYaml, repoMeta, readmeCtx)
+            : adaptSkillMdOnly(skill, skillMd, repoMeta, readmeCtx);
 
           return { skill, adapted, error: null };
         } catch (err: unknown) {

@@ -42,6 +42,7 @@ interface DiscoveredSkill {
   hasProfileYaml: boolean;
   hasSkillMd: boolean;
   hasSkillMdTmpl: boolean;
+  hasReadme: boolean;
   description: string;
   frontmatter: Record<string, string>;
 }
@@ -51,6 +52,7 @@ interface ScanResult {
   repo: string;
   branch: string;
   commitSha: string;
+  repoReadme: string;
   discoveredSkills: DiscoveredSkill[];
   scanDurationMs: number;
 }
@@ -179,6 +181,7 @@ export function RepoImportWizard({
           branch: scanResult.branch,
           commitSha: scanResult.commitSha,
           repoUrl: url.trim(),
+          repoReadme: scanResult.repoReadme,
           skills: selectedSkills,
         }),
       });
