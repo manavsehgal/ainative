@@ -101,54 +101,158 @@ function extractDescription(
   return fmDesc || skillName;
 }
 
-/** Extract the first meaningful paragraph from markdown (skip headings, lists, code blocks). */
+/**
+ * Patterns that indicate a paragraph is AI instruction text, not a human-readable description.
+ * These are common across skill repos (not specific to any one repo).
+ */
+const INSTRUCTION_PATTERNS = [
+  /^you are\b/i,
+  /^you must\b/i,
+  /^you should\b/i,
+  /^you will\b/i,
+  /^your (?:role|job|task|goal)\b/i,
+  /^run the\b/i,
+  /^execute\b/i,
+  /^always\b/i,
+  /^never\b/i,
+  /^when the user\b/i,
+  /^when asked\b/i,
+  /^this skill\b/i,
+  /^this tool\b/i,
+  /^this agent\b/i,
+  /^if the user\b/i,
+  /^before (?:you|running|starting)\b/i,
+  /^after (?:you|running|completing)\b/i,
+  /^do not\b/i,
+  /^don't\b/i,
+  /^make sure\b/i,
+  /^important:/i,
+  /^note:/i,
+  /^⚠/,
+  /^warning/i,
+  /^todo/i,
+];
+
+/** Check if a paragraph looks like AI skill instructions rather than a description. */
+function isInstructionText(text: string): boolean {
+  // Check against known instruction patterns
+  if (INSTRUCTION_PATTERNS.some((p) => p.test(text))) return true;
+
+  // Heavy use of second-person "you" suggests instruction text
+  const youCount = (text.match(/\byou\b/gi) ?? []).length;
+  const wordCount = text.split(/\s+/).length;
+  if (youCount >= 3 || (wordCount > 0 && youCount / wordCount > 0.08)) return true;
+
+  // References to tool names suggest internal skill instructions
+  const toolRefs = /\b(Bash|Read|Write|Edit|Glob|Grep|WebFetch|WebSearch|Agent|AskUserQuestion)\b/;
+  if (toolRefs.test(text)) return true;
+
+  return false;
+}
+
+/**
+ * Extract the first meaningful, non-instruction paragraph from markdown.
+ * Skips headings, lists, code blocks, HTML comments, and AI instruction text.
+ */
 function extractFirstParagraph(md: string): string | null {
   const lines = md.split("\n");
   let inCodeBlock = false;
-  const paraLines: string[] = [];
+  let inComment = false;
+
+  // Collect candidate paragraphs, return the first non-instruction one
+  let paraLines: string[] = [];
 
   for (const line of lines) {
     if (line.startsWith("```")) {
       inCodeBlock = !inCodeBlock;
+      if (paraLines.length > 0) { paraLines = []; } // discard partial
       continue;
     }
     if (inCodeBlock) continue;
 
     const trimmed = line.trim();
 
-    // Skip headings, empty lines at start, HR, HTML
+    // Skip HTML comments (single-line and multi-line)
+    if (trimmed.startsWith("<!--")) {
+      if (!trimmed.includes("-->")) inComment = true;
+      if (paraLines.length > 0) { paraLines = []; }
+      continue;
+    }
+    if (inComment) {
+      if (trimmed.includes("-->")) inComment = false;
+      continue;
+    }
+
+    // Skip headings, HR, HTML tags
     if (trimmed.startsWith("#") || trimmed.startsWith("---") || trimmed.startsWith("<")) {
-      if (paraLines.length > 0) break; // end of paragraph
+      if (paraLines.length > 0) {
+        // Try this paragraph
+        const candidate = paraLines.join(" ").trim();
+        if (isGoodDescription(candidate)) return formatDescription(candidate);
+        paraLines = [];
+      }
       continue;
     }
     // Skip list items and blockquotes
     if (trimmed.startsWith("- ") || trimmed.startsWith("* ") || trimmed.startsWith("> ") || /^\d+\.\s/.test(trimmed)) {
-      if (paraLines.length > 0) break;
+      if (paraLines.length > 0) {
+        const candidate = paraLines.join(" ").trim();
+        if (isGoodDescription(candidate)) return formatDescription(candidate);
+        paraLines = [];
+      }
       continue;
     }
 
     if (trimmed === "") {
-      if (paraLines.length > 0) break; // end of paragraph
+      if (paraLines.length > 0) {
+        const candidate = paraLines.join(" ").trim();
+        if (isGoodDescription(candidate)) return formatDescription(candidate);
+        paraLines = [];
+      }
       continue;
     }
 
     paraLines.push(trimmed);
   }
 
-  const para = paraLines.join(" ").trim();
-  // Only use if it's actually descriptive (not too short, not a command)
-  if (para.length > 15 && !para.startsWith("```") && !para.startsWith("$")) {
-    return para.length > 200 ? para.slice(0, 197) + "..." : para;
+  // Check final paragraph
+  if (paraLines.length > 0) {
+    const candidate = paraLines.join(" ").trim();
+    if (isGoodDescription(candidate)) return formatDescription(candidate);
   }
+
   return null;
+}
+
+/** Check if text is a good human-readable description (not instruction text). */
+function isGoodDescription(text: string): boolean {
+  if (text.length < 15) return false;
+  if (text.startsWith("```") || text.startsWith("$")) return false;
+  if (isInstructionText(text)) return false;
+  return true;
+}
+
+/** Trim description to max length. */
+function formatDescription(text: string): string {
+  return text.length > 200 ? text.slice(0, 197) + "..." : text;
+}
+
+/** Strip markdown inline formatting: **bold**, *italic*, `code`, [links](url) */
+function stripMarkdownFormatting(text: string): string {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, "$1")  // **bold**
+    .replace(/\*(.+?)\*/g, "$1")       // *italic*
+    .replace(/`(.+?)`/g, "$1")         // `code`
+    .replace(/\[(.+?)\]\(.+?\)/g, "$1") // [text](url)
+    .trim();
 }
 
 /**
  * Search the repo README for a section or table row that describes a specific skill.
- * Handles formats like:
- * - Table rows: `| skill-name | description |`
- * - List items: `- **skill-name**: description`
- * - Headings: `### skill-name\n description paragraph`
+ * Generalized for any repo format:
+ * - N-column tables: `| /name | role | description |` or `| name | description |`
+ * - List items: `- **name**: description` or `- \`name\` — description`
+ * - Headings: `### name\n description paragraph`
  */
 function findSkillInRepoReadme(repoReadme: string, skillName: string): string | null {
   if (!repoReadme) return null;
@@ -156,35 +260,73 @@ function findSkillInRepoReadme(repoReadme: string, skillName: string): string | 
   const nameL = skillName.toLowerCase();
   const namePat = skillName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-  // Table row: | name | description | ... or | /name | description |
-  const tableMatch = repoReadme.match(
-    new RegExp(`\\|\\s*/?${namePat}\\s*\\|\\s*([^|\\n]+)`, "i")
-  );
-  if (tableMatch) {
-    const desc = tableMatch[1].trim();
-    if (desc.length > 10) return desc;
+  // Strategy 1: Table rows — find any row where a cell matches the skill name,
+  // then take the LAST non-name cell as the description (works for 2, 3, or N columns).
+  const tableLines = repoReadme.split("\n").filter((l) => l.trim().startsWith("|"));
+  for (const line of tableLines) {
+    // Skip separator rows (| --- | --- |)
+    if (/^\|[\s-:|]+\|$/.test(line.trim())) continue;
+
+    const cells = line
+      .split("|")
+      .map((c) => c.trim())
+      .filter((c) => c.length > 0);
+
+    // Check if any cell contains the skill name (with or without / prefix)
+    const nameCell = cells.findIndex((c) => {
+      const stripped = stripMarkdownFormatting(c).replace(/^\//, "").toLowerCase();
+      return stripped === nameL || stripped === namePat.toLowerCase();
+    });
+
+    if (nameCell >= 0 && cells.length > nameCell + 1) {
+      // Take the last cell as description (skip the name cell and any role/middle cells)
+      const descCell = stripMarkdownFormatting(cells[cells.length - 1]);
+      // But if the last cell IS the name cell, try the one before it
+      const desc = nameCell === cells.length - 1
+        ? stripMarkdownFormatting(cells[Math.max(0, cells.length - 2)])
+        : descCell;
+
+      if (desc.length > 10 && desc.toLowerCase() !== nameL) {
+        return formatDescription(desc);
+      }
+    }
   }
 
-  // List item: - **name** — description  or  - **name**: description
+  // Strategy 2: List items — `- **name** — desc` or `- \`name\`: desc` etc.
   const backtick = "`";
-  const listMatch = repoReadme.match(
-    new RegExp("[-*]\\s+(?:\\*\\*|" + backtick + ")" + namePat + "(?:\\*\\*|" + backtick + ")\\s*[—:\\-]\\s*(.+)", "i")
-  );
-  if (listMatch) {
-    const desc = listMatch[1].trim();
-    if (desc.length > 10) return desc;
+  const listPatterns = [
+    // - **name** — description  or  - **name**: description
+    new RegExp("[-*]\\s+\\*\\*/?\\s*" + namePat + "\\s*\\*\\*\\s*[—:\\-–|]\\s*(.+)", "i"),
+    // - `name` — description  or  - `/name`: description
+    new RegExp("[-*]\\s+" + backtick + "/?" + namePat + backtick + "\\s*[—:\\-–|]\\s*(.+)", "i"),
+    // - name: description (plain)
+    new RegExp("[-*]\\s+/?" + namePat + "\\s*[—:\\-–]\\s*(.+)", "i"),
+  ];
+
+  for (const pattern of listPatterns) {
+    const match = repoReadme.match(pattern);
+    if (match) {
+      const desc = stripMarkdownFormatting(match[1].trim());
+      if (desc.length > 10) return formatDescription(desc);
+    }
   }
 
-  // Section heading: ### name \n paragraph
+  // Strategy 3: Section heading containing the skill name, then next paragraph
   const lines = repoReadme.split("\n");
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
-    if (/^#{1,4}\s/.test(line) && line.toLowerCase().includes(nameL)) {
-      // Grab the next non-empty line as description
+    if (/^#{1,4}\s/.test(line)) {
+      const headingText = line.replace(/^#+\s+/, "").toLowerCase();
+      // Check if heading matches skill name (exact word, not substring of a longer word)
+      const headingWords = headingText.split(/[\s/]+/);
+      if (!headingWords.includes(nameL) && !headingText.includes(`/${nameL}`)) continue;
+
+      // Grab the next non-empty, non-heading line as description
       for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
         const next = lines[j].trim();
-        if (next && !next.startsWith("#") && !next.startsWith("---") && next.length > 15) {
-          return next.length > 200 ? next.slice(0, 197) + "..." : next;
+        if (!next || next.startsWith("#") || next.startsWith("---") || next.startsWith("|")) continue;
+        if (next.length > 15) {
+          return formatDescription(stripMarkdownFormatting(next));
         }
       }
     }

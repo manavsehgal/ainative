@@ -36,23 +36,70 @@ export interface RepoScanResult {
 
 /**
  * Parse YAML frontmatter from a SKILL.md file content.
- * Returns key-value pairs from the --- delimited block.
+ * Handles multi-line YAML block scalars (`|` and `>` indicators)
+ * and YAML arrays (lines starting with `- `).
  */
 function parseFrontmatter(content: string): Record<string, string> {
   const match = content.match(/^---\s*\n([\s\S]*?)\n---/);
   if (!match) return {};
 
   const fm: Record<string, string> = {};
-  for (const line of match[1].split("\n")) {
+  const lines = match[1].split("\n");
+  let currentKey = "";
+  let currentValue = "";
+  let isBlock = false; // inside a `|` or `>` block scalar
+  let blockJoin = " "; // " " for `>` (folded), "\n" for `|` (literal)
+
+  function flushKey() {
+    if (currentKey) {
+      fm[currentKey] = currentValue.trim();
+    }
+  }
+
+  for (const line of lines) {
+    // Indented continuation line (part of a block scalar or YAML array)
+    if (isBlock && (line.startsWith("  ") || line.startsWith("\t"))) {
+      const trimmed = line.trim();
+      // Skip YAML array items for non-description fields (e.g. allowed-tools list)
+      if (trimmed.startsWith("- ") && currentKey !== "description") {
+        currentValue += (currentValue ? ", " : "") + trimmed.slice(2);
+      } else if (trimmed) {
+        currentValue += (currentValue ? blockJoin : "") + trimmed;
+      }
+      continue;
+    }
+
+    // New top-level key
     const colonIdx = line.indexOf(":");
-    if (colonIdx > 0) {
-      const key = line.slice(0, colonIdx).trim();
-      const value = line.slice(colonIdx + 1).trim();
-      if (key && value) {
-        fm[key] = value;
+    if (colonIdx > 0 && !line.startsWith(" ") && !line.startsWith("\t")) {
+      flushKey();
+
+      currentKey = line.slice(0, colonIdx).trim();
+      const rawValue = line.slice(colonIdx + 1).trim();
+
+      if (rawValue === "|" || rawValue === "|+" || rawValue === "|-") {
+        // YAML literal block scalar — preserve newlines as spaces for description
+        isBlock = true;
+        blockJoin = " ";
+        currentValue = "";
+      } else if (rawValue === ">" || rawValue === ">+" || rawValue === ">-") {
+        // YAML folded block scalar
+        isBlock = true;
+        blockJoin = " ";
+        currentValue = "";
+      } else if (rawValue === "") {
+        // Value on next line(s) — treat like a block
+        isBlock = true;
+        blockJoin = ", ";
+        currentValue = "";
+      } else {
+        isBlock = false;
+        currentValue = rawValue;
       }
     }
   }
+  flushKey();
+
   return fm;
 }
 
