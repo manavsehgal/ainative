@@ -28,6 +28,9 @@ import {
   ShieldX,
   FileCode,
   Cpu,
+  ExternalLink,
+  RefreshCw,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -287,6 +290,64 @@ export function ProfileDetailView({ profileId, isBuiltin, initialProfile }: Prof
           )}
         </div>
       </div>
+
+      {/* Import Attribution */}
+      {profile.importMeta && (
+        <Card className="surface-card border-purple-200 dark:border-purple-800/40">
+          <CardContent className="flex items-center justify-between py-3 px-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/30">
+                <Download className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">
+                  Imported from{" "}
+                  <a
+                    href={profile.importMeta.repoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline inline-flex items-center gap-0.5"
+                  >
+                    {profile.importMeta.repoOwner}/{profile.importMeta.repoName}
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {profile.importMeta.branch} @ {profile.importMeta.commitSha.slice(0, 7)}
+                  {" · "}
+                  {new Date(profile.importMeta.importedAt).toLocaleDateString()}
+                  {" · "}
+                  {profile.importMeta.sourceFormat === "stagent" ? "Stagent native" : "SKILL.md adapted"}
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                try {
+                  const res = await fetch("/api/profiles/import-repo/check-updates", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ profileId }),
+                  });
+                  const data = await res.json();
+                  if (data.hasUpdates) {
+                    toast.info("Updates available — check the repo import page to apply them.");
+                  } else {
+                    toast.success("Profile is up to date");
+                  }
+                } catch {
+                  toast.error("Failed to check for updates");
+                }
+              }}
+            >
+              <RefreshCw className="h-3.5 w-3.5 mr-1" />
+              Check Updates
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Bento Grid: Identity + Configuration + Runtime Coverage + Tools & Policy */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

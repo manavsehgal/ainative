@@ -23,6 +23,20 @@ const profileRuntimeOverrideSchema = z.object({
   tests: profileTestsSchema.optional(),
 });
 
+export const importMetaSchema = z.object({
+  repoUrl: z.string().url(),
+  repoOwner: z.string(),
+  repoName: z.string(),
+  branch: z.string(),
+  filePath: z.string(),
+  commitSha: z.string(),
+  contentHash: z.string(),
+  importedAt: z.string(),
+  sourceFormat: z.enum(["stagent", "skillmd-only", "unknown"]),
+});
+
+export type ImportMeta = z.infer<typeof importMetaSchema>;
+
 export const ProfileConfigSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
@@ -43,6 +57,7 @@ export const ProfileConfigSchema = z.object({
   author: z.string().optional(),
   source: z.string().url().optional(),
   tests: profileTestsSchema.optional(),
+  importMeta: importMetaSchema.optional(),
   supportedRuntimes: z.array(runtimeIdSchema).optional(),
   runtimeOverrides: z
     .object(

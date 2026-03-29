@@ -21,6 +21,7 @@ export async function GET() {
       author: p.author,
       source: p.source,
       tests: p.tests,
+      importMeta: p.importMeta,
       supportedRuntimes: p.supportedRuntimes,
       runtimeOverrides: p.runtimeOverrides,
       isBuiltin: isBuiltin(p.id),

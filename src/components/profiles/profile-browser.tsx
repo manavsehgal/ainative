@@ -2,13 +2,20 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Search, Bot, Download, Copy } from "lucide-react";
+import { Plus, Search, Bot, Download, Copy, Package, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ProfileCard } from "@/components/profiles/profile-card";
 import { ProfileImportDialog } from "@/components/profiles/profile-import-dialog";
+import { RepoImportWizard } from "@/components/profiles/repo-import-wizard";
 import type { AgentProfile } from "@/lib/agents/profiles/types";
 
 interface ProfileWithBuiltin extends AgentProfile {
@@ -27,7 +34,11 @@ export function ProfileBrowser({ initialProfiles }: ProfileBrowserProps) {
     "all" | "work" | "personal"
   >("all");
   const [showImport, setShowImport] = useState(false);
+  const [showRepoImport, setShowRepoImport] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [provenanceFilter, setProvenanceFilter] = useState<
+    "all" | "builtin" | "imported" | "custom"
+  >("all");
 
   const builtinProfiles = profiles.filter((p) => p.isBuiltin);
 
@@ -35,6 +46,13 @@ export function ProfileBrowser({ initialProfiles }: ProfileBrowserProps) {
     const q = search.toLowerCase();
     return profiles.filter((p) => {
       if (domainFilter !== "all" && p.domain !== domainFilter) return false;
+      if (provenanceFilter !== "all") {
+        const isImported = !!p.importMeta;
+        const isBi = p.isBuiltin;
+        if (provenanceFilter === "builtin" && !isBi) return false;
+        if (provenanceFilter === "imported" && !isImported) return false;
+        if (provenanceFilter === "custom" && (isBi || isImported)) return false;
+      }
       if (!q) return true;
       return (
         p.name.toLowerCase().includes(q) ||
@@ -42,7 +60,7 @@ export function ProfileBrowser({ initialProfiles }: ProfileBrowserProps) {
         p.tags.some((t) => t.toLowerCase().includes(q))
       );
     });
-  }, [profiles, search, domainFilter]);
+  }, [profiles, search, domainFilter, provenanceFilter]);
 
   return (
     <div className="space-y-6">
@@ -52,10 +70,25 @@ export function ProfileBrowser({ initialProfiles }: ProfileBrowserProps) {
           <Copy className="mr-2 h-4 w-4" />
           Start from Template
         </Button>
-        <Button variant="outline" onClick={() => setShowImport(true)}>
-          <Download className="mr-2 h-4 w-4" />
-          Import
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline">
+              <Download className="mr-2 h-4 w-4" />
+              Import
+              <ChevronDown className="ml-1 h-3 w-3" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setShowImport(true)}>
+              <Download className="mr-2 h-4 w-4" />
+              Import from URL
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setShowRepoImport(true)}>
+              <Package className="mr-2 h-4 w-4" />
+              Import from Repository
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <Button onClick={() => router.push("/profiles/new")}>
           <Plus className="mr-2 h-4 w-4" />
           Create Profile
@@ -115,12 +148,30 @@ export function ProfileBrowser({ initialProfiles }: ProfileBrowserProps) {
             <TabsTrigger value="personal">Personal</TabsTrigger>
           </TabsList>
         </Tabs>
+        <Tabs
+          value={provenanceFilter}
+          onValueChange={(v) =>
+            setProvenanceFilter(v as "all" | "builtin" | "imported" | "custom")
+          }
+        >
+          <TabsList className="surface-control">
+            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="builtin">Built-in</TabsTrigger>
+            <TabsTrigger value="imported">Imported</TabsTrigger>
+            <TabsTrigger value="custom">Custom</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
       {/* Grid */}
       <ProfileImportDialog
         open={showImport}
         onOpenChange={setShowImport}
+        onImported={() => router.refresh()}
+      />
+      <RepoImportWizard
+        open={showRepoImport}
+        onOpenChange={setShowRepoImport}
         onImported={() => router.refresh()}
       />
 

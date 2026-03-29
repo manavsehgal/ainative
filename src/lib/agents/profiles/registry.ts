@@ -180,6 +180,7 @@ function scanProfiles(): Map<string, AgentProfile> {
         author: config.author,
         source: config.source,
         tests: config.tests,
+        importMeta: config.importMeta,
         supportedRuntimes: getSupportedRuntimes(config),
         runtimeOverrides: config.runtimeOverrides,
       });

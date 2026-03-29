@@ -2,6 +2,7 @@
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Download } from "lucide-react";
 import { listRuntimeCatalog } from "@/lib/agents/runtime/catalog";
 import { getSupportedRuntimes } from "@/lib/agents/profiles/compatibility";
 import { IconCircle, getProfileIcon, getDomainColors } from "@/lib/constants/card-icons";
@@ -72,6 +73,12 @@ export function ProfileCard({ profile, isBuiltin = true, onClick }: ProfileCardP
         </div>
 
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          {profile.importMeta && (
+            <span className="flex items-center gap-1 text-purple-600 dark:text-purple-400">
+              <Download className="h-3 w-3" />
+              {profile.importMeta.repoOwner}/{profile.importMeta.repoName}
+            </span>
+          )}
           {profile.version && <span>v{profile.version}</span>}
           {profile.allowedTools && profile.allowedTools.length > 0 && (
             <span>

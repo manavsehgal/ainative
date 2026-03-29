@@ -1,4 +1,5 @@
 import type { AgentRuntimeId } from "@/lib/agents/runtime/catalog";
+import type { ImportMeta } from "@/lib/validators/profile";
 
 export interface CanUseToolPolicy {
   autoApprove?: string[];
@@ -37,6 +38,7 @@ export interface AgentProfile {
   author?: string;
   source?: string;
   tests?: ProfileSmokeTest[];
+  importMeta?: ImportMeta;
   supportedRuntimes: AgentRuntimeId[];
   runtimeOverrides?: Partial<Record<AgentRuntimeId, ProfileRuntimeOverride>>;
 }

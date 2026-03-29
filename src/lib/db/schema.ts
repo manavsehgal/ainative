@@ -515,6 +515,26 @@ export const bookmarks = sqliteTable(
   ]
 );
 
+export const repoImports = sqliteTable(
+  "repo_imports",
+  {
+    id: text("id").primaryKey(),
+    repoUrl: text("repo_url").notNull(),
+    repoOwner: text("repo_owner").notNull(),
+    repoName: text("repo_name").notNull(),
+    branch: text("branch").notNull(),
+    commitSha: text("commit_sha").notNull(),
+    profileIds: text("profile_ids").notNull(), // JSON array of imported profile IDs
+    skillCount: integer("skill_count").notNull(),
+    lastCheckedAt: integer("last_checked_at", { mode: "timestamp" }),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_repo_imports_repo_url").on(table.repoUrl),
+    index("idx_repo_imports_owner_name").on(table.repoOwner, table.repoName),
+  ]
+);
+
 // Shared types derived from schema — use these in components instead of `as any`
 export type ProjectRow = InferSelectModel<typeof projects>;
 export type TaskRow = InferSelectModel<typeof tasks>;
@@ -537,3 +557,4 @@ export type ChatMessageRow = InferSelectModel<typeof chatMessages>;
 export type ProfileTestResultRow = InferSelectModel<typeof profileTestResults>;
 export type ReadingProgressRow = InferSelectModel<typeof readingProgress>;
 export type BookmarkRow = InferSelectModel<typeof bookmarks>;
+export type RepoImportRow = InferSelectModel<typeof repoImports>;
