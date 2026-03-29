@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Search, Bot, Download, Copy, Package, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,19 @@ export function ProfileBrowser({ initialProfiles }: ProfileBrowserProps) {
   const [provenanceFilter, setProvenanceFilter] = useState<
     "all" | "builtin" | "imported" | "custom"
   >("all");
+
+  const refreshProfiles = useCallback(async () => {
+    try {
+      const res = await fetch("/api/profiles");
+      if (res.ok) {
+        const data = await res.json();
+        setProfiles(data);
+      }
+    } catch {
+      // silent — fall back to current state
+    }
+    router.refresh();
+  }, [router]);
 
   const builtinProfiles = profiles.filter((p) => p.isBuiltin);
 
@@ -167,12 +180,12 @@ export function ProfileBrowser({ initialProfiles }: ProfileBrowserProps) {
       <ProfileImportDialog
         open={showImport}
         onOpenChange={setShowImport}
-        onImported={() => router.refresh()}
+        onImported={refreshProfiles}
       />
       <RepoImportWizard
         open={showRepoImport}
         onOpenChange={setShowRepoImport}
-        onImported={() => router.refresh()}
+        onImported={refreshProfiles}
       />
 
       {filteredProfiles.length === 0 ? (
