@@ -555,7 +555,7 @@ export function ProfileDetailView({ profileId, isBuiltin, initialProfile }: Prof
               <span className="text-muted-foreground text-xs group-open:rotate-90 transition-transform shrink-0">▶</span>
             </summary>
             <div className="surface-panel mt-2 rounded-lg p-4">
-              <div className={`${PROSE_NOTIFICATION} max-h-[32rem] overflow-auto surface-scroll rounded-lg p-4`}>
+              <div className={`${PROSE_NOTIFICATION} max-h-[32rem] overflow-auto break-words surface-scroll rounded-lg p-4`}>
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
                   {profile.skillMd}
                 </ReactMarkdown>
