@@ -78,6 +78,8 @@ export function ProfileFormView({
   ]);
   const [codexInstructions, setCodexInstructions] = useState("");
   const [allowedTools, setAllowedTools] = useState("");
+  const [autoApprove, setAutoApprove] = useState("");
+  const [autoDeny, setAutoDeny] = useState("");
   const [maxTurns, setMaxTurns] = useState(30);
   const [outputFormat, setOutputFormat] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -118,6 +120,8 @@ export function ProfileFormView({
           profile.runtimeOverrides?.["openai-codex-app-server"]?.instructions ?? ""
         );
         setAllowedTools(profile.allowedTools?.join(", ") ?? "");
+        setAutoApprove(profile.canUseToolPolicy?.autoApprove?.join(", ") ?? "");
+        setAutoDeny(profile.canUseToolPolicy?.autoDeny?.join(", ") ?? "");
         setMaxTurns(profile.maxTurns ?? 30);
         setOutputFormat(profile.outputFormat ?? "");
         if (profile.tests?.length) {
@@ -165,6 +169,8 @@ export function ProfileFormView({
     setTags(result.tags.join(", "));
     setSkillMd(result.skillMd);
     setAllowedTools(result.allowedTools.join(", "));
+    setAutoApprove(result.canUseToolPolicy.autoApprove.join(", "));
+    setAutoDeny(result.canUseToolPolicy.autoDeny.join(", "));
     setMaxTurns(result.maxTurns);
     setOutputFormat(result.outputFormat);
     setSupportedRuntimes(result.supportedRuntimes);
@@ -179,6 +185,12 @@ export function ProfileFormView({
       case "tags": setTags((value as string[]).join(", ")); break;
       case "skillMd": setSkillMd(value as string); break;
       case "allowedTools": setAllowedTools((value as string[]).join(", ")); break;
+      case "canUseToolPolicy": {
+        const policy = value as { autoApprove: string[]; autoDeny: string[] };
+        setAutoApprove(policy.autoApprove.join(", "));
+        setAutoDeny(policy.autoDeny.join(", "));
+        break;
+      }
       case "maxTurns": setMaxTurns(value as number); break;
       case "outputFormat": setOutputFormat(value as string); break;
       case "supportedRuntimes": setSupportedRuntimes(value as string[]); break;
@@ -217,6 +229,13 @@ export function ProfileFormView({
             }
           : undefined,
       allowedTools: parseCommaSeparated(allowedTools),
+      canUseToolPolicy:
+        autoApprove.trim() || autoDeny.trim()
+          ? {
+              autoApprove: parseCommaSeparated(autoApprove),
+              autoDeny: parseCommaSeparated(autoDeny),
+            }
+          : undefined,
       maxTurns,
       outputFormat: outputFormat.trim() || undefined,
       tests: tests
@@ -439,6 +458,28 @@ export function ProfileFormView({
                 placeholder="Read, Edit, Bash, Grep"
               />
               <p className="text-xs text-muted-foreground">Restricts which tools the agent can call. Leave empty for unrestricted access.</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="profile-auto-approve">Auto-Approve Tools</Label>
+              <TagInput
+                id="profile-auto-approve"
+                value={autoApprove}
+                onChange={setAutoApprove}
+                suggestions={toolSuggestions}
+                placeholder="Read, Grep, Glob"
+              />
+              <p className="text-xs text-muted-foreground">Tools safe to run without user confirmation. Typical: Read, Grep, Glob for read-only agents.</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="profile-auto-deny">Auto-Deny Tools</Label>
+              <TagInput
+                id="profile-auto-deny"
+                value={autoDeny}
+                onChange={setAutoDeny}
+                suggestions={toolSuggestions}
+                placeholder="Bash, Write, Edit"
+              />
+              <p className="text-xs text-muted-foreground">Tools blocked entirely. Use for strict agents that should never write files or run commands.</p>
             </div>
           </div>
         </FormSectionCard>
