@@ -1,6 +1,6 @@
 ---
 title: Skills Repo Import
-status: planned
+status: completed
 priority: P2
 milestone: post-mvp
 scope: EXPAND

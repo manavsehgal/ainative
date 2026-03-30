@@ -1,6 +1,6 @@
 ---
 title: Task Hierarchy Clarity
-status: pending
+status: completed
 priority: P1
 milestone: post-mvp
 source: kitchen-sink-03-23.md

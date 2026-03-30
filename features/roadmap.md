@@ -66,6 +66,8 @@ Features that enhance the product but aren't essential for first use — homepag
 |---------|----------|--------|--------------|
 | [agent-profile-catalog](agent-profile-catalog.md) | P3 | completed | multi-agent-routing |
 | [workflow-blueprints](workflow-blueprints.md) | P3 | completed | multi-agent-routing, workflow-engine, agent-profile-catalog |
+| [skills-repo-import](skills-repo-import.md) | P2 | completed | agent-profile-catalog, skill-portfolio, environment-scanner |
+| [profile-ai-assist-ux](profile-ai-assist-ux.md) | P1 | completed | agent-profile-catalog, task-definition-ai, profile-surface-stability |
 
 ### UI Enhancement
 
@@ -84,13 +86,13 @@ Features that enhance the product but aren't essential for first use — homepag
 | [detail-view-redesign](detail-view-redesign.md)                     | P2       | completed | task-board, document-manager, workflow-engine, ui-density-refinement                                     |
 | [playbook-documentation](playbook-documentation.md)                 | P2       | completed | app-shell, command-palette-enhancement                                                                   |
 | [workflow-ux-overhaul](workflow-ux-overhaul.md)                     | P1       | completed | workflow-engine, ai-assist-workflow-creation, agent-document-context, document-output-generation        |
-| [settings-interactive-controls](settings-interactive-controls.md)   | P2       | pending   | —                                                                                                        |
+| [settings-interactive-controls](settings-interactive-controls.md)   | P2       | completed | —                                                                                                        |
 
 ### Browser & Automation
 
 | Feature | Priority | Status | Dependencies |
 |---------|----------|--------|--------------|
-| [browser-use](browser-use.md) | P1 | planned | chat-engine, agent-integration, tool-permission-persistence |
+| [browser-use](browser-use.md) | P1 | completed | chat-engine, agent-integration, tool-permission-persistence |
 
 ### Platform
 
@@ -105,8 +107,19 @@ Features that enhance the product but aren't essential for first use — homepag
 | [parallel-research-fork-join](parallel-research-fork-join.md) | P2 | completed | workflow-engine, multi-agent-routing |
 | [tool-permission-presets](tool-permission-presets.md) | P2 | completed | tool-permission-persistence |
 | [workspace-context-awareness](workspace-context-awareness.md) | P1 | planned | chat-engine, environment-scanner |
-| [task-hierarchy-clarity](task-hierarchy-clarity.md) | P1 | pending | workflow-engine, task-board, project-management |
-| [agent-document-api-access](agent-document-api-access.md) | P2 | pending | document-preprocessing, file-attachment-data-layer, tool-permission-persistence |
+| [task-hierarchy-clarity](task-hierarchy-clarity.md) | P1 | completed | workflow-engine, task-board, project-management |
+| [agent-document-api-access](agent-document-api-access.md) | P2 | completed | document-preprocessing, file-attachment-data-layer, tool-permission-persistence |
+
+### Direct API Runtime Expansion
+
+| Feature | Priority | Status | Dependencies |
+|---------|----------|--------|--------------|
+| [provider-agnostic-tool-layer](provider-agnostic-tool-layer.md) | P0 | planned | provider-runtime-abstraction |
+| [anthropic-direct-runtime](anthropic-direct-runtime.md) | P1 | planned | provider-agnostic-tool-layer, provider-runtime-abstraction, cross-provider-profile-compatibility |
+| [openai-direct-runtime](openai-direct-runtime.md) | P1 | planned | provider-agnostic-tool-layer, provider-runtime-abstraction, cross-provider-profile-compatibility |
+| [smart-runtime-router](smart-runtime-router.md) | P1 | planned | anthropic-direct-runtime, openai-direct-runtime, multi-agent-routing |
+| [direct-runtime-prompt-caching](direct-runtime-prompt-caching.md) | P2 | planned | anthropic-direct-runtime |
+| [direct-runtime-advanced-capabilities](direct-runtime-advanced-capabilities.md) | P2 | planned | anthropic-direct-runtime, openai-direct-runtime |
 
 ### Runtime Quality
 
@@ -149,8 +162,8 @@ Features that enhance the product but aren't essential for first use — homepag
 | [chat-ui-shell](chat-ui-shell.md) | P1 | completed | chat-api-routes, app-shell, operational-surface-foundation |
 | [chat-message-rendering](chat-message-rendering.md) | P1 | completed | chat-ui-shell, chat-api-routes |
 | [chat-input-composer](chat-input-composer.md) | P1 | completed | chat-ui-shell, chat-api-routes |
-| [chat-conversation-persistence](chat-conversation-persistence.md) | P1 | pending | chat-data-layer, chat-ui-shell |
-| [chat-command-mentions](chat-command-mentions.md) | P1 | planned | chat-input-composer, chat-engine, command-palette-enhancement |
+| [chat-conversation-persistence](chat-conversation-persistence.md) | P1 | completed | chat-data-layer, chat-ui-shell |
+| [chat-command-mentions](chat-command-mentions.md) | P1 | completed | chat-input-composer, chat-engine, command-palette-enhancement |
 
 ### Living Book
 
@@ -222,10 +235,17 @@ Provider runtime chain:
 agent-integration + inbox-notifications + monitoring-dashboard
         + session-management + tool-permission-persistence
                                 │
-                                └── provider-runtime-abstraction
-                                            ├── openai-codex-app-server
-                                            └── cross-provider-profile-compatibility
-                                             └── future provider-aware profile expansion
+                                └── provider-runtime-abstraction (completed)
+                                            ├── openai-codex-app-server (completed)
+                                            ├── cross-provider-profile-compatibility (completed)
+                                            └── provider-agnostic-tool-layer (P0)
+                                                    ├── anthropic-direct-runtime (P1)
+                                                    │       ├── direct-runtime-prompt-caching (P2)
+                                                    │       └──┐
+                                                    └── openai-direct-runtime (P1)
+                                                            └──┤
+                                                               ├── smart-runtime-router (P1)
+                                                               └── direct-runtime-advanced-capabilities (P2)
 ```
 
 Cost governance chain:
@@ -316,6 +336,11 @@ playbook-documentation (completed)
 26. **Sprint 26 — Living Book Enrich** (shipped 2026-03-24): living-book-authors-notes + living-book-reading-paths — collapsible Author's Notes callout, 4 persona-based reading paths with progress tracking
 27. **Sprint 27 — Living Book Pipeline** (shipped 2026-03-24): living-book-markdown-pipeline — all chapters migrated to `book/chapters/*.md` with frontmatter, markdown parser, content blocks
 28. **Sprint 28 — Living Book Autonomy** (shipped 2026-03-24): living-book-self-updating — chapter regeneration via document-writer agent, git-based staleness detection, live SSE progress streaming, ChapterGenerationBar UI
+
+29. **Sprint 29 — Tool Decoupling**: provider-agnostic-tool-layer (P0) — extract 50+ tool definitions from Claude SDK dependency into provider-neutral format
+30. **Sprint 30 — Direct API Runtimes**: anthropic-direct-runtime (P1) + openai-direct-runtime (P1) — parallel build of both direct API adapters with shared agentic loop
+31. **Sprint 31 — Smart Routing**: smart-runtime-router (P1) — auto-select best runtime per task based on content, profile affinity, and user preference
+32. **Sprint 32 — Direct Runtime Polish**: direct-runtime-prompt-caching (P2) + direct-runtime-advanced-capabilities (P2) — prompt caching, extended thinking, context compaction, model selection, server-side tool config
 
 Browser automation chain:
 

@@ -1,5 +1,31 @@
 # Feature Changelog
 
+## 2026-03-30
+
+### Groomed
+- Created **Direct API Runtime Expansion** initiative — 6 features extracted from `ideas/direct-api-gap-analysis.md`:
+  - `provider-agnostic-tool-layer` (P0) — decouple 50+ tool definitions from Claude Agent SDK into provider-neutral `defineTool()` format; prerequisite for both direct runtimes
+  - `anthropic-direct-runtime` (P1) — new `AgentRuntimeAdapter` for Anthropic Messages API; agentic loop, streaming, HITL, session resume via DB; sub-second latency, no CLI required
+  - `openai-direct-runtime` (P1) — new `AgentRuntimeAdapter` for OpenAI Responses API; server-side agentic loop, code interpreter, file search, image generation; no Codex binary required
+  - `smart-runtime-router` (P1) — `suggestRuntime()` function for auto-selecting best runtime per task; keyword signals, profile affinity, user preference (cost/latency/quality); "Auto (recommended)" as default
+  - `direct-runtime-prompt-caching` (P2) — wire Anthropic prompt caching on system/profile/learned-context blocks; up to 90% input cost savings; batch API for meta-completions
+  - `direct-runtime-advanced-capabilities` (P2) — extended thinking, context compaction, per-runtime model selection, server-side tool configuration UI
+- Added "Direct API Runtime Expansion" section to roadmap with dependency chain and sprints 29-32
+- Source: Architecture review + product analysis combining `/architect` review mode and `/product-manager` incremental update
+- Design posture: expansion (add 2 new runtimes), not replacement (existing SDK runtimes untouched)
+
+### Completed
+- `chat-conversation-persistence` — URL/localStorage activeId sync, background activity indicator with task polling
+- `settings-interactive-controls` — SDK Timeout and Max Turns sliders with contextual labels, recommended range indicators
+- `task-hierarchy-clarity` — standalone vs workflow-bound task sectioning, deduplicated status counts, workflow badges
+- `agent-document-api-access` — 3 document mutation tools (upload/update/delete), permission gating, audit logging
+- `browser-use` — Chrome DevTools + Playwright MCP config builder, settings toggles, permission tiering
+- `chat-command-mentions` — slash command registry, @mention popover with entity search, autocomplete hook
+
+### Completed (late)
+- `skills-repo-import` — provenance badges (Built-in/Custom/Imported) on profile cards, typed GitHub API errors (private repo/rate limit/404 detection), source directory link in imported profile detail view
+- `profile-ai-assist-ux` — description field in profile form with AI assist integration, auto-approve/auto-deny tool policy fields with TagInput autocomplete, policy section card in AI assist results panel
+
 ## 2026-03-27
 
 ### Groomed

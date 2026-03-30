@@ -1,6 +1,6 @@
 ---
 title: AI-Assisted Profile Creation & Editing UX Overhaul
-status: planned
+status: completed
 priority: P1
 milestone: post-mvp
 source: conversation

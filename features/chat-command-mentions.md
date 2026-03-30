@@ -1,6 +1,6 @@
 ---
 title: Chat Slash Commands & @Mentions
-status: planned
+status: completed
 priority: P1
 milestone: post-mvp
 source: ideas/chat-enhancements.md

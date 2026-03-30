@@ -1,6 +1,6 @@
 ---
 title: Settings Interactive Controls
-status: pending
+status: completed
 priority: P2
 milestone: post-mvp
 source: kitchen-sink-03-23.md

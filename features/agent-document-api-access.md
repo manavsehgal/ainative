@@ -1,6 +1,6 @@
 ---
 title: Agent Document API Access
-status: pending
+status: completed
 priority: P2
 milestone: post-mvp
 dependencies:

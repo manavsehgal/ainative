@@ -1,6 +1,6 @@
 ---
 title: Browser Use
-status: planned
+status: completed
 priority: P1
 milestone: post-mvp
 source: plans/steady-cooking-eich.md

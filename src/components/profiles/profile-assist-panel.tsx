@@ -182,6 +182,9 @@ export function ProfileAssistPanel({
         onApplyField("allowedTools", result.allowedTools);
         onApplyField("supportedRuntimes", result.supportedRuntimes);
         break;
+      case "policy":
+        onApplyField("canUseToolPolicy", result.canUseToolPolicy);
+        break;
       case "skillmd":
         onApplyField("skillMd", result.skillMd);
         break;
@@ -195,7 +198,7 @@ export function ProfileAssistPanel({
     if (!result) return;
     onApplyAll(result);
     setAllApplied(true);
-    setAppliedSections(new Set(["identity", "config", "skillmd", "tests"]));
+    setAppliedSections(new Set(["identity", "config", "policy", "skillmd", "tests"]));
   }
 
   return (
@@ -367,6 +370,35 @@ export function ProfileAssistPanel({
                     </div>
                   </div>
                 </SectionCard>
+
+                {/* Policy section — only show if AI suggested non-empty policies */}
+                {(result.canUseToolPolicy.autoApprove.length > 0 ||
+                  result.canUseToolPolicy.autoDeny.length > 0) && (
+                  <SectionCard
+                    title="Tool Policies"
+                    applied={appliedSections.has("policy")}
+                    onApply={() => applySection("policy")}
+                  >
+                    <div className="text-sm space-y-1">
+                      {result.canUseToolPolicy.autoApprove.length > 0 && (
+                        <div className="flex items-center gap-1 flex-wrap">
+                          <span className="text-muted-foreground">Auto-approve:</span>
+                          {result.canUseToolPolicy.autoApprove.map((tool) => (
+                            <Badge key={tool} variant="outline" className="text-xs text-green-600">{tool}</Badge>
+                          ))}
+                        </div>
+                      )}
+                      {result.canUseToolPolicy.autoDeny.length > 0 && (
+                        <div className="flex items-center gap-1 flex-wrap">
+                          <span className="text-muted-foreground">Auto-deny:</span>
+                          {result.canUseToolPolicy.autoDeny.map((tool) => (
+                            <Badge key={tool} variant="outline" className="text-xs text-red-600">{tool}</Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </SectionCard>
+                )}
               </div>
 
               {/* SKILL.md section — full width */}
