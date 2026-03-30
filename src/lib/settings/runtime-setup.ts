@@ -63,9 +63,9 @@ export async function getRuntimeSetupStates(): Promise<
       runtimeId: "anthropic-direct",
       label: getRuntimeCatalogEntry("anthropic-direct").label,
       providerId: "anthropic",
-      configured: claudeConfigured, // Shares Anthropic API key
+      configured: claudeAuth.hasKey, // Requires actual API key (OAuth alone is not enough)
       authMethod: claudeAuth.hasKey ? "api_key" : "none",
-      apiKeySource: claudeAuth.apiKeySource,
+      apiKeySource: claudeAuth.hasKey ? claudeAuth.apiKeySource : "unknown",
       billingMode: "usage",
     },
     "openai-direct": {

@@ -1,5 +1,4 @@
-import { AuthConfigSection } from "@/components/settings/auth-config-section";
-import { OpenAIRuntimeSection } from "@/components/settings/openai-runtime-section";
+import { ProvidersAndRuntimesSection } from "@/components/settings/providers-runtimes-section";
 import { PermissionsSections } from "@/components/settings/permissions-sections";
 import { DataManagementSection } from "@/components/settings/data-management-section";
 import { BudgetGuardrailsSection } from "@/components/settings/budget-guardrails-section";
@@ -16,8 +15,7 @@ export default function SettingsPage() {
   return (
     <PageShell title="Settings" description="Manage your Stagent configuration">
       <div className="space-y-6">
-        <AuthConfigSection />
-        <OpenAIRuntimeSection />
+        <ProvidersAndRuntimesSection />
         <ChatSettingsSection />
         <RuntimeTimeoutSection />
         <LearningContextSection />

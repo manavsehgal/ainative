@@ -182,7 +182,7 @@ function applyBudgetSplit(
   current: BudgetFormState,
   overallMonthlySpendCapUsd: string,
   activeRuntimeIds: AgentRuntimeId[],
-  claudePercent = deriveClaudeAllocation(current)
+  anthropicPercent = deriveClaudeAllocation(current)
 ): BudgetFormState {
   const overall = toNullableNumber(overallMonthlySpendCapUsd);
   const next: BudgetFormState = {
@@ -193,31 +193,56 @@ function applyBudgetSplit(
       "openai-codex-app-server": {
         ...current.runtimes["openai-codex-app-server"],
       },
+      "anthropic-direct": { ...current.runtimes["anthropic-direct"] },
+      "openai-direct": { ...current.runtimes["openai-direct"] },
     },
   };
 
   if (overall == null || activeRuntimeIds.length === 0) {
     next.runtimes["claude-code"].monthlySpendCapUsd = "";
     next.runtimes["openai-codex-app-server"].monthlySpendCapUsd = "";
+    next.runtimes["anthropic-direct"].monthlySpendCapUsd = "";
+    next.runtimes["openai-direct"].monthlySpendCapUsd = "";
     return next;
   }
 
-  if (activeRuntimeIds.length === 1) {
-    const runtimeId = activeRuntimeIds[0];
-    next.runtimes[runtimeId].monthlySpendCapUsd = String(overall);
-    for (const candidate of ["claude-code", "openai-codex-app-server"] as const) {
-      if (candidate !== runtimeId) {
-        next.runtimes[candidate].monthlySpendCapUsd = "";
-      }
-    }
+  // Determine which providers have active runtimes
+  const hasAnthropic = activeRuntimeIds.some(
+    (id) => id === "claude-code" || id === "anthropic-direct"
+  );
+  const hasOpenAI = activeRuntimeIds.some(
+    (id) => id === "openai-codex-app-server" || id === "openai-direct"
+  );
+
+  if (hasAnthropic && !hasOpenAI) {
+    // Single provider: Anthropic gets 100%
+    const cap = String(overall);
+    next.runtimes["claude-code"].monthlySpendCapUsd = cap;
+    next.runtimes["anthropic-direct"].monthlySpendCapUsd = cap;
+    next.runtimes["openai-codex-app-server"].monthlySpendCapUsd = "";
+    next.runtimes["openai-direct"].monthlySpendCapUsd = "";
     return next;
   }
 
-  const claudeCap = roundUsd(overall * (claudePercent / 100));
-  const openAICap = roundUsd(Math.max(overall - claudeCap, 0));
+  if (hasOpenAI && !hasAnthropic) {
+    // Single provider: OpenAI gets 100%
+    const cap = String(overall);
+    next.runtimes["openai-codex-app-server"].monthlySpendCapUsd = cap;
+    next.runtimes["openai-direct"].monthlySpendCapUsd = cap;
+    next.runtimes["claude-code"].monthlySpendCapUsd = "";
+    next.runtimes["anthropic-direct"].monthlySpendCapUsd = "";
+    return next;
+  }
 
-  next.runtimes["claude-code"].monthlySpendCapUsd = String(claudeCap);
+  // Both providers: split by anthropicPercent
+  const anthropicCap = roundUsd(overall * (anthropicPercent / 100));
+  const openAICap = roundUsd(Math.max(overall - anthropicCap, 0));
+
+  // Both runtimes under a provider share the provider's allocation
+  next.runtimes["claude-code"].monthlySpendCapUsd = String(anthropicCap);
+  next.runtimes["anthropic-direct"].monthlySpendCapUsd = String(anthropicCap);
   next.runtimes["openai-codex-app-server"].monthlySpendCapUsd = String(openAICap);
+  next.runtimes["openai-direct"].monthlySpendCapUsd = String(openAICap);
   return next;
 }
 
@@ -322,9 +347,16 @@ export function BudgetGuardrailsSection() {
   const overallMonthly = getStatus(snapshot.statuses, "overall", "monthly");
   const blocked = snapshot.statuses.filter((status) => status.health === "blocked");
   const warnings = snapshot.statuses.filter((status) => status.health === "warning");
-  const claudeAllocation = deriveClaudeAllocation(form);
+  const anthropicAllocation = deriveClaudeAllocation(form);
   const claudeRuntime = snapshot.runtimeStates["claude-code"];
-  const showSplitSlider = activeRuntimes.length === 2;
+  // Show split slider when both providers have active runtimes
+  const hasAnthropicRuntimes = activeRuntimes.some(
+    (r) => r.providerId === "anthropic"
+  );
+  const hasOpenAIRuntimes = activeRuntimes.some(
+    (r) => r.providerId === "openai"
+  );
+  const showSplitSlider = hasAnthropicRuntimes && hasOpenAIRuntimes;
 
   return (
     <Card className="surface-card">
@@ -422,11 +454,11 @@ export function BudgetGuardrailsSection() {
 
                   <div className="space-y-3">
                     <div className="flex items-center justify-between gap-3 text-sm">
-                      <span className="font-medium">Claude</span>
-                      <span className="text-muted-foreground">{claudeAllocation}%</span>
+                      <span className="font-medium">Anthropic</span>
+                      <span className="text-muted-foreground">{anthropicAllocation}%</span>
                     </div>
                     <Slider
-                      value={[claudeAllocation]}
+                      value={[anthropicAllocation]}
                       min={0}
                       max={100}
                       step={1}
@@ -444,42 +476,47 @@ export function BudgetGuardrailsSection() {
                       }
                     />
                     <div className="grid gap-3 md:grid-cols-2">
-                      {activeRuntimes.map((runtime) => (
-                        <div key={runtime.runtimeId} className="rounded-xl border border-border/60 bg-background/40 p-3">
-                          <p className="text-sm font-medium">{runtime.label}</p>
-                          <p className="mt-1 text-lg font-semibold">
-                            {formatCurrencyUsd(
-                              toNullableNumber(form.runtimes[runtime.runtimeId].monthlySpendCapUsd)
-                            )}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {runtime.runtimeId === "claude-code"
-                              ? `${claudeAllocation}% of the monthly cap`
-                              : `${100 - claudeAllocation}% of the monthly cap`}
-                          </p>
-                        </div>
-                      ))}
+                      <div className="rounded-xl border border-border/60 bg-background/40 p-3">
+                        <p className="text-sm font-medium">Anthropic</p>
+                        <p className="mt-1 text-lg font-semibold">
+                          {formatCurrencyUsd(
+                            toNullableNumber(form.runtimes["claude-code"].monthlySpendCapUsd)
+                          )}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {anthropicAllocation}% — shared by Claude Code &amp; Anthropic Direct
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-border/60 bg-background/40 p-3">
+                        <p className="text-sm font-medium">OpenAI</p>
+                        <p className="mt-1 text-lg font-semibold">
+                          {formatCurrencyUsd(
+                            toNullableNumber(form.runtimes["openai-codex-app-server"].monthlySpendCapUsd)
+                          )}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {100 - anthropicAllocation}% — shared by Codex &amp; OpenAI Direct
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="grid gap-3 md:grid-cols-2">
-                {activeRuntimes.map((runtime) => (
-                  <div key={runtime.runtimeId} className="surface-panel rounded-2xl p-4">
-                    <SectionEyebrow icon={Wallet} label="Provider Cap" />
-                    <h3 className="mt-1 text-sm font-semibold">{runtime.label}</h3>
-                    <p className="mt-2 text-lg font-semibold">
-                      {formatCurrencyUsd(
-                        toNullableNumber(form.runtimes[runtime.runtimeId].monthlySpendCapUsd)
-                      )}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {runtime.label} receives the full monthly cap because it is the only
-                      configured paid provider.
-                    </p>
-                  </div>
-                ))}
+              <div className="surface-panel rounded-2xl p-4">
+                <SectionEyebrow icon={Wallet} label="Provider Cap" />
+                <h3 className="mt-1 text-sm font-semibold">
+                  {hasAnthropicRuntimes ? "Anthropic" : "OpenAI"}
+                </h3>
+                <p className="mt-2 text-lg font-semibold">
+                  {formatCurrencyUsd(
+                    toNullableNumber(form.overallMonthlySpendCapUsd)
+                  )}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Full monthly cap — single provider with{" "}
+                  {activeRuntimes.length} runtime{activeRuntimes.length > 1 ? "s" : ""}.
+                </p>
               </div>
             )}
 
