@@ -6,6 +6,91 @@
 const GITHUB_API = "https://api.github.com";
 const RAW_BASE = "https://raw.githubusercontent.com";
 
+// ---------------------------------------------------------------------------
+// Typed error class
+// ---------------------------------------------------------------------------
+
+export class GitHubApiError extends Error {
+  readonly status: number;
+  readonly isPrivate: boolean;
+  readonly isRateLimit: boolean;
+  readonly isNotFound: boolean;
+  /** Milliseconds until the rate-limit window resets (only set when isRateLimit). */
+  readonly retryAfterMs: number | undefined;
+
+  constructor(
+    message: string,
+    opts: {
+      status: number;
+      isPrivate?: boolean;
+      isRateLimit?: boolean;
+      isNotFound?: boolean;
+      retryAfterMs?: number;
+    }
+  ) {
+    super(message);
+    this.name = "GitHubApiError";
+    this.status = opts.status;
+    this.isPrivate = opts.isPrivate ?? false;
+    this.isRateLimit = opts.isRateLimit ?? false;
+    this.isNotFound = opts.isNotFound ?? false;
+    this.retryAfterMs = opts.retryAfterMs;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Response → typed error helper (not exported)
+// ---------------------------------------------------------------------------
+
+function toGitHubError(res: Response): GitHubApiError {
+  const status = res.status;
+  const hasToken = Boolean(process.env.GITHUB_TOKEN);
+
+  // 404 — repo/resource not found
+  if (status === 404) {
+    return new GitHubApiError(
+      "Repository not found. Check the URL and try again.",
+      { status, isNotFound: true }
+    );
+  }
+
+  // 401/403 — could be rate-limit or private repo
+  if (status === 401 || status === 403) {
+    const remaining = res.headers.get("x-ratelimit-remaining");
+
+    if (remaining === "0") {
+      const resetEpoch = Number(res.headers.get("x-ratelimit-reset") ?? "0");
+      const retryAfterMs =
+        resetEpoch > 0 ? Math.max(0, resetEpoch * 1000 - Date.now()) : undefined;
+
+      const tokenHint = hasToken
+        ? ""
+        : " Set a GITHUB_TOKEN environment variable for higher rate limits.";
+
+      return new GitHubApiError(
+        `GitHub API rate limit exceeded. Resets in ${retryAfterMs !== undefined ? Math.ceil(retryAfterMs / 1000) : "?"}s.${tokenHint}`,
+        { status, isRateLimit: true, retryAfterMs }
+      );
+    }
+
+    // Private repo / insufficient permissions
+    const tokenHint = hasToken
+      ? " Your GITHUB_TOKEN may lack access to this repository."
+      : " Set a GITHUB_TOKEN environment variable to access private repositories.";
+
+    return new GitHubApiError(
+      `Access denied (${status}).${tokenHint}`,
+      { status, isPrivate: true }
+    );
+  }
+
+  // Everything else — generic
+  return new GitHubApiError(
+    `GitHub API error (${status}). Please try again later.`,
+    { status }
+  );
+}
+
 function headers(): HeadersInit {
   const h: Record<string, string> = {
     Accept: "application/vnd.github.v3+json",
@@ -78,7 +163,7 @@ export async function getDefaultBranch(owner: string, repo: string): Promise<str
     headers: headers(),
   });
   if (!res.ok) {
-    throw new Error(`GitHub API error ${res.status}: ${await res.text()}`);
+    throw toGitHubError(res);
   }
   const data = await res.json();
   return data.default_branch ?? "main";
@@ -95,7 +180,7 @@ export async function getLatestCommitSha(
     { headers: headers() }
   );
   if (!res.ok) {
-    throw new Error(`Failed to get commit SHA: ${res.status}`);
+    throw toGitHubError(res);
   }
   const data = await res.json();
   return data.object.sha;
@@ -112,7 +197,7 @@ export async function getRepoTree(
     { headers: headers() }
   );
   if (!res.ok) {
-    throw new Error(`Failed to get repo tree: ${res.status}`);
+    throw toGitHubError(res);
   }
   const data = await res.json();
   return data.tree ?? [];
@@ -128,7 +213,7 @@ export async function getFileContent(
   const url = `${RAW_BASE}/${owner}/${repo}/${ref}/${path}`;
   const res = await fetch(url);
   if (!res.ok) {
-    throw new Error(`Failed to fetch ${path}: ${res.status}`);
+    throw toGitHubError(res);
   }
   return res.text();
 }
