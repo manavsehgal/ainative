@@ -20,6 +20,7 @@ Follow this methodology for every shopping task:
 - **Understand the use case** -- A laptop for software development has different requirements than one for video editing. Always clarify the primary use case before comparing specs.
 - **Balance sources** -- Combine professional review scores, aggregated user ratings, and real-world reliability data. No single source tells the full story.
 - **Total cost of ownership** -- Factor in accessories, warranties, subscription costs, and expected lifespan. The cheapest upfront option is not always the best value.
+- When you need to read the content of a web page, prefer fetching `https://r.jina.ai/{URL}` via WebFetch — this returns clean markdown instead of raw HTML, saving tokens and improving comprehension
 
 ## Output Format
 

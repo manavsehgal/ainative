@@ -6,6 +6,7 @@ import { BudgetGuardrailsSection } from "@/components/settings/budget-guardrails
 import { ChatSettingsSection } from "@/components/settings/chat-settings-section";
 import { RuntimeTimeoutSection } from "@/components/settings/runtime-timeout-section";
 import { BrowserToolsSection } from "@/components/settings/browser-tools-section";
+import { WebSearchSection } from "@/components/settings/web-search-section";
 import { LearningContextSection } from "@/components/settings/learning-context-section";
 import { PageShell } from "@/components/shared/page-shell";
 
@@ -20,6 +21,7 @@ export default function SettingsPage() {
         <ChatSettingsSection />
         <RuntimeTimeoutSection />
         <LearningContextSection />
+        <WebSearchSection />
         <BrowserToolsSection />
         <BudgetGuardrailsSection />
         <PermissionsSections />

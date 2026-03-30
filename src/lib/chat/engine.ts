@@ -43,8 +43,12 @@ import { createStagentMcpServer } from "./stagent-tools";
 import {
   getBrowserMcpServers,
   getBrowserAllowedToolPatterns,
+  getExternalMcpServers,
+  getExternalAllowedToolPatterns,
   isBrowserTool,
   isBrowserReadOnly,
+  isExaTool,
+  isExaReadOnly,
 } from "@/lib/agents/browser-mcp";
 
 // ── Streaming input wrapper (required for MCP tools) ─────────────────
@@ -206,9 +210,14 @@ export async function* sendMessage(
     const maxTurnsSetting = await getSetting(SETTINGS_KEYS.MAX_TURNS);
     const maxTurns = maxTurnsSetting ? parseInt(maxTurnsSetting, 10) || 30 : 30;
 
-    // Merge browser MCP servers when enabled in settings
-    const browserServers = await getBrowserMcpServers();
-    const browserToolPatterns = await getBrowserAllowedToolPatterns();
+    // Merge browser + external MCP servers when enabled in settings
+    const [browserServers, browserToolPatterns, externalServers, externalToolPatterns] =
+      await Promise.all([
+        getBrowserMcpServers(),
+        getBrowserAllowedToolPatterns(),
+        getExternalMcpServers(),
+        getExternalAllowedToolPatterns(),
+      ]);
 
     const response = query({
       prompt: generatePrompt(fullPrompt),
@@ -219,8 +228,8 @@ export async function* sendMessage(
         includePartialMessages: true,
         cwd: workspace.cwd,
         env: buildClaudeSdkEnv(authEnv),
-        mcpServers: { stagent: stagentServer, ...browserServers },
-        allowedTools: ["mcp__stagent__*", ...browserToolPatterns],
+        mcpServers: { stagent: stagentServer, ...browserServers, ...externalServers },
+        allowedTools: ["mcp__stagent__*", ...browserToolPatterns, ...externalToolPatterns],
         // @ts-expect-error Agent SDK canUseTool types are incomplete — our async handler is compatible at runtime
         canUseTool: async (
           toolName: string,
@@ -244,6 +253,17 @@ export async function* sendMessage(
               type: "status",
               phase: "tool_use",
               message: `Using ${shortName}...`,
+            });
+            return { behavior: "allow", updatedInput: input };
+          }
+
+          // Exa tools: auto-allow read-only (all Exa tools are read-only)
+          if (isExaTool(toolName) && isExaReadOnly(toolName)) {
+            const shortName = toolName.replace("mcp__exa__", "").replace(/_/g, " ");
+            emitSideChannelEvent(conversationId, {
+              type: "status",
+              phase: "tool_use",
+              message: `Exa: ${shortName}...`,
             });
             return { behavior: "allow", updatedInput: input };
           }

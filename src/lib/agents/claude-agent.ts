@@ -20,7 +20,7 @@ import { getActiveLearnedContext } from "./learned-context";
 import { getLaunchCwd, getWorkspaceContext } from "@/lib/environment/workspace-context";
 import { analyzeForLearnedPatterns } from "./pattern-extractor";
 import { processSweepResult } from "./sweep";
-import { getBrowserMcpServers } from "./browser-mcp";
+import { getBrowserMcpServers, getExternalMcpServers, isExaTool, isExaReadOnly } from "./browser-mcp";
 import { persistScreenshot, SCREENSHOT_TOOL_NAMES } from "@/lib/screenshots/persist";
 import {
   extractUsageSnapshot,
@@ -521,10 +521,13 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
     await prepareTaskOutputDirectory(taskId, { clearExisting: true });
     const ctx = await buildTaskQueryContext(task, agentProfileId);
 
-    // Merge browser MCP servers when enabled globally
-    const browserServers = await getBrowserMcpServers();
+    // Merge browser + external MCP servers when enabled globally
+    const [browserServers, externalServers] = await Promise.all([
+      getBrowserMcpServers(),
+      getExternalMcpServers(),
+    ]);
     const profileMcpServers = ctx.payload?.mcpServers ?? {};
-    const mergedMcpServers = { ...profileMcpServers, ...browserServers };
+    const mergedMcpServers = { ...profileMcpServers, ...browserServers, ...externalServers };
 
     const authEnv = await getAuthEnv();
     const response = query({
@@ -631,10 +634,13 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
     await prepareTaskOutputDirectory(taskId);
     const ctx = await buildTaskQueryContext(task, profileId);
 
-    // Merge browser MCP servers when enabled globally
-    const browserServers = await getBrowserMcpServers();
+    // Merge browser + external MCP servers when enabled globally
+    const [browserServers, externalServers] = await Promise.all([
+      getBrowserMcpServers(),
+      getExternalMcpServers(),
+    ]);
     const profileMcpServers = ctx.payload?.mcpServers ?? {};
-    const mergedMcpServers = { ...profileMcpServers, ...browserServers };
+    const mergedMcpServers = { ...profileMcpServers, ...browserServers, ...externalServers };
 
     const authEnv = await getAuthEnv();
     const response = query({
@@ -802,6 +808,11 @@ async function handleToolPermission(
     if (canUseToolPolicy.autoDeny?.includes(toolName)) {
       return { behavior: "deny", message: `Profile policy denies ${toolName}` };
     }
+  }
+
+  // Layer 1.5: External MCP read-only tools — auto-approve without I/O
+  if (!isQuestion && isExaTool(toolName) && isExaReadOnly(toolName)) {
+    return buildAllowedToolPermissionResponse(input);
   }
 
   // Layer 2: Saved user permissions — skip notification for pre-approved tools

@@ -1,12 +1,18 @@
 import { getSetting } from "@/lib/settings/helpers";
 import { SETTINGS_KEYS } from "@/lib/constants/settings";
 
-// ── MCP server config type (matches Claude Agent SDK shape) ──────────
+// ── MCP server config types (matches Claude Agent SDK shape) ─────────
 
 interface McpServerConfig {
   command: string;
   args: string[];
 }
+
+interface McpServerSseConfig {
+  url: string;
+}
+
+type AnyMcpServerConfig = McpServerConfig | McpServerSseConfig;
 
 // ── Read-only browser tools — auto-approved in chat & task permission callbacks
 
@@ -115,5 +121,51 @@ export async function getBrowserAllowedToolPatterns(): Promise<string[]> {
   const patterns: string[] = [];
   if (chromeEnabled === "true") patterns.push("mcp__chrome-devtools__*");
   if (playwrightEnabled === "true") patterns.push("mcp__playwright__*");
+  return patterns;
+}
+
+// ── Exa Search MCP — semantic web search ────────────────────────────
+
+/** All Exa tools are read-only (search, similarity, content fetch) */
+export const EXA_READ_ONLY_TOOLS = new Set([
+  "mcp__exa__web_search_exa",
+  "mcp__exa__find_similar",
+  "mcp__exa__get_contents",
+]);
+
+export function isExaTool(toolName: string): boolean {
+  return toolName.startsWith("mcp__exa__");
+}
+
+export function isExaReadOnly(toolName: string): boolean {
+  return EXA_READ_ONLY_TOOLS.has(toolName);
+}
+
+/**
+ * Read external MCP server settings from DB and return configs
+ * for any enabled servers. Currently supports Exa Search.
+ *
+ * Returns `{}` when nothing is enabled — zero overhead.
+ */
+export async function getExternalMcpServers(): Promise<Record<string, AnyMcpServerConfig>> {
+  const exaEnabled = await getSetting(SETTINGS_KEYS.EXA_SEARCH_MCP_ENABLED);
+
+  const servers: Record<string, AnyMcpServerConfig> = {};
+
+  if (exaEnabled === "true") {
+    servers.exa = { url: "https://mcp.exa.ai/mcp" };
+  }
+
+  return servers;
+}
+
+/**
+ * Build the allowedTools glob patterns for enabled external MCP servers.
+ */
+export async function getExternalAllowedToolPatterns(): Promise<string[]> {
+  const exaEnabled = await getSetting(SETTINGS_KEYS.EXA_SEARCH_MCP_ENABLED);
+
+  const patterns: string[] = [];
+  if (exaEnabled === "true") patterns.push("mcp__exa__*");
   return patterns;
 }

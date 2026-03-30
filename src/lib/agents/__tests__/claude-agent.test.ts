@@ -134,6 +134,9 @@ vi.mock("@/lib/agents/sweep", () => ({
 }));
 vi.mock("@/lib/agents/browser-mcp", () => ({
   getBrowserMcpServers: vi.fn().mockResolvedValue({}),
+  getExternalMcpServers: vi.fn().mockResolvedValue({}),
+  isExaTool: vi.fn().mockReturnValue(false),
+  isExaReadOnly: vi.fn().mockReturnValue(false),
 }));
 
 // Static imports (works because vi.mock is hoisted)

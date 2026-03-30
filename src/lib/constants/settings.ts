@@ -15,6 +15,7 @@ export const SETTINGS_KEYS = {
   BROWSER_MCP_PLAYWRIGHT_ENABLED: "browser.playwrightEnabled",
   BROWSER_MCP_CHROME_DEVTOOLS_CONFIG: "browser.chromeDevtoolsConfig",
   BROWSER_MCP_PLAYWRIGHT_CONFIG: "browser.playwrightConfig",
+  EXA_SEARCH_MCP_ENABLED: "web.exaSearchEnabled",
 } as const;
 
 export type AuthMethod = "api_key" | "oauth";
