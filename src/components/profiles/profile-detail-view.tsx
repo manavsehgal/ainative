@@ -318,6 +318,20 @@ export function ProfileDetailView({ profileId, isBuiltin, initialProfile }: Prof
                   {new Date(profile.importMeta.importedAt).toLocaleDateString()}
                   {" · "}
                   {profile.importMeta.sourceFormat === "stagent" ? "Stagent native" : "SKILL.md adapted"}
+                  {profile.importMeta.filePath && (
+                    <>
+                      {" · "}
+                      <a
+                        href={`${profile.importMeta.repoUrl}/tree/${profile.importMeta.branch}/${profile.importMeta.filePath}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline inline-flex items-center gap-0.5"
+                      >
+                        View source
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </>
+                  )}
                 </p>
               </div>
             </div>
