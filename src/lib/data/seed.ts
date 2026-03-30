@@ -7,6 +7,12 @@ import {
   agentLogs,
   notifications,
   schedules,
+  conversations,
+  chatMessages,
+  learnedContext,
+  views,
+  profileTestResults,
+  repoImports,
 } from "@/lib/db/schema";
 import { clearAllData } from "./clear";
 import { createProjects } from "./seed-data/projects";
@@ -20,6 +26,11 @@ import { upsertSampleProfiles } from "./seed-data/profiles";
 import { processDocument } from "@/lib/documents/processor";
 import { createUsageLedgerSeeds } from "./seed-data/usage-ledger";
 import { recordUsageLedgerEntry } from "@/lib/usage/ledger";
+import { createConversations } from "./seed-data/conversations";
+import { createLearnedContext } from "./seed-data/learned-context";
+import { createViews } from "./seed-data/views";
+import { createProfileTestResults } from "./seed-data/profile-test-results";
+import { createRepoImports } from "./seed-data/repo-imports";
 
 /**
  * Clear all data, then seed with realistic sample data.
@@ -115,6 +126,40 @@ export async function seedSampleData() {
     await recordUsageLedgerEntry(seed);
   }
 
+  // 12. Insert conversations and chat messages
+  const { conversations: convSeeds, messages: msgSeeds } =
+    createConversations(projectIds);
+  for (const c of convSeeds) {
+    db.insert(conversations).values(c).run();
+  }
+  for (const m of msgSeeds) {
+    db.insert(chatMessages).values(m).run();
+  }
+
+  // 13. Insert learned context entries
+  const learnedContextSeeds = createLearnedContext(completedTaskIds);
+  for (const lc of learnedContextSeeds) {
+    db.insert(learnedContext).values(lc).run();
+  }
+
+  // 14. Insert saved views
+  const viewSeeds = createViews();
+  for (const v of viewSeeds) {
+    db.insert(views).values(v).run();
+  }
+
+  // 15. Insert profile test results
+  const testResultSeeds = createProfileTestResults();
+  for (const tr of testResultSeeds) {
+    db.insert(profileTestResults).values(tr).run();
+  }
+
+  // 16. Insert repo import records
+  const repoImportSeeds = createRepoImports();
+  for (const ri of repoImportSeeds) {
+    db.insert(repoImports).values(ri).run();
+  }
+
   return {
     profiles: profileCount,
     projects: projectSeeds.length,
@@ -125,5 +170,11 @@ export async function seedSampleData() {
     agentLogs: logSeeds.length,
     notifications: notifSeeds.length,
     usageLedger: usageSeeds.length,
+    conversations: convSeeds.length,
+    chatMessages: msgSeeds.length,
+    learnedContext: learnedContextSeeds.length,
+    views: viewSeeds.length,
+    profileTestResults: testResultSeeds.length,
+    repoImports: repoImportSeeds.length,
   };
 }

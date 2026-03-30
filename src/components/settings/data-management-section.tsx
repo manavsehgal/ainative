@@ -28,7 +28,7 @@ export function DataManagementSection() {
       if (data.success) {
         const d = data.deleted;
         toast.success(
-          `Cleared ${d.projects} projects, ${d.tasks} tasks, ${d.workflows} workflows, ${d.schedules} schedules, ${d.documents} documents, ${d.agentLogs} logs, ${d.notifications} notifications, ${d.sampleProfiles} sample profiles, ${d.files} files`
+          `Cleared ${d.projects} projects, ${d.tasks} tasks, ${d.workflows} workflows, ${d.schedules} schedules, ${d.documents} documents, ${d.conversations} conversations, ${d.chatMessages} messages, ${d.learnedContext} learned context, ${d.views} views, ${d.agentLogs} logs, ${d.notifications} notifications, ${d.sampleProfiles} sample profiles, ${d.files} files`
         );
       } else {
         toast.error(`Clear failed: ${data.error}`);
@@ -48,7 +48,7 @@ export function DataManagementSection() {
       if (data.success) {
         const s = data.seeded;
         toast.success(
-          `Seeded ${s.profiles} profiles, ${s.projects} projects, ${s.tasks} tasks, ${s.workflows} workflows, ${s.schedules} schedules, ${s.documents} documents, ${s.agentLogs} logs, ${s.notifications} notifications`
+          `Seeded ${s.profiles} profiles, ${s.projects} projects, ${s.tasks} tasks, ${s.workflows} workflows, ${s.schedules} schedules, ${s.documents} documents, ${s.conversations} conversations, ${s.chatMessages} messages, ${s.learnedContext} learned context, ${s.views} views, ${s.agentLogs} logs, ${s.notifications} notifications`
         );
       } else {
         toast.error(`Seed failed: ${data.error}`);
@@ -74,6 +74,7 @@ export function DataManagementSection() {
             <div className="flex items-center gap-2">
               <p className="text-sm text-muted-foreground">
                 Delete all projects, tasks, workflows, schedules, documents,
+                conversations, chat messages, learned context, saved views,
                 agent logs, notifications, seeded sample profiles, and uploaded
                 files. Authentication settings are preserved.
               </p>
@@ -99,8 +100,9 @@ export function DataManagementSection() {
             <p className="text-sm text-muted-foreground">
               Populate with 3 custom profiles, 5 realistic projects, 25 tasks
               across varied statuses, 5 workflows, 4 schedules, 12 documents
-              (XLSX, PDF, DOCX, PPTX), agent logs, and notifications. Existing
-              data is cleared first.
+              (XLSX, PDF, DOCX, PPTX), 3 conversations with chat history,
+              learned context, saved views, profile test results, repo imports,
+              agent logs, and notifications. Existing data is cleared first.
             </p>
             <Button
               variant="outline"
@@ -122,7 +124,7 @@ export function DataManagementSection() {
         open={clearOpen}
         onOpenChange={setClearOpen}
         title="Clear all data?"
-        description="This will permanently delete all projects, tasks, workflows, schedules, documents, agent logs, notifications, seeded sample profiles, and uploaded files. Authentication settings will be preserved. This action cannot be undone."
+        description="This will permanently delete all projects, tasks, workflows, schedules, documents, conversations, chat messages, learned context, saved views, agent logs, notifications, seeded sample profiles, and uploaded files. Authentication settings will be preserved. This action cannot be undone."
         confirmLabel="Clear All Data"
         onConfirm={handleClear}
         destructive
@@ -132,7 +134,7 @@ export function DataManagementSection() {
         open={seedOpen}
         onOpenChange={setSeedOpen}
         title="Seed sample data?"
-        description="This will clear all existing data first, then populate with 3 custom profiles, 5 projects, 25 tasks, 5 workflows, 4 schedules, 12 documents (XLSX, PDF, DOCX, PPTX), agent logs, and notifications. Any current data will be lost."
+        description="This will clear all existing data first, then populate with 3 custom profiles, 5 projects, 25 tasks, 5 workflows, 4 schedules, 12 documents (XLSX, PDF, DOCX, PPTX), 3 conversations with chat history, learned context, saved views, profile test results, repo imports, agent logs, and notifications. Any current data will be lost."
         confirmLabel="Seed Data"
         onConfirm={handleSeed}
       />

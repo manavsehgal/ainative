@@ -272,8 +272,9 @@ async function processAgentStream(
       for (const block of message.message.content) {
         if (block.type === "tool_use") {
           // Track screenshot tool_use IDs for result interception
-          if (typeof block.name === "string" && SCREENSHOT_TOOL_NAMES.has(block.name) && typeof block.id === "string") {
-            pendingScreenshotTools.add(block.id);
+          const toolBlock = block as { type: string; id?: string; name?: string; input?: unknown };
+          if (typeof toolBlock.name === "string" && SCREENSHOT_TOOL_NAMES.has(toolBlock.name) && typeof toolBlock.id === "string") {
+            pendingScreenshotTools.add(toolBlock.id);
           }
           await db.insert(agentLogs).values({
             id: crypto.randomUUID(),
