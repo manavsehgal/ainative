@@ -73,11 +73,24 @@ export function ProfileCard({ profile, isBuiltin = true, onClick }: ProfileCardP
         </div>
 
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          {profile.importMeta && (
-            <span className="flex items-center gap-1 text-purple-600 dark:text-purple-400">
-              <Download className="h-3 w-3" />
-              {profile.importMeta.repoOwner}/{profile.importMeta.repoName}
+          {profile.importMeta ? (
+            <span className="flex items-center gap-1.5">
+              <Badge variant="outline" className="border-purple-200 text-purple-600 dark:border-purple-800 dark:text-purple-400">
+                <Download className="mr-1 h-3 w-3" />
+                Imported
+              </Badge>
+              <span className="text-muted-foreground">
+                {profile.importMeta.repoOwner}/{profile.importMeta.repoName}
+              </span>
             </span>
+          ) : isBuiltin ? (
+            <Badge variant="outline" className="border-blue-200 text-blue-600 dark:border-blue-800 dark:text-blue-400">
+              Built-in
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="border-gray-200 text-gray-500 dark:border-gray-700 dark:text-gray-400">
+              Custom
+            </Badge>
           )}
           {profile.version && <span>v{profile.version}</span>}
           {profile.allowedTools && profile.allowedTools.length > 0 && (
