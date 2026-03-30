@@ -1,10 +1,10 @@
-import { tool } from "@anthropic-ai/claude-agent-sdk";
+import { defineTool } from "../tool-registry";
 import { z } from "zod";
 import { ok, err, type ToolContext } from "./helpers";
 
 export function settingsTools(_ctx: ToolContext) {
   return [
-    tool(
+    defineTool(
       "get_settings",
       "Get current Stagent settings including auth method, budget limits, active runtime, and workspace context. Read-only.",
       {

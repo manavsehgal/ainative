@@ -8,6 +8,8 @@ import {
 } from "./catalog";
 import { claudeRuntimeAdapter } from "./claude";
 import { openAICodexRuntimeAdapter } from "./openai-codex";
+import { anthropicDirectRuntimeAdapter } from "./anthropic-direct";
+import { openAIDirectRuntimeAdapter } from "./openai-direct";
 import { getProfile } from "@/lib/agents/profiles/registry";
 import { resolveProfileRuntimePayload } from "@/lib/agents/profiles/compatibility";
 import type {
@@ -27,6 +29,8 @@ import {
 const runtimeRegistry: Record<AgentRuntimeId, AgentRuntimeAdapter> = {
   "claude-code": claudeRuntimeAdapter,
   "openai-codex-app-server": openAICodexRuntimeAdapter,
+  "anthropic-direct": anthropicDirectRuntimeAdapter,
+  "openai-direct": openAIDirectRuntimeAdapter,
 };
 
 function getRuntimeAdapter(runtimeId?: string | null): AgentRuntimeAdapter {

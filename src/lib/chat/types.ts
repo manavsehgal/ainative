@@ -46,7 +46,7 @@ export interface ChatModelOption {
 
 /** Runtime → provider mapping */
 export function getProviderForRuntime(runtimeId: string): "anthropic" | "openai" {
-  return runtimeId === "openai-codex-app-server" ? "openai" : "anthropic";
+  return (runtimeId === "openai-codex-app-server" || runtimeId === "openai-direct") ? "openai" : "anthropic";
 }
 
 /** Available chat models by provider (fallback when SDKs are unreachable).

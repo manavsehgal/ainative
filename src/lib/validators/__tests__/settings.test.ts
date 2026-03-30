@@ -112,6 +112,12 @@ describe("updateBudgetPolicySchema", () => {
         "openai-codex-app-server": {
           monthlySpendCapUsd: null,
         },
+        "anthropic-direct": {
+          monthlySpendCapUsd: null,
+        },
+        "openai-direct": {
+          monthlySpendCapUsd: null,
+        },
       },
     });
 

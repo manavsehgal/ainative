@@ -3,8 +3,8 @@ name: Project Manager
 version: "1.0.0"
 domain: work
 tags: [planning, estimation, dependencies, project, management, decomposition]
-supportedRuntimes: [claude-code, openai-codex-app-server]
-
+supportedRuntimes: [claude-code, openai-codex-app-server, anthropic-direct, openai-direct]
+preferredRuntime: anthropic-direct
 allowedTools:
   - Read
   - Grep

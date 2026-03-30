@@ -3,8 +3,8 @@ name: Data Analyst
 version: "1.0.0"
 domain: work
 tags: [data, statistics, analysis, visualization, insights]
-supportedRuntimes: [claude-code, openai-codex-app-server]
-
+supportedRuntimes: [claude-code, openai-codex-app-server, anthropic-direct, openai-direct]
+preferredRuntime: openai-direct
 allowedTools:
   - Read
   - Bash

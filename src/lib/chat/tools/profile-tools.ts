@@ -1,10 +1,10 @@
-import { tool } from "@anthropic-ai/claude-agent-sdk";
+import { defineTool } from "../tool-registry";
 import { z } from "zod";
 import { ok, err, type ToolContext } from "./helpers";
 
 export function profileTools(_ctx: ToolContext) {
   return [
-    tool(
+    defineTool(
       "list_profiles",
       "List all available agent profiles with their capabilities and compatible runtimes.",
       {},
@@ -27,7 +27,7 @@ export function profileTools(_ctx: ToolContext) {
       }
     ),
 
-    tool(
+    defineTool(
       "get_profile",
       "Get detailed configuration for a specific agent profile.",
       {

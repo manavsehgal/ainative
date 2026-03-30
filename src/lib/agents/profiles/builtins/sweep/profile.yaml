@@ -4,7 +4,7 @@ version: "1.0.0"
 domain: work
 tags: [sweep, audit, improvement, maintenance]
 supportedRuntimes: [claude-code]
-
+preferredRuntime: claude-code
 maxTurns: 50
 outputFormat: json
 

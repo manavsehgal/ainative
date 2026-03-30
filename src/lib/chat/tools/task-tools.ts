@@ -1,4 +1,4 @@
-import { tool } from "@anthropic-ai/claude-agent-sdk";
+import { defineTool } from "../tool-registry";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { tasks } from "@/lib/db/schema";
@@ -16,7 +16,7 @@ const VALID_TASK_STATUSES = [
 
 export function taskTools(ctx: ToolContext) {
   return [
-    tool(
+    defineTool(
       "list_tasks",
       "List tasks, optionally filtered by project or status. If a project is active in this conversation, tasks are scoped to it by default.",
       {
@@ -53,7 +53,7 @@ export function taskTools(ctx: ToolContext) {
       }
     ),
 
-    tool(
+    defineTool(
       "create_task",
       "Create a new task record in Stagent. Use this when the user asks to create, add, or plan a task.",
       {
@@ -108,7 +108,7 @@ export function taskTools(ctx: ToolContext) {
       }
     ),
 
-    tool(
+    defineTool(
       "update_task",
       "Update an existing task's status, title, description, or priority.",
       {
@@ -165,7 +165,7 @@ export function taskTools(ctx: ToolContext) {
       }
     ),
 
-    tool(
+    defineTool(
       "get_task",
       "Get full details for a specific task by ID.",
       {
@@ -188,7 +188,7 @@ export function taskTools(ctx: ToolContext) {
       }
     ),
 
-    tool(
+    defineTool(
       "execute_task",
       "Queue and execute a task with an AI agent. Returns immediately — execution runs in the background. Requires approval.",
       {
@@ -229,7 +229,7 @@ export function taskTools(ctx: ToolContext) {
       }
     ),
 
-    tool(
+    defineTool(
       "cancel_task",
       "Cancel a running task. Requires approval.",
       {

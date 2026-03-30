@@ -56,6 +56,16 @@ function buildFormState(policy: BudgetPolicy): BudgetFormState {
           policy.runtimes["openai-codex-app-server"].monthlySpendCapUsd
         ),
       },
+      "anthropic-direct": {
+        monthlySpendCapUsd: toInputValue(
+          policy.runtimes["anthropic-direct"].monthlySpendCapUsd
+        ),
+      },
+      "openai-direct": {
+        monthlySpendCapUsd: toInputValue(
+          policy.runtimes["openai-direct"].monthlySpendCapUsd
+        ),
+      },
     },
   };
 }
@@ -75,6 +85,16 @@ function buildPayload(form: BudgetFormState): BudgetPolicy {
       "openai-codex-app-server": {
         monthlySpendCapUsd: toNullableNumber(
           form.runtimes["openai-codex-app-server"].monthlySpendCapUsd
+        ),
+      },
+      "anthropic-direct": {
+        monthlySpendCapUsd: toNullableNumber(
+          form.runtimes["anthropic-direct"].monthlySpendCapUsd
+        ),
+      },
+      "openai-direct": {
+        monthlySpendCapUsd: toNullableNumber(
+          form.runtimes["openai-direct"].monthlySpendCapUsd
         ),
       },
     },

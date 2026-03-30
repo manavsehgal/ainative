@@ -1,4 +1,4 @@
-import { tool } from "@anthropic-ai/claude-agent-sdk";
+import { defineTool } from "../tool-registry";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { notifications } from "@/lib/db/schema";
@@ -7,7 +7,7 @@ import { ok, err, type ToolContext } from "./helpers";
 
 export function notificationTools(_ctx: ToolContext) {
   return [
-    tool(
+    defineTool(
       "list_notifications",
       "List notifications. By default shows only pending approval requests. Set pendingOnly to false for all recent notifications.",
       {
@@ -58,7 +58,7 @@ export function notificationTools(_ctx: ToolContext) {
       }
     ),
 
-    tool(
+    defineTool(
       "respond_notification",
       "Respond to a pending permission or approval notification. Use 'allow' to approve or 'deny' to reject.",
       {
@@ -124,7 +124,7 @@ export function notificationTools(_ctx: ToolContext) {
       }
     ),
 
-    tool(
+    defineTool(
       "mark_notifications_read",
       "Mark all unread notifications as read.",
       {},

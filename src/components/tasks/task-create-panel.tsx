@@ -77,6 +77,10 @@ export function TaskCreatePanel({ projects, defaultProjectId }: TaskCreatePanelP
   const [uploads, setUploads] = useState<UploadedFile[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [suggestedRuntime, setSuggestedRuntime] = useState<{
+    runtimeId: string;
+    reason: string;
+  } | null>(null);
 
   useEffect(() => {
     fetch("/api/profiles")
@@ -103,7 +107,29 @@ export function TaskCreatePanel({ projects, defaultProjectId }: TaskCreatePanelP
     window.history.replaceState({}, "", window.location.pathname);
   }, []);
 
+  // Fetch runtime suggestion when title changes (debounced)
+  useEffect(() => {
+    if (!title.trim() || assignedAgent) {
+      setSuggestedRuntime(null);
+      return;
+    }
+    const timer = setTimeout(() => {
+      fetch("/api/runtimes/suggest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, description, profileId: agentProfile || undefined }),
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.runtimeId) setSuggestedRuntime(data);
+        })
+        .catch(() => {});
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [title, description, agentProfile, assignedAgent]);
+
   const selectedRuntimeId = (assignedAgent ||
+    suggestedRuntime?.runtimeId ||
     DEFAULT_AGENT_RUNTIME) as AgentRuntimeId;
   const selectedProfile = profiles.find((profile) => profile.id === agentProfile);
   const profileCompatibilityError =
@@ -251,7 +277,9 @@ export function TaskCreatePanel({ projects, defaultProjectId }: TaskCreatePanelP
                         <SelectValue placeholder="Default runtime" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="default">Default runtime</SelectItem>
+                        <SelectItem value="default">
+                          Auto{suggestedRuntime ? ` → ${runtimeLabelMap.get(suggestedRuntime.runtimeId as AgentRuntimeId) ?? suggestedRuntime.runtimeId}` : " (recommended)"}
+                        </SelectItem>
                         {runtimeOptions.map((runtime) => (
                           <SelectItem key={runtime.id} value={runtime.id}>
                             {runtime.label}
@@ -259,9 +287,16 @@ export function TaskCreatePanel({ projects, defaultProjectId }: TaskCreatePanelP
                         ))}
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-muted-foreground">
-                      Which provider runtime should execute this task
-                    </p>
+                    {suggestedRuntime && !assignedAgent && (
+                      <p className="text-xs text-muted-foreground">
+                        {suggestedRuntime.reason}
+                      </p>
+                    )}
+                    {!suggestedRuntime && (
+                      <p className="text-xs text-muted-foreground">
+                        Which provider runtime should execute this task
+                      </p>
+                    )}
                   </div>
                   {profiles.length > 0 && (
                     <div className="space-y-1.5">

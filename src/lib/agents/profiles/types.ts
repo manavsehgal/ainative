@@ -19,6 +19,15 @@ export interface ProfileRuntimeOverride {
   tests?: ProfileSmokeTest[];
 }
 
+export interface ProfileRuntimeCapabilityOverride {
+  /** Override model ID for this runtime (e.g., "claude-opus-4-20250514"). */
+  modelId?: string;
+  /** Enable extended thinking (Anthropic Direct only). */
+  extendedThinking?: { enabled: boolean; budgetTokens?: number };
+  /** Server-side tools to enable (e.g., { web_search: true }). */
+  serverTools?: Record<string, boolean>;
+}
+
 export interface AgentProfile {
   id: string;
   name: string;
@@ -40,5 +49,9 @@ export interface AgentProfile {
   tests?: ProfileSmokeTest[];
   importMeta?: ImportMeta;
   supportedRuntimes: AgentRuntimeId[];
+  /** Preferred runtime for auto-routing. When set, suggestRuntime() prefers this. */
+  preferredRuntime?: AgentRuntimeId;
   runtimeOverrides?: Partial<Record<AgentRuntimeId, ProfileRuntimeOverride>>;
+  /** Per-runtime capability overrides (model, extended thinking, server tools). */
+  capabilityOverrides?: Partial<Record<AgentRuntimeId, ProfileRuntimeCapabilityOverride>>;
 }

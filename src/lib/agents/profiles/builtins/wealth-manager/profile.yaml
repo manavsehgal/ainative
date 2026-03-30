@@ -3,8 +3,8 @@ name: Wealth Manager
 version: "1.0.0"
 domain: personal
 tags: [finance, investing, tax, portfolio, retirement, savings]
-supportedRuntimes: [claude-code]
-
+supportedRuntimes: [claude-code, anthropic-direct, openai-direct]
+preferredRuntime: anthropic-direct
 allowedTools:
   - WebSearch
   - WebFetch

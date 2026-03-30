@@ -1,5 +1,13 @@
-import { createSdkMcpServer } from "@anthropic-ai/claude-agent-sdk";
+import { tool as sdkTool, createSdkMcpServer } from "@anthropic-ai/claude-agent-sdk";
 import { type ToolContext } from "./tools/helpers";
+import {
+  type ToolDefinition,
+  type ToolResult,
+  toAnthropicToolDef,
+  toOpenAIFunctionDef,
+  type AnthropicToolDef,
+  type OpenAIFunctionDef,
+} from "./tool-registry";
 import { projectTools } from "./tools/project-tools";
 import { taskTools } from "./tools/task-tools";
 import { workflowTools } from "./tools/workflow-tools";
@@ -11,33 +19,109 @@ import { usageTools } from "./tools/usage-tools";
 import { settingsTools } from "./tools/settings-tools";
 import { chatHistoryTools } from "./tools/chat-history-tools";
 
+// ── Tool server types ────────────────────────────────────────────────
+
+export interface ProviderToolKit {
+  tools: AnthropicToolDef[] | OpenAIFunctionDef[];
+  /** Execute a tool handler by name. Throws if tool not found. */
+  executeHandler(name: string, args: Record<string, unknown>): Promise<ToolResult>;
+}
+
+export interface ToolServer {
+  /** Backward-compatible SDK MCP server for the chat engine. */
+  asMcpServer(): ReturnType<typeof createSdkMcpServer>;
+  /** Provider-formatted tool arrays + handler lookup for direct API runtimes. */
+  forProvider(provider: "anthropic" | "openai"): ProviderToolKit;
+  /** Raw tool definitions for inspection / testing. */
+  readonly definitions: ToolDefinition[];
+}
+
+// ── Factory ──────────────────────────────────────────────────────────
+
+function collectAllTools(ctx: ToolContext): ToolDefinition[] {
+  return [
+    ...projectTools(ctx),
+    ...taskTools(ctx),
+    ...workflowTools(ctx),
+    ...scheduleTools(ctx),
+    ...documentTools(ctx),
+    ...notificationTools(ctx),
+    ...profileTools(ctx),
+    ...usageTools(ctx),
+    ...settingsTools(ctx),
+    ...chatHistoryTools(ctx),
+  ];
+}
+
+/**
+ * Create a tool server that supports both SDK MCP mode and direct API mode.
+ *
+ * - `.asMcpServer()` re-wraps definitions into SDK `tool()` calls for
+ *   backward compatibility with the chat engine.
+ * - `.forProvider("anthropic" | "openai")` returns provider-formatted
+ *   tool definitions + a handler lookup for direct API runtimes.
+ */
+export function createToolServer(
+  projectId?: string | null,
+  onToolResult?: (toolName: string, result: unknown) => void,
+): ToolServer {
+  const ctx: ToolContext = { projectId, onToolResult };
+  const allTools = collectAllTools(ctx);
+
+  // Handler lookup map (built once, shared across modes)
+  const handlerMap = new Map<string, ToolDefinition["handler"]>(
+    allTools.map((t) => [t.name, t.handler]),
+  );
+
+  async function executeHandler(
+    name: string,
+    args: Record<string, unknown>,
+  ): Promise<ToolResult> {
+    const handler = handlerMap.get(name);
+    if (!handler) throw new Error(`Unknown tool: ${name}`);
+    return handler(args);
+  }
+
+  return {
+    asMcpServer() {
+      // Re-wrap ToolDefinitions into SDK tool() format
+      const sdkTools = allTools.map((def) =>
+        sdkTool(def.name, def.description, def.zodShape, def.handler),
+      );
+      return createSdkMcpServer({
+        name: "stagent",
+        version: "1.0.0",
+        tools: sdkTools,
+      });
+    },
+
+    forProvider(provider) {
+      const tools =
+        provider === "anthropic"
+          ? allTools.map(toAnthropicToolDef)
+          : allTools.map(toOpenAIFunctionDef);
+      return { tools, executeHandler };
+    },
+
+    definitions: allTools,
+  };
+}
+
+// ── Backward-compatible export ───────────────────────────────────────
+
 /**
  * Create an in-process MCP server exposing all Stagent tools.
  * The `projectId` closure auto-scopes operations to the active project.
  * `onToolResult` is called after each successful CRUD operation with the
  * tool name and returned entity data — used by the entity detector to
  * generate deterministic Quick Access navigation links.
+ *
+ * @deprecated Use `createToolServer()` for new code. This wrapper exists
+ *   for backward compatibility with the chat engine.
  */
 export function createStagentMcpServer(
   projectId?: string | null,
-  onToolResult?: (toolName: string, result: unknown) => void
+  onToolResult?: (toolName: string, result: unknown) => void,
 ) {
-  const ctx: ToolContext = { projectId, onToolResult };
-
-  return createSdkMcpServer({
-    name: "stagent",
-    version: "1.0.0",
-    tools: [
-      ...projectTools(ctx),
-      ...taskTools(ctx),
-      ...workflowTools(ctx),
-      ...scheduleTools(ctx),
-      ...documentTools(ctx),
-      ...notificationTools(ctx),
-      ...profileTools(ctx),
-      ...usageTools(ctx),
-      ...settingsTools(ctx),
-      ...chatHistoryTools(ctx),
-    ],
-  });
+  return createToolServer(projectId, onToolResult).asMcpServer();
 }

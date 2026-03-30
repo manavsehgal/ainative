@@ -1,4 +1,4 @@
-import { tool } from "@anthropic-ai/claude-agent-sdk";
+import { defineTool } from "../tool-registry";
 import { z } from "zod";
 import { ok, err, type ToolContext } from "./helpers";
 import {
@@ -11,7 +11,7 @@ import {
 export function chatHistoryTools(ctx: ToolContext) {
   return [
     // ── list_conversations ──────────────────────────────────────────
-    tool(
+    defineTool(
       "list_conversations",
       "List recent chat conversations. Use to find past discussions, filter by project or status, or search titles.",
       {
@@ -59,7 +59,7 @@ export function chatHistoryTools(ctx: ToolContext) {
     ),
 
     // ── get_conversation_messages ────────────────────────────────────
-    tool(
+    defineTool(
       "get_conversation_messages",
       "Get message history from a past conversation. Use to recall what was discussed, review decisions, or find specific information from a prior chat.",
       {
@@ -119,7 +119,7 @@ export function chatHistoryTools(ctx: ToolContext) {
     ),
 
     // ── search_messages ─────────────────────────────────────────────
-    tool(
+    defineTool(
       "search_messages",
       "Search across all conversations for specific content. Use when the user asks about prior discussions, decisions, or any topic from past chats.",
       {

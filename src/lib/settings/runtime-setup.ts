@@ -59,6 +59,24 @@ export async function getRuntimeSetupStates(): Promise<
       apiKeySource: openAIAuth.apiKeySource,
       billingMode: "usage",
     },
+    "anthropic-direct": {
+      runtimeId: "anthropic-direct",
+      label: getRuntimeCatalogEntry("anthropic-direct").label,
+      providerId: "anthropic",
+      configured: claudeConfigured, // Shares Anthropic API key
+      authMethod: claudeAuth.hasKey ? "api_key" : "none",
+      apiKeySource: claudeAuth.apiKeySource,
+      billingMode: "usage",
+    },
+    "openai-direct": {
+      runtimeId: "openai-direct",
+      label: getRuntimeCatalogEntry("openai-direct").label,
+      providerId: "openai",
+      configured: openAIAuth.hasKey, // Shares OpenAI API key
+      authMethod: openAIAuth.hasKey ? "api_key" : "none",
+      apiKeySource: openAIAuth.apiKeySource,
+      billingMode: "usage",
+    },
   } satisfies Record<AgentRuntimeId, RuntimeSetupState>;
 
   return states;

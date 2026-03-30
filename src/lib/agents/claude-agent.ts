@@ -1,5 +1,4 @@
 import { query } from "@anthropic-ai/claude-agent-sdk";
-import { z } from "zod";
 import { db } from "@/lib/db";
 import { tasks, projects, agentLogs, notifications } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -20,7 +19,7 @@ import { getActiveLearnedContext } from "./learned-context";
 import { getLaunchCwd, getWorkspaceContext } from "@/lib/environment/workspace-context";
 import { analyzeForLearnedPatterns } from "./pattern-extractor";
 import { processSweepResult } from "./sweep";
-import { getBrowserMcpServers, getExternalMcpServers, isExaTool, isExaReadOnly } from "./browser-mcp";
+import { getBrowserMcpServers, getExternalMcpServers } from "./browser-mcp";
 import { persistScreenshot, SCREENSHOT_TOOL_NAMES } from "@/lib/screenshots/persist";
 import {
   extractUsageSnapshot,
@@ -30,6 +29,10 @@ import {
   type UsageActivityType,
   type UsageSnapshot,
 } from "@/lib/usage/ledger";
+import {
+  handleToolPermission,
+  clearPermissionCache,
+} from "./tool-permissions";
 
 /** Typed representation of messages from the Agent SDK stream */
 interface AgentStreamMessage {
@@ -44,7 +47,7 @@ interface AgentStreamMessage {
   result?: unknown;
 }
 
-interface TaskUsageState extends UsageSnapshot {
+export interface TaskUsageState extends UsageSnapshot {
   activityType: UsageActivityType;
   startedAt: Date;
   taskId: string;
@@ -53,44 +56,7 @@ interface TaskUsageState extends UsageSnapshot {
   scheduleId?: string | null;
 }
 
-const toolPermissionResponseSchema = z.object({
-  behavior: z.enum(["allow", "deny"]),
-  updatedInput: z.unknown().optional(),
-  message: z.string().optional(),
-});
-
-type ToolPermissionResponse = z.infer<typeof toolPermissionResponseSchema>;
-
-const inFlightPermissionRequests = new Map<
-  string,
-  Promise<ToolPermissionResponse>
->();
-const settledPermissionRequests = new Map<string, ToolPermissionResponse>();
-
-function buildAllowedToolPermissionResponse(
-  input: Record<string, unknown>
-): ToolPermissionResponse {
-  return {
-    behavior: "allow",
-    updatedInput: input,
-  };
-}
-
-function normalizeToolPermissionResponse(
-  response: ToolPermissionResponse,
-  input: Record<string, unknown>
-): ToolPermissionResponse {
-  if (response.behavior !== "allow" || response.updatedInput !== undefined) {
-    return response;
-  }
-
-  return {
-    ...response,
-    updatedInput: input,
-  };
-}
-
-function createTaskUsageState(
+export function createTaskUsageState(
   task: {
     id: string;
     projectId?: string | null;
@@ -117,64 +83,7 @@ function applyUsageSnapshot(state: TaskUsageState, source: unknown) {
   Object.assign(state, mergeUsageSnapshot(state, extractUsageSnapshot(source)));
 }
 
-function buildPermissionCacheKey(
-  taskId: string,
-  toolName: string,
-  input: Record<string, unknown>
-): string {
-  return `${taskId}::${toolName}::${JSON.stringify(input)}`;
-}
-
-function clearPermissionCache(taskId: string) {
-  const prefix = `${taskId}::`;
-
-  for (const key of inFlightPermissionRequests.keys()) {
-    if (key.startsWith(prefix)) {
-      inFlightPermissionRequests.delete(key);
-    }
-  }
-
-  for (const key of settledPermissionRequests.keys()) {
-    if (key.startsWith(prefix)) {
-      settledPermissionRequests.delete(key);
-    }
-  }
-}
-
-async function waitForToolPermissionResponse(
-  notificationId: string
-): Promise<ToolPermissionResponse> {
-  const deadline = Date.now() + 55_000;
-  const pollInterval = 1500;
-
-  while (Date.now() < deadline) {
-    const [notification] = await db
-      .select()
-      .from(notifications)
-      .where(eq(notifications.id, notificationId));
-
-    if (notification?.response) {
-      try {
-        const parsed = JSON.parse(notification.response);
-        const validated = toolPermissionResponseSchema.safeParse(parsed);
-        if (validated.success) {
-          return validated.data;
-        }
-        console.error("[claude-agent] Invalid permission response shape:", validated.error.message);
-        return { behavior: "deny", message: "Invalid response format" };
-      } catch (err) {
-        console.error("[claude-agent] Failed to parse permission response:", err);
-        return { behavior: "deny", message: "Invalid response format" };
-      }
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, pollInterval));
-  }
-
-  return { behavior: "deny", message: "Permission request timed out" };
-}
-
-async function finalizeTaskUsage(
+export async function finalizeTaskUsage(
   state: TaskUsageState,
   status: "completed" | "failed" | "cancelled"
 ) {
@@ -430,7 +339,7 @@ async function processAgentStream(
 // Shared prompt & query context builder (F12: eliminate duplication)
 // ---------------------------------------------------------------------------
 
-interface TaskQueryContext {
+export interface TaskQueryContext {
   /** User task content — goes into `prompt` */
   userPrompt: string;
   /** System instructions — goes into `options.systemPrompt` */
@@ -445,7 +354,7 @@ interface TaskQueryContext {
   canUseToolPolicy?: CanUseToolPolicy;
 }
 
-async function buildTaskQueryContext(
+export async function buildTaskQueryContext(
   task: { id: string; title: string; description?: string | null; projectId?: string | null },
   profileId: string
 ): Promise<TaskQueryContext> {
@@ -788,98 +697,4 @@ async function handleExecutionError(
   }
 }
 
-/**
- * Handle tool permission by inserting a notification and polling for response.
- * Uses database polling pattern — the Inbox UI writes the response.
- */
-async function handleToolPermission(
-  taskId: string,
-  toolName: string,
-  input: Record<string, unknown>,
-  canUseToolPolicy?: CanUseToolPolicy
-): Promise<ToolPermissionResponse> {
-  const isQuestion = toolName === "AskUserQuestion";
-
-  // Layer 1: Profile-level canUseToolPolicy — fastest check, no I/O
-  if (!isQuestion && canUseToolPolicy) {
-    if (canUseToolPolicy.autoApprove?.includes(toolName)) {
-      return buildAllowedToolPermissionResponse(input);
-    }
-    if (canUseToolPolicy.autoDeny?.includes(toolName)) {
-      return { behavior: "deny", message: `Profile policy denies ${toolName}` };
-    }
-  }
-
-  // Layer 1.5: External MCP read-only tools — auto-approve without I/O
-  if (!isQuestion && isExaTool(toolName) && isExaReadOnly(toolName)) {
-    return buildAllowedToolPermissionResponse(input);
-  }
-
-  // Layer 2: Saved user permissions — skip notification for pre-approved tools
-  if (!isQuestion) {
-    const { isToolAllowed } = await import("@/lib/settings/permissions");
-    if (await isToolAllowed(toolName, input)) {
-      return buildAllowedToolPermissionResponse(input);
-    }
-  }
-
-  if (!isQuestion) {
-    const cacheKey = buildPermissionCacheKey(taskId, toolName, input);
-    const settledResponse = settledPermissionRequests.get(cacheKey);
-    if (settledResponse) {
-      return normalizeToolPermissionResponse(settledResponse, input);
-    }
-
-    const pendingRequest = inFlightPermissionRequests.get(cacheKey);
-    if (pendingRequest) {
-      return pendingRequest;
-    }
-
-    const requestPromise = (async () => {
-      const notificationId = crypto.randomUUID();
-
-      await db.insert(notifications).values({
-        id: notificationId,
-        taskId,
-        type: "permission_required",
-        title: `Permission required: ${toolName}`,
-        body: JSON.stringify(input).slice(0, 1000),
-        toolName,
-        toolInput: JSON.stringify(input),
-        createdAt: new Date(),
-      });
-
-      const response = normalizeToolPermissionResponse(
-        await waitForToolPermissionResponse(notificationId),
-        input
-      );
-      settledPermissionRequests.set(cacheKey, response);
-      return response;
-    })();
-
-    inFlightPermissionRequests.set(cacheKey, requestPromise);
-
-    try {
-      return await requestPromise;
-    } finally {
-      inFlightPermissionRequests.delete(cacheKey);
-    }
-  }
-
-  const notificationId = crypto.randomUUID();
-
-  await db.insert(notifications).values({
-    id: notificationId,
-    taskId,
-    type: isQuestion ? "agent_message" : "permission_required",
-    title: isQuestion
-      ? "Agent has a question"
-      : `Permission required: ${toolName}`,
-    body: JSON.stringify(input).slice(0, 1000),
-    toolName,
-    toolInput: JSON.stringify(input),
-    createdAt: new Date(),
-  });
-
-  return waitForToolPermissionResponse(notificationId);
-}
+// handleToolPermission and clearPermissionCache imported from ./tool-permissions

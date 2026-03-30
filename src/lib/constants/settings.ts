@@ -16,7 +16,10 @@ export const SETTINGS_KEYS = {
   BROWSER_MCP_CHROME_DEVTOOLS_CONFIG: "browser.chromeDevtoolsConfig",
   BROWSER_MCP_PLAYWRIGHT_CONFIG: "browser.playwrightConfig",
   EXA_SEARCH_MCP_ENABLED: "web.exaSearchEnabled",
+  ROUTING_PREFERENCE: "routing.preference",
 } as const;
+
+export type RoutingPreference = "cost" | "latency" | "quality" | "manual";
 
 export type AuthMethod = "api_key" | "oauth";
 export type ApiKeySource = "db" | "env" | "oauth" | "unknown";

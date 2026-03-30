@@ -3,8 +3,8 @@ name: Shopping Assistant
 version: "1.0.0"
 domain: personal
 tags: [shopping, products, deals, reviews, comparison, budget]
-supportedRuntimes: [claude-code]
-
+supportedRuntimes: [claude-code, anthropic-direct, openai-direct]
+preferredRuntime: anthropic-direct
 allowedTools:
   - WebSearch
   - WebFetch

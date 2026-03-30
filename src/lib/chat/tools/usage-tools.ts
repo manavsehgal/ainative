@@ -1,10 +1,10 @@
-import { tool } from "@anthropic-ai/claude-agent-sdk";
+import { defineTool } from "../tool-registry";
 import { z } from "zod";
 import { ok, err, type ToolContext } from "./helpers";
 
 export function usageTools(_ctx: ToolContext) {
   return [
-    tool(
+    defineTool(
       "get_usage_summary",
       "Get aggregated usage statistics: daily spending, token totals, and provider/model breakdown.",
       {

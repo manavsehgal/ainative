@@ -3,8 +3,8 @@ name: Document Writer
 version: "1.0.0"
 domain: work
 tags: [writing, reports, markdown, document, spec, proposal, summary]
-supportedRuntimes: [claude-code, openai-codex-app-server]
-
+supportedRuntimes: [claude-code, openai-codex-app-server, anthropic-direct, openai-direct]
+preferredRuntime: anthropic-direct
 allowedTools:
   - Read
   - Write

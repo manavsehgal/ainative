@@ -3,8 +3,8 @@ name: DevOps Engineer
 version: "1.0.0"
 domain: work
 tags: [devops, ci-cd, infrastructure, deployment, docker, kubernetes]
-supportedRuntimes: [claude-code, openai-codex-app-server]
-
+supportedRuntimes: [claude-code, openai-codex-app-server, anthropic-direct, openai-direct]
+preferredRuntime: anthropic-direct
 allowedTools:
   - Read
   - Grep

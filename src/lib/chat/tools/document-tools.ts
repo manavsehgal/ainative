@@ -1,4 +1,4 @@
-import { tool } from "@anthropic-ai/claude-agent-sdk";
+import { defineTool } from "../tool-registry";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { documents } from "@/lib/db/schema";
@@ -44,7 +44,7 @@ function resolveMimeType(filename: string): string {
 
 export function documentTools(ctx: ToolContext) {
   return [
-    tool(
+    defineTool(
       "list_documents",
       "List documents, optionally filtered by project, task, direction, or status.",
       {
@@ -97,7 +97,7 @@ export function documentTools(ctx: ToolContext) {
       }
     ),
 
-    tool(
+    defineTool(
       "get_document",
       "Get metadata for a specific document (does not return file content).",
       {
@@ -134,7 +134,7 @@ export function documentTools(ctx: ToolContext) {
       }
     ),
 
-    tool(
+    defineTool(
       "upload_document",
       "Upload a file from the filesystem as a document. Use this to register files you create as documents in the Documents library. The file is copied to Stagent storage and queued for preprocessing (text extraction).",
       {
@@ -194,7 +194,7 @@ export function documentTools(ctx: ToolContext) {
       }
     ),
 
-    tool(
+    defineTool(
       "update_document",
       "Update document metadata or trigger reprocessing. Metadata is merged with existing values, not replaced.",
       {
@@ -255,7 +255,7 @@ export function documentTools(ctx: ToolContext) {
       }
     ),
 
-    tool(
+    defineTool(
       "delete_document",
       "Delete a document. If the document is linked to a task, you must set cascadeDelete to true to confirm deletion.",
       {
@@ -300,7 +300,7 @@ export function documentTools(ctx: ToolContext) {
         }
       }
     ),
-    tool(
+    defineTool(
       "read_document_content",
       "Read the full extracted text content of a document. Use this when you need to analyze, summarize, or answer questions about a document's contents.",
       {

@@ -1,4 +1,4 @@
-import { tool } from "@anthropic-ai/claude-agent-sdk";
+import { defineTool } from "../tool-registry";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { projects, tasks } from "@/lib/db/schema";
@@ -9,7 +9,7 @@ const VALID_PROJECT_STATUSES = ["active", "paused", "completed"] as const;
 
 export function projectTools(ctx: ToolContext) {
   return [
-    tool(
+    defineTool(
       "list_projects",
       "List all projects with task counts. Optionally filter by status.",
       {
@@ -46,7 +46,7 @@ export function projectTools(ctx: ToolContext) {
       }
     ),
 
-    tool(
+    defineTool(
       "create_project",
       "Create a new project in Stagent.",
       {

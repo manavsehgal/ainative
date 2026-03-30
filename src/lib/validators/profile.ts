@@ -23,6 +23,15 @@ const profileRuntimeOverrideSchema = z.object({
   tests: profileTestsSchema.optional(),
 });
 
+const profileRuntimeCapabilityOverrideSchema = z.object({
+  modelId: z.string().optional(),
+  extendedThinking: z.object({
+    enabled: z.boolean(),
+    budgetTokens: z.number().positive().optional(),
+  }).optional(),
+  serverTools: z.record(z.string(), z.boolean()).optional(),
+});
+
 export const importMetaSchema = z.object({
   repoUrl: z.string().url(),
   repoOwner: z.string(),
@@ -59,6 +68,7 @@ export const ProfileConfigSchema = z.object({
   tests: profileTestsSchema.optional(),
   importMeta: importMetaSchema.optional(),
   supportedRuntimes: z.array(runtimeIdSchema).optional(),
+  preferredRuntime: runtimeIdSchema.optional(),
   runtimeOverrides: z
     .object(
       Object.fromEntries(
@@ -69,6 +79,20 @@ export const ProfileConfigSchema = z.object({
       ) as Record<
         (typeof SUPPORTED_AGENT_RUNTIMES)[number],
         z.ZodOptional<typeof profileRuntimeOverrideSchema>
+      >
+    )
+    .partial()
+    .optional(),
+  capabilityOverrides: z
+    .object(
+      Object.fromEntries(
+        SUPPORTED_AGENT_RUNTIMES.map((runtimeId) => [
+          runtimeId,
+          profileRuntimeCapabilityOverrideSchema.optional(),
+        ])
+      ) as Record<
+        (typeof SUPPORTED_AGENT_RUNTIMES)[number],
+        z.ZodOptional<typeof profileRuntimeCapabilityOverrideSchema>
       >
     )
     .partial()

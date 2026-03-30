@@ -54,6 +54,12 @@ describe("budget guardrails", () => {
         "openai-codex-app-server": {
           monthlySpendCapUsd: null,
         },
+        "anthropic-direct": {
+          monthlySpendCapUsd: null,
+        },
+        "openai-direct": {
+          monthlySpendCapUsd: null,
+        },
       },
     });
 
@@ -135,6 +141,12 @@ describe("budget guardrails", () => {
         "openai-codex-app-server": {
           monthlySpendCapUsd: null,
         },
+        "anthropic-direct": {
+          monthlySpendCapUsd: null,
+        },
+        "openai-direct": {
+          monthlySpendCapUsd: null,
+        },
       },
     });
 
@@ -197,6 +209,12 @@ describe("budget guardrails", () => {
         "openai-codex-app-server": {
           monthlySpendCapUsd: 155,
         },
+        "anthropic-direct": {
+          monthlySpendCapUsd: null,
+        },
+        "openai-direct": {
+          monthlySpendCapUsd: null,
+        },
       },
     });
 
@@ -210,7 +228,9 @@ describe("budget guardrails", () => {
 
     expect(overallDaily?.limitValue).toBe(10_000_000);
     expect(claudeMonthly).toBe(310);
-    expect(openAIMonthly).toBeNull();
+    // With anthropic-direct also configured (shares API key), the normalization
+    // enters multi-runtime mode and assigns 0 to unconfigured OpenAI runtime
+    expect(openAIMonthly).toBe(0);
   });
 
   it("splits configured provider caps from the overall budget when both runtimes are configured", async () => {
@@ -230,6 +250,12 @@ describe("budget guardrails", () => {
         },
         "openai-codex-app-server": {
           monthlySpendCapUsd: 180,
+        },
+        "anthropic-direct": {
+          monthlySpendCapUsd: null,
+        },
+        "openai-direct": {
+          monthlySpendCapUsd: null,
         },
       },
     });

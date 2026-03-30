@@ -1,4 +1,4 @@
-import { tool } from "@anthropic-ai/claude-agent-sdk";
+import { defineTool } from "../tool-registry";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { schedules } from "@/lib/db/schema";
@@ -14,7 +14,7 @@ const VALID_SCHEDULE_STATUSES = [
 
 export function scheduleTools(ctx: ToolContext) {
   return [
-    tool(
+    defineTool(
       "list_schedules",
       "List all scheduled prompt loops, optionally filtered by status.",
       {
@@ -42,7 +42,7 @@ export function scheduleTools(ctx: ToolContext) {
       }
     ),
 
-    tool(
+    defineTool(
       "create_schedule",
       'Create a new scheduled recurring task. Accepts human-friendly intervals like "every 30 minutes", "hourly", "daily at 9am".',
       {
@@ -123,7 +123,7 @@ export function scheduleTools(ctx: ToolContext) {
       }
     ),
 
-    tool(
+    defineTool(
       "get_schedule",
       "Get full details for a specific schedule.",
       {
@@ -146,7 +146,7 @@ export function scheduleTools(ctx: ToolContext) {
       }
     ),
 
-    tool(
+    defineTool(
       "update_schedule",
       "Update a schedule's fields or pause/resume it.",
       {
@@ -223,7 +223,7 @@ export function scheduleTools(ctx: ToolContext) {
       }
     ),
 
-    tool(
+    defineTool(
       "delete_schedule",
       "Delete a schedule permanently. Requires approval.",
       {

@@ -1,4 +1,4 @@
-import { tool } from "@anthropic-ai/claude-agent-sdk";
+import { defineTool } from "../tool-registry";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { workflows, tasks, agentLogs, notifications, documents } from "@/lib/db/schema";
@@ -15,7 +15,7 @@ const VALID_WORKFLOW_STATUSES = [
 
 export function workflowTools(ctx: ToolContext) {
   return [
-    tool(
+    defineTool(
       "list_workflows",
       "List all workflows, optionally filtered by project or status.",
       {
@@ -60,7 +60,7 @@ export function workflowTools(ctx: ToolContext) {
       }
     ),
 
-    tool(
+    defineTool(
       "create_workflow",
       "Create a new workflow with a definition. The definition must include a pattern (sequence, parallel, checkpoint, planner-executor, swarm, loop) and steps array.",
       {
@@ -122,7 +122,7 @@ export function workflowTools(ctx: ToolContext) {
       }
     ),
 
-    tool(
+    defineTool(
       "get_workflow",
       "Get full workflow details including definition and step information.",
       {
@@ -172,7 +172,7 @@ export function workflowTools(ctx: ToolContext) {
       }
     ),
 
-    tool(
+    defineTool(
       "update_workflow",
       "Update a draft workflow's name or definition. Only draft workflows can be edited.",
       {
@@ -232,7 +232,7 @@ export function workflowTools(ctx: ToolContext) {
       }
     ),
 
-    tool(
+    defineTool(
       "delete_workflow",
       "Delete a workflow and its child tasks, logs, and notifications. Cannot delete an active workflow. Requires approval.",
       {
@@ -272,7 +272,7 @@ export function workflowTools(ctx: ToolContext) {
       }
     ),
 
-    tool(
+    defineTool(
       "execute_workflow",
       "Start executing a workflow. Returns immediately — execution runs in the background. Requires approval.",
       {
@@ -310,7 +310,7 @@ export function workflowTools(ctx: ToolContext) {
       }
     ),
 
-    tool(
+    defineTool(
       "get_workflow_status",
       "Get the current execution status of a workflow, including step-by-step progress.",
       {

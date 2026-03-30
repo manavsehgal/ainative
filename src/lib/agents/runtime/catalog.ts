@@ -1,6 +1,8 @@
 export const SUPPORTED_AGENT_RUNTIMES = [
   "claude-code",
   "openai-codex-app-server",
+  "anthropic-direct",
+  "openai-direct",
 ] as const;
 
 export type AgentRuntimeId = (typeof SUPPORTED_AGENT_RUNTIMES)[number];
@@ -53,6 +55,38 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
       cancel: true,
       approvals: true,
       mcpServers: false, // Not yet wired — configs not passed to codex subprocess
+      profileTests: false,
+      taskAssist: true,
+      profileAssist: false,
+      authHealthCheck: true,
+    },
+  },
+  "anthropic-direct": {
+    id: "anthropic-direct",
+    label: "Anthropic Direct API",
+    description: "Direct Anthropic Messages API — fast, cost-optimized, no CLI required.",
+    providerId: "anthropic",
+    capabilities: {
+      resume: true,
+      cancel: true,
+      approvals: true,
+      mcpServers: true,
+      profileTests: false,
+      taskAssist: true,
+      profileAssist: true,
+      authHealthCheck: true,
+    },
+  },
+  "openai-direct": {
+    id: "openai-direct",
+    label: "OpenAI Direct API",
+    description: "Direct OpenAI Responses API — server-side tools, web search, code interpreter.",
+    providerId: "openai",
+    capabilities: {
+      resume: true,
+      cancel: true,
+      approvals: true,
+      mcpServers: false,
       profileTests: false,
       taskAssist: true,
       profileAssist: false,
