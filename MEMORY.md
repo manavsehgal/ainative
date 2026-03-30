@@ -45,6 +45,9 @@ This file captures evolving project facts, decisions, and recurring gotchas that
 - Database bootstrap logic should stay aligned with migration SQL to avoid deployed-schema drift.
 - New provider work should extend the runtime registry instead of importing Claude-specific helpers directly from shared orchestration code.
 - Schedule rows now carry `assignedAgent`, and workflow steps / loop configs can target provider runtimes directly.
+- Technical Decision Records (TDRs) are maintained in `.claude/skills/architect/references/tdr-*.md` with 7 categories (data-layer, agent-system, api-design, frontend-architecture, runtime, workflow, infrastructure).
+- The `/architect` skill provides architecture review, change impact analysis, integration design, TDR management, architecture health, and drift detection. Supervisor delegates architecture questions to it.
+- Drift detection identifies positive patterns to codify as new TDRs and negative patterns (anti-patterns) to remediate in code.
 
 ## Recurring Gotchas
 

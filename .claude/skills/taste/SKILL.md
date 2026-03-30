@@ -7,15 +7,30 @@ description: Engineering guardrails for premium frontend interfaces — enforces
 
 This skill enforces quantitative design rules and implementation discipline for premium frontend interfaces. It complements the `frontend-design` skill (creative vision) with engineering constraints.
 
+## Project Override
+
+When working in a project with `design-system/MASTER.md`, read it first — its tokens and constraints override the generic defaults below. For Stagent specifically:
+
+- **Design Metrics:** DV 3-4, MI 2-3, VD 6-7 (overrides generic defaults below)
+- **Typography:** Inter (body) + JetBrains Mono (code) — overrides the generic font list
+- **Icons:** Lucide React (h-4 w-4 inline, h-5 w-5 lists, h-12 w-12 hero) — overrides generic icon library guidance
+- **Color:** OKLCH hue ~250, semantic status tokens — see `design-system/tokens.json`
+- **Surfaces:** Opaque, border-centric elevation (elevation-0 through elevation-3) — no glass, no backdrop-filter
+- **Forbidden patterns:** Read from `design-system/tokens.json` → `forbidden.patterns[]`
+
+When `MASTER.md` exists, the rules below apply EXCEPT where overridden above.
+
 ## Design Metrics
 
 Three tunable parameters drive all conditional rules. Adjust per user request.
 
 | Metric | Default | Scale |
 |--------|---------|-------|
-| `DESIGN_VARIANCE` | 8 | 1 = Perfect Symmetry → 10 = Artsy Chaos |
-| `MOTION_INTENSITY` | 6 | 1 = Static → 10 = Cinematic Physics |
-| `VISUAL_DENSITY` | 4 | 1 = Art Gallery Airy → 10 = Cockpit Packed |
+| `DESIGN_VARIANCE` | 5 | 1 = Perfect Symmetry → 10 = Artsy Chaos |
+| `MOTION_INTENSITY` | 4 | 1 = Static → 10 = Cinematic Physics |
+| `VISUAL_DENSITY` | 5 | 1 = Art Gallery Airy → 10 = Cockpit Packed |
+
+Projects with `design-system/MASTER.md` override these defaults — check the Project Override section above.
 
 ## Foundation
 
@@ -49,13 +64,13 @@ Target **WCAG AA minimum**, AAA for text contrast where feasible.
 Never use emojis in code, markup, text content, or alt text. Replace with icons (Radix, Phosphor) or clean SVG primitives.
 
 ### Icon Libraries
-Use exactly `@phosphor-icons/react` or `@radix-ui/react-icons`. Standardize `strokeWidth` globally (1.5 or 2.0 exclusively).
+Check the project's existing icon library first (grep for import patterns). Common choices: Lucide React, `@phosphor-icons/react`, `@radix-ui/react-icons`. Do not mix libraries — use whichever the project already uses. Standardize `strokeWidth` globally (1.5 or 2.0 exclusively).
 
 ## Typography Stack
 
-**Approved fonts:** Geist, Outfit, Cabinet Grotesk, Satoshi, Clash Display, Neue Machina, Plus Jakarta Sans
-**Monospace:** Geist Mono, JetBrains Mono, Space Mono
-**Banned:** Inter (strictly forbidden for premium/creative work)
+**Approved fonts:** Inter, Outfit, Cabinet Grotesk, Satoshi, Clash Display, Neue Machina, Plus Jakarta Sans
+**Monospace:** JetBrains Mono, Geist Mono, Space Mono
+**Note:** Font preferences are project-specific. Check `design-system/MASTER.md` for the project's chosen fonts before applying this list. Inter is excellent for dense operational UIs; creative/marketing projects may prefer more distinctive choices.
 **Serif:** Banned for Dashboard/Software UIs; permitted only for creative/editorial contexts
 
 **Scale defaults:**
@@ -205,7 +220,7 @@ Reference catalog for high-impact implementations when appropriate:
 
 **Bento Grid 2.0:** Background `#f9fafb`, cards `#ffffff` with `border-slate-200/50`, `rounded-[2.5rem]`, `shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)]`, `p-8`/`p-10`. Titles/descriptions outside and below cards.
 
-**Glassmorphism:** `border-white/10` + `shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]`
+**Opaque Elevation:** For projects using border-centric elevation (check `design-system/MASTER.md`), use `elevation-0` through `elevation-3` utility classes with opaque surfaces instead of glass or shadow-heavy patterns. For creative/greenfield projects without a design system, glassmorphism is acceptable: `border-white/10` + `shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]`.
 
 **Scroll patterns:** Sticky scroll stack, horizontal scroll hijack, zoom parallax, scroll progress SVG auto-draw.
 
@@ -232,3 +247,5 @@ Before shipping, verify:
 - [ ] Images have explicit dimensions or aspect-ratio (no CLS)
 - [ ] Below-fold images use `loading="lazy"`
 - [ ] Color contrast meets WCAG AA (4.5:1 text, 3:1 UI)
+- [ ] If `design-system/tokens.json` exists, run `npx tsx design-system/validate-tokens.ts`
+- [ ] No forbidden patterns from `tokens.json` present in new code

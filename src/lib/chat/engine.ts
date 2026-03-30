@@ -62,6 +62,46 @@ async function* generatePrompt(text: string) {
   };
 }
 
+// ── Error diagnostics ──────────────────────────────────────────────────
+
+/**
+ * Translate a raw SDK / process error + stderr into an actionable message.
+ * The Claude Code subprocess can exit with code 1 for many reasons;
+ * stderr output usually reveals the real cause.
+ */
+function diagnoseProcessError(rawMessage: string, stderr: string): string {
+  const combined = `${rawMessage}\n${stderr}`.toLowerCase();
+
+  if (combined.includes("authentication") || combined.includes("not logged in") || combined.includes("oauth") || combined.includes("token expired")) {
+    return "Authentication failed — please check your API key or run `claude login` to refresh OAuth tokens. (Settings → Authentication)";
+  }
+  if (combined.includes("rate limit") || combined.includes("rate_limit") || combined.includes("429")) {
+    return "Rate limit reached — please wait a moment before sending another message.";
+  }
+  if (combined.includes("billing") || combined.includes("insufficient") || combined.includes("payment")) {
+    return "Billing issue — your account may need a payment method or has exceeded its budget.";
+  }
+  if (combined.includes("enoent") || combined.includes("not found") || combined.includes("command not found")) {
+    return "Claude Code CLI not found — please install it with `npm install -g @anthropic-ai/claude-code`.";
+  }
+  if (combined.includes("model") && (combined.includes("not available") || combined.includes("invalid"))) {
+    return "The selected model is not available for your account. Try switching to a different model.";
+  }
+
+  // Generic process exit — append stderr hint if available
+  if (/process exited with code \d+/i.test(rawMessage)) {
+    if (stderr) {
+      // Extract last meaningful line from stderr
+      const lines = stderr.split("\n").filter((l) => l.trim());
+      const lastLine = lines[lines.length - 1] ?? "";
+      return `${rawMessage}${lastLine ? ` — ${lastLine}` : ""}. Check Settings → Authentication if this persists.`;
+    }
+    return `${rawMessage}. This usually means an authentication or configuration issue — check Settings → Authentication.`;
+  }
+
+  return rawMessage;
+}
+
 // ── Public API ─────────────────────────────────────────────────────────
 
 /**
@@ -185,6 +225,8 @@ export async function* sendMessage(
   const startedAt = new Date();
   let usage: UsageSnapshot = {};
   let fullText = "";
+  // Capture stderr for diagnostics when the Claude Code process fails
+  const stderrChunks: string[] = [];
 
   try {
     const authEnv = await getAuthEnv();
@@ -228,6 +270,11 @@ export async function* sendMessage(
         includePartialMessages: true,
         cwd: workspace.cwd,
         env: buildClaudeSdkEnv(authEnv),
+        stderr: (data: string) => {
+          stderrChunks.push(data);
+          // Keep only last 50 chunks to avoid unbounded memory
+          if (stderrChunks.length > 50) stderrChunks.shift();
+        },
         mcpServers: { stagent: stagentServer, ...browserServers, ...externalServers },
         allowedTools: ["mcp__stagent__*", ...browserToolPatterns, ...externalToolPatterns],
         // @ts-expect-error Agent SDK canUseTool types are incomplete — our async handler is compatible at runtime
@@ -439,19 +486,23 @@ export async function* sendMessage(
             }
           }
         }
-      } else if (raw.type === "result" && "result" in raw) {
+      } else if (raw.type === "result") {
         if (raw.is_error && raw.subtype !== "error_max_turns") {
-          throw new Error(
-            typeof raw.result === "string"
-              ? raw.result
-              : "Agent SDK returned an error"
-          );
+          // SDKResultError has `errors: string[]`; SDKResultSuccess has `result: string`
+          const errors = (raw as Record<string, unknown>).errors as string[] | undefined;
+          const result = (raw as Record<string, unknown>).result as string | undefined;
+          const errorDetail = errors?.length
+            ? errors.join("; ")
+            : typeof result === "string"
+              ? result
+              : "Agent SDK returned an error";
+          throw new Error(errorDetail);
         }
         // Only emit result text as fallback when streaming didn't deliver content.
         // When deltas were active, fullText is already complete — re-emitting
         // the result would duplicate the entire response.
         if (!hasStreamedDeltas || !fullText) {
-          const result = raw.result;
+          const result = (raw as Record<string, unknown>).result;
           if (typeof result === "string" && result.length > 0) {
             if (result !== fullText) {
               const remainder = result.startsWith(fullText)
@@ -522,8 +573,12 @@ export async function* sendMessage(
       quickAccess,
     };
   } catch (error) {
-    const errorMessage =
+    const rawMessage =
       error instanceof Error ? error.message : "Unknown error";
+
+    // Enrich the error with stderr diagnostics when available
+    const stderrTail = stderrChunks.join("").trim();
+    const errorMessage = diagnoseProcessError(rawMessage, stderrTail);
 
     if (fullText && fullText.length > 50) {
       // Substantial content was already streamed — complete gracefully with warning

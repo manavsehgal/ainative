@@ -69,6 +69,7 @@ All modes read from the same artifact set. Read only what's needed for the activ
 | `FLOW.md` | Lifecycle phases, skill coordination patterns | Retro, Vision |
 | `git log --oneline -20` | Recent velocity, commit frequency, active areas | Health, Retro |
 | `MEMORY.md` | Lessons learned, known issues, project state | Retro, Vision |
+| `.claude/skills/architect/references/tdr-*.md` | TDR status, staleness, pattern compliance | Health, Vision |
 
 ---
 
@@ -472,6 +473,11 @@ mode: [health-check | next-steps | sprint-planning | vision-alignment | retrospe
 | Screenshots captured but docs/playbook not synced | "Sync playbook with latest screengrabs" | `/playbook-sync` |
 | Docs regenerated but playbook images stale | "Sync playbook images and validate references" | `/playbook-sync` |
 | Journey coverage gaps detected | "Regenerate journeys to cover N missing features" | `/doc-generator` (reads `.coverage-gaps.json`) |
+| Architecture drift detected | "Run architecture review for pattern compliance" | `/architect` (review) |
+| Major feature touches 2+ layers | "Run impact analysis before building" | `/architect` (impact) |
+| New integration proposed | "Design integration before implementing" | `/architect` (integration) |
+| Informal technical decision made | "Document as TDR" | `/architect` (tdr) |
+| Pattern drift in health check | "Run drift detection to identify codify/remediate items" | `/architect` (drift) |
 
 ### What Supervisor Does NOT Do
 
@@ -481,6 +487,7 @@ mode: [health-check | next-steps | sprint-planning | vision-alignment | retrospe
 - Review UX or design (that's `/frontend-designer` or `/taste`)
 - Create or modify skills (that's `/skill-creator`)
 - Sync screenshots or fix documentation references (that's `/playbook-sync`)
+- Assess architectural blast radius or pattern drift (that's `/architect`)
 - Write code of any kind
 
 ---

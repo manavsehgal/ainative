@@ -6,6 +6,16 @@ license: Complete terms in LICENSE.txt
 
 This skill guides creation of distinctive, production-grade frontend interfaces that avoid generic "AI slop" aesthetics. Implement real working code with exceptional attention to aesthetic details and creative choices.
 
+## Project Context
+
+When building within an existing project, read its design system first:
+- Check for `design-system/MASTER.md` — if it exists, its tokens, forbidden patterns, and component conventions override the generic guidelines below
+- Check `src/components/shared/` for existing shared components to reuse (PageShell, StatusChip, FilterBar, etc.)
+- Check `src/components/ui/` for the project's shadcn/ui component library
+- Check `design-system/tokens.json` for forbidden patterns that must not appear in new code
+
+For Stagent: The "Calm Ops" design system uses opaque surfaces, border-centric elevation (elevation-0 through elevation-3), OKLCH hue ~250, Inter + JetBrains Mono, and minimal functional animations. Creative flourishes like glassmorphism, gradient meshes, noise textures, and grain overlays are explicitly forbidden. See `references/design-decisions.md` in the frontend-designer skill for the full decision catalog.
+
 The user provides frontend requirements: a component, page, application, or interface to build. They may include context about the purpose, audience, or technical constraints.
 
 ## Design Thinking
@@ -27,13 +37,13 @@ Then implement working code (HTML/CSS/JS, React, Vue, etc.) that is:
 ## Frontend Aesthetics Guidelines
 
 Focus on:
-- **Typography**: Choose fonts that are beautiful, unique, and interesting. Avoid generic fonts like Arial and Inter; opt instead for distinctive choices that elevate the frontend's aesthetics; unexpected, characterful font choices. Pair a distinctive display font with a refined body font.
+- **Typography**: Choose fonts intentionally. Avoid lazy defaults (Arial, Times New Roman, system-ui). Even "common" fonts like Inter or Roboto are excellent choices when selected for specific reasons (e.g., Inter's small-text legibility for dense operational UIs). For creative projects, opt for distinctive, characterful font choices. Pair a distinctive display font with a refined body font.
 - **Color & Theme**: Commit to a cohesive aesthetic. Use CSS variables for consistency. Dominant colors with sharp accents outperform timid, evenly-distributed palettes.
 - **Motion**: Use animations for effects and micro-interactions. Prioritize CSS-only solutions for HTML. Use Motion library for React when available. Focus on high-impact moments: one well-orchestrated page load with staggered reveals (animation-delay) creates more delight than scattered micro-interactions. Use scroll-triggering and hover states that surprise.
 - **Spatial Composition**: Unexpected layouts. Asymmetry. Overlap. Diagonal flow. Grid-breaking elements. Generous negative space OR controlled density.
-- **Backgrounds & Visual Details**: Create atmosphere and depth rather than defaulting to solid colors. Add contextual effects and textures that match the overall aesthetic. Apply creative forms like gradient meshes, noise textures, geometric patterns, layered transparencies, dramatic shadows, decorative borders, custom cursors, and grain overlays.
+- **Backgrounds & Visual Details**: Create atmosphere and depth. For greenfield creative projects: gradient meshes, noise textures, geometric patterns, dramatic shadows, decorative borders, and grain overlays. For existing design systems: check `design-system/MASTER.md` for forbidden patterns first — many operational UIs deliberately avoid transparency, gradients, and decorative effects in favor of opaque surfaces and border-centric elevation.
 
-NEVER use generic AI-generated aesthetics like overused font families (Inter, Roboto, Arial, system fonts), cliched color schemes (particularly purple gradients on white backgrounds), predictable layouts and component patterns, and cookie-cutter design that lacks context-specific character.
+NEVER use generic AI-generated aesthetics like default system fonts without intentional choice (Arial, Helvetica, system-ui as a lazy default), cliched color schemes (particularly purple gradients on white backgrounds), predictable layouts and component patterns, and cookie-cutter design that lacks context-specific character.
 
 Interpret creatively and make unexpected choices that feel genuinely designed for the context. No design should be the same. Vary between light and dark themes, different fonts, different aesthetics. NEVER converge on common choices (Space Grotesk, for example) across generations.
 

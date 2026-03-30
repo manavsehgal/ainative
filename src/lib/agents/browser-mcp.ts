@@ -3,16 +3,19 @@ import { SETTINGS_KEYS } from "@/lib/constants/settings";
 
 // ── MCP server config types (matches Claude Agent SDK shape) ─────────
 
-interface McpServerConfig {
+interface McpStdioConfig {
+  type?: "stdio";
   command: string;
   args: string[];
 }
 
-interface McpServerSseConfig {
+interface McpHttpConfig {
+  type: "http";
   url: string;
+  headers?: Record<string, string>;
 }
 
-type AnyMcpServerConfig = McpServerConfig | McpServerSseConfig;
+type AnyMcpServerConfig = McpStdioConfig | McpHttpConfig;
 
 // ── Read-only browser tools — auto-approved in chat & task permission callbacks
 
@@ -78,7 +81,7 @@ function parseExtraArgs(config: string | null): string[] {
  *
  * Returns `{}` when neither server is enabled — zero overhead.
  */
-export async function getBrowserMcpServers(): Promise<Record<string, McpServerConfig>> {
+export async function getBrowserMcpServers(): Promise<Record<string, McpStdioConfig>> {
   const [chromeEnabled, playwrightEnabled, chromeConfig, playwrightConfig] =
     await Promise.all([
       getSetting(SETTINGS_KEYS.BROWSER_MCP_CHROME_DEVTOOLS_ENABLED),
@@ -87,7 +90,7 @@ export async function getBrowserMcpServers(): Promise<Record<string, McpServerCo
       getSetting(SETTINGS_KEYS.BROWSER_MCP_PLAYWRIGHT_CONFIG),
     ]);
 
-  const servers: Record<string, McpServerConfig> = {};
+  const servers: Record<string, McpStdioConfig> = {};
 
   if (chromeEnabled === "true") {
     const extraArgs = parseExtraArgs(chromeConfig);
@@ -153,7 +156,7 @@ export async function getExternalMcpServers(): Promise<Record<string, AnyMcpServ
   const servers: Record<string, AnyMcpServerConfig> = {};
 
   if (exaEnabled === "true") {
-    servers.exa = { url: "https://mcp.exa.ai/mcp" };
+    servers.exa = { type: "http", url: "https://mcp.exa.ai/mcp" };
   }
 
   return servers;

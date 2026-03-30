@@ -18,6 +18,38 @@ UX strategist that bridges product requirements to design execution. Answers the
 | "What's the right layout for this workflow?" | `frontend-designer` | `frontend-design` |
 | "Audit component consistency" | `frontend-designer` | `taste` |
 
+## Project Context
+
+This skill is grounded in Stagent's **Calm Ops** design system — an opaque-surface, border-centric, OKLCH-based design language inspired by Linear, Stripe, and GitHub Primer.
+
+### Data Sources (read before any mode)
+
+| Source | What to Extract | When |
+|--------|----------------|------|
+| `design-system/MASTER.md` | Token values, surface hierarchy, forbidden patterns | Always |
+| `design-system/tokens.json` | Machine-readable tokens, forbidden pattern list | Drift detection |
+| `references/design-decisions.md` | Decision history with rationale (DD-001 through DD-017) | Always |
+| `src/app/globals.css` | @theme inline mappings, CSS custom properties | Review, Audit |
+| `src/lib/constants/status-families.ts` | 5 status families, badge variant mappings | Review, Audit |
+| `src/components/shared/` | PageShell, StatusChip, FilterBar, DetailPane, etc. | All modes |
+
+### Design DNA Summary
+
+- **Color:** OKLCH hue ~250 (indigo/blue-violet), semantic status/priority/complexity tokens
+- **Surfaces:** 3-tier opaque hierarchy (surface-1/2/3), zero transparency
+- **Elevation:** 4 levels via borders + subtle shadows (no glass morphism, no backdrop-filter)
+- **Typography:** Inter (body, 14px base) + JetBrains Mono (code), scale from text-xs to text-2xl
+- **Layout:** PageShell on all routes, bento grids for forms/detail views, max-w-6xl containers
+- **Spacing:** 8pt grid via --space-* tokens (4px increments)
+- **Radius:** Maximum rounded-xl (12px), no oversized 20-30px
+- **Status:** 5 orthogonal families (lifecycle, governance, runtime, risk, schedule) via StatusChip
+- **Animation:** Minimal functional only (transition-colors, animate-spin, animate-pulse)
+- **Forbidden:** `backdrop-filter`, `rgba()`, `glass-*`, `gradient-*`, raw Tailwind status colors
+
+See `references/design-decisions.md` for the full decision catalog with rationale and history.
+
+---
+
 ## Workflow Detection
 
 Determine which mode to run based on user intent:
@@ -44,7 +76,7 @@ Determine which mode to run based on user intent:
 Read the UI code or screenshot, then evaluate against these criteria:
 
 ### Pre-Flight Check
-Run `/taste` pre-flight checklist first. If violations exist, report them before proceeding to UX review.
+Run `/taste` pre-flight checklist first. Also run drift checks 1-2 from `references/drift-checklist.md` (forbidden patterns + semantic tokens) on the reviewed component. If violations exist, report them before proceeding to UX review.
 
 ### UX Evaluation Criteria
 
@@ -123,61 +155,11 @@ When a user has a feature or product goal, produce interface strategy before han
 
 ### Product Context Coordination Table
 
-Recommend `/taste` design metric values based on product context:
-
-| Product Context | DV | MI | VD | Style Direction | Key Anti-Pattern |
-|-----------------|------|------|------|-----------------|------------------|
-| Kanban / task management | 4-6 | 4-5 | 5-7 | flat, functional | ornate design, hidden features |
-| Inbox / notifications | 3-5 | 3-4 | 4-6 | minimal, scan-friendly | heavy chrome, slow response |
-| Monitoring dashboard | 3-5 | 5-7 | 7-8 | data-dense, heat-map | slow rendering, no filtering |
-| Onboarding / setup wizard | 5-7 | 6-8 | 2-4 | claymorphic, playful | complex jargon, info overload |
-| Landing page / marketing | 7-9 | 7-9 | 3-5 | aurora, motion-driven | generic photos, static layout |
-| Settings / configuration | 2-4 | 2-3 | 4-5 | flat, minimal | playful design, unclear labels |
-| Data table / admin panel | 2-4 | 2-3 | 7-9 | flat, data-dense | ornate design, hidden features |
-| Creative tool / editor | 5-7 | 5-7 | 5-7 | dark mode, flexible | rigid layout, slow perf |
-| E-commerce / product page | 6-8 | 6-8 | 4-6 | vibrant, trust-first | low-quality imagery |
-| Documentation / knowledge base | 3-5 | 2-4 | 3-5 | minimal, high-contrast | cluttered layout, slow loading |
-| Social media / community | 6-8 | 6-8 | 5-7 | vibrant, block-based | accessibility ignored |
-| Healthcare / medical | 2-4 | 2-3 | 4-6 | neumorphic, accessible | bright neon, motion-heavy |
-| Financial / banking | 2-4 | 3-4 | 5-7 | trust-first, minimal | playful design, unclear fees |
-| Education / learning | 5-7 | 5-7 | 4-6 | claymorphic, playful | dark modes, complex jargon |
-| Media / streaming | 7-9 | 7-9 | 5-7 | dark mode, motion-driven | static layout, slow player |
-| Real estate / property | 5-7 | 5-7 | 4-6 | glass + minimal | poor photos, no virtual tours |
-| Travel / booking | 7-9 | 7-9 | 4-6 | aurora, motion-driven | generic photos, complex booking |
-| Food / restaurant | 6-8 | 5-7 | 4-6 | vibrant, warm colors | low-quality imagery |
-| Fitness / wellness | 6-8 | 6-8 | 5-7 | vibrant + dark mode | static design, no gamification |
-| News / editorial | 3-5 | 3-5 | 5-7 | minimal, high-contrast | cluttered layout, slow loading |
-| Developer tools / IDE | 2-4 | 2-3 | 6-8 | dark mode, mono-heavy | light mode default, slow perf |
-| CRM / sales pipeline | 3-5 | 4-5 | 6-8 | flat, data-dense | ornate design, hidden features |
-| Analytics / BI dashboard | 3-5 | 5-7 | 7-9 | data-dense, heat-map | slow rendering, no filtering |
-| Chat / messaging | 4-6 | 4-6 | 5-7 | soft UI, real-time | heavy chrome, slow response |
-| IoT / smart home | 4-6 | 5-7 | 6-8 | glass + dark mode | slow updates, no automation |
-
-DV = DESIGN_VARIANCE, MI = MOTION_INTENSITY, VD = VISUAL_DENSITY (all 1-10 scale, see `/taste`).
+See `references/ux-context-table.md` for the full product context → design metric calibration table (25 product contexts with DV/MI/VD recommendations). **Stagent's target range:** DV 3-4, MI 2-3, VD 6-7.
 
 ### Font Pairing Quick-Reference
 
-Curated pairings using Google Fonts. Load via `https://fonts.googleapis.com/css2?family=Font+Name:wght@400;500;700&display=swap`.
-
-| Pairing | Display Font | Body Font | Best For |
-|---------|-------------|-----------|----------|
-| Startup Bold | Clash Display | Satoshi | Startups, bold SaaS |
-| SaaS Friendly | Plus Jakarta Sans | Plus Jakarta Sans | SaaS, productivity |
-| Tech Modern | Space Grotesk | DM Sans | Dev tools, AI products |
-| Geometric Clean | Outfit | Work Sans | Agencies, portfolios |
-| Corporate Trust | Lexend | Source Sans 3 | Enterprise, gov, healthcare |
-| Editorial Classic | Playfair Display | Lato | Editorial, luxury (serif) |
-| Playful Creative | Fredoka | Nunito | Children's, education |
-| Dashboard Data | Fira Code | Fira Sans | Analytics, admin panels |
-| Fashion Forward | Syne | Manrope | Fashion, creative agencies |
-| Sports Impact | Barlow Condensed | Barlow | Sports, fitness, competition |
-| Wellness Calm | Lora | Raleway | Spa, wellness, organic |
-| Gaming Bold | Russo One | Chakra Petch | Gaming, esports |
-| Crypto/Web3 | Orbitron | Exo 2 | Crypto, blockchain |
-| Accessibility First | Atkinson Hyperlegible | Atkinson Hyperlegible | Gov, healthcare, inclusive |
-| Retro Vintage | Abril Fatface | Merriweather | Vintage brands, breweries |
-
-**Note:** Pairings are compatible with `/taste` approved fonts (Geist, Outfit, Satoshi, Clash Display, Plus Jakarta Sans). When a `/taste`-approved font is available, prefer it. Use these pairings for industry-specific recommendations where the approved list doesn't cover the domain.
+See `references/font-pairings.md` for 15 curated Google Fonts pairings by industry. **Stagent uses:** Inter (body) + JetBrains Mono (code) per DD-006.
 
 ### Recommendation Output Format
 
@@ -286,84 +268,94 @@ Define detailed interaction behavior for complex components:
 
 ### Chart Type Guidance
 
-When a deliverable includes data visualization, recommend chart types by data pattern:
-
-| Chart Type | Data Pattern | Library |
-|------------|-------------|---------|
-| Bar (vertical) | Category comparison | Recharts |
-| Bar (horizontal) | Long-label comparison | Recharts |
-| Line | Trend over time | Recharts |
-| Area | Volume over time | Recharts |
-| Pie/Donut | Part-to-whole (≤5 slices) | Recharts |
-| Heatmap | Density across 2D | Nivo |
-| Sparkline | Inline trend indicator | Tremor |
-| KPI card | Single metric + delta | Tremor |
-| Funnel | Conversion stages | Nivo |
-| Treemap | Hierarchical proportions | Nivo |
-| Gauge/Radial | Progress toward target | Recharts |
-
-**Anti-patterns:** Never use 3D charts. Prefer small multiples over dual-axis. Avoid pie charts with >5 slices (use horizontal bar instead).
+See `references/chart-guidance.md` for chart type selection by data pattern (11 chart types with library recommendations). **Stagent note:** The project uses custom SVG chart components (Sparkline, DonutRing, MiniBar) in `src/components/charts/` — prefer these over external libraries.
 
 ---
 
 ## Design System Management Mode
 
-### Audit Process
+### Pre-Flight: Read Sources
 
-1. **Collect** — Read all component files, extract visual patterns (colors, spacing, typography, border radius)
-2. **Cross-reference** — Check extracted values against `/taste` approved values
-3. **Identify drift** — Components using values outside the design system
-4. **Report** — Produce consistency report with specific file:line references
+Before any audit, read these files to establish the baseline:
+- `design-system/MASTER.md` — current token values and surface hierarchy
+- `design-system/tokens.json` — machine-readable tokens and forbidden pattern list
+- `references/design-decisions.md` — decision history with rationale (DD-001 through DD-017)
 
-### Audit Output Format
+### Drift Detection Protocol
+
+Run these 8 checks in order against `src/` files (.tsx, .ts, .css). See `references/drift-checklist.md` for exact grep patterns and context-checking rules.
+
+| # | Check | Severity | What to Grep |
+|---|-------|----------|-------------|
+| 1 | **Forbidden patterns** | CRITICAL | Every pattern from `tokens.json` → `forbidden.patterns[]` |
+| 2 | **Semantic token compliance** | HIGH | Raw Tailwind status colors (`text-green-*`, `text-red-*`, etc.) |
+| 3 | **Surface hierarchy compliance** | MEDIUM | Hardcoded backgrounds (`bg-white`, `bg-zinc-*`, `bg-slate-*`) |
+| 4 | **Elevation consistency** | MEDIUM | Oversized shadows without elevation class, `backdrop-*` |
+| 5 | **Spacing grid adherence** | LOW | Arbitrary spacing (`p-[Npx]` not on 4px grid) |
+| 6 | **Radius compliance** | LOW | Oversized radii (`rounded-2xl`, `rounded-3xl` on containers) |
+| 7 | **Font compliance** | LOW | Removed font refs (Geist), arbitrary `font-[...]` |
+| 8 | **Component pattern compliance** | MEDIUM | Pages without PageShell, status without StatusChip |
+
+Also run `npx tsx design-system/validate-tokens.ts` for automated forbidden pattern + font validation.
+
+### Self-Healing Loop
+
+After drift detection, classify each finding:
+
+**Positive drift** (intentional evolution):
+- New pattern appears in 3+ files and improves on existing convention
+- No design-decisions.md entry forbids it
+- **Action:** (1) Add new DD-NNN to `references/design-decisions.md` with rationale, (2) update `design-system/MASTER.md` if tokens/values changed, (3) update `design-system/tokens.json` if forbidden patterns need updating, (4) flag if SKILL.md itself needs a new check added
+
+**Negative drift** (regression):
+- Pattern violates an existing DD-NNN decision
+- **Action:** (1) Report with file:line references and specific correction, (2) categorize severity per table above, (3) route to `/product-manager` for backlog
+
+**Evolved patterns** (decision is outdated):
+- Existing DD-NNN decision is outdated; codebase has intentionally moved on (confirmed by git history)
+- **Action:** (1) Update the DD-NNN entry in `references/design-decisions.md` with new rationale, (2) update MASTER.md and tokens.json accordingly, (3) note the evolution in the audit report
+
+### Drift Report Output Format
 
 ```markdown
-## Design System Audit
+## Design System Drift Report — [date]
 
-### Token Coverage
-- Colors: [N/M components use design tokens]
-- Spacing: [N/M components use consistent scale]
-- Typography: [N/M components use approved fonts/sizes]
-- Border radius: [N/M components use consistent values]
+### Scan Summary
+- Files scanned: [N]
+- Forbidden patterns: [N] CRITICAL
+- Token violations: [N] HIGH
+- Surface/elevation drift: [N] MEDIUM
+- Spacing/radius/font drift: [N] LOW
 
-### Drift Report
-| Component | File | Issue | Current | Expected |
-|-----------|------|-------|---------|----------|
-| [name] | [file:line] | [type] | [value] | [value] |
+### Findings
 
-### Recommendations
-- [Tokens to add to design system]
-- [Components to update]
-- [Patterns to deprecate]
+| # | Severity | Category | File:Line | Current | Expected | Fix |
+|---|----------|----------|-----------|---------|----------|-----|
+| 1 | CRITICAL | forbidden | [path:N] | [found] | [remove] | [action] |
+
+### Self-Healing Actions Taken
+- [x] Updated design-decisions.md: [what changed]
+- [x] Updated MASTER.md: [what changed]
+- [ ] Recommended code fix: [description]
+
+### Positive Drift Detected
+| Pattern | Occurrences | Recommendation |
+|---------|-------------|----------------|
+| [new pattern] | [N files] | Codify / Ignore |
 ```
 
-**Persistence:** After presenting the audit, invoke `/product-manager` incremental update to create or update `ideas/design-system-fixes.md` with remediation items. If drift severity is high (multiple components affected, accessibility violations), flag for `/product-manager` to create a dedicated feature file.
+**Persistence:** After presenting the drift report, invoke `/product-manager` incremental update to create or update `ideas/design-system-fixes.md` with remediation items. If drift severity is high (CRITICAL findings or multiple components affected), flag for `/product-manager` to create a dedicated feature file.
 
 ### Design System Persistence
 
-Persist design decisions to files so they survive across sessions:
-
-**Folder convention:**
-- `design-system/MASTER.md` — Single source of truth at project root
-- `design-system/pages/<page>.md` — Optional per-page overrides
-
-**MASTER.md captures:**
-- Color tokens (OKLCH values, semantic names)
-- Typography selections (font pairings from quick-reference, weights, scale)
-- Spacing scale (base unit, multipliers)
-- Border radius convention (e.g., "4px buttons, 8px cards, 12px modals")
-- Component pattern choices (e.g., "tables over cards for data display")
-- Animation conventions (motion intensity, preferred easing functions)
-- Design metric calibration (DV, MI, VD values from coordination table)
-
-**Override pattern:** Page-level files inherit from MASTER and override specific tokens. Example: a marketing landing page overrides `DESIGN_VARIANCE: 4` → `DESIGN_VARIANCE: 8` while keeping all other tokens from MASTER.
+`design-system/MASTER.md` is the single source of truth for token values and surface hierarchy. `references/design-decisions.md` is the decision history with rationale. `design-system/tokens.json` provides machine-readable tokens for automated validation.
 
 **When to persist:**
-- After a Design System Audit produces design decisions
+- After a drift audit produces new design decisions or evolves existing ones
 - After a UX Recommendation calibrates design metrics
 - When the user explicitly requests "save these design decisions"
 
-**Cross-session consistency:** On subsequent runs, check for `design-system/MASTER.md` first. If it exists, read it before making recommendations to calibrate against existing decisions. Flag any conflicts between new recommendations and persisted decisions.
+**Cross-session consistency:** On every run, check for existing data sources (see Project Context). If they exist, read them before making recommendations. Flag any conflicts between new recommendations and persisted decisions.
 
 ---
 
@@ -428,31 +420,7 @@ After presenting mode output, run:
 
 ## Pattern Library
 
-Reference catalog of interaction patterns organized by task type:
-
-### Data Display
-- **Table with inline editing** — For power users managing structured data
-- **Card grid** — For visual/scannable content (use sparingly per `/taste` anti-card rule)
-- **List with expandable detail** — For sequential review workflows
-- **Dashboard with key metrics** — For monitoring and status overview
-
-### Data Input
-- **Inline editing** — For frequent, small edits (click-to-edit)
-- **Modal form** — For focused, multi-field creation
-- **Wizard / stepper** — For complex, multi-stage input
-- **Command palette** — For keyboard-first power users
-
-### Navigation
-- **Sidebar + content** — For deep hierarchies with frequent switching
-- **Tab bar** — For 3-7 peer-level sections
-- **Breadcrumb trail** — For deep, linear hierarchies
-- **Search-first** — For large, flat content collections
-
-### Feedback
-- **Toast notification** — For non-blocking success/info messages
-- **Inline validation** — For form fields (validate on blur, not on keystroke)
-- **Progress indicator** — For multi-step or long-running operations
-- **Optimistic update** — For low-risk actions where speed matters
+See `references/pattern-library.md` for the full interaction pattern catalog (Data Display, Data Input, Navigation, Feedback) with Stagent-specific component mappings (PageShell, DataTable, StatusChip, FilterBar, CommandPalette, FormSectionCard).
 
 ---
 
@@ -462,6 +430,7 @@ Reference catalog of interaction patterns organized by task type:
 - **Persona-grounded** — Every recommendation ties back to who is using the interface and why
 - **Measurable** — Prefer UX criteria that can be tested ("user can complete task in 3 clicks") over subjective opinions ("looks clean")
 - **Skill boundaries** — Do not generate component code (that's `/frontend-design`). Do not enforce Tailwind rules (that's `/taste`). Do not write feature specs (that's `/product-manager`). Recommend, specify, and review.
+- **Project-grounded** — Every audit checks against `design-system/MASTER.md`, `tokens.json`, and `references/design-decisions.md` — not generic heuristics. Read data sources before every mode run
 - **Cross-reference** — When recommending design metric values, always reference the coordination table and explain the rationale
 - **Incremental** — When adding UX detail to existing feature specs, use the product-manager's Incremental Update Workflow format
-- **Persist, don't just present** — Every recommendation must flow into the product backlog. After completing any mode, invoke `/product-manager` incremental update to capture findings in feature files, roadmap, and changelog. Recommendations that only exist in conversation are lost.
+- **Persist, don't just present** — Every recommendation must flow into the product backlog. After completing any mode, invoke `/product-manager` incremental update to capture findings in feature files, roadmap, and changelog. Recommendations that only exist in conversation are lost
