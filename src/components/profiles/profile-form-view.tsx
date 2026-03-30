@@ -66,6 +66,7 @@ export function ProfileFormView({
 
   const [fetching, setFetching] = useState(!!profileId);
   const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [id, setId] = useState("");
   const [domain, setDomain] = useState<"work" | "personal">("work");
   const [version, setVersion] = useState("1.0.0");
@@ -91,6 +92,7 @@ export function ProfileFormView({
       .then((r) => r.json())
       .then((profile: AgentProfile) => {
         setName(duplicate ? `${profile.name} (Copy)` : profile.name);
+        setDescription(profile.description ?? "");
         setId(duplicate ? `${profile.id}-copy` : profile.id);
         setDomain(profile.domain as "work" | "personal");
 
@@ -158,6 +160,7 @@ export function ProfileFormView({
   // AI Assist handlers
   const handleAssistApplyAll = useCallback((result: ProfileAssistResult) => {
     handleNameChange(result.name);
+    setDescription(result.description);
     setDomain(result.domain);
     setTags(result.tags.join(", "));
     setSkillMd(result.skillMd);
@@ -171,6 +174,7 @@ export function ProfileFormView({
   const handleAssistApplyField = useCallback((field: keyof ProfileAssistResult, value: unknown) => {
     switch (field) {
       case "name": handleNameChange(value as string); break;
+      case "description": setDescription(value as string); break;
       case "domain": setDomain(value as "work" | "personal"); break;
       case "tags": setTags((value as string[]).join(", ")); break;
       case "skillMd": setSkillMd(value as string); break;
@@ -197,6 +201,7 @@ export function ProfileFormView({
     const payload = {
       id,
       name: name.trim(),
+      description: description.trim() || name.trim(),
       domain,
       version: version.trim() || "1.0.0",
       author: author.trim() || undefined,
@@ -337,6 +342,18 @@ export function ProfileFormView({
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">Work profiles enforce stricter tool approvals. Personal profiles are more permissive.</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="profile-description">Description</Label>
+              <Textarea
+                id="profile-description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="One-line description of what this agent does"
+                rows={2}
+                className="text-sm"
+              />
+              <p className="text-xs text-muted-foreground">Shown in profile cards and search results. Helps users understand the agent&apos;s purpose at a glance.</p>
             </div>
           </div>
         </FormSectionCard>
