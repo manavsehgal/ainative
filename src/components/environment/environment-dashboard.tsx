@@ -28,6 +28,7 @@ interface EnvironmentDashboardProps {
   checkpoints?: EnvironmentCheckpointRow[];
   templates?: EnvironmentTemplateRow[];
   healthScore?: HealthScore | null;
+  scanPath?: string;
 }
 
 export function EnvironmentDashboard({
@@ -38,6 +39,7 @@ export function EnvironmentDashboard({
   checkpoints = [],
   templates = [],
   healthScore,
+  scanPath,
 }: EnvironmentDashboardProps) {
   const router = useRouter();
   const [scanning, setScanning] = useState(false);
@@ -51,12 +53,16 @@ export function EnvironmentDashboard({
   const handleScan = useCallback(async () => {
     setScanning(true);
     try {
-      await fetch("/api/environment/scan", { method: "POST" });
+      await fetch("/api/environment/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectDir: scanPath }),
+      });
       router.refresh();
     } finally {
       setScanning(false);
     }
-  }, [router]);
+  }, [router, scanPath]);
 
   // Filter artifacts client-side
   const filtered = artifacts.filter((a) => {

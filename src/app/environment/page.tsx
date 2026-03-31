@@ -3,11 +3,16 @@ import { listTemplates } from "@/lib/environment/templates";
 import { calculateHealthScore } from "@/lib/environment/health-scoring";
 import { EnvironmentDashboard } from "@/components/environment/environment-dashboard";
 import { PageShell } from "@/components/shared/page-shell";
-import { getWorkspaceContext } from "@/lib/environment/workspace-context";
+import { getWorkspaceContext, getLaunchCwd } from "@/lib/environment/workspace-context";
+import { ensureFreshScan } from "@/lib/environment/auto-scan";
 
 export const dynamic = "force-dynamic";
 
 export default async function EnvironmentPage() {
+  // Auto-scan the workspace directory if stale or missing
+  const cwd = getLaunchCwd();
+  ensureFreshScan(cwd);
+
   const scan = getLatestScan();
 
   if (!scan) {
@@ -18,6 +23,7 @@ export default async function EnvironmentPage() {
           artifacts={[]}
           categoryCounts={[]}
           toolCounts={[]}
+          scanPath={cwd}
         />
       </PageShell>
     );
@@ -48,6 +54,7 @@ export default async function EnvironmentPage() {
         checkpoints={checkpoints}
         templates={templates}
         healthScore={healthScore}
+        scanPath={cwd}
       />
     </PageShell>
   );
