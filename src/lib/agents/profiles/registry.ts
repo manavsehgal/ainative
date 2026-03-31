@@ -11,10 +11,20 @@ import type { AgentProfile } from "./types";
  * At runtime they are copied (if missing) to ~/.claude/skills/ so users
  * can customize them without touching source.
  */
-const BUILTINS_DIR = path.resolve(
+const BUILTINS_DIR_PRIMARY = path.resolve(
   import.meta.dirname ?? __dirname,
   "builtins"
 );
+const BUILTINS_DIR_FALLBACK = path.join(
+  process.cwd(),
+  "src/lib/agents/profiles/builtins"
+);
+
+/** Resolve builtins dir — import.meta.dirname may point to .next/ in bundled contexts */
+function getBuiltinsDir(): string {
+  if (fs.existsSync(BUILTINS_DIR_PRIMARY)) return BUILTINS_DIR_PRIMARY;
+  return BUILTINS_DIR_FALLBACK;
+}
 
 const SKILLS_DIR = path.join(
   process.env.HOME ?? process.env.USERPROFILE ?? ".",
@@ -67,16 +77,17 @@ function getSkillsDirectorySignature(): string {
 // ---------------------------------------------------------------------------
 
 function ensureBuiltins(): void {
-  if (!fs.existsSync(BUILTINS_DIR)) return;
+  const builtinsDir = getBuiltinsDir();
+  if (!fs.existsSync(builtinsDir)) return;
 
   fs.mkdirSync(SKILLS_DIR, { recursive: true });
 
-  for (const entry of fs.readdirSync(BUILTINS_DIR, { withFileTypes: true })) {
+  for (const entry of fs.readdirSync(builtinsDir, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;
 
     const targetDir = path.join(SKILLS_DIR, entry.name);
     const targetYaml = path.join(targetDir, "profile.yaml");
-    const srcYaml = path.join(BUILTINS_DIR, entry.name, "profile.yaml");
+    const srcYaml = path.join(builtinsDir, entry.name, "profile.yaml");
 
     // Never overwrite user edits — only copy if profile.yaml is missing
     if (fs.existsSync(targetYaml)) {
@@ -114,7 +125,7 @@ function ensureBuiltins(): void {
 
     fs.mkdirSync(targetDir, { recursive: true });
 
-    const srcDir = path.join(BUILTINS_DIR, entry.name);
+    const srcDir = path.join(builtinsDir, entry.name);
     for (const file of fs.readdirSync(srcDir)) {
       fs.copyFileSync(path.join(srcDir, file), path.join(targetDir, file));
     }
@@ -235,7 +246,7 @@ export function reloadProfiles(): void {
 
 /** Check if a profile ID is a built-in (exists in builtins/ source directory) */
 export function isBuiltin(id: string): boolean {
-  return fs.existsSync(path.join(BUILTINS_DIR, id, "profile.yaml"));
+  return fs.existsSync(path.join(getBuiltinsDir(), id, "profile.yaml"));
 }
 
 /** Create a new custom profile in ~/.claude/skills/ */

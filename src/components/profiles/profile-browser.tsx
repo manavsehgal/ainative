@@ -122,7 +122,7 @@ export function ProfileBrowser({ initialProfiles }: ProfileBrowserProps) {
               <button
                 key={p.id}
                 type="button"
-                className="surface-card-muted text-left rounded-lg border border-border/60 p-3 hover:border-primary/40 transition-colors"
+                className="bg-muted text-left rounded-lg border border-border/60 p-3 cursor-pointer hover:border-primary/40 hover:bg-accent transition-colors"
                 onClick={() => {
                   setShowTemplates(false);
                   router.push(`/profiles/${p.id}/edit?duplicate=true`);
@@ -155,7 +155,7 @@ export function ProfileBrowser({ initialProfiles }: ProfileBrowserProps) {
             setDomainFilter(v as "all" | "work" | "personal")
           }
         >
-          <TabsList className="surface-control">
+          <TabsList>
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="work">Work</TabsTrigger>
             <TabsTrigger value="personal">Personal</TabsTrigger>
@@ -167,7 +167,7 @@ export function ProfileBrowser({ initialProfiles }: ProfileBrowserProps) {
             setProvenanceFilter(v as "all" | "builtin" | "imported" | "custom")
           }
         >
-          <TabsList className="surface-control">
+          <TabsList>
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="builtin">Built-in</TabsTrigger>
             <TabsTrigger value="imported">Imported</TabsTrigger>

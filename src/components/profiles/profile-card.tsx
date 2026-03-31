@@ -14,7 +14,7 @@ interface ProfileCardProps {
   onClick: () => void;
 }
 
-export function ProfileCard({ profile, isBuiltin = true, onClick }: ProfileCardProps) {
+export function ProfileCard({ profile, isBuiltin = false, onClick }: ProfileCardProps) {
   const runtimeLabelMap = new Map(
     listRuntimeCatalog().map((runtime) => [
       runtime.id,
