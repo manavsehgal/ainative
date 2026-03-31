@@ -83,6 +83,14 @@ export function ProfileCard({ profile, isBuiltin = false, onClick }: ProfileCard
                 {profile.importMeta.repoOwner}/{profile.importMeta.repoName}
               </span>
             </span>
+          ) : profile.origin === "environment" ? (
+            <Badge variant="outline" className="border-emerald-200 text-emerald-600 dark:border-emerald-800 dark:text-emerald-400">
+              Discovered
+            </Badge>
+          ) : profile.origin === "ai-assist" ? (
+            <Badge variant="outline" className="border-violet-200 text-violet-600 dark:border-violet-800 dark:text-violet-400">
+              AI Generated
+            </Badge>
           ) : isBuiltin ? (
             <Badge variant="outline" className="border-blue-200 text-blue-600 dark:border-blue-800 dark:text-blue-400">
               Built-in

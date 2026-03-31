@@ -16,6 +16,8 @@ export default async function NewWorkflowPage() {
     id: p.id,
     name: p.name,
     supportedRuntimes: p.supportedRuntimes,
+    origin: p.origin,
+    scope: p.scope,
   }));
 
   return (

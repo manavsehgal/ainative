@@ -328,14 +328,16 @@ export function TaskCreatePanel({ projects, defaultProjectId }: TaskCreatePanelP
                               <span className="flex items-center gap-1.5">
                                 <Bot className="h-3 w-3" />
                                 {p.name}
-                                {p.isBuiltin && (
-                                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary/60" title="Built-in" />
-                                )}
-                                {p.origin === "environment" && (
-                                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500/60" title="Discovered" />
-                                )}
-                                {p.scope === "project" && (
+                                {p.scope === "project" ? (
                                   <span className="inline-block w-1.5 h-1.5 rounded-full bg-orange-500/60" title="Project" />
+                                ) : p.isBuiltin ? (
+                                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary/60" title="Built-in" />
+                                ) : p.origin === "environment" ? (
+                                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500/60" title="Discovered" />
+                                ) : p.origin === "import" ? (
+                                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-sky-500/60" title="Imported" />
+                                ) : (
+                                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-muted-foreground/40" title="Custom" />
                                 )}
                               </span>
                             </SelectItem>

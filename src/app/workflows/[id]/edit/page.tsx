@@ -34,6 +34,8 @@ export default async function EditWorkflowPage({
     id: p.id,
     name: p.name,
     supportedRuntimes: p.supportedRuntimes,
+    origin: p.origin,
+    scope: p.scope,
   }));
 
   const workflowData = {

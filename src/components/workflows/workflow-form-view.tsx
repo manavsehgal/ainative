@@ -63,7 +63,7 @@ interface WorkflowData {
 interface WorkflowFormViewProps {
   workflow?: WorkflowData;
   projects: { id: string; name: string }[];
-  profiles: Pick<AgentProfile, "id" | "name" | "supportedRuntimes">[];
+  profiles: Pick<AgentProfile, "id" | "name" | "supportedRuntimes" | "origin" | "scope">[];
   clone?: boolean;
 }
 
@@ -855,7 +855,29 @@ export function WorkflowFormView({
                           )
                         }
                       >
-                        {p.name}
+                        <span className="flex items-center gap-1.5">
+                          {p.name}
+                          <span
+                            className={`inline-block w-1.5 h-1.5 rounded-full ${
+                              p.scope === "project"
+                                ? "bg-orange-500/60"
+                                : p.scope === "builtin"
+                                  ? "bg-primary/60"
+                                  : p.origin === "environment"
+                                    ? "bg-emerald-500/60"
+                                    : "bg-muted-foreground/40"
+                            }`}
+                            title={
+                              p.scope === "project"
+                                ? "Project"
+                                : p.scope === "builtin"
+                                  ? "Built-in"
+                                  : p.origin === "environment"
+                                    ? "Discovered"
+                                    : "Custom"
+                            }
+                          />
+                        </span>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1079,7 +1101,20 @@ export function WorkflowFormView({
                                 )
                               }
                             >
-                              {p.name}
+                              <span className="flex items-center gap-1.5">
+                                {p.name}
+                                <span
+                                  className={`inline-block w-1.5 h-1.5 rounded-full ${
+                                    p.scope === "project"
+                                      ? "bg-orange-500/60"
+                                      : p.scope === "builtin"
+                                        ? "bg-primary/60"
+                                        : p.origin === "environment"
+                                          ? "bg-emerald-500/60"
+                                          : "bg-muted-foreground/40"
+                                  }`}
+                                />
+                              </span>
                             </SelectItem>
                           ))}
                         </SelectContent>
