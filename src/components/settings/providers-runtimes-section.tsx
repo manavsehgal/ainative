@@ -74,6 +74,14 @@ const ROUTING_OPTIONS: {
   },
 ];
 
+// ── Routing → auth recommendation ───────────────────────────────────
+
+function recommendedAuthForRouting(pref: RoutingPreference): AuthMethod | null {
+  if (pref === "latency" || pref === "cost") return "api_key";
+  if (pref === "quality") return "oauth";
+  return null; // "manual" has no recommendation
+}
+
 // ── Provider row ─────────────────────────────────────────────────────
 
 const RUNTIME_DESCRIPTIONS: Record<string, string> = {
@@ -92,14 +100,26 @@ function ProviderRow({
   name,
   provider,
   defaultOpen,
+  open: controlledOpen,
+  onOpenChange,
   children,
 }: {
   name: string;
   provider: ProviderState;
   defaultOpen: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   children: React.ReactNode;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
+  const [internalOpen, setInternalOpen] = useState(defaultOpen);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+
+  const toggle = () => {
+    const next = !open;
+    if (!isControlled) setInternalOpen(next);
+    onOpenChange?.(next);
+  };
 
   const activeRuntimes = provider.runtimes.filter((r) => r.configured);
   const activeCount = activeRuntimes.length;
@@ -120,7 +140,7 @@ function ProviderRow({
     <div className="surface-panel rounded-2xl border border-border/60">
       <button
         type="button"
-        onClick={() => setOpen(!open)}
+        onClick={toggle}
         className="flex w-full items-center gap-3 p-4 text-left hover:bg-accent/30 transition-colors rounded-2xl"
       >
         <div
@@ -211,6 +231,7 @@ function ProviderRow({
 export function ProvidersAndRuntimesSection() {
   const [data, setData] = useState<ProvidersPayload | null>(null);
   const [loading, setLoading] = useState(true);
+  const [anthropicOpen, setAnthropicOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -226,6 +247,16 @@ export function ProvidersAndRuntimesSection() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Sync initial open state when data loads
+  useEffect(() => {
+    if (data) {
+      const none = data.configuredProviderCount === 0;
+      if (none || !data.providers.anthropic.configured) {
+        setAnthropicOpen(true);
+      }
+    }
+  }, [data?.configuredProviderCount, data?.providers.anthropic.configured]);
 
   // ── Anthropic auth handlers ──────────────────────────────────────
 
@@ -287,6 +318,16 @@ export function ProvidersAndRuntimesSection() {
     if (res.ok) {
       setData((prev) => (prev ? { ...prev, routingPreference: value } : prev));
       toast.success(`Routing preference set to ${value}`);
+
+      // Reactive: switch Anthropic auth method and expand the row
+      const rec = recommendedAuthForRouting(value);
+      if (rec) {
+        setAnthropicOpen(true);
+        const current = data?.providers.anthropic.authMethod ?? "api_key";
+        if (current !== rec) {
+          handleAnthropicMethodChange(rec);
+        }
+      }
     }
   }
 
@@ -308,6 +349,7 @@ export function ProvidersAndRuntimesSection() {
 
   const { providers, routingPreference, configuredProviderCount } = data;
   const noneConfigured = configuredProviderCount === 0;
+  const recommendedAuth = recommendedAuthForRouting(routingPreference);
 
   return (
     <Card className="surface-card">
@@ -328,15 +370,84 @@ export function ProvidersAndRuntimesSection() {
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {/* Anthropic provider */}
+        {/* Task routing — always visible */}
+        <div className="space-y-3">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Task routing
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              How should Stagent choose a runtime when creating tasks?
+            </p>
+          </div>
+
+          <RadioGroup
+            value={routingPreference}
+            onValueChange={(v) => handleRoutingChange(v as RoutingPreference)}
+            className="grid grid-cols-2 gap-2 sm:grid-cols-4"
+          >
+            {ROUTING_OPTIONS.map((option) => {
+              const Icon = option.icon;
+              const isSelected = routingPreference === option.value;
+              return (
+                <Label
+                  key={option.value}
+                  htmlFor={`routing-${option.value}`}
+                  className={`flex cursor-pointer flex-col items-center gap-1.5 rounded-xl border-2 p-3 text-center transition-all hover:bg-accent/30 ${
+                    isSelected
+                      ? "border-primary bg-primary/5"
+                      : "border-border/40"
+                  }`}
+                >
+                  <RadioGroupItem
+                    value={option.value}
+                    id={`routing-${option.value}`}
+                    className="sr-only"
+                  />
+                  <Icon
+                    className={`h-4 w-4 ${
+                      isSelected ? "text-primary" : "text-muted-foreground"
+                    }`}
+                  />
+                  <span
+                    className={`text-sm font-medium ${
+                      isSelected ? "text-foreground" : "text-muted-foreground"
+                    }`}
+                  >
+                    {option.label}
+                  </span>
+                </Label>
+              );
+            })}
+          </RadioGroup>
+
+          <p className="text-xs text-muted-foreground">
+            {ROUTING_OPTIONS.find((o) => o.value === routingPreference)?.description}
+          </p>
+
+          {recommendedAuth && (
+            <p className="text-xs text-primary/70">
+              {recommendedAuth === "api_key"
+                ? "This preference works best with an API key configured below."
+                : "This preference works well with OAuth (Claude Max/Pro) configured below."}
+            </p>
+          )}
+        </div>
+
+        <Separator />
+
+        {/* Anthropic provider — controlled open state */}
         <ProviderRow
           name="Anthropic"
           provider={providers.anthropic}
-          defaultOpen={noneConfigured || !providers.anthropic.configured}
+          defaultOpen={false}
+          open={anthropicOpen}
+          onOpenChange={setAnthropicOpen}
         >
           <AuthMethodSelector
             value={providers.anthropic.authMethod ?? "api_key"}
             onChange={handleAnthropicMethodChange}
+            recommendedMethod={recommendedAuth}
           />
 
           {(providers.anthropic.authMethod ?? "api_key") === "api_key" && (
@@ -364,7 +475,7 @@ export function ProvidersAndRuntimesSection() {
           )}
         </ProviderRow>
 
-        {/* OpenAI provider */}
+        {/* OpenAI provider — uncontrolled */}
         <ProviderRow
           name="OpenAI"
           provider={providers.openai}
@@ -381,67 +492,6 @@ export function ProvidersAndRuntimesSection() {
             testButtonLabel="Test OpenAI Connection"
           />
         </ProviderRow>
-
-        {/* Routing preference — only when 2+ providers configured */}
-        {configuredProviderCount >= 2 && (
-          <>
-            <Separator />
-            <div className="space-y-3">
-              <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Task routing
-                </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  How should Stagent choose a runtime when creating tasks?
-                </p>
-              </div>
-
-              <RadioGroup
-                value={routingPreference}
-                onValueChange={(v) => handleRoutingChange(v as RoutingPreference)}
-                className="grid grid-cols-2 gap-2 sm:grid-cols-4"
-              >
-                {ROUTING_OPTIONS.map((option) => {
-                  const Icon = option.icon;
-                  const isSelected = routingPreference === option.value;
-                  return (
-                    <Label
-                      key={option.value}
-                      htmlFor={`routing-${option.value}`}
-                      className={`flex cursor-pointer flex-col items-center gap-1.5 rounded-xl border-2 p-3 text-center transition-all hover:bg-accent/30 ${
-                        isSelected
-                          ? "border-primary bg-primary/5"
-                          : "border-border/40"
-                      }`}
-                    >
-                      <RadioGroupItem
-                        value={option.value}
-                        id={`routing-${option.value}`}
-                        className="sr-only"
-                      />
-                      <Icon
-                        className={`h-4 w-4 ${
-                          isSelected ? "text-primary" : "text-muted-foreground"
-                        }`}
-                      />
-                      <span
-                        className={`text-sm font-medium ${
-                          isSelected ? "text-foreground" : "text-muted-foreground"
-                        }`}
-                      >
-                        {option.label}
-                      </span>
-                    </Label>
-                  );
-                })}
-              </RadioGroup>
-
-              <p className="text-xs text-muted-foreground">
-                {ROUTING_OPTIONS.find((o) => o.value === routingPreference)?.description}
-              </p>
-            </div>
-          </>
-        )}
       </CardContent>
     </Card>
   );

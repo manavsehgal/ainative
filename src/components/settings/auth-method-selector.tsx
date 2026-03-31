@@ -7,6 +7,7 @@ import type { AuthMethod } from "@/lib/constants/settings";
 interface AuthMethodSelectorProps {
   value: AuthMethod;
   onChange: (method: AuthMethod) => void;
+  recommendedMethod?: AuthMethod | null;
 }
 
 const methods = [
@@ -24,7 +25,7 @@ const methods = [
   },
 ];
 
-export function AuthMethodSelector({ value, onChange }: AuthMethodSelectorProps) {
+export function AuthMethodSelector({ value, onChange, recommendedMethod }: AuthMethodSelectorProps) {
   return (
     <div className="space-y-2">
       <p className="text-sm font-medium">Authentication Method</p>
@@ -58,6 +59,11 @@ export function AuthMethodSelector({ value, onChange }: AuthMethodSelectorProps)
               <span className="text-xs text-muted-foreground">
                 {method.description}
               </span>
+              {recommendedMethod === method.id && !isSelected && (
+                <span className="text-[10px] font-medium uppercase tracking-wider text-primary/70 mt-0.5">
+                  Recommended
+                </span>
+              )}
             </button>
           );
         })}
