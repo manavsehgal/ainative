@@ -8,6 +8,7 @@ import {
   getArtifactCounts,
   getToolCounts,
 } from "@/lib/environment/data";
+import { ensureFreshScan } from "@/lib/environment/auto-scan";
 
 /** POST: Trigger a new environment scan. */
 export async function POST(req: NextRequest) {
@@ -33,11 +34,17 @@ export async function POST(req: NextRequest) {
   });
 }
 
-/** GET: Return the latest scan result from cache. */
+/** GET: Return the latest scan result from cache. Auto-scans if stale and projectDir is provided. */
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const projectId = url.searchParams.get("projectId");
   const scanId = url.searchParams.get("scanId");
+  const projectDir = url.searchParams.get("projectDir");
+
+  // Auto-scan if a projectDir was provided and the latest scan is stale
+  if (projectDir && !scanId) {
+    ensureFreshScan(projectDir, projectId || undefined);
+  }
 
   let scan;
   if (scanId) {

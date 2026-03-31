@@ -114,7 +114,8 @@ export function getRuntimeCapabilities(
 export function resolveAgentRuntime(runtimeId?: string | null): AgentRuntimeId {
   if (!runtimeId) return DEFAULT_AGENT_RUNTIME;
   if (isAgentRuntimeId(runtimeId)) return runtimeId;
-  throw new Error(`Unknown agent type: ${runtimeId}`);
+  console.warn(`Unknown agent runtime "${runtimeId}", falling back to "${DEFAULT_AGENT_RUNTIME}"`);
+  return DEFAULT_AGENT_RUNTIME;
 }
 
 export function listRuntimeCatalog(): RuntimeCatalogEntry[] {

@@ -36,12 +36,15 @@ export function EnvironmentSummaryCard({
   const [scanning, setScanning] = useState(false);
 
   useEffect(() => {
-    fetch(`/api/environment/scan?projectId=${projectId}`)
+    // Auto-scan on mount: pass workingDirectory so the server can rescan if stale
+    const params = new URLSearchParams({ projectId });
+    if (workingDirectory) params.set("projectDir", workingDirectory);
+    fetch(`/api/environment/scan?${params}`)
       .then((res) => res.json())
       .then((json) => setData(json))
       .catch(() => setData(null))
       .finally(() => setLoading(false));
-  }, [projectId]);
+  }, [projectId, workingDirectory]);
 
   const handleScan = async () => {
     if (!workingDirectory) return;

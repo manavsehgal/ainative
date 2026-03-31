@@ -8,7 +8,7 @@ import {
 import { ProfileConfigSchema } from "@/lib/validators/profile";
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
@@ -20,14 +20,24 @@ export async function GET(
   return NextResponse.json({
     ...profile,
     isBuiltin: isBuiltin(id),
+    scope: profile.scope ?? (isBuiltin(id) ? "builtin" : "user"),
+    readOnly: profile.readOnly ?? false,
   });
 }
+
+const PROJECT_SCOPE_ERROR = "Project-scoped profiles are read-only. Edit them in your project's .claude/skills/ directory.";
 
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+
+  // Check if this is a project-scoped profile
+  const existing = getProfile(id);
+  if (existing?.scope === "project" || existing?.readOnly) {
+    return NextResponse.json({ error: PROJECT_SCOPE_ERROR }, { status: 403 });
+  }
 
   if (isBuiltin(id)) {
     return NextResponse.json(
@@ -61,6 +71,11 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+
+  const existing = getProfile(id);
+  if (existing?.scope === "project" || existing?.readOnly) {
+    return NextResponse.json({ error: PROJECT_SCOPE_ERROR }, { status: 403 });
+  }
 
   if (isBuiltin(id)) {
     return NextResponse.json(

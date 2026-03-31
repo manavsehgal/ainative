@@ -1,5 +1,17 @@
 # Feature Changelog
 
+## 2026-03-31
+
+### Groomed
+- Created **Workspace Intelligence** initiative — 3 new features + 1 existing regrouped:
+  - `auto-environment-scan` (P1) — automatic staleness-based environment scan on project context change; eliminates manual "Scan" button as primary interaction
+  - `project-scoped-profiles` (P1) — bridge project `.claude/skills/` to Stagent profiles, read in-place (not copied), supports SKILL.md-only skills with minimal profile generation
+  - `dynamic-slash-commands` (P2) — dynamic "Skills" group in chat slash command popover, populated from active project's discovered skills
+  - `workspace-context-awareness` (P1, existing) — moved from Platform section into Workspace Intelligence initiative
+- Added "Workspace Intelligence" section to roadmap with dependency chain
+- Architecture decision: project skills read in-place, not copied to `~/.claude/skills/` — prevents drift, project repo stays source of truth
+- Source: `/architect` review mode + `/product-manager` grooming — analyzing how folder skills should align with agent profiles
+
 ## 2026-03-30
 
 ### Groomed

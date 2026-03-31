@@ -4,6 +4,11 @@ import { db } from "@/lib/db";
 import { tasks } from "@/lib/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { ok, err, type ToolContext } from "./helpers";
+import {
+  DEFAULT_AGENT_RUNTIME,
+  isAgentRuntimeId,
+  SUPPORTED_AGENT_RUNTIMES,
+} from "@/lib/agents/runtime/catalog";
 
 const VALID_TASK_STATUSES = [
   "planned",
@@ -77,9 +82,27 @@ export function taskTools(ctx: ToolContext) {
           .describe(
             "Priority: 0 = critical, 1 = high, 2 = medium (default), 3 = low"
           ),
+        assignedAgent: z
+          .string()
+          .optional()
+          .describe(
+            `Runtime ID: ${SUPPORTED_AGENT_RUNTIMES.join(", ")}`
+          ),
+        agentProfile: z
+          .string()
+          .optional()
+          .describe(
+            "Agent profile ID (e.g. general, code-reviewer, researcher, reddit-researcher)"
+          ),
       },
       async (args) => {
         try {
+          if (args.assignedAgent && !isAgentRuntimeId(args.assignedAgent)) {
+            return err(
+              `Invalid runtime "${args.assignedAgent}". Valid: ${SUPPORTED_AGENT_RUNTIMES.join(", ")}`
+            );
+          }
+
           const effectiveProjectId = args.projectId ?? ctx.projectId ?? null;
           const now = new Date();
           const id = crypto.randomUUID();
@@ -91,6 +114,8 @@ export function taskTools(ctx: ToolContext) {
             projectId: effectiveProjectId,
             priority: args.priority ?? 2,
             status: "planned",
+            assignedAgent: args.assignedAgent ?? null,
+            agentProfile: args.agentProfile ?? null,
             createdAt: now,
             updatedAt: now,
           });
@@ -110,7 +135,7 @@ export function taskTools(ctx: ToolContext) {
 
     defineTool(
       "update_task",
-      "Update an existing task's status, title, description, or priority.",
+      "Update an existing task's status, title, description, priority, runtime, or profile.",
       {
         taskId: z.string().describe("The task ID to update"),
         title: z.string().min(1).max(200).optional().describe("New title"),
@@ -129,9 +154,27 @@ export function taskTools(ctx: ToolContext) {
           .max(3)
           .optional()
           .describe("New priority (0-3)"),
+        assignedAgent: z
+          .string()
+          .optional()
+          .describe(
+            `Runtime ID: ${SUPPORTED_AGENT_RUNTIMES.join(", ")}`
+          ),
+        agentProfile: z
+          .string()
+          .optional()
+          .describe(
+            "Agent profile ID (e.g. general, code-reviewer, researcher, reddit-researcher)"
+          ),
       },
       async (args) => {
         try {
+          if (args.assignedAgent && !isAgentRuntimeId(args.assignedAgent)) {
+            return err(
+              `Invalid runtime "${args.assignedAgent}". Valid: ${SUPPORTED_AGENT_RUNTIMES.join(", ")}`
+            );
+          }
+
           const existing = await db
             .select()
             .from(tasks)
@@ -146,6 +189,10 @@ export function taskTools(ctx: ToolContext) {
             updates.description = args.description;
           if (args.status !== undefined) updates.status = args.status;
           if (args.priority !== undefined) updates.priority = args.priority;
+          if (args.assignedAgent !== undefined)
+            updates.assignedAgent = args.assignedAgent;
+          if (args.agentProfile !== undefined)
+            updates.agentProfile = args.agentProfile;
 
           await db
             .update(tasks)
@@ -190,16 +237,24 @@ export function taskTools(ctx: ToolContext) {
 
     defineTool(
       "execute_task",
-      "Queue and execute a task with an AI agent. Returns immediately — execution runs in the background. Requires approval.",
+      `Queue and execute a task with an AI agent. Returns immediately — execution runs in the background. Requires approval. Valid runtime IDs: ${SUPPORTED_AGENT_RUNTIMES.join(", ")}.`,
       {
         taskId: z.string().describe("The task ID to execute"),
         assignedAgent: z
           .string()
           .optional()
-          .describe("Runtime ID to use (e.g. 'claude'). Defaults to the task's assigned agent or 'claude'."),
+          .describe(
+            `Runtime ID: ${SUPPORTED_AGENT_RUNTIMES.join(", ")}. Defaults to task's assigned agent or ${DEFAULT_AGENT_RUNTIME}.`
+          ),
       },
       async (args) => {
         try {
+          if (args.assignedAgent && !isAgentRuntimeId(args.assignedAgent)) {
+            return err(
+              `Invalid runtime "${args.assignedAgent}". Valid: ${SUPPORTED_AGENT_RUNTIMES.join(", ")}`
+            );
+          }
+
           const task = await db
             .select()
             .from(tasks)
@@ -209,7 +264,7 @@ export function taskTools(ctx: ToolContext) {
           if (!task) return err(`Task not found: ${args.taskId}`);
           if (task.status === "running") return err("Task is already running");
 
-          const runtimeId = args.assignedAgent ?? task.assignedAgent ?? "claude";
+          const runtimeId = args.assignedAgent ?? task.assignedAgent ?? DEFAULT_AGENT_RUNTIME;
 
           // Set status to queued
           await db

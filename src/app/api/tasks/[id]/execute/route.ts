@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { tasks } from "@/lib/db/schema";
+import { tasks, projects } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { executeTaskWithAgent, classifyTaskProfile } from "@/lib/agents/router";
 import { DEFAULT_AGENT_RUNTIME } from "@/lib/agents/runtime/catalog";
@@ -9,6 +9,7 @@ import {
   BudgetLimitExceededError,
   enforceTaskBudgetGuardrails,
 } from "@/lib/settings/budget-guardrails";
+import { ensureFreshScan } from "@/lib/environment/auto-scan";
 
 export async function POST(
   _req: NextRequest,
@@ -46,6 +47,17 @@ export async function POST(
   }
 
   const task = claimed[0];
+
+  // Auto-scan environment if the task's project has a workingDirectory
+  if (task.projectId) {
+    const [project] = await db
+      .select()
+      .from(projects)
+      .where(eq(projects.id, task.projectId));
+    if (project?.workingDirectory) {
+      ensureFreshScan(project.workingDirectory, task.projectId);
+    }
+  }
 
   // Auto-classify profile if none was set
   if (!task.agentProfile) {

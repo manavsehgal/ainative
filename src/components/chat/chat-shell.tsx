@@ -515,6 +515,7 @@ export function ChatShell({
                 modelId={modelId}
                 onModelChange={handleModelChange}
                 availableModels={availableModels}
+                projectId={activeConversation?.projectId}
               />
             </ChatEmptyState>
           </div>
@@ -539,6 +540,7 @@ export function ChatShell({
               modelId={modelId}
               onModelChange={handleModelChange}
               availableModels={availableModels}
+              projectId={activeConversation?.projectId}
             />
           </>
         )}

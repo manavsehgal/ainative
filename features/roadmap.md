@@ -106,9 +106,17 @@ Features that enhance the product but aren't essential for first use — homepag
 | [cross-provider-profile-compatibility](cross-provider-profile-compatibility.md) | P2 | completed | provider-runtime-abstraction, openai-codex-app-server, agent-profile-catalog |
 | [parallel-research-fork-join](parallel-research-fork-join.md) | P2 | completed | workflow-engine, multi-agent-routing |
 | [tool-permission-presets](tool-permission-presets.md) | P2 | completed | tool-permission-persistence |
-| [workspace-context-awareness](workspace-context-awareness.md) | P1 | planned | chat-engine, environment-scanner |
 | [task-hierarchy-clarity](task-hierarchy-clarity.md) | P1 | completed | workflow-engine, task-board, project-management |
 | [agent-document-api-access](agent-document-api-access.md) | P2 | completed | document-preprocessing, file-attachment-data-layer, tool-permission-persistence |
+
+### Workspace Intelligence
+
+| Feature | Priority | Status | Dependencies |
+|---------|----------|--------|--------------|
+| [workspace-context-awareness](workspace-context-awareness.md) | P1 | planned | chat-engine, environment-scanner |
+| [auto-environment-scan](auto-environment-scan.md) | P1 | planned | environment-scanner, environment-cache |
+| [project-scoped-profiles](project-scoped-profiles.md) | P1 | planned | agent-profile-catalog, environment-scanner, auto-environment-scan |
+| [dynamic-slash-commands](dynamic-slash-commands.md) | P2 | planned | chat-command-mentions, chat-input-composer, project-scoped-profiles |
 
 ### Direct API Runtime Expansion
 
@@ -127,6 +135,7 @@ Features that enhance the product but aren't essential for first use — homepag
 |---------|----------|--------|--------------|
 | [sdk-runtime-hardening](sdk-runtime-hardening.md) | P2 | completed | provider-runtime-abstraction, usage-metering-ledger, spend-budget-guardrails, agent-self-improvement |
 | [e2e-test-automation](e2e-test-automation.md) | P2 | completed | provider-runtime-abstraction, workflow-engine, agent-profile-catalog |
+| [runtime-validation-hardening](runtime-validation-hardening.md) | P1 | planned | provider-runtime-abstraction, multi-agent-routing |
 
 ### Governance & Analytics
 
@@ -220,6 +229,16 @@ environment-scanner
             ├── skill-portfolio
             ├── environment-health-scoring
             └── agent-profile-from-environment
+
+Workspace intelligence chain:
+
+environment-scanner (completed) + environment-cache (completed)
+    └── auto-environment-scan (P1)
+            └── project-scoped-profiles (P1)
+                    └── dynamic-slash-commands (P2)
+
+chat-engine (completed) + environment-scanner (completed)
+    └── workspace-context-awareness (P1)
 ```
 
 - **Critical path**: database-schema → project-management → task-board → agent-integration → inbox-notifications / monitoring-dashboard

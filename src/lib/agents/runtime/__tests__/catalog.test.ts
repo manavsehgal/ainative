@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   DEFAULT_AGENT_RUNTIME,
   getRuntimeCapabilities,
@@ -30,9 +30,20 @@ describe("runtime catalog", () => {
     expect(getRuntimeCapabilities("openai-codex-app-server").resume).toBe(true);
   });
 
-  it("throws for unknown runtime ids", () => {
-    expect(() => resolveAgentRuntime("unknown-runtime")).toThrow(
-      "Unknown agent type: unknown-runtime"
+  it("falls back to default for unknown runtime ids with a warning", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const result = resolveAgentRuntime("unknown-runtime");
+    expect(result).toBe(DEFAULT_AGENT_RUNTIME);
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Unknown agent runtime")
     );
+    warnSpy.mockRestore();
+  });
+
+  it("falls back to default for typo 'claude' instead of 'claude-code'", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const result = resolveAgentRuntime("claude");
+    expect(result).toBe("claude-code");
+    warnSpy.mockRestore();
   });
 });

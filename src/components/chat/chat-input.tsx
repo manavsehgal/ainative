@@ -8,6 +8,7 @@ import { ChatModelSelector } from "./chat-model-selector";
 import { ChatCommandPopover } from "./chat-command-popover";
 import { useChatAutocomplete, type MentionReference } from "@/hooks/use-chat-autocomplete";
 import { getToolCatalog } from "@/lib/chat/tool-catalog";
+import { useProjectSkills } from "@/hooks/use-project-skills";
 import type { ChatModelOption } from "@/lib/chat/types";
 
 interface ChatInputProps {
@@ -19,6 +20,7 @@ interface ChatInputProps {
   modelId?: string;
   onModelChange?: (modelId: string) => void;
   availableModels?: ChatModelOption[];
+  projectId?: string | null;
 }
 
 export function ChatInput({
@@ -30,10 +32,12 @@ export function ChatInput({
   modelId,
   onModelChange,
   availableModels,
+  projectId,
 }: ChatInputProps) {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const autocomplete = useChatAutocomplete();
+  const { skills: projectSkills } = useProjectSkills(projectId);
 
   // Sync textarea ref with autocomplete hook
   useEffect(() => {
@@ -206,6 +210,7 @@ export function ChatInput({
         anchorRect={autocomplete.state.anchorRect}
         entityResults={autocomplete.entityResults}
         entityLoading={autocomplete.entityLoading}
+        projectProfiles={projectSkills.length > 0 ? projectSkills : undefined}
         onSelect={handlePopoverSelect}
         onClose={autocomplete.close}
       />

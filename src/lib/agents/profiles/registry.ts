@@ -5,6 +5,7 @@ import { ProfileConfigSchema } from "@/lib/validators/profile";
 import type { ProfileConfig } from "@/lib/validators/profile";
 import { getSupportedRuntimes } from "./compatibility";
 import type { AgentProfile } from "./types";
+import { scanProjectProfiles } from "./project-profiles";
 
 /**
  * Builtins ship inside the repo at src/lib/agents/profiles/builtins/.
@@ -228,6 +229,23 @@ export function getProfile(id: string): AgentProfile | undefined {
 
 export function listProfiles(): AgentProfile[] {
   return Array.from(ensureLoaded().values());
+}
+
+/**
+ * List all profiles: builtin + user + project-scoped.
+ * Project profiles are only included when a projectDir is provided.
+ * Each profile is annotated with its scope.
+ */
+export function listAllProfiles(projectDir?: string): AgentProfile[] {
+  const userProfiles = listProfiles().map((p) => ({
+    ...p,
+    scope: p.scope ?? (isBuiltin(p.id) ? "builtin" as const : "user" as const),
+  }));
+
+  if (!projectDir) return userProfiles;
+
+  const projectProfiles = scanProjectProfiles(projectDir);
+  return [...userProfiles, ...projectProfiles];
 }
 
 export function getProfileTags(): Map<string, string[]> {

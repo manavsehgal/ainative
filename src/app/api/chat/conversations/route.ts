@@ -3,6 +3,10 @@ import {
   createConversation,
   listConversations,
 } from "@/lib/data/chat";
+import { db } from "@/lib/db";
+import { projects } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
+import { ensureFreshScan } from "@/lib/environment/auto-scan";
 
 /**
  * GET /api/chat/conversations?status=active&projectId=xxx&limit=50
@@ -46,6 +50,17 @@ export async function POST(req: NextRequest) {
       { error: `Invalid runtimeId. Must be one of: ${validRuntimes.join(", ")}` },
       { status: 400 }
     );
+  }
+
+  // Auto-scan environment when starting a conversation for a project
+  if (projectId) {
+    const [project] = await db
+      .select()
+      .from(projects)
+      .where(eq(projects.id, projectId));
+    if (project?.workingDirectory) {
+      ensureFreshScan(project.workingDirectory, projectId);
+    }
   }
 
   const conversation = await createConversation({

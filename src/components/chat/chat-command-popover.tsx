@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import {
-  getToolCatalog,
+  getToolCatalogWithSkills,
   groupToolCatalog,
   TOOL_GROUP_ICONS,
   TOOL_GROUP_ORDER,
@@ -36,6 +36,7 @@ interface ChatCommandPopoverProps {
   anchorRect: { top: number; left: number; height: number } | null;
   entityResults: EntitySearchResult[];
   entityLoading: boolean;
+  projectProfiles?: Array<{ id: string; name: string; description: string }>;
   onSelect: (item: {
     type: "slash" | "mention";
     id: string;
@@ -81,6 +82,7 @@ export function ChatCommandPopover({
   anchorRect,
   entityResults,
   entityLoading,
+  projectProfiles,
   onSelect,
   onClose,
 }: ChatCommandPopoverProps) {
@@ -127,7 +129,12 @@ export function ChatCommandPopover({
             {mode === "slash" ? "No matching tools" : "No matching entities"}
           </CommandEmpty>
 
-          {mode === "slash" && <ToolCatalogItems onSelect={onSelect} />}
+          {mode === "slash" && (
+            <ToolCatalogItems
+              onSelect={onSelect}
+              projectProfiles={projectProfiles}
+            />
+          )}
 
           {mode === "mention" && (
             <MentionItems
@@ -146,10 +153,15 @@ export function ChatCommandPopover({
 
 function ToolCatalogItems({
   onSelect,
+  projectProfiles,
 }: {
   onSelect: ChatCommandPopoverProps["onSelect"];
+  projectProfiles?: ChatCommandPopoverProps["projectProfiles"];
 }) {
-  const catalog = getToolCatalog({ includeBrowser: true });
+  const catalog = getToolCatalogWithSkills({
+    includeBrowser: true,
+    projectProfiles,
+  });
   const groups = groupToolCatalog(catalog);
 
   return (
@@ -171,7 +183,9 @@ function ToolCatalogItems({
                     label: entry.name,
                     text: entry.behavior === "execute_immediately"
                       ? entry.name
-                      : `Use ${entry.name} to `,
+                      : entry.group === "Skills"
+                        ? `Use the ${entry.name} profile: `
+                        : `Use ${entry.name} to `,
                   })
                 }
               >

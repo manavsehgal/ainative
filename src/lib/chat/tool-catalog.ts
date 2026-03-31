@@ -12,6 +12,7 @@ import {
   Globe,
   Sun,
   CheckCheck,
+  Sparkles,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -25,6 +26,7 @@ export type ToolGroup =
   | "Documents"
   | "Notifications"
   | "Profiles"
+  | "Skills"
   | "Usage"
   | "Settings"
   | "Chat"
@@ -54,6 +56,7 @@ export const TOOL_GROUP_ICONS: Record<ToolGroup, LucideIcon> = {
   Documents: FileText,
   Notifications: Bell,
   Profiles: Bot,
+  Skills: Sparkles,
   Usage: Wallet,
   Settings: Settings,
   Chat: MessageSquare,
@@ -69,6 +72,7 @@ export const TOOL_GROUP_ORDER: ToolGroup[] = [
   "Documents",
   "Schedules",
   "Profiles",
+  "Skills",
   "Browser",
   "Notifications",
   "Chat",
@@ -172,6 +176,26 @@ export function getToolCatalog(opts?: { includeBrowser?: boolean }): ToolCatalog
     cachedCatalog = [...STAGENT_TOOLS, ...UTILITY_ENTRIES];
   }
   return cachedCatalog;
+}
+
+/**
+ * Get the tool catalog with dynamic project skills appended.
+ * NOT cached at module level because it depends on the active project.
+ */
+export function getToolCatalogWithSkills(opts?: {
+  includeBrowser?: boolean;
+  projectProfiles?: Array<{ id: string; name: string; description: string }>;
+}): ToolCatalogEntry[] {
+  const base = getToolCatalog(opts);
+  if (!opts?.projectProfiles?.length) return base;
+
+  const skillEntries: ToolCatalogEntry[] = opts.projectProfiles.map((p) => ({
+    name: p.id,
+    description: p.description,
+    group: "Skills" as ToolGroup,
+  }));
+
+  return [...base, ...skillEntries];
 }
 
 /** Group catalog entries by their ToolGroup */

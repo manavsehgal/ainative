@@ -28,6 +28,8 @@ export interface ProfileRuntimeCapabilityOverride {
   serverTools?: Record<string, boolean>;
 }
 
+export type ProfileScope = "builtin" | "user" | "project";
+
 export interface AgentProfile {
   id: string;
   name: string;
@@ -54,4 +56,10 @@ export interface AgentProfile {
   runtimeOverrides?: Partial<Record<AgentRuntimeId, ProfileRuntimeOverride>>;
   /** Per-runtime capability overrides (model, extended thinking, server tools). */
   capabilityOverrides?: Partial<Record<AgentRuntimeId, ProfileRuntimeCapabilityOverride>>;
+  /** Scope: builtin (shipped), user (~/.claude/skills/), or project (.claude/skills/) */
+  scope?: ProfileScope;
+  /** Whether this profile is read-only (true for project-scoped profiles) */
+  readOnly?: boolean;
+  /** Absolute path to the project directory (only set for project-scoped profiles) */
+  projectDir?: string;
 }
