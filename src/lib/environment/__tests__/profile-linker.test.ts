@@ -150,4 +150,38 @@ describe("linkArtifactsToProfiles", () => {
     expect(result.unlinked).toBe(1);
     expect(result.unlinkedArtifactIds).toContain("a2");
   });
+
+  it("handles directory-style absPath (no file extension)", () => {
+    // The scanner sometimes stores the directory, not the file
+    const artifacts = [
+      makeArtifact("a1", "code-reviewer", "/home/.claude/skills/code-reviewer"),
+      makeArtifact("a2", "general", "/home/.claude/skills/general"),
+    ];
+
+    const mockAll = vi.fn(() => artifacts);
+    const mockRun = vi.fn();
+    (db.select as ReturnType<typeof vi.fn>).mockReturnValue({
+      from: vi.fn(() => ({
+        where: vi.fn(() => ({
+          all: mockAll,
+        })),
+      })),
+    });
+    (db.update as ReturnType<typeof vi.fn>).mockReturnValue({
+      set: vi.fn(() => ({
+        where: vi.fn(() => ({
+          run: mockRun,
+        })),
+      })),
+    });
+
+    mockListAllProfiles.mockReturnValue([
+      { id: "code-reviewer", name: "Code Reviewer" },
+      { id: "general", name: "General" },
+    ]);
+
+    const result = linkArtifactsToProfiles("scan-1");
+    expect(result.linked).toBe(2);
+    expect(result.unlinked).toBe(0);
+  });
 });

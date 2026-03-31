@@ -86,20 +86,28 @@ export function linkArtifactsToProfiles(
 /**
  * Extract the profile ID from a skill artifact's absolute path.
  *
- * Skills live at paths like:
- *   ~/.claude/skills/code-reviewer/SKILL.md
- *   ~/.claude/skills/code-reviewer/profile.yaml
+ * The scanner stores absPath as either:
+ *   - The directory: ~/.claude/skills/code-reviewer
+ *   - Or the file:   ~/.claude/skills/code-reviewer/SKILL.md
  *
- * The profile ID is the parent directory basename ("code-reviewer").
- * For project-scoped skills: .claude/skills/my-skill/SKILL.md → "my-skill"
+ * The profile ID is the skill directory basename ("code-reviewer").
  */
 function extractProfileId(absPath: string): string | null {
-  // The artifact absPath points to the file (SKILL.md or profile.yaml).
-  // The profile ID is the parent directory name.
-  const dir = path.dirname(absPath);
-  const basename = path.basename(dir);
+  // The absPath may point to the skill directory itself or a file within it.
+  // Use the basename of the path first — if it looks like a directory name
+  // (no extension), use it directly. Otherwise, use the parent directory.
+  const basename = path.basename(absPath);
 
-  // Skip if we're at the skills root directory itself
+  // If basename has a file extension (e.g., "SKILL.md"), go up one level
+  if (basename.includes(".")) {
+    const parentBasename = path.basename(path.dirname(absPath));
+    if (parentBasename === "skills" || parentBasename === ".claude") {
+      return null;
+    }
+    return parentBasename;
+  }
+
+  // basename is a directory name — skip if it's the skills root
   if (basename === "skills" || basename === ".claude") {
     return null;
   }

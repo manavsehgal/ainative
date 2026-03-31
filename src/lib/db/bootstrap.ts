@@ -293,7 +293,6 @@ export function bootstrapStagentDatabase(sqlite: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_env_artifacts_tool ON environment_artifacts(tool);
     CREATE INDEX IF NOT EXISTS idx_env_artifacts_scan_tool ON environment_artifacts(scan_id, tool);
     CREATE INDEX IF NOT EXISTS idx_env_artifacts_scan_category ON environment_artifacts(scan_id, category);
-    CREATE INDEX IF NOT EXISTS idx_env_artifacts_linked_profile ON environment_artifacts(linked_profile_id);
 
     CREATE TABLE IF NOT EXISTS environment_checkpoints (
       id TEXT PRIMARY KEY NOT NULL,
