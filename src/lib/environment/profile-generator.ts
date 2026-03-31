@@ -3,31 +3,57 @@
  */
 
 import { getArtifacts } from "./data";
-import { evaluateRules, type ProfileSuggestion } from "./profile-rules";
+import { evaluateRules, generateTier2Suggestions, type ProfileSuggestion } from "./profile-rules";
 import { listProfiles, createProfile } from "@/lib/agents/profiles/registry";
 import type { ProfileConfig } from "@/lib/validators/profile";
 
-const MIN_CONFIDENCE = 0.6;
+const MIN_CURATED_CONFIDENCE = 0.6;
+
+export interface TieredSuggestions {
+  curated: ProfileSuggestion[];
+  discovered: ProfileSuggestion[];
+}
 
 /**
  * Suggest profiles based on artifacts from a scan.
+ * Returns both curated (Tier 1) and discovered (Tier 2) suggestions.
  * Filters out suggestions that match existing profiles.
  */
-export function suggestProfiles(scanId: string): ProfileSuggestion[] {
+export function suggestProfilesTiered(scanId: string): TieredSuggestions {
   const artifacts = getArtifacts({ scanId });
-  const suggestions = evaluateRules(artifacts);
 
-  // Filter by minimum confidence
-  const confident = suggestions.filter((s) => s.confidence >= MIN_CONFIDENCE);
-
-  // Filter out profiles that already exist (by ID match)
+  // Tier 1: Curated rules
+  const curatedRaw = evaluateRules(artifacts);
   const existing = listProfiles();
   const existingIds = new Set(existing.map((p) => p.id));
   const existingNames = new Set(existing.map((p) => p.name.toLowerCase()));
 
-  return confident.filter(
-    (s) => !existingIds.has(s.ruleId) && !existingNames.has(s.name.toLowerCase())
+  const curated = curatedRaw
+    .filter((s) => s.confidence >= MIN_CURATED_CONFIDENCE)
+    .filter(
+      (s) => !existingIds.has(s.ruleId) && !existingNames.has(s.name.toLowerCase())
+    );
+
+  // Tier 2: Unlinked skill artifacts (those without linkedProfileId)
+  const unlinkedSkills = artifacts.filter(
+    (a) => a.category === "skill" && !a.linkedProfileId
   );
+  const discovered = generateTier2Suggestions(unlinkedSkills).filter(
+    (s) =>
+      !existingIds.has(s.ruleId) &&
+      !existingIds.has(`env-${s.ruleId}`) &&
+      !existingNames.has(s.name.toLowerCase())
+  );
+
+  return { curated, discovered };
+}
+
+/**
+ * Suggest profiles based on artifacts from a scan (legacy flat API).
+ * Returns only curated (Tier 1) suggestions for backward compatibility.
+ */
+export function suggestProfiles(scanId: string): ProfileSuggestion[] {
+  return suggestProfilesTiered(scanId).curated;
 }
 
 /**
@@ -98,4 +124,8 @@ export function createProfileFromSuggestion(
   }
 
   createProfile(config, skillMd);
+
+  // Note: the created profile will have author "stagent-env" which,
+  // combined with the env- prefix on the ID, identifies it as environment-originated.
+  // The profile registry can infer origin from the author field.
 }

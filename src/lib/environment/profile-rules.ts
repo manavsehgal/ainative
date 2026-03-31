@@ -1,6 +1,11 @@
 /**
  * Profile suggestion rules engine.
  * Maps artifact clusters to agent profile suggestions.
+ *
+ * Two-tier system:
+ * - Tier 1 (Curated): 6 hardcoded rules with high confidence (0.65-1.0)
+ * - Tier 2 (Discovered): Any unlinked skill artifact with valid SKILL.md
+ *   frontmatter becomes a generic suggestion at confidence 0.5
  */
 
 import type { EnvironmentArtifactRow } from "@/lib/db/schema";
@@ -22,11 +27,14 @@ export interface ProfileRule {
   tags: string[];
 }
 
+export type SuggestionTier = "curated" | "discovered";
+
 export interface ProfileSuggestion {
   ruleId: string;
   name: string;
   description: string;
   confidence: number;
+  tier: SuggestionTier;
   matchedArtifacts: Array<{ id: string; name: string; category: string }>;
   suggestedTools: string[];
   systemPrompt: string;
@@ -190,6 +198,7 @@ export function evaluateRules(
       name: rule.name,
       description: rule.description,
       confidence,
+      tier: "curated",
       matchedArtifacts: matched,
       suggestedTools: rule.suggestedTools,
       systemPrompt: rule.systemPromptTemplate,
@@ -198,4 +207,91 @@ export function evaluateRules(
   }
 
   return suggestions.sort((a, b) => b.confidence - a.confidence);
+}
+
+// ---------------------------------------------------------------------------
+// Tier 2: Auto-discovered suggestions from unlinked skill artifacts
+// ---------------------------------------------------------------------------
+
+const TIER2_CONFIDENCE = 0.5;
+
+/** Parse YAML frontmatter from SKILL.md preview content. */
+function parseFrontmatter(preview: string | null): { name?: string; description?: string } {
+  if (!preview) return {};
+  const match = preview.match(/^---\s*\n([\s\S]*?)\n---/);
+  if (!match) return {};
+
+  const result: { name?: string; description?: string } = {};
+  const lines = match[1].split("\n");
+  for (const line of lines) {
+    const nameMatch = line.match(/^name:\s*(.+)/);
+    if (nameMatch) result.name = nameMatch[1].trim();
+    const descMatch = line.match(/^description:\s*(.+)/);
+    if (descMatch) result.description = descMatch[1].trim();
+  }
+  return result;
+}
+
+/**
+ * Generate Tier 2 (discovered) suggestions from unlinked skill artifacts.
+ *
+ * Any skill artifact that:
+ * 1. Has no linked profile (linkedProfileId is null)
+ * 2. Has parseable SKILL.md frontmatter with at least a name
+ *
+ * becomes a suggestion with confidence 0.5 (below the Tier 1 minimum of 0.6).
+ */
+export function generateTier2Suggestions(
+  unlinkedArtifacts: EnvironmentArtifactRow[]
+): ProfileSuggestion[] {
+  const suggestions: ProfileSuggestion[] = [];
+
+  for (const artifact of unlinkedArtifacts) {
+    if (artifact.category !== "skill") continue;
+
+    // Try to extract metadata from the artifact's preview or metadata field
+    let name: string | undefined;
+    let description: string | undefined;
+
+    // Parse from metadata (JSON) if available
+    if (artifact.metadata) {
+      try {
+        const meta = JSON.parse(artifact.metadata);
+        name = meta.name;
+        description = meta.description;
+      } catch {
+        // Fall through to preview parsing
+      }
+    }
+
+    // Fall back to preview (first 200 chars of SKILL.md) frontmatter parsing
+    if (!name) {
+      const fm = parseFrontmatter(artifact.preview);
+      name = fm.name;
+      description = fm.description;
+    }
+
+    // If we still don't have a name, use the artifact name (directory basename)
+    if (!name) {
+      name = artifact.name
+        .replace(/-/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+    }
+
+    suggestions.push({
+      ruleId: `discovered-${artifact.name}`,
+      name,
+      description: description ?? `Discovered skill: ${artifact.name}`,
+      confidence: TIER2_CONFIDENCE,
+      tier: "discovered",
+      matchedArtifacts: [
+        { id: artifact.id, name: artifact.name, category: artifact.category },
+      ],
+      suggestedTools: ["Read", "Grep", "Glob", "Bash"],
+      systemPrompt: description ?? `You are a ${name} specialist.`,
+      tags: artifact.name.split("-").filter((t) => t.length > 2),
+    });
+  }
+
+  return suggestions.sort((a, b) => a.name.localeCompare(b.name));
 }

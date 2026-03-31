@@ -16,6 +16,7 @@ import {
 } from "@/lib/db/schema";
 import { eq, desc, and, like, sql } from "drizzle-orm";
 import type { ScanResult, ArtifactCategory, ToolPersona, ArtifactScope } from "./types";
+import { linkArtifactsToProfiles } from "./profile-linker";
 
 /** Persist a scan result (scan + all artifacts) in a single transaction. */
 export function createScan(
@@ -70,11 +71,35 @@ export function createScan(
     }
   });
 
+  // Link skill artifacts to their corresponding profiles
+  try {
+    linkArtifactsToProfiles(scanId);
+  } catch (err) {
+    console.warn("[environment] Profile linking failed (non-blocking):", err);
+  }
+
   return db
     .select()
     .from(environmentScans)
     .where(eq(environmentScans.id, scanId))
     .get()!;
+}
+
+/**
+ * Invalidate the latest scan by marking it as stale.
+ * Called after profile mutations to ensure the next ensureFreshScan() re-scans.
+ */
+export function invalidateLatestScan(projectId?: string): void {
+  const latest = getLatestScan(projectId);
+  if (!latest) return;
+
+  // Set scannedAt far enough in the past that shouldRescan() returns true.
+  // The auto-scan staleness window is 5 minutes, so subtracting 10 minutes is safe.
+  const staleTime = new Date(Date.now() - 10 * 60 * 1000);
+  db.update(environmentScans)
+    .set({ scannedAt: staleTime })
+    .where(eq(environmentScans.id, latest.id))
+    .run();
 }
 
 /** Get the most recent completed scan. */

@@ -3,6 +3,9 @@
 ## 2026-03-31
 
 ### Groomed
+- Created `profile-environment-sync` (P1) — roundtrip two-way sync between profiles and environment skill artifacts via passive reconciliation architecture; filesystem as single source of truth, profile-artifact linker, two-tier suggestion engine, scan invalidation on profile mutations, origin badges in UI
+- Architecture decision: "Passive Reconciliation" over "Materialized View" (auto-creates everything, too noisy) and "Linked Registry" (manual-only, no UX improvement). Filesystem IS the sync mechanism; the reconciliation layer just makes it visible
+- Source: `/architect` review + `/product-manager` grooming + `/frontend-designer` UX analysis — cross-skill analysis of profiles and environment features
 - Created **Workspace Intelligence** initiative — 3 new features + 1 existing regrouped:
   - `auto-environment-scan` (P1) — automatic staleness-based environment scan on project context change; eliminates manual "Scan" button as primary interaction
   - `project-scoped-profiles` (P1) — bridge project `.claude/skills/` to Stagent profiles, read in-place (not copied), supports SKILL.md-only skills with minimal profile generation

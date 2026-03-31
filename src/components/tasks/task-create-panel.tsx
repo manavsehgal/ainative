@@ -39,7 +39,11 @@ import type { AgentProfile } from "@/lib/agents/profiles/types";
 type ProfileOption = Pick<
   AgentProfile,
   "id" | "name" | "description" | "supportedRuntimes"
->;
+> & {
+  origin?: string;
+  scope?: string;
+  isBuiltin?: boolean;
+};
 
 interface UploadedFile {
   id: string;
@@ -324,6 +328,15 @@ export function TaskCreatePanel({ projects, defaultProjectId }: TaskCreatePanelP
                               <span className="flex items-center gap-1.5">
                                 <Bot className="h-3 w-3" />
                                 {p.name}
+                                {p.isBuiltin && (
+                                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary/60" title="Built-in" />
+                                )}
+                                {p.origin === "environment" && (
+                                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500/60" title="Discovered" />
+                                )}
+                                {p.scope === "project" && (
+                                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-orange-500/60" title="Project" />
+                                )}
                               </span>
                             </SelectItem>
                           ))}

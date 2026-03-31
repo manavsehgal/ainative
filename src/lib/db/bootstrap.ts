@@ -283,6 +283,7 @@ export function bootstrapStagentDatabase(sqlite: Database.Database): void {
       metadata TEXT,
       size_bytes INTEGER DEFAULT 0 NOT NULL,
       modified_at INTEGER NOT NULL,
+      linked_profile_id TEXT,
       created_at INTEGER NOT NULL,
       FOREIGN KEY (scan_id) REFERENCES environment_scans(id) ON UPDATE NO ACTION ON DELETE NO ACTION
     );
@@ -292,6 +293,7 @@ export function bootstrapStagentDatabase(sqlite: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_env_artifacts_tool ON environment_artifacts(tool);
     CREATE INDEX IF NOT EXISTS idx_env_artifacts_scan_tool ON environment_artifacts(scan_id, tool);
     CREATE INDEX IF NOT EXISTS idx_env_artifacts_scan_category ON environment_artifacts(scan_id, category);
+    CREATE INDEX IF NOT EXISTS idx_env_artifacts_linked_profile ON environment_artifacts(linked_profile_id);
 
     CREATE TABLE IF NOT EXISTS environment_checkpoints (
       id TEXT PRIMARY KEY NOT NULL,
@@ -340,6 +342,9 @@ export function bootstrapStagentDatabase(sqlite: Database.Database): void {
 
     CREATE INDEX IF NOT EXISTS idx_env_templates_scope ON environment_templates(scope);
   `);
+
+  addColumnIfMissing(`ALTER TABLE environment_artifacts ADD COLUMN linked_profile_id TEXT;`);
+  sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_env_artifacts_linked_profile ON environment_artifacts(linked_profile_id);`);
 
   // ── Chat conversation tables ────────────────────────────────────────────
   // Drop legacy conversations/messages tables (incompatible schema from earlier attempt)

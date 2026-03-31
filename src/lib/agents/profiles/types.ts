@@ -30,6 +30,9 @@ export interface ProfileRuntimeCapabilityOverride {
 
 export type ProfileScope = "builtin" | "user" | "project";
 
+/** How a profile entered the system — distinct from scope (where it lives). */
+export type ProfileOrigin = "manual" | "environment" | "import" | "ai-assist";
+
 export interface AgentProfile {
   id: string;
   name: string;
@@ -58,6 +61,8 @@ export interface AgentProfile {
   capabilityOverrides?: Partial<Record<AgentRuntimeId, ProfileRuntimeCapabilityOverride>>;
   /** Scope: builtin (shipped), user (~/.claude/skills/), or project (.claude/skills/) */
   scope?: ProfileScope;
+  /** How this profile was created — manual, environment, import, or ai-assist */
+  origin?: ProfileOrigin;
   /** Whether this profile is read-only (true for project-scoped profiles) */
   readOnly?: boolean;
   /** Absolute path to the project directory (only set for project-scoped profiles) */

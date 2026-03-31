@@ -331,6 +331,7 @@ export const environmentArtifacts = sqliteTable(
     metadata: text("metadata"), // JSON
     sizeBytes: integer("size_bytes").default(0).notNull(),
     modifiedAt: integer("modified_at").notNull(), // epoch ms
+    linkedProfileId: text("linked_profile_id"), // profile ID if this artifact is linked to a profile
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
   },
   (table) => [
@@ -339,6 +340,7 @@ export const environmentArtifacts = sqliteTable(
     index("idx_env_artifacts_tool").on(table.tool),
     index("idx_env_artifacts_scan_tool").on(table.scanId, table.tool),
     index("idx_env_artifacts_scan_category").on(table.scanId, table.category),
+    index("idx_env_artifacts_linked_profile").on(table.linkedProfileId),
   ]
 );
 

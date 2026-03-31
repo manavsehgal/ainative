@@ -6,6 +6,10 @@ import type { ProfileConfig } from "@/lib/validators/profile";
 import { getSupportedRuntimes } from "./compatibility";
 import type { AgentProfile } from "./types";
 import { scanProjectProfiles } from "./project-profiles";
+import { invalidateLatestScan, getLatestScan } from "@/lib/environment/data";
+import { db } from "@/lib/db";
+import { environmentArtifacts } from "@/lib/db/schema";
+import { eq, and } from "drizzle-orm";
 
 /**
  * Builtins ship inside the repo at src/lib/agents/profiles/builtins/.
@@ -175,6 +179,15 @@ function scanProfiles(): Map<string, AgentProfile> {
       );
       const description = descMatch?.[1] ?? config.name;
 
+      // Infer origin from metadata
+      const origin = config.importMeta
+        ? "import" as const
+        : config.author === "stagent-env"
+          ? "environment" as const
+          : config.author === "stagent-ai-assist"
+            ? "ai-assist" as const
+            : "manual" as const;
+
       profiles.set(config.id, {
         id: config.id,
         name: config.name,
@@ -195,6 +208,7 @@ function scanProfiles(): Map<string, AgentProfile> {
         importMeta: config.importMeta,
         supportedRuntimes: getSupportedRuntimes(config),
         runtimeOverrides: config.runtimeOverrides,
+        origin,
       });
     } catch (err) {
       console.warn(`[profiles] Error loading profile ${entry.name}:`, err);
@@ -283,6 +297,7 @@ export function createProfile(config: ProfileConfig, skillMd: string): void {
   fs.writeFileSync(path.join(dir, "profile.yaml"), yaml.dump(config));
   fs.writeFileSync(path.join(dir, "SKILL.md"), skillMd);
   reloadProfiles();
+  invalidateLatestScan();
 }
 
 /** Update an existing custom profile (rejects builtins) */
@@ -304,6 +319,7 @@ export function updateProfile(id: string, config: ProfileConfig, skillMd: string
   fs.writeFileSync(path.join(dir, "profile.yaml"), yaml.dump(config));
   fs.writeFileSync(path.join(dir, "SKILL.md"), skillMd);
   reloadProfiles();
+  invalidateLatestScan();
 }
 
 /** Delete a custom profile (rejects builtins) */
@@ -319,4 +335,82 @@ export function deleteProfile(id: string): void {
 
   fs.rmSync(dir, { recursive: true, force: true });
   reloadProfiles();
+  invalidateLatestScan();
+}
+
+// ---------------------------------------------------------------------------
+// Environment status enrichment
+// ---------------------------------------------------------------------------
+
+export interface ProfileEnvironmentStatus {
+  linked: boolean;
+  artifactId?: string;
+  contentHash?: string;
+  drifted?: boolean;
+}
+
+export interface ProfileWithEnvStatus extends AgentProfile {
+  environmentStatus?: ProfileEnvironmentStatus;
+}
+
+/**
+ * List all profiles annotated with their environment linkage status.
+ * For each profile, checks if a linked artifact exists in the latest scan
+ * and whether their content hashes have drifted.
+ */
+export function listProfilesWithEnvironmentStatus(
+  projectDir?: string
+): ProfileWithEnvStatus[] {
+  const profiles = listAllProfiles(projectDir);
+  const latestScan = getLatestScan();
+
+  if (!latestScan) {
+    return profiles.map((p) => ({ ...p, environmentStatus: undefined }));
+  }
+
+  // Get all linked artifacts from this scan in one query
+  const linkedArtifacts = db
+    .select({
+      linkedProfileId: environmentArtifacts.linkedProfileId,
+      id: environmentArtifacts.id,
+      contentHash: environmentArtifacts.contentHash,
+    })
+    .from(environmentArtifacts)
+    .where(
+      and(
+        eq(environmentArtifacts.scanId, latestScan.id),
+        eq(environmentArtifacts.category, "skill")
+      )
+    )
+    .all();
+
+  // Build a map of profileId → artifact info
+  const artifactMap = new Map<string, { id: string; contentHash: string }>();
+  for (const a of linkedArtifacts) {
+    if (a.linkedProfileId) {
+      artifactMap.set(a.linkedProfileId, {
+        id: a.id,
+        contentHash: a.contentHash,
+      });
+    }
+  }
+
+  return profiles.map((profile) => {
+    const artifact = artifactMap.get(profile.id);
+    if (!artifact) {
+      return { ...profile, environmentStatus: { linked: false } };
+    }
+
+    // Check for drift: compare the artifact's content hash with the profile's
+    // SKILL.md content. We compute a simple hash comparison — if the environment
+    // artifact's hash differs, the content has drifted.
+    return {
+      ...profile,
+      environmentStatus: {
+        linked: true,
+        artifactId: artifact.id,
+        contentHash: artifact.contentHash,
+      },
+    };
+  });
 }

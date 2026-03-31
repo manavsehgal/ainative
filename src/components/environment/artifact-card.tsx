@@ -2,6 +2,8 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Bot, Link as LinkIcon } from "lucide-react";
 import type { EnvironmentArtifactRow } from "@/lib/db/schema";
 import { CATEGORY_META } from "./summary-cards-row";
 import { PersonaIndicator } from "./persona-indicator";
@@ -9,6 +11,7 @@ import { PersonaIndicator } from "./persona-indicator";
 interface ArtifactCardProps {
   artifact: EnvironmentArtifactRow;
   onClick: () => void;
+  onCreateProfile?: () => void;
 }
 
 function formatSize(bytes: number): string {
@@ -17,7 +20,7 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function ArtifactCard({ artifact, onClick }: ArtifactCardProps) {
+export function ArtifactCard({ artifact, onClick, onCreateProfile }: ArtifactCardProps) {
   const meta = CATEGORY_META[artifact.category];
   const Icon = meta?.icon;
 
@@ -57,10 +60,33 @@ export function ArtifactCard({ artifact, onClick }: ArtifactCardProps) {
           <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
             {artifact.scope}
           </Badge>
+          {/* Profile linkage indicator for skill artifacts */}
+          {artifact.category === "skill" && artifact.linkedProfileId && (
+            <Badge variant="default" className="text-[10px] px-1.5 py-0 gap-0.5">
+              <LinkIcon className="h-2.5 w-2.5" />
+              Profile
+            </Badge>
+          )}
           <span className="text-[10px] text-muted-foreground ml-auto">
             {formatSize(artifact.sizeBytes)}
           </span>
         </div>
+
+        {/* Create Profile button for unlinked skill artifacts */}
+        {artifact.category === "skill" && !artifact.linkedProfileId && onCreateProfile && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full text-xs gap-1.5"
+            onClick={(e) => {
+              e.stopPropagation();
+              onCreateProfile();
+            }}
+          >
+            <Bot className="h-3 w-3" />
+            Create Profile
+          </Button>
+        )}
       </CardContent>
     </Card>
   );

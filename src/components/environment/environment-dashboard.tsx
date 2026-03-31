@@ -17,7 +17,9 @@ import { CheckpointList } from "./checkpoint-list";
 import { TemplateList } from "./template-list";
 import { HealthScoreCard } from "./health-score-card";
 import { SuggestedProfiles } from "./suggested-profiles";
+import { ProfileCreateDialog } from "./profile-create-dialog";
 import type { HealthScore } from "@/lib/environment/health-scoring";
+import type { ProfileSuggestion } from "@/lib/environment/profile-rules";
 import { DiscoverWorkspaceDialog } from "@/components/workspace/discover-workspace-dialog";
 
 interface EnvironmentDashboardProps {
@@ -49,6 +51,32 @@ export function EnvironmentDashboard({
   const [scopeFilter, setScopeFilter] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [discoverOpen, setDiscoverOpen] = useState(false);
+  const [createProfileSuggestion, setCreateProfileSuggestion] = useState<ProfileSuggestion | null>(null);
+
+  /** Convert an unlinked skill artifact into a quick suggestion for profile creation. */
+  function artifactToSuggestion(artifact: EnvironmentArtifactRow): ProfileSuggestion {
+    const name = artifact.name
+      .replace(/-/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+    let description = `Discovered skill: ${artifact.name}`;
+    if (artifact.metadata) {
+      try {
+        const meta = JSON.parse(artifact.metadata);
+        if (meta.description) description = meta.description;
+      } catch { /* ignore */ }
+    }
+    return {
+      ruleId: `discovered-${artifact.name}`,
+      name,
+      description,
+      confidence: 0.5,
+      tier: "discovered",
+      matchedArtifacts: [{ id: artifact.id, name: artifact.name, category: artifact.category }],
+      suggestedTools: ["Read", "Grep", "Glob", "Bash"],
+      systemPrompt: description,
+      tags: artifact.name.split("-").filter((t) => t.length > 2),
+    };
+  }
 
   const handleScan = useCallback(async () => {
     setScanning(true);
@@ -170,6 +198,11 @@ export function EnvironmentDashboard({
                   key={artifact.id}
                   artifact={artifact}
                   onClick={() => setSelectedArtifact(artifact)}
+                  onCreateProfile={
+                    artifact.category === "skill" && !artifact.linkedProfileId
+                      ? () => setCreateProfileSuggestion(artifactToSuggestion(artifact))
+                      : undefined
+                  }
                 />
               ))}
             </div>
@@ -200,6 +233,15 @@ export function EnvironmentDashboard({
         open={discoverOpen}
         onOpenChange={setDiscoverOpen}
         onComplete={() => router.refresh()}
+      />
+
+      {/* Profile creation from artifact card's "Create Profile" button */}
+      <ProfileCreateDialog
+        suggestion={createProfileSuggestion}
+        open={!!createProfileSuggestion}
+        onOpenChange={(open) => {
+          if (!open) setCreateProfileSuggestion(null);
+        }}
       />
     </div>
   );

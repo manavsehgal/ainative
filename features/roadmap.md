@@ -160,6 +160,7 @@ Features that enhance the product but aren't essential for first use — homepag
 | [skill-portfolio](skill-portfolio.md) | P2 | completed | environment-cache |
 | [environment-health-scoring](environment-health-scoring.md) | P3 | completed | environment-cache |
 | [agent-profile-from-environment](agent-profile-from-environment.md) | P3 | completed | environment-cache, multi-agent-routing |
+| [profile-environment-sync](profile-environment-sync.md) | P1 | planned | agent-profile-from-environment, environment-cache, agent-profile-catalog, skill-portfolio |
 
 ### Chat Conversation
 
@@ -229,6 +230,7 @@ environment-scanner
             ├── skill-portfolio
             ├── environment-health-scoring
             └── agent-profile-from-environment
+                    └── profile-environment-sync (P1, planned)
 
 Workspace intelligence chain:
 

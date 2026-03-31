@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 import { projects } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
-function mapProfileToResponse(p: { id: string; name: string; description: string; domain: string; tags: string[]; skillMd: string; allowedTools?: string[]; mcpServers?: Record<string, unknown>; canUseToolPolicy?: unknown; maxTurns?: number; outputFormat?: string; version?: string; author?: string; source?: string; tests?: unknown; importMeta?: unknown; supportedRuntimes: string[]; runtimeOverrides?: unknown; scope?: string; readOnly?: boolean; projectDir?: string }) {
+function mapProfileToResponse(p: { id: string; name: string; description: string; domain: string; tags: string[]; skillMd: string; allowedTools?: string[]; mcpServers?: Record<string, unknown>; canUseToolPolicy?: unknown; maxTurns?: number; outputFormat?: string; version?: string; author?: string; source?: string; tests?: unknown; importMeta?: unknown; supportedRuntimes: string[]; runtimeOverrides?: unknown; scope?: string; origin?: string; readOnly?: boolean; projectDir?: string }) {
   return {
     id: p.id,
     name: p.name,
@@ -28,6 +28,7 @@ function mapProfileToResponse(p: { id: string; name: string; description: string
     runtimeOverrides: p.runtimeOverrides,
     isBuiltin: isBuiltin(p.id),
     scope: p.scope ?? (isBuiltin(p.id) ? "builtin" : "user"),
+    origin: p.origin ?? (isBuiltin(p.id) ? undefined : "manual"),
     readOnly: p.readOnly ?? false,
   };
 }
