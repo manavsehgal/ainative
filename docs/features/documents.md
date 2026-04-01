@@ -6,7 +6,7 @@ route: "/documents"
 tags: [documents, upload, preprocessing, pdf, office, text-extraction, agent-context]
 features: ["document-manager", "file-attachment-data-layer", "document-preprocessing", "agent-document-context", "document-output-generation"]
 screengrabCount: 2
-lastUpdated: "2026-03-21"
+lastUpdated: "2026-03-31"
 ---
 
 # Documents
@@ -31,11 +31,11 @@ The upload dialog accepts files via drag-and-drop or file picker. A visual indic
 
 ### Supported File Types
 Stagent processes a range of document formats:
-- **PDF** — Text extraction via pdf-parse.
-- **Text** — Plain text, Markdown, code files.
-- **Images** — Metadata extraction (dimensions, format) via image-size.
-- **Office Documents** — Word documents via mammoth, presentations and archives via jszip.
-- **Spreadsheets** — Excel and CSV files via xlsx parser.
+- **PDF** -- Text extraction via pdf-parse.
+- **Text** -- Plain text, Markdown, code files.
+- **Images** -- Metadata extraction (dimensions, format).
+- **Office Documents** -- Word documents, presentations, and archives.
+- **Spreadsheets** -- Excel and CSV files.
 
 ### Automatic Preprocessing
 After upload, Stagent automatically extracts text content from supported file types. The extracted text is stored alongside the original file, ready to be injected into agent context. Processing status is visible on each document card.
@@ -51,9 +51,9 @@ Agents can generate documents as output during task execution. Generated files a
 ### Upload Documents
 1. Navigate to `/documents` and click "Upload."
 2. Drag and drop files into the upload zone, or click to browse.
-3. Select one or more files — supported types are shown in the dialog.
+3. Select one or more files -- supported types are shown in the dialog.
 4. Click "Upload" to start the process.
-5. Preprocessing begins automatically — watch the status indicator on each document.
+5. Preprocessing begins automatically -- watch the status indicator on each document.
 
 ### Attach Documents to a Task
 1. When creating or editing a task, look for the document attachment field.

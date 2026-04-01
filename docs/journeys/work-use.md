@@ -4,14 +4,14 @@ category: "user-journey"
 persona: "work"
 difficulty: "intermediate"
 estimatedTime: "30 minutes"
-sections: ["projects", "chat", "documents", "workflows", "schedules", "cost-usage", "inbox-notifications"]
-tags: ["intermediate", "team", "documents", "workflows", "schedules", "costs", "inbox"]
-lastUpdated: "2026-03-22"
+sections: ["projects", "chat", "documents", "workflows", "schedules", "cost-usage", "inbox-notifications", "delivery-channels"]
+tags: ["intermediate", "team", "documents", "workflows", "schedules", "costs", "inbox", "channels", "handoffs"]
+lastUpdated: "2026-03-31"
 ---
 
 # Work Use Guide
 
-Meet Jordan, a team lead running a cross-functional product team on Stagent. Jordan uses AI agents to manage multiple workstreams — uploading reference documents, orchestrating multi-step business processes, scheduling recurring automations, tracking spend, and triaging permission requests. This guide walks through a full working session -- from organizing projects to clearing the inbox at end of day.
+Meet Jordan, a team lead running a cross-functional product team on Stagent. Jordan uses AI agents to manage multiple workstreams -- uploading reference documents, orchestrating multi-step business processes, scheduling recurring automations, tracking spend, triaging permission requests, and receiving notifications across Slack and Telegram. This guide walks through a full working session -- from organizing projects to clearing the inbox at end of day.
 
 ## Prerequisites
 
@@ -24,203 +24,171 @@ Meet Jordan, a team lead running a cross-functional product team on Stagent. Jor
 
 ### Step 1: Organize Team Projects
 
-Jordan starts the morning by reviewing the team's active projects. The projects list provides a quick snapshot of every workstream -- status indicators, task counts, and last activity -- so Jordan can decide where to focus first.
+Jordan starts the morning by reviewing the team's active projects.
 
 ![Projects list showing team workstreams with status and task counts](../screengrabs/projects-list.png)
 
 1. Click **Projects** in the sidebar under the **Work** group
 2. Scan the project cards for status badges, task counts, and recent activity timestamps
-3. Click **Create Project** to set up a new workstream -- enter a descriptive name like "Q2 2026 Product Planning," a detailed description covering scope and stakeholders, and a working directory pointing to the shared team repository
+3. Click **Create Project** to set up a new workstream -- enter a descriptive name, description covering scope, and a working directory
 4. Click **Create Project** to save
 
-> **Tip:** Include team conventions in the project description -- for example, "All output should follow our RFC template format." Agents reference this description when executing tasks, so richer context produces better results.
+> **Tip:** Include team conventions in the project description. Agents reference this description when executing tasks, so richer context produces better results.
 
 ### Step 2: Drill Into Project Details
 
-Jordan clicks into the planning project to check on task progress and verify that agents are producing quality output. The project detail page shows all tasks scoped to that workstream, along with project metadata.
+Jordan clicks into a project to check on task progress.
 
 ![Project detail page showing tasks, metadata, and progress](../screengrabs/projects-detail.png)
 
-1. Click on a project card from the projects list to open its detail page
+1. Click on a project card to open its detail page
 2. Review the **task list** -- each task shows its status, assigned agent profile, and last update
 3. Check completed tasks and verify their output quality
 4. Reassign or edit any tasks that need course correction
-5. Use the project description and working directory fields to confirm agents have the right context
-
-> **Tip:** Project-scoped views filter out noise from other workstreams. Use them when you need to focus on a single initiative without distractions from the rest of the workspace.
 
 ### Step 3: Query Workspace Status via Chat
 
-Rather than clicking through every page, Jordan opens Chat to ask a quick question about project status. Chat pulls context from projects, tasks, and documents to give informed, conversational answers with clickable links back to the relevant items.
+Rather than clicking through every page, Jordan asks Chat for a quick status update.
 
 ![Active chat conversation with messages and Quick Access navigation pills](../screengrabs/chat-conversation.png)
 
-1. Click **Chat** in the sidebar under the **Work** group
+1. Click **Chat** in the sidebar
 2. Type a question such as "What is the status of the Q2 planning project?"
-3. Review the AI response -- notice the **Quick Access pills** that link to specific projects, tasks, or documents mentioned in the answer
-4. Click a Quick Access pill to jump directly to the referenced item
-5. Use the **conversation sidebar** on the left to revisit previous chat sessions or start a new one
+3. Review the response -- notice **Quick Access pills** linking to specific items
+4. Click a pill to jump directly to the referenced entity
 
-> **Tip:** Chat is the fastest way to get a cross-cutting status overview. Instead of navigating five different pages, ask one question and follow the entity links in the response. Previous conversations are saved so you can pick up where you left off.
+> **Tip:** Chat is the fastest way to get a cross-cutting status overview. Ask one question and follow the entity links.
 
 ### Step 4: Upload and Manage Documents
 
-Jordan needs to upload reference documents -- a product requirements doc and competitive analysis -- that agents will consult during planning tasks. The documents section manages all files across the workspace.
+Jordan uploads reference documents that agents will consult during planning tasks.
 
 ![Documents table view with file type icons and metadata columns](../screengrabs/documents-list.png)
 
-1. Click **Documents** in the sidebar under the **Manage** group
-2. Review existing documents in the **table view** -- columns show file name, type, size, project association, and upload date
-3. Click the **Upload** button in the page header
-4. Select one or more files from the file picker (supports PDF, text, images, Word documents, and spreadsheets)
-5. Assign the documents to the appropriate project
-6. Click **Upload** to process and store the files
+1. Click **Documents** in the sidebar
+2. Click **Upload** and select files (supports PDF, text, images, Word, and spreadsheets)
+3. Assign the documents to the appropriate project
+4. Click **Upload** to process and store the files
 
-> **Tip:** Stagent automatically extracts text from uploaded documents. PDFs, Word files, and even images are processed so agents can search and reference their contents during task execution -- no manual copy-paste needed.
+> **Tip:** Stagent automatically extracts text from uploaded documents so agents can reference their contents during task execution.
 
 ### Step 5: Switch Document Views
 
-Jordan switches to the grid view for a visual overview of all uploaded files. The grid layout surfaces thumbnail previews and makes it easy to spot file types at a glance.
+Jordan switches to grid view for a visual overview.
 
 ![Documents grid view with card layout showing file previews](../screengrabs/documents-grid.png)
 
-1. Click the **grid toggle** in the documents page header to switch from table to grid view
-2. Browse document cards -- each card shows the file name, type icon, size, and project association
-3. Click any card to open its detail sheet with full metadata and a preview of extracted text
-4. Toggle back to **table view** when you need to sort or filter by specific columns
-
-> **Tip:** Grid view works well for visual scanning when you have a mix of file types. Table view is better for precise filtering and sorting across large document libraries.
+1. Click the **grid toggle** in the documents page header
+2. Browse document cards with file name, type icon, and project association
+3. Toggle back to **table view** when you need to sort or filter
 
 ### Step 6: Browse Workflow Blueprints
 
-Jordan wants to set up a structured review process for the planning project. The blueprint gallery offers pre-built workflow templates for common team processes -- no need to build from scratch.
+Jordan wants to set up a structured review process. The blueprint gallery now includes business-function templates alongside technical ones.
 
 ![Workflow blueprint gallery showing template cards for team processes](../screengrabs/workflows-blueprints.png)
 
-1. Click **Workflows** in the sidebar under the **Manage** group
-2. Navigate to the **Blueprints** tab to open the template gallery
-3. Browse the available blueprint cards -- each describes the workflow's purpose, step count, and recommended agent profiles
-4. Click a blueprint that matches your needs (e.g., "Research & Report" or "Code Review Pipeline")
-5. Customize the template by adjusting step descriptions, agent assignments, and project scope
-6. Click **Create Workflow** to instantiate it
+1. Click **Workflows** in the sidebar and navigate to the **Blueprints** tab
+2. Browse templates including business blueprints: lead research pipeline, content marketing pipeline, customer support triage, financial reporting, and business daily briefing
+3. Click a blueprint to preview its configuration
+4. Customize the template and click **Create Workflow**
 
-> **Tip:** Blueprints are starting points, not rigid templates. After creating a workflow from a blueprint, you can add, remove, or reorder steps to match your team's specific process.
+> **Tip:** Business-function blueprints pair naturally with the corresponding business profiles (Marketing Strategist, Sales Researcher, Financial Analyst, etc.).
 
 ### Step 7: Review Active Workflows
-
-After launching several workflows, Jordan checks back to see which ones have completed, which are still running, and whether any steps need attention.
 
 ![Workflows list with tabs showing status and step progress](../screengrabs/workflows-list.png)
 
 1. Return to the **Workflows** page and select the **All** or **Runs** tab
-2. Scan the workflow list -- each entry shows its name, status, step progress, and last activity
-3. Click on a running workflow to see step-by-step execution details
-4. Check for any steps marked as "waiting" that may need input or approval
-5. Review completed workflows to verify their output quality
+2. Scan the workflow list for status, step progress, and last activity
+3. Click on a running workflow for step-by-step details
+4. Check for steps in a "waiting" state that may need approval
 
-> **Tip:** Workflows with steps in a "waiting" state often need human input or a permission approval. Cross-reference with the Inbox to see if an agent is blocked on a tool permission request.
+### Step 8: Schedule with Natural Language
 
-### Step 8: Schedule Recurring Automations
-
-Jordan wants a weekly status summary generated every Monday morning without manual intervention. Schedules let you configure recurring agent tasks that run on autopilot.
+Jordan schedules a weekly status summary using plain English instead of cron syntax.
 
 ![Schedules list showing active schedules with frequency and next firing time](../screengrabs/schedules-list.png)
 
-1. Click **Schedules** in the sidebar under the **Manage** group
-2. Click **Create Schedule** to open the creation form
-3. Enter a **Name** such as "Weekly Status Report"
-4. Set the **Interval** using natural language -- "every Monday at 9am," "every weekday at 5pm," or "every 2 hours"
-5. Configure the **Task Template** with a title, description, target project, and agent profile
-6. Enable the schedule toggle and click **Create**
+1. Click **Schedules** and then **Create Schedule**
+2. Enter a **Name** such as "Weekly Status Report"
+3. Set the interval using natural language: "every Monday at 9am"
+4. A preview shows exactly how the system interpreted the cadence
+5. Configure the task template with a description, project, and agent profile
+6. Attach a **Slack delivery channel** so the report is posted to the team channel automatically
+7. Click **Create**
 
-> **Tip:** The interval parser understands plain English. You do not need to write cron expressions -- just describe the cadence in natural language and Stagent translates it.
+> **Tip:** The interval parser understands plain English. You do not need to write cron expressions.
 
 ### Step 9: Monitor Spending and Budgets
 
-With multiple agents running tasks and scheduled jobs throughout the week, Jordan checks the cost dashboard to ensure the team stays within budget. Visible spend is governed spend.
-
 ![Cost and Usage dashboard showing spend metrics and budget gauges](../screengrabs/cost-usage-list.png)
 
-1. Click **Costs & Usage** in the sidebar under the **Configure** group
-2. Review the **total spend** for the current billing period at the top of the page
-3. Check the **budget gauge** to see how close the team is to the configured spend cap
-4. Examine the **per-project breakdown** to identify which workstreams consume the most tokens
-5. Review the **per-model breakdown** to understand cost distribution across different AI models
-
-> **Tip:** If costs are climbing faster than expected, check for tasks with very large document contexts or autonomous loops with high iteration counts. Both are common sources of unexpected token consumption.
+1. Click **Cost & Usage** in the sidebar
+2. Review **total spend** for the current billing period
+3. Check the **budget gauge** for spend cap proximity
+4. Examine per-project and per-model breakdowns
 
 ### Step 10: Analyze Cost Breakdown
 
-Jordan scrolls down to the detailed usage table for a granular view of individual cost entries -- which tasks consumed how many tokens, when, and at what price.
-
 ![Cost and Usage page scrolled to show detailed usage breakdown table](../screengrabs/cost-usage-below-fold.png)
 
-1. Scroll below the summary cards to reach the **usage breakdown table**
-2. Review individual entries showing task name, model used, token counts (input and output), and computed cost
-3. Sort by cost or date to find the most expensive operations
-4. Use this data to identify optimization opportunities -- tasks that could use a smaller model or tighter context windows
+1. Scroll below the summary cards to the **usage breakdown table**
+2. Review individual entries with task name, model, token counts, and cost
+3. Sort by cost to find the most expensive operations
 
-> **Tip:** The breakdown table is your audit trail. When a stakeholder asks "why did we spend $X this week," you can trace every dollar back to a specific task and model invocation.
+> **Tip:** The breakdown table is your audit trail. Trace every dollar back to a specific task.
 
-### Step 11: Review Agent Notifications
+### Step 11: Review Agent Notifications and Handoffs
 
-Jordan's agents have been running tasks in the background, and some have hit permission boundaries or completed important milestones. The Inbox is Stagent's human-in-the-loop control center.
+Jordan's agents have been running in the background. Some have generated handoff requests where one agent wants to delegate work to another.
 
 ![Inbox notification queue with tabs and action buttons](../screengrabs/inbox-list.png)
 
-1. Click **Inbox** in the sidebar under the **Work** group
-2. Review the notification list -- each entry summarizes what an agent needs or has accomplished
-3. Notifications are sorted by urgency, with permission requests at the top
-4. Check the **badge count** on the Inbox sidebar item to see how many unread notifications are waiting
+1. Click **Inbox** in the sidebar
+2. Review notifications -- permission requests, agent messages, budget alerts, and **handoff approvals**
+3. For handoff requests, review which agent is delegating to which and the context being passed
+4. Approve or deny the handoff
 
-> **Tip:** A badge on the Inbox sidebar item shows the count of unread notifications. When agents are actively running, check this regularly to avoid leaving them blocked on a permission request.
+> **Tip:** Agent handoffs are governed -- chain depth limits prevent infinite loops, and self-handoffs are blocked automatically.
 
 ### Step 12: Inspect Notification Details
 
-Jordan expands a notification to see the full details of a permission request -- what the agent wants to do, which tool it needs access to, and the specific arguments it plans to use.
-
 ![Inbox with expanded notification showing full content and approval options](../screengrabs/inbox-expanded.png)
 
-1. Click on a notification row to expand it and reveal the full content
-2. For permission requests, review the **action details** -- the tool name, arguments, and why the agent needs it
-3. Choose **Approve** to let the agent proceed, or **Deny** to block the action
-4. For routine tools you trust, use the **Always Allow** option to grant standing permission and reduce future notification noise
-5. For status notifications, read the completion summary and click through to the related task if needed
+1. Click a notification to expand it
+2. For permission requests, review the tool name, arguments, and reason
+3. Choose **Approve**, **Deny**, or **Always Allow**
+4. For handoffs, approve to let the receiving agent begin work
 
-> **Tip:** When you grant "Always Allow" for a tool, the agent will never pause for that action again. Start conservative -- approve one at a time -- and gradually open up permissions as you build confidence in agent behavior. You can always tighten permissions later from the Settings page.
+### Step 13: Configure Multi-Channel Notifications
 
-### Step 13: Manage Schedules
+Jordan sets up Slack so the entire team receives schedule results and important alerts.
 
-Later in the week, Jordan revisits the schedules list to verify that the Monday report ran successfully and to adjust the next firing time for an upcoming holiday.
+![Settings delivery channels with configured channels](../screengrabs/settings-channels.png)
+
+1. Open **Settings** and scroll to **Delivery Channels**
+2. Click **+ Add Channel** and select **Slack**
+3. Enter the webhook URL, bot token, and channel ID (see the [Delivery Channels](../features/delivery-channels.md) guide for setup steps)
+4. Click **Create Channel** then **Test** to verify
+5. Toggle **Chat** on for bidirectional mode -- team members can ask Stagent questions directly from Slack
+
+> **Tip:** With Chat enabled on Slack, anyone in the channel can message Stagent and get workspace-aware responses. This turns Slack into a team-wide AI assistant interface.
+
+### Step 14: Manage Schedules
 
 ![Schedules list with status indicators and next run timestamps](../screengrabs/schedules-list.png)
 
-1. Return to **Schedules** in the sidebar
-2. Locate the "Weekly Status Report" schedule entry
-3. Check the **Last Run** and **Next Run** timestamps to confirm execution
-4. Click the schedule to review its firing history and the tasks it generated
-5. Edit the interval or pause the schedule if adjustments are needed
-
-> **Tip:** Schedules create real tasks each time they fire. You can find the generated tasks in the project's task list or on the Dashboard, making it easy to review and audit automated output.
-
-### Step 14: Review Workflow Results
-
-At the end of the work cycle, Jordan checks completed workflows to review the deliverables agents produced and confirm they meet team standards.
-
-![Workflows list showing completed workflow runs](../screengrabs/workflows-list.png)
-
-1. Navigate to **Workflows** and filter for **completed** runs
-2. Click on a completed workflow to open its detail view
-3. Walk through each step's output -- review generated documents, analysis results, or code changes
-4. Flag any steps that need revision and kick off a follow-up task if needed
-5. Archive workflows that are fully reviewed and accepted
-
-> **Tip:** Treat completed workflows as deliverables. Review them with the same rigor you would apply to a team member's work product -- agents benefit from the same feedback loop that helps humans improve.
+1. Return to **Schedules**
+2. Locate the "Weekly Status Report" schedule
+3. Check **Last Run** and **Next Run** timestamps
+4. Click to review firing history and generated tasks
+5. Edit or pause as needed
 
 ### Step 15: What's Next
 
-Jordan's working session covered the full breadth of Stagent's team-oriented features -- from project organization through cost governance and inbox management. To go deeper:
+Jordan's working session covered team projects, documents, business-function workflows, natural language scheduling, multi-channel notifications, agent handoff approvals, and cost governance. To go deeper:
 
-- [Power User Guide](./power-user.md) -- Build multi-step autonomous workflows, configure agent loops, and orchestrate multi-agent swarms
+- [Power User Guide](./power-user.md) -- Build autonomous workflows, configure Ollama local models, and use episodic memory
 - [Developer Guide](./developer.md) -- Configure authentication, runtime settings, environment scanning, and CLI tooling
-- [Personal Use Guide](./personal-use.md) -- Review the basics of project creation, task management, and single-agent execution
+- [Personal Use Guide](./personal-use.md) -- Review the basics of project creation and task management

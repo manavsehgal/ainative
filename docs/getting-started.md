@@ -1,7 +1,7 @@
 ---
 title: "Getting Started"
 category: "getting-started"
-lastUpdated: "2026-03-21"
+lastUpdated: "2026-03-31"
 ---
 
 # Getting Started
@@ -36,9 +36,10 @@ npm run dev
 ### Requirements
 
 - **Node.js 20+** required for the runtime
-- **One or both AI provider credentials**:
-  - Anthropic API key or OAuth token (for Claude Code runtime)
-  - OpenAI API key (for Codex App Server runtime)
+- **One or more AI provider credentials**:
+  - Anthropic API key or OAuth token (for Claude runtimes)
+  - OpenAI API key (for Codex and OpenAI Direct runtimes)
+  - Ollama installed locally (for free local model execution -- no API key needed)
 
 ## First Run
 
@@ -47,6 +48,7 @@ When you open Stagent for the first time at [localhost:3000](http://localhost:30
 1. **Home Workspace** appears with empty stat cards, an activity feed placeholder, and sidebar navigation
 2. **Configure a runtime** by navigating to **Settings** to enter your provider credentials
 3. **Test connectivity** using the **Test Connection** button in Settings to verify your runtime is reachable
+4. **(Optional) Connect Ollama** for local models -- install Ollama, pull a model, then test the connection in Settings
 
 The Home Workspace serves as your daily briefing with active work counts, pending reviews, and a live activity stream that populates as you create and execute tasks.
 
@@ -70,6 +72,16 @@ To enable the OpenAI Codex runtime alongside Claude:
 3. Click **Test Connection** to verify the Codex App Server is reachable
 4. Once connected, you can select Codex as the runtime when creating or executing tasks
 
+### Ollama Setup (Local Models)
+
+Run AI tasks locally with zero API cost:
+
+1. Install Ollama from [ollama.com](https://ollama.com)
+2. Pull a model: `ollama pull llama3`
+3. Navigate to **Settings** and scroll to the **Ollama** section
+4. Click **Test Connection** to verify Ollama is reachable
+5. Your local models will appear as runtime options throughout the workspace
+
 ### Budget Configuration
 
 Control AI spending from **Settings**:
@@ -78,6 +90,7 @@ Control AI spending from **Settings**:
 - View token usage breakdowns by provider
 - Enable budget guardrails that pause execution when thresholds are reached
 - Monitor cumulative spend on the **Cost & Usage** page (`/costs`)
+- Ollama executions are tracked at $0, reducing cloud API spend
 
 ### Tool Permissions
 
@@ -86,6 +99,17 @@ Agents request permission before using tools. Streamline approvals from **Settin
 - **Always Allow** -- Save patterns for tools you trust (e.g., `Read`, `Bash(command:git *)`)
 - **Presets** -- Enable read-only, git-safe, or full-auto permission bundles
 - **Per-request** -- Review and approve individual tool calls from the **Inbox**
+
+### Delivery Channels
+
+Receive schedule results and chat with Stagent from Slack, Telegram, or webhooks:
+
+1. Navigate to **Settings** and scroll to **Delivery Channels**
+2. Click **+ Add Channel** and configure your messaging service
+3. Click **Test** to verify connectivity
+4. Toggle **Chat** on for bidirectional mode (Slack and Telegram only)
+
+See the [Delivery Channels](./features/delivery-channels.md) guide for detailed per-service setup instructions.
 
 ### Seed Sample Data
 
@@ -134,8 +158,8 @@ stagent
 
 ## What's Next
 
-- [Personal Use Guide](./journeys/personal-use.md) -- Solo productivity walkthrough
-- [Work Use Guide](./journeys/work-use.md) -- Team operations and document management
-- [Power User Guide](./journeys/power-user.md) -- Advanced workflows and automation
-- [Developer Guide](./journeys/developer.md) -- Platform configuration and extending Stagent
+- [Personal Use Guide](./journeys/personal-use.md) -- Solo productivity walkthrough with heartbeat scheduling and Telegram
+- [Work Use Guide](./journeys/work-use.md) -- Team operations with multi-channel delivery and agent handoffs
+- [Power User Guide](./journeys/power-user.md) -- Ollama local models, episodic memory, and NLP scheduling
+- [Developer Guide](./journeys/developer.md) -- Platform configuration, channel architecture, and CLI tooling
 - [Feature Reference](./index.md) -- Browse all features by section

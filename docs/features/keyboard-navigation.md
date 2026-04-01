@@ -4,9 +4,9 @@ category: "feature-reference"
 section: "keyboard-navigation"
 route: "cross-cutting"
 tags: [keyboard, command-palette, accessibility, aria, a11y, navigation]
-features: ["command-palette-enhancement", "accessibility"]
+features: ["command-palette-enhancement", "accessibility", "keyboard-shortcut-system"]
 screengrabCount: 2
-lastUpdated: "2026-03-21"
+lastUpdated: "2026-03-31"
 ---
 
 # Keyboard Navigation
@@ -27,10 +27,10 @@ Stagent is designed for keyboard-first operation. The command palette provides i
 
 Activated with **Meta+K** (Cmd+K on macOS, Ctrl+K on other platforms), the command palette provides:
 
-- **Recent items** — quick access to recently viewed projects, tasks, and workflows.
-- **Cross-entity search** — type to search across projects, tasks, workflows, documents, and schedules in a single unified list.
-- **Keyboard navigation** — arrow keys to browse results, Enter to select, Escape to dismiss.
-- **Action shortcuts** — create new tasks, projects, or workflows directly from the palette.
+- **Recent items** -- quick access to recently viewed projects, tasks, and workflows.
+- **Cross-entity search** -- type to search across projects, tasks, workflows, documents, and schedules in a single unified list.
+- **Keyboard navigation** -- arrow keys to browse results, Enter to select, Escape to dismiss.
+- **Action shortcuts** -- create new tasks, projects, or workflows directly from the palette.
 
 ### Focus-Visible Rings
 
@@ -42,16 +42,16 @@ A hidden skip link appears on Tab press, allowing keyboard users to bypass the s
 
 ### ARIA Labels
 
-All interactive elements carry descriptive ARIA labels. Status badges include `aria-label` text that reads the status aloud (e.g., "Status: completed"). Icon-only buttons have accessible names.
+All interactive elements carry descriptive ARIA labels. Status badges include `aria-label` text that reads the status aloud. Icon-only buttons have accessible names.
 
 ### Kanban Keyboard Drag-and-Drop
 
 Kanban board cards support full keyboard-driven reordering:
 
-1. **Space** — pick up the focused card.
-2. **Arrow keys** — move the card between columns or positions.
-3. **Space** — drop the card in its new position.
-4. **Escape** — cancel the drag and return the card to its original position.
+1. **Space** -- pick up the focused card.
+2. **Arrow keys** -- move the card between columns or positions.
+3. **Space** -- drop the card in its new position.
+4. **Escape** -- cancel the drag and return the card to its original position.
 
 A live region announces the card's current position during the drag operation for screen reader users.
 

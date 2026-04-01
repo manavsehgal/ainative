@@ -1,7 +1,7 @@
 export interface NotificationSeed {
   id: string;
   taskId: string;
-  type: "task_completed" | "task_failed" | "permission_required" | "agent_message";
+  type: "task_completed" | "task_failed" | "permission_required" | "agent_message" | "budget_alert" | "context_proposal" | "context_proposal_batch";
   title: string;
   body: string;
   read: boolean;
@@ -136,6 +136,59 @@ export function createNotifications(taskIds: string[]): NotificationSeed[] {
       response: null,
       respondedAt: null,
       createdAt: new Date(now - 30 * 60_000),
+    },
+    // Budget alert — unread, needs attention
+    {
+      id: crypto.randomUUID(),
+      taskId: taskIds[2], // Compare dividend yield — running
+      type: "budget_alert",
+      title: "Daily budget 80% consumed",
+      body: "Agent tasks have used $4.02 of your $5.00 daily budget. 2 running tasks may exceed the limit. Consider pausing non-critical tasks or increasing the daily cap in Settings → Budget Guardrails.",
+      read: false,
+      toolName: null,
+      toolInput: null,
+      response: null,
+      respondedAt: null,
+      createdAt: new Date(now - 2 * HOUR),
+    },
+    // Context proposal — unread, needs attention (agent learned something)
+    {
+      id: crypto.randomUUID(),
+      taskId: taskIds[0], // Analyze portfolio — completed
+      type: "context_proposal",
+      title: "Learned: Portfolio rebalancing threshold",
+      body: "From the portfolio analysis task, I learned that your preferred sector concentration limit is 35%. I'd like to remember this for future investment analysis tasks so I can flag overweight positions automatically.",
+      read: false,
+      toolName: null,
+      toolInput: JSON.stringify({
+        pattern: "sector_concentration_limit",
+        value: "35%",
+        confidence: 0.92,
+      }),
+      response: null,
+      respondedAt: null,
+      createdAt: new Date(now - 5 * HOUR),
+    },
+    // Context proposal batch — read, already responded
+    {
+      id: crypto.randomUUID(),
+      taskId: taskIds[5], // Audit competitors — completed
+      type: "context_proposal_batch",
+      title: "3 patterns learned from competitor audit",
+      body: "After completing the competitor landing page audit, I identified 3 reusable patterns:\n\n1. **Social proof placement** — above the fold, not below\n2. **CTA limit** — max 3 CTAs per page for focus\n3. **Hero personalization** — dynamic content based on referral source\n\nShall I remember these for future marketing tasks?",
+      read: true,
+      toolName: null,
+      toolInput: JSON.stringify({
+        patterns: [
+          { key: "social_proof_placement", value: "above_fold" },
+          { key: "cta_limit", value: 3 },
+          { key: "hero_personalization", value: "referral_based" },
+        ],
+        confidence: 0.88,
+      }),
+      response: "approved",
+      respondedAt: new Date(now - 8 * HOUR),
+      createdAt: new Date(now - 10 * HOUR),
     },
   ];
 }

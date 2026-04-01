@@ -1,55 +1,53 @@
 ---
-title: "Playbook"
+title: "User Guide"
 category: "feature-reference"
 section: "playbook"
-route: "/playbook"
-tags: [playbook, documentation, guides, reference, articles]
-features: ["playbook-documentation"]
+route: "/user-guide"
+tags: [user-guide, documentation, guides, reference, articles, adoption-tracking]
+features: ["playbook-documentation", "documentation-adoption-tracking"]
 screengrabCount: 1
-lastUpdated: "2026-03-21"
+lastUpdated: "2026-03-31"
 ---
 
-# Playbook
+# User Guide
 
-Built-in documentation system that surfaces product guides and feature reference articles directly within the Stagent workspace. Playbook articles are generated from feature specs and screengrabs, giving users browsable, searchable documentation without leaving the app. Articles are organized by section for easy discovery.
+Built-in documentation and adoption tracking system that surfaces product guides, feature reference articles, and guided learning journeys directly within the Stagent workspace. The User Guide includes a feature adoption tracker that shows your usage progress across all feature areas, four persona-based learning journeys, and a browsable feature exploration grid.
 
 ## Screenshots
 
-![Playbook article list with sections](../screengrabs/playbook-list.png)
-*The playbook page displaying a list of documentation articles organized by section with search capability.*
+![User Guide page with adoption tracker and journey cards](../screengrabs/user-guide-list.png)
+*The User Guide showing feature adoption tracker, guided journeys for 4 personas (Personal, Work, Power User, Developer), and feature exploration grid.*
 
 ## Key Features
 
-### In-App Documentation
-The playbook embeds product documentation directly into the Stagent interface. Users can read feature guides, reference articles, and how-to instructions without switching to an external docs site or wiki.
+### Feature Adoption Tracker
+A visual tracker at the top of the page shows your adoption depth across all major feature areas. As you use different parts of Stagent, the tracker updates to reflect which features you have explored and which remain undiscovered.
 
-### Feature Reference Articles
-Each article covers a specific feature area with an overview, screenshots, key features, step-by-step instructions, and links to related articles. Articles are generated from structured feature specs and include annotated screengrabs for visual context.
+### Guided Learning Journeys
+Four persona-based journeys walk you through Stagent at your own pace:
+- **Personal Use** -- for solo founders getting started with their first AI-powered tasks
+- **Work Use** -- for team leads managing projects, documents, and workflows
+- **Power User** -- for automation specialists configuring profiles, schedules, and monitoring
+- **Developer** -- for platform engineers setting up authentication, runtimes, and CLI tooling
 
-### Section Organization
-Articles are grouped into logical sections that mirror the application's navigation structure. Sections such as workspace, tasks, workflows, documents, agents, automation, and configuration make it easy to find documentation relevant to the feature you are using.
+### Feature Exploration Grid
+A browsable grid of all feature areas with descriptions and direct links to the relevant pages. Use this as a discovery tool when you want to explore features you have not tried yet.
 
-### Search Capability
-A search function lets you find articles by keyword across all playbook content. Search matches against article titles, tags, and body text to surface relevant documentation quickly.
+### Usage-Stage Awareness
+The guide adapts to your current usage stage. Features you have already used are marked differently from those you have not explored, helping you focus on areas with the most potential value for your workflow.
 
 ## How To
 
 ### Browse Documentation
-1. Navigate to `/playbook` from the sidebar.
-2. Scroll through the article list to see all available documentation.
-3. Articles are organized by section for logical grouping.
-4. Click any article title to open the full article view.
+1. Navigate to `/user-guide` from the sidebar under the **Learn** group.
+2. Review the adoption tracker at the top for a summary of your feature usage.
+3. Choose a guided journey that matches your role and experience level.
+4. Browse the feature grid to discover areas you have not explored yet.
 
-### Search for a Topic
-1. Open the playbook at `/playbook`.
-2. Use the search field to enter keywords related to your question.
-3. Results filter in real time as you type.
-4. Click a matching article to read the full documentation.
-
-### Find Related Features
-1. Open any playbook article.
-2. Scroll to the **Related** section at the bottom.
-3. Click related article links to navigate to documentation for connected features.
+### Follow a Learning Journey
+1. Open the User Guide and select a journey (Personal, Work, Power User, or Developer).
+2. Follow the step-by-step guide, which links directly to the relevant pages in Stagent.
+3. Your progress through the journey is tracked automatically.
 
 ## Related
 - [Home & Workspace](./home-workspace.md)

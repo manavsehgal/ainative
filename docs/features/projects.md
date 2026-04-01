@@ -6,7 +6,7 @@ route: "/projects"
 tags: [projects, workspaces, tasks, working-directory, organization]
 features: ["project-management", "detail-view-redesign"]
 screengrabCount: 2
-lastUpdated: "2026-03-21"
+lastUpdated: "2026-03-31"
 ---
 
 # Projects
@@ -27,7 +27,7 @@ Projects are workspaces that group related tasks, workflows, and documents under
 Each project acts as a container for related work. Tasks, workflows, and documents associated with a project share context, making it easy to organize complex initiatives with multiple agent activities.
 
 ### Project Cards
-The project list displays cards with the project name, current status, and a brief description. Cards are interactive — click to navigate to the project detail page.
+The project list displays cards with the project name, current status, and a brief description. Cards are interactive -- click to navigate to the project detail page.
 
 ### Project Detail Page
 The detail page shows everything associated with a project: its tasks (with status), linked workflows, and attached documents. This is your single-pane view of all activity within a project.

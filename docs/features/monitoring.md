@@ -6,7 +6,7 @@ route: "/monitor"
 tags: [monitoring, agent-logs, activity, real-time, execution]
 features: ["monitoring-dashboard"]
 screengrabCount: 1
-lastUpdated: "2026-03-21"
+lastUpdated: "2026-03-31"
 ---
 
 # Monitoring

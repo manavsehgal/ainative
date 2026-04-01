@@ -1,6 +1,6 @@
 {
-  "generated": "2026-03-27T17:45:00Z",
-  "version": 1,
+  "generated": "2026-03-31T21:00:00Z",
+  "version": 2,
   "sections": [
     {
       "slug": "home-workspace",
@@ -9,7 +9,7 @@
       "path": "features/home-workspace.md",
       "route": "/",
       "tags": ["home", "workspace", "briefing", "stat-cards", "activity-feed"],
-      "features": ["homepage-dashboard", "micro-visualizations"],
+      "features": ["homepage-dashboard", "app-shell", "product-messaging-refresh"],
       "screengrabCount": 2
     },
     {
@@ -18,9 +18,9 @@
       "category": "feature-reference",
       "path": "features/dashboard-kanban.md",
       "route": "/dashboard",
-      "tags": ["kanban", "tasks", "ai-assist", "board", "drag-and-drop"],
-      "features": ["task-board", "task-definition-ai", "kanban-board-operations", "board-context-persistence", "ai-assist-workflow-creation", "detail-view-redesign"],
-      "screengrabCount": 4
+      "tags": ["kanban", "tasks", "ai-assist", "board", "drag-and-drop", "bulk-operations", "heartbeat"],
+      "features": ["task-board", "task-definition-ai", "kanban-board-operations", "board-context-persistence", "ai-assist-workflow-creation", "detail-view-redesign", "heartbeat-scheduler"],
+      "screengrabCount": 5
     },
     {
       "slug": "inbox-notifications",
@@ -28,8 +28,8 @@
       "category": "feature-reference",
       "path": "features/inbox-notifications.md",
       "route": "/inbox",
-      "tags": ["inbox", "approvals", "notifications", "human-in-the-loop", "progressive-disclosure"],
-      "features": ["inbox-notifications", "ambient-approval-toast", "rich-content-rendering"],
+      "tags": ["inbox", "approvals", "notifications", "human-in-the-loop", "handoffs"],
+      "features": ["inbox-notifications", "ambient-approval-toast", "agent-async-handoffs"],
       "screengrabCount": 2
     },
     {
@@ -38,9 +38,9 @@
       "category": "feature-reference",
       "path": "features/chat.md",
       "route": "/chat",
-      "tags": ["chat", "conversations", "ai", "tool-catalog", "mentions", "model-selection"],
-      "features": ["chat-data-layer", "chat-engine", "chat-api-routes", "chat-ui-shell", "chat-message-rendering", "chat-input-composer"],
-      "screengrabCount": 5
+      "tags": ["chat", "conversations", "ai", "tool-catalog", "mentions", "model-selection", "channels"],
+      "features": ["chat-data-layer", "chat-engine", "chat-api-routes", "chat-ui-shell", "chat-message-rendering", "chat-input-composer", "bidirectional-channel-chat"],
+      "screengrabCount": 4
     },
     {
       "slug": "projects",
@@ -50,7 +50,7 @@
       "route": "/projects",
       "tags": ["projects", "workspaces", "task-grouping", "file-context"],
       "features": ["project-management", "working-directory-context"],
-      "screengrabCount": 3
+      "screengrabCount": 2
     },
     {
       "slug": "workflows",
@@ -58,9 +58,9 @@
       "category": "feature-reference",
       "path": "features/workflows.md",
       "route": "/workflows",
-      "tags": ["workflows", "orchestration", "blueprints", "parallel", "swarm", "step-builder"],
-      "features": ["workflow-engine", "workflow-blueprints", "parallel-research-fork-join", "multi-agent-swarm", "autonomous-loop-execution", "workflow-ux-overhaul"],
-      "screengrabCount": 5
+      "tags": ["workflows", "orchestration", "blueprints", "parallel", "swarm", "step-builder", "business-blueprints"],
+      "features": ["workflow-engine", "workflow-blueprints", "parallel-research-fork-join", "multi-agent-swarm", "autonomous-loop-execution", "workflow-ux-overhaul", "business-function-profiles"],
+      "screengrabCount": 3
     },
     {
       "slug": "documents",
@@ -70,7 +70,7 @@
       "route": "/documents",
       "tags": ["documents", "upload", "preprocessing", "agent-context", "extraction"],
       "features": ["document-manager", "file-attachment-data-layer", "document-preprocessing", "agent-document-context", "document-output-generation"],
-      "screengrabCount": 3
+      "screengrabCount": 2
     },
     {
       "slug": "monitoring",
@@ -80,7 +80,7 @@
       "route": "/monitor",
       "tags": ["monitoring", "logs", "streaming", "execution-tracking"],
       "features": ["monitoring-dashboard", "live-log-streaming"],
-      "screengrabCount": 2
+      "screengrabCount": 1
     },
     {
       "slug": "profiles",
@@ -88,9 +88,9 @@
       "category": "feature-reference",
       "path": "features/profiles.md",
       "route": "/profiles",
-      "tags": ["profiles", "agents", "routing", "catalog", "auto-routing"],
-      "features": ["multi-agent-routing", "agent-profile-catalog", "agent-self-improvement", "learned-context-ux-completion", "cross-provider-profile-compatibility", "profile-surface-stability"],
-      "screengrabCount": 3
+      "tags": ["profiles", "agents", "routing", "catalog", "auto-routing", "business-profiles"],
+      "features": ["multi-agent-routing", "agent-profile-catalog", "agent-self-improvement", "cross-provider-profile-compatibility", "business-function-profiles"],
+      "screengrabCount": 2
     },
     {
       "slug": "schedules",
@@ -98,9 +98,9 @@
       "category": "feature-reference",
       "path": "features/schedules.md",
       "route": "/schedules",
-      "tags": ["schedules", "cron", "recurring", "autonomous-loops", "automation"],
-      "features": ["scheduled-prompt-loops", "autonomous-loop-execution"],
-      "screengrabCount": 3
+      "tags": ["schedules", "cron", "recurring", "heartbeat", "nlp", "proactive"],
+      "features": ["scheduled-prompt-loops", "heartbeat-scheduler", "natural-language-scheduling"],
+      "screengrabCount": 2
     },
     {
       "slug": "cost-usage",
@@ -118,9 +118,9 @@
       "category": "feature-reference",
       "path": "features/settings.md",
       "route": "/settings",
-      "tags": ["settings", "authentication", "permissions", "presets", "budgets", "browser-tools"],
-      "features": ["session-management", "tool-permission-persistence", "tool-permission-presets", "browser-use", "spend-budget-guardrails"],
-      "screengrabCount": 5
+      "tags": ["settings", "authentication", "permissions", "presets", "budgets", "browser-tools", "ollama", "channels"],
+      "features": ["session-management", "tool-permission-persistence", "tool-permission-presets", "browser-use", "spend-budget-guardrails", "ollama-runtime-provider", "multi-channel-delivery", "bidirectional-channel-chat"],
+      "screengrabCount": 9
     },
     {
       "slug": "delivery-channels",
@@ -128,18 +128,18 @@
       "category": "feature-reference",
       "path": "features/delivery-channels.md",
       "route": "/settings",
-      "tags": ["delivery-channels", "slack", "telegram", "webhook", "notifications", "integrations"],
-      "features": ["delivery-channels"],
-      "screengrabCount": 0
+      "tags": ["delivery-channels", "slack", "telegram", "webhook", "notifications", "integrations", "bidirectional", "chat"],
+      "features": ["multi-channel-delivery", "bidirectional-channel-chat"],
+      "screengrabCount": 4
     },
     {
       "slug": "playbook",
-      "title": "Playbook",
+      "title": "User Guide",
       "category": "feature-reference",
       "path": "features/playbook.md",
-      "route": "/playbook",
-      "tags": ["playbook", "documentation", "in-app-help"],
-      "features": ["in-app-documentation"],
+      "route": "/user-guide",
+      "tags": ["user-guide", "documentation", "adoption-tracking"],
+      "features": ["playbook-documentation", "documentation-adoption-tracking"],
       "screengrabCount": 1
     },
     {
@@ -148,9 +148,9 @@
       "category": "cross-cutting",
       "path": "features/provider-runtimes.md",
       "route": "cross-cutting",
-      "tags": ["runtimes", "claude", "openai", "codex", "providers", "architecture"],
-      "features": ["provider-runtime-abstraction", "openai-codex-app-server", "agent-integration"],
-      "screengrabCount": 1
+      "tags": ["runtimes", "claude", "openai", "codex", "ollama", "providers", "architecture", "smart-router"],
+      "features": ["provider-runtime-abstraction", "openai-codex-app-server", "agent-integration", "ollama-runtime-provider", "anthropic-direct-runtime", "openai-direct-runtime", "smart-runtime-router"],
+      "screengrabCount": 2
     },
     {
       "slug": "agent-intelligence",
@@ -158,9 +158,9 @@
       "category": "cross-cutting",
       "path": "features/agent-intelligence.md",
       "route": "cross-cutting",
-      "tags": ["ai", "routing", "loops", "swarm", "self-improvement", "ai-assist"],
-      "features": ["multi-agent-routing", "autonomous-loop-execution", "multi-agent-swarm", "agent-self-improvement", "workflow-context-batching", "ai-assist-workflow-creation"],
-      "screengrabCount": 2
+      "tags": ["ai", "routing", "loops", "swarm", "self-improvement", "ai-assist", "episodic-memory", "handoffs"],
+      "features": ["multi-agent-routing", "autonomous-loop-execution", "multi-agent-swarm", "agent-self-improvement", "workflow-context-batching", "ai-assist-workflow-creation", "agent-episodic-memory", "agent-async-handoffs"],
+      "screengrabCount": 0
     },
     {
       "slug": "tool-permissions",
@@ -180,7 +180,7 @@
       "route": "cross-cutting",
       "tags": ["design-system", "calm-ops", "tokens", "components", "visual-language"],
       "features": ["calm-ops-design-system", "oklch-tokens", "elevation-system"],
-      "screengrabCount": 2
+      "screengrabCount": 0
     },
     {
       "slug": "keyboard-navigation",
@@ -190,7 +190,7 @@
       "route": "cross-cutting",
       "tags": ["keyboard", "navigation", "command-palette", "accessibility", "shortcuts"],
       "features": ["command-palette", "keyboard-shortcuts", "focus-management"],
-      "screengrabCount": 1
+      "screengrabCount": 2
     },
     {
       "slug": "shared-components",
@@ -200,7 +200,7 @@
       "route": "cross-cutting",
       "tags": ["components", "reusable", "page-shell", "detail-pane", "status-chip", "data-table"],
       "features": ["page-shell", "detail-pane", "status-chip", "data-table", "empty-state", "error-state"],
-      "screengrabCount": 2
+      "screengrabCount": 0
     }
   ],
   "overview": [
@@ -232,7 +232,7 @@
       "persona": "personal",
       "difficulty": "beginner",
       "path": "journeys/personal-use.md",
-      "sections": ["home-workspace", "chat", "dashboard-kanban", "projects", "playbook"],
+      "sections": ["home-workspace", "chat", "dashboard-kanban", "projects", "schedules", "delivery-channels", "user-guide"],
       "stepCount": 14
     },
     {
@@ -241,7 +241,7 @@
       "persona": "work",
       "difficulty": "intermediate",
       "path": "journeys/work-use.md",
-      "sections": ["projects", "chat", "documents", "workflows", "schedules", "cost-usage", "inbox-notifications"],
+      "sections": ["projects", "chat", "documents", "workflows", "schedules", "cost-usage", "inbox-notifications", "delivery-channels"],
       "stepCount": 15
     },
     {
@@ -250,7 +250,7 @@
       "persona": "power-user",
       "difficulty": "advanced",
       "path": "journeys/power-user.md",
-      "sections": ["dashboard-kanban", "profiles", "chat", "workflows", "schedules", "monitoring"],
+      "sections": ["dashboard-kanban", "profiles", "chat", "workflows", "schedules", "monitoring", "settings"],
       "stepCount": 15
     },
     {
@@ -259,14 +259,14 @@
       "persona": "developer",
       "difficulty": "advanced",
       "path": "journeys/developer.md",
-      "sections": ["settings", "environment", "chat", "monitoring", "profiles", "workflows", "schedules"],
+      "sections": ["settings", "environment", "chat", "monitoring", "profiles", "workflows", "schedules", "delivery-channels"],
       "stepCount": 14
     }
   ],
   "metadata": {
     "totalDocs": 29,
     "totalScreengrabs": 44,
-    "featuresCovered": 58,
+    "featuresCovered": 68,
     "appSections": 15
   }
 }

@@ -3,15 +3,15 @@ title: "Developer Guide"
 category: "user-journey"
 persona: "developer"
 difficulty: "advanced"
-estimatedTime: "28 minutes"
-sections: ["settings", "environment", "chat", "monitoring", "profiles", "workflows", "schedules"]
-tags: ["advanced", "developer", "settings", "environment", "cli", "api", "monitoring", "profiles"]
-lastUpdated: "2026-03-22"
+estimatedTime: "30 minutes"
+sections: ["settings", "environment", "chat", "monitoring", "profiles", "workflows", "schedules", "delivery-channels"]
+tags: ["advanced", "developer", "settings", "environment", "cli", "api", "monitoring", "profiles", "ollama", "channels", "handoffs", "memory"]
+lastUpdated: "2026-03-31"
 ---
 
 # Developer Guide
 
-Meet Riley, a platform engineer responsible for setting up, securing, and extending Stagent for a development team. Riley needs to configure authentication, enforce budget guardrails, define permission presets, manage data lifecycle, explore the environment control plane, understand the chat streaming architecture, monitor agent execution, inspect workflows and schedules, and script batch operations via the CLI. This journey covers the infrastructure and configuration layer that keeps the AI business operating system secure, observable, and performant.
+Meet Riley, a platform engineer responsible for setting up, securing, and extending Stagent for a development team. Riley needs to configure authentication, connect Ollama for local models, set up delivery channels for Slack and Telegram, enforce budget guardrails, define permission presets, explore the environment control plane, understand the chat streaming and channel gateway architecture, monitor agent execution including async handoffs and episodic memory, and script batch operations via the CLI. This journey covers the infrastructure and configuration layer that keeps the AI business operating system secure, observable, and performant.
 
 ## Prerequisites
 
@@ -25,276 +25,193 @@ Meet Riley, a platform engineer responsible for setting up, securing, and extend
 
 ### Step 1: Configure Authentication
 
-Riley starts at the Settings page -- the central hub for all system-level configuration. The first priority is getting authentication right, because every agent execution depends on a valid provider connection.
+Riley starts at the Settings page. The first priority is getting authentication right.
 
 ![Settings page showing auth, runtime, and configuration sections](../screengrabs/settings-list.png)
 
 1. Click **Settings** in the sidebar under the **Configure** group
-2. Locate the **Authentication** section at the top of the page
-3. Choose between two authentication methods:
-   - **OAuth** (default, recommended for Claude Max subscribers): Uses your Max subscription tokens with no separate API billing
-   - **API Key**: Uses the `ANTHROPIC_API_KEY` from `.env.local`, billed per token
-4. If using OAuth, click **Connect** to initiate the browser-based OAuth flow
-5. If using API Key, verify the key is set in `.env.local` and click **Test Connection**
-6. Confirm the connection status indicator shows **Connected**
+2. Choose between **OAuth** (default, recommended for Claude Max subscribers) and **API Key** (billed per token)
+3. Click **Test Connection** to verify provider connectivity
+4. For the Codex runtime, configure the App Server endpoint
+5. Confirm all connection status indicators show **Connected**
 
-> **Tip:** OAuth is the default for a reason -- it avoids per-token charges on your Anthropic account. If both OAuth and an API key are present, the SDK subprocess environment must be carefully managed to prevent the key from leaking into OAuth sessions. Stagent handles this automatically by stripping `ANTHROPIC_API_KEY` from the child process env when OAuth mode is active.
+> **Tip:** OAuth is the default for a reason -- it avoids per-token charges on your Anthropic account.
 
-### Step 2: Set Up Budget Guardrails
+### Step 2: Connect Ollama for Local Runtime
 
-With authentication in place, Riley configures spending limits. Budget controls are critical when multiple team members run agents concurrently -- a single runaway loop can burn through a monthly allocation in minutes.
+Riley sets up Ollama as the fifth runtime adapter for private, zero-cost execution.
+
+![Ollama section with local models listed](../screengrabs/settings-ollama-connected.png)
+
+1. Install Ollama from [ollama.com](https://ollama.com) and pull models: `ollama pull llama3 && ollama pull qwen3`
+2. Scroll to the **Ollama** section in Settings
+3. Verify the URL (default: `http://localhost:11434`)
+4. Click **Test Connection** -- the status shows connected with all available models listed
+5. Models now appear as runtime options across tasks, schedules, workflows, and chat
+
+> **Tip:** Ollama follows the same `AgentRuntimeAdapter` interface as all other runtimes. It uses NDJSON streaming for token delivery and is fully integrated with the smart router, usage ledger ($0 cost tracking), and profile system. The smart router can auto-select Ollama for tasks that match privacy or cost preferences.
+
+### Step 3: Configure Delivery Channels
+
+Riley sets up Slack and Telegram as delivery channels for schedule notifications and bidirectional chat.
+
+![Delivery channels with Slack configuration form](../screengrabs/settings-channels-add-form.png)
+
+1. Scroll to **Delivery Channels** in Settings
+2. Click **+ Add Channel** and select **Slack**
+3. Enter the webhook URL, bot token (xoxb-), signing secret, and channel ID
+4. Click **Create Channel** then **Test** to verify delivery
+5. Toggle **Chat** on for bidirectional mode
+
+![Telegram channel configuration](../screengrabs/settings-channels-telegram-form.png)
+
+6. Add a second channel for **Telegram** with bot token and chat ID
+7. Test and enable Chat mode
+
+![Webhook channel configuration](../screengrabs/settings-channels-webhook-form.png)
+
+8. Add a **Webhook** channel for custom integrations (outbound only)
+
+> **Tip:** The channel gateway architecture is straightforward: for local development, Stagent includes a built-in poller that checks Slack (`conversations.history` API) and Telegram (`getUpdates` API) every 5 seconds. No public URL or webhook registration needed. The poller only polls channels with both Chat and Active toggles on. Channel conversations flow through the same chat engine as web conversations, including tool access and permission handling.
+
+### Step 4: Set Up Budget Guardrails
 
 ![Budget guardrails section with spend cap configuration](../screengrabs/settings-budget.png)
 
-1. Scroll to the **Budget** section in Settings (or click the section anchor)
-2. Set a **Monthly Spend Cap** appropriate for the team (e.g., $50 for development, $500 for production)
-3. Configure **Alert Thresholds** at 50%, 75%, and 90% of the budget
-4. Choose the alert delivery method (inbox notification, browser notification, or both)
-5. Enable **Hard Stop** to halt all agent execution when the cap is exceeded (recommended for non-production environments)
-6. Review the current spend-to-date displayed alongside the cap
+1. Scroll to the **Budget** section in Settings
+2. Set a **Monthly Spend Cap** appropriate for the team
+3. Configure alert thresholds at 50%, 75%, and 90%
+4. Enable **Hard Stop** to halt agent execution when the cap is exceeded
+5. Review current spend-to-date
 
-> **Tip:** Budget guardrails are enforced at the usage-metering-ledger level -- every token consumed by every provider (Anthropic and OpenAI) is metered into the ledger before the response streams back. The Cost & Usage dashboard (covered in the [Work Use Guide](./work-use.md)) visualizes spend against these limits in real time.
+> **Tip:** Ollama executions are tracked at $0, so routing routine tasks to local models directly reduces spend against the budget cap.
 
-### Step 3: Configure Permission Presets
-
-Riley defines the governance layer that controls what tools agents can invoke and under what conditions. Permission presets establish the baseline trust posture for the entire workspace.
+### Step 5: Configure Permission Presets
 
 ![Permission presets with risk badges and toggle controls](../screengrabs/settings-presets.png)
 
-1. Scroll to the **Permissions** section in Settings
-2. Review the three built-in presets, each tagged with a risk badge:
-   - **Restrictive** (Low Risk): Agents ask before every tool use -- safest, highest friction
-   - **Balanced** (Medium Risk): Read operations are pre-approved, writes require human approval
-   - **Autonomous** (High Risk): Most operations pre-approved, only destructive actions require approval
-3. Select a preset as the workspace default by clicking its radio button
-4. Optionally toggle individual tool permissions to customize beyond the preset (e.g., always allow file reads, always ask for shell commands)
-5. Observe how per-tool overrides are highlighted when they diverge from the active preset
+1. Scroll to the **Permissions** section
+2. Review the three presets with risk badges (Read Only, Git Safe, Full Auto)
+3. Select a preset as the workspace default
+4. Optionally toggle individual tool permissions for fine-grained control
 
-> **Tip:** Permission presets interact with the "Always Allow" button in the Inbox. When a user approves a tool with "Always Allow," that approval is persisted in the settings table and survives across sessions. The preset sets the floor; individual approvals can only escalate, never reduce, the trust level.
-
-### Step 4: Manage Data and Storage
-
-Riley reviews data management to understand storage footprint, configure retention policies, and know how to reset the workspace cleanly when needed.
+### Step 6: Manage Data and Storage
 
 ![Data management section in Settings](../screengrabs/settings-data.png)
 
-1. Scroll to the **Data Management** section in Settings
-2. Review the **database location** (default: `~/.stagent/stagent.db`) and its current size
-3. Check **storage usage** broken down by category: database, uploaded documents (`~/.stagent/uploads/`), and agent logs
-4. Configure **log retention** policies (e.g., 30-day retention, auto-archive completed tasks after 90 days)
-5. Use the **Clear Data** action cautiously -- it deletes all tasks, projects, workflows, documents, and logs while preserving settings
-6. Note the FK-safe deletion order: child records (agent_logs, notifications) are removed before parent records (tasks, projects)
+1. Scroll to **Data Management**
+2. Review database location (`~/.stagent/stagent.db`) and storage usage
+3. Use **Clear Data** cautiously -- it removes all workspace content while preserving settings
+4. Use **Populate Sample Data** for demos or testing
 
-> **Tip:** The SQLite database runs in WAL (Write-Ahead Logging) mode for concurrent read performance. Agent logs and execution traces are typically the largest consumers of disk space. If the database grows beyond a few hundred megabytes, consider archiving old logs rather than clearing everything.
+### Step 7: Explore the Environment Dashboard
 
-### Step 5: Explore the Environment Dashboard
-
-Riley switches to the Environment page to understand the control plane -- what development tools are installed, how they are configured, and what project configurations Stagent has detected across the filesystem.
+Riley switches to the Environment page to understand the control plane.
 
 ![Environment dashboard showing Claude Code and Codex CLI configurations](../screengrabs/environment-list.png)
 
-1. Click **Environment** in the sidebar under the **Configure** group
-2. Review the **detected tools** section -- Stagent's environment scanner identifies installed CLIs (Claude Code, Codex CLI), their versions, and config file locations
-3. Inspect the **project configurations** panel showing discovered projects with their working directories, detected languages, and framework versions
-4. Check the **health scores** for each detected environment (green = fully configured, yellow = partial, red = missing required config)
-5. Note the **sync status** indicators that show whether local project configs match the canonical templates
-6. Use the **Refresh** action to re-run the environment scanner if you have just installed a new tool
+1. Click **Environment** in the sidebar
+2. Review detected tools (Claude Code, Codex CLI, Ollama), their versions, and config file locations
+3. Inspect project configurations with working directories and detected frameworks
+4. Check health scores for each detected environment
+5. Use **Refresh** to re-run the environment scanner
 
-> **Tip:** The environment scanner reads config files like `~/.codex/config.toml`, `.claude/settings.local.json`, and project-level `AGENTS.md` files. It caches results to avoid repeated filesystem scans. The cache is invalidated automatically when Stagent detects file modification timestamps have changed, or you can force a refresh from this dashboard.
+> **Tip:** The environment scanner reads config files and caches results. The cache invalidates automatically when file timestamps change.
 
-### Step 6: Understand the Chat Architecture
+### Step 8: Understand the Chat and Channel Architecture
 
-Riley examines the Chat interface not as a user but as a developer, tracing the request lifecycle from input to streamed response. Understanding this architecture is essential for extending or debugging the conversational layer.
+Riley traces the request lifecycle from input to streamed response across both web and channel interfaces.
 
-![Active chat conversation with streamed response and Quick Access pills](../screengrabs/chat-conversation.png)
+![Active chat conversation with streamed response](../screengrabs/chat-conversation.png)
 
-1. Open the **Chat** page and start or continue a conversation
-2. Trace the request flow through these API endpoints:
-   - `POST /api/chat` -- Accepts a message, returns an SSE-streamed response
-   - `GET /api/chat/conversations` -- Lists conversations with pagination
-   - `POST /api/chat/conversations` -- Creates a new conversation
-   - `GET /api/chat/conversations/[id]` -- Retrieves a conversation with full message history
-   - `DELETE /api/chat/conversations/[id]` -- Deletes a conversation and its messages
-   - `GET /api/chat/suggested-prompts` -- Returns categorized prompt suggestions
-   - `GET /api/models` -- Dynamic model catalog with cost tier metadata
-3. Observe the SSE stream in your browser's Network tab -- each chunk arrives as a `stream_event` wrapper containing a delta payload
-4. Notice the **Quick Access pills** rendered below AI responses -- these are parsed from entity references (tasks, projects, documents) detected in the response text
-5. Review the model selector to see how the dynamic model catalog populates available models with cost tier badges
+1. Open **Chat** and start a conversation
+2. Trace the API flow: `POST /api/chat` (SSE stream), `GET/POST/DELETE /api/chat/conversations`, `GET /api/models`
+3. Observe the SSE stream in the browser Network tab
+4. Note that channel conversations (Slack/Telegram) flow through the same chat engine:
+   - Inbound: poller reads messages from Slack/Telegram -> creates/continues conversation -> sends response via channel API
+   - Turn locking prevents concurrent processing of the same conversation
+   - Permission requests are surfaced in the channel itself ("approve" / "deny" replies)
 
-> **Tip:** The chat engine uses the same provider-runtime-abstraction as task execution, meaning it respects the same authentication method, budget caps, and usage metering. Conversation data is stored in SQLite alongside the rest of the Stagent schema, so chat history is queryable via Drizzle ORM. The `stream_event` wrapper format was a hard-won lesson -- see the codebase commit history for the blank-response fix that added proper wrapper handling.
-
-### Step 7: Monitor Agent Execution
-
-With the platform configured, Riley turns to the Monitor to verify that agents are executing correctly and that permission checks, budget enforcement, and tool invocations are all behaving as expected.
+### Step 9: Monitor Agent Execution and Handoffs
 
 ![Agent monitoring dashboard with execution logs](../screengrabs/monitor-list.png)
 
-1. Click **Monitor** in the sidebar under the **Manage** group
-2. Scan the execution log for recent entries -- each row shows the agent profile, task, status, duration, and token count
-3. Filter by **status** to surface any error-level entries that might indicate configuration problems
-4. Click an execution entry to expand its full trace:
-   - **Tool calls**: What tools the agent invoked, with full argument payloads
-   - **Outputs**: What each tool returned (truncated for large payloads)
-   - **Timing**: Per-step duration to identify bottlenecks
-   - **Token usage**: Input and output token counts per step, rolled up into the usage ledger
-5. Verify that permission checks appear in the trace -- approved actions proceed, denied actions show a "waiting for approval" state, and hard-denied actions show a rejection reason
+1. Click **Monitor** in the sidebar
+2. Scan the execution log for recent entries
+3. Filter by status to surface errors
+4. Expand entries to see tool calls, outputs, timing, and token usage
+5. Look for **handoff traces** -- when agents use `send_handoff` to delegate work, the monitor shows the handoff chain with governance checks (chain depth limits, self-handoff prevention)
+6. Verify permission checks appear in traces: approved actions proceed, denied actions show rejection reasons
 
-> **Tip:** The Monitor is your primary diagnostic tool. When an agent behaves unexpectedly, check the tool call arguments first -- incorrect arguments are the most common root cause. For long-running autonomous loops, the Monitor shows iteration counts and stop-condition evaluations so you can see exactly why a loop terminated.
+> **Tip:** The async handoff system uses an `agent_messages` table as a message bus. Governance gates are enforced at the API level -- chain depth limits and self-handoff prevention cannot be bypassed by the agent.
 
-### Step 8: Inspect Workflow Runs
+### Step 10: Inspect Episodic Memory
 
-Riley drills into a workflow run to understand multi-step execution. Workflows chain tasks together with dependency ordering, and the detail page shows step-by-step progress including intermediate outputs.
+Riley reviews the episodic memory system that gives agents persistent knowledge.
+
+![Profile detail showing capabilities](../screengrabs/profiles-detail.png)
+
+1. Open a **Profile** detail page
+2. The memory browser shows knowledge entries the agent has accumulated across task executions
+3. Each memory has a confidence score and a timestamp -- confidence decays over time
+4. Entries are relevance-filtered during retrieval: only memories relevant to the current task context are injected
+5. Review the memory API endpoints:
+   - `GET /api/memory` -- list memories with optional profile and relevance filters
+   - `POST /api/memory` -- create a memory entry manually
+   - `DELETE /api/memory/[id]` -- remove a specific memory
+6. Memories are stored in the `agent_memory` table, distinct from the behavioral `learned_context` table
+
+> **Tip:** Episodic memory captures *facts* (company research, discovered configurations, market data). Learned context captures *behaviors* (preferred code patterns, formatting conventions). Both systems work together but serve different purposes.
+
+### Step 11: Inspect Workflow Runs
 
 ![Workflow detail page showing steps and execution status](../screengrabs/workflows-detail.png)
 
-1. Click **Workflows** in the sidebar under the **Work** group
-2. Select a completed or in-progress workflow run from the list
-3. Review the **step timeline** showing each task in execution order with status badges (completed, running, queued, failed)
-4. Click individual steps to see their execution details -- the same trace data available in the Monitor, but scoped to this workflow
-5. Check the **context propagation** between steps -- outputs from earlier steps are injected as context into later steps via the workflow-context-batching system
-6. Review the **total duration** and **aggregate token usage** for the entire workflow run
-7. If a step failed, inspect the error and note whether the workflow halted (fail-fast) or continued (skip-on-error)
+1. Select a workflow run to review step-by-step execution
+2. Check context propagation between steps
+3. Review total duration and aggregate token usage
+4. Note handoff steps where one agent delegated to another mid-workflow
 
-> **Tip:** Workflows support parallel execution via fork-join patterns. When you see multiple steps at the same depth level in the timeline, those ran concurrently. The workflow engine respects the same permission presets as individual task execution, so a restrictive preset can create bottlenecks in multi-step workflows if each step requires approval.
-
-### Step 9: Review Agent Profiles
-
-Riley reviews the agent profile catalog to understand which behavioral configurations are available and how they map to different task types and provider capabilities.
-
-![Agent profiles grid with work and personal tabs](../screengrabs/profiles-list.png)
-
-1. Click **Profiles** in the sidebar under the **Manage** group
-2. Review the profile grid, organized into **Work** and **Personal** tabs
-3. Note the profile cards showing: name, description, provider compatibility icons (Anthropic, OpenAI), and capability badges
-4. Observe that each profile declares its tool access scope -- some profiles (like Code Reviewer) have deliberately narrow access
-5. Check provider compatibility: profiles that support both Anthropic and OpenAI runtimes show dual provider icons, while some are provider-specific
-6. Note the profile count and verify all expected profiles are loaded (General, Code Reviewer, Researcher, Document Writer, plus any custom profiles)
-
-> **Tip:** Agent profiles and permission presets form a two-layer governance model. The profile defines *what tools are available* to the agent, and the permission preset defines *the approval level* for each tool. A restrictive preset with a broad profile still requires approval -- the narrower of the two always wins.
-
-### Step 10: Examine Profile Configuration
-
-Riley opens a specific profile to understand its detailed configuration -- the system prompt, tool declarations, capability flags, and provider-specific settings that shape agent behavior.
-
-![Profile detail page showing capabilities, tools, and configuration](../screengrabs/profiles-detail.png)
-
-1. Click any profile card to open its detail page
-2. Review the **system prompt** that shapes the agent's persona and behavioral constraints
-3. Examine the **tool declarations** -- the explicit list of tools this profile can invoke
-4. Check the **capability flags**: can this profile access the filesystem, run shell commands, browse the web, or generate documents?
-5. Review **provider-specific settings** -- some profiles have different temperature, max tokens, or model preferences per provider
-6. Note the **task assignment count** showing how many tasks currently use this profile
-7. Verify that the profile's tool list aligns with your permission preset expectations
-
-> **Tip:** Profiles are defined in `src/lib/agents/profiles/` as TypeScript modules. To create a custom profile, add a new file following the pattern of existing profiles (types.ts defines the interface, registry.ts registers profiles). Custom profiles appear automatically in the UI after a server restart. The cross-provider-profile-compatibility feature ensures profiles work consistently across Anthropic and OpenAI runtimes.
-
-### Step 11: Inspect Schedule Configuration
-
-Riley examines a schedule to understand how automated prompt loops are configured, when they fire, and what their execution history looks like.
+### Step 12: Review Schedule Configuration
 
 ![Schedule detail sheet showing configuration and firing history](../screengrabs/schedules-detail.png)
 
-1. Click **Schedules** in the sidebar under the **Manage** group
-2. Select a schedule to open its detail sheet
-3. Review the **schedule configuration**: prompt text, interval (e.g., "every 4 hours," "daily at 9am"), associated project, and agent profile
-4. Check the **firing history** showing past executions with timestamps, durations, and outcomes (success, failed, skipped)
-5. Note the **next firing time** calculated from the interval parser
-6. Review the **pause/resume** toggle -- paused schedules retain their configuration but skip firings until resumed
-7. Verify that the schedule's agent profile and project assignment match your team's expectations
+1. Select a schedule to open its detail sheet
+2. Review configuration: prompt, interval, heartbeat checklist, delivery channels
+3. Check firing history including suppressed heartbeat runs
+4. Verify the NLP-parsed interval matches the intended cadence
 
-> **Tip:** The scheduler engine runs via the Next.js `instrumentation.ts` register hook, so it starts automatically with the dev server. The interval parser supports natural language patterns like "every 30 minutes," "daily at 9am," and "weekdays at 5pm." Schedules are stored in the `schedules` table and their execution history feeds into the same Monitor and usage ledger as manual task runs.
+> **Tip:** The scheduler engine runs via the Next.js `instrumentation.ts` register hook. The interval parser supports both natural language and standard cron expressions.
 
-### Step 12: Build and Test the CLI
+### Step 13: Build and Test the CLI
 
-Riley builds the CLI for scripted operations, CI/CD integration, and terminal-first workflows. The CLI shares the same SQLite database as the web UI, so changes are instantly visible in both interfaces.
+Riley builds the CLI for scripted operations and CI/CD integration.
 
 ![Settings page for CLI configuration reference](../screengrabs/settings-list.png)
 
-1. Build the CLI from the project root:
-   ```bash
-   npm run build:cli
-   ```
-2. Verify the build succeeded:
-   ```bash
-   node dist/cli.js --help
-   ```
-3. Test basic CRUD operations:
-   ```bash
-   # List all projects
-   node dist/cli.js projects list
-
-   # Create a task
-   node dist/cli.js tasks create --title "CLI test task" --project <project-id>
-
-   # Execute a task with a specific agent profile
-   node dist/cli.js tasks execute <task-id> --profile general
-
-   # Check execution status
-   node dist/cli.js tasks get <task-id>
-   ```
-4. Verify that CLI-created entities appear in the web UI immediately (shared SQLite database, WAL mode)
-
-> **Tip:** The CLI entry point is `bin/cli.ts`, compiled to `dist/cli.js`. It uses the same Drizzle ORM and data access layer as the web app, so there is zero drift between interfaces. The CLI is ideal for CI/CD pipelines -- create tasks, trigger workflows, or query execution results from shell scripts.
-
-### Step 13: Script Batch Operations
-
-Riley creates a shell script to bootstrap a new project with predefined tasks and a workflow -- a common pattern for onboarding new team members or standardizing project initialization.
-
-![Agent monitoring dashboard showing batch execution results](../screengrabs/monitor-list.png)
-
-1. Create a bootstrap script that chains CLI commands:
-   ```bash
-   #!/bin/bash
-   set -euo pipefail
-
-   # Create the project
-   PROJECT_ID=$(node dist/cli.js projects create \
-     --name "New Initiative" \
-     --description "Bootstrapped project" \
-     --working-directory ~/Developer/new-initiative)
-
-   # Create standard tasks with appropriate profiles
-   node dist/cli.js tasks create \
-     --title "Set up repository structure" \
-     --project $PROJECT_ID \
-     --profile general
-
-   node dist/cli.js tasks create \
-     --title "Write initial documentation" \
-     --project $PROJECT_ID \
-     --profile document-writer
-
-   node dist/cli.js tasks create \
-     --title "Review security configuration" \
-     --project $PROJECT_ID \
-     --profile code-reviewer
-
-   echo "Project $PROJECT_ID bootstrapped with 3 tasks"
-   ```
-2. Run the script and verify the project and tasks appear in the web UI
-3. Check the Monitor for execution traces from any tasks you triggered
-4. Version-control the script so any team member can replicate the setup
-
-> **Tip:** CLI scripts are infrastructure-as-code for your AI agent workspace. Store bootstrap scripts alongside your project code. Combine them with the schedule system for recurring maintenance tasks -- for example, a nightly script that creates a "review open PRs" task assigned to the Code Reviewer profile.
+1. Build the CLI: `npm run build:cli`
+2. Verify: `node dist/cli.js --help`
+3. Test CRUD operations: `node dist/cli.js projects list`, `node dist/cli.js tasks create --title "CLI test"`
+4. Verify CLI-created entities appear in the web UI (shared SQLite database)
 
 ### Step 14: Verify Platform Health
 
-Riley performs a final platform health check before handing the workspace over to the team. This checklist covers every layer touched in this journey.
+Riley performs a final platform health check.
 
 ![Environment dashboard for final health verification](../screengrabs/environment-list.png)
 
-1. **Authentication**: Verify connection status in Settings shows a green **Connected** indicator
-2. **Budget**: Confirm the monthly cap is set and alert thresholds are configured at 50%, 75%, and 90%
-3. **Permissions**: Execute a test task and verify the correct approval prompts appear in the Inbox based on your chosen preset
-4. **Data**: Confirm the database is accessible at `~/.stagent/stagent.db` and WAL mode is enabled
-5. **Environment**: Check the Environment dashboard for green health scores on all detected tools
-6. **Chat**: Send a test message and verify the SSE stream completes with a coherent response
-7. **Monitor**: Scan for any error-level entries from the last hour
-8. **Profiles**: Confirm all expected profiles are loaded and show correct provider compatibility
-9. **Schedules**: Verify any active schedules show correct next-firing times
+1. **Authentication**: Verify connection status for all configured providers (Claude, Codex, Ollama)
+2. **Budget**: Confirm monthly cap and alert thresholds are set
+3. **Permissions**: Execute a test task and verify approval prompts match the active preset
+4. **Delivery Channels**: Verify Slack and Telegram channels show green "ok" test status with Chat enabled
+5. **Environment**: Check green health scores on all detected tools
+6. **Chat**: Send a test message and verify SSE stream completes; send a message from Slack/Telegram to verify bidirectional flow
+7. **Monitor**: Scan for error-level entries from the last hour
+8. **Profiles**: Confirm all profiles loaded with correct provider compatibility (including Ollama)
+9. **Schedules**: Verify active schedules show correct next-firing times and delivery channels
 10. **CLI**: Run `node dist/cli.js --help` to confirm the build is current
 
-> **Tip:** Run this checklist after any significant configuration change, Stagent version update, or Node.js upgrade. A healthy platform has: authenticated provider connection, budget limits enforced, default permission preset active, environment scanner green, CLI built and current, and a clean Monitor with no recent errors.
+> **Tip:** Run this checklist after any significant configuration change, Stagent version update, or Node.js upgrade.
 
 ## What's Next
 
