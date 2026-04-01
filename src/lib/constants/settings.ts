@@ -17,6 +17,8 @@ export const SETTINGS_KEYS = {
   BROWSER_MCP_PLAYWRIGHT_CONFIG: "browser.playwrightConfig",
   EXA_SEARCH_MCP_ENABLED: "web.exaSearchEnabled",
   ROUTING_PREFERENCE: "routing.preference",
+  OLLAMA_BASE_URL: "ollama.baseUrl",
+  OLLAMA_DEFAULT_MODEL: "ollama.defaultModel",
 } as const;
 
 export type RoutingPreference = "cost" | "latency" | "quality" | "manual";

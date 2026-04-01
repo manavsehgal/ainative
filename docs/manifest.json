@@ -193,6 +193,28 @@
       "screengrabCount": 2
     }
   ],
+  "overview": [
+    {
+      "slug": "why-stagent",
+      "title": "Why Stagent",
+      "category": "overview",
+      "path": "why-stagent.md"
+    }
+  ],
+  "useCases": [
+    {
+      "slug": "solo-founder",
+      "title": "Solo Founder",
+      "category": "use-case",
+      "path": "use-cases/solo-founder.md"
+    },
+    {
+      "slug": "agency-operator",
+      "title": "Agency Operator",
+      "category": "use-case",
+      "path": "use-cases/agency-operator.md"
+    }
+  ],
   "journeys": [
     {
       "slug": "personal-use",
@@ -232,7 +254,7 @@
     }
   ],
   "metadata": {
-    "totalDocs": 25,
+    "totalDocs": 28,
     "totalScreengrabs": 44,
     "featuresCovered": 58,
     "appSections": 15

@@ -35,6 +35,7 @@ import {
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { LearnedContextPanel } from "@/components/profiles/learned-context-panel";
+import { MemoryBrowser } from "@/components/memory/memory-browser";
 import {
   type AgentRuntimeId,
   DEFAULT_AGENT_RUNTIME,
@@ -551,6 +552,16 @@ export function ProfileDetailView({ profileId, isBuiltin, initialProfile }: Prof
 
       {/* Learned Context */}
       <LearnedContextPanel profileId={profileId} />
+
+      {/* Episodic Memory */}
+      <Card className="surface-card">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium">Episodic Memory</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <MemoryBrowser profileId={profileId} />
+        </CardContent>
+      </Card>
 
       {/* Bottom row: SKILL.md + Tests */}
       <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4">

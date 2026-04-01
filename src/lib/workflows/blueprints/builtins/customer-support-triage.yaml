@@ -1,0 +1,107 @@
+id: customer-support-triage
+name: Customer Support Triage
+description: Classify, respond to, and quality-check customer support tickets
+version: "1.0.0"
+domain: work
+tags: [support, triage, customer-service, escalation]
+pattern: sequence
+estimatedDuration: "5-15 min"
+difficulty: beginner
+author: stagent
+
+variables:
+  - id: ticket_content
+    type: textarea
+    label: Ticket Content
+    description: The full text of the customer's support ticket or message
+    required: true
+    placeholder: "Paste the customer's message here..."
+  - id: urgency
+    type: select
+    label: Urgency
+    description: Initial urgency assessment
+    required: true
+    default: medium
+    options:
+      - { value: low, label: "Low — general question or feedback" }
+      - { value: medium, label: "Medium — functional issue, workaround exists" }
+      - { value: high, label: "High — service degraded, no workaround" }
+      - { value: critical, label: "Critical — service down, data loss risk" }
+  - id: customer_tier
+    type: select
+    label: Customer Tier
+    description: The customer's subscription or account tier
+    required: true
+    default: paid
+    options:
+      - { value: free, label: "Free tier" }
+      - { value: paid, label: "Paid / Pro" }
+      - { value: enterprise, label: "Enterprise" }
+
+steps:
+  - name: Classify & Prioritize
+    profileId: customer-support-agent
+    promptTemplate: |
+      Classify and prioritize this support ticket:
+
+      ---
+      {{ticket_content}}
+      ---
+
+      Initial urgency: {{urgency}}
+      Customer tier: {{customer_tier}}
+
+      Provide:
+      1. Category (billing, technical, account, feature-request, bug-report)
+      2. Confirmed urgency level (may differ from initial assessment) with justification
+      3. Sentiment analysis (frustrated, confused, neutral, satisfied)
+      4. Key issue summary in one sentence
+      5. Escalation recommendation (yes/no) with reasoning
+      6. Suggested knowledge base articles to reference
+    requiresApproval: false
+    expectedOutput: structured-findings
+
+  - name: Draft Response
+    profileId: customer-support-agent
+    promptTemplate: |
+      Draft a customer-facing response to this ticket:
+
+      ---
+      {{ticket_content}}
+      ---
+
+      Customer tier: {{customer_tier}}
+
+      Using the classification from the previous step, write a response that:
+      1. Acknowledges the specific issue the customer raised
+      2. Provides a clear resolution or next steps
+      3. Sets expectations for timeline if resolution is not immediate
+      4. Includes a follow-up plan
+      5. Matches tone to the customer's sentiment
+
+      Also draft internal notes for the support team with any context needed for follow-up.
+    requiresApproval: false
+    expectedOutput: markdown-report
+
+  - name: Quality Review
+    profileId: operations-coordinator
+    promptTemplate: |
+      Review the support response drafted in the previous step for quality and completeness.
+
+      Original ticket:
+      ---
+      {{ticket_content}}
+      ---
+
+      Customer tier: {{customer_tier}}
+
+      Check:
+      1. Does the response address the customer's actual issue (not a tangential one)?
+      2. Is the tone appropriate for the customer's sentiment?
+      3. Are next steps concrete with timelines?
+      4. Does the response follow SOP for this ticket category?
+      5. Are there any compliance or policy concerns?
+
+      Provide a pass/fail verdict with specific revision notes if needed.
+    requiresApproval: false
+    expectedOutput: structured-findings

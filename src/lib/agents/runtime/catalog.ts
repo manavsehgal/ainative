@@ -3,6 +3,7 @@ export const SUPPORTED_AGENT_RUNTIMES = [
   "openai-codex-app-server",
   "anthropic-direct",
   "openai-direct",
+  "ollama",
 ] as const;
 
 export type AgentRuntimeId = (typeof SUPPORTED_AGENT_RUNTIMES)[number];
@@ -24,7 +25,7 @@ export interface RuntimeCatalogEntry {
   id: AgentRuntimeId;
   label: string;
   description: string;
-  providerId: "anthropic" | "openai";
+  providerId: "anthropic" | "openai" | "ollama";
   capabilities: RuntimeCapabilities;
 }
 
@@ -86,6 +87,22 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
       resume: true,
       cancel: true,
       approvals: true,
+      mcpServers: false,
+      profileTests: false,
+      taskAssist: true,
+      profileAssist: false,
+      authHealthCheck: true,
+    },
+  },
+  ollama: {
+    id: "ollama",
+    label: "Ollama (Local)",
+    description: "Local model execution via Ollama — free, private, no API key required.",
+    providerId: "ollama",
+    capabilities: {
+      resume: false,
+      cancel: true,
+      approvals: false,
       mcpServers: false,
       profileTests: false,
       taskAssist: true,

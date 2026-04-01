@@ -3,7 +3,7 @@ name: Researcher
 version: "1.0.0"
 domain: work
 tags: [research, web-search, citations, analyze, summarize, report]
-supportedRuntimes: [claude-code, openai-codex-app-server, anthropic-direct, openai-direct]
+supportedRuntimes: [claude-code, openai-codex-app-server, anthropic-direct, openai-direct, ollama]
 preferredRuntime: anthropic-direct
 allowedTools:
   - WebSearch

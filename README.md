@@ -1,8 +1,8 @@
 # Stagent
 
-> Governed AI Agent Workspace — Supervised Local Execution, Workflows, Documents, and Provider Runtimes.
+> AI Business Operating System — Run your business with AI agents. Local-first, multi-provider, governed.
 
-[![npm](https://img.shields.io/npm/v/stagent)](https://www.npmjs.com/package/stagent) [![Next.js 16](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/) [![React 19](https://img.shields.io/badge/React-19-61DAFB)](https://react.dev/) [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6)](https://www.typescriptlang.org/) [![Claude Agent SDK](https://img.shields.io/badge/Claude-Agent_SDK-D97706)](https://docs.anthropic.com/) [![OpenAI Codex App Server](https://img.shields.io/badge/OpenAI-Codex_App_Server-10A37F)](https://developers.openai.com/codex/app-server) [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![AI Business Operating System](https://img.shields.io/badge/AI_Business-Operating_System-6366F1)](https://stagent.io) [![npm](https://img.shields.io/npm/v/stagent)](https://www.npmjs.com/package/stagent) [![Next.js 16](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/) [![React 19](https://img.shields.io/badge/React-19-61DAFB)](https://react.dev/) [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6)](https://www.typescriptlang.org/) [![Claude Agent SDK](https://img.shields.io/badge/Claude-Agent_SDK-D97706)](https://docs.anthropic.com/) [![OpenAI Codex App Server](https://img.shields.io/badge/OpenAI-Codex_App_Server-10A37F)](https://developers.openai.com/codex/app-server) [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
 **[stagent.io](https://stagent.io)** · **[GitHub](https://github.com/manavsehgal/stagent)**
 
@@ -28,20 +28,20 @@ Open [localhost:3000](http://localhost:3000). That's it — zero config, local S
 
 ## Why Stagent
 
-AI agents are powerful — but production use breaks down when teams cannot see what the agent is doing, which rules it follows, or intervene before an unsafe action lands. Stagent gives you a **governed operations workspace** where every run is visible, every profile is reusable, and every approval is auditable.
+The AI agent stack is broken for business operators. You can spin up an agent in minutes — but running it reliably for real work means stitching together orchestration, governance, cost controls, and team coordination yourself. Stagent closes that gap with a single local-first platform where agents do the work and you stay in control.
 
 - **Local-first** — SQLite database, no cloud dependency, `npx stagent` and go
 - **Multi-provider** — Claude Code + OpenAI Codex App Server behind one runtime registry
-- **Human-in-the-loop** — Inbox approvals, ambient toasts, tool permission policies
-- **Reusable profiles** — 21 agent profiles with instructions, tool policies, and runtime tuning
-- **Workflow orchestration** — 6 patterns (sequence, planner-executor, checkpoint, parallel, loop, swarm)
-- **Cost governance** — Usage metering, budgets, and spend visibility per provider and model
+- **Your rules, enforced** — Tool permissions, inbox approvals, and audit trails for every agent action
+- **Your AI team** — 21 specialist profiles ready to deploy, each with instructions, tool policies, and runtime tuning
+- **Business processes, automated** — 6 workflow patterns (sequence, planner-executor, checkpoint, parallel, loop, swarm)
+- **Know what you spend** — Usage metering, budgets, and spend visibility per provider and model
 
 ---
 
 ## Runtime Bridge
 
-Stagent ships a shared runtime registry that routes tasks, schedules, and workflow steps through two governed execution backends: **Claude Code** (Anthropic Claude Agent SDK) and **OpenAI Codex App Server**. Both land in the same inbox, monitoring, and task-state surfaces — switching providers is a config change, not a rewrite.
+Run the same business process on different AI providers without changing a line of configuration. Stagent's shared runtime registry routes tasks, schedules, and workflow steps through **Claude Code** (Anthropic Claude Agent SDK) and **OpenAI Codex App Server**, landing everything in the same inbox, monitoring, and cost surfaces. Switching providers is a settings change, not a rewrite.
 
 ---
 

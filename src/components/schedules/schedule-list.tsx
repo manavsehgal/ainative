@@ -11,7 +11,7 @@ import { ScheduleStatusBadge } from "./schedule-status-badge";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
 import { describeCron } from "@/lib/schedules/interval-parser";
-import { Clock, Pause, Play, Trash2 } from "lucide-react";
+import { Clock, Heart, Pause, Play, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface Schedule {
@@ -28,6 +28,8 @@ interface Schedule {
   lastFiredAt: string | null;
   nextFireAt: string | null;
   createdAt: string;
+  type: "scheduled" | "heartbeat";
+  suppressionCount: number;
 }
 
 interface ScheduleListProps {
@@ -155,7 +157,10 @@ export function ScheduleList({ projects, initialSelectedId }: ScheduleListProps)
             >
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between gap-2 min-w-0">
-                  <CardTitle className="min-w-0 truncate text-base font-medium">
+                  <CardTitle className="min-w-0 truncate text-base font-medium flex items-center gap-1.5">
+                    {sched.type === "heartbeat" && (
+                      <Heart className="h-3.5 w-3.5 text-rose-500 shrink-0" />
+                    )}
                     {sched.name}
                   </CardTitle>
                   <ScheduleStatusBadge status={sched.status} />
@@ -169,6 +174,14 @@ export function ScheduleList({ projects, initialSelectedId }: ScheduleListProps)
                     {sched.firingCount} firing
                     {sched.firingCount !== 1 ? "s" : ""}
                   </span>
+                  {sched.type === "heartbeat" && sched.suppressionCount > 0 && (
+                    <>
+                      <span>·</span>
+                      <span className="text-emerald-600">
+                        {sched.suppressionCount} suppressed
+                      </span>
+                    </>
+                  )}
                   {!sched.recurs && (
                     <>
                       <span>·</span>

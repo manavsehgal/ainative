@@ -1,6 +1,6 @@
 ---
 title: Provider-Agnostic Tool Layer
-status: planned
+status: completed
 priority: P0
 milestone: post-mvp
 source: ideas/direct-api-gap-analysis.md

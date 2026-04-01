@@ -1,6 +1,6 @@
 ---
 title: Workspace Context Awareness
-status: planned
+status: completed
 priority: P1
 milestone: post-mvp
 source: dogfooding discovery (worktree usage, 2026-03-23)

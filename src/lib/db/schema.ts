@@ -33,6 +33,10 @@ export const tasks = sqliteTable(
     result: text("result"),
     sessionId: text("session_id"),
     resumeCount: integer("resume_count").default(0).notNull(),
+    /** How this task was created: manual, scheduled, heartbeat, or workflow */
+    sourceType: text("source_type", {
+      enum: ["manual", "scheduled", "heartbeat", "workflow"],
+    }),
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
   },
@@ -165,6 +169,32 @@ export const schedules = sqliteTable(
     expiresAt: integer("expires_at", { mode: "timestamp" }),
     lastFiredAt: integer("last_fired_at", { mode: "timestamp" }),
     nextFireAt: integer("next_fire_at", { mode: "timestamp" }),
+    /** 'scheduled' (default, clock-driven) or 'heartbeat' (intelligence-driven) */
+    type: text("type", { enum: ["scheduled", "heartbeat"] })
+      .default("scheduled")
+      .notNull(),
+    /** JSON array of checklist items the agent evaluates (heartbeat only) */
+    heartbeatChecklist: text("heartbeat_checklist"),
+    /** Hour of day (0-23) when heartbeats are active */
+    activeHoursStart: integer("active_hours_start"),
+    /** Hour of day (0-23) when heartbeats stop */
+    activeHoursEnd: integer("active_hours_end"),
+    /** Timezone for active hours windowing */
+    activeTimezone: text("active_timezone").default("UTC"),
+    /** Consecutive suppressed (no-action) heartbeat runs */
+    suppressionCount: integer("suppression_count").default(0).notNull(),
+    /** Timestamp of last heartbeat run that produced action */
+    lastActionAt: integer("last_action_at", { mode: "timestamp" }),
+    /** Daily budget cap for heartbeat evaluations (in microdollars) */
+    heartbeatBudgetPerDay: integer("heartbeat_budget_per_day"),
+    /** Spend so far today for heartbeat evaluations (in microdollars) */
+    heartbeatSpentToday: integer("heartbeat_spent_today").default(0).notNull(),
+    /** When the daily heartbeat budget was last reset */
+    heartbeatBudgetResetAt: integer("heartbeat_budget_reset_at", {
+      mode: "timestamp",
+    }),
+    /** JSON array of channel config IDs for delivery after firing */
+    deliveryChannels: text("delivery_channels"),
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
   },
@@ -204,6 +234,35 @@ export const learnedContext = sqliteTable(
       table.version
     ),
     index("idx_learned_context_change_type").on(table.changeType),
+  ]
+);
+
+export const agentMemory = sqliteTable(
+  "agent_memory",
+  {
+    id: text("id").primaryKey(),
+    profileId: text("profile_id").notNull(),
+    category: text("category", {
+      enum: ["fact", "preference", "pattern", "outcome"],
+    }).notNull(),
+    content: text("content").notNull(),
+    confidence: integer("confidence").default(700).notNull(), // 0-1000 scale (700 = 0.7)
+    sourceTaskId: text("source_task_id").references(() => tasks.id),
+    tags: text("tags"), // JSON array
+    lastAccessedAt: integer("last_accessed_at", { mode: "timestamp" }),
+    accessCount: integer("access_count").default(0).notNull(),
+    decayRate: integer("decay_rate").default(10).notNull(), // per-day decay in thousandths (10 = 0.01/day)
+    status: text("status", {
+      enum: ["active", "decayed", "archived", "rejected"],
+    })
+      .default("active")
+      .notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_agent_memory_profile_status").on(table.profileId, table.status),
+    index("idx_agent_memory_confidence").on(table.confidence),
   ]
 );
 
@@ -537,6 +596,56 @@ export const repoImports = sqliteTable(
   ]
 );
 
+// ── Multi-Channel Delivery ────────────────────────────────────────────
+
+export const channelConfigs = sqliteTable(
+  "channel_configs",
+  {
+    id: text("id").primaryKey(),
+    channelType: text("channel_type", { enum: ["slack", "telegram", "webhook"] }).notNull(),
+    name: text("name").notNull(),
+    config: text("config").notNull(), // JSON: { webhookUrl?, botToken?, chatId?, channelId? }
+    status: text("status", { enum: ["active", "disabled"] }).default("active").notNull(),
+    testStatus: text("test_status", { enum: ["untested", "ok", "failed"] }).default("untested").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_channel_configs_type").on(table.channelType),
+  ]
+);
+
+// ── Agent Async Handoffs ──────────────────────────────────────────────
+
+export const agentMessages = sqliteTable(
+  "agent_messages",
+  {
+    id: text("id").primaryKey(),
+    fromProfileId: text("from_profile_id").notNull(),
+    toProfileId: text("to_profile_id").notNull(),
+    taskId: text("task_id").references(() => tasks.id),
+    targetTaskId: text("target_task_id").references(() => tasks.id),
+    subject: text("subject").notNull(),
+    body: text("body").notNull(),
+    attachments: text("attachments"), // JSON
+    priority: integer("priority").default(2).notNull(),
+    status: text("status", {
+      enum: ["pending", "accepted", "in_progress", "completed", "rejected", "expired"],
+    }).default("pending").notNull(),
+    requiresApproval: integer("requires_approval", { mode: "boolean" }).default(false).notNull(),
+    approvedBy: text("approved_by"),
+    parentMessageId: text("parent_message_id"),
+    chainDepth: integer("chain_depth").default(0).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+    respondedAt: integer("responded_at", { mode: "timestamp" }),
+    expiresAt: integer("expires_at", { mode: "timestamp" }),
+  },
+  (table) => [
+    index("idx_agent_messages_to_status").on(table.toProfileId, table.status),
+    index("idx_agent_messages_task").on(table.taskId),
+  ]
+);
+
 // Shared types derived from schema — use these in components instead of `as any`
 export type ProjectRow = InferSelectModel<typeof projects>;
 export type TaskRow = InferSelectModel<typeof tasks>;
@@ -547,6 +656,7 @@ export type DocumentRow = InferSelectModel<typeof documents>;
 export type ScheduleRow = InferSelectModel<typeof schedules>;
 export type SettingsRow = InferSelectModel<typeof settings>;
 export type LearnedContextRow = InferSelectModel<typeof learnedContext>;
+export type AgentMemoryRow = InferSelectModel<typeof agentMemory>;
 export type UsageLedgerRow = InferSelectModel<typeof usageLedger>;
 export type ViewRow = InferSelectModel<typeof views>;
 export type EnvironmentScanRow = InferSelectModel<typeof environmentScans>;
@@ -560,3 +670,5 @@ export type ProfileTestResultRow = InferSelectModel<typeof profileTestResults>;
 export type ReadingProgressRow = InferSelectModel<typeof readingProgress>;
 export type BookmarkRow = InferSelectModel<typeof bookmarks>;
 export type RepoImportRow = InferSelectModel<typeof repoImports>;
+export type ChannelConfigRow = InferSelectModel<typeof channelConfigs>;
+export type AgentMessageRow = InferSelectModel<typeof agentMessages>;

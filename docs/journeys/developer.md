@@ -11,7 +11,7 @@ lastUpdated: "2026-03-22"
 
 # Developer Guide
 
-Meet Riley, a platform engineer responsible for setting up, securing, and extending the Stagent installation for a development team. Riley needs to configure authentication, enforce budget guardrails, define permission presets, manage data lifecycle, explore the environment control plane, understand the chat streaming architecture, monitor agent execution, inspect workflows and schedules, and script batch operations via the CLI. This journey covers the infrastructure and configuration layer that keeps Stagent secure, observable, and performant.
+Meet Riley, a platform engineer responsible for setting up, securing, and extending Stagent for a development team. Riley needs to configure authentication, enforce budget guardrails, define permission presets, manage data lifecycle, explore the environment control plane, understand the chat streaming architecture, monitor agent execution, inspect workflows and schedules, and script batch operations via the CLI. This journey covers the infrastructure and configuration layer that keeps the AI business operating system secure, observable, and performant.
 
 ## Prerequisites
 

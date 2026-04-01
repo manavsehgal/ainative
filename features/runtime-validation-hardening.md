@@ -1,6 +1,6 @@
 ---
 title: Runtime Validation Hardening
-status: planned
+status: in-progress
 priority: P1
 milestone: post-mvp
 source: conversation — reddit-researcher profile crash (2026-03-31)

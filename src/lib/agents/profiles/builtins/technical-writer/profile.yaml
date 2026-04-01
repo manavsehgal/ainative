@@ -3,7 +3,7 @@ name: Technical Writer
 version: "1.0.0"
 domain: work
 tags: [documentation, api-docs, adr, readme, changelog, technical-writing]
-supportedRuntimes: [claude-code, openai-codex-app-server, anthropic-direct, openai-direct]
+supportedRuntimes: [claude-code, openai-codex-app-server, anthropic-direct, openai-direct, ollama]
 preferredRuntime: anthropic-direct
 allowedTools:
   - Read

@@ -118,6 +118,9 @@ describe("updateBudgetPolicySchema", () => {
         "openai-direct": {
           monthlySpendCapUsd: null,
         },
+        ollama: {
+          monthlySpendCapUsd: null,
+        },
       },
     });
 

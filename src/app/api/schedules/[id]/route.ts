@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { schedules, tasks } from "@/lib/db/schema";
 import { eq, like } from "drizzle-orm";
 import { parseInterval, computeNextFireTime } from "@/lib/schedules/interval-parser";
+import { parseNaturalLanguage } from "@/lib/schedules/nlp-parser";
 import { resolveAgentRuntime } from "@/lib/agents/runtime/catalog";
 import { validateRuntimeProfileAssignment } from "@/lib/agents/profiles/assignment-validation";
 
@@ -22,13 +23,19 @@ export async function GET(
   }
 
   // Fetch child tasks (firing history) by title pattern match
+  const titlePrefix = schedule.type === "heartbeat"
+    ? `${schedule.name} — heartbeat #%`
+    : `${schedule.name} — firing #%`;
   const childTasks = await db
     .select()
     .from(tasks)
-    .where(like(tasks.title, `${schedule.name} — firing #%`));
+    .where(like(tasks.title, titlePrefix));
 
   return NextResponse.json({
     ...schedule,
+    heartbeatChecklist: schedule.heartbeatChecklist
+      ? JSON.parse(schedule.heartbeatChecklist)
+      : null,
     firingHistory: childTasks.sort(
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -42,13 +49,22 @@ export async function PATCH(
 ) {
   const { id } = await params;
   const body = await req.json();
-  const { status, name, prompt, interval, assignedAgent, agentProfile } = body as {
+  const {
+    status, name, prompt, interval, assignedAgent, agentProfile,
+    heartbeatChecklist, activeHoursStart, activeHoursEnd, activeTimezone,
+    heartbeatBudgetPerDay,
+  } = body as {
     status?: string;
     name?: string;
     prompt?: string;
     interval?: string;
     assignedAgent?: string;
     agentProfile?: string;
+    heartbeatChecklist?: Array<{ id: string; instruction: string; priority: string }>;
+    activeHoursStart?: number | null;
+    activeHoursEnd?: number | null;
+    activeTimezone?: string;
+    heartbeatBudgetPerDay?: number | null;
   };
 
   const [schedule] = await db
@@ -108,7 +124,10 @@ export async function PATCH(
 
   if (interval !== undefined) {
     try {
-      const cronExpression = parseInterval(interval);
+      const nlResult = parseNaturalLanguage(interval);
+      const cronExpression = nlResult
+        ? nlResult.cronExpression
+        : parseInterval(interval);
       updates.cronExpression = cronExpression;
       // Recompute next fire time if schedule is active
       if ((updates.status ?? schedule.status) === "active") {
@@ -139,6 +158,25 @@ export async function PATCH(
     } else {
       updates.assignedAgent = null;
     }
+  }
+
+  // Heartbeat-specific field updates
+  if (heartbeatChecklist !== undefined) {
+    updates.heartbeatChecklist = heartbeatChecklist
+      ? JSON.stringify(heartbeatChecklist)
+      : null;
+  }
+  if (activeHoursStart !== undefined) {
+    updates.activeHoursStart = activeHoursStart;
+  }
+  if (activeHoursEnd !== undefined) {
+    updates.activeHoursEnd = activeHoursEnd;
+  }
+  if (activeTimezone !== undefined) {
+    updates.activeTimezone = activeTimezone || "UTC";
+  }
+  if (heartbeatBudgetPerDay !== undefined) {
+    updates.heartbeatBudgetPerDay = heartbeatBudgetPerDay;
   }
 
   const compatibilityError = validateRuntimeProfileAssignment({

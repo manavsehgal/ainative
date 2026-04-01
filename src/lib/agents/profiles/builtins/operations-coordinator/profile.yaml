@@ -1,0 +1,26 @@
+id: operations-coordinator
+name: Operations Coordinator
+version: "1.0.0"
+domain: work
+tags: [operations, coordination, process, sop, reporting, efficiency, logistics]
+supportedRuntimes: [claude-code, openai-codex-app-server, anthropic-direct, openai-direct]
+preferredRuntime: anthropic-direct
+allowedTools:
+  - Read
+  - Grep
+  - Glob
+  - Write
+  - Edit
+  - Bash
+
+canUseToolPolicy:
+  autoApprove: [Read, Grep, Glob]
+  autoDeny: []
+
+maxTurns: 20
+
+author: stagent
+
+tests:
+  - task: "Document the standard operating procedure for onboarding a new client"
+    expectedKeywords: [steps, checklist, timeline, responsible, deliverable]

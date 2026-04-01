@@ -1,0 +1,26 @@
+id: sales-researcher
+name: Sales Researcher
+version: "1.0.0"
+domain: work
+tags: [sales, research, leads, prospecting, outreach, crm, pipeline]
+supportedRuntimes: [claude-code, openai-codex-app-server, anthropic-direct, openai-direct, ollama]
+preferredRuntime: anthropic-direct
+allowedTools:
+  - Read
+  - Grep
+  - Glob
+  - WebSearch
+  - WebFetch
+  - Write
+
+canUseToolPolicy:
+  autoApprove: [Read, Grep, Glob, WebSearch, WebFetch]
+  autoDeny: []
+
+maxTurns: 20
+
+author: stagent
+
+tests:
+  - task: "Research potential leads for an AI consulting firm"
+    expectedKeywords: [lead, qualification, outreach, personalized, pipeline]

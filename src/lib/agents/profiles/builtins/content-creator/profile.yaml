@@ -1,0 +1,27 @@
+id: content-creator
+name: Content Creator
+version: "1.0.0"
+domain: work
+tags: [content, writing, blog, copywriting, social-media, newsletter, editing]
+supportedRuntimes: [claude-code, openai-codex-app-server, anthropic-direct, openai-direct]
+preferredRuntime: anthropic-direct
+allowedTools:
+  - Read
+  - Grep
+  - Glob
+  - WebSearch
+  - WebFetch
+  - Write
+  - Edit
+
+canUseToolPolicy:
+  autoApprove: [Read, Grep, Glob, WebSearch, WebFetch]
+  autoDeny: []
+
+maxTurns: 25
+
+author: stagent
+
+tests:
+  - task: "Write a blog post about AI automation for small businesses"
+    expectedKeywords: [audience, headline, structure, cta, seo]

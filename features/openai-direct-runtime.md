@@ -1,6 +1,6 @@
 ---
 title: OpenAI Direct Runtime
-status: planned
+status: completed
 priority: P1
 milestone: post-mvp
 source: ideas/direct-api-gap-analysis.md

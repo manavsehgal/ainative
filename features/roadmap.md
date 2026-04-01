@@ -85,6 +85,8 @@ Features that enhance the product but aren't essential for first use — homepag
 | [board-context-persistence](board-context-persistence.md)           | P2       | completed | task-board, kanban-board-operations                                                                      |
 | [detail-view-redesign](detail-view-redesign.md)                     | P2       | completed | task-board, document-manager, workflow-engine, ui-density-refinement                                     |
 | [playbook-documentation](playbook-documentation.md)                 | P2       | completed | app-shell, command-palette-enhancement                                                                   |
+| [documentation-adoption-tracking](documentation-adoption-tracking.md) | P2     | completed | playbook-documentation, database-schema                                                                  |
+| [keyboard-shortcut-system](keyboard-shortcut-system.md)             | P2       | completed | app-shell, command-palette-enhancement                                                                   |
 | [workflow-ux-overhaul](workflow-ux-overhaul.md)                     | P1       | completed | workflow-engine, ai-assist-workflow-creation, agent-document-context, document-output-generation        |
 | [settings-interactive-controls](settings-interactive-controls.md)   | P2       | completed | —                                                                                                        |
 
@@ -113,19 +115,19 @@ Features that enhance the product but aren't essential for first use — homepag
 
 | Feature | Priority | Status | Dependencies |
 |---------|----------|--------|--------------|
-| [workspace-context-awareness](workspace-context-awareness.md) | P1 | planned | chat-engine, environment-scanner |
-| [auto-environment-scan](auto-environment-scan.md) | P1 | planned | environment-scanner, environment-cache |
-| [project-scoped-profiles](project-scoped-profiles.md) | P1 | planned | agent-profile-catalog, environment-scanner, auto-environment-scan |
-| [dynamic-slash-commands](dynamic-slash-commands.md) | P2 | planned | chat-command-mentions, chat-input-composer, project-scoped-profiles |
+| [workspace-context-awareness](workspace-context-awareness.md) | P1 | completed | chat-engine, environment-scanner |
+| [auto-environment-scan](auto-environment-scan.md) | P1 | completed | environment-scanner, environment-cache |
+| [project-scoped-profiles](project-scoped-profiles.md) | P1 | completed | agent-profile-catalog, environment-scanner, auto-environment-scan |
+| [dynamic-slash-commands](dynamic-slash-commands.md) | P2 | in-progress | chat-command-mentions, chat-input-composer, project-scoped-profiles |
 
 ### Direct API Runtime Expansion
 
 | Feature | Priority | Status | Dependencies |
 |---------|----------|--------|--------------|
-| [provider-agnostic-tool-layer](provider-agnostic-tool-layer.md) | P0 | planned | provider-runtime-abstraction |
-| [anthropic-direct-runtime](anthropic-direct-runtime.md) | P1 | planned | provider-agnostic-tool-layer, provider-runtime-abstraction, cross-provider-profile-compatibility |
-| [openai-direct-runtime](openai-direct-runtime.md) | P1 | planned | provider-agnostic-tool-layer, provider-runtime-abstraction, cross-provider-profile-compatibility |
-| [smart-runtime-router](smart-runtime-router.md) | P1 | planned | anthropic-direct-runtime, openai-direct-runtime, multi-agent-routing |
+| [provider-agnostic-tool-layer](provider-agnostic-tool-layer.md) | P0 | completed | provider-runtime-abstraction |
+| [anthropic-direct-runtime](anthropic-direct-runtime.md) | P1 | completed | provider-agnostic-tool-layer, provider-runtime-abstraction, cross-provider-profile-compatibility |
+| [openai-direct-runtime](openai-direct-runtime.md) | P1 | completed | provider-agnostic-tool-layer, provider-runtime-abstraction, cross-provider-profile-compatibility |
+| [smart-runtime-router](smart-runtime-router.md) | P1 | completed | anthropic-direct-runtime, openai-direct-runtime, multi-agent-routing |
 | [direct-runtime-prompt-caching](direct-runtime-prompt-caching.md) | P2 | planned | anthropic-direct-runtime |
 | [direct-runtime-advanced-capabilities](direct-runtime-advanced-capabilities.md) | P2 | planned | anthropic-direct-runtime, openai-direct-runtime |
 
@@ -135,7 +137,7 @@ Features that enhance the product but aren't essential for first use — homepag
 |---------|----------|--------|--------------|
 | [sdk-runtime-hardening](sdk-runtime-hardening.md) | P2 | completed | provider-runtime-abstraction, usage-metering-ledger, spend-budget-guardrails, agent-self-improvement |
 | [e2e-test-automation](e2e-test-automation.md) | P2 | completed | provider-runtime-abstraction, workflow-engine, agent-profile-catalog |
-| [runtime-validation-hardening](runtime-validation-hardening.md) | P1 | planned | provider-runtime-abstraction, multi-agent-routing |
+| [runtime-validation-hardening](runtime-validation-hardening.md) | P1 | in-progress | provider-runtime-abstraction, multi-agent-routing |
 
 ### Governance & Analytics
 
@@ -160,7 +162,8 @@ Features that enhance the product but aren't essential for first use — homepag
 | [skill-portfolio](skill-portfolio.md) | P2 | completed | environment-cache |
 | [environment-health-scoring](environment-health-scoring.md) | P3 | completed | environment-cache |
 | [agent-profile-from-environment](agent-profile-from-environment.md) | P3 | completed | environment-cache, multi-agent-routing |
-| [profile-environment-sync](profile-environment-sync.md) | P1 | planned | agent-profile-from-environment, environment-cache, agent-profile-catalog, skill-portfolio |
+| [workspace-discovery](workspace-discovery.md) | P1 | completed | environment-scanner, environment-cache |
+| [profile-environment-sync](profile-environment-sync.md) | P1 | in-progress | agent-profile-from-environment, environment-cache, agent-profile-catalog, skill-portfolio |
 
 ### Chat Conversation
 
@@ -174,6 +177,7 @@ Features that enhance the product but aren't essential for first use — homepag
 | [chat-input-composer](chat-input-composer.md) | P1 | completed | chat-ui-shell, chat-api-routes |
 | [chat-conversation-persistence](chat-conversation-persistence.md) | P1 | completed | chat-data-layer, chat-ui-shell |
 | [chat-command-mentions](chat-command-mentions.md) | P1 | completed | chat-input-composer, chat-engine, command-palette-enhancement |
+| [codex-chat-engine](codex-chat-engine.md) | P1 | completed | chat-engine, openai-codex-app-server, provider-runtime-abstraction |
 
 ### Living Book
 
@@ -184,6 +188,34 @@ Features that enhance the product but aren't essential for first use — homepag
 | [living-book-reading-paths](living-book-reading-paths.md) | P2 | **completed** | living-book-content-merge, playbook-documentation |
 | [living-book-markdown-pipeline](living-book-markdown-pipeline.md) | P2 | **completed** | living-book-content-merge, playbook-documentation |
 | [living-book-self-updating](living-book-self-updating.md) | P3 | **completed** | living-book-markdown-pipeline, workflow-engine, ai-assist-workflow-creation, agent-document-context |
+
+### Vision Alignment — Business Positioning
+
+| Feature | Priority | Status | Dependencies |
+|---------|----------|--------|--------------|
+| [product-messaging-refresh](product-messaging-refresh.md) | P0 | completed | — |
+| [business-function-profiles](business-function-profiles.md) | P1 | completed | agent-profile-catalog, workflow-blueprints |
+
+### Vision Alignment — Proactive Intelligence
+
+| Feature | Priority | Status | Dependencies |
+|---------|----------|--------|--------------|
+| [heartbeat-scheduler](heartbeat-scheduler.md) | P0 | completed | scheduled-prompt-loops |
+| [natural-language-scheduling](natural-language-scheduling.md) | P1 | completed | heartbeat-scheduler |
+| [agent-episodic-memory](agent-episodic-memory.md) | P1 | completed | agent-self-improvement |
+
+### Vision Alignment — Multi-Channel & Coordination
+
+| Feature | Priority | Status | Dependencies |
+|---------|----------|--------|--------------|
+| [multi-channel-delivery](multi-channel-delivery.md) | P2 | completed | heartbeat-scheduler |
+| [agent-async-handoffs](agent-async-handoffs.md) | P2 | completed | multi-agent-routing, heartbeat-scheduler |
+
+### Vision Alignment — Runtime Expansion
+
+| Feature | Priority | Status | Dependencies |
+|---------|----------|--------|--------------|
+| [ollama-runtime-provider](ollama-runtime-provider.md) | P2 | completed | provider-runtime-abstraction |
 
 ## Dependency Graph
 
@@ -319,6 +351,26 @@ playbook-documentation (completed)
                     └── living-book-self-updating (completed)
 ```
 
+Vision alignment chain:
+
+```
+Phase 1 — Business Positioning (parallel, no code deps)
+    ├── product-messaging-refresh (P0)
+    └── business-function-profiles (P1)
+
+Phase 2 — Proactive Intelligence
+    ├── heartbeat-scheduler (P0) ← scheduled-prompt-loops
+    │       └── natural-language-scheduling (P1)
+    └── agent-episodic-memory (P1) ← agent-self-improvement
+
+Phase 3 — Coordination + Delivery
+    ├── multi-channel-delivery (P2) ← heartbeat-scheduler
+    └── agent-async-handoffs (P2) ← heartbeat-scheduler
+
+Phase 4 — Runtime Expansion
+    └── ollama-runtime-provider (P2) ← provider-runtime-abstraction
+```
+
 ## Recommended Build Order
 
 1. **Sprint 1 — Foundation**: cli-bootstrap + database-schema + app-shell (parallel)
@@ -363,6 +415,14 @@ playbook-documentation (completed)
 31. **Sprint 31 — Smart Routing**: smart-runtime-router (P1) — auto-select best runtime per task based on content, profile affinity, and user preference
 32. **Sprint 32 — Direct Runtime Polish**: direct-runtime-prompt-caching (P2) + direct-runtime-advanced-capabilities (P2) — prompt caching, extended thinking, context compaction, model selection, server-side tool config
 
+> Direct API Runtime Expansion initiative (4 of 6 features) shipped 2026-03-31. Sprints 29-31 completed. Sprint 32 (polish) planned.
+
+33. **Sprint 33 — Business Positioning**: product-messaging-refresh (P0) + business-function-profiles (P1) — README/docs repositioning and 6 new business profiles + 5 new workflow blueprints (parallel)
+34. **Sprint 34 — Heartbeat Engine**: heartbeat-scheduler (P0) — proactive agent execution with checklist, suppression, active hours, cost controls
+35. **Sprint 35 — Agent Intelligence**: agent-episodic-memory (P1) + natural-language-scheduling (P1) — persistent knowledge memory and NLP schedule parsing (parallel)
+36. **Sprint 36 — Coordination**: multi-channel-delivery (P2) + agent-async-handoffs (P2) — Slack/Telegram delivery and inter-agent message bus (parallel)
+37. **Sprint 37 — Local Runtime**: ollama-runtime-provider (P2) — local model execution via Ollama
+
 Browser automation chain:
 
 ```
@@ -378,3 +438,21 @@ chat-engine + agent-integration + tool-permission-persistence
 - **Pricing source of truth**: Need a durable model-pricing strategy for Claude and Codex so historical usage rows preserve derived cost even if provider pricing changes later
 - **Parallel workflow UX ceiling**: Need to decide how much branch configurability to expose beyond the current fork/join pattern without turning the editor into a graph builder
 - **Notification channel policy**: Need to define when Stagent should escalate from in-app approval toast to browser notification delivery, especially for hidden tabs
+
+### Deferred from Vision Alignment (2026-03-31)
+
+Items from `ideas/vision/` that are explicitly deferred — documented for future grooming:
+
+- **MCP business tool integration** (CRM, email, Slack-as-tool, social) — largest technical investment, defer until heartbeat proves proactive value
+- **Cloud sync** (Supabase/Turso) — architecture change from local-first to hybrid, defer until users need it
+- **Multi-user RBAC** — requires auth system, defer until team use cases validated
+- **Portfolio view** (PE operating partner use case) — depends on multi-user + cloud sync
+- **Agent marketplace / blueprint registry** (community) — defer until internal library is rich
+- **API-first/headless deployment** — enterprise play
+- **Voice/phone agent integration** — niche, high-effort
+- **Business KPI dashboard** — depends on MCP integrations that don't exist yet
+- **Gemini/DeepSeek runtime providers** — defer until Ollama proves demand
+- **OpenClaw Gateway MCP bridge** — defer until OpenClaw Foundation stabilizes
+- **ClawHub import bridge** — can extend skills-repo-import later
+- **Workspace git export** — useful but lower leverage than proactive intelligence
+- **Bidirectional messaging** (Phase 2 of multi-channel-delivery) — delivery-only first

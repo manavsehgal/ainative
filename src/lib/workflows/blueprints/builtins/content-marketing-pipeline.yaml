@@ -1,0 +1,90 @@
+id: content-marketing-pipeline
+name: Content Marketing Pipeline
+description: Strategy, creation, and optimization for content marketing campaigns
+version: "1.0.0"
+domain: work
+tags: [marketing, content, seo, campaigns]
+pattern: checkpoint
+estimatedDuration: "15-30 min"
+difficulty: intermediate
+author: stagent
+
+variables:
+  - id: topic
+    type: text
+    label: Topic
+    description: The subject or theme for the content
+    required: true
+    placeholder: "e.g., AI-powered customer support for SaaS companies"
+  - id: content_type
+    type: select
+    label: Content Type
+    description: The format of content to produce
+    required: true
+    default: blog
+    options:
+      - { value: blog, label: "Blog post (1,200-2,000 words)" }
+      - { value: social, label: "Social media series (5-7 posts)" }
+      - { value: newsletter, label: "Newsletter edition" }
+      - { value: email-sequence, label: "Email sequence (3-5 emails)" }
+  - id: target_audience
+    type: text
+    label: Target Audience
+    description: Who this content is for
+    required: true
+    placeholder: "e.g., VP of Engineering at mid-stage startups"
+
+steps:
+  - name: Strategy & Planning
+    profileId: marketing-strategist
+    promptTemplate: |
+      Develop a content strategy for the following:
+
+      Topic: {{topic}}
+      Content type: {{content_type}}
+      Target audience: {{target_audience}}
+
+      Deliver:
+      1. Audience analysis — pain points, search behavior, content preferences
+      2. SEO keyword cluster with primary keyword, secondary keywords, and search intent
+      3. Content brief — angle, key messages, competitive differentiation, target word count
+      4. Distribution plan — channels, posting schedule, promotion tactics
+      5. Success metrics — what to measure and realistic benchmarks
+    requiresApproval: false
+    expectedOutput: structured-findings
+
+  - name: Content Creation
+    profileId: content-creator
+    promptTemplate: |
+      Create the content based on the strategy from the previous step.
+
+      Topic: {{topic}}
+      Format: {{content_type}}
+      Audience: {{target_audience}}
+
+      Follow the content brief, keyword strategy, and angle defined in the strategy phase.
+      Include SEO elements: optimized headline, meta description, header structure with keywords,
+      internal/external link suggestions, and a compelling CTA.
+      Write in a tone appropriate for the target audience.
+    requiresApproval: true
+    expectedOutput: markdown-report
+
+  - name: Review & Optimize
+    profileId: marketing-strategist
+    promptTemplate: |
+      Review the content created in the previous step for marketing effectiveness.
+
+      Topic: {{topic}}
+      Format: {{content_type}}
+      Audience: {{target_audience}}
+
+      Evaluate against:
+      1. SEO optimization — keyword placement, header structure, meta description quality
+      2. Audience fit — tone, reading level, pain point coverage
+      3. Conversion potential — CTA strength, value proposition clarity
+      4. Competitive differentiation — does this stand out from existing content on this topic?
+
+      Provide specific revision suggestions ranked by impact, and a final quality score (1-10)
+      with justification.
+    requiresApproval: false
+    expectedOutput: structured-findings

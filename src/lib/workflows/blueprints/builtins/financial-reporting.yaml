@@ -1,0 +1,104 @@
+id: financial-reporting
+name: Financial Reporting
+description: Data gathering, analysis, and investor-ready report generation
+version: "1.0.0"
+domain: work
+tags: [finance, reporting, analysis, metrics]
+pattern: checkpoint
+estimatedDuration: "15-25 min"
+difficulty: intermediate
+author: stagent
+
+variables:
+  - id: reporting_period
+    type: select
+    label: Reporting Period
+    description: The time period covered by this report
+    required: true
+    default: monthly
+    options:
+      - { value: weekly, label: "Weekly" }
+      - { value: monthly, label: "Monthly" }
+      - { value: quarterly, label: "Quarterly" }
+  - id: focus_area
+    type: select
+    label: Focus Area
+    description: Primary financial area to analyze
+    required: true
+    default: revenue
+    options:
+      - { value: revenue, label: "Revenue & growth metrics" }
+      - { value: expenses, label: "Expenses & cost optimization" }
+      - { value: cash-flow, label: "Cash flow & runway" }
+      - { value: unit-economics, label: "Unit economics (LTV, CAC, churn)" }
+  - id: audience
+    type: select
+    label: Report Audience
+    description: Who will read this report — affects depth and format
+    required: true
+    default: internal
+    options:
+      - { value: internal, label: "Internal leadership" }
+      - { value: investor, label: "Investors / board of directors" }
+      - { value: board, label: "Board meeting deck" }
+
+steps:
+  - name: Data Gathering
+    profileId: financial-analyst
+    promptTemplate: |
+      Gather and organize financial data for the {{reporting_period}} report.
+
+      Focus area: {{focus_area}}
+      Audience: {{audience}}
+
+      Collect and structure:
+      1. Revenue data — MRR, ARR, new vs. expansion vs. churned revenue
+      2. Expense data — by category (COGS, R&D, S&M, G&A)
+      3. Cash position — current balance, burn rate, runway
+      4. Key SaaS metrics — relevant to {{focus_area}}
+
+      Read any available financial data files in the project. Present raw data in tables
+      with clear labels, time periods, and source references. Flag any data gaps.
+    requiresApproval: false
+    expectedOutput: structured-findings
+
+  - name: Analysis & Insights
+    profileId: financial-analyst
+    promptTemplate: |
+      Analyze the financial data gathered in the previous step.
+
+      Period: {{reporting_period}}
+      Focus: {{focus_area}}
+      Audience: {{audience}}
+
+      Deliver:
+      1. Trend analysis — period-over-period changes with direction and magnitude
+      2. Variance analysis — actual vs. plan/forecast for key line items (flag >10% deviations)
+      3. Unit economics snapshot — LTV, CAC, LTV:CAC ratio, payback period, gross margin
+      4. Risk flags — any metrics approaching concerning thresholds
+      5. Three-scenario forecast (base, optimistic, conservative) for the next period
+
+      State all assumptions explicitly. Cite data sources for every number.
+    requiresApproval: true
+    expectedOutput: structured-findings
+
+  - name: Report Generation
+    profileId: document-writer
+    promptTemplate: |
+      Generate a polished financial report from the analysis in previous steps.
+
+      Period: {{reporting_period}}
+      Focus: {{focus_area}}
+      Audience: {{audience}}
+
+      Structure for {{audience}} audience:
+      - Executive summary (one page max — key metrics, headline insights, action items)
+      - Metrics dashboard (table format with period-over-period comparisons)
+      - Deep-dive on {{focus_area}} with charts described in markdown
+      - Risk and opportunity section
+      - Forward guidance with key assumptions
+
+      Use precise language appropriate for {{audience}}. Investors expect growth narrative;
+      internal leadership expects operational detail; board expects strategic framing.
+    requiresApproval: true
+    expectedOutput: markdown-report

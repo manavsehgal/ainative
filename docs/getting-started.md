@@ -6,7 +6,7 @@ lastUpdated: "2026-03-21"
 
 # Getting Started
 
-Get Stagent running in under a minute and create your first governed agent task.
+Get Stagent running in under a minute and create your first AI-powered business task.
 
 ## Installation
 

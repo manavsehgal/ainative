@@ -11,7 +11,7 @@ lastUpdated: "2026-03-22"
 
 # Power User Guide
 
-Meet Sam, a DevOps engineer who automates everything that can be automated -- and most things that people assume cannot. Sam has already completed the Personal Use Guide and runs Stagent daily for task management. Now Sam is ready to go deeper: specialized agent profiles, multi-step workflow pipelines, scheduled autonomous loops, bulk operations, and real-time monitoring. This guide covers the advanced automation layer that transforms Stagent from a task manager into a hands-off operations engine.
+Meet Sam, a DevOps engineer who automates everything that can be automated -- and most things that people assume cannot. Sam has already completed the Personal Use Guide and runs Stagent daily as an AI business operating system. Now Sam is ready to go deeper: specialized agent profiles, multi-step workflow pipelines, scheduled autonomous loops, bulk operations, and real-time monitoring. This guide covers the advanced automation layer that puts entire business processes on autopilot.
 
 ## Prerequisites
 

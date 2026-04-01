@@ -1,6 +1,6 @@
 ---
 title: Profile-Environment Sync
-status: planned
+status: in-progress
 priority: P1
 milestone: post-mvp
 source: features/agent-profile-from-environment.md

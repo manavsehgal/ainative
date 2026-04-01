@@ -1,7 +1,7 @@
 {
   "name": "stagent",
   "version": "0.5.0",
-  "description": "Governed AI agent workspace for supervised local execution, workflows, documents, and provider runtimes.",
+  "description": "AI Business Operating System — run your business with AI agents. Local-first, multi-provider, governed.",
   "keywords": [
     "ai",
     "agents",
@@ -11,7 +11,12 @@
     "openai",
     "codex",
     "nextjs",
-    "local-first"
+    "local-first",
+    "business",
+    "operating-system",
+    "orchestration",
+    "solo-founder",
+    "ai-business"
   ],
   "license": "Apache-2.0",
   "type": "module",

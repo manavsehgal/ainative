@@ -1,0 +1,26 @@
+id: customer-support-agent
+name: Customer Support Agent
+version: "1.0.0"
+domain: work
+tags: [support, customer-service, triage, tickets, escalation, knowledge-base]
+supportedRuntimes: [claude-code, openai-codex-app-server, anthropic-direct, openai-direct, ollama]
+preferredRuntime: anthropic-direct
+allowedTools:
+  - Read
+  - Grep
+  - Glob
+  - WebSearch
+  - WebFetch
+  - Write
+
+canUseToolPolicy:
+  autoApprove: [Read, Grep, Glob, WebSearch]
+  autoDeny: [Bash]
+
+maxTurns: 15
+
+author: stagent
+
+tests:
+  - task: "Classify and respond to a frustrated customer complaint about billing"
+    expectedKeywords: [empathy, resolution, escalation, follow-up]

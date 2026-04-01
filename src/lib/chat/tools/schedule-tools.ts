@@ -74,14 +74,24 @@ export function scheduleTools(ctx: ToolContext) {
           const { parseInterval, computeNextFireTime } = await import(
             "@/lib/schedules/interval-parser"
           );
+          const { parseNaturalLanguage } = await import(
+            "@/lib/schedules/nlp-parser"
+          );
 
           let cronExpression: string;
-          try {
-            cronExpression = parseInterval(args.interval);
-          } catch (e) {
-            return err(
-              `Invalid interval "${args.interval}": ${e instanceof Error ? e.message : "parse error"}`
-            );
+          // Try NLP first for natural language expressions,
+          // then fall back to parseInterval for shorthand (5m, 2h) and raw cron
+          const nlResult = parseNaturalLanguage(args.interval);
+          if (nlResult) {
+            cronExpression = nlResult.cronExpression;
+          } else {
+            try {
+              cronExpression = parseInterval(args.interval);
+            } catch (e) {
+              return err(
+                `Invalid interval "${args.interval}": ${e instanceof Error ? e.message : "parse error"}`
+              );
+            }
           }
 
           const effectiveProjectId = args.projectId ?? ctx.projectId ?? null;
@@ -185,8 +195,14 @@ export function scheduleTools(ctx: ToolContext) {
             const { parseInterval, computeNextFireTime } = await import(
               "@/lib/schedules/interval-parser"
             );
+            const { parseNaturalLanguage } = await import(
+              "@/lib/schedules/nlp-parser"
+            );
             try {
-              const cron = parseInterval(args.interval);
+              const nlResult = parseNaturalLanguage(args.interval);
+              const cron = nlResult
+                ? nlResult.cronExpression
+                : parseInterval(args.interval);
               updates.cronExpression = cron;
               updates.nextFireAt = computeNextFireTime(cron);
             } catch (e) {

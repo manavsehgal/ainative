@@ -11,7 +11,7 @@ lastUpdated: "2026-03-21"
 
 # Home Workspace
 
-The Home Workspace is your landing page when you open Stagent. It provides a real-time overview of agent activity, task status, and items that need your attention. The persistent sidebar organizes all workspace areas into three logical groups for quick navigation.
+The Home Workspace is your command center when you open Stagent. It provides a real-time overview of agent activity, business tasks, and items that need your attention — so you can triage your AI-powered operations at a glance. The persistent sidebar organizes all areas into three logical groups for quick navigation.
 
 ## Screenshots
 

@@ -2,6 +2,81 @@
 
 ## 2026-03-31
 
+### Completed — Vision Alignment Sprints 33-37
+
+**Sprint 33 — Business Positioning (parallel):**
+- `product-messaging-refresh` (P0) — Repositioned all in-repo messaging from "Governed AI Agent Workspace" to "AI Business Operating System"; README, package.json, CLI, docs, welcome landing, 7 journey/feature docs, 3 new docs (why-stagent, use-cases)
+- `business-function-profiles` (P1) — 6 new builtin profiles (marketing-strategist, sales-researcher, customer-support-agent, financial-analyst, content-creator, operations-coordinator) + 5 new workflow blueprints (lead-research, content-marketing, support-triage, financial-reporting, daily-briefing)
+
+**Sprint 34 — Heartbeat Engine:**
+- `heartbeat-scheduler` (P0) — Proactive intelligence mode: 10 new columns on schedules table (type, checklist, active hours, suppression, budget), heartbeat engine in scheduler.ts, active hours windowing, suppression logic, heartbeat prompt builder, API routes, UI with checklist editor and type selector, heartbeat badges on task cards
+
+**Sprint 35 — Agent Intelligence (parallel):**
+- `natural-language-scheduling` (P1) — NLP parser for plain-English scheduling, HEARTBEAT.md file support, parse preview API, schedule form NL input
+- `agent-episodic-memory` (P1) — agent_memory table, memory extraction, relevance-filtered retrieval, confidence decay, CRUD API, memory browser UI
+
+**Sprint 36 — Coordination (parallel):**
+- `multi-channel-delivery` (P2) — channel_configs table, Slack/Telegram/webhook adapters, channel registry, settings UI, schedule delivery integration
+- `agent-async-handoffs` (P2) — agent_messages table, handoff governance (chain depth, self-handoff prevention), message bus, send_handoff chat tool, API routes, approval UI
+
+**Sprint 37 — Local Runtime:**
+- `ollama-runtime-provider` (P2) — 5th runtime adapter (NDJSON streaming), model discovery, smart router integration, settings UI with connection test and model management
+
+### Groomed — Vision Alignment Initiative (8 features from 2 vision docs)
+
+**Source documents:**
+- `ideas/vision/machine-builds-machine-claude-ext-rsrch.md` — Strategic intelligence briefing (market positioning, JTBD, competitive landscape)
+- `ideas/vision/Stagent-OpenClaw-Companion-Research-Report.md` — 9 OpenClaw capabilities to adopt
+
+**New feature specs created:**
+- `product-messaging-refresh` (P0) — Reposition all in-repo messaging from "Governed AI Agent Workspace" to "AI Business Operating System"; README, docs, playbook, CLI help, in-app welcome; new problem statement and use case docs
+- `business-function-profiles` (P1) — 6 new builtin profiles (marketing-strategist, sales-researcher, customer-support-agent, financial-analyst, content-creator, operations-coordinator) + 5 new workflow blueprints (lead-research-pipeline, content-marketing-pipeline, customer-support-triage, financial-reporting, business-daily-briefing)
+- `heartbeat-scheduler` (P0) — Proactive agent execution extending scheduled-prompt-loops; agents evaluate checklists and suppress no-op runs; business-hour windowing, cost controls, heartbeat badges on Kanban
+- `agent-episodic-memory` (P1) — Persistent knowledge memory distinct from behavioral learned_context; new agent_memory table, confidence scoring, memory decay, relevance-filtered injection, operator review UI
+- `natural-language-scheduling` (P1) — NLP parser for plain-English scheduling expressions; HEARTBEAT.md file support; chat-based schedule creation; confidence-based confirmation flow
+- `multi-channel-delivery` (P2) — Slack and Telegram as outbound delivery channels; heartbeat results, workflow completions, approval requests; channel adapter architecture; Phase 1 delivery-only
+- `agent-async-handoffs` (P2) — Async inter-agent communication via SQLite agent_messages table; send_handoff tool, heartbeat-triggered processing, governance gates, handoff policies, chain depth limits
+- `ollama-runtime-provider` (P2) — Ollama runtime adapter for local model execution; model discovery, smart router integration, $0 cost tracking, privacy-sensitive task routing
+
+**Overlap resolutions documented:**
+- heartbeat-scheduler vs scheduled-prompt-loops: intelligence-driven (new) vs clock-driven (existing) — extends, not replaces
+- agent-episodic-memory vs learned_context: knowledge memory (new) vs behavioral memory (existing) — complementary
+- agent-async-handoffs vs multi-agent-swarm: decoupled async (new) vs synchronous workflow-bound (existing) — complementary
+
+**Roadmap updates:**
+- Added 4 new sections: Vision Alignment — Business Positioning, Proactive Intelligence, Multi-Channel & Coordination, Runtime Expansion
+- Added dependency chain and sprints 33-37
+- Added deferred items section (13 items from vision docs explicitly out of scope)
+
+**Architecture decisions:**
+- Business-function profiles are ADDITIONS (6 new), not renames of existing 14 profiles
+- Heartbeat extends existing scheduler table with `type: "heartbeat"` column
+- Episodic memory uses new `agent_memory` table, not the existing `learned_context` table
+- Multi-channel delivery is outbound-only (Phase 1); bidirectional deferred
+- Ollama follows existing `AgentRuntimeAdapter` pattern
+
+**Skills used:** `/product-manager`, `/frontend-designer`, `/architect`
+
+### Completed (status sync — code existed, specs were stale)
+- `auto-environment-scan` — staleness-based auto-scan via `src/lib/environment/auto-scan.ts`, 5min threshold, test coverage
+- `project-scoped-profiles` — reads `.claude/skills/` in-place via `src/lib/agents/profiles/project-profiles.ts`, cache invalidation, SKILL.md-only support
+- `provider-agnostic-tool-layer` — `defineTool()` factory in `src/lib/chat/tool-registry.ts`, Zod → JSON Schema, `toAnthropicToolDef()` / `toOpenAIFunctionDef()` formatters
+- `anthropic-direct-runtime` — full Messages API adapter in `src/lib/agents/runtime/anthropic-direct.ts`, streaming, tool use, session resume, budget enforcement
+- `openai-direct-runtime` — full Responses API adapter in `src/lib/agents/runtime/openai-direct.ts`, hybrid tool use, `previous_response_id` resume
+- `smart-runtime-router` — keyword-based `suggestRuntime()` in `src/lib/agents/router.ts`, profile affinity, credential filtering, cost/latency/quality preferences
+- `workspace-context-awareness` — workspace context injection in `src/lib/environment/workspace-context.ts`, integrated into chat engine system prompt (Tier 0)
+
+### Started (status sync — partial implementations)
+- `runtime-validation-hardening` — profile Zod validation exists (`src/lib/validators/profile.ts`), runtime config validation middleware still missing
+- `dynamic-slash-commands` — tool catalog supports dynamic skills (`src/lib/chat/tool-catalog.ts`), slash command palette registration not yet implemented
+- `profile-environment-sync` — one-way artifact→profile linking via `src/lib/environment/profile-linker.ts`, reverse sync not yet implemented
+
+### Retrospective specs created
+- `codex-chat-engine` (P1, completed) — parallel Codex App Server streaming engine for chat; shares context builder, entity detection, usage metering with Claude engine
+- `workspace-discovery` (P1, completed) — parent-directory walker for `.claude/`/`.codex/` markers; powers workspace import flow with GitHub API integration
+- `documentation-adoption-tracking` (P2, completed) — DB-driven adoption depth per feature area; 9+ table parallel queries, usage stage classifier, journey completion tracking
+- `keyboard-shortcut-system` (P2, completed) — singleton shortcut registry with scope-based activation, sequence keys (500ms timeout), modifier support, subscriber pattern
+
 ### Groomed
 - Created `profile-environment-sync` (P1) — roundtrip two-way sync between profiles and environment skill artifacts via passive reconciliation architecture; filesystem as single source of truth, profile-artifact linker, two-tier suggestion engine, scan invalidation on profile mutations, origin badges in UI
 - Architecture decision: "Passive Reconciliation" over "Materialized View" (auto-creates everything, too noisy) and "Linked Registry" (manual-only, no UX improvement). Filesystem IS the sync mechanism; the reconciliation layer just makes it visible

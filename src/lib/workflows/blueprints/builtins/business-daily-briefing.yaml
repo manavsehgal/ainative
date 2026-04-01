@@ -1,0 +1,102 @@
+id: business-daily-briefing
+name: Business Daily Briefing
+description: Gather signals, analyze priorities, and compile a daily intelligence briefing
+version: "1.0.0"
+domain: work
+tags: [operations, briefing, intelligence, daily]
+pattern: sequence
+estimatedDuration: "10-20 min"
+difficulty: beginner
+author: stagent
+
+variables:
+  - id: business_name
+    type: text
+    label: Business Name
+    description: The company or business to brief on
+    required: true
+    placeholder: "e.g., Acme Corp"
+  - id: focus_areas
+    type: textarea
+    label: Focus Areas
+    description: Topics, competitors, or domains to monitor
+    required: true
+    placeholder: "e.g., AI agent frameworks, competitor launches, customer sentiment on social media, regulatory changes in fintech"
+  - id: briefing_depth
+    type: select
+    label: Briefing Depth
+    description: How detailed the briefing should be
+    required: true
+    default: standard
+    options:
+      - { value: quick, label: "Quick (bullet points, 1-2 pages)" }
+      - { value: standard, label: "Standard (summaries with context, 3-4 pages)" }
+      - { value: detailed, label: "Detailed (deep analysis with recommendations, 5+ pages)" }
+
+steps:
+  - name: Gather Signals
+    profileId: researcher
+    promptTemplate: |
+      Research the latest developments relevant to {{business_name}}.
+
+      Focus areas:
+      {{focus_areas}}
+
+      Briefing depth: {{briefing_depth}}
+
+      Search for:
+      1. Industry news and developments from the last 24-48 hours
+      2. Competitor activity — product launches, funding, hiring, partnerships
+      3. Market trends and analyst commentary relevant to the focus areas
+      4. Regulatory or policy changes that could impact the business
+      5. Notable social media discussions or customer sentiment signals
+
+      For each finding, include: source URL, publication date, relevance rating (high/medium/low),
+      and a one-sentence summary. Prioritize recency and relevance.
+    requiresApproval: false
+    expectedOutput: structured-findings
+
+  - name: Analyze & Prioritize
+    profileId: operations-coordinator
+    promptTemplate: |
+      Analyze the signals gathered in the previous step for {{business_name}}.
+
+      Focus areas:
+      {{focus_areas}}
+
+      Depth: {{briefing_depth}}
+
+      For each signal:
+      1. Assess business impact (high/medium/low) and urgency (action needed today/this week/monitor)
+      2. Identify which team or function should be aware (product, engineering, sales, marketing, leadership)
+      3. Flag any signals that require immediate action or decision
+      4. Connect related signals into coherent themes or narratives
+      5. Note any gaps — important focus areas with no new signals (absence of news can be informative)
+
+      Output a prioritized signal list grouped by theme, with action items for high-priority items.
+    requiresApproval: false
+    expectedOutput: structured-findings
+
+  - name: Compile Briefing
+    profileId: document-writer
+    promptTemplate: |
+      Compile the daily business briefing for {{business_name}} from the previous analysis.
+
+      Depth: {{briefing_depth}}
+
+      Structure:
+      1. **Top Line** — 3-5 most important takeaways in bold bullet points
+      2. **Action Items** — decisions or actions needed today, with owners suggested
+      3. **Industry & Market** — key developments grouped by theme
+      4. **Competitive Landscape** — competitor moves and positioning changes
+      5. **Signals to Watch** — emerging trends that don't require action yet but merit tracking
+
+      For {{briefing_depth}} depth:
+      - quick: bullet points only, no analysis prose
+      - standard: brief summaries with context for each section
+      - detailed: full analysis with strategic recommendations and source citations
+
+      Write in crisp, executive-friendly language. Lead with "so what" — why each item matters
+      to {{business_name}} specifically, not just that it happened.
+    requiresApproval: false
+    expectedOutput: markdown-report

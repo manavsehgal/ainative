@@ -60,6 +60,9 @@ describe("budget guardrails", () => {
         "openai-direct": {
           monthlySpendCapUsd: null,
         },
+        ollama: {
+          monthlySpendCapUsd: null,
+        },
       },
     });
 
@@ -147,6 +150,9 @@ describe("budget guardrails", () => {
         "openai-direct": {
           monthlySpendCapUsd: null,
         },
+        ollama: {
+          monthlySpendCapUsd: null,
+        },
       },
     });
 
@@ -215,6 +221,9 @@ describe("budget guardrails", () => {
         "openai-direct": {
           monthlySpendCapUsd: null,
         },
+        ollama: {
+          monthlySpendCapUsd: null,
+        },
       },
     });
 
@@ -255,6 +264,9 @@ describe("budget guardrails", () => {
           monthlySpendCapUsd: null,
         },
         "openai-direct": {
+          monthlySpendCapUsd: null,
+        },
+        ollama: {
           monthlySpendCapUsd: null,
         },
       },

@@ -6,19 +6,27 @@ lastUpdated: "2026-03-21"
 
 # Stagent Documentation
 
-Stagent is a governed AI agent workspace that lets you create, execute, and monitor AI-powered tasks locally. It provides supervised execution with human-in-the-loop approvals, multi-step workflows, document management, and cost governance across multiple AI providers.
+Stagent is an AI Business Operating System that lets solo founders and micro-teams run their entire business with AI agents — locally, governed, and cost-controlled. Deploy 21 specialist profiles, automate multi-step business processes, and maintain full visibility over spend and execution across multiple AI providers.
 
 ## Getting Started
+- [Why Stagent](./why-stagent.md) — The problem, the solution, and who it's for
 - [Quick Start Guide](./getting-started.md)
+
+## Use Cases
+
+| Guide | Audience | Description |
+|-------|----------|-------------|
+| [Solo Founder](./use-cases/solo-founder.md) | Founders & solopreneurs | Content pipelines, lead research, support triage |
+| [Agency Operator](./use-cases/agency-operator.md) | AI agencies | Client portfolios, vertical profiles, service blueprints |
 
 ## User Journeys
 
 | Guide | Difficulty | Time | Description |
 |-------|-----------|------|-------------|
-| [Personal Use](./journeys/personal-use.md) | Beginner | ~20 min | Solo productivity with AI tasks |
-| [Work Use](./journeys/work-use.md) | Intermediate | ~24 min | Team collaboration and document management |
-| [Power User](./journeys/power-user.md) | Advanced | ~24 min | Advanced workflows and automation |
-| [Developer](./journeys/developer.md) | Advanced | ~20 min | Platform configuration and CLI usage |
+| [Personal Use](./journeys/personal-use.md) | Beginner | ~20 min | Your first AI-powered business task |
+| [Work Use](./journeys/work-use.md) | Intermediate | ~24 min | Run team operations with AI agents |
+| [Power User](./journeys/power-user.md) | Advanced | ~24 min | Automate business processes end-to-end |
+| [Developer](./journeys/developer.md) | Advanced | ~20 min | Configure, extend, and operate the platform |
 
 ## Feature Reference
 

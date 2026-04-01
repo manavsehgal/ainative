@@ -66,6 +66,9 @@ function buildFormState(policy: BudgetPolicy): BudgetFormState {
           policy.runtimes["openai-direct"].monthlySpendCapUsd
         ),
       },
+      ollama: {
+        monthlySpendCapUsd: "", // Ollama is always $0
+      },
     },
   };
 }
@@ -96,6 +99,9 @@ function buildPayload(form: BudgetFormState): BudgetPolicy {
         monthlySpendCapUsd: toNullableNumber(
           form.runtimes["openai-direct"].monthlySpendCapUsd
         ),
+      },
+      ollama: {
+        monthlySpendCapUsd: null, // Ollama is always $0 — no budget needed
       },
     },
   };

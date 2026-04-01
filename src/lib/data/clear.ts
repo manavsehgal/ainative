@@ -4,6 +4,7 @@ import {
   notifications,
   documents,
   learnedContext,
+  agentMemory,
   tasks,
   workflows,
   schedules,
@@ -21,6 +22,8 @@ import {
   bookmarks,
   profileTestResults,
   repoImports,
+  channelConfigs,
+  agentMessages,
 } from "@/lib/db/schema";
 import { readdirSync, unlinkSync, mkdirSync } from "fs";
 import { join } from "path";
@@ -54,6 +57,10 @@ export function clearAllData() {
   const bookmarksDeleted = db.delete(bookmarks).run().changes;
   const readingProgressDeleted = db.delete(readingProgress).run().changes;
 
+  // Agent messages reference tasks — delete before tasks
+  const agentMessagesDeleted = db.delete(agentMessages).run().changes;
+  const channelConfigsDeleted = db.delete(channelConfigs).run().changes;
+
   const repoImportsDeleted = db.delete(repoImports).run().changes;
   const profileTestResultsDeleted = db.delete(profileTestResults).run().changes;
   const viewsDeleted = db.delete(views).run().changes;
@@ -61,6 +68,7 @@ export function clearAllData() {
   const logsDeleted = db.delete(agentLogs).run().changes;
   const notificationsDeleted = db.delete(notifications).run().changes;
   const documentsDeleted = db.delete(documents).run().changes;
+  const agentMemoryDeleted = db.delete(agentMemory).run().changes;
   const learnedContextDeleted = db.delete(learnedContext).run().changes;
   const tasksDeleted = db.delete(tasks).run().changes;
   const workflowsDeleted = db.delete(workflows).run().changes;
@@ -102,6 +110,7 @@ export function clearAllData() {
     agentLogs: logsDeleted,
     notifications: notificationsDeleted,
     documents: documentsDeleted,
+    agentMemory: agentMemoryDeleted,
     learnedContext: learnedContextDeleted,
     environmentSyncOps: envSyncOpsDeleted,
     environmentCheckpoints: envCheckpointsDeleted,
@@ -114,6 +123,8 @@ export function clearAllData() {
     readingProgress: readingProgressDeleted,
     repoImports: repoImportsDeleted,
     profileTestResults: profileTestResultsDeleted,
+    agentMessages: agentMessagesDeleted,
+    channelConfigs: channelConfigsDeleted,
     files: filesDeleted,
     screenshots: screenshotsDeleted,
   };

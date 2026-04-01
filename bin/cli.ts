@@ -56,7 +56,7 @@ Examples:
 
 program
   .name("stagent")
-  .description("Governed AI agent workspace")
+  .description("AI Business Operating System")
   .version(pkg.version)
   .addHelpText("after", getHelpText)
   .option("-p, --port <number>", "port to start on", "3000")

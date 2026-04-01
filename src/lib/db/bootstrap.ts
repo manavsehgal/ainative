@@ -24,6 +24,9 @@ const STAGENT_TABLES = [
   "bookmarks",
   "profile_test_results",
   "repo_imports",
+  "agent_memory",
+  "channel_configs",
+  "agent_messages",
 ] as const;
 
 export function bootstrapStagentDatabase(sqlite: Database.Database): void {
@@ -142,6 +145,16 @@ export function bootstrapStagentDatabase(sqlite: Database.Database): void {
       expires_at INTEGER,
       last_fired_at INTEGER,
       next_fire_at INTEGER,
+      type TEXT DEFAULT 'scheduled' NOT NULL,
+      heartbeat_checklist TEXT,
+      active_hours_start INTEGER,
+      active_hours_end INTEGER,
+      active_timezone TEXT DEFAULT 'UTC',
+      suppression_count INTEGER DEFAULT 0 NOT NULL,
+      last_action_at INTEGER,
+      heartbeat_budget_per_day INTEGER,
+      heartbeat_spent_today INTEGER DEFAULT 0 NOT NULL,
+      heartbeat_budget_reset_at INTEGER,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL,
       FOREIGN KEY (project_id) REFERENCES projects(id) ON UPDATE NO ACTION ON DELETE NO ACTION
@@ -243,6 +256,21 @@ export function bootstrapStagentDatabase(sqlite: Database.Database): void {
 
   addColumnIfMissing(`ALTER TABLE projects ADD COLUMN working_directory TEXT;`);
   addColumnIfMissing(`ALTER TABLE schedules ADD COLUMN assigned_agent TEXT;`);
+
+  // Heartbeat scheduler columns
+  addColumnIfMissing(`ALTER TABLE schedules ADD COLUMN type TEXT DEFAULT 'scheduled' NOT NULL;`);
+  addColumnIfMissing(`ALTER TABLE schedules ADD COLUMN heartbeat_checklist TEXT;`);
+  addColumnIfMissing(`ALTER TABLE schedules ADD COLUMN active_hours_start INTEGER;`);
+  addColumnIfMissing(`ALTER TABLE schedules ADD COLUMN active_hours_end INTEGER;`);
+  addColumnIfMissing(`ALTER TABLE schedules ADD COLUMN active_timezone TEXT DEFAULT 'UTC';`);
+  addColumnIfMissing(`ALTER TABLE schedules ADD COLUMN suppression_count INTEGER DEFAULT 0 NOT NULL;`);
+  addColumnIfMissing(`ALTER TABLE schedules ADD COLUMN last_action_at INTEGER;`);
+  addColumnIfMissing(`ALTER TABLE schedules ADD COLUMN heartbeat_budget_per_day INTEGER;`);
+  addColumnIfMissing(`ALTER TABLE schedules ADD COLUMN heartbeat_spent_today INTEGER DEFAULT 0 NOT NULL;`);
+  addColumnIfMissing(`ALTER TABLE schedules ADD COLUMN heartbeat_budget_reset_at INTEGER;`);
+
+  // Task source type
+  addColumnIfMissing(`ALTER TABLE tasks ADD COLUMN source_type TEXT;`);
   addColumnIfMissing(`ALTER TABLE documents ADD COLUMN version INTEGER NOT NULL DEFAULT 1;`);
   addColumnIfMissing(`ALTER TABLE documents ADD COLUMN source TEXT DEFAULT 'upload';`);
   addColumnIfMissing(`ALTER TABLE documents ADD COLUMN conversation_id TEXT REFERENCES conversations(id);`);
@@ -430,6 +458,29 @@ export function bootstrapStagentDatabase(sqlite: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_repo_imports_owner_name ON repo_imports(repo_owner, repo_name);
   `);
 
+  // ── Agent episodic memory ────────────────────────────────────────────
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS agent_memory (
+      id TEXT PRIMARY KEY NOT NULL,
+      profile_id TEXT NOT NULL,
+      category TEXT NOT NULL,
+      content TEXT NOT NULL,
+      confidence INTEGER DEFAULT 700 NOT NULL,
+      source_task_id TEXT,
+      tags TEXT,
+      last_accessed_at INTEGER,
+      access_count INTEGER DEFAULT 0 NOT NULL,
+      decay_rate INTEGER DEFAULT 10 NOT NULL,
+      status TEXT DEFAULT 'active' NOT NULL,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      FOREIGN KEY (source_task_id) REFERENCES tasks(id) ON UPDATE NO ACTION ON DELETE NO ACTION
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_agent_memory_profile_status ON agent_memory(profile_id, status);
+    CREATE INDEX IF NOT EXISTS idx_agent_memory_confidence ON agent_memory(confidence);
+  `);
+
   // ── Profile test results ────────────────────────────────────────────
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS profile_test_results (
@@ -443,6 +494,52 @@ export function bootstrapStagentDatabase(sqlite: Database.Database): void {
     );
 
     CREATE INDEX IF NOT EXISTS idx_profile_test_results_profile_runtime ON profile_test_results(profile_id, runtime_id);
+  `);
+
+  // ── Multi-Channel Delivery ────────────────────────────────────────────
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS channel_configs (
+      id TEXT PRIMARY KEY NOT NULL,
+      channel_type TEXT NOT NULL,
+      name TEXT NOT NULL,
+      config TEXT NOT NULL,
+      status TEXT DEFAULT 'active' NOT NULL,
+      test_status TEXT DEFAULT 'untested' NOT NULL,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_channel_configs_type ON channel_configs(channel_type);
+  `);
+
+  addColumnIfMissing(`ALTER TABLE schedules ADD COLUMN delivery_channels TEXT;`);
+
+  // ── Agent Async Handoffs ──────────────────────────────────────────────
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS agent_messages (
+      id TEXT PRIMARY KEY NOT NULL,
+      from_profile_id TEXT NOT NULL,
+      to_profile_id TEXT NOT NULL,
+      task_id TEXT,
+      target_task_id TEXT,
+      subject TEXT NOT NULL,
+      body TEXT NOT NULL,
+      attachments TEXT,
+      priority INTEGER DEFAULT 2 NOT NULL,
+      status TEXT DEFAULT 'pending' NOT NULL,
+      requires_approval INTEGER DEFAULT 0 NOT NULL,
+      approved_by TEXT,
+      parent_message_id TEXT,
+      chain_depth INTEGER DEFAULT 0 NOT NULL,
+      created_at INTEGER NOT NULL,
+      responded_at INTEGER,
+      expires_at INTEGER,
+      FOREIGN KEY (task_id) REFERENCES tasks(id) ON UPDATE NO ACTION ON DELETE NO ACTION,
+      FOREIGN KEY (target_task_id) REFERENCES tasks(id) ON UPDATE NO ACTION ON DELETE NO ACTION
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_agent_messages_to_status ON agent_messages(to_profile_id, status);
+    CREATE INDEX IF NOT EXISTS idx_agent_messages_task ON agent_messages(task_id);
   `);
 }
 

@@ -12,10 +12,19 @@
  */
 
 import { db } from "@/lib/db";
-import { schedules, tasks } from "@/lib/db/schema";
-import { eq, and, lte, like, inArray, sql } from "drizzle-orm";
+import { schedules, tasks, agentLogs } from "@/lib/db/schema";
+import { eq, and, lte, inArray, sql } from "drizzle-orm";
 import { computeNextFireTime } from "./interval-parser";
 import { executeTaskWithRuntime } from "@/lib/agents/runtime";
+import { checkActiveHours } from "./active-hours";
+import {
+  buildHeartbeatPrompt,
+  parseHeartbeatResponse,
+  parseChecklist,
+} from "./heartbeat-prompt";
+import { sendToChannels } from "@/lib/channels/registry";
+import type { ChannelMessage } from "@/lib/channels/types";
+import { processHandoffs } from "@/lib/agents/handoff/bus";
 
 const POLL_INTERVAL_MS = 60_000; // 60 seconds
 
@@ -88,10 +97,22 @@ export async function tickScheduler(): Promise<void> {
         continue;
       }
 
-      await fireSchedule(schedule, now);
+      // Branch on schedule type
+      if (schedule.type === "heartbeat") {
+        await fireHeartbeat(schedule, now);
+      } else {
+        await fireSchedule(schedule, now);
+      }
     } catch (err) {
       console.error(`[scheduler] failed to fire schedule ${schedule.id}:`, err);
     }
+  }
+
+  // Process pending agent handoffs
+  try {
+    await processHandoffs();
+  } catch (err) {
+    console.error("[scheduler] handoff processing error:", err);
   }
 }
 
@@ -152,6 +173,7 @@ async function fireSchedule(
     assignedAgent: schedule.assignedAgent,
     agentProfile: schedule.agentProfile,
     priority: 2,
+    sourceType: "scheduled",
     createdAt: now,
     updatedAt: now,
   });
@@ -194,6 +216,199 @@ async function fireSchedule(
   console.log(
     `[scheduler] fired schedule "${schedule.name}" → task ${taskId} (firing #${firingNumber})`
   );
+
+  // Deliver to configured channels
+  if (schedule.deliveryChannels) {
+    try {
+      const channelIds = JSON.parse(schedule.deliveryChannels) as string[];
+      if (channelIds.length > 0) {
+        const message: ChannelMessage = {
+          subject: `Schedule fired: ${schedule.name} (#${firingNumber})`,
+          body: `Task "${schedule.name} — firing #${firingNumber}" has been created and queued for execution.\n\nPrompt: ${schedule.prompt.slice(0, 500)}`,
+          format: "text",
+          metadata: { scheduleId: schedule.id, taskId, firingNumber },
+        };
+        sendToChannels(channelIds, message).catch((err) => {
+          console.error(`[scheduler] channel delivery failed for schedule ${schedule.id}:`, err);
+        });
+      }
+    } catch {
+      // Invalid JSON in deliveryChannels — skip
+    }
+  }
+}
+
+/**
+ * Fire a heartbeat schedule: evaluate checklist, suppress or create action task.
+ */
+async function fireHeartbeat(
+  schedule: typeof schedules.$inferSelect,
+  now: Date
+): Promise<void> {
+  // 1. Active hours check
+  const hoursResult = checkActiveHours(
+    schedule.activeHoursStart,
+    schedule.activeHoursEnd,
+    schedule.activeTimezone,
+    now
+  );
+
+  if (!hoursResult.isActive) {
+    // Reschedule to the next active window or next cron fire (whichever is later)
+    const nextCronFire = computeNextFireTime(schedule.cronExpression, now);
+    const nextFire = hoursResult.nextActiveAt && hoursResult.nextActiveAt > nextCronFire
+      ? hoursResult.nextActiveAt
+      : nextCronFire;
+
+    await db
+      .update(schedules)
+      .set({ nextFireAt: nextFire, updatedAt: now })
+      .where(eq(schedules.id, schedule.id));
+
+    console.log(`[scheduler] heartbeat "${schedule.name}" skipped — outside active hours`);
+    return;
+  }
+
+  // 2. Daily budget check
+  if (schedule.heartbeatBudgetPerDay !== null && schedule.heartbeatBudgetPerDay > 0) {
+    // Reset daily budget if we've crossed into a new day
+    const resetAt = schedule.heartbeatBudgetResetAt;
+    const startOfToday = new Date(now);
+    startOfToday.setHours(0, 0, 0, 0);
+
+    if (!resetAt || resetAt < startOfToday) {
+      db.update(schedules)
+        .set({
+          heartbeatSpentToday: 0,
+          heartbeatBudgetResetAt: startOfToday,
+          updatedAt: now,
+        })
+        .where(eq(schedules.id, schedule.id))
+        .run();
+      // Reset the in-memory value for the check below
+      schedule = { ...schedule, heartbeatSpentToday: 0 };
+    }
+
+    if (schedule.heartbeatSpentToday >= (schedule.heartbeatBudgetPerDay ?? Infinity)) {
+      // Budget exhausted — skip and reschedule to tomorrow
+      const nextFire = computeNextFireTime(schedule.cronExpression, now);
+      await db
+        .update(schedules)
+        .set({ nextFireAt: nextFire, updatedAt: now })
+        .where(eq(schedules.id, schedule.id));
+
+      console.log(`[scheduler] heartbeat "${schedule.name}" paused — daily budget exhausted`);
+      return;
+    }
+  }
+
+  // 3. Parse checklist
+  const checklist = parseChecklist(schedule.heartbeatChecklist);
+  if (checklist.length === 0) {
+    console.warn(`[scheduler] heartbeat "${schedule.name}" has empty checklist — skipping`);
+    const nextFire = computeNextFireTime(schedule.cronExpression, now);
+    await db
+      .update(schedules)
+      .set({ nextFireAt: nextFire, updatedAt: now })
+      .where(eq(schedules.id, schedule.id));
+    return;
+  }
+
+  // 4. Create evaluation task
+  const evalTaskId = crypto.randomUUID();
+  const firingNumber = schedule.firingCount + 1;
+  const heartbeatDescription = buildHeartbeatPrompt(checklist, schedule.name);
+
+  await db.insert(tasks).values({
+    id: evalTaskId,
+    projectId: schedule.projectId,
+    workflowId: null,
+    scheduleId: schedule.id,
+    title: `${schedule.name} — heartbeat #${firingNumber}`,
+    description: heartbeatDescription,
+    status: "queued",
+    assignedAgent: schedule.assignedAgent,
+    agentProfile: schedule.agentProfile,
+    priority: 2,
+    sourceType: "heartbeat",
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  // 5. Execute and wait for result (with timeout)
+  try {
+    await executeTaskWithRuntime(evalTaskId);
+  } catch (err) {
+    console.error(`[scheduler] heartbeat evaluation failed for "${schedule.name}":`, err);
+  }
+
+  // 6. Read the completed task result
+  const [evalTask] = await db
+    .select({ result: tasks.result, status: tasks.status })
+    .from(tasks)
+    .where(eq(tasks.id, evalTaskId));
+
+  const evaluation = evalTask?.result
+    ? parseHeartbeatResponse(evalTask.result)
+    : null;
+
+  // Default to action_needed=true if we can't parse the response (fail-open)
+  const actionNeeded = evaluation?.action_needed ?? true;
+
+  // 7. Log the heartbeat evaluation
+  const logId = crypto.randomUUID();
+  const logPayload = actionNeeded
+    ? `Heartbeat action needed: ${evaluation?.items?.filter((i) => i.status === "action_needed").map((i) => i.summary).join("; ") ?? "parse failed, defaulting to action"}`
+    : `Heartbeat OK — all items normal (suppression #${schedule.suppressionCount + 1})`;
+
+  db.insert(agentLogs)
+    .values({
+      id: logId,
+      taskId: evalTaskId,
+      agentType: "heartbeat",
+      event: actionNeeded ? "heartbeat_action" : "heartbeat_suppressed",
+      payload: logPayload,
+      timestamp: now,
+    })
+    .run();
+
+  // 8. Update schedule counters and compute next fire
+  const nextFire = computeNextFireTime(schedule.cronExpression, now);
+
+  if (actionNeeded) {
+    // Action path: reset suppression, update lastActionAt
+    await db
+      .update(schedules)
+      .set({
+        firingCount: firingNumber,
+        lastFiredAt: now,
+        lastActionAt: now,
+        suppressionCount: 0,
+        nextFireAt: nextFire,
+        updatedAt: now,
+      })
+      .where(eq(schedules.id, schedule.id));
+
+    console.log(
+      `[scheduler] heartbeat "${schedule.name}" → ACTION NEEDED → task ${evalTaskId} (firing #${firingNumber})`
+    );
+  } else {
+    // Suppression path: increment counter, no action task
+    await db
+      .update(schedules)
+      .set({
+        firingCount: firingNumber,
+        lastFiredAt: now,
+        suppressionCount: schedule.suppressionCount + 1,
+        nextFireAt: nextFire,
+        updatedAt: now,
+      })
+      .where(eq(schedules.id, schedule.id));
+
+    console.log(
+      `[scheduler] heartbeat "${schedule.name}" → OK (suppression #${schedule.suppressionCount + 1})`
+    );
+  }
 }
 
 /**

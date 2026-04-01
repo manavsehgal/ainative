@@ -11,7 +11,7 @@ lastUpdated: "2026-03-22"
 
 # Work Use Guide
 
-Meet Jordan, a team lead managing a cross-functional product team. Jordan juggles multiple workstreams, uploads reference documents for agents to consult, orchestrates multi-step workflows, schedules recurring automations, tracks API spend, and triages permission requests from running agents. This guide walks through a full working session -- from organizing projects to clearing the inbox at end of day.
+Meet Jordan, a team lead running a cross-functional product team on Stagent. Jordan uses AI agents to manage multiple workstreams — uploading reference documents, orchestrating multi-step business processes, scheduling recurring automations, tracking spend, and triaging permission requests. This guide walks through a full working session -- from organizing projects to clearing the inbox at end of day.
 
 ## Prerequisites
 

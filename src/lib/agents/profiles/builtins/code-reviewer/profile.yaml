@@ -3,7 +3,7 @@ name: Code Reviewer
 version: "1.0.0"
 domain: work
 tags: [security, code-quality, owasp, review, audit, bug, vulnerability]
-supportedRuntimes: [claude-code, openai-codex-app-server, anthropic-direct, openai-direct]
+supportedRuntimes: [claude-code, openai-codex-app-server, anthropic-direct, openai-direct, ollama]
 preferredRuntime: claude-code
 allowedTools:
   - Read

@@ -1,6 +1,6 @@
 ---
 title: Auto Environment Scan
-status: planned
+status: completed
 priority: P1
 milestone: post-mvp
 source: dogfooding discovery (manual scan friction, 2026-03-31)

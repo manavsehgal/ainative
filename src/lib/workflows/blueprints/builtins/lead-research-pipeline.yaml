@@ -1,0 +1,82 @@
+id: lead-research-pipeline
+name: Lead Research Pipeline
+description: Identify, qualify, and plan outreach for prospective leads
+version: "1.0.0"
+domain: work
+tags: [sales, research, leads, outreach]
+pattern: sequence
+estimatedDuration: "15-30 min"
+difficulty: intermediate
+author: stagent
+
+variables:
+  - id: target_industry
+    type: text
+    label: Target Industry
+    description: The industry or vertical to prospect into
+    required: true
+    placeholder: "e.g., Healthcare SaaS, FinTech, EdTech"
+  - id: company_size
+    type: select
+    label: Company Size
+    description: Target company size tier
+    required: true
+    default: smb
+    options:
+      - { value: startup, label: "Startup (1-50 employees)" }
+      - { value: smb, label: "SMB (51-500 employees)" }
+      - { value: enterprise, label: "Enterprise (500+ employees)" }
+  - id: outreach_goal
+    type: text
+    label: Outreach Goal
+    description: What you want to achieve with the outreach
+    required: true
+    placeholder: "e.g., Book 10 discovery calls for AI consulting services"
+
+steps:
+  - name: Research & Identify
+    profileId: sales-researcher
+    promptTemplate: |
+      Research and identify potential leads in the {{target_industry}} industry.
+
+      Target company size: {{company_size}}
+      Outreach goal: {{outreach_goal}}
+
+      Find 10-15 companies that match this profile. For each, gather:
+      company name, headquarters, employee count, funding stage, key decision-makers,
+      recent news or trigger events, and technology stack where visible.
+      Output as a structured list suitable for pipeline review.
+    requiresApproval: false
+    expectedOutput: structured-findings
+
+  - name: Qualify & Prioritize
+    profileId: sales-researcher
+    promptTemplate: |
+      Review the leads identified in the previous step and qualify each using BANT criteria.
+
+      Target industry: {{target_industry}}
+      Company size: {{company_size}}
+      Goal: {{outreach_goal}}
+
+      Score each lead 1-5 on qualification strength. Rank by priority tier (A/B/C).
+      Flag any leads that need additional discovery before outreach.
+      Output a prioritized pipeline table with qualification notes.
+    requiresApproval: false
+    expectedOutput: structured-findings
+
+  - name: Create Outreach Plan
+    profileId: content-creator
+    promptTemplate: |
+      Create personalized outreach templates for the top-priority leads from the previous steps.
+
+      Industry: {{target_industry}}
+      Goal: {{outreach_goal}}
+
+      For each A-tier lead, draft:
+      1. A personalized cold email referencing a specific trigger event or pain point
+      2. A LinkedIn connection request message
+      3. A follow-up email for non-responders (to send 3-5 days later)
+
+      Each message should have a clear hook, value proposition, and low-friction CTA.
+    requiresApproval: false
+    expectedOutput: markdown-report

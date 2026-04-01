@@ -1,22 +1,22 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Shield, GitBranch, Wallet } from "lucide-react";
+import { Shield, Zap, Wallet } from "lucide-react";
 
 const pillars = [
   {
     icon: Shield,
-    title: "Governed Execution",
-    description: "Every agent action requires explicit approval. Full audit trail for every decision.",
+    title: "Your Rules, Enforced",
+    description: "Every agent action respects your policies. Full audit trail for every decision.",
   },
   {
-    icon: GitBranch,
-    title: "Reusable Automation",
-    description: "Build workflow templates once, run them many times. Profile-aware agent routing.",
+    icon: Zap,
+    title: "Business on Autopilot",
+    description: "Build workflow templates once, run them many times. 21 specialist profiles ready to deploy.",
   },
   {
     icon: Wallet,
-    title: "Cost & Visibility",
-    description: "Track spend per task, per runtime. Budget guardrails prevent surprise bills.",
+    title: "Know What You Spend",
+    description: "Track spend per task, per provider. Budget guardrails prevent surprise bills.",
   },
 ];
 
@@ -31,7 +31,7 @@ export function WelcomeLanding() {
         Welcome to Stagent
       </h1>
       <p className="text-base text-muted-foreground mb-8 max-w-lg">
-        The governed AI agent operations workspace. Execute tasks, manage workflows, and maintain full oversight of your AI agents.
+        Your AI Business Operating System. Deploy AI agents, automate business processes, and maintain full control of spend and execution.
       </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full mb-8">

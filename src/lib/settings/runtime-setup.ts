@@ -13,7 +13,7 @@ export type RuntimeSetupMethod = AuthMethod | "none";
 export interface RuntimeSetupState {
   runtimeId: AgentRuntimeId;
   label: string;
-  providerId: "anthropic" | "openai";
+  providerId: "anthropic" | "openai" | "ollama";
   configured: boolean;
   authMethod: RuntimeSetupMethod;
   apiKeySource: ApiKeySource;
@@ -76,6 +76,15 @@ export async function getRuntimeSetupStates(): Promise<
       authMethod: openAIAuth.hasKey ? "api_key" : "none",
       apiKeySource: openAIAuth.apiKeySource,
       billingMode: "usage",
+    },
+    ollama: {
+      runtimeId: "ollama",
+      label: getRuntimeCatalogEntry("ollama").label,
+      providerId: "ollama",
+      configured: true, // Ollama is always "configured" — availability checked at connection time
+      authMethod: "none",
+      apiKeySource: "unknown",
+      billingMode: "usage", // $0 usage
     },
   } satisfies Record<AgentRuntimeId, RuntimeSetupState>;
 

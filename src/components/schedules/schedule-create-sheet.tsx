@@ -38,7 +38,7 @@ export function ScheduleCreateSheet({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: values.name,
-          prompt: values.prompt,
+          prompt: values.prompt || undefined,
           interval: values.interval,
           projectId: values.projectId || undefined,
           assignedAgent: values.assignedAgent || undefined,
@@ -46,6 +46,14 @@ export function ScheduleCreateSheet({
           recurs: values.recurs,
           maxFirings: values.maxFirings || undefined,
           expiresInHours: values.expiresInHours || undefined,
+          type: values.type,
+          ...(values.type === "heartbeat" && {
+            heartbeatChecklist: values.heartbeatChecklist,
+            activeHoursStart: values.activeHoursStart || undefined,
+            activeHoursEnd: values.activeHoursEnd || undefined,
+            activeTimezone: values.activeTimezone || undefined,
+            heartbeatBudgetPerDay: values.heartbeatBudgetPerDay || undefined,
+          }),
         }),
       });
 

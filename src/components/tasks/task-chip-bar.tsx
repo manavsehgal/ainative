@@ -15,6 +15,7 @@ import {
   FolderKanban,
   GitBranch,
   Clock,
+  Heart,
   ArrowUp,
   ArrowDown,
   Minus,
@@ -195,7 +196,11 @@ export function TaskChipBar({
           {task.scheduleId && (
             <Link href="/schedules">
               <Badge variant="secondary" className="text-xs cursor-pointer hover:bg-accent gap-1">
-                <Clock className="h-3 w-3" />
+                {task.sourceType === "heartbeat" ? (
+                  <Heart className="h-3 w-3 text-rose-500" />
+                ) : (
+                  <Clock className="h-3 w-3" />
+                )}
                 {task.scheduleName ?? "Schedule"}
               </Badge>
             </Link>

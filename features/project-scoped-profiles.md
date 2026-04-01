@@ -1,6 +1,6 @@
 ---
 title: Project-Scoped Profiles
-status: planned
+status: completed
 priority: P1
 milestone: post-mvp
 source: dogfooding discovery (folder skills invisible to chat, 2026-03-31)

@@ -18,6 +18,7 @@ import { profileTools } from "./tools/profile-tools";
 import { usageTools } from "./tools/usage-tools";
 import { settingsTools } from "./tools/settings-tools";
 import { chatHistoryTools } from "./tools/chat-history-tools";
+import { handoffTools } from "./tools/handoff-tools";
 
 // ── Tool server types ────────────────────────────────────────────────
 
@@ -50,6 +51,7 @@ function collectAllTools(ctx: ToolContext): ToolDefinition[] {
     ...usageTools(ctx),
     ...settingsTools(ctx),
     ...chatHistoryTools(ctx),
+    ...handoffTools(ctx),
   ];
 }
 

@@ -20,6 +20,7 @@ export interface TaskItem {
   projectName?: string;
   workflowId: string | null;
   scheduleId: string | null;
+  sourceType: string | null;
   workflowName?: string;
   scheduleName?: string;
   result: string | null;

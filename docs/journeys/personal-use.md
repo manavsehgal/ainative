@@ -11,7 +11,7 @@ lastUpdated: "2026-03-22"
 
 # Personal Use Guide
 
-Meet Alex, a solo developer who just discovered Stagent. Alex has a side project -- a personal portfolio website -- that needs planning and execution help, but has never used an AI agent workspace before. Over the next 28 minutes, Alex will explore the workspace, chat with AI, create a project, manage tasks on a kanban board, and discover the built-in documentation hub. By the end, Alex will have a fully organized project ready for AI-assisted execution.
+Meet Alex, a solo founder who just discovered Stagent. Alex has a side project -- a personal portfolio website -- that needs planning and execution help, but has never used an AI business operating system before. Over the next 28 minutes, Alex will explore the platform, chat with AI, create a project, manage tasks on a kanban board, and discover the built-in documentation hub. By the end, Alex will have a fully organized project ready for AI-assisted execution.
 
 ## Prerequisites
 

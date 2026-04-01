@@ -49,10 +49,11 @@ describe("profile registry", () => {
     expect(general!.domain).toBe("work");
   });
 
-  it("returns all 14 builtin profiles", () => {
+  it("returns all 20 builtin profiles", () => {
     const profiles = listProfiles().filter((p) => isBuiltin(p.id));
     const ids = profiles.map((p) => p.id);
 
+    // Original 14
     expect(ids).toContain("general");
     expect(ids).toContain("code-reviewer");
     expect(ids).toContain("researcher");
@@ -67,7 +68,14 @@ describe("profile registry", () => {
     expect(ids).toContain("shopping-assistant");
     expect(ids).toContain("learning-coach");
     expect(ids).toContain("sweep");
-    expect(profiles.length).toBe(14);
+    // 6 new business function profiles
+    expect(ids).toContain("marketing-strategist");
+    expect(ids).toContain("sales-researcher");
+    expect(ids).toContain("customer-support-agent");
+    expect(ids).toContain("financial-analyst");
+    expect(ids).toContain("content-creator");
+    expect(ids).toContain("operations-coordinator");
+    expect(profiles.length).toBe(20);
   });
 
   it("getProfile returns undefined for unknown id", () => {
@@ -121,7 +129,7 @@ describe("profile registry", () => {
       (p) => p.domain === "personal"
     );
 
-    expect(workProfiles.length).toBe(9); // general, code-reviewer, researcher, document-writer, project-manager, data-analyst, technical-writer, devops-engineer, sweep
+    expect(workProfiles.length).toBe(15); // general, code-reviewer, researcher, document-writer, project-manager, data-analyst, technical-writer, devops-engineer, sweep + 6 business profiles
     expect(personalProfiles.length).toBe(5); // wealth-manager, travel-planner, health-fitness-coach, shopping-assistant, learning-coach
   });
 

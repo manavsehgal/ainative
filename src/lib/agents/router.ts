@@ -55,6 +55,11 @@ const RUNTIME_KEYWORD_SIGNALS: Record<string, AgentRuntimeId> = {
   // Sandbox → openai-codex (isolated execution)
   sandbox: "openai-codex-app-server",
   isolated: "openai-codex-app-server",
+  // Local/private → ollama (free, no API key)
+  local: "ollama",
+  private: "ollama",
+  offline: "ollama",
+  free: "ollama",
 };
 
 // ── Preference-based tiebreaker scoring ──────────────────────────────
@@ -64,6 +69,7 @@ const LATENCY_SCORE: Record<AgentRuntimeId, number> = {
   "openai-direct": 3,
   "claude-code": 1, // Subprocess spawn overhead
   "openai-codex-app-server": 1,
+  ollama: 2, // Local, no network round-trip, but model load time
 };
 
 const COST_SCORE: Record<AgentRuntimeId, number> = {
@@ -71,6 +77,7 @@ const COST_SCORE: Record<AgentRuntimeId, number> = {
   "openai-direct": 3,
   "claude-code": 1, // SDK overhead + potential OAuth subscription
   "openai-codex-app-server": 1,
+  ollama: 5, // Free — always $0
 };
 
 const QUALITY_SCORE: Record<AgentRuntimeId, number> = {
@@ -78,6 +85,7 @@ const QUALITY_SCORE: Record<AgentRuntimeId, number> = {
   "openai-codex-app-server": 2,
   "anthropic-direct": 2,
   "openai-direct": 2,
+  ollama: 1, // Local models, smaller parameter counts
 };
 
 // ── Core routing function ────────────────────────────────────────────

@@ -1,0 +1,27 @@
+id: marketing-strategist
+name: Marketing Strategist
+version: "1.0.0"
+domain: work
+tags: [marketing, strategy, campaigns, seo, social-media, email, content-planning]
+supportedRuntimes: [claude-code, openai-codex-app-server, anthropic-direct, openai-direct, ollama]
+preferredRuntime: anthropic-direct
+allowedTools:
+  - Read
+  - Grep
+  - Glob
+  - WebSearch
+  - WebFetch
+  - Write
+  - Edit
+
+canUseToolPolicy:
+  autoApprove: [Read, Grep, Glob, WebSearch, WebFetch]
+  autoDeny: []
+
+maxTurns: 25
+
+author: stagent
+
+tests:
+  - task: "Create a content marketing strategy for a B2B SaaS startup"
+    expectedKeywords: [audience, funnel, content-calendar, seo, conversion]

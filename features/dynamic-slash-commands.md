@@ -1,6 +1,6 @@
 ---
 title: Dynamic Slash Commands
-status: planned
+status: in-progress
 priority: P2
 milestone: post-mvp
 source: dogfooding discovery (skills unavailable in chat, 2026-03-31)
