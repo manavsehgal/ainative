@@ -17,12 +17,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CHAT_MODELS, DEFAULT_CHAT_MODEL } from "@/lib/chat/types";
+import { CHAT_MODELS, DEFAULT_CHAT_MODEL, type ChatModelOption } from "@/lib/chat/types";
 import { FormSectionCard } from "@/components/shared/form-section-card";
 import { MessageCircle } from "lucide-react";
 
 export function ChatSettingsSection() {
   const [defaultModel, setDefaultModel] = useState(DEFAULT_CHAT_MODEL);
+  const [ollamaModels, setOllamaModels] = useState<ChatModelOption[]>([]);
 
   const fetchSettings = useCallback(async () => {
     try {
@@ -38,6 +39,21 @@ export function ChatSettingsSection() {
 
   useEffect(() => {
     fetchSettings();
+    // Fetch Ollama models for the dropdown
+    fetch("/api/runtimes/ollama")
+      .then((r) => (r.ok ? r.json() : { models: [] }))
+      .then((data: { models?: Array<{ name: string }> }) => {
+        setOllamaModels(
+          (data.models ?? []).map((m) => ({
+            id: `ollama:${m.name}`,
+            label: m.name.replace(/:latest$/, ""),
+            provider: "ollama" as const,
+            tier: "Local",
+            costLabel: "Free",
+          }))
+        );
+      })
+      .catch(() => {});
   }, [fetchSettings]);
 
   const handleModelChange = async (modelId: string) => {
@@ -85,6 +101,16 @@ export function ChatSettingsSection() {
                 <SelectGroup>
                   <SelectLabel>OpenAI</SelectLabel>
                   {openaiModels.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.label} — {m.tier} ({m.costLabel})
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              )}
+              {ollamaModels.length > 0 && (
+                <SelectGroup>
+                  <SelectLabel>Ollama (Local)</SelectLabel>
+                  {ollamaModels.map((m) => (
                     <SelectItem key={m.id} value={m.id}>
                       {m.label} — {m.tier} ({m.costLabel})
                     </SelectItem>

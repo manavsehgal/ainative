@@ -39,13 +39,14 @@ export interface QuickAccessItem {
 export interface ChatModelOption {
   id: string;
   label: string;
-  provider: "anthropic" | "openai";
+  provider: "anthropic" | "openai" | "ollama";
   tier: string; // "Fast" | "Balanced" | "Best"
-  costLabel: string; // "$" | "$$" | "$$$"
+  costLabel: string; // "$" | "$$" | "$$$" | "Free"
 }
 
 /** Runtime → provider mapping */
-export function getProviderForRuntime(runtimeId: string): "anthropic" | "openai" {
+export function getProviderForRuntime(runtimeId: string): "anthropic" | "openai" | "ollama" {
+  if (runtimeId === "ollama") return "ollama";
   return (runtimeId === "openai-codex-app-server" || runtimeId === "openai-direct") ? "openai" : "anthropic";
 }
 
@@ -75,7 +76,12 @@ export function resolveModelLabel(modelId: string): string {
 /** Model → runtime mapping (derived from model's provider or ID prefix) */
 export function getRuntimeForModel(modelId: string): string {
   const model = CHAT_MODELS.find((m) => m.id === modelId);
-  if (model) return model.provider === "openai" ? "openai-codex-app-server" : "claude-code";
+  if (model) {
+    if (model.provider === "ollama") return "ollama";
+    return model.provider === "openai" ? "openai-codex-app-server" : "claude-code";
+  }
+  // Check dynamically added Ollama models (prefixed with "ollama:")
+  if (modelId.startsWith("ollama:")) return "ollama";
   // Fallback: OpenAI models start with "gpt" or "o"
   return /^(gpt|o\d)/.test(modelId) ? "openai-codex-app-server" : "claude-code";
 }

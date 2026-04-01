@@ -131,6 +131,13 @@ export async function* sendMessage(
     return;
   }
 
+  // Route to Ollama for local models
+  if (conversation.runtimeId === "ollama") {
+    const { sendOllamaMessage } = await import("./ollama-engine");
+    yield* sendOllamaMessage(conversationId, userContent, signal);
+    return;
+  }
+
   const runtimeId = conversation.runtimeId;
   const providerId = getProviderForRuntime(runtimeId);
 

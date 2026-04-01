@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { CHAT_MODELS, DEFAULT_CHAT_MODEL, type ChatModelOption } from "@/lib/chat/types";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +25,7 @@ const tierEmoji: Record<string, string> = {
   Fast: "\u26A1",
   Balanced: "\u2728",
   Best: "\uD83D\uDC8E",
+  Local: "\uD83C\uDFE0",
 };
 
 export function ChatModelSelector({
@@ -31,7 +33,27 @@ export function ChatModelSelector({
   onModelChange,
   models = CHAT_MODELS,
 }: ChatModelSelectorProps) {
-  const current = models.find((m) => m.id === modelId) ?? models[0] ?? { id: modelId, label: modelId, provider: "anthropic" as const, tier: "Balanced", costLabel: "$$" };
+  const [ollamaModels, setOllamaModels] = useState<ChatModelOption[]>([]);
+
+  // Fetch available Ollama models on mount
+  useEffect(() => {
+    fetch("/api/runtimes/ollama")
+      .then((r) => (r.ok ? r.json() : { models: [] }))
+      .then((data: { models?: Array<{ name: string; details?: { parameter_size?: string } }> }) => {
+        const models = (data.models ?? []).map((m) => ({
+          id: `ollama:${m.name}`,
+          label: m.name.replace(/:latest$/, ""),
+          provider: "ollama" as const,
+          tier: "Local",
+          costLabel: "Free",
+        }));
+        setOllamaModels(models);
+      })
+      .catch(() => {});
+  }, []);
+
+  const allModels = [...models, ...ollamaModels];
+  const current = allModels.find((m) => m.id === modelId) ?? allModels[0] ?? { id: modelId, label: modelId, provider: "anthropic" as const, tier: "Balanced", costLabel: "$$" };
 
   const anthropicModels = models.filter(
     (m) => m.provider === "anthropic"
@@ -73,6 +95,25 @@ export function ChatModelSelector({
             </DropdownMenuLabel>
             <DropdownMenuGroup>
               {openaiModels.map((m) => (
+                <ModelMenuItem
+                  key={m.id}
+                  model={m}
+                  isSelected={m.id === modelId}
+                  onSelect={onModelChange}
+                />
+              ))}
+            </DropdownMenuGroup>
+          </>
+        )}
+
+        {ollamaModels.length > 0 && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-xs text-muted-foreground">
+              Ollama (Local)
+            </DropdownMenuLabel>
+            <DropdownMenuGroup>
+              {ollamaModels.map((m) => (
                 <ModelMenuItem
                   key={m.id}
                   model={m}
