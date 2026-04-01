@@ -209,7 +209,7 @@ Features that enhance the product but aren't essential for first use — homepag
 | Feature | Priority | Status | Dependencies |
 |---------|----------|--------|--------------|
 | [multi-channel-delivery](multi-channel-delivery.md) | P2 | completed | heartbeat-scheduler |
-| [bidirectional-channel-chat](bidirectional-channel-chat.md) | P1 | planned | multi-channel-delivery, chat-engine |
+| [bidirectional-channel-chat](bidirectional-channel-chat.md) | P1 | completed | multi-channel-delivery, chat-engine |
 | [agent-async-handoffs](agent-async-handoffs.md) | P2 | completed | multi-agent-routing, heartbeat-scheduler |
 
 ### Vision Alignment — Runtime Expansion

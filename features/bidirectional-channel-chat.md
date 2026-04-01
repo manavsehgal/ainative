@@ -1,6 +1,6 @@
 ---
 title: Bidirectional Channel Chat
-status: planned
+status: completed
 priority: P1
 milestone: post-mvp
 source: features/multi-channel-delivery.md

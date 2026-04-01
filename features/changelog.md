@@ -2,8 +2,8 @@
 
 ## 2026-03-31
 
-### Groomed
-- `bidirectional-channel-chat` (P1) — Promoted from deferred Phase 2 of multi-channel-delivery. Channel Gateway bridges inbound Slack/Telegram messages to existing chat engine. 5 phases: data foundation, gateway, Telegram, Slack, permissions+UI
+### Completed
+- `bidirectional-channel-chat` (P1) — Channel Gateway bridges inbound Slack/Telegram messages to existing chat engine. Auto-polling for local dev (5s interval). Settings UI with Chat/Active switches, Test button with status indicator. Multi-turn conversations, turn locking, permission handling via channel replies. Slack requires botToken + channels:history + chat:write scopes
 
 ## 2026-03-31
 
