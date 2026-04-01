@@ -441,52 +441,70 @@ export function ChannelsSection() {
                             </Badge>
                           )}
                         </div>
-                        <div className="flex items-center gap-1 mt-0.5">
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {/* Toggles */}
+                      <div className="flex items-center gap-3">
+                        {ch.channelType !== "webhook" && (
+                          <div className="flex items-center gap-1.5">
+                            <Label
+                              htmlFor={`chat-${ch.id}`}
+                              className="text-xs text-muted-foreground cursor-pointer"
+                            >
+                              Chat
+                            </Label>
+                            <Switch
+                              id={`chat-${ch.id}`}
+                              checked={ch.direction === "bidirectional"}
+                              onCheckedChange={() => handleDirectionToggle(ch)}
+                            />
+                          </div>
+                        )}
+                        <div className="flex items-center gap-1.5">
+                          <Label
+                            htmlFor={`active-${ch.id}`}
+                            className="text-xs text-muted-foreground cursor-pointer"
+                          >
+                            Active
+                          </Label>
+                          <Switch
+                            id={`active-${ch.id}`}
+                            checked={ch.status === "active"}
+                            onCheckedChange={() => handleToggle(ch.id, ch.status)}
+                          />
+                        </div>
+                      </div>
+                      <div className="h-4 w-px bg-border" />
+                      {/* Actions */}
+                      <div className="flex items-center gap-1.5">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleTest(ch.id)}
+                          disabled={testingId === ch.id}
+                        >
+                          {testingId === ch.id ? (
+                            <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Zap className="mr-1 h-3.5 w-3.5" />
+                          )}
+                          Test
+                        </Button>
+                        <div className="flex items-center gap-1">
                           <TestIcon className={`h-3 w-3 ${testColor}`} />
                           <span className={`text-xs ${testColor}`}>
                             {ch.testStatus}
                           </span>
                         </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {ch.channelType !== "webhook" && (
                         <Button
                           variant="ghost"
-                          size="sm"
-                          onClick={() => handleDirectionToggle(ch)}
-                          title={
-                            ch.direction === "bidirectional"
-                              ? "Disable bidirectional chat"
-                              : "Enable bidirectional chat"
-                          }
+                          size="icon"
+                          onClick={() => handleDelete(ch.id)}
                         >
-                          {ch.direction === "bidirectional" ? "Outbound Only" : "Enable Chat"}
+                          <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleTest(ch.id)}
-                        disabled={testingId === ch.id}
-                      >
-                        {testingId === ch.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          "Test"
-                        )}
-                      </Button>
-                      <Switch
-                        checked={ch.status === "active"}
-                        onCheckedChange={() => handleToggle(ch.id, ch.status)}
-                      />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(ch.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      </div>
                     </div>
                   </div>
                   {ch.direction === "bidirectional" && (
