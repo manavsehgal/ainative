@@ -123,6 +123,16 @@
       "screengrabCount": 5
     },
     {
+      "slug": "delivery-channels",
+      "title": "Delivery Channels",
+      "category": "feature-reference",
+      "path": "features/delivery-channels.md",
+      "route": "/settings",
+      "tags": ["delivery-channels", "slack", "telegram", "webhook", "notifications", "integrations"],
+      "features": ["delivery-channels"],
+      "screengrabCount": 0
+    },
+    {
       "slug": "playbook",
       "title": "Playbook",
       "category": "feature-reference",
@@ -254,7 +264,7 @@
     }
   ],
   "metadata": {
-    "totalDocs": 28,
+    "totalDocs": 29,
     "totalScreengrabs": 44,
     "featuresCovered": 58,
     "appSections": 15
