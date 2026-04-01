@@ -31,8 +31,11 @@ export function gatherChapterContext(chapterId: string): ChapterContext {
   const sourceDocSlugs = mapping?.docs ?? [];
   const slug = chapterIdToSlug(chapterId);
 
+  // Resolve paths relative to source file, not cwd (npx-safe)
+  const appRoot = join(import.meta.dirname ?? __dirname, "..", "..", "..");
+
   // Read the current chapter markdown (if it exists)
-  const chapterMdPath = join(process.cwd(), "book", "chapters", `${slug}.md`);
+  const chapterMdPath = join(appRoot, "book", "chapters", `${slug}.md`);
   const currentMarkdown = existsSync(chapterMdPath)
     ? readFileSync(chapterMdPath, "utf-8")
     : null;
@@ -40,7 +43,7 @@ export function gatherChapterContext(chapterId: string): ChapterContext {
   // Read related playbook docs for content
   const sourceContents: string[] = [];
   for (const docSlug of sourceDocSlugs) {
-    const docPath = join(process.cwd(), "docs", "features", `${docSlug}.md`);
+    const docPath = join(appRoot, "docs", "features", `${docSlug}.md`);
     if (existsSync(docPath)) {
       const content = readFileSync(docPath, "utf-8");
       sourceContents.push(`### Feature: ${docSlug}\n${content}`);
@@ -48,7 +51,7 @@ export function gatherChapterContext(chapterId: string): ChapterContext {
   }
 
   // Read the book strategy document
-  const strategyPath = join(process.cwd(), "ai-native-notes", "ai-native-book-strategy.md");
+  const strategyPath = join(appRoot, "ai-native-notes", "ai-native-book-strategy.md");
   const strategy = existsSync(strategyPath)
     ? readFileSync(strategyPath, "utf-8")
     : null;

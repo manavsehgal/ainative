@@ -15,20 +15,15 @@ import { eq, and } from "drizzle-orm";
  * Builtins ship inside the repo at src/lib/agents/profiles/builtins/.
  * At runtime they are copied (if missing) to ~/.claude/skills/ so users
  * can customize them without touching source.
+ * Uses import.meta.dirname (not process.cwd()) so it works under npx.
  */
-const BUILTINS_DIR_PRIMARY = path.resolve(
+const BUILTINS_DIR = path.resolve(
   import.meta.dirname ?? __dirname,
   "builtins"
 );
-const BUILTINS_DIR_FALLBACK = path.join(
-  process.cwd(),
-  "src/lib/agents/profiles/builtins"
-);
 
-/** Resolve builtins dir — import.meta.dirname may point to .next/ in bundled contexts */
 function getBuiltinsDir(): string {
-  if (fs.existsSync(BUILTINS_DIR_PRIMARY)) return BUILTINS_DIR_PRIMARY;
-  return BUILTINS_DIR_FALLBACK;
+  return BUILTINS_DIR;
 }
 
 const SKILLS_DIR = path.join(

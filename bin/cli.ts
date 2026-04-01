@@ -151,7 +151,7 @@ async function main() {
       const candidate = join(searchDir, "node_modules", "next", "package.json");
       if (existsSync(candidate)) {
         const hoistedRoot = searchDir;
-        for (const name of ["src", "public", "docs"]) {
+        for (const name of ["src", "public", "docs", "book", "ai-native-notes"]) {
           const dest = join(hoistedRoot, name);
           const src = join(appDir, name);
           if (!existsSync(dest) && existsSync(src)) {

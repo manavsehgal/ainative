@@ -154,7 +154,9 @@ function tryLoadMarkdownChapter(id: string): BookChapter | null {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { parseMarkdownChapter } = require("./markdown-parser") as { parseMarkdownChapter: (md: string, slug: string) => { sections: Array<{ id: string; title: string; content: import("./types").ContentBlock[] }> } };
 
-    const filePath = join(process.cwd(), "book", "chapters", `${fileSlug}.md`);
+    // Resolve relative to source file, not cwd (npx-safe)
+    const appRoot = join(import.meta.dirname ?? __dirname, "..", "..", "..");
+    const filePath = join(appRoot, "book", "chapters", `${fileSlug}.md`);
     if (!existsSync(filePath)) return null;
 
     const content = readFileSync(filePath, "utf-8");

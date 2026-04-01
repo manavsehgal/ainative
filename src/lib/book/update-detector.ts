@@ -33,7 +33,9 @@ function getLastGenerated(chapterId: string): string | null {
   const slug = CHAPTER_SLUGS[chapterId];
   if (!slug) return null;
 
-  const mdPath = join(process.cwd(), "book", "chapters", `${slug}.md`);
+  // Resolve relative to source file, not cwd (npx-safe)
+  const appRoot = join(import.meta.dirname ?? __dirname, "..", "..", "..");
+  const mdPath = join(appRoot, "book", "chapters", `${slug}.md`);
   if (!existsSync(mdPath)) return null;
 
   const content = readFileSync(mdPath, "utf-8");

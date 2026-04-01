@@ -3,16 +3,20 @@ import type { ProcessorResult } from "../registry";
 
 /** Parse XLSX/CSV to a text table representation */
 export async function processSpreadsheet(filePath: string): Promise<ProcessorResult> {
-  const XLSX = await import("xlsx");
+  const ExcelJS = await import("exceljs");
+  const workbook = new ExcelJS.Workbook();
   const buffer = await readFile(filePath);
-  const workbook = XLSX.read(buffer, { type: "buffer" });
+  await workbook.xlsx.load(buffer as unknown as Buffer);
 
   const sheets: string[] = [];
-  for (const sheetName of workbook.SheetNames) {
-    const sheet = workbook.Sheets[sheetName];
-    const csv = XLSX.utils.sheet_to_csv(sheet);
-    sheets.push(`--- Sheet: ${sheetName} ---\n${csv}`);
-  }
+  workbook.eachSheet((worksheet) => {
+    const rows: string[] = [];
+    worksheet.eachRow((row) => {
+      const values = (row.values as (string | number | null | undefined)[]).slice(1); // ExcelJS is 1-indexed
+      rows.push(values.map((v) => (v ?? "").toString()).join(","));
+    });
+    sheets.push(`--- Sheet: ${worksheet.name} ---\n${rows.join("\n")}`);
+  });
 
   return { extractedText: sheets.join("\n\n") };
 }

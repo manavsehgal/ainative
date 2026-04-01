@@ -22,6 +22,15 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Stagent",
   description: "AI agent task management",
+  icons: {
+    icon: [
+      { url: "/stagent-s-64.png", sizes: "64x64", type: "image/png" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+    ],
+    apple: [
+      { url: "/stagent-s-128.png", sizes: "128x128", type: "image/png" },
+    ],
+  },
 };
 
 // Inline theme bootstrap prevents a flash between the server render and local theme preference.

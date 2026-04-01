@@ -162,15 +162,17 @@ async function createPptx(slides: string[]): Promise<Buffer> {
   return Buffer.from(buf);
 }
 
-/** Create a valid XLSX using the xlsx library */
-function createXlsxSync(csvContent: string): Buffer {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const XLSX = require("xlsx");
+/** Create a valid XLSX using exceljs */
+async function createXlsx(csvContent: string): Promise<Buffer> {
+  const ExcelJS = await import("exceljs");
+  const workbook = new ExcelJS.Workbook();
+  const ws = workbook.addWorksheet("Sheet1");
   const rows = csvContent.split("\n").map((line: string) => line.split(","));
-  const ws = XLSX.utils.aoa_to_sheet(rows);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
-  return XLSX.write(wb, { type: "buffer", bookType: "xlsx" }) as Buffer;
+  for (const row of rows) {
+    ws.addRow(row);
+  }
+  const arrayBuffer = await workbook.xlsx.writeBuffer();
+  return Buffer.from(arrayBuffer);
 }
 
 /** Create a minimal valid PDF with text content */
@@ -254,9 +256,8 @@ const DOCUMENTS: DocumentDef[] = [
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     projectIndex: 0,
     taskIndex: 0,
-    content: () =>
-      Promise.resolve(
-        createXlsxSync(
+    content: async () =>
+      createXlsx(
           `Ticker,Shares,Avg Cost,Current Price,Market Value,Sector
 NVDA,45,285.50,890.25,40061.25,Technology
 AAPL,120,142.30,178.50,21420.00,Technology
@@ -273,7 +274,6 @@ LLY,15,580.00,782.50,11737.50,Healthcare
 HD,35,325.00,348.90,12211.50,Consumer
 MA,40,368.50,462.80,18512.00,Finance
 CVX,55,152.30,158.40,8712.00,Energy`
-        )
       ),
   },
   {
@@ -398,9 +398,8 @@ Tertiary: Newsletter subscription`
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     projectIndex: 2,
     taskIndex: 10,
-    content: () =>
-      Promise.resolve(
-        createXlsxSync(
+    content: async () =>
+      createXlsx(
           `Name,Title,Company,Industry,Size,LinkedIn URL,Email,Status
 Sarah Chen,VP Engineering,Acme Corp,SaaS,500-1000,linkedin.com/in/sarachen,s.chen@acmecorp.com,Qualified
 Marcus Johnson,Director of Engineering,Acme Corp,SaaS,500-1000,linkedin.com/in/marcusjohnson,m.johnson@acmecorp.com,Qualified
@@ -414,7 +413,6 @@ Nina Patel,CTO,QuickShip,Logistics,200-500,linkedin.com/in/ninapatel,n.patel@qui
 Alex Turner,Director of Engineering,BrightPath,EdTech,100-200,linkedin.com/in/alexturner,a.turner@brightpath.edu,Qualified
 Sophie Reed,VP Product,GreenGrid,CleanTech,50-200,linkedin.com/in/sophiereed,s.reed@greengrid.io,Researching
 Chris Wong,VP Engineering,NexaPay,FinTech,200-500,linkedin.com/in/chriswong,c.wong@nexapay.com,Qualified`
-        )
       ),
   },
   {
@@ -514,9 +512,8 @@ Total: $2,052 (Pre-approved #EXP-2025-0342)`
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     projectIndex: 3,
     taskIndex: 19,
-    content: () =>
-      Promise.resolve(
-        createXlsxSync(
+    content: async () =>
+      createXlsx(
           `Date,Category,Vendor,Amount,Description,Receipt
 2025-03-15,Airfare,United Airlines,342.00,SFO to JFK Economy Plus UA 456,receipt-001.pdf
 2025-03-15,Ground Transport,Uber,62.50,JFK to Manhattan Club hotel,receipt-002.pdf
@@ -536,7 +533,6 @@ Total: $2,052 (Pre-approved #EXP-2025-0342)`
 2025-03-15,Meals,Starbucks JFK,8.40,Coffee at terminal,receipt-016.pdf
 2025-03-16,Miscellaneous,CVS Pharmacy,12.80,Phone charger,receipt-017.pdf
 2025-03-17,Miscellaneous,Hotel Concierge,15.00,Luggage storage tip,receipt-018.pdf`
-        )
       ),
   },
 
@@ -590,9 +586,8 @@ STATUS: 7 of 8 documents collected (87.5%)`
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     projectIndex: 4,
     taskIndex: 21,
-    content: () =>
-      Promise.resolve(
-        createXlsxSync(
+    content: async () =>
+      createXlsx(
           `Date,Category,Description,Amount,Deductible,Notes
 2025-01-05,Home Office,Internet service (pro-rata),45.00,Yes,8.3% of total
 2025-01-05,Home Office,Electricity (pro-rata),32.00,Yes,8.3% of total
@@ -619,7 +614,6 @@ STATUS: 7 of 8 documents collected (87.5%)`
 2025-04-01,Health,HSA contribution,500.00,Yes,Monthly
 2025-04-05,Home Office,Internet (pro-rata),45.00,Yes,Monthly
 2025-04-05,Home Office,Electricity (pro-rata),38.00,Yes,Spring cycle`
-        )
       ),
   },
 
