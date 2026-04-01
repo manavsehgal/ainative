@@ -50,6 +50,7 @@ interface ChannelConfig {
   config: string;
   status: "active" | "disabled";
   testStatus: "untested" | "ok" | "failed";
+  direction: "outbound" | "bidirectional";
   createdAt: string;
   updatedAt: string;
 }
@@ -85,6 +86,10 @@ export function ChannelsSection() {
   const [formChatId, setFormChatId] = useState("");
   const [formUrl, setFormUrl] = useState("");
   const [formHeaders, setFormHeaders] = useState("");
+  // Slack bidirectional fields
+  const [formSlackBotToken, setFormSlackBotToken] = useState("");
+  const [formSigningSecret, setFormSigningSecret] = useState("");
+  const [formSlackChannelId, setFormSlackChannelId] = useState("");
   const [saving, setSaving] = useState(false);
 
   const fetchChannels = useCallback(async () => {
@@ -111,12 +116,19 @@ export function ChannelsSection() {
     setFormChatId("");
     setFormUrl("");
     setFormHeaders("");
+    setFormSlackBotToken("");
+    setFormSigningSecret("");
+    setFormSlackChannelId("");
   };
 
   const handleCreate = async () => {
     let config: Record<string, unknown> = {};
     if (formType === "slack") {
       config = { webhookUrl: formWebhookUrl };
+      // Include bidirectional fields if provided
+      if (formSlackBotToken.trim()) config.botToken = formSlackBotToken.trim();
+      if (formSigningSecret.trim()) config.signingSecret = formSigningSecret.trim();
+      if (formSlackChannelId.trim()) config.slackChannelId = formSlackChannelId.trim();
     } else if (formType === "telegram") {
       config = { botToken: formBotToken, chatId: formChatId };
     } else {
@@ -207,6 +219,38 @@ export function ChannelsSection() {
     }
   };
 
+  const handleDirectionToggle = async (ch: ChannelConfig) => {
+    const newDirection = ch.direction === "outbound" ? "bidirectional" : "outbound";
+    try {
+      const res = await fetch(`/api/channels/${ch.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ direction: newDirection }),
+      });
+      if (res.ok) {
+        toast.success(
+          newDirection === "bidirectional"
+            ? "Bidirectional chat enabled"
+            : "Reverted to outbound-only"
+        );
+        fetchChannels();
+      }
+    } catch {
+      toast.error("Failed to update direction");
+    }
+  };
+
+  const getWebhookUrl = (ch: ChannelConfig): string => {
+    const base = typeof window !== "undefined" ? window.location.origin : "";
+    if (ch.channelType === "telegram") {
+      return `${base}/api/channels/inbound/telegram?configId=${ch.id}`;
+    }
+    if (ch.channelType === "slack") {
+      return `${base}/api/channels/inbound/slack?configId=${ch.id}`;
+    }
+    return `${base}/api/channels/inbound/webhook?configId=${ch.id}`;
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -260,14 +304,55 @@ export function ChannelsSection() {
                 </div>
 
                 {formType === "slack" && (
-                  <div className="space-y-2">
-                    <Label>Webhook URL</Label>
-                    <Input
-                      placeholder="https://hooks.slack.com/services/..."
-                      value={formWebhookUrl}
-                      onChange={(e) => setFormWebhookUrl(e.target.value)}
-                    />
-                  </div>
+                  <>
+                    <div className="space-y-2">
+                      <Label>Webhook URL</Label>
+                      <Input
+                        placeholder="https://hooks.slack.com/services/..."
+                        value={formWebhookUrl}
+                        onChange={(e) => setFormWebhookUrl(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>
+                        Bot Token{" "}
+                        <span className="text-muted-foreground font-normal">
+                          (for bidirectional chat)
+                        </span>
+                      </Label>
+                      <Input
+                        placeholder="xoxb-..."
+                        value={formSlackBotToken}
+                        onChange={(e) => setFormSlackBotToken(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>
+                        Signing Secret{" "}
+                        <span className="text-muted-foreground font-normal">
+                          (for bidirectional chat)
+                        </span>
+                      </Label>
+                      <Input
+                        placeholder="From Basic Information → App Credentials"
+                        value={formSigningSecret}
+                        onChange={(e) => setFormSigningSecret(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>
+                        Channel ID{" "}
+                        <span className="text-muted-foreground font-normal">
+                          (for bidirectional chat)
+                        </span>
+                      </Label>
+                      <Input
+                        placeholder="C0123456789"
+                        value={formSlackChannelId}
+                        onChange={(e) => setFormSlackChannelId(e.target.value)}
+                      />
+                    </div>
+                  </>
                 )}
 
                 {formType === "telegram" && (
@@ -339,50 +424,79 @@ export function ChannelsSection() {
               return (
                 <div
                   key={ch.id}
-                  className="flex items-center justify-between rounded-lg border p-3"
+                  className="rounded-lg border p-3 space-y-2"
                 >
-                  <div className="flex items-center gap-3">
-                    <Icon className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">{ch.name}</span>
-                        <Badge variant="outline" className="text-xs capitalize">
-                          {ch.channelType}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-1 mt-0.5">
-                        <TestIcon className={`h-3 w-3 ${testColor}`} />
-                        <span className={`text-xs ${testColor}`}>
-                          {ch.testStatus}
-                        </span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Icon className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">{ch.name}</span>
+                          <Badge variant="outline" className="text-xs capitalize">
+                            {ch.channelType}
+                          </Badge>
+                          {ch.direction === "bidirectional" && (
+                            <Badge variant="default" className="text-xs">
+                              Chat
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <TestIcon className={`h-3 w-3 ${testColor}`} />
+                          <span className={`text-xs ${testColor}`}>
+                            {ch.testStatus}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleTest(ch.id)}
-                      disabled={testingId === ch.id}
-                    >
-                      {testingId === ch.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        "Test"
+                    <div className="flex items-center gap-2">
+                      {ch.channelType !== "webhook" && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDirectionToggle(ch)}
+                          title={
+                            ch.direction === "bidirectional"
+                              ? "Disable bidirectional chat"
+                              : "Enable bidirectional chat"
+                          }
+                        >
+                          {ch.direction === "bidirectional" ? "Outbound Only" : "Enable Chat"}
+                        </Button>
                       )}
-                    </Button>
-                    <Switch
-                      checked={ch.status === "active"}
-                      onCheckedChange={() => handleToggle(ch.id, ch.status)}
-                    />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDelete(ch.id)}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleTest(ch.id)}
+                        disabled={testingId === ch.id}
+                      >
+                        {testingId === ch.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          "Test"
+                        )}
+                      </Button>
+                      <Switch
+                        checked={ch.status === "active"}
+                        onCheckedChange={() => handleToggle(ch.id, ch.status)}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDelete(ch.id)}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
                   </div>
+                  {ch.direction === "bidirectional" && (
+                    <div className="pl-7 text-xs text-muted-foreground">
+                      <span className="font-medium">Webhook URL:</span>{" "}
+                      <code className="bg-muted px-1 py-0.5 rounded text-[11px] select-all">
+                        {getWebhookUrl(ch)}
+                      </code>
+                    </div>
+                  )}
                 </div>
               );
             })}

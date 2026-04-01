@@ -27,10 +27,11 @@ export async function PATCH(
 ) {
   const { id } = await params;
   const body = await req.json();
-  const { name, config, status } = body as {
+  const { name, config, status, direction } = body as {
     name?: string;
     config?: Record<string, unknown>;
     status?: "active" | "disabled";
+    direction?: "outbound" | "bidirectional";
   };
 
   const [channel] = await db
@@ -62,6 +63,13 @@ export async function PATCH(
       return NextResponse.json({ error: "Invalid status" }, { status: 400 });
     }
     updates.status = status;
+  }
+
+  if (direction !== undefined) {
+    if (!["outbound", "bidirectional"].includes(direction)) {
+      return NextResponse.json({ error: "Invalid direction" }, { status: 400 });
+    }
+    updates.direction = direction;
   }
 
   await db.update(channelConfigs).set(updates).where(eq(channelConfigs.id, id));

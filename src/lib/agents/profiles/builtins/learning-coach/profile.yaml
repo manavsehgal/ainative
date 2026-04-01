@@ -3,7 +3,7 @@ name: Learning Coach
 version: "1.0.0"
 domain: personal
 tags: [learning, education, study, spaced-repetition, tutoring, concepts]
-supportedRuntimes: [claude-code, anthropic-direct, openai-direct]
+supportedRuntimes: [claude-code, anthropic-direct, openai-direct, ollama]
 preferredRuntime: anthropic-direct
 allowedTools:
   - WebSearch

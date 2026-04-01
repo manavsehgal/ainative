@@ -90,12 +90,14 @@ This walkthrough creates a Slack App with an Incoming Webhook and connects it to
 
 1. Open Telegram and message [@BotFather](https://t.me/BotFather)
 2. Send `/newbot`, follow the prompts, and copy the **Bot Token** (format: `123456:ABC-DEF...`)
-3. Start a conversation with your new bot (or add it to a group)
-4. Get your **Chat ID** by visiting `https://api.telegram.org/bot<TOKEN>/getUpdates` after sending a message -- the `chat.id` field contains the value you need (negative for groups)
+3. Open Telegram, search for your bot by its username, and **send it any message** (e.g., "hello") -- this is required before you can retrieve your Chat ID
+4. Get your **Chat ID** by visiting `https://api.telegram.org/bot<TOKEN>/getUpdates` in your browser -- the `chat.id` field in the JSON response contains the value you need (negative for groups). If the result array is empty, send another message to the bot first, then reload the URL
 5. In Stagent Settings → Delivery Channels → **+ Add Channel**
 6. Set Channel Type to **Telegram**
 7. Enter the Bot Token and Chat ID
-8. Click **Create Channel** → **Test** → verify green **ok**
+8. Click **Create Channel**
+9. Click **Test** next to the new channel -- verify the status changes to green **ok**
+10. Open the bot conversation in Telegram and confirm the test message "Stagent channel test - connection OK" was delivered
 
 ### Add a Generic Webhook
 

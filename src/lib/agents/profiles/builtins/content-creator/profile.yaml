@@ -3,7 +3,7 @@ name: Content Creator
 version: "1.0.0"
 domain: work
 tags: [content, writing, blog, copywriting, social-media, newsletter, editing]
-supportedRuntimes: [claude-code, openai-codex-app-server, anthropic-direct, openai-direct]
+supportedRuntimes: [claude-code, openai-codex-app-server, anthropic-direct, openai-direct, ollama]
 preferredRuntime: anthropic-direct
 allowedTools:
   - Read

@@ -3,7 +3,7 @@ name: Operations Coordinator
 version: "1.0.0"
 domain: work
 tags: [operations, coordination, process, sop, reporting, efficiency, logistics]
-supportedRuntimes: [claude-code, openai-codex-app-server, anthropic-direct, openai-direct]
+supportedRuntimes: [claude-code, openai-codex-app-server, anthropic-direct, openai-direct, ollama]
 preferredRuntime: anthropic-direct
 allowedTools:
   - Read

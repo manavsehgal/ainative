@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, index, uniqueIndex } from "drizzle-orm/sqlite-core";
 import type { InferSelectModel } from "drizzle-orm";
 
 export const projects = sqliteTable("projects", {
@@ -604,9 +604,10 @@ export const channelConfigs = sqliteTable(
     id: text("id").primaryKey(),
     channelType: text("channel_type", { enum: ["slack", "telegram", "webhook"] }).notNull(),
     name: text("name").notNull(),
-    config: text("config").notNull(), // JSON: { webhookUrl?, botToken?, chatId?, channelId? }
+    config: text("config").notNull(), // JSON: { webhookUrl?, botToken?, chatId?, channelId?, signingSecret? }
     status: text("status", { enum: ["active", "disabled"] }).default("active").notNull(),
     testStatus: text("test_status", { enum: ["untested", "ok", "failed"] }).default("untested").notNull(),
+    direction: text("direction", { enum: ["outbound", "bidirectional"] }).default("outbound").notNull(),
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
   },
@@ -614,6 +615,34 @@ export const channelConfigs = sqliteTable(
     index("idx_channel_configs_type").on(table.channelType),
   ]
 );
+
+export type ChannelConfigRow = InferSelectModel<typeof channelConfigs>;
+
+// ── Bidirectional Channel Chat ────────────────────────────────────────
+
+export const channelBindings = sqliteTable(
+  "channel_bindings",
+  {
+    id: text("id").primaryKey(),
+    channelConfigId: text("channel_config_id").references(() => channelConfigs.id).notNull(),
+    conversationId: text("conversation_id").references(() => conversations.id).notNull(),
+    externalThreadId: text("external_thread_id"),
+    runtimeId: text("runtime_id").notNull(),
+    modelId: text("model_id"),
+    profileId: text("profile_id"),
+    status: text("status", { enum: ["active", "paused", "archived"] }).default("active").notNull(),
+    pendingRequestId: text("pending_request_id"),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_channel_bindings_config").on(table.channelConfigId),
+    index("idx_channel_bindings_conversation").on(table.conversationId),
+    uniqueIndex("idx_channel_bindings_config_thread").on(table.channelConfigId, table.externalThreadId),
+  ]
+);
+
+export type ChannelBindingRow = InferSelectModel<typeof channelBindings>;
 
 // ── Agent Async Handoffs ──────────────────────────────────────────────
 
@@ -670,5 +699,4 @@ export type ProfileTestResultRow = InferSelectModel<typeof profileTestResults>;
 export type ReadingProgressRow = InferSelectModel<typeof readingProgress>;
 export type BookmarkRow = InferSelectModel<typeof bookmarks>;
 export type RepoImportRow = InferSelectModel<typeof repoImports>;
-export type ChannelConfigRow = InferSelectModel<typeof channelConfigs>;
 export type AgentMessageRow = InferSelectModel<typeof agentMessages>;

@@ -2,6 +2,11 @@
 
 ## 2026-03-31
 
+### Groomed
+- `bidirectional-channel-chat` (P1) — Promoted from deferred Phase 2 of multi-channel-delivery. Channel Gateway bridges inbound Slack/Telegram messages to existing chat engine. 5 phases: data foundation, gateway, Telegram, Slack, permissions+UI
+
+## 2026-03-31
+
 ### Completed — Vision Alignment Sprints 33-37
 
 **Sprint 33 — Business Positioning (parallel):**

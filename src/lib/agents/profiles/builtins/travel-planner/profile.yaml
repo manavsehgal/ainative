@@ -3,7 +3,7 @@ name: Travel Planner
 version: "1.0.0"
 domain: personal
 tags: [travel, itinerary, budget, booking, vacation, trip]
-supportedRuntimes: [claude-code, anthropic-direct, openai-direct]
+supportedRuntimes: [claude-code, anthropic-direct, openai-direct, ollama]
 preferredRuntime: anthropic-direct
 allowedTools:
   - WebSearch

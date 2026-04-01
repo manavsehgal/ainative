@@ -22,6 +22,7 @@ import {
   bookmarks,
   profileTestResults,
   repoImports,
+  channelBindings,
   channelConfigs,
   agentMessages,
 } from "@/lib/db/schema";
@@ -56,6 +57,9 @@ export function clearAllData() {
   // Book tables (no FK dependencies)
   const bookmarksDeleted = db.delete(bookmarks).run().changes;
   const readingProgressDeleted = db.delete(readingProgress).run().changes;
+
+  // Channel bindings reference channel_configs + conversations — delete before both
+  const channelBindingsDeleted = db.delete(channelBindings).run().changes;
 
   // Agent messages reference tasks — delete before tasks
   const agentMessagesDeleted = db.delete(agentMessages).run().changes;
@@ -124,6 +128,7 @@ export function clearAllData() {
     repoImports: repoImportsDeleted,
     profileTestResults: profileTestResultsDeleted,
     agentMessages: agentMessagesDeleted,
+    channelBindings: channelBindingsDeleted,
     channelConfigs: channelConfigsDeleted,
     files: filesDeleted,
     screenshots: screenshotsDeleted,
