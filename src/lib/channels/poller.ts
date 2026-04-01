@@ -11,12 +11,16 @@ import { channelConfigs } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { telegramAdapter } from "./telegram-adapter";
 import { handleInboundMessage } from "./gateway";
+import type { InboundMessage } from "./types";
 
 const POLL_INTERVAL_MS = 5_000; // 5 seconds
 let intervalHandle: ReturnType<typeof setInterval> | null = null;
 
 /** Per-channel offset tracking (in-memory, resets on restart). */
 const channelOffsets = new Map<string, number>();
+
+/** Per-channel Slack timestamp tracking (in-memory). */
+const slackTimestamps = new Map<string, string>();
 
 /** Lock to prevent overlapping ticks. */
 let ticking = false;
@@ -72,8 +76,9 @@ async function pollChannel(
 ): Promise<void> {
   if (channel.channelType === "telegram") {
     await pollTelegram(channel);
+  } else if (channel.channelType === "slack") {
+    await pollSlack(channel);
   }
-  // Slack uses Events API (push-based) — no polling needed
   // Webhook channels are push-based — no polling needed
 }
 
@@ -153,6 +158,102 @@ async function pollTelegram(
       // Non-fatal
     }
   }
+}
+
+async function pollSlack(
+  channel: typeof channelConfigs.$inferSelect
+): Promise<void> {
+  let parsedConfig: Record<string, unknown>;
+  try {
+    parsedConfig = JSON.parse(channel.config) as Record<string, unknown>;
+  } catch {
+    return;
+  }
+
+  const botToken = parsedConfig.botToken as string;
+  const slackChannelId = parsedConfig.slackChannelId as string;
+  if (!botToken || !slackChannelId) return;
+
+  // Use oldest timestamp to only fetch new messages
+  const oldest = slackTimestamps.get(channel.id);
+
+  const params = new URLSearchParams({
+    channel: slackChannelId,
+    limit: "20",
+  });
+  if (oldest) {
+    params.set("oldest", oldest);
+  }
+
+  let messages: SlackMessage[];
+  try {
+    const res = await fetch(
+      `https://slack.com/api/conversations.history?${params.toString()}`,
+      {
+        headers: { Authorization: `Bearer ${botToken}` },
+      }
+    );
+    const data = (await res.json()) as {
+      ok: boolean;
+      messages?: SlackMessage[];
+      error?: string;
+    };
+    if (!data.ok || !data.messages) return;
+    messages = data.messages;
+  } catch {
+    return; // Network error — retry next tick
+  }
+
+  if (messages.length === 0) return;
+
+  // Slack returns newest first — reverse to process chronologically
+  messages.reverse();
+
+  let maxTs = oldest ?? "0";
+  for (const msg of messages) {
+    // Skip bot messages, subtypes (joins, edits), and already-seen messages
+    if (msg.bot_id || msg.subtype) continue;
+    if (oldest && msg.ts <= oldest) continue;
+
+    if (msg.ts > maxTs) {
+      maxTs = msg.ts;
+    }
+
+    const inbound: InboundMessage = {
+      text: msg.text ?? "",
+      senderId: msg.user,
+      senderName: msg.user,
+      externalThreadId: msg.thread_ts ?? msg.ts,
+      externalMessageId: msg.ts,
+      isBot: !!msg.bot_id,
+    };
+
+    if (!inbound.text) continue;
+
+    try {
+      await handleInboundMessage({
+        channelConfigId: channel.id,
+        message: inbound,
+      });
+    } catch (err) {
+      console.error(`[channel-poller] error processing slack message ${msg.ts}:`, err);
+    }
+  }
+
+  // Track the latest timestamp so we don't re-process
+  if (maxTs > (oldest ?? "0")) {
+    slackTimestamps.set(channel.id, maxTs);
+  }
+}
+
+interface SlackMessage {
+  type: string;
+  text?: string;
+  user?: string;
+  bot_id?: string;
+  subtype?: string;
+  ts: string;
+  thread_ts?: string;
 }
 
 interface TelegramUpdate {
