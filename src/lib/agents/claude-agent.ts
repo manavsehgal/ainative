@@ -372,7 +372,7 @@ export async function buildTaskQueryContext(
   const outputInstructions = buildTaskOutputInstructions(task.id);
   const learnedCtx = getActiveLearnedContext(profileId);
   const learnedCtxBlock = learnedCtx
-    ? `## Learned Context\nPatterns and insights learned from previous tasks:\n\n${learnedCtx}`
+    ? `## Learned Context\n<learned-context>\n${learnedCtx}\n</learned-context>`
     : "";
 
   // Resolve working directory: project's workingDirectory > launch cwd

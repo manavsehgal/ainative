@@ -39,8 +39,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid channel config" }, { status: 500 });
   }
 
+  // Require webhookSecret — refuse to process inbound messages without authentication
   const expectedSecret = parsedConfig.webhookSecret as string | undefined;
-  if (expectedSecret && secret !== expectedSecret) {
+  if (!expectedSecret) {
+    return NextResponse.json(
+      { error: "Channel config missing webhookSecret — cannot verify request" },
+      { status: 401 }
+    );
+  }
+
+  // NOTE: The secret is passed as a query-string parameter. This is Telegram's recommended
+  // webhook verification design (https://core.telegram.org/bots/api#setwebhook secret_token).
+  // Query strings may appear in server access logs — ensure logs are access-controlled.
+  if (secret !== expectedSecret) {
     return NextResponse.json({ error: "Invalid secret" }, { status: 403 });
   }
 

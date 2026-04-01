@@ -56,8 +56,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid channel config" }, { status: 500 });
   }
 
-  // Only verify signature if signingSecret is configured
-  if (parsedConfig.signingSecret && slackAdapter.verifySignature) {
+  // Require signingSecret — refuse to process inbound messages without signature verification
+  if (!parsedConfig.signingSecret) {
+    return NextResponse.json(
+      { error: "Channel config missing signingSecret — cannot verify request" },
+      { status: 401 }
+    );
+  }
+
+  if (slackAdapter.verifySignature) {
     const headers: Record<string, string> = {};
     req.headers.forEach((value, key) => {
       headers[key] = value;

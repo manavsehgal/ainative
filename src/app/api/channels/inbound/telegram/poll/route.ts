@@ -15,6 +15,13 @@ import { handleInboundMessage } from "@/lib/channels/gateway";
  * Returns the number of updates processed.
  */
 export async function POST(req: NextRequest) {
+  // Guard: only accept requests from the internal poller.
+  // The internal scheduler sets this header; external callers won't have it.
+  const internalToken = req.headers.get("x-stagent-internal");
+  if (internalToken !== "poll") {
+    return NextResponse.json({ error: "Unauthorized — internal use only" }, { status: 401 });
+  }
+
   const configId = req.nextUrl.searchParams.get("configId");
   if (!configId) {
     return NextResponse.json({ error: "Missing configId" }, { status: 400 });
@@ -28,6 +35,11 @@ export async function POST(req: NextRequest) {
 
   if (!config) {
     return NextResponse.json({ error: "Channel not found" }, { status: 404 });
+  }
+
+  // Refuse to poll disabled channels
+  if (config.status !== "active") {
+    return NextResponse.json({ error: "Channel is not active" }, { status: 403 });
   }
 
   let parsedConfig: Record<string, unknown>;

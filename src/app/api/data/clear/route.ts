@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { clearAllData } from "@/lib/data/clear";
 
 export async function POST() {
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json(null, { status: 404 });
+  }
+
   try {
     const deleted = clearAllData();
     return NextResponse.json({ success: true, deleted });

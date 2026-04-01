@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { documents, tasks, projects } from "@/lib/db/schema";
-import { eq, and, like, or, desc, sql } from "drizzle-orm";
+import { eq, and, like, or, desc } from "drizzle-orm";
 import { access, stat, copyFile, mkdir } from "fs/promises";
-import { basename, extname, join } from "path";
+import path, { basename, extname, join } from "path";
+import { homedir } from "os";
 import crypto from "crypto";
 import { getStagentUploadsDir } from "@/lib/utils/stagent-paths";
 import { processDocument } from "@/lib/documents/processor";
@@ -120,18 +121,47 @@ export async function POST(req: NextRequest) {
 
   const body = parsed.data;
 
+  // Path traversal protection: resolve and validate the file path
+  const resolvedPath = path.resolve(body.file_path);
+  const home = homedir();
+  const SENSITIVE_PREFIXES = ["/etc", "/var", "/proc", "/sys", "/dev", "/root"];
+  const SENSITIVE_HOME_DIRS = [".ssh", ".gnupg", ".aws", ".config", ".env"];
+
+  if (SENSITIVE_PREFIXES.some((prefix) => resolvedPath.startsWith(prefix))) {
+    return NextResponse.json(
+      { error: "Access denied: path points to a restricted system directory" },
+      { status: 403 }
+    );
+  }
+
+  if (resolvedPath.startsWith(home)) {
+    const relativeToHome = resolvedPath.slice(home.length + 1);
+    if (SENSITIVE_HOME_DIRS.some((dir) => relativeToHome.startsWith(dir))) {
+      return NextResponse.json(
+        { error: "Access denied: path points to a sensitive home directory" },
+        { status: 403 }
+      );
+    }
+  } else if (!resolvedPath.startsWith("/tmp")) {
+    // Outside home and not /tmp — reject
+    return NextResponse.json(
+      { error: "Access denied: path must be under the user's home directory or /tmp" },
+      { status: 403 }
+    );
+  }
+
   try {
-    await access(body.file_path);
+    await access(resolvedPath);
   } catch {
     return NextResponse.json({ error: `File not found: ${body.file_path}` }, { status: 400 });
   }
 
-  const stats = await stat(body.file_path);
+  const stats = await stat(resolvedPath);
   if (!stats.isFile()) {
     return NextResponse.json({ error: `Not a file: ${body.file_path}` }, { status: 400 });
   }
 
-  const originalName = basename(body.file_path);
+  const originalName = basename(resolvedPath);
   const ext = extname(originalName).toLowerCase();
   const mimeType = MIME_TYPES[ext] ?? "application/octet-stream";
   const id = crypto.randomUUID();
@@ -140,7 +170,7 @@ export async function POST(req: NextRequest) {
   const uploadsDir = getStagentUploadsDir();
   await mkdir(uploadsDir, { recursive: true });
   const storagePath = join(uploadsDir, filename);
-  await copyFile(body.file_path, storagePath);
+  await copyFile(resolvedPath, storagePath);
 
   const now = new Date();
   await db.insert(documents).values({

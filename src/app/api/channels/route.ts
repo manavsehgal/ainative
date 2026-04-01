@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { channelConfigs } from "@/lib/db/schema";
 import { desc, eq } from "drizzle-orm";
+import { maskChannelRow } from "@/lib/channels/types";
 
 const VALID_CHANNEL_TYPES = ["slack", "telegram", "webhook"] as const;
 
@@ -11,7 +12,7 @@ export async function GET() {
     .from(channelConfigs)
     .orderBy(desc(channelConfigs.createdAt));
 
-  return NextResponse.json(result);
+  return NextResponse.json(result.map(maskChannelRow));
 }
 
 export async function POST(req: NextRequest) {
@@ -67,5 +68,5 @@ export async function POST(req: NextRequest) {
     .from(channelConfigs)
     .where(eq(channelConfigs.id, id));
 
-  return NextResponse.json(created, { status: 201 });
+  return NextResponse.json(maskChannelRow(created), { status: 201 });
 }

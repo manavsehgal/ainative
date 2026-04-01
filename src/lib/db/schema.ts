@@ -604,7 +604,10 @@ export const channelConfigs = sqliteTable(
     id: text("id").primaryKey(),
     channelType: text("channel_type", { enum: ["slack", "telegram", "webhook"] }).notNull(),
     name: text("name").notNull(),
-    config: text("config").notNull(), // JSON: { webhookUrl?, botToken?, chatId?, channelId?, signingSecret? }
+    // SECURITY: The config JSON contains credentials (botToken, signingSecret, webhookSecret)
+    // stored as plaintext. A future improvement should encrypt these at rest.
+    // All API responses MUST mask sensitive fields via maskChannelConfig() before returning.
+    config: text("config").notNull(), // JSON: { webhookUrl?, botToken?, chatId?, channelId?, signingSecret?, webhookSecret? }
     status: text("status", { enum: ["active", "disabled"] }).default("active").notNull(),
     testStatus: text("test_status", { enum: ["untested", "ok", "failed"] }).default("untested").notNull(),
     direction: text("direction", { enum: ["outbound", "bidirectional"] }).default("outbound").notNull(),

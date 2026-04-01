@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { channelConfigs } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { maskChannelRow } from "@/lib/channels/types";
 
 export async function GET(
   _req: NextRequest,
@@ -18,7 +19,7 @@ export async function GET(
     return NextResponse.json({ error: "Channel not found" }, { status: 404 });
   }
 
-  return NextResponse.json(channel);
+  return NextResponse.json(maskChannelRow(channel));
 }
 
 export async function PATCH(
@@ -79,7 +80,7 @@ export async function PATCH(
     .from(channelConfigs)
     .where(eq(channelConfigs.id, id));
 
-  return NextResponse.json(updated);
+  return NextResponse.json(maskChannelRow(updated));
 }
 
 export async function DELETE(

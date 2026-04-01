@@ -30,6 +30,38 @@ export interface ChannelDeliveryResult {
   error?: string;
 }
 
+// ── Credential masking ───────────────────────────────────────────────
+
+/** Fields in channel config JSON that contain secrets and must be masked in API responses. */
+const SENSITIVE_CONFIG_KEYS = ["botToken", "signingSecret", "webhookSecret"];
+
+/**
+ * Mask sensitive fields in a channel config JSON string.
+ * Returns a new JSON string with secrets replaced by "****<last4>".
+ */
+export function maskChannelConfig(configJson: string): string {
+  try {
+    const parsed = JSON.parse(configJson) as Record<string, unknown>;
+    for (const key of SENSITIVE_CONFIG_KEYS) {
+      const val = parsed[key];
+      if (typeof val === "string" && val.length > 0) {
+        const last4 = val.slice(-4);
+        parsed[key] = `****${last4}`;
+      }
+    }
+    return JSON.stringify(parsed);
+  } catch {
+    return configJson;
+  }
+}
+
+/**
+ * Mask sensitive fields in a channel config row before returning from API.
+ */
+export function maskChannelRow<T extends { config: string }>(row: T): T {
+  return { ...row, config: maskChannelConfig(row.config) };
+}
+
 /** Normalized inbound message from any channel. */
 export interface InboundMessage {
   text: string;

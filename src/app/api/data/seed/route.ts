@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { seedSampleData } from "@/lib/data/seed";
 
 export async function POST() {
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json(null, { status: 404 });
+  }
+
   try {
     const seeded = await seedSampleData();
     return NextResponse.json({ success: true, seeded });
