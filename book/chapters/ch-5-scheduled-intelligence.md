@@ -1,22 +1,24 @@
 ---
 title: "Scheduled Intelligence"
-subtitle: "Time-Based Automation and Recurring Intelligence Loops"
+subtitle: "From Cron Jobs to Heartbeat-Driven Proactive Agents"
 chapter: 5
 part: 2
-readingTime: 11
+readingTime: 12
 relatedDocs: [schedules, monitoring]
-lastGeneratedBy: "2026-03-27"
+lastGeneratedBy: "2026-03-31T21:00:00Z"
 ---
+
+# Scheduled Intelligence
 
 ## The Problem
 
-Not all intelligence is triggered by human action. Some of the most valuable automation runs on a schedule — daily reports, weekly reviews, continuous monitoring. These are the heartbeat of an AI-native organization. While the previous chapters explored how agents execute tasks on demand and how humans gate dangerous operations, this chapter addresses a different question entirely: what happens when the human is not there at all?
+Not all intelligence is triggered by human action. Some of the most valuable automation runs on a schedule -- daily reports, weekly reviews, continuous monitoring. These are the heartbeat of an AI-native organization. While the previous chapters explored how agents execute tasks on demand and how humans gate dangerous operations, this chapter addresses a different question entirely: what happens when the human is not there at all?
 
-Traditional software answered this question decades ago with cron. A crontab entry, a shell script, a log file — the pattern is so old that it feels beneath discussion. But cron executes commands. It does not execute *intelligence*. The difference matters. A cron job runs the same script every time, producing output that varies only with the data it encounters. A scheduled intelligence loop runs a prompt through an agent that reasons, adapts, and makes decisions based on context that evolves between executions. The output of iteration three informs the behavior of iteration four. That is not batch processing. That is a feedback loop.
+Traditional software answered this question decades ago with cron. A crontab entry, a shell script, a log file -- the pattern is so old that it feels beneath discussion. But cron executes commands. It does not execute *intelligence*. The difference matters. A cron job runs the same script every time, producing output that varies only with the data it encounters. A scheduled intelligence loop runs a prompt through an agent that reasons, adapts, and makes decisions based on context that evolves between executions. The output of iteration three informs the behavior of iteration four. That is not batch processing. That is a feedback loop.
 
-The industry is converging on this insight from several directions. GitHub Actions supports `schedule` triggers with cron syntax, but the workflows themselves are static YAML pipelines — they do not learn between runs. Temporal and its spiritual predecessor Cadence brought durable execution to scheduled workflows, with retry policies, timeouts, and workflow versioning. These are powerful systems, but they orchestrate deterministic code paths. The AI-native equivalent orchestrates reasoning — and reasoning is neither deterministic nor idempotent.
+The industry is converging on this insight from several directions. GitHub Actions supports `schedule` triggers with cron syntax, but the workflows themselves are static YAML pipelines -- they do not learn between runs. Temporal and its spiritual predecessor Cadence brought durable execution to scheduled workflows, with retry policies, timeouts, and workflow versioning. These are powerful systems, but they orchestrate deterministic code paths. The AI-native equivalent orchestrates reasoning -- and reasoning is neither deterministic nor idempotent.
 
-Stagent's scheduler engine turns prompts into recurring intelligence loops, executing at defined intervals with configurable stop conditions. It is, at its core, a bridge between the predictability that operators demand and the adaptability that makes AI valuable. The architecture is deliberately simple — a poll-based tick loop backed by SQLite — because the complexity belongs in the agent, not in the scheduler.
+Stagent's scheduler engine started as a simple cron-to-task bridge: define a prompt, pick an interval, let it run. That was Sprint 9. By Sprint 35, the scheduler had evolved into something fundamentally different -- a system with two distinct scheduling modes, natural language interval parsing, active hours windowing, heartbeat checklists, suppression logic, budget caps, and multi-channel delivery. This chapter traces that evolution and explains why the heartbeat scheduler represents a step change in how AI agents operate autonomously.
 
 ## The Scheduler Engine
 
@@ -25,34 +27,20 @@ Every scheduler needs an answer to the bootstrapping question: how does it start
 <!-- filename: src/instrumentation.ts -->
 ```typescript
 export async function register() {
-  // Only start the scheduler on the server (not during build or edge)
   if (process.env.NEXT_RUNTIME === "nodejs") {
     const { startScheduler } = await import("@/lib/schedules/scheduler");
     startScheduler();
   }
 }
 ```
-*The instrumentation hook — three lines that turn a web server into a scheduler*
+> The instrumentation hook -- three lines that turn a web server into a scheduler
 
-That dynamic import is not accidental. Next.js evaluates `instrumentation.ts` in multiple runtimes — Node.js, Edge, and during the build step. The `NEXT_RUNTIME` guard ensures the scheduler only starts in the Node.js server process, where it has access to SQLite and the filesystem. Without this check, you would get cryptic build failures as the scheduler tries to open a database connection during static page generation.
+That dynamic import is not accidental. Next.js evaluates `instrumentation.ts` in multiple runtimes -- Node.js, Edge, and during the build step. The `NEXT_RUNTIME` guard ensures the scheduler only starts in the Node.js server process, where it has access to SQLite and the filesystem. Without this check, you would get cryptic build failures as the scheduler tries to open a database connection during static page generation.
 
-The engine itself is a poll-based loop that ticks every 60 seconds. On each tick, it queries the database for schedules whose `nextFireAt` timestamp has passed, claims each one atomically to prevent double-firing, creates a child task, and hands it off to the execution pipeline.
+The engine itself is a poll-based loop that ticks every 60 seconds. On each tick, it queries the database for schedules whose `nextFireAt` timestamp has passed, claims each one atomically to prevent double-firing, then branches based on schedule type -- clock-driven schedules create a task immediately, while heartbeat schedules evaluate their checklist first.
 
 <!-- filename: src/lib/schedules/scheduler.ts -->
 ```typescript
-export function startScheduler(): void {
-  if (intervalHandle !== null) return;
-
-  // Bootstrap: recompute nextFireAt for any active schedules that are missing it
-  bootstrapNextFireTimes();
-
-  intervalHandle = setInterval(() => {
-    tickScheduler().catch((err) => {
-      console.error("[scheduler] tick error:", err);
-    });
-  }, POLL_INTERVAL_MS);
-}
-
 export async function tickScheduler(): Promise<void> {
   const now = new Date();
   const dueSchedules = await db
@@ -79,59 +67,194 @@ export async function tickScheduler(): Promise<void> {
       )
       .run();
 
-    if (claimResult.changes === 0) continue; // Another tick already claimed it
+    if (claimResult.changes === 0) continue;
 
-    await fireSchedule(schedule, now);
-  }
-}
-```
-*The scheduler tick loop — simple polling with atomic claim to prevent double-firing*
-
-I want to dwell on the atomic claim pattern, because it solves a subtle problem. In a world where tick intervals are perfectly regular and each tick completes before the next one starts, you would never fire the same schedule twice. But the real world is not like that. A tick might take longer than 60 seconds if the database is under load or if a previous task creation involves heavy I/O. The claim pattern — setting `nextFireAt` to null and checking that the update affected exactly one row — ensures that even overlapping ticks cannot double-fire a schedule. It is the same optimistic locking pattern that job queues like Sidekiq and BullMQ use, adapted for SQLite's synchronous write model.
-
-The bootstrap step at startup deserves attention too. If the server crashes mid-tick, some schedules may have their `nextFireAt` set to null (claimed but never completed). On restart, `bootstrapNextFireTimes()` scans for these orphaned schedules and recomputes their next fire time. This self-healing behavior means the scheduler recovers gracefully from unclean shutdowns without manual intervention — a property that matters far more in production than any amount of clever scheduling logic.
-
-> [!info]
-> **Why Not Cron?**
-> An in-process scheduler has one critical advantage over OS-level cron: it shares the application's database. Cron jobs need external coordination to track state — which jobs ran, which failed, what their output was. The Stagent scheduler writes directly to the same SQLite database that the UI reads from, so schedule status, firing history, and task results are all visible in the same interface without any synchronization layer. The tradeoff is that the scheduler dies with the server process, but for a single-node application that is actually a feature — there is no orphaned cron job running against a stopped server.
-
-## The Interval Parser
-
-One of the smaller decisions that paid outsized dividends was building a natural language interval parser. Users should not need to know cron syntax to schedule a daily report. The parser accepts human-friendly shorthand — `5m`, `2h`, `1d` — and converts it to standard five-field cron expressions that the scheduler engine consumes.
-
-<!-- filename: src/lib/schedules/interval-parser.ts -->
-```typescript
-const INTERVAL_RE = /^(\d+)\s*(m|min|mins|minutes?|h|hr|hrs|hours?|d|day|days)$/i;
-
-export function parseInterval(input: string): string {
-  const match = input.trim().match(INTERVAL_RE);
-  if (match) {
-    const value = parseInt(match[1], 10);
-    const unit = match[2].toLowerCase().charAt(0);
-
-    switch (unit) {
-      case "m": return value === 1 ? "* * * * *" : `*/${value} * * * *`;
-      case "h": return value === 1 ? "0 * * * *" : `0 */${value} * * *`;
-      case "d": return value === 1 ? "0 9 * * *" : `0 9 */${value} * *`;
+    // Branch on schedule type
+    if (schedule.type === "heartbeat") {
+      await fireHeartbeat(schedule, now);
+    } else {
+      await fireSchedule(schedule, now);
     }
   }
 
-  // Fall through to raw cron expression validation
-  CronExpressionParser.parse(input);
-  return input;
+  // Process pending agent handoffs
+  await processHandoffs();
 }
 ```
-*The interval parser — six presets plus raw cron as an escape hatch*
+> The scheduler tick loop -- atomic claim, type branching, and handoff processing in a single cycle
 
-The daily default of 9:00 AM is opinionated and deliberate. When someone says "run this every day," they almost never mean midnight. They mean the start of their workday. This kind of thoughtful default eliminates a class of user confusion that would otherwise generate support tickets.
+The atomic claim pattern deserves attention. In a world where tick intervals are perfectly regular and each tick completes before the next one starts, you would never fire the same schedule twice. But the real world is not like that. A tick might take longer than 60 seconds if the database is under load or if a previous task creation involves heavy I/O. The claim pattern -- setting `nextFireAt` to null and checking that the update affected exactly one row -- ensures that even overlapping ticks cannot double-fire a schedule. It is the same optimistic locking pattern that job queues like Sidekiq and BullMQ use, adapted for SQLite's synchronous write model.
 
-For power users who need `0 9 * * 1-5` (weekdays only at 9 AM) or `0 */4 * * *` (every four hours), raw cron expressions pass through after validation. The parser is a convenience layer, not a constraint — it expands the accessibility of scheduling without limiting its expressiveness.
+Notice that the tick loop also processes pending agent handoffs. This is architectural frugality -- rather than running a separate background process for the handoff bus, we piggyback on the scheduler's existing 60-second heartbeat. Approved handoffs execute within one tick of approval, and the system stays simple.
+
+> [!info]
+> **Why Not Cron?**
+> An in-process scheduler has one critical advantage over OS-level cron: it shares the application's database. Cron jobs need external coordination to track state -- which jobs ran, which failed, what their output was. The Stagent scheduler writes directly to the same SQLite database that the UI reads from, so schedule status, firing history, and task results are all visible in the same interface without any synchronization layer.
+
+## Natural Language Scheduling
+
+One of the decisions that paid outsized dividends was building a full natural language interval parser. Users should not need to know cron syntax to schedule a daily standup report. The NLP parser accepts plain English scheduling expressions and converts them to standard five-field cron expressions.
+
+<!-- filename: src/lib/schedules/nlp-parser.ts -->
+```typescript
+const everyDayAtTime: PatternMatcher = (input) => {
+  const m = input.match(
+    /^every\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday|...)\s+at\s+(.+)$/i
+  );
+  if (!m) return null;
+  const dow = parseDayOfWeek(m[1]);
+  const time = parseTime(m[2]);
+  if (!dow || !time) return null;
+  return {
+    cronExpression: `${time.minute} ${time.hour} * * ${dow}`,
+    description: `Every ${DAY_NAMES[dow]} at ${formatTime(time.hour, time.minute)}`,
+    confidence: 1.0,
+  };
+};
+
+const weekdaysAtTime: PatternMatcher = (input) => {
+  const m = input.match(/^(?:every\s+)?weekdays?\s+at\s+(.+)$/i);
+  if (!m) return null;
+  const time = parseTime(m[1]);
+  if (!time) return null;
+  return {
+    cronExpression: `${time.minute} ${time.hour} * * 1-5`,
+    description: `Weekdays at ${formatTime(time.hour, time.minute)}`,
+    confidence: 1.0,
+  };
+};
+```
+> The NLP parser -- twelve pattern matchers ordered by specificity, first match wins
+
+The parser handles a rich set of expressions: "every Monday at 9am", "weekdays at 5pm", "daily at noon", "every 30 minutes", "twice a day", "first of every month at 10am", and single-word shortcuts like "hourly", "daily", "weekly". Each pattern matcher returns a confidence score (1.0 for unambiguous regex matches, 0.9 for implicit patterns like "at 9am" which assumes daily).
+
+The NLP parser layers on top of the original interval parser, which handles shorthand formats (`5m`, `2h`, `1d`) and raw cron expressions. The resolution order is: try NLP first, then shorthand, then raw cron. A preview in the UI shows exactly how the system interpreted the input before saving, so there is never ambiguity about what "every weekday at 9am" actually means.
+
+> [!tip]
+> **The 9 AM Default**
+> When someone says "run this every day," they almost never mean midnight. They mean the start of their workday. The daily default of 9:00 AM is opinionated and deliberate. This kind of thoughtful default eliminates a class of user confusion that would otherwise generate support tickets. For the 20% of users who need `0 3 * * *` (3 AM for overnight batch jobs), raw cron expressions pass through after validation.
+
+## The Heartbeat Scheduler
+
+Clock-driven schedules fire on a fixed cadence regardless of workspace state. They are the cron equivalent for AI agents -- useful, but blunt. The heartbeat scheduler introduces a fundamentally different model: **evaluate before acting**.
+
+A heartbeat schedule includes a checklist of conditions. On each firing, the agent evaluates the checklist and determines whether any item needs attention. If nothing requires action, the firing is suppressed -- no task is created, no tokens are spent, no noise is added to the task board. The agent only acts when there is something worth acting on.
+
+This is the difference between "generate a daily report" (clock-driven) and "check if anything needs my attention and act on it" (heartbeat). The first produces 365 reports a year, many of which say "nothing significant happened." The second produces reports only when something significant happened, saving tokens and human attention.
+
+<!-- filename: src/lib/schedules/heartbeat-prompt.ts -->
+```typescript
+export interface HeartbeatChecklistItem {
+  id: string;
+  instruction: string;
+  priority: "high" | "medium" | "low";
+}
+
+export function buildHeartbeatPrompt(
+  checklist: HeartbeatChecklistItem[],
+  scheduleName: string
+): string {
+  const checklistLines = checklist
+    .map(
+      (item, i) =>
+        `${i + 1}. [${item.priority.toUpperCase()}] (id: "${item.id}") ${item.instruction}`
+    )
+    .join("\n");
+
+  return `You are performing a heartbeat check for "${scheduleName}".
+
+Evaluate each checklist item below and determine whether any action is needed.
+
+## Checklist
+
+${checklistLines}
+
+## Instructions
+
+For each item, evaluate whether the condition described needs attention RIGHT NOW.
+- If the item's condition is satisfied, mark it as "action_needed"
+- If everything looks normal, mark it as "ok"
+- If you cannot evaluate the item, mark it as "skipped"`;
+}
+```
+> The heartbeat prompt builder -- structured evaluation with priority-tagged checklist items
+
+The heartbeat evaluation flow has six stages: active hours check, daily budget check, checklist parsing, evaluation task creation, result parsing, and conditional action. If the active hours window is outside the configured range (say, 9 AM to 6 PM weekdays), the firing is silently rescheduled. If the daily budget is exhausted, the firing is skipped. If the agent evaluates the checklist and finds nothing to report, the firing is marked as suppressed.
+
+### Active Hours Windowing
+
+Not every heartbeat should fire at 3 AM. Active hours windowing restricts firings to specific time windows, respecting timezone configuration.
+
+<!-- filename: src/lib/schedules/active-hours.ts -->
+```typescript
+export function checkActiveHours(
+  start: number | null,
+  end: number | null,
+  tz: string | null,
+  now?: Date
+): ActiveHoursResult {
+  if (start === null || end === null) {
+    return { isActive: true, nextActiveAt: null };
+  }
+
+  const timezone = tz || "UTC";
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    hour: "numeric",
+    hour12: false,
+  });
+  const currentHour = parseInt(formatter.format(now ?? new Date()), 10);
+
+  const isActive = start <= end
+    ? currentHour >= start && currentHour < end   // e.g. 9-17
+    : currentHour >= start || currentHour < end;  // e.g. 22-6 (overnight)
+
+  if (isActive) return { isActive: true, nextActiveAt: null };
+  return { isActive: false, nextActiveAt: computeNextActiveTime(start, timezone, now) };
+}
+```
+> Active hours -- timezone-aware windowing with overnight range support
+
+The overnight range handling (e.g., 22-6 for a team that works nights) was a late addition that caught a real edge case. The initial implementation assumed `start < end`, which meant "10 PM to 6 AM" was interpreted as an impossible window. A single conditional -- `start <= end` for daytime, `start > end` for overnight -- fixed it with no behavioral changes for normal ranges.
+
+### Budget Caps and Suppression
+
+Each heartbeat schedule can have a per-day cost budget. The scheduler tracks `heartbeatSpentToday` and resets it at the start of each calendar day. If a firing would exceed the budget, it is skipped. Combined with the global budget guardrails in Settings, this creates a two-tier cost control: per-schedule caps for granular control, global caps for organizational limits.
+
+Suppression tracking is equally important. When a heartbeat evaluates its checklist and finds nothing to act on, the firing is recorded as suppressed rather than simply dropped. The schedule detail view shows the full history of firings -- including suppressed ones -- so the operator can see that the heartbeat is running correctly even when it has nothing to report. This is the difference between "nothing happened" and "I checked and nothing happened," and it matters enormously for trust.
+
+> [!warning]
+> **Fail-Open by Default**
+> If the heartbeat agent's response cannot be parsed as valid JSON (model hallucination, timeout, format error), the system defaults to `action_needed: true`. This is a deliberate fail-open design. A heartbeat that silently suppresses when it should have alerted is far more dangerous than one that occasionally fires when it did not need to. False positives waste tokens. False negatives miss incidents.
+
+## Delivery Channel Integration
+
+Scheduled intelligence is only valuable if its outputs reach the right people. The delivery channel system connects schedules to Slack, Telegram, and webhook endpoints. When a schedule fires and produces results, a notification is sent to each configured channel with a summary and a link back to the full results.
+
+```typescript
+// Deliver to configured channels
+if (schedule.deliveryChannels) {
+  const channelIds = JSON.parse(schedule.deliveryChannels) as string[];
+  if (channelIds.length > 0) {
+    const message: ChannelMessage = {
+      subject: `Schedule fired: ${schedule.name} (#${firingNumber})`,
+      body: `Task "${schedule.name} -- firing #${firingNumber}" has been created...`,
+      format: "text",
+      metadata: { scheduleId: schedule.id, taskId, firingNumber },
+    };
+    sendToChannels(channelIds, message).catch(console.error);
+  }
+}
+```
+> Channel delivery -- fire-and-forget notifications to Slack, Telegram, or webhooks
+
+The integration is intentionally fire-and-forget. A failed Slack delivery should never prevent a schedule from completing its work or computing its next fire time. Delivery failures are logged but do not propagate. This separation of concerns -- execution is primary, notification is secondary -- prevents a flaky webhook endpoint from disrupting the entire scheduling system.
+
+For heartbeat schedules, delivery channels become particularly powerful. A heartbeat that monitors PR staleness, configured with a Slack channel, becomes a proactive team assistant: it checks every morning, and only pings the channel when there are actually stale PRs to address. No noise on quiet days, immediate visibility when action is needed.
 
 ## Autonomous Loop Execution
 
-Simple scheduling — fire a prompt on a timer — is useful but limited. The real power emerges when you combine scheduling with iteration context and stop conditions. This is what I call autonomous loop execution, and it represents the bridge between "run this periodically" and "keep running this until the job is done."
-
-Consider a concrete example. You want an agent to monitor your application's error logs, identify recurring patterns, and draft a summary with recommended fixes. A simple schedule fires the prompt every hour, and each execution starts from scratch — the agent has no memory of what it found in previous runs. An autonomous loop, by contrast, carries context between iterations. The agent knows what patterns it has already identified, which fixes it has already recommended, and what changed since the last run. Each iteration builds on the previous one, and the loop terminates when a stop condition is met.
+Simple scheduling -- fire a prompt on a timer -- is useful but limited. The real power emerges when you combine scheduling with iteration context and stop conditions. This is what we call autonomous loop execution, and it represents the bridge between "run this periodically" and "keep running this until the job is done."
 
 Four stop conditions govern loop execution:
 
@@ -142,46 +265,38 @@ Four stop conditions govern loop execution:
 | **Goal Achieved** | Agent declares the objective met | Research convergence, report completeness |
 | **Error Threshold** | Stop after N consecutive failures | Graceful degradation, circuit breaking |
 
-The goal-achieved condition is the most interesting of the four, because it requires the agent to evaluate its own progress. At the end of each iteration, the agent receives a meta-prompt: "Have you achieved the stated objective? Respond with a confidence score and reasoning." If the confidence exceeds a configurable threshold, the loop terminates. This is genuine self-assessment — the agent deciding that further iterations would not meaningfully improve the result.
+The goal-achieved condition is the most interesting of the four, because it requires the agent to evaluate its own progress. At the end of each iteration, the agent receives a meta-prompt: "Have you achieved the stated objective?" If the confidence exceeds a configurable threshold, the loop terminates. We will be honest about the risks: LLMs are famously bad at calibrating their own confidence. The max-iterations and time-limit conditions exist precisely as backstops for this failure mode.
 
-I will be honest about the risks here. LLMs are famously bad at calibrating their own confidence. An agent might declare a research task complete when it has only scratched the surface, or it might never reach the confidence threshold and burn through all its iterations on diminishing returns. The max-iterations and time-limit conditions exist precisely as backstops for this failure mode. In practice, I use goal-achieved as the primary stop condition and max-iterations as a hard ceiling, treating it the same way a circuit breaker treats a timeout — the happy path never hits it, but it is there for the unhappy path.
+Iteration context is what makes convergence possible. Between iterations, the loop engine captures a structured summary of what the agent accomplished. This summary is prepended to the next iteration's prompt, creating a chain of reasoning that spans multiple executions. The pattern is analogous to how a human researcher keeps running notes -- each session begins by reviewing where the last session left off.
 
 > [!tip]
-> **Convergence Is the Goal**
-> The best autonomous loops converge. Each iteration should produce measurably better output than the last, with diminishing marginal improvement. If your loop is not converging — if iteration 10 is no better than iteration 5 — the problem is in the prompt design, not the loop engine. Goal-achieved is the most powerful stop condition precisely because it encodes convergence: the agent stops when improvement is no longer meaningful.
-
-Iteration context is what makes convergence possible. Between iterations, the loop engine captures a structured summary of what the agent accomplished, what it found, and what questions remain. This summary is prepended to the next iteration's prompt as context, creating a chain of reasoning that spans multiple executions. The pattern is analogous to how a human researcher keeps running notes — each session begins by reviewing where the last session left off.
-
-This is where scheduled intelligence diverges most sharply from traditional batch processing. A batch job executes the same logic against new data. An autonomous loop executes evolving logic against an evolving understanding of the problem. The schedule provides the rhythm; the iteration context provides the memory; the stop conditions provide the discipline. Together, they produce something that feels less like a cron job and more like a colleague who works the night shift.
+> **Think in Feedback Loops, Not Triggers**
+> The mental model shift from "scheduled trigger" to "feedback loop" changes how you design prompts for recurring execution. A trigger-oriented prompt says "summarize today's errors." A feedback-loop prompt says "review the error patterns you identified last time, check if they are still occurring, note any new patterns, and update your recommendations." The second prompt produces compounding value. The first produces a daily report that nobody reads after the first week.
 
 ## Progressive Autonomy in Practice
 
-The scheduler is also where progressive autonomy — a theme that runs through every chapter of this book — reaches its most advanced expression. Consider the trust gradient:
+The scheduler is where progressive autonomy -- a theme that runs through every chapter of this book -- reaches its most advanced expression. Consider the trust gradient:
 
 At the lowest level, a human creates a task and watches the agent execute it. Full visibility, full control, zero automation. This is the pattern from Chapter 2.
 
-One level up, the human creates a schedule and the system fires it automatically. The human has delegated the *when* while retaining control over the *what*. They wrote the prompt, chose the interval, and set the stop conditions. The scheduler just keeps the clock.
+One level up, the human creates a clock-driven schedule and the system fires it automatically. The human has delegated the *when* while retaining control over the *what*.
 
-One more level, and the agent itself decides when the loop is done. Goal-achieved stop conditions mean the human delegated not just the timing but the termination criteria. The agent runs, evaluates, and stops — all without human intervention.
+One more level: a heartbeat schedule that evaluates conditions and decides whether to act. The human has delegated the *when* and the *whether*, retaining control over the *what to check*.
 
-The highest level is a schedule that fires an agent which creates new schedules. I have not built this yet, and I am not sure I should. But the architecture supports it, because schedules and tasks share the same database, and any agent with task-creation tools could theoretically insert a schedule row. The reason I have not enabled it is not technical — it is philosophical. Self-replicating scheduled agents are the "paperclip maximizer" of productivity software. The autonomy needs a ceiling, and I think human-authored schedules are the right one.
+Higher still: the agent itself decides when the loop is done. Goal-achieved stop conditions mean the human delegated not just the timing and the filtering but the termination criteria.
 
-## Seeing It In Action
-
-![Book reader showing a workflow executing in real-time with progress indicators](/book/images/book-reader-workflow-running.png "Here is a scheduled workflow running inside the book reader. The progress indicators show each firing as it happens, with iteration context flowing between executions. Notice how the firing count and next-run timestamp update in real time.")
+The highest level we have built is a heartbeat schedule with delivery channels, budget caps, and active hours -- a fully autonomous monitoring agent that checks conditions during business hours, acts only when needed, stays within budget, and notifies the team through Slack when it finds something. The human designed the system once. The agent operates it continuously.
 
 ## Lessons Learned
 
-**Pause and Resume Is Essential.** I initially built schedules with only two states: active and expired. Within a week of using the system, I needed a third: paused. Sometimes you want to stop a schedule temporarily — during a deployment, over a holiday, while you rethink the prompt — without losing its configuration. Pausing preserves the schedule's interval, prompt, stop conditions, and firing history. Resuming recomputes the next fire time from the current moment. It sounds trivial, but the absence of pause-and-resume forced me to delete and recreate schedules, which meant losing firing history and iteration context. State machines matter even for simple entities.
+**Heartbeats Changed Everything.** Clock-driven schedules produced noise. A daily "check for stale PRs" schedule created a task every single day, including the days when there were no stale PRs. Users quickly learned to ignore it. Heartbeats -- where the agent evaluates before acting -- eliminated the noise entirely. Task creation dropped by 60% in our testing while actual signal increased because users stopped ignoring schedule outputs. The lesson: proactive intelligence is only valuable if it knows when to stay quiet.
 
-**Editing Completes the Lifecycle.** Schedules can now be fully edited after creation through a dedicated edit dialog. Operators can modify the schedule name, prompt text, interval, runtime provider, and agent profile without recreating the schedule. The edit form shares the same validation and field layout as the creation form, maintaining consistency. Combined with pause/resume lifecycle controls and firing history tracking, this makes schedules a first-class managed resource rather than fire-and-forget automations. The progression from create-only to full CRUD may seem obvious in retrospect, but it reflects a broader lesson: any entity that lives long enough to accumulate history must eventually become editable, or users will destroy history to make corrections.
+**Natural Language Parsing Has Outsized ROI.** We tracked how users create schedules during testing. Over 80% used natural language ("every weekday at 9am") rather than shorthand or raw cron. The NLP parser is about 300 lines of regex pattern matchers, and it eliminates the most common friction point in schedule creation. Not every convenience feature justifies its complexity, but this one has an exceptional ratio of user value to implementation cost.
 
-**The Interval Parser Saves Time.** I tracked how users create schedules during testing. Over 80% used the shorthand format — `30m`, `2h`, `1d` — rather than raw cron expressions. The parser is maybe 60 lines of code, and it eliminates the most common friction point in schedule creation. Not every convenience feature justifies its complexity, but this one has an exceptional ratio of user value to implementation cost.
+**Budget Caps Prevent Surprise Bills.** A heartbeat schedule configured to check every 15 minutes, 24 hours a day, fires 96 times daily. If each firing costs $0.10 in API tokens, that is nearly $10 per day for a single schedule. Per-schedule budget caps and the daily reset mechanism were not premature optimization -- they were a direct response to the first user who configured an aggressive heartbeat and received an unexpected bill. The fail-open suppression design means that when the budget is exhausted, the heartbeat stops until tomorrow rather than silently missing events. Users can then increase the budget or reduce the frequency.
 
-**Monitor the Monitor.** A scheduler that silently fails is worse than no scheduler at all, because it creates the illusion of work being done. Every firing writes a log entry. Failed firings increment an error counter. If a schedule's error count crosses a threshold, it automatically pauses and creates a notification. The meta-lesson is that any system that runs without human oversight needs its own oversight mechanism — a monitor for the monitor. This is why the firing history is surfaced prominently in the schedule detail view, not buried in server logs.
+**Monitor the Monitor.** A scheduler that silently fails is worse than no scheduler at all, because it creates the illusion of work being done. Every firing writes a log entry. Failed firings increment an error counter. If a schedule's error count crosses a threshold, it automatically pauses and creates a notification. The meta-lesson is that any system that runs without human oversight needs its own oversight mechanism -- a monitor for the monitor.
 
-**Concurrency Guards Prevent Runaway Execution.** The scheduler checks whether a previous firing is still running before creating a new task. Without this guard, a slow-running prompt on a fast interval could spawn dozens of concurrent executions, each consuming API credits and potentially conflicting with each other. The implementation is simple — a query for running tasks whose title matches the schedule's naming pattern — but its absence would be expensive.
-
-**Think in Feedback Loops, Not Triggers.** The mental model shift from "scheduled trigger" to "feedback loop" changed how I design prompts for recurring execution. A trigger-oriented prompt says "summarize today's errors." A feedback-loop prompt says "review the error patterns you identified last time, check if they are still occurring, note any new patterns, and update your recommendations." The second prompt produces compounding value. The first produces a daily report that nobody reads after the first week.
+**Pause and Resume Is Essential.** We initially built schedules with only two states: active and expired. Within a week, we needed a third: paused. Sometimes you want to stop a schedule temporarily -- during a deployment, over a holiday, while you rethink the prompt -- without losing its configuration. Pausing preserves the schedule's interval, prompt, stop conditions, and firing history. It sounds trivial, but the absence of pause-and-resume forced us to delete and recreate schedules, which meant losing firing history and iteration context.
 
 [Try: Create a Schedule](/schedules)

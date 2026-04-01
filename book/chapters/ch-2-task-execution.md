@@ -4,7 +4,7 @@ subtitle: "Single-Agent to Multi-Agent Task Orchestration"
 chapter: 2
 part: 1
 readingTime: 15
-lastGeneratedBy: "2026-03-27"
+lastGeneratedBy: "2026-03-31T21:00:00Z"
 ---
 
 ## The Problem
@@ -17,7 +17,7 @@ This is the question that separates chatbots from agents. A chatbot waits for yo
 
 The industry has tried to close this gap several times. AutoGPT burst onto the scene in early 2023 with the promise of fully autonomous agents that could decompose goals into sub-tasks, execute them in sequence, and self-correct. It was electrifying to watch — and wildly unreliable in practice. Agents would enter infinite loops, burn through API credits on tangential research, or confidently execute the wrong plan. The core insight was sound (LLMs can drive multi-step workflows), but the execution lacked the constraints that make autonomy safe.
 
-LangChain's agent framework took a more structured approach, introducing the concept of agent executors with explicit tool definitions and chain-of-thought prompting. CrewAI pushed further into multi-agent territory, letting you define teams of agents with distinct roles and delegation patterns. These frameworks proved that orchestration matters — but they also revealed a tension that I think is fundamental to this space: the more autonomy you grant, the more guardrails you need.
+LangChain's agent framework took a more structured approach, introducing the concept of agent executors with explicit tool definitions and chain-of-thought prompting. CrewAI pushed further into multi-agent territory, letting you define teams of agents with distinct roles and delegation patterns. These frameworks proved that orchestration matters — but they also revealed a tension that we think is fundamental to this space: the more autonomy you grant, the more guardrails you need.
 
 > [!warning]
 > **The Autonomy Trap**
@@ -25,19 +25,25 @@ LangChain's agent framework took a more structured approach, introducing the con
 
 When we started building Stagent, we wanted to find the middle ground. Not the "let the agent do everything" approach that makes demos exciting and production deployments terrifying. Not the "human approves every action" approach that defeats the purpose of automation. Instead, a system where agents operate within well-defined boundaries, where the database serves as a shared coordination layer, and where humans can step in precisely when their judgment matters most.
 
-The architecture that emerged has three layers: a multi-agent routing system that matches tasks to specialized profiles, a fire-and-forget execution model that keeps the UI responsive while agents work in the background, and a permission system that cascades from profile-level constraints through persistent user preferences down to real-time human approval. Each layer addresses a different failure mode we encountered while building the system, and together they form what we think of as a progressive autonomy stack.
+The architecture that emerged has four layers: a multi-agent routing system that matches tasks to specialized profiles across five runtime providers, a fire-and-forget execution model that keeps the UI responsive while agents work in the background, a permission system that cascades from profile-level constraints through persistent user preferences down to real-time human approval, and an intelligence layer that gives agents memory and the ability to hand off work to one another. Each layer addresses a different failure mode we encountered while building the system, and together they form what we think of as a progressive autonomy stack.
 
 ## Multi-Agent Routing
 
 The first lesson we learned was that a single general-purpose agent is a liability. Not because the underlying model is incapable — Claude is remarkably versatile — but because the framing matters enormously. A code review needs a different system prompt, different tool access, and different behavioral constraints than a research task. Asking one agent to be good at everything means it is optimized for nothing.
 
-This is a pattern the industry is converging on. CrewAI calls them "agents with roles." LangChain introduced "agent types." Microsoft's AutoGen has "conversable agents" with distinct system messages. The terminology varies, but the insight is the same: specialization through prompt engineering and tool scoping produces dramatically better results than general-purpose agents with kitchen-sink tool access.
+In Stagent, specialization lives in the profile system. Each profile is a YAML file paired with a SKILL.md document that together define an agent's identity: what it is good at, which tools it can access, what its behavioral constraints are, and how it should format its output. The system ships with 20 built-in profiles spanning two broad categories.
 
-In Stagent, specialization lives in the profile system. Each profile is a YAML file paired with a SKILL.md document that together define an agent's identity: what it is good at, which tools it can access, what its behavioral constraints are, and how it should format its output. The system ships with fourteen built-in profiles — General, Code Reviewer, Data Analyst, DevOps Engineer, Document Writer, Researcher, Project Manager, Technical Writer, Wealth Manager, Health & Fitness Coach, Learning Coach, Travel Planner, Shopping Assistant, and Sweep — but users can create their own by dropping a new directory into `~/.claude/skills/`.
+**Technical profiles** handle developer and analytical work: General, Code Reviewer, Data Analyst, DevOps Engineer, Document Writer, Researcher, Project Manager, Technical Writer, and Sweep (for proactive codebase maintenance).
+
+**Business-function profiles** cover operational roles that turn Stagent into an AI Business Operating System: Marketing Strategist (market research, campaign planning, growth strategy), Sales Researcher (lead qualification, personalized outreach), Customer Support Agent (ticket triage, empathetic response drafting, escalation management), Financial Analyst (financial statement analysis, forecasting, investor-ready reporting), Content Creator (blog posts, social media, newsletters, conversion-focused copy), and Operations Coordinator (SOP documentation, process optimization, cross-functional coordination).
+
+**Lifestyle profiles** round out the catalog for personal use: Wealth Manager, Health & Fitness Coach, Learning Coach, Travel Planner, and Shopping Assistant.
+
+Users can create custom profiles by dropping a directory into `~/.claude/skills/`, and the registry picks them up on the next access — no restart required.
 
 > [!info]
 > **Agent Profiles: Specialization Through Configuration**
-> Each profile defines a complete agent persona: domain expertise, allowed tools, MCP server connections, permission policies, output format, and behavioral instructions via SKILL.md. Built-in profiles ship with the app and are copied to the user's home directory on first run. Users can customize existing profiles or create entirely new ones — the system hot-reloads changes without restart. Profiles are cross-provider: the same definition works on both Claude (Agent SDK) and Codex (App Server) runtimes, with optional runtime-specific overrides.
+> Each profile defines a complete agent persona: domain expertise, allowed tools, MCP server connections, permission policies, output format, and behavioral instructions via SKILL.md. Built-in profiles ship with the app and are copied to the user's home directory on first run. Users can customize existing profiles or create entirely new ones — the system hot-reloads changes without restart. Profiles are cross-provider: the same definition works on all five runtimes (Claude Code SDK, Codex App Server, Anthropic Direct, OpenAI Direct, and Ollama), with optional runtime-specific overrides.
 
 Here is what a profile looks like in practice. The code reviewer auto-approves read-only tools (Read, Grep, Glob) but requires approval for Bash commands, caps execution at 20 turns, and includes smoke tests that verify the profile produces expected output keywords:
 
@@ -71,7 +77,39 @@ tests:
 ```
 *The code reviewer profile — scoped tools, bounded turns, and built-in smoke tests*
 
-The profile registry has evolved significantly since the early days of hardcoded maps. What started as a simple four-profile `Map` became a filesystem-based scanner that reads `~/.claude/skills/*/profile.yaml`, validates each file against a Zod schema, pairs it with a SKILL.md behavioral document, and caches the results with filesystem-change-detection that invalidates the cache when profiles are added or modified:
+The `AgentProfile` type captures everything the execution engine needs:
+
+<!-- filename: src/lib/agents/profiles/types.ts -->
+```typescript
+export interface AgentProfile {
+  id: string;
+  name: string;
+  description: string;
+  domain: string;
+  tags: string[];
+  /** Full content of the SKILL.md file (system prompt + behavioral instructions) */
+  skillMd: string;
+  allowedTools?: string[];
+  mcpServers?: Record<string, unknown>;
+  canUseToolPolicy?: CanUseToolPolicy;
+  maxTurns?: number;
+  outputFormat?: string;
+  version?: string;
+  author?: string;
+  tests?: ProfileSmokeTest[];
+  supportedRuntimes: AgentRuntimeId[];
+  /** Preferred runtime for auto-routing. When set, suggestRuntime() prefers this. */
+  preferredRuntime?: AgentRuntimeId;
+  runtimeOverrides?: Partial<Record<AgentRuntimeId, ProfileRuntimeOverride>>;
+  /** Per-runtime capability overrides (model, extended thinking, server tools). */
+  capabilityOverrides?: Partial<Record<AgentRuntimeId, ProfileRuntimeCapabilityOverride>>;
+}
+```
+*The profile type — from tool policies and runtime overrides to capability-level control per provider*
+
+The `capabilityOverrides` field is a recent addition that deserves attention. It lets a profile declare per-runtime settings like model selection, extended thinking parameters, and server-side tools. A financial-analyst profile might request `claude-opus-4` via Anthropic Direct with extended thinking enabled for deep analysis, while defaulting to a lighter model on Ollama for local quick-checks. This makes profiles not just behavior-portable but performance-tunable across providers.
+
+The profile registry has evolved from a simple hardcoded map into a filesystem-based scanner with cache invalidation:
 
 <!-- filename: src/lib/agents/profiles/registry.ts -->
 ```typescript
@@ -104,83 +142,37 @@ function getSkillsDirectorySignature(): string {
   }
   return signatureParts.join("|");
 }
-
-function ensureLoaded(): Map<string, AgentProfile> {
-  ensureBuiltins();
-  const signature = getSkillsDirectorySignature();
-  if (!profileCache || profileCacheSignature !== signature) {
-    profileCache = scanProfiles();
-    profileCacheSignature = signature;
-  }
-  return profileCache;
-}
 ```
-*Filesystem-based profile loading with mtime-based cache invalidation*
+*Filesystem-based profile loading with mtime-based cache invalidation — edit a YAML file, and the next execution picks it up*
 
 The routing decision — which profile handles a given task — uses auto-detect classification. The task classifier analyzes the task content and selects the best-fit profile from the registry. The user can always override the automatic classification from the UI; the classifier is a default, not a mandate.
 
-The key insight is that the profile *is* the agent. There is no separate "agent class" with complex initialization logic. A profile is data — a YAML configuration, a SKILL.md system prompt, an allowed tool list, a set of constraints — and the execution engine simply applies that data when spinning up a new session. This makes agents cheap to create, easy to test, and safe to iterate on. If a profile produces bad results, you edit a YAML file and a markdown document. You do not refactor a class hierarchy.
+## Five Runtime Providers
 
-The `AgentProfile` type captures everything the execution engine needs to know:
+A profile defines *what* an agent does. A runtime defines *how* it runs. Stagent supports five runtime adapters, each with distinct capabilities:
 
-<!-- filename: src/lib/agents/profiles/types.ts -->
+<!-- filename: src/lib/agents/runtime/catalog.ts -->
 ```typescript
-export interface AgentProfile {
-  id: string;
-  name: string;
-  description: string;
-  domain: string;
-  tags: string[];
-  /** Full content of the SKILL.md file (system prompt + behavioral instructions) */
-  skillMd: string;
-  allowedTools?: string[];
-  mcpServers?: Record<string, unknown>;
-  canUseToolPolicy?: CanUseToolPolicy;
-  maxTurns?: number;
-  outputFormat?: string;
-  version?: string;
-  author?: string;
-  source?: string;
-  tests?: ProfileSmokeTest[];
-  supportedRuntimes: AgentRuntimeId[];
-  runtimeOverrides?: Partial<Record<AgentRuntimeId, ProfileRuntimeOverride>>;
-}
+export const SUPPORTED_AGENT_RUNTIMES = [
+  "claude-code",
+  "openai-codex-app-server",
+  "anthropic-direct",
+  "openai-direct",
+  "ollama",
+] as const;
 ```
-*The profile type — everything from tool policies to runtime-specific overrides*
 
-Profiles also support cross-provider compatibility. The same profile works on both Claude Code (via the Agent SDK) and Codex App Server (via WebSocket JSON-RPC), with optional `runtimeOverrides` that tailor instructions or tool lists per provider. The general profile, for example, ships with a Codex-specific instruction override:
+**Claude Code** (Agent SDK) is the primary runtime — full approvals, session resume, MCP server passthrough, and the richest tool ecosystem. **OpenAI Codex App Server** connects via WebSocket JSON-RPC for sandboxed code execution. **Anthropic Direct** and **OpenAI Direct** provide lightweight API access for simpler tasks that do not need tool use. **Ollama** is the newest addition — a local runtime that connects to Ollama-managed models running on your own hardware, enabling fully offline agent execution with zero API costs.
 
-<!-- filename: src/lib/agents/profiles/builtins/general/profile.yaml -->
-```yaml
-id: general
-name: General
-version: "1.0.0"
-domain: work
-tags: [general, default, task, help, assistant]
-supportedRuntimes: [claude-code, openai-codex-app-server]
-
-runtimeOverrides:
-  openai-codex-app-server:
-    instructions: |
-      You are the default Stagent operator profile for Codex App Server.
-      Stay pragmatic, execute the requested work directly, and prefer
-      concise operational updates.
-
-maxTurns: 30
-```
-*Cross-provider profiles — same identity, runtime-tailored behavior*
-
-![Chat session querying workflow execution state](/book/images/chat-querying-workflow.png "Here's a real chat session where we queried the workflow engine to debug a routing issue. The conversational interface makes it natural to inspect system state — you just ask.")
+The runtime catalog declares capabilities for each provider: which ones support resume, cancel, approvals, MCP servers, profile tests, and auth health checks. The profile's `supportedRuntimes` field intersects with available runtimes to determine which providers can execute a given task. When `preferredRuntime` is set on a profile, the auto-router honors that preference.
 
 ## Fire-and-Forget Execution
 
 The second problem we needed to solve was responsiveness. An agent task can take anywhere from thirty seconds to fifteen minutes depending on complexity, tool usage, and the number of turns the agent needs. If the API route that triggers execution blocks until the agent finishes, the HTTP request times out, the UI freezes, and the user assumes something broke.
 
-The solution is a pattern we call fire-and-forget with structured recovery. When you click "Execute" on a task, the API returns HTTP 202 (Accepted) immediately. The actual agent work happens in a background process that the execution manager tracks. The UI polls for status updates and streams logs via Server-Sent Events. If the agent fails, the error is captured, the task status is updated to "failed," and the logs contain everything you need to diagnose what went wrong.
+The solution is a pattern we call fire-and-forget with structured recovery. When you click "Execute" on a task, the API returns HTTP 202 (Accepted) immediately. The actual agent work happens in a background process that the execution manager tracks. The UI polls for status updates and streams logs via Server-Sent Events.
 
-This is fundamentally different from how most chat-based AI interfaces work. In a chat interface, you send a message and wait for the response — it is synchronous by nature. In a task execution system, the submission and the result are decoupled. You can submit a task, navigate to a different page, close your browser, and come back later to find the results waiting for you. This decoupling is what makes it possible to run multiple agents concurrently, chain tasks into workflows, and schedule recurring executions.
-
-The execution manager itself is deceptively simple — an in-memory `Map<string, RunningExecution>` that tracks active tasks with their abort controllers, session IDs, and metadata:
+The execution manager itself is deceptively simple — an in-memory `Map<string, RunningExecution>` that tracks active tasks:
 
 <!-- filename: src/lib/agents/execution-manager.ts -->
 ```typescript
@@ -210,261 +202,167 @@ export function removeExecution(taskId: string): void {
 ```
 *The entire execution manager — simplicity at this layer is a deliberate choice*
 
-Simplicity at this layer is deliberate. The complexity lives in the agent session (the Claude Agent SDK handles multi-turn conversation, tool invocation, and streaming) and in the coordination layer (the database tracks state transitions, the notification table handles permission requests, the log table captures every agent action).
-
-The real execution flow in `executeClaudeTask` orchestrates all of these concerns. It builds document context from attached files, resolves the agent profile with runtime-specific overrides, constructs an environment with the correct authentication credentials, sets up usage tracking for token accounting, processes the Agent SDK's async message stream, and performs post-execution pattern extraction for self-improvement:
-
-<!-- filename: src/lib/agents/claude-agent.ts -->
-```typescript
-export async function executeClaudeTask(taskId: string): Promise<void> {
-  const [task] = await db.select().from(tasks).where(eq(tasks.id, taskId));
-  if (!task) throw new Error(`Task ${taskId} not found`);
-  const usageState = createTaskUsageState(task);
-
-  const abortController = new AbortController();
-  const agentProfileId = task.agentProfile ?? "general";
-
-  setExecution(taskId, {
-    abortController,
-    sessionId: null,
-    taskId,
-    startedAt: new Date(),
-  });
-
-  try {
-    await prepareTaskOutputDirectory(taskId, { clearExisting: true });
-    const ctx = await buildTaskQueryContext(task, agentProfileId);
-
-    const authEnv = await getAuthEnv();
-    const response = query({
-      prompt: ctx.userPrompt,
-      options: {
-        abortController,
-        includePartialMessages: true,
-        cwd: ctx.cwd,
-        env: buildClaudeSdkEnv(authEnv),
-        systemPrompt: ctx.systemInstructions
-          ? { type: "preset", preset: "claude_code", append: ctx.systemInstructions }
-          : { type: "preset", preset: "claude_code" },
-        maxTurns: ctx.maxTurns,
-        maxBudgetUsd: DEFAULT_MAX_BUDGET_USD,
-        ...(ctx.payload?.allowedTools && { allowedTools: ctx.payload.allowedTools }),
-        ...(ctx.payload?.mcpServers && { mcpServers: ctx.payload.mcpServers }),
-        canUseTool: async (toolName: string, input: Record<string, unknown>) => {
-          return handleToolPermission(taskId, toolName, input, ctx.canUseToolPolicy);
-        },
-      },
-    });
-
-    await processAgentStream(taskId, task.title, response, abortController, agentProfileId, usageState);
-
-    // Fire-and-forget pattern extraction for self-improvement
-    analyzeForLearnedPatterns(taskId, agentProfileId).catch((err) => {
-      console.error("[self-improvement] pattern extraction failed:", err);
-    });
-  } catch (error: unknown) {
-    await handleExecutionError(taskId, task.title, error, abortController, agentProfileId, usageState);
-  } finally {
-    clearPermissionCache(taskId);
-    removeExecution(taskId);
-  }
-}
-```
-*The full execution flow — profile resolution, SDK query, stream processing, and cleanup*
+Simplicity at this layer is deliberate. The complexity lives in the agent session (the SDK handles multi-turn conversation, tool invocation, and streaming) and in the coordination layer (the database tracks state transitions, the notification table handles permission requests, the log table captures every agent action).
 
 Three supporting systems make fire-and-forget work in practice.
 
-**Status tracking via the database.** Every task has a status column that transitions through a well-defined state machine: planned, queued, running, paused, completed, failed, cancelled. The UI polls this column to update the task card in real time. Because the database is the single source of truth, you can have multiple browser tabs open and they will all converge on the correct state. No WebSocket server to maintain, no in-memory state to synchronize across processes.
+**Status tracking via the database.** Every task has a status column that transitions through a well-defined state machine: planned, queued, running, paused, completed, failed, cancelled. The UI polls this column to update the task card in real time. Because the database is the single source of truth, you can have multiple browser tabs open and they will all converge on the correct state.
 
-**Log streaming via Server-Sent Events.** While the task is running, the agent writes structured log entries to the `agent_logs` table — every tool start, every stream event, every completion or error. An SSE endpoint reads these logs with a polling loop and pushes them to the client as they appear. This gives the user a live view of what the agent is doing without the overhead of a WebSocket connection.
+**Log streaming via Server-Sent Events.** While the task is running, the agent writes structured log entries to the `agent_logs` table — every tool start, every stream event, every completion or error. An SSE endpoint reads these logs with a polling loop and pushes them to the client as they appear.
 
 > [!tip]
 > **SSE for Real-Time Logs**
 > Server-Sent Events are the unsung hero of real-time AI interfaces. Unlike WebSockets, SSE connections are plain HTTP, work through proxies and CDNs, automatically reconnect on failure, and require zero client-side library code — just `new EventSource(url)`. For unidirectional streaming (which is almost always what you need for agent logs), SSE is simpler, more reliable, and more infrastructure-friendly than WebSockets.
 
-**Abort handling for cancellation.** Each running execution stores an `AbortController` that the UI can trigger to cancel a task mid-flight. The abort signal propagates through the Agent SDK session, cleanly terminating the conversation and any in-progress tool calls. The task status transitions to "cancelled" and the partial results are preserved in the logs. The stream processor checks for abort throughout:
+**Abort handling for cancellation.** Each running execution stores an `AbortController` that the UI can trigger to cancel a task mid-flight. The abort signal propagates through the Agent SDK session, cleanly terminating the conversation and any in-progress tool calls.
 
-<!-- filename: src/lib/agents/claude-agent.ts -->
+The system also supports **session resume**. If a task fails or is interrupted, the Agent SDK session ID is persisted in the database. The `resumeClaudeTask` function picks up where the agent left off, passing the saved session ID back to the SDK's `resume` option. A resume counter prevents infinite retry loops.
+
+**Usage tracking** runs alongside every execution. The system extracts token counts and model information from the SDK's stream messages, then writes a ledger entry on completion. This feeds the Cost & Usage dashboard, giving visibility into how much each task, workflow, or schedule costs across all five providers.
+
+## Agent Intelligence: Memory and Handoffs
+
+The execution engine described above handles a single agent running a single task. But production AI systems need two additional capabilities: agents that remember what they learned, and agents that can delegate work to each other.
+
+### Episodic Memory
+
+Stagent's episodic memory system gives agents persistent factual knowledge that survives across task executions. Distinct from behavioral learned context (which adjusts how an agent approaches work), episodic memory captures what an agent discovers — facts, decisions, outcomes, and patterns.
+
+<!-- filename: src/lib/db/schema.ts (agent_memory table) -->
 ```typescript
-// Handle result — skip if task was cancelled mid-stream
-if (message.type === "result" && "result" in raw) {
-  if (abortController.signal.aborted) {
-    await finalizeTaskUsage(usageState, "cancelled");
-    return;
-  }
-  receivedResult = true;
-  // ... save result, notify, log, scan outputs
-}
+export const agentMemory = sqliteTable("agent_memory", {
+  id: text("id").primaryKey(),
+  profileId: text("profile_id").notNull(),
+  category: text("category", {
+    enum: ["fact", "preference", "pattern", "outcome"],
+  }).notNull(),
+  content: text("content").notNull(),
+  confidence: integer("confidence").default(700).notNull(), // 0-1000 scale
+  sourceTaskId: text("source_task_id").references(() => tasks.id),
+  tags: text("tags"), // JSON array
+  lastAccessedAt: integer("last_accessed_at", { mode: "timestamp" }),
+  accessCount: integer("access_count").default(0).notNull(),
+  decayRate: integer("decay_rate").default(10).notNull(), // per-day decay in thousandths
+  status: text("status", {
+    enum: ["active", "decayed", "archived", "rejected"],
+  }).default("active").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+});
+```
+*Episodic memory schema — confidence scoring, time-based decay, and four memory categories*
 
-// Safety net: if stream ended without a result frame, fail the task
-// instead of leaving it stuck in "running" forever
-if (!receivedResult) {
-  const errorDetail = turnCount > 0
-    ? `Agent exhausted its turn limit (${turnCount} turns used) without producing a final result.`
-    : "Agent stream ended without producing a result";
-  // ... mark failed, notify
+Each memory entry has a confidence score on a 0-1000 scale, a decay rate that reduces relevance over time, and a category (fact, preference, pattern, or outcome). When a new task executes, the system retrieves only memories relevant to the current context, filtered by profile and weighted by confidence after applying time-based decay. Older memories gradually lose weight, keeping the context window focused on current knowledge without losing historical information entirely.
+
+The practical impact is significant. A financial-analyst profile that researches a company once can recall that research in future tasks without re-doing the work. A customer-support-agent profile that learns a client's preference for concise responses remembers that preference across tickets. Memory access counts help identify which knowledge is most frequently useful, informing what to prioritize and what to let decay.
+
+A memory browser UI lets operators inspect, edit, and delete stored memories — maintaining human oversight over what agents "know."
+
+### Async Handoffs
+
+The second intelligence capability is agent-to-agent handoffs. When one agent discovers work that falls outside its expertise, it can hand that work off to another profile through an asynchronous message bus:
+
+<!-- filename: src/lib/agents/handoff/bus.ts -->
+```typescript
+export async function sendHandoff(request: HandoffRequest): Promise<string> {
+  // Determine chain depth from parent message
+  let chainDepth = 0;
+  if (request.parentMessageId) {
+    const [parent] = await db
+      .select({ chainDepth: agentMessages.chainDepth })
+      .from(agentMessages)
+      .where(eq(agentMessages.id, request.parentMessageId));
+    if (parent) {
+      chainDepth = parent.chainDepth + 1;
+    }
+  }
+
+  // Validate governance rules
+  const validation = validateHandoff(request, chainDepth);
+  if (!validation.valid) {
+    throw new Error(validation.error);
+  }
+
+  const id = crypto.randomUUID();
+  await db.insert(agentMessages).values({
+    id,
+    fromProfileId: request.fromProfileId,
+    toProfileId: request.toProfileId,
+    taskId: request.sourceTaskId,
+    subject: request.subject.trim(),
+    body: request.body.trim(),
+    status: request.requiresApproval ? "pending" : "accepted",
+    requiresApproval: request.requiresApproval ?? false,
+    chainDepth,
+    createdAt: now,
+  });
 }
 ```
-*Abort-aware stream processing with a safety net for incomplete executions*
+*The handoff bus — governance-gated delegation between agent profiles*
 
-The system also supports **session resume**. If a task fails or is interrupted, the Agent SDK session ID is persisted in the database. The `resumeClaudeTask` function picks up where the agent left off, passing the saved session ID back to the SDK's `resume` option. This avoids repeating expensive work — the agent resumes its conversation with full context of prior turns. A resume counter prevents infinite retry loops, and session expiry is detected gracefully.
+Governance gates prevent the most common failure modes of multi-agent systems. Chain depth limits prevent infinite handoff loops (agent A hands to B, which hands to C, which hands back to A). Self-handoff is blocked. Handoff requests surface in the human inbox for approval before the receiving agent begins work — maintaining the progressive autonomy principle even in agent-to-agent communication. Configurable handoff policies determine which profiles can hand off to which, and under what conditions.
 
-**Usage tracking** runs alongside every execution. The system extracts token counts and model information from the SDK's stream messages, then writes a ledger entry on completion. This feeds the cost and usage dashboard, giving users visibility into how much each task, workflow, or schedule costs across providers.
-
-![AI Assist generating a detailed task description from a brief title](/book/images/book-reader-task-ai-assist.png "This screenshot captures the AI Assist feature in action — the user types a brief task title, and the agent generates a detailed description with acceptance criteria before execution even begins. Small touches like this make the difference between a tool that developers tolerate and one they actually enjoy using.")
+This enables emergent workflows: a researcher discovers a code issue and hands it off to the code-reviewer. A content-creator drafts marketing copy and hands it to the marketing-strategist for review. These workflows are not pre-built — they emerge from agent judgment, constrained by governance rules.
 
 ## Tool Permissions
 
-If multi-agent routing is about matching the right agent to the right task, and fire-and-forget is about making execution non-blocking, then the permission system is about making autonomy safe. This is the layer that determines whether an agent can use a particular tool without asking, needs to ask the user first, or is blocked from using the tool entirely.
+If multi-agent routing is about matching the right agent to the right task, and fire-and-forget is about making execution non-blocking, then the permission system is about making autonomy safe. Stagent uses a three-tier permission cascade. When an agent wants to use a tool, the system checks three sources in order, and the first definitive answer wins:
 
-The industry has explored this space with varying degrees of sophistication. LangChain's early agents had no permission model — every tool in the agent's toolkit was available unconditionally. AutoGPT added a "continuous mode" toggle that was essentially an all-or-nothing switch. CrewAI introduced task-level delegation but not tool-level permissions. The common thread is that most frameworks treat permissions as an afterthought, a boolean flag bolted on after the core execution loop is built.
+**Tier 1: Profile constraints.** Each agent profile defines a `canUseToolPolicy` with explicit auto-approve and auto-deny lists. These constraints are the fastest check — no database I/O, just an in-memory array lookup.
 
-We think this gets the design exactly backwards. The permission model should be the *first* thing you design, because it determines the boundary between what the system can do autonomously and what requires human judgment. Get this wrong and you either have an agent that constantly interrupts you for trivial approvals (destroying the productivity gains that justified building the system) or an agent that silently executes dangerous operations (destroying trust that is impossible to rebuild).
+**Tier 2: Persistent permissions.** When a user clicks "Always Allow" on a tool permission request, that preference is stored in the settings table. The permission system supports pattern-based matching — not just blanket tool approval, but granular constraints like `Bash(command:git *)` that allow Bash only when the command starts with "git."
 
-Stagent uses a three-tier permission cascade. When an agent wants to use a tool, the system checks three sources in order, and the first definitive answer wins:
-
-<!-- filename: src/lib/agents/claude-agent.ts -->
-```typescript
-async function handleToolPermission(
-  taskId: string,
-  toolName: string,
-  input: Record<string, unknown>,
-  canUseToolPolicy?: CanUseToolPolicy
-): Promise<ToolPermissionResponse> {
-  const isQuestion = toolName === "AskUserQuestion";
-
-  // Layer 1: Profile-level canUseToolPolicy — fastest check, no I/O
-  if (!isQuestion && canUseToolPolicy) {
-    if (canUseToolPolicy.autoApprove?.includes(toolName)) {
-      return buildAllowedToolPermissionResponse(input);
-    }
-    if (canUseToolPolicy.autoDeny?.includes(toolName)) {
-      return { behavior: "deny", message: `Profile policy denies ${toolName}` };
-    }
-  }
-
-  // Layer 2: Saved user permissions — skip notification for pre-approved tools
-  if (!isQuestion) {
-    const { isToolAllowed } = await import("@/lib/settings/permissions");
-    if (await isToolAllowed(toolName, input)) {
-      return buildAllowedToolPermissionResponse(input);
-    }
-  }
-
-  // Layer 3: Database polling — ask the user
-  const notificationId = crypto.randomUUID();
-  await db.insert(notifications).values({
-    id: notificationId,
-    taskId,
-    type: "permission_required",
-    title: `Permission required: ${toolName}`,
-    body: JSON.stringify(input).slice(0, 1000),
-    toolName,
-    toolInput: JSON.stringify(input),
-    createdAt: new Date(),
-  });
-
-  return waitForToolPermissionResponse(notificationId);
-}
-```
-*Three-tier permission cascade — profile policy, persistent preferences, then human approval*
-
-**Tier 1: Profile constraints.** Each agent profile defines a `canUseToolPolicy` with explicit auto-approve and auto-deny lists. The code reviewer profile auto-approves `Read`, `Grep`, and `Glob` but requires approval for `Bash`. The researcher profile might auto-approve web search but deny filesystem access entirely. These constraints are the fastest check — no database I/O, just an in-memory array lookup — and they represent the security boundary that the profile author considers non-negotiable.
-
-**Tier 2: Persistent permissions.** When a user clicks "Always Allow" on a tool permission request, that preference is stored in the settings table and honored for all future executions. The permission system supports pattern-based matching — not just blanket tool approval, but granular constraints like `Bash(command:git *)` that allow Bash only when the command starts with "git":
-
-<!-- filename: src/lib/settings/permissions.ts -->
-```typescript
-export function matchesPermission(
-  toolName: string,
-  input: Record<string, unknown>,
-  pattern: string
-): boolean {
-  const parenIdx = pattern.indexOf("(");
-
-  // No constraint — bare tool name match
-  if (parenIdx === -1) {
-    return pattern === toolName;
-  }
-
-  const patternTool = pattern.slice(0, parenIdx);
-  if (patternTool !== toolName) return false;
-
-  // Parse constraint: "key:glob)"
-  const constraint = pattern.slice(parenIdx + 1, -1);
-  const colonIdx = constraint.indexOf(":");
-  if (colonIdx === -1) return false;
-
-  const key = constraint.slice(0, colonIdx);
-  const glob = constraint.slice(colonIdx + 1);
-  const inputValue = String(input[key] ?? "");
-
-  if (glob.endsWith("*")) {
-    return inputValue.startsWith(glob.slice(0, -1));
-  }
-  return inputValue === glob;
-}
-```
-*Pattern-based permission matching — granular control beyond simple allow/deny*
-
-This means "Always Allow" is not a blunt instrument. A user can approve `Read` blanket (safe — it is read-only) while constraining `Bash` to specific command prefixes. The settings page shows all persistent permissions and lets you revoke any of them.
-
-**Tier 3: Human-in-the-loop.** If neither the profile nor persistent settings provide a definitive answer, the system pauses the agent and presents the tool call to the user for approval. This is implemented through the database polling pattern: the agent writes a notification record with the tool name and proposed input, then polls the notification table every 1.5 seconds waiting for a response. The UI renders the permission request as an inline card in the task detail view, with "Allow," "Always Allow," and "Deny" buttons:
-
-<!-- filename: src/lib/agents/claude-agent.ts -->
-```typescript
-async function waitForToolPermissionResponse(
-  notificationId: string
-): Promise<ToolPermissionResponse> {
-  const deadline = Date.now() + 55_000;
-  const pollInterval = 1500;
-
-  while (Date.now() < deadline) {
-    const [notification] = await db
-      .select()
-      .from(notifications)
-      .where(eq(notifications.id, notificationId));
-
-    if (notification?.response) {
-      const parsed = JSON.parse(notification.response);
-      const validated = toolPermissionResponseSchema.safeParse(parsed);
-      if (validated.success) return validated.data;
-      return { behavior: "deny", message: "Invalid response format" };
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, pollInterval));
-  }
-
-  return { behavior: "deny", message: "Permission request timed out" };
-}
-```
-*Database polling for permission responses — 55-second timeout with 1.5-second intervals*
-
-The database-as-message-queue pattern deserves special attention because it is one of those architectural decisions that sounds wrong on paper but works beautifully in practice. The conventional wisdom is that you need WebSockets or a proper message broker for real-time bidirectional communication. But the permission exchange has a very specific access pattern: one writer (the agent), one reader (the UI), low frequency (at most a few requests per task), and a hard requirement for persistence (if the server restarts mid-task, the pending permission request must survive). A database row satisfies all of these requirements with zero additional infrastructure. The polling adds a small amount of latency (up to 1.5 seconds) that is imperceptible to the user because they need time to read and evaluate the permission request anyway.
-
-The chat interface uses a different mechanism — an in-memory `AsyncQueue` and `Promise`-based permission bridge — because chat conversations are synchronous and short-lived, making database persistence unnecessary. But for task execution, where the agent might run for minutes and the user might navigate away, the database polling pattern is the right choice.
+**Tier 3: Human-in-the-loop.** If neither the profile nor persistent settings provide a definitive answer, the system pauses the agent and presents the tool call to the user for approval via the database polling pattern.
 
 > [!lesson]
-> **Permission deduplication matters.** During development, we discovered that agents sometimes request the same tool with identical inputs multiple times in rapid succession. Without deduplication, this would flood the user with redundant permission popups. The system now caches in-flight and settled permission responses per-task, keyed by `taskId::toolName::JSON(input)`. If a duplicate request arrives while one is pending, it shares the same Promise. If the same request was already settled, the cached response is returned instantly.
+> **Permission deduplication matters.** During development, we discovered that agents sometimes request the same tool with identical inputs multiple times in rapid succession. Without deduplication, this would flood the user with redundant permission popups. The system now caches in-flight and settled permission responses per-task, keyed by `taskId::toolName::JSON(input)`. If a duplicate request arrives while one is pending, it shares the same Promise.
 
-This three-tier cascade implements what we think of as progressive autonomy in practice. A new user starts with maximum safety — every unfamiliar tool triggers a human review. As they build confidence in the system, they click "Always Allow" for tools they trust, optionally with pattern constraints. Over time, the system becomes increasingly autonomous *on their terms*, with the autonomy boundary shaped by their actual experience rather than an abstract trust setting.
+## Multi-Channel Delivery
 
-[Try: Execute a Task](/tasks)
+Task results do not have to stay inside Stagent. The delivery channel system routes output to external platforms:
+
+<!-- filename: src/lib/channels/registry.ts -->
+```typescript
+const adapters: Record<string, ChannelAdapter> = {
+  slack: slackAdapter,
+  telegram: telegramAdapter,
+  webhook: webhookAdapter,
+};
+
+export async function sendToChannels(
+  channelIds: string[],
+  message: ChannelMessage
+): Promise<ChannelDeliveryResult[]> {
+  if (channelIds.length === 0) return [];
+  const configs = await db
+    .select()
+    .from(channelConfigs)
+    .where(inArray(channelConfigs.id, channelIds));
+  // ... send to each enabled channel
+}
+```
+*Three channel adapters — Slack, Telegram, and webhook — with bidirectional chat support*
+
+Schedules and heartbeats can specify delivery channels, so results flow directly to the team's communication tool. Bidirectional support means Slack and Telegram are not just output channels — you can send messages back through them, triggering new tasks or continuing conversations. Inbound polling via `conversations.history` (Slack) and `getUpdates` (Telegram) makes the channels a two-way interface to the entire agent system.
 
 ## Chat as a Conversational Task Interface
 
-Chat provides a conversational alternative to the task board for creating and managing tasks. The tool catalog organizes workspace capabilities into five categories -- Explore, Create, Debug, Automate, and Smart Picks -- with multi-provider model selection across Claude and Codex models. @ mentions inject document context directly into prompts, while slash commands offer quick access to tools and actions. Tasks created through chat land in the same governed pipeline as board-created tasks, flowing through the same fire-and-forget execution, the same permission cascade, and the same log streaming infrastructure described above. The chat interface does not bypass any of the safety mechanisms -- it is a different entry point to the same system, optimized for users who think conversationally rather than in terms of forms and boards.
+Chat provides a conversational alternative to the task board for creating and managing tasks. The tool catalog organizes workspace capabilities into five categories — Explore, Create, Debug, Automate, and Smart Picks — with multi-provider model selection across all five runtimes. @ mentions inject document context directly into prompts, while slash commands offer quick access to tools and actions. Tasks created through chat land in the same governed pipeline as board-created tasks, flowing through the same fire-and-forget execution, the same permission cascade, and the same log streaming infrastructure described above.
+
+[Try: Execute a Task](/tasks)
 
 ## Lessons Learned
 
-Building the task execution layer taught us four things that we now consider foundational to any AI-native application.
+Building the task execution layer taught us five things that we now consider foundational to any AI-native application.
 
-**Specialization beats generalization.** A code review agent with a focused SKILL.md prompt, scoped tool access via YAML, and domain-specific constraints produces dramatically better results than a general-purpose agent asked to "review this code." The overhead of maintaining multiple profiles is trivial compared to the improvement in output quality — each profile is just two files in a directory. This holds true even when the underlying model is the same; the framing is what matters. We have seen this pattern echoed across the industry: the most successful agent deployments are not the ones with the most powerful models, but the ones with the most carefully scoped roles.
+**Specialization beats generalization.** A code review agent with a focused SKILL.md prompt, scoped tool access via YAML, and domain-specific constraints produces dramatically better results than a general-purpose agent asked to "review this code." This holds even when the underlying model is the same; the framing is what matters. The addition of business-function profiles (marketing-strategist, financial-analyst, etc.) validated this principle beyond engineering — the same specialization advantage applies to sales outreach, customer support, and financial analysis.
 
-**The database is the message queue.** Every coordination problem in Stagent — status tracking, log streaming, permission requests, workflow state, usage accounting — uses the same SQLite database as its communication layer. No Redis, no RabbitMQ, no WebSocket server. The database is already there for persistence; using it for coordination eliminates an entire class of infrastructure complexity. This only works because our access patterns are low-frequency and our consistency requirements are modest (eventual consistency within a few seconds is fine for a human watching a task execute). For a system processing thousands of concurrent agent tasks, you would need something more sophisticated. But for the single-user and small-team use case that Stagent targets, the database-as-message-queue pattern is a genuine architectural advantage.
+**Five runtimes are better than one.** Early versions of Stagent ran everything through Claude Code. Adding Codex App Server, Anthropic Direct, OpenAI Direct, and Ollama did not just provide fallback options — it changed how we think about task routing. Simple summarization tasks route to lightweight API calls. Complex code analysis goes to Claude Code with full tool access. Cost-sensitive recurring heartbeats can run on local Ollama models. The profile's `preferredRuntime` and `capabilityOverrides` make this routing transparent and configurable.
 
-**Log everything.** An agent that fails silently is worse than an agent that fails loudly. Every tool call, every permission decision, every status transition is captured in the agent logs table. When something goes wrong — and it will — the logs tell you exactly what happened, in what order, with what inputs. This is not just a debugging convenience; it is a trust mechanism. Users who can inspect exactly what an agent did are far more willing to grant expanded permissions than users who have to take the system's word for it. Transparency is the currency of progressive autonomy. The monitoring dashboard at `/monitor` aggregates all agent activity into a single real-time feed, making it easy to spot errors, trace execution paths, and build confidence in the system.
+**The database is the message queue.** Every coordination problem in Stagent — status tracking, log streaming, permission requests, handoff governance, usage accounting — uses the same SQLite database as its communication layer. No Redis, no RabbitMQ, no WebSocket server. For the single-user and small-team use case that Stagent targets, the database-as-message-queue pattern is a genuine architectural advantage.
 
-**Build safety nets into the stream processor.** Early in development, we encountered a class of failures where the agent stream would end without producing a final result — the agent would exhaust its turn limit or encounter an SDK error, and the task would sit in "running" status forever. The fix was a safety net at the end of the stream processor: if no result frame was received, the task is automatically marked as failed with a diagnostic message that tells the user what happened. Similarly, abort handling checks for cancellation before writing results, preventing race conditions where a cancelled task appears to complete. These defensive patterns cost almost nothing to implement but prevent the most frustrating class of user experience failures.
+**Memory must decay.** Our first implementation of episodic memory stored everything at equal weight forever. The context window filled with stale facts, and agents spent tokens reasoning over outdated information. Adding confidence-based decay and relevance filtering transformed memory from a liability into an asset. The decay rate is tunable per-memory, and the memory browser gives humans oversight over what agents retain.
 
-There is a fifth lesson that emerged later, as the system matured: the execution layer is never finished. Every new capability — workflows that chain tasks, schedules that trigger recurring executions, learned context that feeds back into future runs, session resume that avoids repeating expensive work — layers on top of the same fire-and-forget foundation. The simplicity of that foundation (submit a task, track its status, stream its logs, handle its permissions) is what makes it possible to compose these higher-level abstractions without the system collapsing under its own complexity. The next chapter will show how document processing builds on this foundation to transform unstructured input into structured knowledge, but the unit of execution remains the same: a single agent, working on a single task, within well-defined boundaries.
+**Build safety nets into the stream processor.** Early in development, we encountered a class of failures where the agent stream would end without producing a final result — the agent would exhaust its turn limit, and the task would sit in "running" status forever. The fix was a safety net: if no result frame was received, the task is automatically marked as failed with a diagnostic message. Similarly, abort handling checks for cancellation before writing results, preventing race conditions. These defensive patterns cost almost nothing to implement but prevent the most frustrating class of user experience failures.
+
+There is a sixth lesson that emerged later, as the system matured: the execution layer is never finished. Every new capability — workflows that chain tasks, schedules that trigger recurring executions, episodic memory that accumulates knowledge, handoffs that delegate between profiles, channels that deliver results externally — layers on top of the same fire-and-forget foundation. The simplicity of that foundation (submit a task, track its status, stream its logs, handle its permissions) is what makes it possible to compose these higher-level abstractions without the system collapsing under its own complexity.

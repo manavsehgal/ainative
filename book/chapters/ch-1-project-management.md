@@ -4,7 +4,7 @@ subtitle: "From Manual Planning to Autonomous Sprint Planning"
 chapter: 1
 part: 1
 readingTime: 12
-lastGeneratedBy: "2026-03-27"
+lastGeneratedBy: "2026-03-31T21:00:00Z"
 ---
 
 ## The Problem
@@ -15,7 +15,7 @@ This is the planning bottleneck, and it is one of the most expensive inefficienc
 
 But what if that assumption is wrong?
 
-When we started building Stagent, we did not set out to replace project managers. We set out to answer a simpler question: what would project management look like if an AI agent were a first-class participant in the process from day one? Not bolted on after the fact — not a chatbot sidebar in an existing tool — but woven into the foundation of how projects are structured, planned, and executed.
+When we started building Stagent — the AI Business Operating System — we did not set out to replace project managers. We set out to answer a simpler question: what would project management look like if an AI agent were a first-class participant in the process from day one? Not bolted on after the fact — not a chatbot sidebar in an existing tool — but woven into the foundation of how projects are structured, planned, and executed.
 
 The answer surprised us. It was not about making AI do what humans already do. It was about rethinking what needed to be done in the first place.
 
@@ -37,7 +37,7 @@ This is the shift from executor to architect. In the old model, a project manage
 
 Consider how a typical feature request flows through each model. In the traditional approach, a PM writes a ticket, breaks it into subtasks, estimates each one, assigns engineers, schedules the work, and tracks it daily. In Stagent, the PM describes the feature objective and its constraints. An agent profile — a structured configuration that defines an agent's personality, capabilities, and guardrails — takes over. The agent analyzes the codebase, proposes a task breakdown, identifies dependencies on existing code, flags risks, and begins execution. The human approves the plan, adjusts priorities, and intervenes only when judgment calls arise.
 
-This is not a theoretical distinction. The agent profile is a concrete artifact — a pair of files that turns an abstract AI model into a specialized team member with defined responsibilities. In Stagent, every profile lives as a directory under `~/.claude/skills/` containing a `profile.yaml` for configuration and a `SKILL.md` for behavioral instructions.
+This is not a theoretical distinction. The agent profile is a concrete artifact — a pair of files that turns an abstract AI model into a specialized team member with defined responsibilities. In Stagent, every profile lives as a directory under `~/.claude/skills/` containing a `profile.yaml` for configuration and a `SKILL.md` for behavioral instructions. The system ships with 20 built-in profiles spanning technical roles (code-reviewer, devops-engineer, data-analyst) and business functions (marketing-strategist, financial-analyst, sales-researcher, customer-support-agent, content-creator, operations-coordinator).
 
 <!-- filename: src/lib/agents/profiles/builtins/project-manager/profile.yaml -->
 ```yaml
@@ -67,7 +67,7 @@ tests:
 ```
 *The Project Manager profile — notice how `allowedTools` and `canUseToolPolicy` encode trust boundaries, while `tests` define verifiable behavioral expectations*
 
-Notice what this configuration encodes. It is not just a name and a prompt. It defines `allowedTools` — the specific tools the agent can invoke (read-only filesystem access, no writes). It defines `canUseToolPolicy` — which tools auto-approve without human confirmation and which are auto-denied. The `supportedRuntimes` field declares that this profile works across both Claude Code and OpenAI Codex runtimes, making it provider-agnostic. And the `tests` array provides smoke tests: give the agent a task, check that its output contains expected keywords. This is how we verify that a profile actually produces the behavior we designed for.
+Notice what this configuration encodes. It is not just a name and a prompt. It defines `allowedTools` — the specific tools the agent can invoke (read-only filesystem access, no writes). It defines `canUseToolPolicy` — which tools auto-approve without human confirmation and which are auto-denied. The `supportedRuntimes` field declares that this profile works across both Claude Code and OpenAI Codex runtimes — and indeed across all five of Stagent's runtime providers (Claude Code SDK, Codex App Server, Anthropic Direct, OpenAI Direct, and Ollama). The `tests` array provides smoke tests: give the agent a task, check that its output contains expected keywords. This is how we verify that a profile actually produces the behavior we designed for.
 
 This is the principle of progressive autonomy at work: not all-or-nothing automation, but a graduated spectrum of trust encoded in declarative configuration.
 
@@ -117,6 +117,10 @@ export const tasks = sqliteTable(
     result: text("result"),
     sessionId: text("session_id"),
     resumeCount: integer("resume_count").default(0).notNull(),
+    /** How this task was created: manual, scheduled, heartbeat, or workflow */
+    sourceType: text("source_type", {
+      enum: ["manual", "scheduled", "heartbeat", "workflow"],
+    }),
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
   },
@@ -131,111 +135,94 @@ export const tasks = sqliteTable(
 
 Look at the `workingDirectory` field on the projects table. In a traditional PM tool, there is no concept of a working directory — projects exist in an abstract namespace. But an AI agent that needs to analyze code, run tests, or generate files needs to know where to look. This field bridges the gap between the abstract world of project management and the concrete world of a filesystem where work actually happens.
 
-The `agentProfile` field on the tasks table is equally revealing. In Jira, you assign a task to a person. In Stagent, you assign a task to an agent profile — a behavioral configuration that determines how the AI approaches the work. A task assigned to the `code-reviewer` profile will be handled differently than one assigned to the `document-writer` profile, even though the same underlying AI model powers both. The profile is the personality; the model is the engine.
+The `agentProfile` field on the tasks table is equally revealing. In Jira, you assign a task to a person. In Stagent, you assign a task to an agent profile — a behavioral configuration that determines how the AI approaches the work. A task assigned to the `code-reviewer` profile will be handled differently than one assigned to the `financial-analyst` profile, even though the same underlying AI model may power both. The profile is the personality; the model is the engine.
 
-Notice also the foreign keys linking tasks to `workflows` and `schedules`. A task does not exist in isolation — it can be part of an automated workflow chain or spawned by a recurring schedule. These relationships let agents reason about context: "this task was triggered by a weekly code-quality schedule, so I should focus on regression patterns rather than new features." The schema encodes organizational knowledge that would otherwise live only in a human's head.
+The `sourceType` field tracks provenance — whether a task was created manually, spawned by a schedule, generated by a heartbeat evaluation, or produced as a step in a workflow. This distinction matters for the dashboard: heartbeat-generated tasks display a heartbeat badge on their Kanban card, making it easy to audit what your scheduled agents produced overnight versus what you created yourself.
 
-The indexing strategy is another agent affordance. Indexes on `status`, `project_id`, and `agent_profile` are not just performance optimizations — they define the query patterns that agents use most frequently. When an agent asks "what are my pending tasks?", that query hits `idx_tasks_status` and `idx_tasks_agent_profile` directly. The schema is optimized for agent access patterns, not just human ones.
+Notice also the foreign keys linking tasks to `workflows` and `schedules`. A task does not exist in isolation — it can be part of an automated workflow chain or spawned by a recurring schedule with natural language timing like "every weekday at 9am." These relationships let agents reason about context: "this task was triggered by a weekly code-quality heartbeat, so I should focus on regression patterns rather than new features." The schema encodes organizational knowledge that would otherwise live only in a human's head.
 
 > [!tip]
 > **The Affordance of Structure**
 > AI agents work best when database schemas are explicit, enumerated, and queryable. Every field you add to your schema is an affordance — a handle that agents can grasp. Free-text fields are slippery; enum fields are grippy. Timestamps enable temporal reasoning. Foreign keys encode relationships that agents can traverse. Design your schema as if your most important user cannot read between the lines — because it cannot.
 
-### Pillar 2: Agent Profiles as Behavioral Architecture
+### Pillar 2: The Home Workspace as Operations Center
 
-The second pillar is the agent profile system. Traditional PM tools have roles — admin, member, viewer. These roles control access. Agent profiles control behavior. They define not just what an agent can do, but how it approaches work.
+The second pillar is the human oversight surface. The home workspace at `/` is not a status page — it is a control surface for an AI Business Operating System. Five stat cards at the top give an instant pulse: tasks running, completed today, awaiting review, active projects, and active workflows. A "Needs Attention" section surfaces items that require human judgment — permission requests from agents, failed tasks, stalled workflows, and agent handoff approvals waiting in the inbox.
 
-Stagent ships with 14 built-in profiles spanning multiple domains: `general`, `project-manager`, `code-reviewer`, `document-writer`, `researcher`, `technical-writer`, `data-analyst`, `devops-engineer`, `sweep` (for codebase maintenance), and lifestyle profiles like `wealth-manager`, `travel-planner`, `health-fitness-coach`, `shopping-assistant`, and `learning-coach`. Each profile carries its own SKILL.md behavioral instructions, tool permissions, runtime compatibility declarations, and constraint boundaries.
+The sidebar organizes the entire workspace into four groups that reflect how we think about AI-augmented operations:
 
-The profile system is filesystem-based and user-extensible. Built-in profiles ship in the source tree under `src/lib/agents/profiles/builtins/` and are copied to `~/.claude/skills/` on first run — but never overwritten, so users can customize them freely. The registry scans this directory, validates each `profile.yaml` against a Zod schema, pairs it with its `SKILL.md`, and caches the result.
+- **Work** — Dashboard, Inbox, Chat, Projects, Workflows, Documents
+- **Manage** — Monitor, Profiles, Schedules, Cost & Usage
+- **Learn** — AI Native Book, User Guide
+- **Configure** — Environment, Settings
 
-<!-- filename: src/lib/agents/profiles/types.ts -->
-```typescript
-export interface AgentProfile {
-  id: string;
-  name: string;
-  description: string;
-  domain: string;
-  tags: string[];
-  /** Full content of the SKILL.md file (system prompt + behavioral instructions) */
-  skillMd: string;
-  allowedTools?: string[];
-  mcpServers?: Record<string, unknown>;
-  canUseToolPolicy?: CanUseToolPolicy;
-  maxTurns?: number;
-  outputFormat?: string;
-  version?: string;
-  author?: string;
-  tests?: ProfileSmokeTest[];
-  supportedRuntimes: AgentRuntimeId[];
-  runtimeOverrides?: Partial<Record<AgentRuntimeId, ProfileRuntimeOverride>>;
-}
-```
-*The `AgentProfile` interface — a profile is far more than a system prompt. It encodes domain, tool permissions, runtime compatibility, and behavioral tests.*
+A trust tier badge in the sidebar footer displays the current permission level (Read Only, Git Safe, Full Auto), making the autonomy boundary visible at all times. The workspace indicator shows which project context agents are operating within.
 
-This matters because project management is not one activity — it is many. Breaking down a feature into tasks requires different reasoning than estimating effort. Identifying risks requires different attention patterns than writing acceptance criteria. By encoding these behavioral differences into profiles, we give the system a vocabulary for matching the right cognitive style to the right job.
+The Kanban board at `/dashboard` makes execution visible. Tasks flow through five columns — Planned, Queued, Running, Completed, Failed — with drag-and-drop to override agent decisions when human judgment calls for it. Filter bars slice by project, status, or priority. Bulk select mode lets you queue, move, or delete multiple tasks at once — essential when heartbeat schedules generate many tasks overnight. The AI Assist button on the task creation form enhances a rough title and description with structured context, acceptance criteria, and suggested parameters — turning a one-line idea into an agent-ready specification.
 
-The `runtimeOverrides` field deserves special attention. Stagent supports multiple AI runtimes — Claude Code and OpenAI Codex App Server — and a profile can carry different instructions for each. The project-manager profile might use Claude's deep reasoning for dependency analysis while leveraging Codex's code execution sandbox for estimation. This multi-runtime architecture means profiles are portable across providers, not locked to a single vendor.
-
-The profile registry becomes a kind of team roster. When a new task comes in, the system can reason about which profile is best suited to handle it, just as a manager would reason about which team member to assign. The difference is that this matching happens in milliseconds, not in a scheduling meeting.
-
-<!-- filename: src/lib/agents/profiles/registry.ts -->
-```typescript
-export function getProfile(id: string): AgentProfile | undefined {
-  return ensureLoaded().get(id);
-}
-
-export function listProfiles(): AgentProfile[] {
-  return Array.from(ensureLoaded().values());
-}
-
-/** Force re-scan of .claude/skills/ — call after user adds/edits profiles */
-export function reloadProfiles(): void {
-  profileCache = null;
-  profileCacheSignature = null;
-}
-
-/** Create a new custom profile in ~/.claude/skills/ */
-export function createProfile(config: ProfileConfig, skillMd: string): void {
-  const result = ProfileConfigSchema.safeParse(config);
-  if (!result.success) {
-    throw new Error(`Invalid profile: ${result.error.issues.map(i => i.message).join(", ")}`);
-  }
-
-  const dir = path.join(SKILLS_DIR, config.id);
-  fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(path.join(dir, "profile.yaml"), yaml.dump(config));
-  fs.writeFileSync(path.join(dir, "SKILL.md"), skillMd);
-  reloadProfiles();
-}
-```
-*The registry provides CRUD operations for profiles — users can create custom profiles at runtime, validated against the same Zod schema used for built-ins*
-
-The registry uses a file-signature cache that tracks modification times of every `profile.yaml` and `SKILL.md` in the skills directory. If a user edits a profile between requests, the cache invalidates automatically on the next access. This means profiles are live-editable — change a YAML file, and the next task execution picks up the new configuration without a restart.
-
-### Pillar 3: Human-in-the-Loop as System Design
-
-The third pillar is the human oversight model. This is where most AI-in-a-tool approaches get it wrong. They either give the AI too little autonomy (requiring approval for every action, making it slower than doing it manually) or too much (letting it run unsupervised, leading to trust-destroying mistakes).
-
-Our approach is progressive autonomy — a five-stage spectrum that we discovered through building Stagent with Stagent:
-
-**Manual**: The human does everything. The AI observes and learns context. This is where every new project starts, because trust must be earned, not assumed.
-
-**Assisted**: The AI suggests, the human decides. The agent might propose a task breakdown, but the human reviews and modifies it before any work begins. This is the stage where most traditional AI integrations stop — the chatbot-as-advisor pattern.
-
-**Delegated**: The human defines the objective, the agent executes within guardrails. The `canUseToolPolicy` in the agent profile defines the boundaries — `autoApprove` for safe operations, `autoDeny` for forbidden ones, and everything else pauses for human confirmation. Within those boundaries, the agent acts autonomously. Outside them, it pauses and asks.
-
-**Autonomous**: The agent plans and executes end-to-end, with the human monitoring via dashboards and logs rather than approving individual steps. This stage requires high trust and a proven track record of reliable agent behavior.
-
-**Emergent**: The agent identifies opportunities the human has not considered. It notices patterns across projects, suggests process improvements, and proactively raises issues before they become blockers. This is the frontier — the stage we are actively building toward.
-
-The key insight is that these stages are not global settings. They are per-task, per-profile, and per-project. You might trust the general assistant to autonomously break down tasks (stage 4) while keeping the code reviewer at the delegated level (stage 3) where deployments still require approval. Trust is granular, not binary.
-
-The home workspace makes this oversight model tangible. Five stat cards at the top show tasks running, completed today, awaiting review, active projects, and active workflows. A "Needs Attention" section surfaces items requiring human action — permission requests, failed tasks, stalled workflows. The human does not need to poll or check in; the system pushes decision points to them.
+Stagent ships with five sample projects to demonstrate the breadth of the system: Investment Portfolio Tracker, SaaS Landing Page, Lead Generation Pipeline, Business Trip Planner, and Tax Filing Assistant. These span personal and professional domains, showing how the same AI-native project management primitives apply whether you are tracking code deployments or planning a vacation.
 
 > [!info]
 > **The Dashboard as Control Surface**
-> Stagent's home workspace at `/` is designed as an operations center, not a status page. Stat cards give pulse metrics. The "Needs Attention" section acts as a human-in-the-loop queue — every item there represents a moment where the system needs human judgment. The sidebar organizes the workspace into three groups: Work (Dashboard, Inbox, Projects, Workflows, Documents), Manage (Monitor, Profiles, Schedules, Cost & Usage), and Configure (Playbook, Settings). This hierarchy reflects the progressive autonomy model — most of your time should be spent in Work, occasionally in Manage, rarely in Configure.
+> Stagent's home workspace at `/` is designed as an operations center, not a status page. Stat cards give pulse metrics. The "Needs Attention" section acts as a human-in-the-loop queue — every item there represents a moment where the system needs human judgment. The sidebar hierarchy reflects the progressive autonomy model — most of your time should be spent in Work, occasionally in Manage, rarely in Configure.
+
+### Pillar 3: Heartbeat Schedules and Proactive Work
+
+The third pillar is one of the most distinctive features of Stagent's project management: the heartbeat scheduler. Traditional schedules are clock-driven — they fire at a fixed interval regardless of whether anything has changed. Heartbeat schedules are intelligence-driven — they evaluate a checklist of conditions and only produce work when the conditions warrant it.
+
+<!-- filename: src/lib/db/schema.ts (schedules table) -->
+```typescript
+export const schedules = sqliteTable("schedules", {
+  id: text("id").primaryKey(),
+  projectId: text("project_id").references(() => projects.id),
+  name: text("name").notNull(),
+  prompt: text("prompt").notNull(),
+  cronExpression: text("cron_expression").notNull(),
+  agentProfile: text("agent_profile"),
+  /** 'scheduled' (default, clock-driven) or 'heartbeat' (intelligence-driven) */
+  type: text("type", { enum: ["scheduled", "heartbeat"] })
+    .default("scheduled")
+    .notNull(),
+  /** JSON array of checklist items the agent evaluates (heartbeat only) */
+  heartbeatChecklist: text("heartbeat_checklist"),
+  /** Hour of day (0-23) when heartbeats are active */
+  activeHoursStart: integer("active_hours_start"),
+  activeHoursEnd: integer("active_hours_end"),
+  activeTimezone: text("active_timezone").default("UTC"),
+  suppressionCount: integer("suppression_count").default(0).notNull(),
+  /** JSON array of channel config IDs for delivery after firing */
+  deliveryChannels: text("delivery_channels"),
+  // ... timestamps, budget fields
+});
+```
+*The heartbeat scheduler schema — active hours, suppression counts, and delivery channels turn a dumb cron into an intelligent, context-aware scheduling system*
+
+A heartbeat schedule might say: "Every weekday at 9am, check whether (1) any tasks have been stuck in running state for more than 2 hours, (2) any scheduled workflows failed overnight, and (3) the deployment pipeline has pending approvals. If any condition is true, create a summary task and deliver it to Slack." The agent evaluates the checklist, decides whether action is warranted, and only creates work when something actually needs attention.
+
+Active hours windowing prevents 3am wake-up notifications. Suppression counts track how many consecutive heartbeat runs produced no action — useful for tuning frequency. Daily budget caps prevent runaway evaluations. And delivery channels route results to Slack, Telegram, or webhook endpoints, with bidirectional chat support so you can respond to heartbeat findings directly from your messaging app.
+
+The scheduler engine itself is a poll-based system that runs on a 60-second interval, checking for schedules whose `nextFireAt` has passed:
+
+<!-- filename: src/lib/schedules/scheduler.ts -->
+```typescript
+export function startScheduler(): void {
+  if (intervalHandle !== null) return;
+
+  // Bootstrap: recompute nextFireAt for any active schedules that are missing it
+  bootstrapNextFireTimes();
+
+  intervalHandle = setInterval(() => {
+    tickScheduler().catch((err) => {
+      console.error("[scheduler] tick error:", err);
+    });
+  }, POLL_INTERVAL_MS);
+
+  console.log("[scheduler] started — polling every 60s");
+}
+```
+*The scheduler engine — poll-based simplicity with bootstrap self-healing*
+
+Natural language scheduling parses expressions like "every weekday at 9am" or "twice daily" into cron expressions, making schedule creation conversational rather than technical. This connects back to the AI-native premise: the system should meet users where they think, not where the implementation is convenient.
 
 ## The Difference in Practice
 
@@ -247,8 +234,6 @@ In Stagent, the workflow looked like this: we created a project, described the o
 
 Total planning overhead: about 20 minutes. And because the agent had analyzed the actual codebase (not a description of it), the plan was grounded in reality from the start. No "oh, we didn't realize this would require a schema migration" surprises on day three of the sprint.
 
-The Kanban board at `/dashboard` made the execution visible. Tasks flowed through five columns — Planned, Queued, Running, Completed, Failed — with drag-and-drop to override agent decisions when human judgment called for it. Filter bars let us slice by project, status, or priority. The AI Assist button on the task creation form could enhance a rough title and description with structured context, acceptance criteria, and suggested parameters — turning a one-line idea into an agent-ready specification.
-
 This is not about speed, though the speed improvement is real. It is about the quality of planning. An AI agent that can read the codebase, query the database schema, and reason about dependencies produces plans that are more technically grounded than plans produced in a meeting room with a whiteboard. The agent does not forget about that edge case in the authentication middleware. It does not overlook the foreign key constraint that makes the migration order critical. It reads the code and reasons from what is actually there.
 
 ## Lessons Learned
@@ -259,9 +244,13 @@ After building and using Stagent's project management system across dozens of fe
 
 Our most counterintuitive lesson: the schema matters more than the AI model. We spent weeks tuning prompts and profiles before realizing that the single highest-leverage improvement was adding an `agentProfile` column to the tasks table. That one field transformed tasks from "things humans do" into "things that can be routed to the right cognitive style." Similarly, adding `workingDirectory` to projects unlocked filesystem-aware planning — something no amount of prompt engineering could achieve without it.
 
-The schema kept growing as we discovered new agent affordances. Foreign keys to `workflows` and `schedules` let agents understand task provenance. The `sessionId` and `resumeCount` fields enabled long-running tasks that survive interruptions. Indexes on `agent_profile` made profile-based routing queries fast. Each schema addition was a new capability for every agent in the system — a multiplier, not an increment.
+The schema kept growing as we discovered new agent affordances. Foreign keys to `workflows` and `schedules` let agents understand task provenance. The `sourceType` enum distinguishes manual tasks from heartbeat-generated and workflow-spawned ones. The `sessionId` and `resumeCount` fields enabled long-running tasks that survive interruptions. Indexes on `agent_profile` made profile-based routing queries fast. Each schema addition was a new capability for every agent in the system — a multiplier, not an increment.
 
 If you are building an AI-native application, design your schema first. Make every field explicit. Use enums instead of free text. Add the columns that AI agents need even if your UI does not display them yet. The schema is the foundation; everything else is built on top of it.
+
+### Heartbeats Change the Relationship with Work
+
+The heartbeat scheduler changed how we relate to our own system. Before heartbeats, we checked Stagent to see what was happening. After heartbeats, Stagent checked on our projects and told us what needed attention — delivered to Slack or Telegram, within active hours, only when conditions warranted it. The shift from pull to push is subtle but profound. You stop thinking "I should check on the deployment pipeline" and start trusting that the system will tell you when something matters. Active hours and suppression counts prevent alert fatigue. Budget caps prevent cost surprises. The heartbeat does not replace human judgment — it surfaces the moments where human judgment is needed.
 
 ### Progressive Autonomy Works
 
@@ -269,11 +258,9 @@ The five-stage autonomy model (Manual, Assisted, Delegated, Autonomous, Emergent
 
 Today, task decomposition runs at stage 3 (Delegated) — the project-manager profile breaks down features autonomously using only read-only tools. Code execution runs at stage 2 (Assisted) — the agent proposes, the human approves. Deployment remains at stage 1 (Manual). This granularity is essential. A single global autonomy knob would either hold everything back or push everything forward too fast.
 
-The `canUseToolPolicy` mechanism made this granularity practical. Instead of a single permission flag, each profile declares which tools auto-approve, which auto-deny, and which require case-by-case human judgment. The project-manager profile auto-approves `Read`, `Grep`, and `Glob` (safe, read-only operations) while everything else requires confirmation. The general profile gets broader permissions. This is trust encoded as configuration, not trust assumed by default.
-
 ### The Human Role Evolves, It Does Not Disappear
 
-The fear that AI will replace project managers misses the point. What disappears is the operational drudgery — the ticket-writing, status-chasing, meeting-scheduling overhead that consumes most of a PM's day. What remains — and grows in importance — is the system design work: defining objectives, setting constraints, designing agent profiles, establishing trust boundaries, and making judgment calls that require context no AI currently possesses.
+The fear that AI will replace project managers misses the point. What disappears is the operational drudgery — the ticket-writing, status-chasing, meeting-scheduling overhead that consumes most of a PM's day. What remains — and grows in importance — is the system design work: defining objectives, setting constraints, designing agent profiles, establishing trust boundaries, configuring heartbeat checklists, and making judgment calls that require context no AI currently possesses.
 
 In our experience, the humans who thrive in an AI-native workflow are the ones who shift from thinking "what tasks do I need to do?" to thinking "what system do I need to design so that tasks get done well?" It is a higher-leverage position. The PM becomes less like a foreman on a construction site and more like an architect — still essential, but operating at a different altitude.
 
@@ -281,21 +268,11 @@ In our experience, the humans who thrive in an AI-native workflow are the ones w
 
 Early on, we tried to encode all agent behavior in system prompts. It worked, but it did not scale. A system prompt is a blob of text — you cannot query it, version it, validate it, or compose it with other configurations. Moving to the profile system — YAML configuration plus Markdown instructions, validated by Zod, cached by the registry, extensible by users — transformed how we thought about agent behavior.
 
-Profiles compose. A task gets a profile, a project gets a working directory, a schedule gets a cron expression, and the system assembles the right context for each execution. Profiles are testable — the `tests` array in each profile.yaml lets us verify behavioral expectations in CI. Profiles are portable — the `supportedRuntimes` field means the same profile works across Claude and Codex. And profiles are user-extensible — anyone can drop a new directory into `~/.claude/skills/` and the registry picks it up on the next access.
-
-### Existing Tools Will Adapt, But Slowly
-
-Jira, Linear, and their peers are already adding AI features, and those features will get better over time. But they face a structural disadvantage: their data models were designed for human workflows. Adding AI to a schema built for humans is like adding power steering to a horse-drawn carriage — it helps, but it does not change the fundamental architecture. An AI-native schema, designed from the ground up with agent affordances, enables capabilities that bolt-on AI cannot match.
-
-This is not a permanent advantage. Eventually, traditional tools will evolve their schemas, or new competitors will emerge with AI-native foundations. But for now, the gap between "AI-assisted traditional PM" and "AI-native PM" is wide enough to be meaningful.
-
-### Environment Onboarding Changes the Starting Line
-
-Stagent now doubles as a control plane for AI coding environments. The Environment dashboard scans Claude Code and Codex CLI configurations across projects, caches detected state for fast rendering, tracks health scores, and supports bidirectional sync. Environment templates let teams standardize project setups, while the agent-profile-from-environment feature auto-generates reusable profiles from detected capabilities. This collapses the gap between "I installed the AI tools" and "my project is ready for agent-driven work" — environment onboarding becomes a managed, repeatable process rather than tribal knowledge passed between developers.
+Profiles compose. A task gets a profile, a project gets a working directory, a schedule gets a cron expression, and the system assembles the right context for each execution. Profiles are testable — the `tests` array in each profile.yaml lets us verify behavioral expectations in CI. Profiles are portable — the `supportedRuntimes` field means the same profile works across Claude, Codex, Anthropic Direct, OpenAI Direct, and Ollama. And profiles are user-extensible — anyone can drop a new directory into `~/.claude/skills/` and the registry picks it up on the next access.
 
 ---
 
-The project management system described in this chapter is the foundation on which everything else in Stagent is built. Tasks, workflows, agent profiles, and human oversight — these are the primitives. In the chapters that follow, we will see how these primitives compose into increasingly sophisticated patterns: multi-agent collaboration, autonomous execution loops, and eventually, systems that improve themselves.
+The project management system described in this chapter is the foundation on which everything else in Stagent is built. Tasks, workflows, agent profiles, heartbeat schedules, and human oversight — these are the primitives. In the chapters that follow, we will see how these primitives compose into increasingly sophisticated patterns: multi-agent collaboration with episodic memory, autonomous execution loops with async handoffs, and document processing that turns unstructured files into agent-accessible knowledge.
 
 But it all starts here, with a schema and a profile and the willingness to ask: what if the AI were not a tool we use, but a team member we design for?
 

@@ -1,32 +1,27 @@
 ---
 title: "Agent Self-Improvement"
-subtitle: "Learning from Execution Logs and Feedback"
+subtitle: "From Learned Context to Episodic Memory"
 chapter: 6
 part: 2
 readingTime: 13
 relatedDocs: [agent-intelligence, profiles]
 relatedJourney: developer
+lastGeneratedBy: "2026-03-31T21:00:00Z"
 ---
+
+# Agent Self-Improvement
 
 ## The Problem
 
-An agent that makes the same mistake twice isn't learning. Most AI systems are stateless -- each invocation starts fresh with no memory of past successes or failures. This is fine for simple tasks, but it's a fundamental limitation for complex, ongoing work. Stagent's learned context system closes this loop, feeding execution outcomes back into agent behavior.
+An agent that makes the same mistake twice is not learning. Most AI systems are stateless -- each invocation starts fresh with no memory of past successes or failures. This is fine for simple tasks, but it is a fundamental limitation for complex, ongoing work. Stagent's self-improvement system closes this loop through two complementary mechanisms: **learned context** for behavioral patterns and **episodic memory** for factual knowledge. Together, they give agents a persistent, evolving understanding of the projects and people they serve.
 
 Consider what happens in a typical AI-assisted workflow today. You ask an agent to refactor a module. It makes a choice that breaks your test suite -- maybe it renames an export without updating the barrel file. You correct it. The agent apologizes, fixes the issue, and you move on. Two weeks later, you ask it to refactor another module. It makes the exact same mistake. The apology is just as polite. The fix is just as quick. But the waste is just as real.
 
 This is not a problem of model capability. GPT-4, Claude, Gemini -- they can all reason about barrel files and named exports. The problem is architectural. Each invocation is an island. There is no bridge between what the agent learned at 2pm on Tuesday and what it knows at 9am on Thursday. The context window is the agent's entire universe, and when that window closes, the universe ends.
 
-The industry has developed several approaches to this problem, and it is worth understanding them before explaining why we chose a different path.
+The industry has developed several approaches to this problem. **Fine-tuning** modifies model weights but is expensive, slow to iterate on, and operates at the provider level. **RLHF** shapes model behavior through preference signals but is not application-level. **DSPy's prompt optimization** is closer -- programmatic prompt tuning based on execution outcomes -- but requires a metric function, a training set, and an optimization loop. **RAG** retrieves relevant documents at query time, but RAG systems typically retrieve static documents populated by humans, not by the agent's own experience.
 
-**Fine-tuning** modifies the model's weights using task-specific data. It is powerful but expensive, slow to iterate on, and requires significant infrastructure. You cannot fine-tune a model every time an agent learns that your project prefers tabs over spaces. The feedback cycle is measured in hours or days, not seconds.
-
-**RLHF (Reinforcement Learning from Human Feedback)** shapes model behavior through preference signals, but it operates at the model provider level, not the application level. You cannot run RLHF on your deployment of Claude to teach it your team's coding conventions.
-
-**DSPy's prompt optimization** is closer to what we need -- it programmatically tunes prompts based on execution outcomes. But it requires a metric function, a training set, and an optimization loop. It is a research framework, not an operational one.
-
-**RAG (Retrieval-Augmented Generation)** retrieves relevant documents at query time and injects them into context. This is the closest cousin to our approach, but RAG systems typically retrieve static documents. They do not learn from their own execution. The knowledge base is populated by humans, not by the agent's experience.
-
-What we wanted was something simpler and more immediate: a system where an agent's own execution outcomes become future context, where learning happens at runtime without model modification, and where a human stays in the loop to validate what gets learned. We wanted feedback loops as intelligence -- the idea that a system's capacity for learning matters more than its capacity at any single point in time.
+What we wanted was something simpler and more immediate: a system where an agent's own execution outcomes become future context, where learning happens at runtime without model modification, and where a human stays in the loop to validate what gets learned. The result is two systems that operate at different timescales and serve different purposes, but share the same principle: intelligence is not a snapshot, it is a trajectory.
 
 > [!info]
 > **Feedback Loops as Intelligence**
@@ -34,7 +29,7 @@ What we wanted was something simpler and more immediate: a system where an agent
 
 ## The Learned Context System
 
-Stagent's self-improvement system operates in three phases: **Capture**, **Store**, and **Inject**. Each phase is deliberately simple. The power comes from the loop, not from the sophistication of any individual step.
+Stagent's first self-improvement mechanism operates in three phases: **Capture**, **Store**, and **Inject**. Each phase is deliberately simple. The power comes from the loop, not from the sophistication of any individual step.
 
 **Capture** happens automatically after every task completes. The pattern extractor analyzes the task's execution logs -- what tools were called, what errors occurred, what the final result looked like -- and uses a meta-completion (a separate LLM call dedicated to reflection) to identify patterns worth remembering. These patterns are categorized as error resolutions, best practices, shortcuts, or preferences.
 
@@ -42,136 +37,40 @@ Stagent's self-improvement system operates in three phases: **Capture**, **Store
 
 **Inject** happens at the start of every task execution. The system retrieves the latest approved context for the agent's profile and prepends it to the task prompt. The agent does not know this context was learned from past executions. It simply sees additional instructions that help it avoid past mistakes and follow established patterns.
 
-The schema that makes this possible is straightforward:
-
-<!-- filename: src/lib/db/schema.ts -->
+<!-- filename: src/lib/agents/learned-context.ts -->
 ```typescript
-export const learnedContext = sqliteTable("learned_context", {
-  id: text("id").primaryKey(),
-  profileId: text("profile_id").notNull(),
-  version: integer("version").notNull(),
-  content: text("content"),
-  diff: text("diff"),
-  changeType: text("change_type", {
-    enum: ["proposal", "approved", "rejected", "rollback", "summarization"],
-  }).notNull(),
-  sourceTaskId: text("source_task_id").references(() => tasks.id),
-  proposalNotificationId: text("proposal_notification_id"),
-  proposedAdditions: text("proposed_additions"),
-  approvedBy: text("approved_by"),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
-});
-```
-*Learned context schema -- versioned, scoped by profile, with full change-type audit trail*
+const DEFAULT_CONTEXT_CHAR_LIMIT = 8_000;
+const SUMMARIZATION_RATIO = 0.75;
 
-Several design choices here deserve explanation. The `profileId` field scopes context to a specific agent profile. The code-reviewer profile learns different things than the general assistant. Scoping prevents knowledge contamination -- a lesson about TypeScript linting rules should not pollute the researcher profile that works primarily with documents.
+/** Get the latest approved context for a profile */
+export function getActiveLearnedContext(profileId: string): string | null {
+  const [row] = db
+    .select({ content: learnedContext.content })
+    .from(learnedContext)
+    .where(
+      and(
+        eq(learnedContext.profileId, profileId),
+        eq(learnedContext.changeType, "approved")
+      )
+    )
+    .orderBy(desc(learnedContext.version))
+    .limit(1)
+    .all();
+
+  return row?.content ?? null;
+}
+```
+> Learned context retrieval -- scoped by profile, always returns the latest approved version
+
+Several design choices deserve explanation. The `profileId` field scopes context to a specific agent profile. The code-reviewer profile learns different things than the general assistant. Scoping prevents knowledge contamination -- a lesson about TypeScript linting rules should not pollute the researcher profile that works primarily with documents.
 
 The `version` field creates an append-only history. We never update a learned context row. We only insert new versions. This means you can always answer the question "what did this agent know last Tuesday?" -- a question that turns out to be surprisingly important when debugging unexpected agent behavior.
 
 The `changeType` enum tracks the lifecycle of every piece of knowledge. A pattern starts as a `proposal`, gets `approved` or `rejected` by a human, and might eventually be `summarized` when the context grows too large. The `rollback` type lets you revert to any previous version if a recently approved pattern turns out to be harmful.
 
-> [!tip]
-> **Confidence Decay**
-> Context entries start at full confidence. When contradicted by newer evidence or rejected by human reviewers, their influence decreases. The summarization process automatically archives low-value entries when context grows beyond the 6,000-character threshold, keeping the agent's working memory focused on what actually matters. This is managed by a dedicated meta-completion call that condenses the context while preserving actionable patterns.
+### The Proposal Flow
 
-## The Feedback Loop
-
-The feedback loop is where the system earns its name. Three channels feed information back into agent behavior, each operating at a different timescale and with a different level of confidence.
-
-### Explicit Feedback: Human Corrections
-
-The highest-signal channel is direct human intervention. When a user reviews an agent's work and makes corrections -- editing a task result, rejecting an approach, or providing specific guidance -- the pattern extractor captures this as a high-confidence learning opportunity.
-
-In practice, this works through the notification system. After every task execution, the pattern extractor runs a meta-completion to identify noteworthy patterns from the execution logs. If it finds any, it creates a context proposal and sends it to the human for review via a notification. The human can approve the proposal as-is, edit it before approving, or reject it entirely.
-
-<!-- filename: src/lib/agents/learned-context.ts -->
-```typescript
-export async function proposeContextAddition(
-  profileId: string,
-  taskId: string,
-  additions: string,
-  options?: { silent?: boolean }
-): Promise<string> {
-  const version = getNextVersion(profileId);
-  const rowId = crypto.randomUUID();
-  const now = new Date();
-
-  // Insert proposal row
-  await db.insert(learnedContext).values({
-    id: rowId,
-    profileId,
-    version,
-    content: null, // not yet approved
-    diff: additions,
-    changeType: "proposal",
-    sourceTaskId: taskId,
-    proposalNotificationId: notificationId,
-    proposedAdditions: additions,
-    createdAt: now,
-  });
-
-  // Create notification for human review
-  if (notificationId) {
-    await db.insert(notifications).values({
-      id: notificationId,
-      taskId,
-      type: "context_proposal",
-      title: `Context proposal for ${profileId}`,
-      body: additions.slice(0, 500),
-      toolName: profileId,
-      toolInput: JSON.stringify({ profileId, additions, learnedContextId: rowId }),
-      createdAt: now,
-    });
-  }
-
-  return rowId;
-}
-```
-*The proposal flow -- every learning starts as a suggestion, not a certainty*
-
-This human-in-the-loop design is not incidental. It is the cornerstone of what I think of as progressive autonomy -- the principle that an agent should earn trust through demonstrated competence, not demand it through configuration. Early in a project, every context proposal goes through human review. As the human builds confidence in the agent's pattern extraction quality, they can choose to auto-approve certain categories or profiles. The system grows more autonomous as it proves itself, not before.
-
-### Implicit Feedback: Task Outcomes
-
-The second channel is quieter but more prolific. Every completed task generates execution logs: which tools were invoked, what errors occurred, how many retries were needed, what the final outcome was. The pattern extractor sifts through these logs looking for signal.
-
-<!-- filename: src/lib/agents/pattern-extractor.ts -->
-```typescript
-export async function analyzeForLearnedPatterns(
-  taskId: string,
-  profileId: string
-): Promise<string | null> {
-  // Gather task data and recent agent logs
-  const [task] = await db
-    .select({ title: tasks.title, description: tasks.description, result: tasks.result })
-    .from(tasks)
-    .where(eq(tasks.id, taskId));
-
-  const logs = await db
-    .select({ event: agentLogs.event, payload: agentLogs.payload })
-    .from(agentLogs)
-    .where(eq(agentLogs.taskId, taskId))
-    .orderBy(desc(agentLogs.timestamp))
-    .limit(20);
-
-  const currentContext = getActiveLearnedContext(profileId);
-
-  // Meta-completion to extract patterns
-  const { text } = await runMetaCompletion({
-    prompt: `Analyze this completed task for patterns worth learning...
-
-    Extract ONLY genuinely useful patterns — things that would help this
-    profile avoid mistakes or work more efficiently on similar future tasks.
-    Do NOT repeat patterns already in the learned context.`,
-    activityType: "pattern_extraction",
-  });
-
-  // ... parse and propose
-}
-```
-*Pattern extraction runs fire-and-forget after every task completion*
-
-The fire-and-forget pattern is deliberate. In `claude-agent.ts`, after the main task execution stream completes, the pattern extraction call runs asynchronously without blocking the response to the user:
+Every learning starts as a suggestion, not a certainty. The pattern extractor runs fire-and-forget after each task completion, analyzing execution logs through a meta-completion call. If it identifies patterns worth remembering, it creates a context proposal and sends it to the human for review via a notification.
 
 ```typescript
 // Fire-and-forget pattern extraction for self-improvement
@@ -182,15 +81,212 @@ analyzeForLearnedPatterns(taskId, agentProfileId).catch((err) => {
 
 This means self-improvement never slows down task execution. It is a background process, invisible to the user, that quietly accumulates knowledge. If it fails -- network error, model overload, parsing glitch -- the task still completes successfully. Learning is valuable but not critical. The system degrades gracefully.
 
-A key design constraint here is the instruction to "NOT repeat patterns already in the learned context." The current context is passed to the meta-completion alongside the execution logs. This prevents the knowledge base from filling up with redundant entries. Without this constraint, every successful code review would generate a "remember to check for unused imports" pattern until the context window was consumed by repetition.
+> [!tip]
+> **Confidence Decay for Learned Context**
+> Context entries start at full confidence. When contradicted by newer evidence or rejected by human reviewers, their influence decreases. The summarization process automatically archives low-value entries when context grows beyond the 6,000-character threshold (75% of the 8,000-character limit), keeping the agent's working memory focused on what actually matters.
 
-### Cross-Agent Learning via Workflow Sessions
+## Episodic Memory: The Knowledge Layer
 
-The third channel operates across agent boundaries within a workflow. When a workflow executes multiple tasks -- perhaps a researcher gathers information, a code-reviewer analyzes it, and a document-writer produces a report -- each agent generates patterns independently. Without coordination, this produces a flood of individual notifications that overwhelms the human reviewer.
+Learned context captures behavioral patterns -- how an agent should work. Episodic memory captures factual knowledge -- what an agent has discovered. This distinction is critical. "Always check for barrel file updates when renaming exports" is a behavioral pattern. "The payments service uses Stripe API v2023-10-16 and requires idempotency keys" is a fact. Both are valuable. They serve different purposes and decay at different rates.
+
+Episodic memory was introduced in Sprint 36 to address a gap we kept running into: agents re-discovering the same facts on every execution. A researcher agent would spend tokens looking up a company's latest funding round, find the answer, complete the task -- and then spend the same tokens looking up the same fact two days later on a related task. The information was in the task result, but not in the agent's memory.
+
+The episodic memory system has four components: **extraction**, **storage with confidence scoring**, **time-based decay**, and **relevance-filtered retrieval**.
+
+### Memory Extraction
+
+After a task completes, the memory extractor analyzes the result text using heuristic pattern matching -- no LLM calls required. It identifies statements that look like facts, preferences, patterns, or outcomes based on keyword signals.
+
+<!-- filename: src/lib/agents/memory/extractor.ts -->
+```typescript
+function classifyStatement(line: string): MemoryExtractionResult["category"] {
+  const lower = line.toLowerCase();
+  if (PATTERN_KEYWORDS.some((kw) => lower.includes(kw))) return "pattern";
+  if (PREFERENCE_KEYWORDS.some((kw) => lower.includes(kw))) return "preference";
+  if (OUTCOME_KEYWORDS.some((kw) => lower.includes(kw))) return "outcome";
+  return "fact";
+}
+
+export async function extractMemories(
+  taskResult: string,
+  profileId: string
+): Promise<MemoryExtractionResult[]> {
+  // Get existing memory contents for deduplication
+  const existingMemories = db
+    .select({ content: agentMemory.content })
+    .from(agentMemory)
+    .where(
+      and(eq(agentMemory.profileId, profileId), eq(agentMemory.status, "active"))
+    )
+    .all();
+  const existingContents = existingMemories.map((m) => m.content);
+
+  const statements = extractStatements(taskResult);
+  const results: MemoryExtractionResult[] = [];
+
+  for (const statement of statements) {
+    if (isSimilarToExisting(statement, existingContents)) continue;
+    const category = classifyStatement(statement);
+    const tags = extractTags(statement);
+    const confidence = category === "fact" ? 0.7 : category === "pattern" ? 0.5 : 0.6;
+    results.push({ category, content: statement, tags, confidence });
+  }
+
+  return results.slice(0, 20); // Cap at 20 memories per extraction
+}
+```
+> Memory extraction -- heuristic classification with deduplication against existing memories
+
+The decision to use heuristic extraction instead of an LLM call was deliberate. Learned context uses a meta-completion for pattern extraction because behavioral patterns require reasoning about what is generalizable. Factual knowledge, by contrast, can be identified through keyword signals: statements starting with "the API...", "the database...", "this project..." are almost always facts worth remembering. The heuristic approach is fast, free (no API tokens), and runs on every task completion without budget concerns.
+
+The deduplication check prevents memory bloat. Before storing a new memory, the extractor compares it against all existing active memories for the profile. If the candidate has more than 80% word overlap with an existing memory, it is silently dropped. This keeps the memory store lean -- the same fact does not get stored twenty times because twenty tasks happened to mention it.
+
+### Confidence Scoring and Decay
+
+Every memory has a confidence score on a 0-1 scale (stored as 0-1000 in the database for integer precision). Initial confidence varies by category: facts start at 0.7, patterns at 0.5, preferences and outcomes at 0.6. These starting points reflect our observation that explicit factual statements are more likely to be correct than inferred patterns.
+
+<!-- filename: src/lib/agents/memory/types.ts -->
+```typescript
+export interface MemoryExtractionResult {
+  category: "fact" | "preference" | "pattern" | "outcome";
+  content: string;
+  tags: string[];
+  confidence: number; // 0-1 scale (converted to 0-1000 for DB)
+}
+```
+
+Confidence decays over time. The decay function runs periodically, reducing each memory's confidence based on how long it has been since the memory was last accessed. A memory that is retrieved frequently (because it keeps being relevant to new tasks) maintains high confidence. A memory that has not been accessed in weeks gradually fades.
+
+<!-- filename: src/lib/agents/memory/decay.ts -->
+```typescript
+export function applyMemoryDecay(): { decayed: number; archived: number } {
+  const now = Date.now();
+  const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
+
+  const activeMemories = db
+    .select()
+    .from(agentMemory)
+    .where(eq(agentMemory.status, "active"))
+    .all();
+
+  let decayed = 0;
+  let archived = 0;
+
+  for (const memory of activeMemories) {
+    const lastAccess = memory.lastAccessedAt?.getTime() ?? memory.createdAt.getTime();
+    const daysSinceAccess = (now - lastAccess) / (1000 * 60 * 60 * 24);
+
+    // newConfidence = confidence * (1 - decayRate/1000) ^ daysSinceLastAccess
+    const decayFactor = Math.pow(1 - memory.decayRate / 1000, daysSinceAccess);
+    const newConfidence = Math.round(memory.confidence * decayFactor);
+
+    if (now - lastAccess > NINETY_DAYS_MS && newConfidence < 200) {
+      newStatus = "archived";
+      archived++;
+    } else if (newConfidence < 100) {
+      newStatus = "decayed";
+      decayed++;
+    }
+  }
+
+  return { decayed, archived };
+}
+```
+> Memory decay -- exponential confidence reduction based on access recency, with archive threshold
+
+The decay model uses three states: **active** (confidence >= 100, available for retrieval), **decayed** (confidence < 100, excluded from retrieval but still visible in the browser), and **archived** (not accessed for 90+ days with low confidence, hidden by default). This three-state model means memories are never deleted -- they fade gracefully, and an operator can always dig into the archive to understand what the agent used to know.
+
+The decay rate is per-memory and configurable, but the default produces a half-life of roughly 14 days for unaccessed memories. A fact that was relevant two weeks ago but has not been touched since will have lost about half its confidence. If it is still relevant, the next task that retrieves it will reset its access timestamp and restore its standing. If it is not, it will continue to fade until it crosses the threshold into decayed status.
+
+> [!warning]
+> **Decay Is Not Deletion**
+> Memory decay reduces confidence, it does not erase knowledge. A decayed memory still exists in the database and is visible in the memory browser. If circumstances change and an old fact becomes relevant again, an operator can manually restore it to active status. This is important for compliance and debugging -- the system maintains a complete history of what every agent profile has ever known.
+
+### Relevance-Filtered Retrieval
+
+The retrieval system is where episodic memory earns its keep. When an agent begins a new task, the system retrieves the most relevant memories for the current context using a multi-factor scoring function.
+
+<!-- filename: src/lib/agents/memory/retrieval.ts -->
+```typescript
+export async function getRelevantMemories(
+  profileId: string,
+  taskContext: string,
+  limit: number = 10
+): Promise<AgentMemoryRow[]> {
+  // Query active memories with confidence >= 300 (0.3)
+  const candidates = db
+    .select()
+    .from(agentMemory)
+    .where(
+      and(
+        eq(agentMemory.profileId, profileId),
+        eq(agentMemory.status, "active"),
+        gte(agentMemory.confidence, 300)
+      )
+    )
+    .all();
+
+  const scored = candidates.map((memory) => {
+    const confidenceFactor = memory.confidence / 1000;          // 30%
+    const recencyFactor = Math.exp(-0.05 * daysSinceAccess);    // 20%
+    const tagOverlap = /* tag match score */;                   // 25%
+    const contentFactor = Math.min(wordOverlap / 5, 1);         // 25%
+
+    const score =
+      confidenceFactor * 0.3 +
+      recencyFactor * 0.2 +
+      (tagOverlap > 0 ? 0.25 : 0) +
+      contentFactor * 0.25;
+
+    return { memory, score };
+  });
+
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, limit).map((s) => s.memory);
+}
+```
+> Relevance retrieval -- four-factor scoring with confidence, recency, tag overlap, and content similarity
+
+Four factors determine relevance: **confidence** (30% weight) ensures high-confidence memories rank higher; **recency** (20%) exponentially decays based on days since last access; **tag overlap** (25%) matches extracted technical terms against the task context; and **content similarity** (25%) measures word overlap between the memory text and the current task description.
+
+The minimum confidence threshold of 0.3 (300 in DB units) acts as a quality gate. Memories that have decayed below 30% confidence are excluded from retrieval entirely, even if their content is relevant. This prevents stale or contradicted knowledge from polluting the agent's context.
+
+Retrieval also updates access metadata. Every memory that gets retrieved has its `lastAccessedAt` timestamp reset and its `accessCount` incremented. This creates a virtuous cycle: memories that keep being relevant stay fresh, while irrelevant memories continue to decay. The system self-organizes without human intervention.
+
+## Two Systems, One Agent
+
+The distinction between learned context and episodic memory is subtle but important. Here is how they compare:
+
+| Dimension | Learned Context | Episodic Memory |
+|-----------|----------------|-----------------|
+| **What it stores** | Behavioral patterns, best practices | Factual knowledge, discoveries |
+| **How it's captured** | LLM meta-completion (reflection) | Heuristic keyword extraction |
+| **Human approval** | Required before injection | Not required (auto-stored) |
+| **Scope** | Per-profile, version-controlled | Per-profile, confidence-scored |
+| **Decay model** | Manual summarization at threshold | Automatic time-based confidence decay |
+| **Injection** | Prepended to every task prompt | Relevance-filtered per task |
+| **Cost** | One API call per extraction | Zero API calls (heuristic) |
+
+In practice, the two systems reinforce each other. Learned context tells the agent *how* to work: "always check barrel file exports when refactoring." Episodic memory tells the agent *what it knows*: "the auth module uses barrel exports in src/lib/auth/index.ts." When both are injected into a refactoring task, the agent knows both the rule and the relevant file, producing better results than either system alone.
+
+> [!lesson]
+> **Hot Reloading for Agents**
+> Both learned context and episodic memory are injected at execution time, not baked into the agent's configuration. Approving a new learned context pattern or storing a new episodic memory takes effect immediately on the next task -- no restart, no redeployment, no waiting for a training run. It is the agent equivalent of hot module replacement: change the knowledge, see the effect.
+
+## The Memory Browser
+
+Episodic memory introduced a new operational need: visibility into what agents remember. The memory browser UI provides a searchable, filterable view of all stored memories across profiles. Operators can inspect individual memories to see their content, confidence score, category, tags, creation date, and access history.
+
+The browser supports three operations: **editing** a memory's content (useful when the extractor captured a fact slightly wrong), **archiving** a memory that is no longer relevant, and **restoring** a previously decayed or archived memory. These CRUD operations are backed by an API that maintains the same audit trail as the rest of the system -- every change is recorded, and the history is browsable.
+
+This visibility layer turned out to be essential for trust. Without it, episodic memory was a black box -- the agent seemed to know things, but operators could not tell what or why. The browser makes the agent's knowledge inspectable, which is a prerequisite for trusting it. You cannot delegate decision-making to a system whose knowledge base you cannot see.
+
+## Cross-Agent Learning via Workflow Sessions
+
+When a workflow executes multiple tasks -- perhaps a researcher gathers information, a code-reviewer analyzes it, and a document-writer produces a report -- each agent generates patterns independently. Without coordination, this produces a flood of individual notifications that overwhelms the human reviewer.
 
 The learning session system solves this by buffering proposals during workflow execution and presenting them as a single batch when the workflow completes.
 
-<!-- filename: src/lib/agents/learning-session.ts -->
 ```typescript
 const activeSessions = new Map<string, {
   workflowId: string;
@@ -205,99 +301,32 @@ export function openLearningSession(workflowId: string): void {
     openedAt: new Date(),
   });
 }
-
-export async function closeLearningSession(
-  workflowId: string
-): Promise<string | null> {
-  const session = activeSessions.get(workflowId);
-  activeSessions.delete(workflowId);
-
-  if (!session || session.proposalIds.length === 0) return null;
-
-  // Group proposals by profile, create single batch notification
-  // ...
-}
 ```
-*Learning sessions buffer cross-agent proposals into a single reviewable batch*
+> Learning sessions buffer cross-agent proposals into a single reviewable batch
 
 This batching serves two purposes. First, it reduces notification fatigue. A workflow with five tasks might generate eight proposals, and reviewing them as a group gives the human better context than reviewing them one by one. Second, it enables cross-pollination. When the human reviews the batch, they can see patterns that emerged across agents -- perhaps the researcher and the code-reviewer both struggled with the same API, suggesting a systemic issue rather than a profile-specific one.
 
-> [!lesson]
-> **Hot Reloading for Agents**
-> Learned context is injected at execution time, not baked into the agent's configuration. This means approving a new pattern takes effect immediately on the next task -- no restart, no redeployment, no waiting for a training run. It is the agent equivalent of hot module replacement: change the knowledge, see the effect.
-
-This runtime injection approach is what fundamentally distinguishes Stagent's learning system from fine-tuning or RLHF. When you fine-tune a model, you are modifying weights. The change is permanent, global, and expensive to reverse. When you approve a learned context entry in Stagent, you are modifying a database row. The change is scoped, versioned, and reversible with a single rollback operation.
-
-The tradeoff is obvious: fine-tuning changes the model's deep capabilities, while context injection only changes what the model knows in a specific context window. But for the kinds of learning that matter in operational settings -- project conventions, error patterns, team preferences -- context injection is not just adequate, it is superior. These things change frequently. They differ across projects. They need human oversight. A database row is the right abstraction.
-
-![Hot reloading a learned context entry with instant agent behavior change](/book/images/hot-reloading-feature.png "This screenshot shows the hot-reloading feature in action -- a learned context entry being approved and immediately influencing the next agent execution without any restart or redeployment.")
-
 ## Context Size Management
 
-There is a practical constraint that makes this entire system possible or impossible: the context window. Every character of learned context competes with task instructions, document context, profile prompts, and tool definitions for space in the model's finite attention span. An unbounded learning system would eventually consume the entire context window with accumulated knowledge, leaving no room for the actual task.
+There is a practical constraint that makes the entire learned context system possible or impossible: the context window. Every character of learned context competes with task instructions, document context, profile prompts, episodic memories, and tool definitions for space in the model's finite attention span.
 
-Stagent manages this through an 8,000-character hard limit and a 6,000-character summarization threshold. When approved context for a profile crosses the threshold, a dedicated meta-completion condenses the accumulated knowledge -- merging related patterns, removing superseded entries, and preserving only what remains actionable.
+Stagent manages this through a configurable character limit (default 8,000) and a summarization threshold at 75% of the limit. When approved context for a profile crosses the threshold, a dedicated meta-completion condenses the accumulated knowledge -- merging related patterns, removing superseded entries, and preserving only what remains actionable.
 
-<!-- filename: src/lib/agents/learned-context.ts -->
-```typescript
-const CONTEXT_CHAR_LIMIT = 8_000;
-const SUMMARIZATION_THRESHOLD = 6_000;
+The character limit is configurable through Settings (range: 2,000 to 32,000 characters). Teams that work with models that have larger context windows can increase the limit. Teams that need to reserve more space for document context can decrease it. The summarization ratio (75%) ensures there is always headroom for new patterns without hitting the hard ceiling.
 
-export async function summarizeContext(profileId: string): Promise<void> {
-  const content = getActiveLearnedContext(profileId);
-  if (!content || content.length <= SUMMARIZATION_THRESHOLD) return;
-
-  const { text } = await runMetaCompletion({
-    prompt: `You are condensing learned context for an AI agent profile "${profileId}".
-    Produce a condensed version that:
-    1. Preserves all actionable patterns and best practices
-    2. Merges related patterns into combined entries
-    3. Removes redundant or superseded information
-    4. Stays under ${SUMMARIZATION_THRESHOLD} characters`,
-    activityType: "context_summarization",
-  });
-
-  // Create new summarization version
-  await db.insert(learnedContext).values({
-    id: crypto.randomUUID(),
-    profileId,
-    version: getNextVersion(profileId),
-    content: summarized,
-    diff: `Summarized from ${content.length} to ${summarized.length} chars`,
-    changeType: "summarization",
-    createdAt: new Date(),
-  });
-}
-```
-*Auto-summarization keeps learned context within the attention budget*
-
-This summarization step is itself a form of learning. The model must decide what to keep and what to discard, which patterns are fundamental and which are circumstantial. It is compression through understanding, not truncation. The result is a more potent knowledge base -- fewer characters carrying more signal.
-
-I think of this as cognitive budgeting. Every agent has an attention budget, and the learned context system must be a responsible steward of that budget. Injecting 8,000 characters of high-quality learned patterns is transformative. Injecting 8,000 characters of redundant, low-confidence noise is actively harmful -- it displaces task-relevant information and confuses the model's reasoning.
-
-## Why Most Agent Frameworks Skip This
-
-If runtime learning is so valuable, why do most agent frameworks ignore it? I think there are three reasons.
-
-First, most frameworks are built for single-shot interactions. LangChain, CrewAI, AutoGen -- they excel at orchestrating complex chains of LLM calls within a single session. But the session is the boundary. When the chain completes, the framework's job is done. There is no mechanism for feeding results back into future sessions because the framework does not model sessions as part of a continuous history.
-
-Second, learning requires opinions about what to learn. A general-purpose framework cannot decide whether "always use semicolons" is a pattern worth persisting. That decision is domain-specific, project-specific, even team-specific. Building a learning system means building a curation system, and curation requires a point of view. Most frameworks deliberately avoid having a point of view because it would limit their generality.
-
-Third, learning creates liability. If an agent learns an incorrect pattern and propagates it across future tasks, the damage compounds. This is the "bad habit" problem, and it is genuinely scary. A stateless agent can be wrong, but it is wrong in isolation. A learning agent can be wrong in a way that corrupts future behavior. The human-in-the-loop approval process is not just a nice feature -- it is the safety mechanism that makes persistent learning viable at all.
-
-This is where progressive autonomy becomes essential. You do not give a new team member root access on their first day. You do not let a junior developer merge to main without review. Similarly, you should not let an agent modify its own knowledge base without human oversight -- at least not initially. As the agent demonstrates good judgment in its pattern extraction, the human can relax the review process. Trust is earned through track record, not granted through configuration.
+We think of this as cognitive budgeting. Every agent has an attention budget, and the self-improvement systems must be responsible stewards of that budget. Injecting 8,000 characters of high-quality learned patterns plus 10 relevant episodic memories is transformative. Injecting the same volume of redundant, low-confidence noise is actively harmful -- it displaces task-relevant information and confuses the model's reasoning.
 
 ## Lessons Learned
 
-Building this system taught us several things the hard way.
+**Two Memory Systems Are Better Than One.** Our first design tried to use a single system for both behavioral patterns and factual knowledge. It failed for a simple reason: behavioral patterns need human curation (the cost of a bad habit is high), while factual knowledge needs automatic ingestion (the cost of re-discovering a fact is wasted tokens). Splitting into learned context (curated) and episodic memory (automatic) let each system optimize for its purpose.
 
-**Context Window Is Finite.** This sounds obvious, but the implications are not. We started without summarization, and within a week of active use, the code-reviewer profile had accumulated so much learned context that it consumed half the context window before the task even started. The agent's performance actually degraded as it learned more, because the sheer volume of context overwhelmed its ability to focus on the task at hand. Aggressive filtering and auto-summarization were not optimizations -- they were survival mechanisms.
+**Heuristic Extraction Is Surprisingly Good.** We expected the keyword-based memory extractor to be a temporary placeholder until we wired up an LLM-based extractor. Six weeks later, the heuristic version is still in production. It captures the right statements 70-80% of the time, costs nothing, and runs on every single task without budget concerns. The LLM meta-completion for learned context is better at identifying generalizable patterns, but for factual extraction, keyword matching is good enough.
 
-**Human Feedback Is Gold.** The most valuable learned context consistently comes from explicit human corrections, not from automated pattern extraction. When a human edits a proposal before approving it, they are distilling their judgment into a format the agent can use. The edited version is almost always better than the raw extraction. This is why the approval UI supports editing -- not just approve or reject, but approve-with-modifications. The system learns from the modification as much as from the approval.
+**Confidence Decay Prevents Knowledge Rot.** Without decay, the memory store would accumulate stale facts indefinitely. "The staging server is at 10.0.1.42" might have been true in January but wrong by March. The 14-day half-life for unaccessed memories means that stale facts naturally fade unless something keeps them alive. This is not perfect -- there is no mechanism to actively invalidate a memory when the underlying fact changes -- but it is a reasonable default that prevents the worst case of confidently injecting outdated knowledge.
 
 **Scope Carefully.** Our first design used global scope -- patterns learned by any profile were visible to all profiles. This was a disaster. The code-reviewer learned that "always check for null pointer exceptions" was a critical pattern, which was true for code review but actively harmful when injected into the document-writer's context. Profile-scoped learning was not a feature we planned. It was a fix for a problem we created by being too ambitious with knowledge sharing.
 
-**Learning Is Not Always Good.** Some patterns the extractor identifies are technically correct but operationally useless. "This task completed successfully" is a true pattern that teaches nothing. "The API returned a 429 rate limit error and the agent retried after 30 seconds" is a true pattern that might matter once but should not be learned as a permanent behavior. The quality of pattern extraction depends heavily on the meta-completion prompt, and we have iterated on that prompt more than any other part of the system.
+**Human Feedback Is Gold.** The most valuable learned context consistently comes from explicit human corrections, not from automated pattern extraction. When a human edits a proposal before approving it, they are distilling their judgment into a format the agent can use. The edited version is almost always better than the raw extraction. This is why the approval UI supports editing -- not just approve or reject, but approve-with-modifications.
 
 **Versioning Saves You.** The append-only version history has saved us multiple times. In one case, an approved pattern caused the agent to skip a validation step that it had previously performed correctly. Because we could see exactly when the pattern was introduced and what the agent's context looked like before and after, we diagnosed the issue in minutes and rolled back to the previous version. Without versioning, we would have been debugging blind.
 
@@ -305,10 +334,10 @@ Building this system taught us several things the hard way.
 
 ## The Trajectory of Intelligence
 
-This chapter has been about a specific technical system -- learned context in Stagent. But the principle extends far beyond any single implementation. The question is not whether your agent is smart enough today. The question is whether your agent will be smarter tomorrow.
+This chapter has been about two specific technical systems -- learned context and episodic memory in Stagent. But the principle extends far beyond any single implementation. The question is not whether your agent is smart enough today. The question is whether your agent will be smarter tomorrow.
 
-Feedback loops are the mechanism that converts experience into capability. Fine-tuning does this at the model level. RLHF does this at the alignment level. Stagent's learned context does this at the application level. Each operates at a different timescale and with different tradeoffs, but they all share the same fundamental insight: intelligence is not a property of a system at a point in time. It is the derivative -- the rate of change.
+Feedback loops are the mechanism that converts experience into capability. Fine-tuning does this at the model level. RLHF does this at the alignment level. Stagent's learned context and episodic memory do this at the application level, at two different timescales -- behavioral learning through human-curated patterns, and knowledge accumulation through automatic extraction with confidence decay.
 
-A system that learns from every interaction, even slowly, even imperfectly, will eventually outperform a system that does not. The compounding effect of thousands of small improvements -- a pattern here, a preference there, an error resolution that saves five minutes on every future task -- creates a gap that raw model capability cannot close.
+A system that learns from every interaction, even slowly, even imperfectly, will eventually outperform a system that does not. The compounding effect of thousands of small improvements -- a pattern here, a remembered fact there, an error resolution that saves five minutes on every future task -- creates a gap that raw model capability cannot close.
 
-This is why I believe learned context is not an optional feature for AI-native applications. It is a defining characteristic. An application that uses AI but does not learn from its own use is an application with AI, not an AI-native application. The difference is the feedback loop.
+This is why we believe self-improvement is not an optional feature for AI-native applications. It is a defining characteristic. An application that uses AI but does not learn from its own use is an application with AI, not an AI-native application. The difference is the feedback loop.

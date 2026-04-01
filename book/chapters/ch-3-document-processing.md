@@ -3,8 +3,8 @@ title: "Document Processing"
 subtitle: "Unstructured Input to Structured Knowledge"
 chapter: 3
 part: 1
-readingTime: 14
-relatedDocs: [documents, shared-components]
+readingTime: 10
+lastGeneratedBy: "2026-03-31T21:00:00Z"
 ---
 
 # Document Processing
@@ -13,7 +13,7 @@ relatedDocs: [documents, shared-components]
 
 Every business runs on documents. Contracts, invoices, meeting notes, research papers, design specs, customer feedback surveys -- the knowledge that drives decisions lives not in tidy database rows but in PDFs, Word documents, spreadsheets, and plain text files scattered across file systems and cloud drives.
 
-For human workers, this is manageable. We open a PDF, read it, and extract what we need. But for AI agents, these formats are opaque walls. An agent asked to summarize a project's requirements cannot read the Word document sitting in a shared drive. A task-execution agent cannot reference last quarter's financial report if it is locked inside an Excel file. The knowledge is there. The agent simply cannot see it.
+For human workers, this is manageable. We open a PDF, read it, and extract what we need. But for AI agents, these formats are opaque walls. An agent asked to summarize a project's requirements cannot read the Word document sitting in a shared drive. A financial-analyst profile cannot reference last quarter's earnings report if it is locked inside an Excel file. A customer-support-agent cannot consult the product manual when drafting a response. The knowledge is there. The agent simply cannot see it.
 
 This is the fundamental bottleneck of enterprise AI adoption. Organizations pour resources into fine-tuning models and crafting elaborate prompts, while ignoring the simpler problem: their agents are blind to 90% of the organization's knowledge.
 
@@ -21,7 +21,7 @@ This is the fundamental bottleneck of enterprise AI adoption. Organizations pour
 > **The Knowledge Gap**
 > Most organizations have more knowledge locked in documents than in databases. The first step toward AI-native operations is not better models or smarter prompts -- it is making existing knowledge accessible to agents in a format they can reason over.
 
-I had experienced this firsthand building Stagent's earlier sprints. The task execution engine was powerful -- agents could read databases, call APIs, write code. But the moment a user attached a PDF to a task, the agent hit a wall. It could see the file path. It could not read the content. The gap between "the file exists" and "the agent understands the file" was where productivity went to die.
+We experienced this firsthand building Stagent's earlier sprints. The task execution engine was powerful -- agents could read databases, call APIs, write code across five runtime providers. But the moment a user attached a PDF to a task, the agent hit a wall. It could see the file path. It could not read the content. The gap between "the file exists" and "the agent understands the file" was where productivity went to die.
 
 The industry has responded with increasingly complex solutions. LangChain's document loaders provide a framework for ingesting dozens of formats. Unstructured.io offers a hosted API for parsing everything from HTML to images. Vector databases like Pinecone and Weaviate power RAG (Retrieval-Augmented Generation) pipelines that index chunks of text for semantic search. These are impressive tools. They are also, for most applications, more infrastructure than you need.
 
@@ -92,9 +92,9 @@ export async function processDocument(documentId: string): Promise<void> {
 ```
 *The processor orchestrator -- fire-and-forget with error capture in the database*
 
-There are several design choices worth highlighting. First, the function takes a `documentId`, not a file path. The database is the single source of truth -- the processor fetches the file path, MIME type, and everything else it needs from the document record. Second, the function never throws. Every failure mode -- missing document, unsupported type, processor crash -- is captured as a status update or error message in the database. This is the "fire-and-forget" pattern we use throughout Stagent: the caller kicks off processing and moves on, while the UI polls the document status to show progress.
+There are several design choices worth highlighting. First, the function takes a `documentId`, not a file path. The database is the single source of truth -- the processor fetches the file path, MIME type, and everything else it needs from the document record. Second, the function never throws. Every failure mode -- missing document, unsupported type, processor crash -- is captured as a status update or error message in the database. This is the same "fire-and-forget" pattern we use for task execution: the caller kicks off processing and moves on, while the UI polls the document status to show progress.
 
-This pattern is a manifestation of what our book strategy calls **The Affordance of Structure**. By storing processing state in the database rather than in memory or log files, we make the pipeline observable to both humans (via the UI) and agents (via database queries). An agent can check whether a document has been processed before attempting to use it. The structure affords intelligence.
+This pattern is a manifestation of what we call **The Affordance of Structure**. By storing processing state in the database rather than in memory or log files, we make the pipeline observable to both humans (via the UI) and agents (via database queries). An agent can check whether a document has been processed before attempting to use it. The structure affords intelligence.
 
 ## Format-Specific Processors
 
@@ -136,21 +136,63 @@ export function getProcessor(
 
 The `ProcessorResult` interface is deliberately minimal: a string of extracted text and an optional processed file path. No metadata schemas, no structured output formats, no abstract syntax trees. Every document, regardless of its source format, becomes a flat string. This might seem reductive -- and it is. That is the point.
 
-When I first designed this system, I was tempted to build rich typed outputs for each format. PDFs would return page-level segments with bounding boxes. Spreadsheets would return typed cell grids. Office documents would preserve heading hierarchies. This is what LangChain's document loaders do, and it is powerful for building search indices or citation systems.
+When we first designed this system, we were tempted to build rich typed outputs for each format. PDFs would return page-level segments with bounding boxes. Spreadsheets would return typed cell grids. Office documents would preserve heading hierarchies. This is what LangChain's document loaders do, and it is powerful for building search indices or citation systems.
 
 But Stagent's agents do not need bounding boxes. They need text they can reason over. The flat-string design means every processor has an identical contract, every consumer can handle every format identically, and adding a new processor is a single function that returns `{ extractedText: string }`. The simplicity compounds.
 
 > [!tip]
 > **The Registry Pattern**
-> Self-registration is a recurring pattern in Stagent. Agent profiles register their capabilities. Workflow steps register their handlers. Document processors register their MIME types. The pattern keeps the system extensible without requiring a central manifest -- adding a new capability means adding a new module that registers itself at import time.
+> Self-registration is a recurring pattern in Stagent. Agent profiles register their capabilities. Workflow steps register their handlers. Document processors register their MIME types. Channel adapters register by type (slack, telegram, webhook). The pattern keeps the system extensible without requiring a central manifest -- adding a new capability means adding a new module that registers itself at import time.
 
-In the processor module, registration happens imperatively at module load time. Text-based formats (plain text, Markdown, JSON, JavaScript, TypeScript, Python, HTML, CSS, YAML) all route to the same `processText` handler -- they are already readable as strings. PDF, image, office, and spreadsheet formats each get their own specialized handlers. This means adding support for a new format -- say, EPUB or RTF -- requires writing one function and adding one `registerProcessor` call. No configuration files, no plugin manifests, no factory patterns.
+In the processor module, registration happens imperatively at module load time:
+
+<!-- filename: src/lib/documents/processor.ts (registration block) -->
+```typescript
+// Text-based formats
+const textMimeTypes = [
+  "text/plain", "text/markdown", "application/json",
+  "text/javascript", "text/typescript", "text/x-python",
+  "text/html", "text/css", "text/yaml", "application/x-yaml",
+];
+for (const mime of textMimeTypes) {
+  registerProcessor(mime, processText);
+}
+
+// PDF
+registerProcessor("application/pdf", processPdf);
+
+// Images
+const imageMimeTypes = ["image/png", "image/jpeg", "image/gif", "image/webp"];
+for (const mime of imageMimeTypes) {
+  registerProcessor(mime, processImage);
+}
+
+// Office documents
+registerProcessor(
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  processDocx
+);
+registerProcessor(
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  processPptx
+);
+
+// Spreadsheets
+registerProcessor(
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  processSpreadsheet
+);
+registerProcessor("text/csv", processSpreadsheet);
+```
+*Imperative registration at module load -- adding a new format is one function and one registerProcessor call*
+
+Text-based formats all route to the same `processText` handler -- they are already readable as strings. PDF, image, office, and spreadsheet formats each get their own specialized handlers. Adding support for a new format -- say, EPUB or RTF -- requires writing one function and adding one `registerProcessor` call. No configuration files, no plugin manifests, no factory patterns.
 
 ## Agent-Accessible Context
 
 Extracting text is only half the job. The extracted content must flow into the agent's context window at execution time, formatted in a way that helps rather than hinders reasoning. This is where the context builder comes in.
 
-The context builder takes a task ID, queries all input documents attached to that task, and assembles them into a formatted string that gets injected into the agent's prompt. It handles edge cases that trip up naive implementations: images get path references (since agents can use the Read tool to view them directly), in-progress documents get status notes, large documents get truncated with a pointer to the full content.
+The context builder takes a task ID, queries all input documents attached to that task, and assembles them into a formatted string that gets injected into the agent's prompt. It handles edge cases that trip up naive implementations: images get path references (since agents can use the Read tool to view them directly), in-progress documents get status notes, error states surface the processing error, and large documents get truncated with a pointer to the full content.
 
 <!-- filename: src/lib/documents/context-builder.ts -->
 ```typescript
@@ -175,7 +217,7 @@ function formatDocument(doc: DocumentRow, index: number): string {
       return `${header}\n${pathLine}\nContent:\n<document>\n${doc.extractedText}\n</document>`;
     }
     const truncated = doc.extractedText.slice(0, MAX_INLINE_TEXT);
-    return `${header}\n${pathLine}\nContent (truncated to ${MAX_INLINE_TEXT} chars):\n<document>\n${truncated}\n</document>`;
+    return `${header}\n${pathLine}\nContent (truncated to ${MAX_INLINE_TEXT} chars — use Read tool for full content):\n<document>\n${truncated}\n</document>`;
   }
 
   return `${header}\n${pathLine}\nType: ${doc.mimeType} (use Read tool to access)`;
@@ -215,11 +257,9 @@ This is not laziness. It is a deliberate architectural choice driven by the scal
 > **Simplicity Over Sophistication**
 > At the scale of a single project's documents, a SQL query provides better retrieval than a vector database. You lose semantic similarity ranking but gain debuggability, zero additional infrastructure, and sub-millisecond response times. Start with the simplest retrieval that works and add complexity only when scale demands it. Most teams reach for vector databases before they have exhausted what a well-indexed relational query can do.
 
-The industry's infatuation with vector databases has created a blind spot. I have watched teams spend weeks setting up Pinecone clusters and embedding pipelines for applications that serve hundreds of documents. The embedding computation alone costs more than the entire Stagent hosting budget. When I tell other developers that Stagent's RAG is just a SQL query, the reaction is usually disbelief followed by "wait, that actually works?"
+The context builder also handles workflow-level document context. When a multi-step workflow executes, documents attached to the parent task flow down to child tasks via `buildWorkflowDocumentContext`. This prevents information loss across workflow steps and ensures each step has access to the source material, with a 30,000-character guard against prompt bloat.
 
-It works because the problem is smaller than we think. Most AI applications do not need to search across millions of documents. They need to give an agent access to the five or ten documents relevant to the current task. For that, a foreign key is all the retrieval you need.
-
-This connects to the **Feedback Loops as Intelligence** theme. When an agent processes a document and produces output, that output can itself become a document -- feeding back into the system for future tasks. The context builder does not distinguish between human-uploaded documents and agent-generated ones. They are all rows in the same table, all queryable by the same SQL, all injectable into the same context window. The loop closes naturally because the data model is uniform.
+The connection to episodic memory is worth noting. When an agent processes a document and extracts key facts, those facts can be stored as episodic memories with confidence scores and decay rates. A financial-analyst profile that reads a quarterly report today will remember the key metrics weeks later, even without re-attaching the document -- the memory system bridges the gap between document-level context (ephemeral, per-task) and institutional knowledge (persistent, per-profile).
 
 ## Document Management UI
 
@@ -229,6 +269,8 @@ The upload dialog supports drag-and-drop and multi-file batch uploads. Behind th
 
 A sliding detail sheet shows individual document metadata: file size, MIME type, processing status, extraction preview, and the associated project or task. Bulk operations -- select multiple documents, delete them in one action -- keep the library manageable as it grows.
 
+Agents can also generate documents as output during task execution. A content-creator profile drafting a blog post or a financial-analyst profile producing a forecast report can write output files that appear in the document library automatically, linked back to the originating task. This closes the loop: documents flow in as context, and new documents flow out as results.
+
 The UI follows Stagent's "Calm Ops" design system: opaque surfaces, border-centric elevation, and status chips that communicate state without demanding attention. A document in "processing" state gets a subtle animated indicator. An error state surfaces the processing error message inline, not in a modal that interrupts workflow.
 
 [Try: Upload a Document](/documents)
@@ -237,7 +279,7 @@ The UI follows Stagent's "Calm Ops" design system: opaque surfaces, border-centr
 
 What makes this pipeline meaningful is not any individual piece -- the processor, the registry, the context builder, or the UI are each straightforward. It is the integration between them that transforms document processing from a feature into a capability.
 
-Here is the full path: a user drags a PDF into the upload dialog. The upload API writes the file to disk, creates a database record, and calls `processDocument(id)` fire-and-forget. The processor looks up the PDF handler, extracts text via pdf-parse, and writes it back to the database row. Later, when the user creates a task and attaches this document, the execution engine calls `buildDocumentContext(taskId)`. The context builder queries the document, finds the extracted text, formats it between `<document>` tags, and injects it into the agent's prompt. The agent reads the contract, summarizes the key terms, and writes its analysis as a task output.
+Here is the full path: a user drags a PDF into the upload dialog. The upload API writes the file to disk, creates a database record, and calls `processDocument(id)` fire-and-forget. The processor looks up the PDF handler, extracts text via pdf-parse, and writes it back to the database row. Later, when the user creates a task and attaches this document, the execution engine calls `buildDocumentContext(taskId)`. The context builder queries the document, finds the extracted text, formats it between `<document>` tags, and injects it into the agent's prompt. The agent reads the contract, summarizes the key terms, and writes its analysis as a task output document.
 
 Every step is a database operation. Every state transition is observable. Every failure is recoverable. The user can re-upload a failed document. The agent can check if extraction is complete before proceeding. The system self-heals because the database is the single source of truth.
 
@@ -247,11 +289,11 @@ This end-to-end traceability is what separates production AI from demo AI. In a 
 
 Building Stagent's document processing taught three lessons that apply to any AI-native system.
 
-**Wire Everything End-to-End.** During Sprint 6, I built the processor, the registry, and the context builder as three separate modules. Each one had tests. Each one worked in isolation. But when I went to ship, none of them were wired together. The upload API did not call the processor. The execution engine did not call the context builder. I had built "code islands" -- fully implemented modules that were never imported by the code that needed them. The fix took an hour, but the lesson was permanent: a feature is not done when the code works. It is done when you can trace a path from user action to visible result through every layer of the stack.
+**Wire Everything End-to-End.** During Sprint 6, we built the processor, the registry, and the context builder as three separate modules. Each one had tests. Each one worked in isolation. But when we went to ship, none of them were wired together. The upload API did not call the processor. The execution engine did not call the context builder. We had built "code islands" -- fully implemented modules that were never imported by the code that needed them. The fix took an hour, but the lesson was permanent: a feature is not done when the code works. It is done when you can trace a path from user action to visible result through every layer of the stack.
 
 **Schema Must Match Migration.** The documents table gained preprocessing columns (extractedText, processedPath, processingError) via a SQL migration file. But the Drizzle ORM schema was never updated to include these columns. The TypeScript types did not know the columns existed. The processor code that tried to write to those columns would have failed at runtime with inscrutable errors. The lesson: when you add columns via migration, update the schema in the same commit. ORM types are not just developer convenience -- they are your compile-time safety net.
 
-**Preprocessing Is Not Optional.** My first implementation stored documents but skipped extraction. The plan was to add preprocessing "later." But without extracted text, documents were invisible to agents -- they could see file names but not content. Users uploaded documents expecting agents to understand them, and nothing happened. The feature was technically complete (you could upload and view documents) but functionally useless (agents could not read them). Preprocessing is not a nice-to-have optimization. It is the bridge between "the file exists" and "the agent can use it."
+**Preprocessing Is Not Optional.** Our first implementation stored documents but skipped extraction. The plan was to add preprocessing "later." But without extracted text, documents were invisible to agents -- they could see file names but not content. Users uploaded documents expecting agents to understand them, and nothing happened. The feature was technically complete (you could upload and view documents) but functionally useless (agents could not read them). Preprocessing is not a nice-to-have optimization. It is the bridge between "the file exists" and "the agent can use it."
 
 > [!warning]
 > **The Integration Test**
