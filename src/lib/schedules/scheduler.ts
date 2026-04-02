@@ -12,7 +12,7 @@
  */
 
 import { db } from "@/lib/db";
-import { schedules, tasks, agentLogs } from "@/lib/db/schema";
+import { schedules, tasks, agentLogs, scheduleDocumentInputs, documents } from "@/lib/db/schema";
 import { eq, and, lte, inArray, sql } from "drizzle-orm";
 import { computeNextFireTime } from "./interval-parser";
 import { executeTaskWithRuntime } from "@/lib/agents/runtime";
@@ -178,6 +178,21 @@ async function fireSchedule(
     updatedAt: now,
   });
 
+  // Link schedule's documents to the created task
+  try {
+    const schedDocs = await db
+      .select({ documentId: scheduleDocumentInputs.documentId })
+      .from(scheduleDocumentInputs)
+      .where(eq(scheduleDocumentInputs.scheduleId, schedule.id));
+    for (const { documentId } of schedDocs) {
+      await db.update(documents)
+        .set({ taskId, projectId: schedule.projectId, updatedAt: now })
+        .where(eq(documents.id, documentId));
+    }
+  } catch (err) {
+    console.error(`[scheduler] Document linking failed for schedule ${schedule.id}:`, err);
+  }
+
   // Update schedule counters
   const isOneShot = !schedule.recurs;
   const reachedMax =
@@ -334,6 +349,21 @@ async function fireHeartbeat(
     createdAt: now,
     updatedAt: now,
   });
+
+  // Link schedule's documents to the heartbeat task
+  try {
+    const schedDocs = await db
+      .select({ documentId: scheduleDocumentInputs.documentId })
+      .from(scheduleDocumentInputs)
+      .where(eq(scheduleDocumentInputs.scheduleId, schedule.id));
+    for (const { documentId } of schedDocs) {
+      await db.update(documents)
+        .set({ taskId: evalTaskId, projectId: schedule.projectId, updatedAt: now })
+        .where(eq(documents.id, documentId));
+    }
+  } catch (err) {
+    console.error(`[scheduler] Document linking failed for heartbeat ${schedule.id}:`, err);
+  }
 
   // 5. Execute and wait for result (with timeout)
   try {

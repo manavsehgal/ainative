@@ -66,27 +66,26 @@ export async function POST(req: NextRequest) {
     updatedAt: now,
   });
 
-  // Link already-uploaded documents to this task
-  if (parsed.data.fileIds && parsed.data.fileIds.length > 0) {
+  // Link documents to this task (from document picker or legacy fileIds)
+  if (parsed.data.documentIds && parsed.data.documentIds.length > 0) {
     try {
-      for (const fileId of parsed.data.fileIds) {
-        // Update existing document record (created by /api/uploads) to link to this task
+      for (const docId of parsed.data.documentIds) {
         await db.update(documents)
           .set({
             taskId: id,
             projectId: parsed.data.projectId ?? null,
             updatedAt: now,
           })
-          .where(eq(documents.id, fileId));
+          .where(eq(documents.id, docId));
 
         // Trigger processing if not already done (fire-and-forget)
-        processDocument(fileId).catch((err) => {
-          console.error(`[tasks] processDocument failed for ${fileId}:`, err);
+        processDocument(docId).catch((err) => {
+          console.error(`[tasks] processDocument failed for ${docId}:`, err);
         });
       }
     } catch (err) {
-      // File association is best-effort — don't fail task creation
-      console.error("[tasks] File association failed:", err);
+      // Document association is best-effort — don't fail task creation
+      console.error("[tasks] Document association failed:", err);
     }
   }
 

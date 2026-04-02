@@ -13,7 +13,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Clock, Bot, Heart, Plus, X, GripVertical, Sparkles, CheckCircle2, AlertCircle } from "lucide-react";
+import { Clock, Bot, Heart, Plus, X, GripVertical, Sparkles, CheckCircle2, AlertCircle, Paperclip } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { DocumentPickerSheet } from "@/components/shared/document-picker-sheet";
+import { getFileIcon, formatSize } from "@/components/documents/utils";
 import {
   type AgentRuntimeId,
   DEFAULT_AGENT_RUNTIME,
@@ -59,6 +62,7 @@ export interface ScheduleFormValues {
   activeHoursEnd: number | "";
   activeTimezone: string;
   heartbeatBudgetPerDay: number | "";
+  documentIds: string[];
 }
 
 export interface ScheduleFormInitialValues {
@@ -201,6 +205,43 @@ export function ScheduleForm({
   const [activeTimezone, setActiveTimezone] = useState("UTC");
   const [heartbeatBudgetPerDay, setHeartbeatBudgetPerDay] = useState<number | "">("");
 
+  // Document picker state
+  const [selectedDocIds, setSelectedDocIds] = useState<Set<string>>(new Set());
+  const [selectedDocs, setSelectedDocs] = useState<Array<{ id: string; originalName: string; mimeType: string; size: number }>>([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const handleDocPickerConfirm = useCallback(
+    (ids: string[]) => {
+      setSelectedDocIds(new Set(ids));
+      const newIds = ids.filter(
+        (id) => !selectedDocs.some((d) => d.id === id)
+      );
+      if (newIds.length > 0) {
+        const params = new URLSearchParams({ status: "ready" });
+        if (projectId) params.set("projectId", projectId);
+        fetch(`/api/documents?${params}`)
+          .then((r) => r.json())
+          .then((allDocs: Array<Record<string, unknown>>) => {
+            const idSet = new Set(ids);
+            setSelectedDocs(
+              allDocs
+                .filter((d) => idSet.has(d.id as string))
+                .map((d) => ({
+                  id: d.id as string,
+                  originalName: d.originalName as string,
+                  mimeType: d.mimeType as string,
+                  size: d.size as number,
+                }))
+            );
+          })
+          .catch(() => {});
+      } else {
+        setSelectedDocs((prev) => prev.filter((d) => ids.includes(d.id)));
+      }
+    },
+    [projectId, selectedDocs]
+  );
+
   useEffect(() => {
     fetch("/api/profiles")
       .then((r) => r.json())
@@ -261,6 +302,7 @@ export function ScheduleForm({
       activeHoursEnd,
       activeTimezone,
       heartbeatBudgetPerDay,
+      documentIds: [...selectedDocIds],
     });
   }
 
@@ -647,6 +689,76 @@ export function ScheduleForm({
           <p className="text-xs text-muted-foreground">Context directory</p>
         </div>
       )}
+
+      {/* Context Documents */}
+      <div className="space-y-2">
+        <Label className="flex items-center gap-1.5">
+          <Paperclip className="h-3.5 w-3.5 text-muted-foreground" />
+          Context Documents
+        </Label>
+        {selectedDocs.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {selectedDocs.map((doc) => {
+              const Icon = getFileIcon(doc.mimeType);
+              return (
+                <Badge
+                  key={doc.id}
+                  variant="secondary"
+                  className="flex items-center gap-1.5 pl-2 pr-1 py-1"
+                >
+                  <Icon className="h-3 w-3" />
+                  <span className="text-xs max-w-[140px] truncate">
+                    {doc.originalName}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {formatSize(doc.size)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedDocIds((prev) => {
+                        const next = new Set(prev);
+                        next.delete(doc.id);
+                        return next;
+                      });
+                      setSelectedDocs((prev) => prev.filter((d) => d.id !== doc.id));
+                    }}
+                    className="ml-0.5 rounded-full p-0.5 hover:bg-muted transition-colors"
+                    aria-label={`Remove ${doc.originalName}`}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              );
+            })}
+          </div>
+        )}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setPickerOpen(true)}
+          className="gap-1.5"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          {selectedDocs.length > 0 ? "Add More" : "Select Documents"}
+        </Button>
+        {selectedDocs.length > 0 && (
+          <p className="text-xs text-muted-foreground">
+            {selectedDocs.length} document{selectedDocs.length !== 1 ? "s" : ""} will be provided as context for each firing
+          </p>
+        )}
+      </div>
+
+      <DocumentPickerSheet
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        projectId={projectId || null}
+        selectedIds={selectedDocIds}
+        onConfirm={handleDocPickerConfirm}
+        groupBy="source"
+        title="Select Context Documents"
+      />
 
       {/* Runtime */}
       <div className="space-y-2">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -19,7 +19,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Bot, FileText, AlignLeft } from "lucide-react";
+import { Bot, FileText, AlignLeft, Paperclip, Plus, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { DocumentPickerSheet } from "@/components/shared/document-picker-sheet";
+import { getFileIcon, formatSize } from "@/components/documents/utils";
 import { toast } from "sonner";
 import {
   type AgentRuntimeId,
@@ -69,6 +72,9 @@ export function TaskEditDialog({
   const [assignedAgent, setAssignedAgent] = useState("");
   const [agentProfile, setAgentProfile] = useState("");
   const [profiles, setProfiles] = useState<ProfileOption[]>([]);
+  const [selectedDocIds, setSelectedDocIds] = useState<Set<string>>(new Set());
+  const [selectedDocs, setSelectedDocs] = useState<Array<{ id: string; originalName: string; mimeType: string; size: number }>>([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -85,6 +91,25 @@ export function TaskEditDialog({
       setPriority(String(task.priority));
       setAssignedAgent(task.assignedAgent ?? "");
       setAgentProfile(task.agentProfile ?? "");
+      // Load existing documents linked to this task
+      fetch(`/api/documents?taskId=${task.id}&status=ready`)
+        .then((r) => r.json())
+        .then((docs: Array<Record<string, unknown>>) => {
+          const ids = new Set(docs.map((d) => d.id as string));
+          setSelectedDocIds(ids);
+          setSelectedDocs(
+            docs.map((d) => ({
+              id: d.id as string,
+              originalName: d.originalName as string,
+              mimeType: d.mimeType as string,
+              size: d.size as number,
+            }))
+          );
+        })
+        .catch(() => {
+          setSelectedDocIds(new Set());
+          setSelectedDocs([]);
+        });
     }
   }, [task]);
 
@@ -97,6 +122,38 @@ export function TaskEditDialog({
           runtimeLabelMap.get(selectedRuntimeId) ?? selectedRuntimeId
         }`
       : null;
+
+  const handleDocPickerConfirm = useCallback(
+    (ids: string[]) => {
+      setSelectedDocIds(new Set(ids));
+      const newIds = ids.filter(
+        (id) => !selectedDocs.some((d) => d.id === id)
+      );
+      if (newIds.length > 0) {
+        const params = new URLSearchParams({ status: "ready" });
+        if (task?.projectId) params.set("projectId", task.projectId);
+        fetch(`/api/documents?${params}`)
+          .then((r) => r.json())
+          .then((allDocs: Array<Record<string, unknown>>) => {
+            const idSet = new Set(ids);
+            setSelectedDocs(
+              allDocs
+                .filter((d) => idSet.has(d.id as string))
+                .map((d) => ({
+                  id: d.id as string,
+                  originalName: d.originalName as string,
+                  mimeType: d.mimeType as string,
+                  size: d.size as number,
+                }))
+            );
+          })
+          .catch(() => {});
+      } else {
+        setSelectedDocs((prev) => prev.filter((d) => ids.includes(d.id)));
+      }
+    },
+    [task?.projectId, selectedDocs]
+  );
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -113,6 +170,7 @@ export function TaskEditDialog({
           priority: parseInt(priority, 10),
           assignedAgent: assignedAgent || undefined,
           agentProfile: agentProfile || undefined,
+          documentIds: [...selectedDocIds],
         }),
       });
       if (res.ok) {
@@ -263,6 +321,71 @@ export function TaskEditDialog({
               )}
             </div>
           )}
+          {/* Context Documents */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-1.5">
+              <Paperclip className="h-3.5 w-3.5 text-muted-foreground" />
+              Context Documents
+            </Label>
+            {selectedDocs.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {selectedDocs.map((doc) => {
+                  const Icon = getFileIcon(doc.mimeType);
+                  return (
+                    <Badge
+                      key={doc.id}
+                      variant="secondary"
+                      className="flex items-center gap-1.5 pl-2 pr-1 py-1"
+                    >
+                      <Icon className="h-3 w-3" />
+                      <span className="text-xs max-w-[140px] truncate">
+                        {doc.originalName}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {formatSize(doc.size)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedDocIds((prev) => {
+                            const next = new Set(prev);
+                            next.delete(doc.id);
+                            return next;
+                          });
+                          setSelectedDocs((prev) => prev.filter((d) => d.id !== doc.id));
+                        }}
+                        className="ml-0.5 rounded-full p-0.5 hover:bg-muted transition-colors"
+                        aria-label={`Remove ${doc.originalName}`}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  );
+                })}
+              </div>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setPickerOpen(true)}
+              className="gap-1.5"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              {selectedDocs.length > 0 ? "Add More" : "Select Documents"}
+            </Button>
+          </div>
+
+          <DocumentPickerSheet
+            open={pickerOpen}
+            onOpenChange={setPickerOpen}
+            projectId={task?.projectId ?? null}
+            selectedIds={selectedDocIds}
+            onConfirm={handleDocPickerConfirm}
+            groupBy="project"
+            title="Select Context Documents"
+          />
+
           <Button
             type="submit"
             disabled={loading || !title.trim() || !!profileCompatibilityError}

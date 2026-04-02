@@ -36,6 +36,7 @@ export interface PickerDocument {
 interface DocumentPickerSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Scope documents to a project. Null = show all ready documents. */
   projectId: string | null;
   /** Currently selected document IDs (to pre-check) */
   selectedIds: Set<string>;
@@ -43,6 +44,10 @@ interface DocumentPickerSheetProps {
   onConfirm: (selectedIds: string[]) => void;
   /** Optional: scope to a step ID label */
   stepLabel?: string;
+  /** Grouping mode: "workflow" groups by source workflow, "project" by project name, "source" by direction */
+  groupBy?: "workflow" | "project" | "source";
+  /** Override the sheet title */
+  title?: string;
 }
 
 export function DocumentPickerSheet({
@@ -52,6 +57,8 @@ export function DocumentPickerSheet({
   selectedIds,
   onConfirm,
   stepLabel,
+  groupBy = "source",
+  title,
 }: DocumentPickerSheetProps) {
   const [documents, setDocuments] = useState<PickerDocument[]>([]);
   const [loading, setLoading] = useState(false);
@@ -67,10 +74,10 @@ export function DocumentPickerSheet({
   }, [open, projectId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function fetchDocuments() {
-    if (!projectId) return;
     setLoading(true);
     try {
-      const params = new URLSearchParams({ projectId, status: "ready" });
+      const params = new URLSearchParams({ status: "ready" });
+      if (projectId) params.set("projectId", projectId);
       const res = await fetch(`/api/documents?${params}`);
       if (res.ok) {
         const data = await res.json();
@@ -94,23 +101,40 @@ export function DocumentPickerSheet({
     );
   }, [documents, search]);
 
-  // Group documents by source workflow (or fallback to task/upload)
+  // Group documents based on the groupBy mode
   const grouped = useMemo(() => {
     const groups: Record<string, PickerDocument[]> = {};
     for (const doc of filtered) {
-      const source =
-        doc.direction === "output"
-          ? doc.workflowName
-            ? `From: ${doc.workflowName}`
-            : doc.taskTitle
-              ? `From: ${doc.taskTitle}`
-              : "Agent Generated"
-          : "Uploaded";
-      if (!groups[source]) groups[source] = [];
-      groups[source].push(doc);
+      let key: string;
+      switch (groupBy) {
+        case "workflow":
+          key =
+            doc.direction === "output"
+              ? doc.workflowName
+                ? `From: ${doc.workflowName}`
+                : doc.taskTitle
+                  ? `From: ${doc.taskTitle}`
+                  : "Agent Generated"
+              : "Uploaded";
+          break;
+        case "project":
+          key = doc.projectName ?? "No Project";
+          break;
+        case "source":
+        default:
+          key =
+            doc.direction === "output"
+              ? doc.taskTitle
+                ? "Task Output"
+                : "Agent Generated"
+              : "Uploaded";
+          break;
+      }
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(doc);
     }
     return groups;
-  }, [filtered]);
+  }, [filtered, groupBy]);
 
   function toggleDocument(id: string) {
     setLocalSelected((prev) => {
@@ -129,18 +153,28 @@ export function DocumentPickerSheet({
     onOpenChange(false);
   }
 
+  const sheetTitle = title
+    ? title
+    : stepLabel
+      ? `Select Documents for "${stepLabel}"`
+      : "Select Input Documents";
+
+  const emptyMessage = search
+    ? "No documents match your search."
+    : projectId
+      ? "No documents available in this project."
+      : "No documents available. Upload files in the Documents view.";
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-lg">
         <SheetHeader className="p-4">
           <SheetTitle className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
-            {stepLabel
-              ? `Select Documents for "${stepLabel}"`
-              : "Select Input Documents"}
+            {sheetTitle}
           </SheetTitle>
           <SheetDescription>
-            Choose documents from the project pool to provide as context.
+            Choose documents to provide as context.
           </SheetDescription>
         </SheetHeader>
 
@@ -164,9 +198,7 @@ export function DocumentPickerSheet({
               </div>
             ) : Object.keys(grouped).length === 0 ? (
               <div className="text-center text-sm text-muted-foreground py-12">
-                {search
-                  ? "No documents match your search."
-                  : "No documents available in this project."}
+                {emptyMessage}
               </div>
             ) : (
               <div className="space-y-4 px-2">

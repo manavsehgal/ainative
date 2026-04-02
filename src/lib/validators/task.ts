@@ -10,8 +10,13 @@ export const createTaskSchema = z.object({
   priority: z.number().min(0).max(3).default(2),
   assignedAgent: assignedAgentSchema.optional(),
   agentProfile: z.string().optional(),
+  documentIds: z.array(z.string()).optional(),
+  /** @deprecated Use documentIds instead */
   fileIds: z.array(z.string()).optional(),
-});
+}).transform((data) => ({
+  ...data,
+  documentIds: data.documentIds ?? data.fileIds,
+}));
 
 export const updateTaskSchema = z.object({
   title: z.string().min(1).max(200).optional(),
@@ -24,6 +29,7 @@ export const updateTaskSchema = z.object({
   agentProfile: z.string().optional(),
   result: z.string().optional(),
   sessionId: z.string().optional(),
+  documentIds: z.array(z.string()).optional(),
 });
 
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;

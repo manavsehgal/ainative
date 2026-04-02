@@ -49,7 +49,7 @@ import {
   MAX_PARALLEL_BRANCHES,
   MIN_PARALLEL_BRANCHES,
 } from "@/lib/workflows/parallel";
-import { DocumentPickerSheet } from "./document-picker-sheet";
+import { DocumentPickerSheet } from "@/components/shared/document-picker-sheet";
 import { getFileIcon, formatSize } from "@/components/documents/utils";
 import {
   DEFAULT_SWARM_CONCURRENCY_LIMIT,
@@ -428,6 +428,27 @@ export function WorkflowFormView({
       })
       .catch(() => {});
   }, [workflow, clone]);
+
+  // Auto-populate project default documents for new workflows
+  useEffect(() => {
+    if (workflow || !projectId) return; // Only for create mode with a project selected
+    fetch(`/api/projects/${projectId}/documents`)
+      .then((r) => r.json())
+      .then((docs: Array<Record<string, unknown>>) => {
+        if (Array.isArray(docs) && docs.length > 0) {
+          setSelectedDocIds(new Set(docs.map((d) => d.id as string)));
+          setSelectedDocs(
+            docs.map((d) => ({
+              id: d.id as string,
+              originalName: d.originalName as string,
+              mimeType: d.mimeType as string,
+              size: d.size as number,
+            }))
+          );
+        }
+      })
+      .catch(() => {});
+  }, [projectId, workflow]);
 
   // Pre-populate form for edit/clone
   useEffect(() => {
@@ -1224,6 +1245,7 @@ export function WorkflowFormView({
                   projectId={projectId}
                   selectedIds={selectedDocIds}
                   onConfirm={handleDocPickerConfirm}
+                  groupBy="workflow"
                 />
               </FormSectionCard>
             )}

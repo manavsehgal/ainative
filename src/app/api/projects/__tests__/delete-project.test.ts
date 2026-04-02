@@ -27,6 +27,7 @@ describe("project DELETE cascade coverage", () => {
     "environmentScans",
     "environmentCheckpoints",
     "conversations",
+    "projectDocumentDefaults",
   ];
 
   // Tables that are indirect children (FK to a table that has projectId)

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,11 +14,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bot, FileText, Settings, Paperclip } from "lucide-react";
+import { Bot, FileText, Settings, Paperclip, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import { AIAssistPanel } from "./ai-assist-panel";
-import { FileUpload } from "./file-upload";
 import type { TaskAssistResponse } from "@/lib/agents/runtime/task-assist-types";
+import { Badge } from "@/components/ui/badge";
+import { DocumentPickerSheet } from "@/components/shared/document-picker-sheet";
+import { getFileIcon, formatSize } from "@/components/documents/utils";
 import { FormSectionCard } from "@/components/shared/form-section-card";
 import {
   saveAssistState,
@@ -45,12 +47,11 @@ type ProfileOption = Pick<
   isBuiltin?: boolean;
 };
 
-interface UploadedFile {
+interface SelectedDoc {
   id: string;
-  filename: string;
   originalName: string;
+  mimeType: string;
   size: number;
-  type: string;
 }
 
 interface TaskCreatePanelProps {
@@ -78,7 +79,9 @@ export function TaskCreatePanel({ projects, defaultProjectId }: TaskCreatePanelP
   const [priority, setPriority] = useState("2");
   const [agentProfile, setAgentProfile] = useState<string>("");
   const [profiles, setProfiles] = useState<ProfileOption[]>([]);
-  const [uploads, setUploads] = useState<UploadedFile[]>([]);
+  const [selectedDocIds, setSelectedDocIds] = useState<Set<string>>(new Set());
+  const [selectedDocs, setSelectedDocs] = useState<SelectedDoc[]>([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [suggestedRuntime, setSuggestedRuntime] = useState<{
@@ -92,6 +95,31 @@ export function TaskCreatePanel({ projects, defaultProjectId }: TaskCreatePanelP
       .then((data: ProfileOption[]) => setProfiles(data))
       .catch(() => {});
   }, []);
+
+  // Load project default documents when project changes
+  useEffect(() => {
+    if (!projectId) {
+      setSelectedDocIds(new Set());
+      setSelectedDocs([]);
+      return;
+    }
+    fetch(`/api/projects/${projectId}/documents`)
+      .then((r) => r.json())
+      .then((docs: Array<Record<string, unknown>>) => {
+        if (Array.isArray(docs) && docs.length > 0) {
+          setSelectedDocIds(new Set(docs.map((d) => d.id as string)));
+          setSelectedDocs(
+            docs.map((d) => ({
+              id: d.id as string,
+              originalName: d.originalName as string,
+              mimeType: d.mimeType as string,
+              size: d.size as number,
+            }))
+          );
+        }
+      })
+      .catch(() => {});
+  }, [projectId]);
 
   // Restore form state when returning from workflow confirmation
   useEffect(() => {
@@ -143,6 +171,42 @@ export function TaskCreatePanel({ projects, defaultProjectId }: TaskCreatePanelP
         }`
       : null;
 
+  const handleDocPickerConfirm = useCallback(
+    (ids: string[]) => {
+      setSelectedDocIds(new Set(ids));
+      // Fetch metadata for newly selected docs
+      const newIds = ids.filter(
+        (id) => !selectedDocs.some((d) => d.id === id)
+      );
+      if (newIds.length > 0) {
+        const params = new URLSearchParams({ status: "ready" });
+        if (projectId) params.set("projectId", projectId);
+        fetch(`/api/documents?${params}`)
+          .then((r) => r.json())
+          .then((allDocs: Array<Record<string, unknown>>) => {
+            const idSet = new Set(ids);
+            setSelectedDocs(
+              allDocs
+                .filter((d) => idSet.has(d.id as string))
+                .map((d) => ({
+                  id: d.id as string,
+                  originalName: d.originalName as string,
+                  mimeType: d.mimeType as string,
+                  size: d.size as number,
+                }))
+            );
+          })
+          .catch(() => {});
+      } else {
+        // Remove deselected docs
+        setSelectedDocs((prev) =>
+          prev.filter((d) => ids.includes(d.id))
+        );
+      }
+    },
+    [projectId, selectedDocs]
+  );
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) return;
@@ -163,7 +227,7 @@ export function TaskCreatePanel({ projects, defaultProjectId }: TaskCreatePanelP
           priority: parseInt(priority, 10),
           assignedAgent: assignedAgent || undefined,
           agentProfile: agentProfile || undefined,
-          fileIds: uploads.length > 0 ? uploads.map((f) => f.id) : undefined,
+          documentIds: selectedDocIds.size > 0 ? [...selectedDocIds] : undefined,
         }),
       });
       if (res.ok) {
@@ -240,7 +304,7 @@ export function TaskCreatePanel({ projects, defaultProjectId }: TaskCreatePanelP
                           ))}
                         </SelectContent>
                       </Select>
-                      <p className="text-xs text-muted-foreground">Working directory</p>
+                      <p className="text-xs text-muted-foreground">Working directory · Select a project to scope document context</p>
                     </div>
                     <div className="space-y-1.5">
                       <Label>Priority</Label>
@@ -369,11 +433,70 @@ export function TaskCreatePanel({ projects, defaultProjectId }: TaskCreatePanelP
                 </div>
               </FormSectionCard>
 
-              <FormSectionCard icon={Paperclip} title="Attachments">
-                <FileUpload
-                  uploads={uploads}
-                  onUploaded={(f) => setUploads((prev) => [...prev, f])}
-                  onRemove={(id) => setUploads((prev) => prev.filter((f) => f.id !== id))}
+              <FormSectionCard icon={Paperclip} title="Context Documents">
+                <div className="space-y-3">
+                  {selectedDocs.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {selectedDocs.map((doc) => {
+                        const Icon = getFileIcon(doc.mimeType);
+                        return (
+                          <Badge
+                            key={doc.id}
+                            variant="secondary"
+                            className="flex items-center gap-1.5 pl-2 pr-1 py-1"
+                          >
+                            <Icon className="h-3 w-3" />
+                            <span className="text-xs max-w-[180px] truncate">
+                              {doc.originalName}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">
+                              {formatSize(doc.size)}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedDocIds((prev) => {
+                                  const next = new Set(prev);
+                                  next.delete(doc.id);
+                                  return next;
+                                });
+                                setSelectedDocs((prev) => prev.filter((d) => d.id !== doc.id));
+                              }}
+                              className="ml-0.5 rounded-full p-0.5 hover:bg-muted transition-colors"
+                              aria-label={`Remove ${doc.originalName}`}
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPickerOpen(true)}
+                    className="gap-1.5"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    {selectedDocs.length > 0 ? "Add More Documents" : "Select Documents"}
+                  </Button>
+                  {selectedDocs.length > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      {selectedDocs.length} document{selectedDocs.length !== 1 ? "s" : ""} will be provided as context
+                    </p>
+                  )}
+                </div>
+
+                <DocumentPickerSheet
+                  open={pickerOpen}
+                  onOpenChange={setPickerOpen}
+                  projectId={projectId || null}
+                  selectedIds={selectedDocIds}
+                  onConfirm={handleDocPickerConfirm}
+                  groupBy="project"
+                  title="Select Context Documents"
                 />
               </FormSectionCard>
 

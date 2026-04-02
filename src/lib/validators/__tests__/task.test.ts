@@ -72,39 +72,62 @@ describe("createTaskSchema", () => {
     }
   });
 
-  it("accepts fileIds as optional array of strings", () => {
+  it("accepts documentIds as optional array of strings", () => {
     const result = createTaskSchema.safeParse({
       title: "Test",
-      fileIds: ["abc-123", "def-456"],
+      documentIds: ["abc-123", "def-456"],
     });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.fileIds).toEqual(["abc-123", "def-456"]);
+      expect(result.data.documentIds).toEqual(["abc-123", "def-456"]);
     }
   });
 
-  it("accepts task without fileIds", () => {
+  it("accepts task without documentIds", () => {
     const result = createTaskSchema.safeParse({ title: "Test" });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.fileIds).toBeUndefined();
+      expect(result.data.documentIds).toBeUndefined();
     }
   });
 
-  it("accepts empty fileIds array", () => {
-    const result = createTaskSchema.safeParse({ title: "Test", fileIds: [] });
+  it("accepts empty documentIds array", () => {
+    const result = createTaskSchema.safeParse({ title: "Test", documentIds: [] });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.fileIds).toEqual([]);
+      expect(result.data.documentIds).toEqual([]);
     }
   });
 
-  it("rejects fileIds with non-string elements", () => {
+  it("rejects documentIds with non-string elements", () => {
     const result = createTaskSchema.safeParse({
       title: "Test",
-      fileIds: [123, true],
+      documentIds: [123, true],
     });
     expect(result.success).toBe(false);
+  });
+
+  it("accepts deprecated fileIds and transforms to documentIds", () => {
+    const result = createTaskSchema.safeParse({
+      title: "Test",
+      fileIds: ["file-1", "file-2"],
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.documentIds).toEqual(["file-1", "file-2"]);
+    }
+  });
+
+  it("prefers documentIds over fileIds when both provided", () => {
+    const result = createTaskSchema.safeParse({
+      title: "Test",
+      documentIds: ["doc-1"],
+      fileIds: ["file-1"],
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.documentIds).toEqual(["doc-1"]);
+    }
   });
 });
 
@@ -140,5 +163,15 @@ describe("updateTaskSchema", () => {
       assignedAgent: "unknown-runtime",
     });
     expect(result.success).toBe(false);
+  });
+
+  it("accepts documentIds in update", () => {
+    const result = updateTaskSchema.safeParse({
+      documentIds: ["doc-1", "doc-2"],
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.documentIds).toEqual(["doc-1", "doc-2"]);
+    }
   });
 });

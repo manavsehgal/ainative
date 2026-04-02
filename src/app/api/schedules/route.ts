@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { schedules } from "@/lib/db/schema";
+import { schedules, scheduleDocumentInputs } from "@/lib/db/schema";
 import { desc, eq } from "drizzle-orm";
 import { parseInterval, computeNextFireTime } from "@/lib/schedules/interval-parser";
 import { parseNaturalLanguage } from "@/lib/schedules/nlp-parser";
@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
     activeHoursEnd,
     activeTimezone,
     heartbeatBudgetPerDay,
+    documentIds,
   } =
     body as {
       name?: string;
@@ -51,6 +52,7 @@ export async function POST(req: NextRequest) {
       activeHoursEnd?: number;
       activeTimezone?: string;
       heartbeatBudgetPerDay?: number;
+      documentIds?: string[];
     };
 
   const scheduleType = type ?? "scheduled";
@@ -166,6 +168,22 @@ export async function POST(req: NextRequest) {
     createdAt: now,
     updatedAt: now,
   });
+
+  // Link documents to schedule
+  if (documentIds && documentIds.length > 0) {
+    try {
+      for (const docId of documentIds) {
+        await db.insert(scheduleDocumentInputs).values({
+          id: crypto.randomUUID(),
+          scheduleId: id,
+          documentId: docId,
+          createdAt: now,
+        });
+      }
+    } catch (err) {
+      console.error("[schedules] Document association failed:", err);
+    }
+  }
 
   const [created] = await db
     .select()

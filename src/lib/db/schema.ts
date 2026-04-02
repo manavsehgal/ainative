@@ -707,6 +707,52 @@ export const workflowDocumentInputs = sqliteTable(
 
 export type WorkflowDocumentInputRow = InferSelectModel<typeof workflowDocumentInputs>;
 
+export const scheduleDocumentInputs = sqliteTable(
+  "schedule_document_inputs",
+  {
+    id: text("id").primaryKey(),
+    scheduleId: text("schedule_id")
+      .references(() => schedules.id)
+      .notNull(),
+    documentId: text("document_id")
+      .references(() => documents.id)
+      .notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_sdi_schedule").on(table.scheduleId),
+    uniqueIndex("idx_sdi_schedule_doc").on(
+      table.scheduleId,
+      table.documentId
+    ),
+  ]
+);
+
+export type ScheduleDocumentInputRow = InferSelectModel<typeof scheduleDocumentInputs>;
+
+export const projectDocumentDefaults = sqliteTable(
+  "project_document_defaults",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id")
+      .references(() => projects.id)
+      .notNull(),
+    documentId: text("document_id")
+      .references(() => documents.id)
+      .notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_pdd_project").on(table.projectId),
+    uniqueIndex("idx_pdd_project_doc").on(
+      table.projectId,
+      table.documentId
+    ),
+  ]
+);
+
+export type ProjectDocumentDefaultRow = InferSelectModel<typeof projectDocumentDefaults>;
+
 // Shared types derived from schema — use these in components instead of `as any`
 export type ProjectRow = InferSelectModel<typeof projects>;
 export type TaskRow = InferSelectModel<typeof tasks>;

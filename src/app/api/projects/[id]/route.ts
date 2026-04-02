@@ -16,6 +16,7 @@ import {
   environmentScans,
   chatMessages,
   conversations,
+  projectDocumentDefaults,
 } from "@/lib/db/schema";
 import { eq, inArray } from "drizzle-orm";
 import { updateProjectSchema } from "@/lib/validators/project";
@@ -42,15 +43,43 @@ export async function PATCH(
 ) {
   const { id } = await params;
   const body = await req.json();
-  const parsed = updateProjectSchema.safeParse(body);
+  // Extract documentIds before validation (not a project column)
+  const { documentIds, ...projectBody } = body as Record<string, unknown> & { documentIds?: string[] };
+  const parsed = updateProjectSchema.safeParse(projectBody);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
+  const now = new Date();
   await db
     .update(projects)
-    .set({ ...parsed.data, updatedAt: new Date() })
+    .set({ ...parsed.data, updatedAt: now })
     .where(eq(projects.id, id));
+
+  // Handle default document bindings
+  if (documentIds !== undefined) {
+    try {
+      // Replace all bindings
+      await db
+        .delete(projectDocumentDefaults)
+        .where(eq(projectDocumentDefaults.projectId, id));
+      for (const docId of documentIds) {
+        try {
+          await db.insert(projectDocumentDefaults).values({
+            id: crypto.randomUUID(),
+            projectId: id,
+            documentId: docId,
+            createdAt: now,
+          });
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : "";
+          if (!msg.includes("UNIQUE constraint")) throw err;
+        }
+      }
+    } catch (err) {
+      console.error("[projects] Document defaults update failed:", err);
+    }
+  }
 
   const [updated] = await db
     .select()
@@ -160,7 +189,10 @@ export async function DELETE(
         .run();
     }
 
-    // 6. Direct project children
+    // 6. Project document defaults (junction table)
+    db.delete(projectDocumentDefaults).where(eq(projectDocumentDefaults.projectId, id)).run();
+
+    // 7. Direct project children
     db.delete(documents).where(eq(documents.projectId, id)).run();
     db.delete(tasks).where(eq(tasks.projectId, id)).run();
     if (workflowIds.length > 0) {

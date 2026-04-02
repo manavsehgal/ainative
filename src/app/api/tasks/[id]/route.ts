@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { tasks, projects, workflows, schedules, usageLedger } from "@/lib/db/schema";
+import { tasks, projects, workflows, schedules, usageLedger, documents } from "@/lib/db/schema";
 import { eq, sum, min, max } from "drizzle-orm";
 import { updateTaskSchema } from "@/lib/validators/task";
 import { isValidTransition, type TaskStatus } from "@/lib/constants/task-status";
@@ -106,10 +106,45 @@ export async function PATCH(
     }
   }
 
+  // Extract documentIds before spreading into task update (not a task column)
+  const { documentIds, ...taskFields } = parsed.data;
+  const now = new Date();
+
   await db
     .update(tasks)
-    .set({ ...parsed.data, updatedAt: new Date() })
+    .set({ ...taskFields, updatedAt: now })
     .where(eq(tasks.id, id));
+
+  // Handle document linking/unlinking
+  if (documentIds !== undefined) {
+    try {
+      // Unlink documents previously linked to this task that are no longer selected
+      const currentDocs = await db
+        .select({ id: documents.id })
+        .from(documents)
+        .where(eq(documents.taskId, id));
+      const newDocSet = new Set(documentIds);
+      for (const doc of currentDocs) {
+        if (!newDocSet.has(doc.id)) {
+          await db.update(documents)
+            .set({ taskId: null, updatedAt: now })
+            .where(eq(documents.id, doc.id));
+        }
+      }
+      // Link newly selected documents
+      for (const docId of documentIds) {
+        await db.update(documents)
+          .set({
+            taskId: id,
+            projectId: existing.projectId,
+            updatedAt: now,
+          })
+          .where(eq(documents.id, docId));
+      }
+    } catch (err) {
+      console.error("[tasks] Document association failed:", err);
+    }
+  }
 
   const [updated] = await db.select().from(tasks).where(eq(tasks.id, id));
   return NextResponse.json(updated);

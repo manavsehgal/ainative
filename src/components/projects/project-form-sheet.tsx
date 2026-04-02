@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Sheet,
   SheetContent,
@@ -19,9 +19,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FolderOpen, AlignLeft, FolderCode, Trash2 } from "lucide-react";
+import { FolderOpen, AlignLeft, FolderCode, Trash2, Paperclip, Plus, X } from "lucide-react";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { DocumentPickerSheet } from "@/components/shared/document-picker-sheet";
+import { getFileIcon, formatSize } from "@/components/documents/utils";
 
 interface Project {
   id: string;
@@ -53,6 +56,9 @@ export function ProjectFormSheet({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [selectedDocIds, setSelectedDocIds] = useState<Set<string>>(new Set());
+  const [selectedDocs, setSelectedDocs] = useState<Array<{ id: string; originalName: string; mimeType: string; size: number }>>([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   // Pre-fill form in edit mode
   useEffect(() => {
@@ -61,14 +67,67 @@ export function ProjectFormSheet({
       setDescription(project.description ?? "");
       setWorkingDirectory(project.workingDirectory ?? "");
       setStatus(project.status);
+      // Load existing default documents
+      fetch(`/api/projects/${project.id}/documents`)
+        .then((r) => r.json())
+        .then((docs: Array<Record<string, unknown>>) => {
+          const ids = new Set(docs.map((d) => d.id as string));
+          setSelectedDocIds(ids);
+          setSelectedDocs(
+            docs.map((d) => ({
+              id: d.id as string,
+              originalName: d.originalName as string,
+              mimeType: d.mimeType as string,
+              size: d.size as number,
+            }))
+          );
+        })
+        .catch(() => {
+          setSelectedDocIds(new Set());
+          setSelectedDocs([]);
+        });
     } else if (mode === "create") {
       setName("");
       setDescription("");
       setWorkingDirectory("");
       setStatus("active");
+      setSelectedDocIds(new Set());
+      setSelectedDocs([]);
     }
     setError(null);
   }, [mode, project, open]);
+
+  const handleDocPickerConfirm = useCallback(
+    (ids: string[]) => {
+      setSelectedDocIds(new Set(ids));
+      const newIds = ids.filter(
+        (id) => !selectedDocs.some((d) => d.id === id)
+      );
+      if (newIds.length > 0) {
+        const params = new URLSearchParams({ status: "ready" });
+        if (project?.id) params.set("projectId", project.id);
+        fetch(`/api/documents?${params}`)
+          .then((r) => r.json())
+          .then((allDocs: Array<Record<string, unknown>>) => {
+            const idSet = new Set(ids);
+            setSelectedDocs(
+              allDocs
+                .filter((d) => idSet.has(d.id as string))
+                .map((d) => ({
+                  id: d.id as string,
+                  originalName: d.originalName as string,
+                  mimeType: d.mimeType as string,
+                  size: d.size as number,
+                }))
+            );
+          })
+          .catch(() => {});
+      } else {
+        setSelectedDocs((prev) => prev.filter((d) => ids.includes(d.id)));
+      }
+    },
+    [project?.id, selectedDocs]
+  );
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -85,6 +144,7 @@ export function ProjectFormSheet({
             name: name.trim(),
             description: description.trim() || undefined,
             workingDirectory: workingDirectory.trim() || undefined,
+            documentIds: selectedDocIds.size > 0 ? [...selectedDocIds] : undefined,
           }),
         });
         if (res.ok) {
@@ -104,6 +164,7 @@ export function ProjectFormSheet({
             description: description.trim() || undefined,
             workingDirectory: workingDirectory.trim() || undefined,
             status,
+            documentIds: [...selectedDocIds],
           }),
         });
         if (res.ok) {
@@ -235,6 +296,76 @@ export function ProjectFormSheet({
                   <p className="text-xs text-muted-foreground">Paused projects won&apos;t accept task executions</p>
                 </div>
               )}
+
+              {/* Default Documents */}
+              {(isEdit || selectedDocs.length > 0) && (
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1.5">
+                    <Paperclip className="h-3.5 w-3.5 text-muted-foreground" />
+                    Default Documents
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Auto-attached to new tasks and workflows in this project
+                  </p>
+                  {selectedDocs.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {selectedDocs.map((doc) => {
+                        const Icon = getFileIcon(doc.mimeType);
+                        return (
+                          <Badge
+                            key={doc.id}
+                            variant="secondary"
+                            className="flex items-center gap-1.5 pl-2 pr-1 py-1"
+                          >
+                            <Icon className="h-3 w-3" />
+                            <span className="text-xs max-w-[140px] truncate">
+                              {doc.originalName}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">
+                              {formatSize(doc.size)}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedDocIds((prev) => {
+                                  const next = new Set(prev);
+                                  next.delete(doc.id);
+                                  return next;
+                                });
+                                setSelectedDocs((prev) => prev.filter((d) => d.id !== doc.id));
+                              }}
+                              className="ml-0.5 rounded-full p-0.5 hover:bg-muted transition-colors"
+                              aria-label={`Remove ${doc.originalName}`}
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPickerOpen(true)}
+                    className="gap-1.5"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    {selectedDocs.length > 0 ? "Add More" : "Select Documents"}
+                  </Button>
+                </div>
+              )}
+
+              <DocumentPickerSheet
+                open={pickerOpen}
+                onOpenChange={setPickerOpen}
+                projectId={project?.id ?? null}
+                selectedIds={selectedDocIds}
+                onConfirm={handleDocPickerConfirm}
+                groupBy="source"
+                title="Select Default Documents"
+              />
 
               {error && (
                 <p className="text-sm text-destructive">{error}</p>

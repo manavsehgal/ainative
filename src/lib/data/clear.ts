@@ -26,6 +26,8 @@ import {
   channelConfigs,
   agentMessages,
   workflowDocumentInputs,
+  scheduleDocumentInputs,
+  projectDocumentDefaults,
 } from "@/lib/db/schema";
 import { readdirSync, unlinkSync, mkdirSync } from "fs";
 import { join } from "path";
@@ -73,8 +75,10 @@ export function clearAllData() {
   const logsDeleted = db.delete(agentLogs).run().changes;
   const notificationsDeleted = db.delete(notifications).run().changes;
 
-  // Workflow document inputs references both workflows and documents — delete before both
+  // Document junction tables — delete before documents, workflows, schedules, projects
   const workflowDocInputsDeleted = db.delete(workflowDocumentInputs).run().changes;
+  const scheduleDocInputsDeleted = db.delete(scheduleDocumentInputs).run().changes;
+  const projectDocDefaultsDeleted = db.delete(projectDocumentDefaults).run().changes;
 
   const documentsDeleted = db.delete(documents).run().changes;
   const agentMemoryDeleted = db.delete(agentMemory).run().changes;
@@ -136,6 +140,8 @@ export function clearAllData() {
     channelBindings: channelBindingsDeleted,
     channelConfigs: channelConfigsDeleted,
     workflowDocumentInputs: workflowDocInputsDeleted,
+    scheduleDocumentInputs: scheduleDocInputsDeleted,
+    projectDocumentDefaults: projectDocDefaultsDeleted,
     files: filesDeleted,
     screenshots: screenshotsDeleted,
   };
