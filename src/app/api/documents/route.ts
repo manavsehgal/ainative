@@ -74,7 +74,9 @@ export async function GET(req: NextRequest) {
       updatedAt: documents.updatedAt,
       taskTitle: tasks.title,
       projectName: projects.name,
+      workflowId: workflows.id,
       workflowName: workflows.name,
+      workflowRunNumber: tasks.workflowRunNumber,
     })
     .from(documents)
     .leftJoin(tasks, eq(documents.taskId, tasks.id))

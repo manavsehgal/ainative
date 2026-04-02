@@ -1,14 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { workflows } from "@/lib/db/schema";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import type { WorkflowDefinition } from "@/lib/workflows/types";
 import { validateWorkflowDefinitionAssignments } from "@/lib/agents/profiles/assignment-validation";
 import { validateWorkflowDefinition } from "@/lib/workflows/definition-validation";
 
 export async function GET() {
   const result = await db
-    .select()
+    .select({
+      id: workflows.id,
+      name: workflows.name,
+      projectId: workflows.projectId,
+      definition: workflows.definition,
+      status: workflows.status,
+      runNumber: workflows.runNumber,
+      createdAt: workflows.createdAt,
+      updatedAt: workflows.updatedAt,
+      taskCount: sql<number>`(SELECT COUNT(*) FROM tasks WHERE workflow_id = ${workflows.id})`.as("taskCount"),
+      outputDocCount: sql<number>`(SELECT COUNT(*) FROM documents WHERE task_id IN (SELECT id FROM tasks WHERE workflow_id = ${workflows.id}) AND direction = 'output')`.as("outputDocCount"),
+    })
     .from(workflows)
     .orderBy(desc(workflows.createdAt));
 
