@@ -5,7 +5,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, Bot, ArrowUp, ArrowDown, Minus, Trash2, Check, X, Loader2, Square, CheckSquare, Pencil } from "lucide-react";
+import { AlertCircle, Bot, ArrowUp, ArrowDown, Minus, Trash2, Check, X, Loader2, Square, CheckSquare, Pencil, FileText } from "lucide-react";
 import type { TaskStatus } from "@/lib/constants/task-status";
 
 export interface TaskItem {
@@ -28,6 +28,7 @@ export interface TaskItem {
   resumeCount: number;
   createdAt: string;
   updatedAt: string;
+  docCount?: number;
   usage?: {
     inputTokens: number | null;
     outputTokens: number | null;
@@ -163,6 +164,12 @@ export function TaskCard({
                 <Badge variant="secondary" className="text-xs gap-1 max-w-[120px]">
                   <Bot className="h-3 w-3 shrink-0" aria-hidden="true" />
                   <span className="truncate">{task.assignedAgent}</span>
+                </Badge>
+              )}
+              {task.docCount != null && task.docCount > 0 && (
+                <Badge variant="outline" className="text-xs gap-1 h-5">
+                  <FileText className="h-3 w-3 shrink-0" />
+                  {task.docCount}
                 </Badge>
               )}
               {isFailed && <AlertCircle className="h-3.5 w-3.5 text-destructive" aria-label="Task failed" />}

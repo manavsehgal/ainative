@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Workflow, Loader2 } from "lucide-react";
+import { Workflow, Loader2, FileText } from "lucide-react";
 import { workflowStatusVariant, patternLabels } from "@/lib/constants/status-colors";
 
 export interface WorkflowKanbanItem {
@@ -16,6 +16,7 @@ export interface WorkflowKanbanItem {
   projectName?: string;
   stepProgress: { current: number; total: number };
   currentStepName?: string;
+  outputDocCount?: number;
   createdAt: string;
   updatedAt?: string;
 }
@@ -112,6 +113,12 @@ export function WorkflowKanbanCard({ workflow }: WorkflowKanbanCardProps) {
           >
             {workflow.status}
           </Badge>
+          {workflow.outputDocCount != null && workflow.outputDocCount > 0 && (
+            <span className="text-[11px] text-muted-foreground flex items-center gap-0.5">
+              <FileText className="h-3 w-3" />
+              {workflow.outputDocCount}
+            </span>
+          )}
           <div className="flex-1" />
           <span className="text-[11px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
             View →

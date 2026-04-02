@@ -46,6 +46,7 @@ export function DocumentTable({
             <TableHead>Name</TableHead>
             <TableHead className="hidden md:table-cell">Size</TableHead>
             <TableHead className="hidden md:table-cell">Direction</TableHead>
+            <TableHead className="hidden lg:table-cell">Workflow</TableHead>
             <TableHead className="hidden lg:table-cell">Task</TableHead>
             <TableHead className="hidden lg:table-cell">Project</TableHead>
             <TableHead>Status</TableHead>
@@ -86,6 +87,9 @@ export function DocumentTable({
                       <span className="text-xs text-muted-foreground">v{doc.version}</span>
                     )}
                   </div>
+                </TableCell>
+                <TableCell className="hidden lg:table-cell text-muted-foreground text-sm truncate max-w-[140px]">
+                  {doc.workflowName ?? "—"}
                 </TableCell>
                 <TableCell className="hidden lg:table-cell text-sm">
                   {doc.taskTitle ? (

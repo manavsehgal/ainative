@@ -70,6 +70,11 @@ export function DocumentGrid({
               <span className="capitalize">{doc.direction}</span>
               {doc.direction === "output" && <span>v{doc.version}</span>}
             </div>
+            {doc.workflowName && (
+              <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                {doc.workflowName}
+              </p>
+            )}
           </Card>
         );
       })}

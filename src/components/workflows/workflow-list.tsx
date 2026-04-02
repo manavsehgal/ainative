@@ -24,6 +24,9 @@ interface Workflow {
   definition: string;
   createdAt: string;
   updatedAt: string;
+  taskCount?: number;
+  outputDocCount?: number;
+  runNumber?: number;
 }
 
 interface WorkflowListProps {
@@ -176,6 +179,18 @@ export function WorkflowList({ projects }: WorkflowListProps) {
                     <span>{patternLabels[pattern] ?? pattern}</span>
                     <span>&middot;</span>
                     <span>{stepCount} step{stepCount !== 1 ? "s" : ""}</span>
+                    {wf.taskCount != null && wf.taskCount > 0 && (
+                      <>
+                        <span className="text-muted-foreground">&middot;</span>
+                        <span>{wf.taskCount} task{wf.taskCount !== 1 ? "s" : ""}</span>
+                      </>
+                    )}
+                    {wf.outputDocCount != null && wf.outputDocCount > 0 && (
+                      <>
+                        <span className="text-muted-foreground">&middot;</span>
+                        <span>{wf.outputDocCount} doc{wf.outputDocCount !== 1 ? "s" : ""}</span>
+                      </>
+                    )}
                   </div>
                   {promptPreview && (
                     <p className="text-xs text-muted-foreground line-clamp-2 mt-1.5">
@@ -183,9 +198,16 @@ export function WorkflowList({ projects }: WorkflowListProps) {
                     </p>
                   )}
                   <div className="flex items-center justify-between mt-3">
-                    <Badge variant={workflowStatusVariant[wf.status] ?? "secondary"}>
-                      {wf.status}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={workflowStatusVariant[wf.status] ?? "secondary"}>
+                        {wf.status}
+                      </Badge>
+                      {wf.runNumber != null && wf.runNumber > 0 && (
+                        <Badge variant="outline" className="text-[10px] font-normal">
+                          Run #{wf.runNumber}
+                        </Badge>
+                      )}
+                    </div>
                     <TooltipProvider>
                       <div className="flex items-center gap-1">
                         {(wf.status === "draft" || wf.status === "completed" || wf.status === "failed") && (
