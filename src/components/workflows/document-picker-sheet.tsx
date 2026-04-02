@@ -28,6 +28,8 @@ export interface PickerDocument {
   projectName: string | null;
   /** Source workflow name (if document was produced by a workflow task) */
   sourceWorkflow?: string;
+  /** Parent workflow name (joined from tasks → workflows) */
+  workflowName?: string | null;
   createdAt: number;
 }
 
@@ -92,15 +94,17 @@ export function DocumentPickerSheet({
     );
   }, [documents, search]);
 
-  // Group documents by source
+  // Group documents by source workflow (or fallback to task/upload)
   const grouped = useMemo(() => {
     const groups: Record<string, PickerDocument[]> = {};
     for (const doc of filtered) {
       const source =
         doc.direction === "output"
-          ? doc.taskTitle
-            ? `From: ${doc.taskTitle}`
-            : "Agent Generated"
+          ? doc.workflowName
+            ? `From: ${doc.workflowName}`
+            : doc.taskTitle
+              ? `From: ${doc.taskTitle}`
+              : "Agent Generated"
           : "Uploaded";
       if (!groups[source]) groups[source] = [];
       groups[source].push(doc);
@@ -168,7 +172,7 @@ export function DocumentPickerSheet({
               <div className="space-y-4 px-2">
                 {Object.entries(grouped).map(([source, docs]) => (
                   <div key={source}>
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                    <p className="text-xs font-medium text-muted-foreground mb-2">
                       {source}
                     </p>
                     <div className="space-y-1">

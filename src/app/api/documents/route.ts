@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { documents, tasks, projects } from "@/lib/db/schema";
+import { documents, tasks, projects, workflows } from "@/lib/db/schema";
 import { eq, and, like, or, desc } from "drizzle-orm";
 import { access, stat, copyFile, mkdir } from "fs/promises";
 import path, { basename, extname, join } from "path";
@@ -74,9 +74,11 @@ export async function GET(req: NextRequest) {
       updatedAt: documents.updatedAt,
       taskTitle: tasks.title,
       projectName: projects.name,
+      workflowName: workflows.name,
     })
     .from(documents)
     .leftJoin(tasks, eq(documents.taskId, tasks.id))
+    .leftJoin(workflows, eq(tasks.workflowId, workflows.id))
     .leftJoin(projects, eq(documents.projectId, projects.id))
     .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(desc(documents.createdAt));
