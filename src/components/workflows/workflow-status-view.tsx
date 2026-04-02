@@ -332,8 +332,8 @@ export function WorkflowStatusView({ workflowId }: WorkflowStatusViewProps) {
                 </Button>
               )}
 
-              {/* Edit — draft only */}
-              {data.status === "draft" && hasDefinition && (
+              {/* Edit — draft, completed, or failed */}
+              {["draft", "completed", "failed"].includes(data.status) && hasDefinition && (
                 <Button
                   variant="outline"
                   size="sm"

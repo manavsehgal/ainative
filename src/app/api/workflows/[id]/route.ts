@@ -35,16 +35,29 @@ export async function PATCH(
     return NextResponse.json({ error: "Workflow not found" }, { status: 404 });
   }
 
-  // Edit name/definition — draft only
+  // Edit name/definition — draft, completed, or failed
   if (name !== undefined || definition !== undefined) {
-    if (workflow.status !== "draft") {
+    if (!["draft", "completed", "failed"].includes(workflow.status)) {
       return NextResponse.json(
-        { error: "Can only edit draft workflows" },
+        { error: "Cannot edit active or paused workflows" },
         { status: 409 }
       );
     }
 
     const updates: Record<string, unknown> = { updatedAt: new Date() };
+
+    // Reset non-draft workflows to draft and strip execution state
+    if (workflow.status !== "draft") {
+      updates.status = "draft";
+      try {
+        const existingDef = JSON.parse(workflow.definition) as Record<string, unknown>;
+        delete existingDef._state;
+        delete existingDef._loopState;
+        updates.definition = JSON.stringify(existingDef);
+      } catch {
+        // Definition will be overwritten below if provided
+      }
+    }
 
     if (name !== undefined) {
       if (!name.trim()) {

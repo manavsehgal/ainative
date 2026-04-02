@@ -188,7 +188,7 @@ export function WorkflowList({ projects }: WorkflowListProps) {
                     </Badge>
                     <TooltipProvider>
                       <div className="flex items-center gap-1">
-                        {wf.status === "draft" && (
+                        {(wf.status === "draft" || wf.status === "completed" || wf.status === "failed") && (
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
