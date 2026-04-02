@@ -14,6 +14,20 @@ export interface WorkflowStep {
   dependsOn?: string[];
   assignedAgent?: string;
   agentProfile?: string;
+  /** Document IDs from the project pool to inject as context for this step */
+  documentIds?: string[];
+}
+
+/** Selector for auto-discovering documents from the project pool */
+export interface DocumentSelector {
+  fromWorkflowId?: string;
+  fromWorkflowName?: string;
+  category?: string;
+  direction?: "input" | "output";
+  mimeType?: string;
+  namePattern?: string;
+  /** Take only the N most recent matching documents */
+  latest?: number;
 }
 
 export interface LoopConfig {

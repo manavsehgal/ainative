@@ -1,5 +1,10 @@
 # Feature Changelog
 
+## 2026-04-02
+
+### Groomed
+- `workflow-document-pool` (P1) — New feature for intuitive document handoff between workflows via project-level document pool. Junction table architecture, document picker in workflow form (Input Tray), output dock on completed workflows, auto-discovery via document selectors, and chat smart wiring. Brainstormed with product-manager, architect, and frontend-designer perspectives. 3 phases: data+engine, form UX, chat intelligence.
+
 ## 2026-04-01
 
 ### Started

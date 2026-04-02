@@ -25,6 +25,7 @@ import {
   channelBindings,
   channelConfigs,
   agentMessages,
+  workflowDocumentInputs,
 } from "@/lib/db/schema";
 import { readdirSync, unlinkSync, mkdirSync } from "fs";
 import { join } from "path";
@@ -71,6 +72,10 @@ export function clearAllData() {
   const usageLedgerDeleted = db.delete(usageLedger).run().changes;
   const logsDeleted = db.delete(agentLogs).run().changes;
   const notificationsDeleted = db.delete(notifications).run().changes;
+
+  // Workflow document inputs references both workflows and documents — delete before both
+  const workflowDocInputsDeleted = db.delete(workflowDocumentInputs).run().changes;
+
   const documentsDeleted = db.delete(documents).run().changes;
   const agentMemoryDeleted = db.delete(agentMemory).run().changes;
   const learnedContextDeleted = db.delete(learnedContext).run().changes;
@@ -130,6 +135,7 @@ export function clearAllData() {
     agentMessages: agentMessagesDeleted,
     channelBindings: channelBindingsDeleted,
     channelConfigs: channelConfigsDeleted,
+    workflowDocumentInputs: workflowDocInputsDeleted,
     files: filesDeleted,
     screenshots: screenshotsDeleted,
   };

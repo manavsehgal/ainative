@@ -23,7 +23,9 @@ import {
   MessageSquareMore,
   FileText,
   Paperclip,
+  ArrowRight,
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
@@ -614,6 +616,11 @@ export function WorkflowStatusView({ workflowId }: WorkflowStatusViewProps) {
         />
       )}
 
+      {/* Output Dock — chain into new workflow */}
+      {data.status === "completed" && hasStepDocs && (
+        <OutputDock stepDocuments={data.stepDocuments!} steps={data.steps} />
+      )}
+
       {/* Delete confirmation */}
       <ConfirmDialog
         open={confirmDelete}
@@ -625,5 +632,119 @@ export function WorkflowStatusView({ workflowId }: WorkflowStatusViewProps) {
         destructive
       />
     </div>
+  );
+}
+
+/** Output Dock — selectable output documents for chaining into a new workflow */
+function OutputDock({
+  stepDocuments,
+  steps,
+}: {
+  stepDocuments: Record<string, DocumentInfo[]>;
+  steps: StepWithState[];
+}) {
+  const router = useRouter();
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // Flatten all output documents
+  const allOutputDocs = Object.entries(stepDocuments).flatMap(
+    ([taskId, docs]) => {
+      const step = steps.find((s) => s.state.taskId === taskId);
+      return docs.map((doc) => ({
+        ...doc,
+        stepName: step?.name ?? "Unknown Step",
+      }));
+    }
+  );
+
+  if (allOutputDocs.length === 0) return null;
+
+  function toggleDoc(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function selectAll() {
+    setSelectedIds(new Set(allOutputDocs.map((d) => d.id)));
+  }
+
+  function chainIntoNewWorkflow() {
+    if (selectedIds.size === 0) return;
+    const params = new URLSearchParams({
+      inputDocs: [...selectedIds].join(","),
+    });
+    router.push(`/workflows/new?${params}`);
+  }
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <ArrowRight className="h-4 w-4" />
+            Chain Output Documents
+          </CardTitle>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={selectAll}
+            className="text-xs"
+          >
+            Select All
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Select output documents to use as inputs in a new workflow
+        </p>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
+          {allOutputDocs.map((doc) => {
+            const isChecked = selectedIds.has(doc.id);
+            return (
+              <button
+                key={doc.id}
+                type="button"
+                onClick={() => toggleDoc(doc.id)}
+                className={`flex items-center gap-3 p-3 rounded-lg text-left transition-colors border ${
+                  isChecked
+                    ? "bg-accent/50 border-accent"
+                    : "hover:bg-muted/50 border-border/50"
+                }`}
+              >
+                <Checkbox
+                  checked={isChecked}
+                  onCheckedChange={() => toggleDoc(doc.id)}
+                />
+                <FileText className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">
+                    {doc.originalName}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {doc.stepName}
+                  </p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {selectedIds.size > 0 && (
+          <Button
+            onClick={chainIntoNewWorkflow}
+            className="w-full gap-2"
+            size="sm"
+          >
+            <ArrowRight className="h-4 w-4" />
+            Chain {selectedIds.size} Document{selectedIds.size !== 1 ? "s" : ""} Into New Workflow
+          </Button>
+        )}
+      </CardContent>
+    </Card>
   );
 }

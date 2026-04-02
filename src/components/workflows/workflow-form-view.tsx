@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,6 +27,8 @@ import {
   ArrowDown,
   Brain,
   ShieldCheck,
+  FileText,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { FormSectionCard } from "@/components/shared/form-section-card";
@@ -47,6 +49,8 @@ import {
   MAX_PARALLEL_BRANCHES,
   MIN_PARALLEL_BRANCHES,
 } from "@/lib/workflows/parallel";
+import { DocumentPickerSheet } from "./document-picker-sheet";
+import { getFileIcon, formatSize } from "@/components/documents/utils";
 import {
   DEFAULT_SWARM_CONCURRENCY_LIMIT,
   MAX_SWARM_WORKERS,
@@ -304,6 +308,7 @@ export function WorkflowFormView({
     runtimeOptions.map((runtime) => [runtime.id, runtime.label])
   );
   const router = useRouter();
+  const searchParams = useSearchParams();
   const mode = workflow ? (clone ? "clone" : "edit") : "create";
 
   const [name, setName] = useState("");
@@ -312,6 +317,13 @@ export function WorkflowFormView({
   const [steps, setSteps] = useState<WorkflowStep[]>([createEmptyStep()]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Document pool state
+  const [selectedDocIds, setSelectedDocIds] = useState<Set<string>>(new Set());
+  const [selectedDocs, setSelectedDocs] = useState<
+    Array<{ id: string; originalName: string; mimeType: string; size: number }>
+  >([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   // Loop-specific state
   const [loopPrompt, setLoopPrompt] = useState("");
@@ -324,6 +336,98 @@ export function WorkflowFormView({
   const [swarmConcurrencyLimit, setSwarmConcurrencyLimit] = useState(
     DEFAULT_SWARM_CONCURRENCY_LIMIT
   );
+
+  // Pre-populate documents from URL params (e.g., from Output Dock chain)
+  useEffect(() => {
+    const inputDocsParam = searchParams.get("inputDocs");
+    if (inputDocsParam) {
+      const docIds = inputDocsParam.split(",").filter(Boolean);
+      if (docIds.length > 0) {
+        setSelectedDocIds(new Set(docIds));
+        // Fetch document metadata for display
+        Promise.all(
+          docIds.map((id) =>
+            fetch(`/api/documents?id=${id}`)
+              .then((r) => r.json())
+              .then((docs) =>
+                Array.isArray(docs) && docs.length > 0 ? docs[0] : null
+              )
+              .catch(() => null)
+          )
+        ).then((results) => {
+          setSelectedDocs(
+            results.filter(Boolean).map((d: Record<string, unknown>) => ({
+              id: d.id as string,
+              originalName: d.originalName as string,
+              mimeType: d.mimeType as string,
+              size: d.size as number,
+            }))
+          );
+        });
+      }
+    }
+  }, [searchParams]);
+
+  // Handle document picker confirmation
+  const handleDocPickerConfirm = useCallback(
+    (ids: string[]) => {
+      setSelectedDocIds(new Set(ids));
+      // Fetch metadata for newly selected docs
+      const newIds = ids.filter(
+        (id) => !selectedDocs.some((d) => d.id === id)
+      );
+      if (newIds.length > 0) {
+        fetch(`/api/documents?projectId=${projectId}&status=ready`)
+          .then((r) => r.json())
+          .then((allDocs: Array<Record<string, unknown>>) => {
+            const idSet = new Set(ids);
+            setSelectedDocs(
+              allDocs
+                .filter((d) => idSet.has(d.id as string))
+                .map((d) => ({
+                  id: d.id as string,
+                  originalName: d.originalName as string,
+                  mimeType: d.mimeType as string,
+                  size: d.size as number,
+                }))
+            );
+          })
+          .catch(() => {});
+      } else {
+        // Remove deselected docs
+        setSelectedDocs((prev) =>
+          prev.filter((d) => ids.includes(d.id))
+        );
+      }
+    },
+    [projectId, selectedDocs]
+  );
+
+  function removeDocument(id: string) {
+    setSelectedDocIds((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+    setSelectedDocs((prev) => prev.filter((d) => d.id !== id));
+  }
+
+  // Load existing document bindings when editing
+  useEffect(() => {
+    if (!workflow || clone) return;
+    fetch(`/api/workflows/${workflow.id}/documents`)
+      .then((r) => r.json())
+      .then((bindings: Array<{ documentId: string; document: { id: string; originalName: string; mimeType: string; size: number } | null }>) => {
+        const docs = bindings
+          .filter((b) => b.document)
+          .map((b) => b.document!);
+        if (docs.length > 0) {
+          setSelectedDocIds(new Set(docs.map((d) => d.id)));
+          setSelectedDocs(docs);
+        }
+      })
+      .catch(() => {});
+  }, [workflow, clone]);
 
   // Pre-populate form for edit/clone
   useEffect(() => {
@@ -723,6 +827,23 @@ export function WorkflowFormView({
       });
 
       if (res.ok) {
+        const data = await res.json().catch(() => null);
+        const workflowId = isEdit ? workflow.id : data?.id;
+
+        // Attach pool documents to the workflow via junction table
+        if (workflowId && selectedDocIds.size > 0) {
+          await fetch(`/api/workflows/${workflowId}/documents`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              documentIds: [...selectedDocIds],
+            }),
+          }).catch(() => {
+            // Non-blocking — workflow was created, docs attachment is best-effort
+            console.warn("[workflow-form] Failed to attach pool documents");
+          });
+        }
+
         toast.success(
           mode === "edit"
             ? "Workflow updated"
@@ -734,9 +855,8 @@ export function WorkflowFormView({
         if (isEdit) {
           router.push(`/workflows/${workflow.id}`);
         } else {
-          const data = await res.json().catch(() => null);
-          if (data?.id) {
-            router.push(`/workflows/${data.id}`);
+          if (workflowId) {
+            router.push(`/workflows/${workflowId}`);
           } else {
             router.push("/workflows");
           }
@@ -1040,6 +1160,73 @@ export function WorkflowFormView({
                 )}
               </div>
             </FormSectionCard>
+
+            {/* Input Documents — Document Pool */}
+            {projectId && (
+              <FormSectionCard
+                icon={FileText}
+                title="Input Documents"
+                hint="Attach documents from the project pool as context for this workflow"
+              >
+                <div className="space-y-3">
+                  {selectedDocs.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {selectedDocs.map((doc) => {
+                        const Icon = getFileIcon(doc.mimeType);
+                        return (
+                          <Badge
+                            key={doc.id}
+                            variant="secondary"
+                            className="flex items-center gap-1.5 pl-2 pr-1 py-1"
+                          >
+                            <Icon className="h-3 w-3" />
+                            <span className="text-xs max-w-[180px] truncate">
+                              {doc.originalName}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">
+                              {formatSize(doc.size)}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => removeDocument(doc.id)}
+                              className="ml-0.5 rounded-full p-0.5 hover:bg-muted transition-colors"
+                              aria-label={`Remove ${doc.originalName}`}
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPickerOpen(true)}
+                    className="gap-1.5"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    {selectedDocs.length > 0
+                      ? "Add More Documents"
+                      : "Attach Documents"}
+                  </Button>
+                  {selectedDocs.length > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      {selectedDocs.length} document{selectedDocs.length !== 1 ? "s" : ""} will be injected as context for all steps
+                    </p>
+                  )}
+                </div>
+
+                <DocumentPickerSheet
+                  open={pickerOpen}
+                  onOpenChange={setPickerOpen}
+                  projectId={projectId}
+                  selectedIds={selectedDocIds}
+                  onConfirm={handleDocPickerConfirm}
+                />
+              </FormSectionCard>
+            )}
 
             {isLoop && (
               <FormSectionCard icon={RefreshCw} title="Loop Config">

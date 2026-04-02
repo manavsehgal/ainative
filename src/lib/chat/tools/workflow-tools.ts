@@ -1,8 +1,15 @@
 import { defineTool } from "../tool-registry";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { workflows, tasks, agentLogs, notifications, documents } from "@/lib/db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import {
+  workflows,
+  tasks,
+  agentLogs,
+  notifications,
+  documents,
+  workflowDocumentInputs,
+} from "@/lib/db/schema";
+import { eq, and, desc, inArray, like } from "drizzle-orm";
 import { ok, err, type ToolContext } from "./helpers";
 
 const VALID_WORKFLOW_STATUSES = [
@@ -74,6 +81,12 @@ export function workflowTools(ctx: ToolContext) {
           .describe(
             'Workflow definition as JSON string. Must include "pattern" and "steps" array. Example: {"pattern":"sequence","steps":[{"name":"step1","prompt":"Do X","assignedAgent":"claude"}]}'
           ),
+        documentIds: z
+          .array(z.string())
+          .optional()
+          .describe(
+            "Optional array of document IDs from the project pool to attach as input context. These documents will be injected into all workflow steps at execution time."
+          ),
       },
       async (args) => {
         try {
@@ -103,6 +116,25 @@ export function workflowTools(ctx: ToolContext) {
             updatedAt: now,
           });
 
+          // Attach pool documents if provided
+          const attachedDocs: string[] = [];
+          if (args.documentIds && args.documentIds.length > 0) {
+            for (const docId of args.documentIds) {
+              try {
+                await db.insert(workflowDocumentInputs).values({
+                  id: crypto.randomUUID(),
+                  workflowId: id,
+                  documentId: docId,
+                  stepId: null,
+                  createdAt: now,
+                });
+                attachedDocs.push(docId);
+              } catch {
+                // Skip duplicates or invalid doc IDs
+              }
+            }
+          }
+
           const [workflow] = await db
             .select()
             .from(workflows)
@@ -115,6 +147,7 @@ export function workflowTools(ctx: ToolContext) {
             projectId: workflow.projectId,
             status: workflow.status,
             createdAt: workflow.createdAt,
+            attachedDocuments: attachedDocs.length,
           });
         } catch (e) {
           return err(e instanceof Error ? e.message : "Failed to create workflow");
@@ -351,6 +384,116 @@ export function workflowTools(ctx: ToolContext) {
           });
         } catch (e) {
           return err(e instanceof Error ? e.message : "Failed to get workflow status");
+        }
+      }
+    ),
+
+    defineTool(
+      "find_related_documents",
+      "Search for documents in the project pool that could be used as context for a workflow. Returns output documents from completed workflows and uploaded documents. Use this proactively when creating follow-up workflows to discover relevant context.",
+      {
+        projectId: z
+          .string()
+          .optional()
+          .describe("Project ID to search in. Omit to use the active project."),
+        query: z
+          .string()
+          .optional()
+          .describe("Search query to match against document names"),
+        direction: z
+          .enum(["input", "output"])
+          .optional()
+          .describe('Filter by direction. Use "output" to find documents produced by other workflows.'),
+        sourceWorkflowId: z
+          .string()
+          .optional()
+          .describe("Filter to documents produced by a specific workflow"),
+        limit: z
+          .number()
+          .optional()
+          .describe("Maximum number of documents to return (default: 20)"),
+      },
+      async (args) => {
+        try {
+          const effectiveProjectId = args.projectId ?? ctx.projectId ?? undefined;
+          if (!effectiveProjectId) {
+            return err("No project context — specify a projectId or set an active project");
+          }
+
+          const conditions = [
+            eq(documents.projectId, effectiveProjectId),
+            eq(documents.status, "ready"),
+          ];
+
+          if (args.direction) {
+            conditions.push(eq(documents.direction, args.direction));
+          }
+
+          if (args.query) {
+            conditions.push(like(documents.originalName, `%${args.query}%`));
+          }
+
+          if (args.sourceWorkflowId) {
+            // Find task IDs belonging to the source workflow
+            const workflowTasks = await db
+              .select({ id: tasks.id })
+              .from(tasks)
+              .where(eq(tasks.workflowId, args.sourceWorkflowId));
+
+            const taskIds = workflowTasks.map((t) => t.id);
+            if (taskIds.length > 0) {
+              conditions.push(inArray(documents.taskId, taskIds));
+            } else {
+              return ok([]); // No tasks for this workflow
+            }
+          }
+
+          const result = await db
+            .select({
+              id: documents.id,
+              originalName: documents.originalName,
+              mimeType: documents.mimeType,
+              size: documents.size,
+              direction: documents.direction,
+              category: documents.category,
+              status: documents.status,
+              taskId: documents.taskId,
+              createdAt: documents.createdAt,
+            })
+            .from(documents)
+            .where(and(...conditions))
+            .orderBy(desc(documents.createdAt))
+            .limit(args.limit ?? 20);
+
+          // Enrich with source workflow name
+          const enriched = await Promise.all(
+            result.map(async (doc) => {
+              let sourceWorkflowName: string | null = null;
+              if (doc.taskId) {
+                const [task] = await db
+                  .select({ workflowId: tasks.workflowId })
+                  .from(tasks)
+                  .where(eq(tasks.id, doc.taskId));
+                if (task?.workflowId) {
+                  const [wf] = await db
+                    .select({ name: workflows.name })
+                    .from(workflows)
+                    .where(eq(workflows.id, task.workflowId));
+                  sourceWorkflowName = wf?.name ?? null;
+                }
+              }
+              return {
+                ...doc,
+                sourceWorkflow: sourceWorkflowName,
+              };
+            })
+          );
+
+          return ok(enriched);
+        } catch (e) {
+          return err(
+            e instanceof Error ? e.message : "Failed to find documents"
+          );
         }
       }
     ),

@@ -20,7 +20,10 @@ import {
   openLearningSession,
   closeLearningSession,
 } from "@/lib/agents/learning-session";
-import { buildWorkflowDocumentContext } from "@/lib/documents/context-builder";
+import {
+  buildWorkflowDocumentContext,
+  buildPoolDocumentContext,
+} from "@/lib/documents/context-builder";
 
 /**
  * Execute a workflow by advancing through its steps according to the pattern.
@@ -359,7 +362,8 @@ async function executeParallel(
         step.prompt,
         step.assignedAgent,
         step.agentProfile,
-        parentTaskId
+        parentTaskId,
+        step.id
       );
 
       const completedAt = new Date().toISOString();
@@ -433,7 +437,8 @@ async function executeParallel(
     synthesisPrompt,
     synthesisStep.assignedAgent,
     synthesisStep.agentProfile,
-    parentTaskId
+    parentTaskId,
+    synthesisStep.id
   );
 
   await commitState((draft) => {
@@ -559,7 +564,8 @@ async function executeSwarm(
         workerPrompt,
         step.assignedAgent,
         step.agentProfile,
-        parentTaskId
+        parentTaskId,
+        step.id
       );
 
       const completedAt = new Date().toISOString();
@@ -680,7 +686,8 @@ async function runSwarmRefinery(input: {
     refineryPrompt,
     refineryStep.assignedAgent,
     refineryStep.agentProfile,
-    parentTaskId
+    parentTaskId,
+    refineryStep.id
   );
 
   refineryState.taskId = refineryResult.taskId;
@@ -716,7 +723,8 @@ export async function executeChildTask(
   prompt: string,
   assignedAgent?: string,
   agentProfile?: string,
-  parentTaskId?: string
+  parentTaskId?: string,
+  stepId?: string
 ): Promise<{ taskId: string; status: string; result?: string; error?: string }> {
   const [workflow] = await db
     .select()
@@ -735,8 +743,14 @@ export async function executeChildTask(
   if (parentTaskId) {
     const docContext = await buildWorkflowDocumentContext(parentTaskId);
     if (docContext) {
-      enrichedPrompt = `${docContext}\n\n${prompt}`;
+      enrichedPrompt = `${docContext}\n\n${enrichedPrompt}`;
     }
+  }
+
+  // Inject pool document context from workflow_document_inputs junction table
+  const poolContext = await buildPoolDocumentContext(workflowId, stepId);
+  if (poolContext) {
+    enrichedPrompt = `${poolContext}\n\n${enrichedPrompt}`;
   }
 
   const taskId = crypto.randomUUID();
@@ -807,7 +821,8 @@ async function executeStep(
     prompt,
     assignedAgent,
     agentProfile,
-    parentTaskId
+    parentTaskId,
+    stepId
   );
 
   stepState.taskId = result.taskId;

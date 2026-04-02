@@ -678,6 +678,35 @@ export const agentMessages = sqliteTable(
   ]
 );
 
+// ── Workflow Document Pool ───────────────────────────────────────────
+
+export const workflowDocumentInputs = sqliteTable(
+  "workflow_document_inputs",
+  {
+    id: text("id").primaryKey(),
+    workflowId: text("workflow_id")
+      .references(() => workflows.id)
+      .notNull(),
+    documentId: text("document_id")
+      .references(() => documents.id)
+      .notNull(),
+    /** null = document available to all steps; set = scoped to specific step */
+    stepId: text("step_id"),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_wdi_workflow").on(table.workflowId),
+    index("idx_wdi_document").on(table.documentId),
+    uniqueIndex("idx_wdi_workflow_doc_step").on(
+      table.workflowId,
+      table.documentId,
+      table.stepId
+    ),
+  ]
+);
+
+export type WorkflowDocumentInputRow = InferSelectModel<typeof workflowDocumentInputs>;
+
 // Shared types derived from schema — use these in components instead of `as any`
 export type ProjectRow = InferSelectModel<typeof projects>;
 export type TaskRow = InferSelectModel<typeof tasks>;

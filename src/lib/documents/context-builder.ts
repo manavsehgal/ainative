@@ -4,8 +4,8 @@
  */
 
 import { db } from "@/lib/db";
-import { documents } from "@/lib/db/schema";
-import { and, eq } from "drizzle-orm";
+import { documents, workflowDocumentInputs } from "@/lib/db/schema";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import type { DocumentRow } from "@/lib/db/schema";
 
 const MAX_INLINE_TEXT = 10_000;
@@ -111,6 +111,79 @@ export async function buildWorkflowDocumentContext(
     ].join("\n");
   } catch (error) {
     console.error("[context-builder] Failed to build workflow document context:", error);
+    return null;
+  }
+}
+
+/**
+ * Build document context from the workflow document pool (junction table).
+ * Queries workflow_document_inputs for documents bound to this workflow,
+ * optionally scoped to a specific step. Returns null if no pool documents.
+ *
+ * Includes both workflow-level bindings (stepId=null) and step-specific bindings.
+ */
+export async function buildPoolDocumentContext(
+  workflowId: string,
+  stepId?: string
+): Promise<string | null> {
+  try {
+    // Get workflow-level (stepId=null) bindings — available to all steps
+    const globalBindings = await db
+      .select({ documentId: workflowDocumentInputs.documentId })
+      .from(workflowDocumentInputs)
+      .where(
+        and(
+          eq(workflowDocumentInputs.workflowId, workflowId),
+          isNull(workflowDocumentInputs.stepId)
+        )
+      );
+
+    // If a specific step, also get step-scoped bindings
+    let stepBindings: { documentId: string }[] = [];
+    if (stepId) {
+      stepBindings = await db
+        .select({ documentId: workflowDocumentInputs.documentId })
+        .from(workflowDocumentInputs)
+        .where(
+          and(
+            eq(workflowDocumentInputs.workflowId, workflowId),
+            eq(workflowDocumentInputs.stepId, stepId)
+          )
+        );
+    }
+
+    // Deduplicate document IDs
+    const docIdSet = new Set<string>();
+    for (const b of [...globalBindings, ...stepBindings]) {
+      docIdSet.add(b.documentId);
+    }
+
+    if (docIdSet.size === 0) return null;
+
+    const docs = await db
+      .select()
+      .from(documents)
+      .where(inArray(documents.id, [...docIdSet]));
+
+    if (docs.length === 0) return null;
+
+    const sections = docs.map((doc, i) => formatDocument(doc, i));
+    let result = sections.join("\n\n");
+
+    if (result.length > MAX_WORKFLOW_DOC_CONTEXT) {
+      result = result.slice(0, MAX_WORKFLOW_DOC_CONTEXT);
+      result += `\n\n(Pool document context truncated at ${MAX_WORKFLOW_DOC_CONTEXT} chars — use Read tool for full content)`;
+    }
+
+    return [
+      "--- Workflow Pool Documents ---",
+      "",
+      result,
+      "",
+      "--- End Workflow Pool Documents ---",
+    ].join("\n");
+  } catch (error) {
+    console.error("[context-builder] Failed to build pool document context:", error);
     return null;
   }
 }

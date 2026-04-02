@@ -48,6 +48,7 @@ Features that enhance the product but aren't essential for first use — homepag
 | [agent-document-context](agent-document-context.md) | P1 | completed | file-attachment-data-layer, document-preprocessing |
 | [document-manager](document-manager.md) | P2 | completed | file-attachment-data-layer, document-preprocessing |
 | [document-output-generation](document-output-generation.md) | P3 | completed | file-attachment-data-layer, agent-document-context |
+| [workflow-document-pool](workflow-document-pool.md) | P1 | planned | workflow-engine, file-attachment-data-layer, document-preprocessing, agent-document-context, document-output-generation, workflow-ux-overhaul |
 
 ### Agent Intelligence
 
@@ -247,6 +248,7 @@ content-handling (MVP, completed)
             │       ├── document-manager (P2)
             │       └── agent-document-context (P1)
             │               └── document-output-generation (P3)
+            │                       └── workflow-document-pool (P1, planned)
             └── agent-document-context (P1)
 ```
 
