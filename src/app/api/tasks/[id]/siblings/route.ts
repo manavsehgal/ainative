@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { tasks } from "@/lib/db/schema";
-import { eq, and, ne } from "drizzle-orm";
+import { eq, and, ne, isNull } from "drizzle-orm";
 
 export async function GET(
   _req: NextRequest,
@@ -17,9 +17,15 @@ export async function GET(
     .from(tasks)
     .where(eq(tasks.id, id));
 
-  if (!task || !task.workflowId || task.workflowRunNumber == null) {
+  if (!task || !task.workflowId) {
     return NextResponse.json([]);
   }
+  // Match siblings by workflowId + workflowRunNumber.
+  // For pre-existing tasks (workflowRunNumber is NULL), match all tasks
+  // in the same workflow that also have NULL workflowRunNumber.
+  const runCondition = task.workflowRunNumber != null
+    ? eq(tasks.workflowRunNumber, task.workflowRunNumber)
+    : isNull(tasks.workflowRunNumber);
 
   const siblings = await db
     .select({
@@ -32,7 +38,7 @@ export async function GET(
     .where(
       and(
         eq(tasks.workflowId, task.workflowId),
-        eq(tasks.workflowRunNumber, task.workflowRunNumber),
+        runCondition,
         ne(tasks.id, id)
       )
     )

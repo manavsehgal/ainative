@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { documents, tasks, projects } from "@/lib/db/schema";
+import { documents, tasks, projects, workflows } from "@/lib/db/schema";
 import { desc, eq } from "drizzle-orm";
 import { DocumentBrowser } from "@/components/documents/document-browser";
 import { PageShell } from "@/components/shared/page-shell";
@@ -31,9 +31,13 @@ export default async function DocumentsPage() {
       updatedAt: documents.updatedAt,
       taskTitle: tasks.title,
       projectName: projects.name,
+      workflowId: workflows.id,
+      workflowName: workflows.name,
+      workflowRunNumber: tasks.workflowRunNumber,
     })
     .from(documents)
     .leftJoin(tasks, eq(documents.taskId, tasks.id))
+    .leftJoin(workflows, eq(tasks.workflowId, workflows.id))
     .leftJoin(projects, eq(documents.projectId, projects.id))
     .orderBy(desc(documents.createdAt));
 

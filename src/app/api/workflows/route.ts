@@ -17,8 +17,8 @@ export async function GET() {
       runNumber: workflows.runNumber,
       createdAt: workflows.createdAt,
       updatedAt: workflows.updatedAt,
-      taskCount: sql<number>`(SELECT COUNT(*) FROM tasks WHERE workflow_id = ${workflows.id})`.as("taskCount"),
-      outputDocCount: sql<number>`(SELECT COUNT(*) FROM documents WHERE task_id IN (SELECT id FROM tasks WHERE workflow_id = ${workflows.id}) AND direction = 'output')`.as("outputDocCount"),
+      taskCount: sql<number>`(SELECT COUNT(*) FROM tasks t WHERE t.workflow_id = "workflows"."id")`.as("taskCount"),
+      outputDocCount: sql<number>`(SELECT COUNT(*) FROM documents d WHERE d.task_id IN (SELECT t2.id FROM tasks t2 WHERE t2.workflow_id = "workflows"."id") AND d.direction = 'output')`.as("outputDocCount"),
     })
     .from(workflows)
     .orderBy(desc(workflows.createdAt));
