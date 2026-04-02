@@ -140,7 +140,7 @@ export function DocumentPickerSheet({
           </SheetDescription>
         </SheetHeader>
 
-        <div className="px-6 pb-6 flex flex-col gap-4 h-[calc(100%-120px)]">
+        <div className="px-6 pb-6 flex flex-col gap-4 flex-1 min-h-0">
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -153,7 +153,7 @@ export function DocumentPickerSheet({
           </div>
 
           {/* Document list */}
-          <ScrollArea className="flex-1 -mx-2">
+          <ScrollArea className="flex-1 min-h-0 -mx-2">
             {loading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -190,7 +190,6 @@ export function DocumentPickerSheet({
                           >
                             <Checkbox
                               checked={isChecked}
-                              onCheckedChange={() => toggleDocument(doc.id)}
                               aria-label={`Select ${doc.originalName}`}
                             />
                             <Icon className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
