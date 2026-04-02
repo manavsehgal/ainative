@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { workflows } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { executeWorkflow } from "@/lib/workflows/engine";
 import type { WorkflowDefinition } from "@/lib/workflows/types";
 
@@ -57,7 +57,11 @@ export async function POST(
   // Prevents concurrent double-execution from parallel requests.
   const claimResult = db
     .update(workflows)
-    .set({ status: "active", updatedAt: new Date() })
+    .set({
+      status: "active",
+      runNumber: sql`${workflows.runNumber} + 1`,
+      updatedAt: new Date(),
+    })
     .where(
       and(
         eq(workflows.id, id),

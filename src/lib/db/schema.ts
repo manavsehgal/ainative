@@ -37,6 +37,7 @@ export const tasks = sqliteTable(
     sourceType: text("source_type", {
       enum: ["manual", "scheduled", "heartbeat", "workflow"],
     }),
+    workflowRunNumber: integer("workflow_run_number"),
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
   },
@@ -59,6 +60,7 @@ export const workflows = sqliteTable("workflows", {
   })
     .default("draft")
     .notNull(),
+  runNumber: integer("run_number").default(0).notNull(),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
 });

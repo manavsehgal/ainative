@@ -58,6 +58,7 @@ export function bootstrapStagentDatabase(sqlite: Database.Database): void {
       result TEXT,
       session_id TEXT,
       resume_count INTEGER DEFAULT 0 NOT NULL,
+      workflow_run_number INTEGER,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL,
       FOREIGN KEY (project_id) REFERENCES projects(id) ON UPDATE NO ACTION ON DELETE NO ACTION,
@@ -71,6 +72,7 @@ export function bootstrapStagentDatabase(sqlite: Database.Database): void {
       name TEXT NOT NULL,
       definition TEXT NOT NULL,
       status TEXT DEFAULT 'draft' NOT NULL,
+      run_number INTEGER DEFAULT 0 NOT NULL,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL,
       FOREIGN KEY (project_id) REFERENCES projects(id) ON UPDATE NO ACTION ON DELETE NO ACTION
@@ -275,6 +277,8 @@ export function bootstrapStagentDatabase(sqlite: Database.Database): void {
 
   // Task source type
   addColumnIfMissing(`ALTER TABLE tasks ADD COLUMN source_type TEXT;`);
+  addColumnIfMissing(`ALTER TABLE workflows ADD COLUMN run_number INTEGER DEFAULT 0 NOT NULL;`);
+  addColumnIfMissing(`ALTER TABLE tasks ADD COLUMN workflow_run_number INTEGER;`);
   addColumnIfMissing(`ALTER TABLE documents ADD COLUMN version INTEGER NOT NULL DEFAULT 1;`);
   addColumnIfMissing(`ALTER TABLE documents ADD COLUMN source TEXT DEFAULT 'upload';`);
   addColumnIfMissing(`ALTER TABLE documents ADD COLUMN conversation_id TEXT REFERENCES conversations(id);`);

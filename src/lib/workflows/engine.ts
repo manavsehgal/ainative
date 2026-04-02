@@ -765,6 +765,7 @@ export async function executeChildTask(
     priority: 1,
     assignedAgent: assignedAgent ?? null,
     agentProfile: resolvedProfile ?? null,
+    workflowRunNumber: workflow?.runNumber ?? null,
     createdAt: new Date(),
     updatedAt: new Date(),
   });

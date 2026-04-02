@@ -1,0 +1,2 @@
+ALTER TABLE workflows ADD COLUMN run_number INTEGER DEFAULT 0 NOT NULL;
+ALTER TABLE tasks ADD COLUMN workflow_run_number INTEGER;

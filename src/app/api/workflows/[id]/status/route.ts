@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { workflows, documents } from "@/lib/db/schema";
-import { eq, and, inArray } from "drizzle-orm";
+import { workflows, tasks, documents } from "@/lib/db/schema";
+import { eq, and, inArray, count, desc, sql as drizzleSql } from "drizzle-orm";
 import { parseWorkflowState } from "@/lib/workflows/engine";
 
 /** Collect output documents for workflow step tasks + input documents from parent task */
@@ -81,6 +81,18 @@ export async function GET(
     return NextResponse.json({ error: "Workflow not found" }, { status: 404 });
   }
 
+  const runHistory = await db
+    .select({
+      runNumber: tasks.workflowRunNumber,
+      taskCount: count(tasks.id),
+      completedCount: drizzleSql<number>`SUM(CASE WHEN ${tasks.status} = 'completed' THEN 1 ELSE 0 END)`,
+      failedCount: drizzleSql<number>`SUM(CASE WHEN ${tasks.status} = 'failed' THEN 1 ELSE 0 END)`,
+    })
+    .from(tasks)
+    .where(eq(tasks.workflowId, id))
+    .groupBy(tasks.workflowRunNumber)
+    .orderBy(desc(tasks.workflowRunNumber));
+
   const { definition, state, loopState } = parseWorkflowState(workflow.definition);
   const sourceTaskId: string | undefined = definition.sourceTaskId;
   const { stepDocuments, parentDocuments } = await getWorkflowDocuments(state, sourceTaskId);
@@ -100,6 +112,8 @@ export async function GET(
       steps: definition.steps,
       stepDocuments,
       parentDocuments,
+      runNumber: workflow.runNumber,
+      runHistory,
     });
   }
 
@@ -118,5 +132,7 @@ export async function GET(
     workflowState: state,
     stepDocuments,
     parentDocuments,
+    runNumber: workflow.runNumber,
+    runHistory,
   });
 }
