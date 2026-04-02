@@ -4,6 +4,9 @@
 
 ### Groomed
 - `workflow-document-pool` (P1) — New feature for intuitive document handoff between workflows via project-level document pool. Junction table architecture, document picker in workflow form (Input Tray), output dock on completed workflows, auto-discovery via document selectors, and chat smart wiring. Brainstormed with product-manager, architect, and frontend-designer perspectives. 3 phases: data+engine, form UX, chat intelligence.
+- `workflow-run-history` (P1) — Run tracking for workflows: `runNumber` on workflows (atomic increment on execute), `workflowRunNumber` on tasks (stamped from workflow). Enables grouping tasks by run, document lineage through runs, and document picker disambiguation. Old documents kept; "current" derived by highest version.
+- `entity-relationship-detail-views` (P2) — Bidirectional entity relationships in detail views: workflow source badge + version history on document detail, sibling tasks on task detail, document count + recent docs on project detail, project link on workflow detail. Two new API endpoints (versions, siblings).
+- `relationship-summary-cards` (P2) — Compact relationship counts on cards/lists: document counts on workflow/task/project cards, task counts on workflow list cards, workflow name column in document table/grid. Subquery-based count enrichment. Zero counts hidden.
 
 ## 2026-04-01
 

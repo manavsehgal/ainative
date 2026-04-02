@@ -214,6 +214,14 @@ Features that enhance the product but aren't essential for first use — homepag
 | [bidirectional-channel-chat](bidirectional-channel-chat.md) | P1 | completed | multi-channel-delivery, chat-engine |
 | [agent-async-handoffs](agent-async-handoffs.md) | P2 | completed | multi-agent-routing, heartbeat-scheduler |
 
+### Entity Relationships
+
+| Feature | Priority | Status | Dependencies |
+|---------|----------|--------|--------------|
+| [workflow-run-history](workflow-run-history.md) | P1 | planned | workflow-engine, workflow-editing, document-output-generation |
+| [entity-relationship-detail-views](entity-relationship-detail-views.md) | P2 | planned | workflow-run-history, detail-view-redesign |
+| [relationship-summary-cards](relationship-summary-cards.md) | P2 | planned | entity-relationship-detail-views |
+
 ### Vision Alignment — Runtime Expansion
 
 | Feature | Priority | Status | Dependencies |
@@ -435,6 +443,16 @@ chat-engine + agent-integration + tool-permission-persistence
                                 └── browser-use
                                         ├── Chrome DevTools MCP (CDP, live Chrome)
                                         └── Playwright MCP (headless, accessibility snapshots)
+```
+
+Entity relationship chain:
+
+```
+workflow-engine + workflow-editing + document-output-generation
+                                │
+                                └── workflow-run-history (P1)
+                                        └── entity-relationship-detail-views (P2)
+                                                └── relationship-summary-cards (P2)
 ```
 
 ## Open Questions
