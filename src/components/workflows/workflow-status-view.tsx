@@ -24,6 +24,7 @@ import {
   FileText,
   Paperclip,
   ArrowRight,
+  FolderKanban,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import ReactMarkdown from "react-markdown";
@@ -74,6 +75,13 @@ interface WorkflowStatusData {
   swarmConfig?: SwarmConfig;
   stepDocuments?: Record<string, DocumentInfo[]>;
   parentDocuments?: DocumentInfo[];
+  runNumber?: number;
+  runHistory?: Array<{
+    runNumber: number | null;
+    taskCount: number;
+    completedCount: number;
+    failedCount: number;
+  }>;
 }
 
 interface WorkflowStatusViewProps {
@@ -317,6 +325,23 @@ export function WorkflowStatusView({ workflowId }: WorkflowStatusViewProps) {
                 <p className="text-sm text-muted-foreground mt-1">
                   {patternLabels[data.pattern] ?? data.pattern}
                 </p>
+                <div className="flex items-center gap-2 mt-1">
+                  {data.projectId && (
+                    <Badge
+                      variant="outline"
+                      className="text-xs cursor-pointer hover:bg-accent gap-1"
+                      onClick={() => router.push(`/projects/${data.projectId}`)}
+                    >
+                      <FolderKanban className="h-3 w-3" />
+                      Project
+                    </Badge>
+                  )}
+                  {data.runNumber != null && data.runNumber > 0 && (
+                    <Badge variant="outline" className="text-xs font-normal">
+                      Run #{data.runNumber}
+                    </Badge>
+                  )}
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-2">

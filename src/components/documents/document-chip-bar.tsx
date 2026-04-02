@@ -18,6 +18,7 @@ import {
   ArrowDownLeft,
   Link2,
   FolderKanban,
+  GitBranch,
 } from "lucide-react";
 import {
   getFileIcon,
@@ -127,8 +128,23 @@ export function DocumentChipBar({
         </Badge>
       </div>
 
-      {/* Row 3: Links — task, workflow, project */}
+      {/* Row 3: Links — workflow, task, project */}
       <div className="flex flex-wrap items-center gap-2">
+        {/* Workflow source */}
+        {doc.workflowId && doc.workflowName && (
+          <Badge
+            variant="secondary"
+            className="text-xs cursor-pointer hover:bg-accent gap-1"
+            onClick={() => router.push(`/workflows/${doc.workflowId}`)}
+          >
+            <GitBranch className="h-3 w-3" />
+            {doc.workflowName}
+            {doc.workflowRunNumber != null && doc.workflowRunNumber > 0 && (
+              <span className="text-muted-foreground ml-1">Run #{doc.workflowRunNumber}</span>
+            )}
+          </Badge>
+        )}
+
         {/* Task link */}
         {doc.taskTitle ? (
           <Badge

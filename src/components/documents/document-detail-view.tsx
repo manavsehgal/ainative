@@ -3,9 +3,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { FileText } from "lucide-react";
 import { toast } from "sonner";
 import { DocumentChipBar } from "./document-chip-bar";
 import { DocumentContentRenderer } from "./document-content-renderer";
+import { formatSize, formatRelativeTime } from "./utils";
 import type { DocumentWithRelations } from "./types";
 
 /** Serialized version of DocumentWithRelations (Date fields become strings from server) */
@@ -28,6 +31,14 @@ export function DocumentDetailView({ documentId, initialDocument }: DocumentDeta
   const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
   const [deleting, setDeleting] = useState(false);
   const [linking, setLinking] = useState(false);
+  const [versions, setVersions] = useState<Array<{
+    id: string;
+    version: number;
+    size: number;
+    status: string;
+    createdAt: string;
+    workflowRunNumber: number | null;
+  }>>([]);
 
   const refresh = useCallback(async () => {
     try {
@@ -55,6 +66,16 @@ export function DocumentDetailView({ documentId, initialDocument }: DocumentDeta
       .then(setProjects)
       .catch(() => {});
   }, [refresh, initialDocument]);
+
+  // Fetch version history for output documents
+  useEffect(() => {
+    if (doc?.direction === "output") {
+      fetch(`/api/documents/${documentId}/versions`)
+        .then((r) => r.ok ? r.json() : [])
+        .then(setVersions)
+        .catch(() => {});
+    }
+  }, [doc?.direction, documentId]);
 
   async function handleDelete() {
     if (!doc) return;
@@ -136,6 +157,36 @@ export function DocumentDetailView({ documentId, initialDocument }: DocumentDeta
         deleting={deleting}
         linking={linking}
       />
+      {/* Version History */}
+      {doc.direction === "output" && versions.length > 1 && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium text-muted-foreground">Version History</h3>
+          <div className="surface-control rounded-lg divide-y divide-border">
+            {versions.map((v) => (
+              <button
+                key={v.id}
+                className={`w-full flex items-center gap-3 px-3 py-2 text-xs hover:bg-accent/50 transition-colors ${v.id === doc.id ? "bg-accent/30" : ""}`}
+                onClick={() => v.id !== doc.id && router.push(`/documents/${v.id}`)}
+                disabled={v.id === doc.id}
+              >
+                <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <span className="font-medium">v{v.version}</span>
+                {v.id === doc.id && (
+                  <Badge variant="outline" className="text-[10px] py-0 px-1.5">current</Badge>
+                )}
+                <span className="text-muted-foreground">{formatSize(v.size)}</span>
+                {v.workflowRunNumber != null && v.workflowRunNumber > 0 && (
+                  <span className="text-muted-foreground">Run #{v.workflowRunNumber}</span>
+                )}
+                <span className="text-muted-foreground ml-auto">
+                  {formatRelativeTime(typeof v.createdAt === "number" ? v.createdAt : new Date(v.createdAt).getTime())}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="prose-reader-surface">
         <DocumentContentRenderer doc={doc} />
       </div>

@@ -1,7 +1,10 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { TaskAttachments } from "./task-attachments";
 import { TaskChipBar } from "./task-chip-bar";
@@ -18,6 +21,12 @@ interface TaskDetailViewProps {
 
 export function TaskDetailView({ taskId, initialTask }: TaskDetailViewProps) {
   const router = useRouter();
+  const [siblings, setSiblings] = useState<Array<{
+    id: string;
+    title: string;
+    status: string;
+    createdAt: string;
+  }>>([]);
 
   const {
     task,
@@ -46,6 +55,15 @@ export function TaskDetailView({ taskId, initialTask }: TaskDetailViewProps) {
     enabled: true,
     onDeleted: () => router.push("/dashboard"),
   });
+
+  useEffect(() => {
+    if (task?.workflowId) {
+      fetch(`/api/tasks/${taskId}/siblings`)
+        .then((r) => r.ok ? r.json() : [])
+        .then(setSiblings)
+        .catch(() => {});
+    }
+  }, [task?.workflowId, taskId]);
 
   if (!loaded) {
     return (
@@ -81,6 +99,35 @@ export function TaskDetailView({ taskId, initialTask }: TaskDetailViewProps) {
       />
 
       <TaskBentoGrid task={task} docs={docs} />
+
+      {/* Sibling tasks from same workflow run */}
+      {siblings.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium text-muted-foreground">
+            Related Tasks ({siblings.length})
+          </h3>
+          <div className="surface-control rounded-lg divide-y divide-border">
+            {siblings.map((s) => (
+              <Link
+                key={s.id}
+                href={`/tasks/${s.id}`}
+                className="flex items-center gap-3 px-3 py-2 text-xs hover:bg-accent/50 transition-colors"
+              >
+                <span className={`w-2 h-2 rounded-full shrink-0 ${
+                  s.status === "completed" ? "bg-status-completed" :
+                  s.status === "failed" ? "bg-destructive" :
+                  s.status === "running" ? "bg-status-running" :
+                  "bg-muted-foreground"
+                }`} />
+                <span className="truncate flex-1">{s.title}</span>
+                <Badge variant="outline" className="text-[10px] capitalize">
+                  {s.status}
+                </Badge>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {docs.length > 0 && (
         <div className="surface-card-muted rounded-lg p-4 space-y-4">

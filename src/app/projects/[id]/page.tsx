@@ -1,12 +1,14 @@
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
-import { projects, tasks, workflows } from "@/lib/db/schema";
-import { eq, count, getTableColumns } from "drizzle-orm";
+import { projects, tasks, workflows, documents } from "@/lib/db/schema";
+import { eq, count, desc, getTableColumns } from "drizzle-orm";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { COLUMN_ORDER } from "@/lib/constants/task-status";
 import { PageShell } from "@/components/shared/page-shell";
 import { ProjectDetailClient } from "@/components/projects/project-detail";
+import Link from "next/link";
+import { FileText } from "lucide-react";
 import { Sparkline } from "@/components/charts/sparkline";
 import { getProjectCompletionTrend } from "@/lib/queries/chart-data";
 import { EnvironmentSummaryCard } from "@/components/environment/environment-summary-card";
@@ -37,6 +39,27 @@ export default async function ProjectDetailPage({
     .leftJoin(workflows, eq(tasks.workflowId, workflows.id))
     .where(eq(tasks.projectId, id))
     .orderBy(tasks.priority, tasks.createdAt);
+
+  // Document count and recent docs
+  const [{ docCount }] = await db
+    .select({ docCount: count(documents.id) })
+    .from(documents)
+    .where(eq(documents.projectId, id));
+
+  const recentDocs = docCount > 0 ? await db
+    .select({
+      id: documents.id,
+      originalName: documents.originalName,
+      direction: documents.direction,
+      version: documents.version,
+      size: documents.size,
+      createdAt: documents.createdAt,
+    })
+    .from(documents)
+    .where(eq(documents.projectId, id))
+    .orderBy(desc(documents.createdAt))
+    .limit(5)
+  : [];
 
   // Status breakdown (standalone tasks only for headline metrics)
   const statusCounts: Record<string, number> = {};
@@ -144,12 +167,49 @@ export default async function ProjectDetailPage({
         </div>
       )}
 
+      {/* Recent documents */}
+      {recentDocs.length > 0 && (
+        <div className="mb-6">
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm">Recent Documents</CardTitle>
+                <Link href={`/documents?projectId=${id}`} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  View all &rarr;
+                </Link>
+              </div>
+            </CardHeader>
+            <CardContent className="divide-y divide-border">
+              {recentDocs.map((doc) => (
+                <Link
+                  key={doc.id}
+                  href={`/documents/${doc.id}`}
+                  className="flex items-center gap-3 py-2 text-xs hover:bg-accent/50 transition-colors -mx-6 px-6"
+                >
+                  <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <span className="truncate flex-1">{doc.originalName}</span>
+                  <Badge variant="outline" className="text-[10px]">
+                    {doc.direction}
+                  </Badge>
+                  {doc.direction === "output" && (
+                    <span className="text-muted-foreground">v{doc.version}</span>
+                  )}
+                </Link>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Task count summary */}
       {(standaloneCount > 0 || workflowCount > 0) && (
         <p className="text-xs text-muted-foreground mb-4">
           {standaloneCount} standalone task{standaloneCount !== 1 ? "s" : ""}
           {workflowCount > 0 && (
             <> &middot; {workflowCount} workflow task{workflowCount !== 1 ? "s" : ""} across {workflowGroupCount} workflow{workflowGroupCount !== 1 ? "s" : ""}</>
+          )}
+          {docCount > 0 && (
+            <> &middot; {docCount} document{docCount !== 1 ? "s" : ""}</>
           )}
         </p>
       )}
