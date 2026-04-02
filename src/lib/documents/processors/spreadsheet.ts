@@ -6,7 +6,8 @@ export async function processSpreadsheet(filePath: string): Promise<ProcessorRes
   const ExcelJS = await import("exceljs");
   const workbook = new ExcelJS.Workbook();
   const buffer = await readFile(filePath);
-  await workbook.xlsx.load(buffer as unknown as Buffer);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await workbook.xlsx.load(buffer as any);
 
   const sheets: string[] = [];
   workbook.eachSheet((worksheet) => {

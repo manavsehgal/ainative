@@ -1,5 +1,10 @@
 # Feature Changelog
 
+## 2026-04-01
+
+### Started
+- `chat-settings-tool` (P1) — `set_settings` write tool for chat agent with 9-key allowlist, per-key validation, and permission gating
+
 ## 2026-03-31
 
 ### Completed

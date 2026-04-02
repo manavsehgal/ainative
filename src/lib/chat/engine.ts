@@ -299,6 +299,7 @@ export async function* sendMessage(
             "mcp__stagent__upload_document",
             "mcp__stagent__update_document",
             "mcp__stagent__delete_document",
+            "mcp__stagent__set_settings",
           ]);
           if (toolName.startsWith("mcp__stagent__") && !PERMISSION_GATED_TOOLS.has(toolName)) {
             // Emit tool-use status so the user sees what the model is doing

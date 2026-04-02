@@ -136,6 +136,7 @@ const STAGENT_TOOLS: ToolCatalogEntry[] = [
 
   // ── Settings ──
   { name: "get_settings", description: "Get current Stagent settings", group: "Settings", paramHint: "key" },
+  { name: "set_settings", description: "Update a Stagent setting (approval required)", group: "Settings", paramHint: "key, value" },
 
   // ── Chat History ──
   { name: "list_conversations", description: "List recent chat conversations", group: "Chat", paramHint: "search, limit" },

@@ -108,6 +108,7 @@ Features that enhance the product but aren't essential for first use — homepag
 | [cross-provider-profile-compatibility](cross-provider-profile-compatibility.md) | P2 | completed | provider-runtime-abstraction, openai-codex-app-server, agent-profile-catalog |
 | [parallel-research-fork-join](parallel-research-fork-join.md) | P2 | completed | workflow-engine, multi-agent-routing |
 | [tool-permission-presets](tool-permission-presets.md) | P2 | completed | tool-permission-persistence |
+| [chat-settings-tool](chat-settings-tool.md) | P1 | in-progress | tool-permission-persistence, chat-engine |
 | [task-hierarchy-clarity](task-hierarchy-clarity.md) | P1 | completed | workflow-engine, task-board, project-management |
 | [agent-document-api-access](agent-document-api-access.md) | P2 | completed | document-preprocessing, file-attachment-data-layer, tool-permission-persistence |
 

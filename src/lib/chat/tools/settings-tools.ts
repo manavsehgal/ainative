@@ -2,6 +2,76 @@ import { defineTool } from "../tool-registry";
 import { z } from "zod";
 import { ok, err, type ToolContext } from "./helpers";
 
+/* ── Writable settings allowlist ─────────────────────────────────── */
+
+interface WritableSetting {
+  validate: (value: string) => string | null; // error message or null
+  description: string;
+}
+
+const WRITABLE_SETTINGS: Record<string, WritableSetting> = {
+  "runtime.sdkTimeoutSeconds": {
+    description: "SDK timeout in seconds (10–300)",
+    validate: (v) => {
+      const n = parseInt(v, 10);
+      return isNaN(n) || n < 10 || n > 300 ? "Must be integer 10–300" : null;
+    },
+  },
+  "runtime.maxTurns": {
+    description: "Max agent turns per task (1–50)",
+    validate: (v) => {
+      const n = parseInt(v, 10);
+      return isNaN(n) || n < 1 || n > 50 ? "Must be integer 1–50" : null;
+    },
+  },
+  "routing.preference": {
+    description: "Routing preference: cost | latency | quality | manual",
+    validate: (v) =>
+      ["cost", "latency", "quality", "manual"].includes(v)
+        ? null
+        : "Must be one of: cost, latency, quality, manual",
+  },
+  "browser.chromeDevtoolsEnabled": {
+    description: "Enable Chrome DevTools MCP: true | false",
+    validate: (v) =>
+      ["true", "false"].includes(v) ? null : "Must be 'true' or 'false'",
+  },
+  "browser.playwrightEnabled": {
+    description: "Enable Playwright MCP: true | false",
+    validate: (v) =>
+      ["true", "false"].includes(v) ? null : "Must be 'true' or 'false'",
+  },
+  "web.exaSearchEnabled": {
+    description: "Enable Exa web search: true | false",
+    validate: (v) =>
+      ["true", "false"].includes(v) ? null : "Must be 'true' or 'false'",
+  },
+  "learning.contextCharLimit": {
+    description: "Learning context char limit (2000–32000, step 1000)",
+    validate: (v) => {
+      const n = parseInt(v, 10);
+      return isNaN(n) || n < 2000 || n > 32000 || n % 1000 !== 0
+        ? "Must be integer 2000–32000, step 1000"
+        : null;
+    },
+  },
+  "ollama.baseUrl": {
+    description: "Ollama server base URL",
+    validate: (v) => (v.trim().length === 0 ? "Must be non-empty URL" : null),
+  },
+  "ollama.defaultModel": {
+    description: "Default Ollama model name",
+    validate: (v) =>
+      v.trim().length === 0 ? "Must be non-empty string" : null,
+  },
+};
+
+const WRITABLE_KEYS_DOC = Object.entries(WRITABLE_SETTINGS)
+  .map(([k, v]) => `- "${k}": ${v.description}`)
+  .join("\n");
+
+/* ── Tool definitions ────────────────────────────────────────────── */
+
 export function settingsTools(_ctx: ToolContext) {
   return [
     defineTool(
@@ -66,6 +136,45 @@ export function settingsTools(_ctx: ToolContext) {
           return ok(entries);
         } catch (e) {
           return err(e instanceof Error ? e.message : "Failed to get settings");
+        }
+      }
+    ),
+
+    defineTool(
+      "set_settings",
+      `Update a Stagent setting. Requires user approval.\n\nWritable keys:\n${WRITABLE_KEYS_DOC}`,
+      {
+        key: z.string().describe("Setting key to update"),
+        value: z.string().describe("New value (always a string)"),
+      },
+      async (args) => {
+        const spec = WRITABLE_SETTINGS[args.key];
+        if (!spec) {
+          return err(
+            `Key "${args.key}" is not writable. Valid keys: ${Object.keys(WRITABLE_SETTINGS).join(", ")}`
+          );
+        }
+        const validationError = spec.validate(args.value);
+        if (validationError) {
+          return err(
+            `Invalid value for "${args.key}": ${validationError}`
+          );
+        }
+        try {
+          const { getSetting, setSetting } = await import(
+            "@/lib/settings/helpers"
+          );
+          const oldValue = await getSetting(args.key);
+          await setSetting(args.key, args.value);
+          return ok({
+            key: args.key,
+            oldValue: oldValue ?? "(unset)",
+            newValue: args.value,
+          });
+        } catch (e) {
+          return err(
+            e instanceof Error ? e.message : "Failed to update setting"
+          );
         }
       }
     ),
