@@ -84,6 +84,14 @@ Read only what's needed for the active mode.
 | `FLOW.md` | Lifecycle phases, skill coordination | Integration |
 | `design-system/MASTER.md` | Design token decisions, surface families | Review (frontend arch) |
 | `git log --oneline -30` | Recent architectural changes | Health, Drift |
+| `src/lib/channels/` | Channel adapter registry, types, credential masking | Integration, Review |
+| `src/lib/chat/` | Chat engine, context builder, tool registry, permission bridge | Integration, Review |
+| `src/lib/chat/tools/` | Permission-gated tool definitions, allowlists | Review, Drift |
+| `src/lib/agents/memory/` | Episodic memory retrieval, decay, extraction | Integration, Review |
+| `src/lib/agents/handoff/` | Async inter-agent message bus | Integration, Review |
+| `src/lib/environment/` | Scanner, parsers, sync engine, templates | Integration, Review |
+| `src/lib/schedules/nlp-parser.ts` | NLP schedule parsing, heartbeat prompt builder | Integration |
+| `src/lib/documents/document-resolver.ts` | Document pool resolution, glob matching | Integration |
 
 ---
 
@@ -232,6 +240,16 @@ Design how a new system or feature integrates with existing architecture.
 | Profile-as-skill-dir | [yes/no] | [how it connects] |
 | Learned context versioning | [yes/no] | [how it connects] |
 | Idempotent bootstrap | [yes/no] | [how it connects] |
+| Channel adapter registry | [yes/no] | [how it connects] |
+| Heartbeat intelligence-driven execution | [yes/no] | [how it connects] |
+| Dual memory (episodic + behavioral) | [yes/no] | [how it connects] |
+| N:M document pool junction tables | [yes/no] | [how it connects] |
+| Chat conversation engine | [yes/no] | [how it connects] |
+| Environment scan/sync pipeline | [yes/no] | [how it connects] |
+| Permission-gated chat tools | [yes/no] | [how it connects] |
+| Async agent handoff bus | [yes/no] | [how it connects] |
+| Saved views persistence | [yes/no] | [how it connects] |
+| NL schedule parsing | [yes/no] | [how it connects] |
 
 ### Data Model Design
 [New tables, columns, relationships, with Drizzle schema sketch]
@@ -301,13 +319,13 @@ superseded-by: TDR-NNN (if applicable)
 
 | Category | Scope |
 |----------|-------|
-| `data-layer` | Schema, migrations, bootstrap, Drizzle patterns, SQLite specifics |
-| `agent-system` | Execution, profiles, learned context, pattern extraction |
-| `api-design` | Route patterns, SSE, fire-and-forget, response codes |
-| `frontend-architecture` | Server Components, client boundaries, design system integration |
+| `data-layer` | Schema, migrations, bootstrap, Drizzle patterns, SQLite specifics, junction tables |
+| `agent-system` | Execution, profiles, learned context, pattern extraction, episodic memory, async handoffs, chat tools |
+| `api-design` | Route patterns, SSE, fire-and-forget, response codes, chat conversation engine |
+| `frontend-architecture` | Server Components, client boundaries, design system integration, saved views |
 | `runtime` | Multi-provider abstraction, adapter registry, capability matrix |
-| `workflow` | Task lifecycle, notification-as-queue, human-in-the-loop, scheduling |
-| `infrastructure` | WAL mode, idempotent bootstrap, data directory, distribution |
+| `workflow` | Task lifecycle, notification-as-queue, human-in-the-loop, scheduling, heartbeat engine, NLP parsing |
+| `infrastructure` | WAL mode, idempotent bootstrap, data directory, distribution, channel delivery, environment onboarding |
 
 ---
 
@@ -435,6 +453,30 @@ These are the primary checks to run. They are grounded in the project's actual p
 **Infrastructure Checks:**
 - New tables must be added to both migration SQL and bootstrap.ts
 - New tables with foreign keys must be added to `clear.ts` in FK-safe order
+
+**Channel Delivery Checks:**
+- Channel adapter implementations must implement the full `ChannelAdapter` interface (send, testConnection, and optionally parseInbound/verifySignature/sendReply)
+- `channelConfigs.config` must never be returned unmasked — all API routes must use `maskChannelConfig()` before response
+- New channel types must be registered in `src/lib/channels/registry.ts` adapters map
+
+**Chat Engine Checks:**
+- Chat tools that write data must be in the `WRITABLE_SETTINGS` allowlist with per-key validation
+- Chat messages must go through the data layer (`addMessage()`/`updateMessageContent()`), not direct DB inserts
+- Context building must use `buildChatContext()` — no ad-hoc DB queries from chat tools
+
+**Memory System Checks:**
+- Episodic memory retrieval must respect confidence scoring — never bypass the scoring/ranking step
+- Learned context changes must still go through proposal → approval flow (TDR-008 unchanged)
+- Memory decay must use the configurable `decayRate` field, not hardcoded values
+
+**Environment Onboarding Checks:**
+- Sync operations must create a checkpoint before applying changes (never sync without rollback point)
+- New scanner implementations must follow the existing scanner pattern (`scanners/claude-code.ts`, `scanners/codex.ts`)
+- Artifacts must be content-hashed (`contentHash` field) for change detection
+
+**Agent Handoff Checks:**
+- Agent messages must track `chainDepth` and enforce maximum depth limits — no unbounded delegation chains
+- Messages with `requiresApproval: true` must not be auto-processed — they must route through notification approval
 
 ---
 

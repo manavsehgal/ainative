@@ -29,8 +29,13 @@ Use database polling (SELECT with interval) instead of WebSockets for all async 
 - **Redis pub/sub** — external dependency.
 - **In-process event bus** — lost on restart.
 
+## Evolved Patterns
+
+The chat conversation engine (TDR-023) uses Claude Agent SDK streaming via SSE for real-time message delivery, not DB polling. This is architecturally consistent — SSE was already approved in TDR-005 for log streaming. Chat streaming is *content delivery*, not *coordination*. The core decision (DB polling for async coordination: permissions, scheduling, task status) remains valid and unchanged. Heartbeat evaluation (TDR-019) also uses the polling loop — the scheduler polls, then delegates the execution decision to the agent.
+
 ## References
 
 - `src/lib/agents/claude-agent.ts` (permission polling)
-- `src/lib/schedules/scheduler.ts` (schedule polling)
+- `src/lib/schedules/scheduler.ts` (schedule polling + heartbeat branch)
 - `src/app/api/logs/stream/`
+- `src/lib/chat/engine.ts` (SSE streaming — see TDR-023)

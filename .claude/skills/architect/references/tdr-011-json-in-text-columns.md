@@ -14,7 +14,17 @@ Several entities need semi-structured data that varies by type (workflow definit
 
 ## Decision
 
-Store JSON as TEXT columns. Application-level parsing and validation via Zod schemas at API boundaries. Columns used: tasks.metadata, workflows.definition, notifications.metadata, schedules.configuration, documents.metadata, views.filters/sorting/columnVisibility, profiles persona/manifest.
+Store JSON as TEXT columns. Application-level parsing and validation via Zod schemas at API boundaries.
+
+Columns using this pattern (as of Sprint 37):
+- **Core:** `workflows.definition`, `notifications.body` (structured payloads), `learnedContext.proposedAdditions`
+- **Scheduling:** `schedules.heartbeatChecklist`, `schedules.deliveryChannels`
+- **Chat:** `conversations.contextScope`, `chatMessages.metadata`
+- **Channels:** `channelConfigs.config` (**SECURITY**: contains credentials — must be masked via `maskChannelConfig()` before API response)
+- **Agent:** `agentMessages.attachments`, `agentMemory.tags`
+- **Environment:** `environmentScans.persona/errors`, `environmentArtifacts.metadata`, `environmentTemplates.manifest`
+- **Views:** `views.filters`, `views.sorting`, `views.columns`
+- **Imports:** `repoImports.profileIds`
 
 ## Consequences
 

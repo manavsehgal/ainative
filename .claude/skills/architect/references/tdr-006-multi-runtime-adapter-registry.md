@@ -21,6 +21,7 @@ A runtime adapter registry maps runtime IDs to adapter implementations. Each ada
 - Adding a new provider requires only implementing the adapter interface and registering in catalog.ts.
 - Shared orchestration code is provider-agnostic.
 - Capability validation prevents runtime errors from unsupported operations.
+- Ollama (5th provider, added Sprint 37) demonstrates the pattern's extensibility — local model execution with $0 cost rate, limited capabilities (no resume, no approvals, no mcpServers). Smart router uses provider affinity to route privacy-sensitive tasks to Ollama.
 
 ## Alternatives Considered
 
@@ -34,3 +35,4 @@ A runtime adapter registry maps runtime IDs to adapter implementations. Each ada
 - `src/lib/agents/runtime/index.ts` (registry)
 - `src/lib/agents/runtime/claude.ts`
 - `src/lib/agents/runtime/openai-codex.ts`
+- `src/lib/agents/runtime/ollama-adapter.ts`

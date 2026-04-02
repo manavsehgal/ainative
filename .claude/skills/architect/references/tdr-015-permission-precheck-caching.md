@@ -29,7 +29,12 @@ Three-tier permission system: (1) Profile-level auto-approve/auto-deny patterns 
 - **Per-tool-name caching only** — misses input-specific risks.
 - **Database-backed cache** — over-engineered, memory is fine for task lifetime.
 
+## Evolved Patterns
+
+The chat surface extends this philosophy with per-key parameter gating (TDR-024). While this TDR gates tool *usage* (can the agent use this tool?), TDR-024 gates tool *parameters* (can the agent write this specific setting key?). Both share the principle of cascading permission checks from auto-approve → cached → human-confirmed.
+
 ## References
 
 - `src/lib/agents/claude-agent.ts` (buildPermissionCacheKey, permission cascade)
 - `src/lib/db/schema.ts` (settings table for Always Allow)
+- `src/lib/chat/tools/settings-tools.ts` (per-key allowlist — see TDR-024)
