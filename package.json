@@ -27,7 +27,6 @@
     "dist/",
     "docs/",
     "src/",
-    "public/icon.svg",
     "public/icon-512.png",
     "public/stagent-s-64.png",
     "public/stagent-s-128.png",
