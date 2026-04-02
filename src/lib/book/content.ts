@@ -142,8 +142,9 @@ function tryLoadMarkdownChapter(id: string): BookChapter | null {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { parseMarkdownChapter } = require("./markdown-parser") as { parseMarkdownChapter: (md: string, slug: string) => { sections: Array<{ id: string; title: string; content: import("./types").ContentBlock[] }> } };
 
-    // Resolve relative to source file, not cwd (npx-safe)
-    const appRoot = join(import.meta.dirname ?? __dirname, "..", "..", "..");
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { getAppRoot } = require("../utils/app-root") as { getAppRoot: (metaDirname: string | undefined, depth: number) => string };
+    const appRoot = getAppRoot(import.meta.dirname, 3);
     const filePath = join(appRoot, "book", "chapters", `${fileSlug}.md`);
     if (!existsSync(filePath)) return null;
 

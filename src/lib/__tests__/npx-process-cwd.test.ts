@@ -40,6 +40,7 @@ describe("npx safety: no process.cwd() for app-internal asset resolution", () =>
   const ALLOWED_FILES = [
     "bin/cli.ts",                                // CLI entrypoint defines cwd context
     "src/lib/environment/workspace-context.ts",   // defines getLaunchCwd fallback
+    "src/lib/utils/app-root.ts",                  // validated fallback when import.meta.dirname is virtual
     "drizzle.config.ts",                          // build-time config
   ];
 

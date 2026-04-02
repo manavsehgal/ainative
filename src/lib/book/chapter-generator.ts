@@ -2,6 +2,7 @@ import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 import { CHAPTER_MAPPING, CHAPTER_SLUGS } from "./chapter-mapping";
 import { getChapter } from "./content";
+import { getAppRoot } from "../utils/app-root";
 
 /** Shared context gathered from disk for prompt assembly */
 interface ChapterContext {
@@ -31,8 +32,7 @@ export function gatherChapterContext(chapterId: string): ChapterContext {
   const sourceDocSlugs = mapping?.docs ?? [];
   const slug = CHAPTER_SLUGS[chapterId] ?? chapterId;
 
-  // Resolve paths relative to source file, not cwd (npx-safe)
-  const appRoot = join(import.meta.dirname ?? __dirname, "..", "..", "..");
+  const appRoot = getAppRoot(import.meta.dirname, 3);
 
   // Read the current chapter markdown (if it exists)
   const chapterMdPath = join(appRoot, "book", "chapters", `${slug}.md`);

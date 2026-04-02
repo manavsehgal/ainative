@@ -1,12 +1,11 @@
 import { readFileSync, readdirSync, existsSync } from "fs";
 import { join, basename } from "path";
 import type { DocManifest, ParsedDoc } from "./types";
+import { getAppRoot } from "../utils/app-root";
 
 /** Resolve the docs directory relative to this source file (npx-safe) */
 function docsDir(): string {
-  const dir = import.meta.dirname ?? __dirname;
-  // src/lib/docs/ → project root → docs/
-  return join(dir, "..", "..", "..", "docs");
+  return join(getAppRoot(import.meta.dirname, 3), "docs");
 }
 
 /** Read and parse docs/manifest.json */

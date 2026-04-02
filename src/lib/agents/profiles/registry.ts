@@ -15,11 +15,14 @@ import { eq, and } from "drizzle-orm";
  * Builtins ship inside the repo at src/lib/agents/profiles/builtins/.
  * At runtime they are copied (if missing) to ~/.claude/skills/ so users
  * can customize them without touching source.
- * Uses import.meta.dirname (not process.cwd()) so it works under npx.
+ * Uses getAppRoot + known subpath because Turbopack compiles import.meta.dirname
+ * to a virtual /ROOT/ path that doesn't exist on the filesystem.
  */
+import { getAppRoot } from "@/lib/utils/app-root";
+
 const BUILTINS_DIR = path.resolve(
-  import.meta.dirname ?? __dirname,
-  "builtins"
+  getAppRoot(import.meta.dirname, 4),
+  "src", "lib", "agents", "profiles", "builtins"
 );
 
 function getBuiltinsDir(): string {

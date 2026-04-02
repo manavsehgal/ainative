@@ -3,12 +3,12 @@ import path from "node:path";
 import yaml from "js-yaml";
 import { BlueprintSchema } from "@/lib/validators/blueprint";
 import { getStagentBlueprintsDir } from "@/lib/utils/stagent-paths";
+import { getAppRoot } from "@/lib/utils/app-root";
 import type { WorkflowBlueprint } from "./types";
 
-// Use fileURLToPath for ESM compatibility in Next.js
 const BUILTINS_DIR = path.resolve(
-  import.meta.dirname ?? path.dirname(new URL(import.meta.url).pathname),
-  "builtins"
+  getAppRoot(import.meta.dirname, 4),
+  "src", "lib", "workflows", "blueprints", "builtins"
 );
 
 const USER_BLUEPRINTS_DIR = getStagentBlueprintsDir();

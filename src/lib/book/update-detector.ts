@@ -2,6 +2,7 @@ import { execFileSync } from "child_process";
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import { CHAPTER_MAPPING, CHAPTER_SLUGS } from "./chapter-mapping";
+import { getAppRoot } from "../utils/app-root";
 
 export interface ChapterStaleness {
   chapterId: string;
@@ -20,8 +21,7 @@ function getLastGenerated(chapterId: string): string | null {
   const slug = CHAPTER_SLUGS[chapterId];
   if (!slug) return null;
 
-  // Resolve relative to source file, not cwd (npx-safe)
-  const appRoot = join(import.meta.dirname ?? __dirname, "..", "..", "..");
+  const appRoot = getAppRoot(import.meta.dirname, 3);
   const mdPath = join(appRoot, "book", "chapters", `${slug}.md`);
   if (!existsSync(mdPath)) return null;
 
