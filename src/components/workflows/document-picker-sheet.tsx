@@ -176,11 +176,13 @@ export function DocumentPickerSheet({
                         const Icon = getFileIcon(doc.mimeType);
                         const isChecked = localSelected.has(doc.id);
                         return (
-                          <button
+                          <div
                             key={doc.id}
-                            type="button"
+                            role="button"
+                            tabIndex={0}
                             onClick={() => toggleDocument(doc.id)}
-                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
+                            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleDocument(doc.id); } }}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors cursor-pointer ${
                               isChecked
                                 ? "bg-accent/50 border border-accent"
                                 : "hover:bg-muted/50 border border-transparent"
@@ -211,7 +213,7 @@ export function DocumentPickerSheet({
                                 </Badge>
                               )}
                             </div>
-                          </button>
+                          </div>
                         );
                       })}
                     </div>

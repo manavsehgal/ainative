@@ -703,11 +703,13 @@ function OutputDock({
           {allOutputDocs.map((doc) => {
             const isChecked = selectedIds.has(doc.id);
             return (
-              <button
+              <div
                 key={doc.id}
-                type="button"
+                role="button"
+                tabIndex={0}
                 onClick={() => toggleDoc(doc.id)}
-                className={`flex items-center gap-3 p-3 rounded-lg text-left transition-colors border ${
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleDoc(doc.id); } }}
+                className={`flex items-center gap-3 p-3 rounded-lg text-left transition-colors border cursor-pointer ${
                   isChecked
                     ? "bg-accent/50 border-accent"
                     : "hover:bg-muted/50 border-border/50"
@@ -726,7 +728,7 @@ function OutputDock({
                     {doc.stepName}
                   </p>
                 </div>
-              </button>
+              </div>
             );
           })}
         </div>
