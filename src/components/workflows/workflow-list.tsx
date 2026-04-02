@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
 import { GitBranch, Pencil, Copy, RotateCcw, Trash2, FileCog, Play } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { workflowStatusVariant, patternLabels } from "@/lib/constants/status-colors";
 import { IconCircle, getWorkflowIconFromName } from "@/lib/constants/card-icons";
@@ -185,50 +186,72 @@ export function WorkflowList({ projects }: WorkflowListProps) {
                     <Badge variant={workflowStatusVariant[wf.status] ?? "secondary"}>
                       {wf.status}
                     </Badge>
-                    <div className="flex items-center gap-1">
-                      {wf.status === "draft" && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          aria-label="Edit workflow"
-                          onClick={(e) => { e.stopPropagation(); router.push(`/workflows/${wf.id}/edit`); }}
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        aria-label="Clone workflow"
-                        onClick={(e) => { e.stopPropagation(); router.push(`/workflows/${wf.id}/edit?clone=true`); }}
-                      >
-                        <Copy className="h-3.5 w-3.5" />
-                      </Button>
-                      {(wf.status === "completed" || wf.status === "failed") && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          aria-label="Re-run workflow"
-                          onClick={(e) => { e.stopPropagation(); handleRerun(wf.id); }}
-                        >
-                          <RotateCcw className="h-3.5 w-3.5" />
-                        </Button>
-                      )}
-                      {wf.status !== "active" && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-destructive"
-                          aria-label="Delete workflow"
-                          onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(wf.id); }}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      )}
-                    </div>
+                    <TooltipProvider>
+                      <div className="flex items-center gap-1">
+                        {wf.status === "draft" && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                aria-label="Edit workflow"
+                                onClick={(e) => { e.stopPropagation(); router.push(`/workflows/${wf.id}/edit`); }}
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Edit</TooltipContent>
+                          </Tooltip>
+                        )}
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              aria-label="Clone workflow"
+                              onClick={(e) => { e.stopPropagation(); router.push(`/workflows/${wf.id}/edit?clone=true`); }}
+                            >
+                              <Copy className="h-3.5 w-3.5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Clone</TooltipContent>
+                        </Tooltip>
+                        {(wf.status === "completed" || wf.status === "failed") && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                aria-label="Re-run workflow"
+                                onClick={(e) => { e.stopPropagation(); handleRerun(wf.id); }}
+                              >
+                                <RotateCcw className="h-3.5 w-3.5" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Re-run</TooltipContent>
+                          </Tooltip>
+                        )}
+                        {wf.status !== "active" && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-destructive"
+                                aria-label="Delete workflow"
+                                onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(wf.id); }}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Delete</TooltipContent>
+                          </Tooltip>
+                        )}
+                      </div>
+                    </TooltipProvider>
                   </div>
                 </CardContent>
               </Card>

@@ -335,53 +335,50 @@ export function WorkflowStatusView({ workflowId }: WorkflowStatusViewProps) {
               {/* Edit — draft only */}
               {data.status === "draft" && hasDefinition && (
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
-                  aria-label="Edit workflow"
+                  variant="outline"
+                  size="sm"
                   onClick={() => router.push(`/workflows/${workflowId}/edit`)}
                 >
-                  <Pencil className="h-3.5 w-3.5" />
+                  <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                  Edit
                 </Button>
               )}
 
               {/* Clone — always available */}
               {hasDefinition && (
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
-                  aria-label="Clone workflow"
+                  variant="outline"
+                  size="sm"
                   onClick={() => router.push(`/workflows/${workflowId}/edit?clone=true`)}
                 >
-                  <Copy className="h-3.5 w-3.5" />
+                  <Copy className="h-3.5 w-3.5 mr-1.5" />
+                  Clone
                 </Button>
               )}
 
               {/* Re-run — completed/failed only */}
               {(data.status === "completed" || data.status === "failed") && (
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
-                  aria-label="Re-run workflow"
+                  variant="outline"
+                  size="sm"
                   onClick={handleRerun}
                   disabled={executing}
                 >
-                  <RotateCcw className="h-3.5 w-3.5" />
+                  <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+                  Re-run
                 </Button>
               )}
 
               {/* Delete — not active */}
               {data.status !== "active" && (
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 text-destructive"
-                  aria-label="Delete workflow"
+                  variant="outline"
+                  size="sm"
+                  className="text-destructive hover:text-destructive"
                   onClick={() => setConfirmDelete(true)}
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
+                  <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                  Delete
                 </Button>
               )}
             </div>
