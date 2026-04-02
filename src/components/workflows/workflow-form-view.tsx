@@ -288,6 +288,15 @@ function normalizeSwarmSteps(
   );
 }
 
+const PATTERN_LABELS: Record<string, string> = {
+  sequence: "Sequence",
+  "planner-executor": "Planner → Executor",
+  checkpoint: "Checkpoint",
+  loop: "Autonomous Loop",
+  parallel: "Parallel Research",
+  swarm: "Multi-Agent Swarm",
+};
+
 const PATTERN_ICONS: Record<string, React.ReactNode> = {
   sequence: <ArrowDown className="h-3.5 w-3.5 text-muted-foreground" />,
   "planner-executor": <Brain className="h-3.5 w-3.5 text-muted-foreground" />,
@@ -1104,15 +1113,20 @@ export function WorkflowFormView({
                 </div>
                 <div className="space-y-1.5">
                   <Label>Pattern</Label>
+                  {mode === "edit" ? (
+                    <div className="flex h-9 w-fit items-center gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-sm opacity-50 cursor-not-allowed">
+                      {PATTERN_ICONS[pattern]}
+                      {PATTERN_LABELS[pattern] ?? pattern}
+                    </div>
+                  ) : (
                   <Select
                     value={pattern}
                     onValueChange={(value) =>
                       setPattern(value as WorkflowPattern)
                     }
-                    disabled={mode === "edit"}
                   >
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Select pattern" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="sequence">
@@ -1153,6 +1167,7 @@ export function WorkflowFormView({
                       </SelectItem>
                     </SelectContent>
                   </Select>
+                  )}
                   <p className="text-xs text-muted-foreground">How steps execute</p>
                 </div>
                 {projects.length > 0 && (
