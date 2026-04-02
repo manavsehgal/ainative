@@ -1,7 +1,7 @@
 import { execFileSync } from "child_process";
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
-import { CHAPTER_MAPPING } from "./chapter-mapping";
+import { CHAPTER_MAPPING, CHAPTER_SLUGS } from "./chapter-mapping";
 
 export interface ChapterStaleness {
   chapterId: string;
@@ -14,19 +14,6 @@ export interface ChapterStaleness {
   /** Source files that changed since last generation */
   changedFiles: string[];
 }
-
-/** Chapter ID to markdown filename mapping */
-const CHAPTER_SLUGS: Record<string, string> = {
-  "ch-1": "ch-1-project-management",
-  "ch-2": "ch-2-task-execution",
-  "ch-3": "ch-3-document-processing",
-  "ch-4": "ch-4-workflow-orchestration",
-  "ch-5": "ch-5-scheduled-intelligence",
-  "ch-6": "ch-6-agent-self-improvement",
-  "ch-7": "ch-7-multi-agent-swarms",
-  "ch-8": "ch-8-human-in-the-loop",
-  "ch-9": "ch-9-autonomous-organization",
-};
 
 /** Read the lastGeneratedBy timestamp from a chapter's markdown frontmatter */
 function getLastGenerated(chapterId: string): string | null {

@@ -1,5 +1,22 @@
 /** Maps book chapters to Playbook feature docs and journeys */
 
+/**
+ * Single source of truth: chapter ID → markdown filename slug.
+ * Used by content loader, chapter generator, and update detector.
+ * Slug corresponds to files in book/chapters/ (without .md extension).
+ */
+export const CHAPTER_SLUGS: Record<string, string> = {
+  "ch-1": "ch-1-project-management",
+  "ch-2": "ch-2-task-execution",
+  "ch-3": "ch-3-document-processing",
+  "ch-4": "ch-4-workflow-orchestration",
+  "ch-5": "ch-5-scheduled-intelligence",
+  "ch-6": "ch-6-agent-self-improvement",
+  "ch-7": "ch-7-multi-agent-swarms",
+  "ch-8": "ch-8-human-in-the-loop",
+  "ch-9": "ch-9-autonomous-organization",
+};
+
 interface ChapterMapping {
   docs: string[];
   journey?: string;

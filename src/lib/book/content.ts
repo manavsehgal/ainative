@@ -1,17 +1,5 @@
 import type { Book, BookChapter, BookPart } from "./types";
-
-/** Mapping from chapter ID to markdown filename slug (without ch-N- prefix) */
-const CHAPTER_SLUG_MAP: Record<string, string> = {
-  "ch-1": "ch-1-project-management",
-  "ch-2": "ch-2-task-execution",
-  "ch-3": "ch-3-document-processing",
-  "ch-4": "ch-4-workflow-orchestration",
-  "ch-5": "ch-5-scheduled-intelligence",
-  "ch-6": "ch-6-agent-self-improvement",
-  "ch-7": "ch-7-multi-agent-swarms",
-  "ch-8": "ch-8-human-in-the-loop",
-  "ch-9": "ch-9-the-autonomous-organization",
-};
+import { CHAPTER_SLUGS } from "./chapter-mapping";
 
 /** The three parts of the AI Native book */
 export const PARTS: BookPart[] = [
@@ -143,7 +131,7 @@ function tryLoadMarkdownChapter(id: string): BookChapter | null {
   if (typeof window !== "undefined") return null;
 
   try {
-    const fileSlug = CHAPTER_SLUG_MAP[id];
+    const fileSlug = CHAPTER_SLUGS[id];
     if (!fileSlug) return null;
 
     // Dynamic require to avoid bundling fs in client builds

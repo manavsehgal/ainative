@@ -1,6 +1,6 @@
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
-import { CHAPTER_MAPPING } from "./chapter-mapping";
+import { CHAPTER_MAPPING, CHAPTER_SLUGS } from "./chapter-mapping";
 import { getChapter } from "./content";
 
 /** Shared context gathered from disk for prompt assembly */
@@ -29,7 +29,7 @@ export function gatherChapterContext(chapterId: string): ChapterContext {
 
   const mapping = CHAPTER_MAPPING[chapterId];
   const sourceDocSlugs = mapping?.docs ?? [];
-  const slug = chapterIdToSlug(chapterId);
+  const slug = CHAPTER_SLUGS[chapterId] ?? chapterId;
 
   // Resolve paths relative to source file, not cwd (npx-safe)
   const appRoot = join(import.meta.dirname ?? __dirname, "..", "..", "..");
@@ -179,18 +179,3 @@ export function buildChapterRegenerationPrompt(chapterId: string): string {
   return sections.join("\n");
 }
 
-/** Map chapter ID to markdown filename slug */
-function chapterIdToSlug(chapterId: string): string {
-  const slugMap: Record<string, string> = {
-    "ch-1": "ch-1-project-management",
-    "ch-2": "ch-2-task-execution",
-    "ch-3": "ch-3-document-processing",
-    "ch-4": "ch-4-workflow-orchestration",
-    "ch-5": "ch-5-scheduled-intelligence",
-    "ch-6": "ch-6-agent-self-improvement",
-    "ch-7": "ch-7-multi-agent-swarms",
-    "ch-8": "ch-8-human-in-the-loop",
-    "ch-9": "ch-9-autonomous-organization",
-  };
-  return slugMap[chapterId] ?? chapterId;
-}

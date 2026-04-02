@@ -50,7 +50,12 @@ describe("npx safety: no process.cwd() for app-internal asset resolution", () =>
   const DANGEROUS_PATTERNS = [
     /process\.cwd\(\)\s*,\s*["'](?:public|docs|book|ai-native-notes|src)\b/,
     /process\.cwd\(\)\s*,\s*["'].*?\.(?:png|ico|svg|jpg|md|json)["']/,
+    // Catch bare process.cwd() in book/docs/profiles modules (even without join)
+    /process\.cwd\(\)/,
   ];
+
+  // Files in these directories are NEVER allowed to use process.cwd()
+  const STRICT_DIRS = ["src/lib/book/", "src/lib/docs/", "src/lib/agents/profiles/"];
 
   it("server-side code does not use process.cwd() for internal asset paths", () => {
     const srcFiles = collectFiles(join(PROJECT_ROOT, "src"));
@@ -69,10 +74,19 @@ describe("npx safety: no process.cwd() for app-internal asset resolution", () =>
 
       const content = readFileSync(filePath, "utf-8");
       const lines = content.split("\n");
+      const isStrictDir = STRICT_DIRS.some((d) => relative.startsWith(d));
 
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
-        for (const pattern of DANGEROUS_PATTERNS) {
+        // In strict dirs, ANY process.cwd() in code (not comments) is a violation
+        const trimmed = line.trim();
+        const isComment = trimmed.startsWith("//") || trimmed.startsWith("*") || trimmed.startsWith("/*");
+        if (isStrictDir && !isComment && /process\.cwd\(\)/.test(line)) {
+          violations.push({ file: relative, line: i + 1, text: line.trim() });
+          continue;
+        }
+        // Elsewhere, only flag process.cwd() combined with app-internal paths
+        for (const pattern of DANGEROUS_PATTERNS.slice(0, 2)) {
           if (pattern.test(line)) {
             violations.push({ file: relative, line: i + 1, text: line.trim() });
           }
