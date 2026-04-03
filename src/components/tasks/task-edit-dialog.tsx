@@ -124,35 +124,11 @@ export function TaskEditDialog({
       : null;
 
   const handleDocPickerConfirm = useCallback(
-    (ids: string[]) => {
+    (ids: string[], meta: Array<{ id: string; originalName: string; mimeType: string; size: number }>) => {
       setSelectedDocIds(new Set(ids));
-      const newIds = ids.filter(
-        (id) => !selectedDocs.some((d) => d.id === id)
-      );
-      if (newIds.length > 0) {
-        const params = new URLSearchParams({ status: "ready" });
-        if (task?.projectId) params.set("projectId", task.projectId);
-        fetch(`/api/documents?${params}`)
-          .then((r) => r.json())
-          .then((allDocs: Array<Record<string, unknown>>) => {
-            const idSet = new Set(ids);
-            setSelectedDocs(
-              allDocs
-                .filter((d) => idSet.has(d.id as string))
-                .map((d) => ({
-                  id: d.id as string,
-                  originalName: d.originalName as string,
-                  mimeType: d.mimeType as string,
-                  size: d.size as number,
-                }))
-            );
-          })
-          .catch(() => {});
-      } else {
-        setSelectedDocs((prev) => prev.filter((d) => ids.includes(d.id)));
-      }
+      setSelectedDocs(meta);
     },
-    [task?.projectId, selectedDocs]
+    []
   );
 
   async function handleSubmit(e: React.FormEvent) {

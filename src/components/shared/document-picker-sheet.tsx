@@ -57,8 +57,8 @@ interface DocumentPickerSheetProps {
   projectId: string | null;
   /** Currently selected document IDs (to pre-check) */
   selectedIds: Set<string>;
-  /** Called when user confirms selection */
-  onConfirm: (selectedIds: string[]) => void;
+  /** Called when user confirms selection. Second arg provides metadata for display (avoids re-fetch). */
+  onConfirm: (selectedIds: string[], selectedMeta: PickerSelectedDoc[]) => void;
   /** Optional: scope to a step ID label */
   stepLabel?: string;
   /** Grouping mode: "workflow" groups by source workflow, "project" by project name, "source" by direction */
@@ -263,7 +263,16 @@ export function DocumentPickerSheet({
   }
 
   function handleConfirm() {
-    onConfirm([...localSelected]);
+    const ids = [...localSelected];
+    // Build metadata array from cached meta + current documents
+    const meta: PickerSelectedDoc[] = ids.map((id) => {
+      const cached = selectedDocMeta.get(id);
+      if (cached) return cached;
+      const doc = documents.find((d) => d.id === id);
+      if (doc) return { id: doc.id, originalName: doc.originalName, mimeType: doc.mimeType, size: doc.size, projectName: doc.projectName };
+      return { id, originalName: "Unknown", mimeType: "application/octet-stream", size: 0 };
+    });
+    onConfirm(ids, meta);
     onOpenChange(false);
   }
 

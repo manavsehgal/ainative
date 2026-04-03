@@ -379,37 +379,11 @@ export function WorkflowFormView({
 
   // Handle document picker confirmation
   const handleDocPickerConfirm = useCallback(
-    (ids: string[]) => {
+    (ids: string[], meta: Array<{ id: string; originalName: string; mimeType: string; size: number }>) => {
       setSelectedDocIds(new Set(ids));
-      // Fetch metadata for newly selected docs
-      const newIds = ids.filter(
-        (id) => !selectedDocs.some((d) => d.id === id)
-      );
-      if (newIds.length > 0) {
-        fetch(`/api/documents?projectId=${projectId}&status=ready`)
-          .then((r) => r.json())
-          .then((allDocs: Array<Record<string, unknown>>) => {
-            const idSet = new Set(ids);
-            setSelectedDocs(
-              allDocs
-                .filter((d) => idSet.has(d.id as string))
-                .map((d) => ({
-                  id: d.id as string,
-                  originalName: d.originalName as string,
-                  mimeType: d.mimeType as string,
-                  size: d.size as number,
-                }))
-            );
-          })
-          .catch(() => {});
-      } else {
-        // Remove deselected docs
-        setSelectedDocs((prev) =>
-          prev.filter((d) => ids.includes(d.id))
-        );
-      }
+      setSelectedDocs(meta);
     },
-    [projectId, selectedDocs]
+    []
   );
 
   function removeDocument(id: string) {
