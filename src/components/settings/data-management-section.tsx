@@ -76,8 +76,8 @@ export function DataManagementSection() {
                 Delete all projects, tasks, workflows, schedules, documents,
                 conversations, chat messages, usage ledger, learned context,
                 saved views, agent logs, notifications, seeded sample profiles,
-                and uploaded files. Database snapshots and authentication
-                settings are preserved.
+                and uploaded files.{" "}
+                <strong>Database snapshots and authentication settings are preserved.</strong>
               </p>
               <Badge variant="destructive" className="shrink-0">Irreversible</Badge>
             </div>
