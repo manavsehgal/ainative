@@ -48,7 +48,7 @@ export function DataManagementSection() {
       if (data.success) {
         const s = data.seeded;
         toast.success(
-          `Seeded ${s.profiles} profiles, ${s.projects} projects, ${s.tasks} tasks, ${s.workflows} workflows, ${s.schedules} schedules, ${s.documents} documents, ${s.conversations} conversations, ${s.chatMessages} messages, ${s.usageLedger} usage entries, ${s.learnedContext} learned context, ${s.views} views, ${s.profileTestResults} test results, ${s.repoImports} repo imports, ${s.agentLogs} logs, ${s.notifications} notifications`
+          `Seeded ${s.profiles} profiles, ${s.projects} projects, ${s.tasks} tasks, ${s.workflows} workflows, ${s.schedules} schedules, ${s.documents} documents, ${s.userTables} tables (${s.userTableRows} rows), ${s.conversations} conversations, ${s.chatMessages} messages, ${s.usageLedger} usage entries, ${s.learnedContext} learned context, ${s.views} views, ${s.profileTestResults} test results, ${s.repoImports} repo imports, ${s.agentLogs} logs, ${s.notifications} notifications`
         );
       } else {
         toast.error(`Seed failed: ${data.error}`);
@@ -103,10 +103,11 @@ export function DataManagementSection() {
               (solo founder, agency, PE ops), 48 tasks with agent profiles and
               source types, 8 workflows (sequence, checkpoint, planner-executor),
               8 schedules (including 3 heartbeat monitors), 18 markdown documents
-              (input and output), 6 conversations with 45 messages, 45 usage
-              ledger entries across 3 runtimes, learned context, 6 saved views,
-              4 profile test results, 3 repo imports, agent logs, and 28
-              notifications. Existing data is cleared first.
+              (input and output), 6 data tables with rows (pipeline, content,
+              health scores, KPIs, listings, campaigns), 6 conversations with
+              45 messages, 45 usage ledger entries across 3 runtimes, learned
+              context, 6 saved views, 4 profile test results, 3 repo imports,
+              agent logs, and 28 notifications. Existing data is cleared first.
             </p>
             <Button
               variant="outline"
@@ -138,7 +139,7 @@ export function DataManagementSection() {
         open={seedOpen}
         onOpenChange={setSeedOpen}
         title="Seed sample data?"
-        description="This will clear all existing data first, then populate with 5 agent profiles, 8 projects across 3 personas (solo founder, agency, PE ops), 48 tasks, 8 workflows, 8 schedules (3 heartbeat), 18 markdown documents, 6 conversations, 45 usage entries across 3 runtimes, learned context, saved views, profile test results, repo imports, agent logs, and 28 notifications. Any current data will be lost."
+        description="This will clear all existing data first, then populate with 5 agent profiles, 8 projects across 3 personas (solo founder, agency, PE ops), 48 tasks, 8 workflows, 8 schedules (3 heartbeat), 18 markdown documents, 6 data tables with rows, 6 conversations, 45 usage entries across 3 runtimes, learned context, saved views, profile test results, repo imports, agent logs, and 28 notifications. Any current data will be lost."
         confirmLabel="Seed Data"
         onConfirm={handleSeed}
       />

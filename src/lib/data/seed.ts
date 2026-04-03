@@ -31,6 +31,8 @@ import { createLearnedContext } from "./seed-data/learned-context";
 import { createViews } from "./seed-data/views";
 import { createProfileTestResults } from "./seed-data/profile-test-results";
 import { createRepoImports } from "./seed-data/repo-imports";
+import { createUserTables } from "./seed-data/user-tables";
+import { createTable, addRows } from "@/lib/data/tables";
 
 /**
  * Clear all data, then seed with realistic sample data.
@@ -166,6 +168,37 @@ export async function seedSampleData() {
     db.insert(repoImports).values(ri).run();
   }
 
+  // 17. Insert user-created tables with columns and rows
+  const userTableSeeds = createUserTables(projectIds);
+  let totalTableRows = 0;
+  for (const tableSeed of userTableSeeds) {
+    await createTable({
+      name: tableSeed.name,
+      description: tableSeed.description,
+      projectId: tableSeed.projectId,
+      source: tableSeed.source,
+      columns: tableSeed.columns.map((col, i) => ({
+        name: col.name,
+        displayName: col.displayName,
+        dataType: col.dataType,
+        position: i,
+        required: col.required ?? false,
+        config: col.config ?? undefined,
+      })),
+    });
+    // createTable generates its own ID; retrieve it by name+project
+    const { listTables } = await import("@/lib/data/tables");
+    const tables = await listTables({ projectId: tableSeed.projectId });
+    const created = tables.find((t) => t.name === tableSeed.name);
+    if (created && tableSeed.rows.length > 0) {
+      await addRows(
+        created.id,
+        tableSeed.rows.map((data) => ({ data }))
+      );
+      totalTableRows += tableSeed.rows.length;
+    }
+  }
+
   return {
     profiles: profileCount,
     projects: projectSeeds.length,
@@ -182,5 +215,7 @@ export async function seedSampleData() {
     views: viewSeeds.length,
     profileTestResults: testResultSeeds.length,
     repoImports: repoImportSeeds.length,
+    userTables: userTableSeeds.length,
+    userTableRows: totalTableRows,
   };
 }
