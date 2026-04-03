@@ -5,6 +5,8 @@ import {
   listTables,
   getTable,
   createTable,
+  updateTable,
+  deleteTable,
   listRows,
   addRows,
   updateRow,
@@ -15,8 +17,8 @@ import {
   updateColumn,
   deleteColumn,
   reorderColumns,
-  getColumns,
 } from "@/lib/data/tables";
+import { getTableHistory } from "@/lib/tables/history";
 import {
   extractStructuredData,
   inferColumnTypes,
@@ -578,5 +580,258 @@ Guidelines for schema inference:
         }
       }
     ),
+
+    // ── Table management ───────────────────────────────────────────────
+
+    defineTool(
+      "update_table",
+      "Update a table's name or description.",
+      {
+        tableId: z.string().describe("Table ID to update"),
+        name: z.string().optional().describe("New table name"),
+        description: z.string().nullable().optional().describe("New description"),
+      },
+      async (args) => {
+        try {
+          const updated = await updateTable(args.tableId, {
+            name: args.name,
+            description: args.description,
+          });
+          if (!updated) return err("Table not found");
+          return ok({ id: updated.id, name: updated.name });
+        } catch (e) {
+          return err(e instanceof Error ? e.message : "Failed to update table");
+        }
+      }
+    ),
+
+    defineTool(
+      "delete_table",
+      "Permanently delete a table and all its rows, columns, views, and triggers.",
+      {
+        tableId: z.string().describe("Table ID to delete"),
+      },
+      async (args) => {
+        try {
+          await deleteTable(args.tableId);
+          return ok({ deleted: true });
+        } catch (e) {
+          return err(e instanceof Error ? e.message : "Failed to delete table");
+        }
+      }
+    ),
+
+    // ── Charts ─────────────────────────────────────────────────────────
+
+    defineTool(
+      "list_charts",
+      "List saved chart views for a table.",
+      {
+        tableId: z.string().describe("Table ID"),
+      },
+      async (args) => {
+        try {
+          const res = await fetch(`${getBaseUrl()}/api/tables/${args.tableId}/charts`);
+          if (!res.ok) return err("Failed to list charts");
+          return ok(await res.json());
+        } catch (e) {
+          return err(e instanceof Error ? e.message : "Failed to list charts");
+        }
+      }
+    ),
+
+    defineTool(
+      "create_chart",
+      "Create a chart visualization for a table. Supports bar, line, pie, and scatter chart types with aggregation.",
+      {
+        tableId: z.string().describe("Table ID"),
+        type: z.enum(["bar", "line", "pie", "scatter"]).describe("Chart type"),
+        title: z.string().min(1).describe("Chart title"),
+        xColumn: z.string().describe("Column for X axis / categories"),
+        yColumn: z.string().optional().describe("Column for Y axis / values"),
+        aggregation: z.enum(["sum", "avg", "count", "min", "max"]).optional().describe("Aggregation operation"),
+      },
+      async (args) => {
+        try {
+          const res = await fetch(`${getBaseUrl()}/api/tables/${args.tableId}/charts`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              type: args.type,
+              title: args.title,
+              xColumn: args.xColumn,
+              yColumn: args.yColumn,
+              aggregation: args.aggregation,
+            }),
+          });
+          if (!res.ok) return err("Failed to create chart");
+          return ok(await res.json());
+        } catch (e) {
+          return err(e instanceof Error ? e.message : "Failed to create chart");
+        }
+      }
+    ),
+
+    // ── Triggers ───────────────────────────────────────────────────────
+
+    defineTool(
+      "list_triggers",
+      "List all triggers configured for a table.",
+      {
+        tableId: z.string().describe("Table ID"),
+      },
+      async (args) => {
+        try {
+          const res = await fetch(`${getBaseUrl()}/api/tables/${args.tableId}/triggers`);
+          if (!res.ok) return err("Failed to list triggers");
+          return ok(await res.json());
+        } catch (e) {
+          return err(e instanceof Error ? e.message : "Failed to list triggers");
+        }
+      }
+    ),
+
+    defineTool(
+      "create_trigger",
+      "Create a trigger that fires when table rows change. Triggers can create tasks or start workflows.",
+      {
+        tableId: z.string().describe("Table ID"),
+        name: z.string().min(1).describe("Trigger name"),
+        triggerEvent: z.enum(["row_added", "row_updated", "row_deleted"]).describe("Event that fires the trigger"),
+        condition: z.object({
+          column: z.string(),
+          operator: z.string(),
+          value: z.string(),
+        }).optional().describe("Optional condition — trigger only fires when this filter matches"),
+        actionType: z.enum(["create_task", "run_workflow"]).describe("Action to perform"),
+        actionConfig: z.record(z.string(), z.unknown()).describe("Action config: {title, description, projectId} for create_task, {workflowId} for run_workflow"),
+      },
+      async (args) => {
+        try {
+          const res = await fetch(`${getBaseUrl()}/api/tables/${args.tableId}/triggers`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: args.name,
+              triggerEvent: args.triggerEvent,
+              condition: args.condition ?? null,
+              actionType: args.actionType,
+              actionConfig: args.actionConfig,
+            }),
+          });
+          if (!res.ok) return err("Failed to create trigger");
+          return ok(await res.json());
+        } catch (e) {
+          return err(e instanceof Error ? e.message : "Failed to create trigger");
+        }
+      }
+    ),
+
+    defineTool(
+      "update_trigger",
+      "Update a trigger's status (active/paused) or configuration.",
+      {
+        tableId: z.string().describe("Table ID"),
+        triggerId: z.string().describe("Trigger ID to update"),
+        status: z.enum(["active", "paused"]).optional().describe("New status"),
+        name: z.string().optional().describe("New trigger name"),
+      },
+      async (args) => {
+        try {
+          const res = await fetch(`${getBaseUrl()}/api/tables/${args.tableId}/triggers/${args.triggerId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              status: args.status,
+              name: args.name,
+            }),
+          });
+          if (!res.ok) return err("Failed to update trigger");
+          return ok(await res.json());
+        } catch (e) {
+          return err(e instanceof Error ? e.message : "Failed to update trigger");
+        }
+      }
+    ),
+
+    defineTool(
+      "delete_trigger",
+      "Delete a trigger from a table.",
+      {
+        tableId: z.string().describe("Table ID"),
+        triggerId: z.string().describe("Trigger ID to delete"),
+      },
+      async (args) => {
+        try {
+          const res = await fetch(`${getBaseUrl()}/api/tables/${args.tableId}/triggers/${args.triggerId}`, {
+            method: "DELETE",
+          });
+          if (!res.ok) return err("Failed to delete trigger");
+          return ok({ deleted: true });
+        } catch (e) {
+          return err(e instanceof Error ? e.message : "Failed to delete trigger");
+        }
+      }
+    ),
+
+    // ── History ─────────────────────────────────────────────────────────
+
+    defineTool(
+      "get_table_history",
+      "Get recent change history for a table, showing row updates and deletions with previous data snapshots.",
+      {
+        tableId: z.string().describe("Table ID"),
+        limit: z.number().int().min(1).max(200).optional().describe("Max entries to return (default 50)"),
+      },
+      async (args) => {
+        try {
+          const history = getTableHistory(args.tableId, args.limit ?? 50);
+          return ok(history.map((h) => ({
+            id: h.id,
+            rowId: h.rowId,
+            changeType: h.changeType,
+            changedBy: h.changedBy,
+            createdAt: h.createdAt,
+          })));
+        } catch (e) {
+          return err(e instanceof Error ? e.message : "Failed to get history");
+        }
+      }
+    ),
+
+    // ── Save as template ───────────────────────────────────────────────
+
+    defineTool(
+      "save_as_template",
+      "Save a table as a reusable user template, optionally including sample data from the first 5 rows.",
+      {
+        tableId: z.string().describe("Table ID to save as template"),
+        name: z.string().min(1).describe("Template name"),
+        category: z.enum(["business", "personal", "pm", "finance", "content"]).optional().describe("Template category (default: personal)"),
+        includeSampleData: z.boolean().optional().describe("Include first 5 rows as sample data"),
+      },
+      async (args) => {
+        try {
+          const res = await fetch(`${getBaseUrl()}/api/tables/templates`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              tableId: args.tableId,
+              name: args.name,
+              category: args.category ?? "personal",
+              includeSampleData: args.includeSampleData ?? false,
+            }),
+          });
+          if (!res.ok) return err("Failed to save template");
+          return ok(await res.json());
+        } catch (e) {
+          return err(e instanceof Error ? e.message : "Failed to save template");
+        }
+      }
+    ),
   ];
+}
+
+function getBaseUrl(): string {
+  return process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 }

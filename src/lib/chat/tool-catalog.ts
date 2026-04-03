@@ -161,6 +161,16 @@ const STAGENT_TOOLS: ToolCatalogEntry[] = [
   { name: "update_column", description: "Update a column's name or type", group: "Tables", paramHint: "columnId, displayName, dataType" },
   { name: "delete_column", description: "Delete a column from a table", group: "Tables", paramHint: "columnId" },
   { name: "reorder_columns", description: "Reorder columns in a table", group: "Tables", paramHint: "tableId, columnIds" },
+  { name: "update_table", description: "Update a table's name or description", group: "Tables", paramHint: "tableId, name, description" },
+  { name: "delete_table", description: "Delete a table and all its data", group: "Tables", paramHint: "tableId" },
+  { name: "list_charts", description: "List saved charts for a table", group: "Tables", paramHint: "tableId" },
+  { name: "create_chart", description: "Create a bar/line/pie/scatter chart", group: "Tables", paramHint: "tableId, type, title, xColumn, yColumn" },
+  { name: "list_triggers", description: "List triggers for a table", group: "Tables", paramHint: "tableId" },
+  { name: "create_trigger", description: "Create a trigger on row changes", group: "Tables", paramHint: "tableId, triggerEvent, actionType" },
+  { name: "update_trigger", description: "Update trigger status or config", group: "Tables", paramHint: "tableId, triggerId, status" },
+  { name: "delete_trigger", description: "Delete a trigger", group: "Tables", paramHint: "tableId, triggerId" },
+  { name: "get_table_history", description: "Get row change history for a table", group: "Tables", paramHint: "tableId, limit" },
+  { name: "save_as_template", description: "Save a table as a reusable template", group: "Tables", paramHint: "tableId, name, category" },
 
   // ── Chat History ──
   { name: "list_conversations", description: "List recent chat conversations", group: "Chat", paramHint: "search, limit" },
