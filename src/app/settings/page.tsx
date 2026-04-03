@@ -1,6 +1,7 @@
 import { ProvidersAndRuntimesSection } from "@/components/settings/providers-runtimes-section";
 import { PermissionsSections } from "@/components/settings/permissions-sections";
 import { DataManagementSection } from "@/components/settings/data-management-section";
+import { DatabaseSnapshotsSection } from "@/components/settings/database-snapshots-section";
 import { BudgetGuardrailsSection } from "@/components/settings/budget-guardrails-section";
 import { ChatSettingsSection } from "@/components/settings/chat-settings-section";
 import { RuntimeTimeoutSection } from "@/components/settings/runtime-timeout-section";
@@ -27,6 +28,7 @@ export default function SettingsPage() {
         <ChannelsSection />
         <BudgetGuardrailsSection />
         <PermissionsSections />
+        <DatabaseSnapshotsSection />
         <DataManagementSection />
       </div>
     </PageShell>

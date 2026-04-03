@@ -6,5 +6,8 @@ export async function register() {
 
     const { startChannelPoller } = await import("@/lib/channels/poller");
     startChannelPoller();
+
+    const { startAutoBackup } = await import("@/lib/snapshots/auto-backup");
+    startAutoBackup();
   }
 }

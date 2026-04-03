@@ -44,6 +44,7 @@ const STAGENT_TABLES = [
   "schedule_table_inputs",
   "user_table_triggers",
   "user_table_row_history",
+  "snapshots",
 ] as const;
 
 export function bootstrapStagentDatabase(sqlite: Database.Database): void {
@@ -822,6 +823,23 @@ export function bootstrapStagentDatabase(sqlite: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_row_history_row_id ON user_table_row_history(row_id);
     CREATE INDEX IF NOT EXISTS idx_row_history_table_id ON user_table_row_history(table_id);
     CREATE INDEX IF NOT EXISTS idx_row_history_created_at ON user_table_row_history(created_at);
+
+    CREATE TABLE IF NOT EXISTS snapshots (
+      id TEXT PRIMARY KEY NOT NULL,
+      label TEXT NOT NULL,
+      type TEXT DEFAULT 'manual' NOT NULL,
+      status TEXT DEFAULT 'in_progress' NOT NULL,
+      file_path TEXT NOT NULL,
+      size_bytes INTEGER DEFAULT 0 NOT NULL,
+      db_size_bytes INTEGER DEFAULT 0 NOT NULL,
+      files_size_bytes INTEGER DEFAULT 0 NOT NULL,
+      file_count INTEGER DEFAULT 0 NOT NULL,
+      error TEXT,
+      created_at INTEGER NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_snapshots_type ON snapshots(type);
+    CREATE INDEX IF NOT EXISTS idx_snapshots_created_at ON snapshots(created_at);
   `);
 }
 

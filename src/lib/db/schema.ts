@@ -1119,3 +1119,32 @@ export type WorkflowTableInputRow = InferSelectModel<typeof workflowTableInputs>
 export type ScheduleTableInputRow = InferSelectModel<typeof scheduleTableInputs>;
 export type UserTableTriggerRow = InferSelectModel<typeof userTableTriggers>;
 export type UserTableRowHistoryRow = InferSelectModel<typeof userTableRowHistory>;
+
+// ── Snapshots ──────────────────────────────────────────────────────────
+
+export const snapshots = sqliteTable(
+  "snapshots",
+  {
+    id: text("id").primaryKey(),
+    label: text("label").notNull(),
+    type: text("type", { enum: ["manual", "auto"] })
+      .default("manual")
+      .notNull(),
+    status: text("status", { enum: ["in_progress", "completed", "failed"] })
+      .default("in_progress")
+      .notNull(),
+    filePath: text("file_path").notNull(),
+    sizeBytes: integer("size_bytes").default(0).notNull(),
+    dbSizeBytes: integer("db_size_bytes").default(0).notNull(),
+    filesSizeBytes: integer("files_size_bytes").default(0).notNull(),
+    fileCount: integer("file_count").default(0).notNull(),
+    error: text("error"),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_snapshots_type").on(table.type),
+    index("idx_snapshots_created_at").on(table.createdAt),
+  ]
+);
+
+export type SnapshotRow = InferSelectModel<typeof snapshots>;

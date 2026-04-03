@@ -2,6 +2,9 @@
 
 ## 2026-04-03
 
+### Started
+- `database-snapshot-backup` (P1) — Full-state snapshot system: atomic SQLite .backup(), tarball of all ~/.stagent/ file dirs, auto-backup timer with cron intervals, user-configurable retention (max count + max age weeks), restore with pre-restore safety snapshot, Settings UI card. Brainstormed with /architect + /product-manager. 6 implementation phases.
+
 ### Completed — Structured Data (Tables) Initiative (14 features, Sprints 38-43)
 
 Full Airtable-like structured data system shipped in a single session. 52 new files, 8 modified files, 0 type errors, 418 tests passing.

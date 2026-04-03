@@ -32,6 +32,8 @@ const {
     update: vi.fn().mockReturnValue({ set: mockSet }),
     insert: vi.fn().mockReturnValue({ values: mockValues }),
   };
+  // .where() must return a thenable with .all() for both async and sync query patterns
+  mockWhere.mockReturnValue({ then: (fn: (v: unknown[]) => void) => fn([]), all: () => [] });
   mockFrom.mockReturnValue({ where: mockWhere });
   mockSet.mockReturnValue({ where: mockSetWhere });
   mockValues.mockResolvedValue(undefined);
@@ -77,7 +79,8 @@ const {
 });
 
 vi.mock("@/lib/db", () => ({ db: mockDb }));
-vi.mock("@/lib/db/schema", () => ({
+vi.mock("@/lib/db/schema", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/db/schema")>()),
   tasks: {
     id: "id",
     status: "status",
@@ -181,6 +184,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   // Re-establish mock chains after clearAllMocks
   mockDb.select.mockReturnValue({ from: mockFrom });
+  mockWhere.mockReturnValue({ then: (fn: (v: unknown[]) => void) => fn([]), all: () => [] });
   mockFrom.mockReturnValue({ where: mockWhere });
   mockDb.update.mockReturnValue({ set: mockSet });
   mockSet.mockReturnValue({ where: mockSetWhere });

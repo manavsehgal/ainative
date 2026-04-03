@@ -112,6 +112,7 @@ Features that enhance the product but aren't essential for first use — homepag
 | [chat-settings-tool](chat-settings-tool.md) | P1 | in-progress | tool-permission-persistence, chat-engine |
 | [task-hierarchy-clarity](task-hierarchy-clarity.md) | P1 | completed | workflow-engine, task-board, project-management |
 | [agent-document-api-access](agent-document-api-access.md) | P2 | completed | document-preprocessing, file-attachment-data-layer, tool-permission-persistence |
+| [database-snapshot-backup](database-snapshot-backup.md) | P1 | in-progress | — |
 
 ### Workspace Intelligence
 

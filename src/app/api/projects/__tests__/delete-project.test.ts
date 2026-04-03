@@ -28,6 +28,7 @@ describe("project DELETE cascade coverage", () => {
     "environmentCheckpoints",
     "conversations",
     "projectDocumentDefaults",
+    "userTables",
   ];
 
   // Tables that are indirect children (FK to a table that has projectId)
@@ -39,6 +40,17 @@ describe("project DELETE cascade coverage", () => {
     { table: "chatMessages", parent: "conversations", via: "conversationId" },
     { table: "environmentArtifacts", parent: "environmentScans", via: "scanId" },
     { table: "environmentSyncOps", parent: "environmentCheckpoints", via: "checkpointId" },
+    { table: "userTableColumns", parent: "userTables", via: "tableId" },
+    { table: "userTableRows", parent: "userTables", via: "tableId" },
+    { table: "userTableViews", parent: "userTables", via: "tableId" },
+    { table: "userTableImports", parent: "userTables", via: "tableId" },
+    { table: "userTableRelationships", parent: "userTables", via: "fromTableId" },
+    { table: "tableDocumentInputs", parent: "userTables", via: "tableId" },
+    { table: "taskTableInputs", parent: "userTables", via: "tableId" },
+    { table: "workflowTableInputs", parent: "userTables", via: "tableId" },
+    { table: "scheduleTableInputs", parent: "userTables", via: "tableId" },
+    { table: "userTableTriggers", parent: "userTables", via: "tableId" },
+    { table: "userTableRowHistory", parent: "userTables", via: "tableId" },
   ];
 
   it("handles all tables with direct projectId FK", () => {

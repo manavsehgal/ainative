@@ -17,6 +17,18 @@ import {
   chatMessages,
   conversations,
   projectDocumentDefaults,
+  userTables,
+  userTableColumns,
+  userTableRows,
+  userTableViews,
+  userTableImports,
+  userTableRelationships,
+  tableDocumentInputs,
+  taskTableInputs,
+  workflowTableInputs,
+  scheduleTableInputs,
+  userTableTriggers,
+  userTableRowHistory,
 } from "@/lib/db/schema";
 import { eq, inArray } from "drizzle-orm";
 import { updateProjectSchema } from "@/lib/validators/project";
@@ -191,6 +203,31 @@ export async function DELETE(
 
     // 6. Project document defaults (junction table)
     db.delete(projectDocumentDefaults).where(eq(projectDocumentDefaults.projectId, id)).run();
+
+    // 6b. User-defined tables — cascade-delete children before parent
+    const tableIds = db
+      .select({ id: userTables.id })
+      .from(userTables)
+      .where(eq(userTables.projectId, id))
+      .all()
+      .map((r) => r.id);
+
+    if (tableIds.length > 0) {
+      // Junction tables first
+      db.delete(tableDocumentInputs).where(inArray(tableDocumentInputs.tableId, tableIds)).run();
+      db.delete(taskTableInputs).where(inArray(taskTableInputs.tableId, tableIds)).run();
+      db.delete(workflowTableInputs).where(inArray(workflowTableInputs.tableId, tableIds)).run();
+      db.delete(scheduleTableInputs).where(inArray(scheduleTableInputs.tableId, tableIds)).run();
+      // Children
+      db.delete(userTableRowHistory).where(inArray(userTableRowHistory.tableId, tableIds)).run();
+      db.delete(userTableTriggers).where(inArray(userTableTriggers.tableId, tableIds)).run();
+      db.delete(userTableImports).where(inArray(userTableImports.tableId, tableIds)).run();
+      db.delete(userTableViews).where(inArray(userTableViews.tableId, tableIds)).run();
+      db.delete(userTableRelationships).where(inArray(userTableRelationships.fromTableId, tableIds)).run();
+      db.delete(userTableRows).where(inArray(userTableRows.tableId, tableIds)).run();
+      db.delete(userTableColumns).where(inArray(userTableColumns.tableId, tableIds)).run();
+      db.delete(userTables).where(inArray(userTables.id, tableIds)).run();
+    }
 
     // 7. Direct project children
     db.delete(documents).where(eq(documents.projectId, id)).run();

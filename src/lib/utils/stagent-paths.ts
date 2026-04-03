@@ -20,3 +20,23 @@ export function getStagentBlueprintsDir(): string {
 export function getStagentScreenshotsDir(): string {
   return join(getStagentDataDir(), "screenshots");
 }
+
+export function getStagentSnapshotsDir(): string {
+  return join(getStagentDataDir(), "snapshots");
+}
+
+export function getStagentOutputsDir(): string {
+  return join(getStagentDataDir(), "outputs");
+}
+
+export function getStagentSessionsDir(): string {
+  return join(getStagentDataDir(), "sessions");
+}
+
+export function getStagentLogsDir(): string {
+  return join(getStagentDataDir(), "logs");
+}
+
+export function getStagentDocumentsDir(): string {
+  return join(getStagentDataDir(), "documents");
+}
