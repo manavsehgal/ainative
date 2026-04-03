@@ -544,7 +544,7 @@ export function WorkflowStatusView({ workflowId }: WorkflowStatusViewProps) {
               ) : (
                 <div className="space-y-3">
                   {data.steps.map((step, index) => (
-                    <div key={step.id} className="flex items-start gap-3">
+                    <div key={`${step.id}-${index}`} className="flex items-start gap-3">
                       <div className="mt-0.5 flex flex-col items-center">
                         {stepStatusIcons[step.state.status] ?? stepStatusIcons.pending}
                         {index < data.steps.length - 1 && (
