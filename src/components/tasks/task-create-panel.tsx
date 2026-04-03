@@ -497,6 +497,8 @@ export function TaskCreatePanel({ projects, defaultProjectId }: TaskCreatePanelP
                   onConfirm={handleDocPickerConfirm}
                   groupBy="project"
                   title="Select Context Documents"
+                  allowCrossProject
+                  selectedDocumentMeta={selectedDocs}
                 />
               </FormSectionCard>
 

@@ -758,6 +758,8 @@ export function ScheduleForm({
         onConfirm={handleDocPickerConfirm}
         groupBy="source"
         title="Select Context Documents"
+        allowCrossProject
+        selectedDocumentMeta={selectedDocs}
       />
 
       {/* Runtime */}

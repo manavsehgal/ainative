@@ -1261,6 +1261,8 @@ export function WorkflowFormView({
                   selectedIds={selectedDocIds}
                   onConfirm={handleDocPickerConfirm}
                   groupBy="workflow"
+                  allowCrossProject
+                  selectedDocumentMeta={selectedDocs}
                 />
               </FormSectionCard>
             )}
