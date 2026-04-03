@@ -18,6 +18,7 @@ import {
   Globe,
   Settings,
   MessageCircle,
+  Table2,
 } from "lucide-react";
 import {
   Sidebar,
@@ -56,6 +57,7 @@ const workItems: NavItem[] = [
   { title: "Projects", href: "/projects", icon: FolderKanban },
   { title: "Workflows", href: "/workflows", icon: Workflow },
   { title: "Documents", href: "/documents", icon: FileText },
+  { title: "Tables", href: "/tables", icon: Table2, alsoMatches: ["/tables/"] },
 ];
 
 const manageItems: NavItem[] = [

@@ -6,6 +6,7 @@ import { setExecution, removeExecution } from "./execution-manager";
 import { MAX_RESUME_COUNT, DEFAULT_MAX_TURNS, DEFAULT_MAX_BUDGET_USD } from "@/lib/constants/task-status";
 import { getAuthEnv, updateAuthStatus } from "@/lib/settings/auth";
 import { buildDocumentContext } from "@/lib/documents/context-builder";
+import { buildTableContext } from "@/lib/tables/context-builder";
 import {
   buildTaskOutputInstructions,
   prepareTaskOutputDirectory,
@@ -369,6 +370,7 @@ export async function buildTaskQueryContext(
   const profileInstructions = payload?.instructions ?? "";
   const basePrompt = task.description || task.title;
   const docContext = await buildDocumentContext(task.id);
+  const tableContext = await buildTableContext(task.id);
   const outputInstructions = buildTaskOutputInstructions(task.id);
   const learnedCtx = getActiveLearnedContext(profileId);
   const learnedCtxBlock = learnedCtx
@@ -394,7 +396,7 @@ export async function buildTaskQueryContext(
     : "";
 
   // F1: Separate system instructions from user content
-  const systemInstructions = [worktreeNote, profileInstructions, learnedCtxBlock, docContext, outputInstructions]
+  const systemInstructions = [worktreeNote, profileInstructions, learnedCtxBlock, docContext, tableContext, outputInstructions]
     .filter(Boolean)
     .join("\n\n");
 

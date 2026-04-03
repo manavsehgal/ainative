@@ -16,3 +16,11 @@ sqlite.pragma("foreign_keys = ON");
 bootstrapStagentDatabase(sqlite);
 
 export const db = drizzle(sqlite, { schema });
+
+// Lazy seed: table templates (idempotent — checks before inserting)
+import("@/lib/data/seed-data/table-templates").then(({ seedTableTemplates }) => {
+  seedTableTemplates().catch(() => {
+    // Template seeding is non-critical — log and continue
+    console.warn("[db] table template seeding failed");
+  });
+});

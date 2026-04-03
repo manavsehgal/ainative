@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { projects, tasks, workflows, documents, schedules } from "@/lib/db/schema";
+import { projects, tasks, workflows, documents, schedules, userTables } from "@/lib/db/schema";
 import { like, desc } from "drizzle-orm";
 import { listProfiles } from "@/lib/agents/profiles/registry";
 
@@ -25,7 +25,7 @@ export async function GET(request: Request) {
 
   const hasQuery = query.trim().length > 0;
   const pattern = hasQuery ? `%${query}%` : "";
-  const perType = Math.max(2, Math.floor(limit / 5));
+  const perType = Math.max(2, Math.floor(limit / 7));
 
   const results: EntityResult[] = [];
 
@@ -45,9 +45,12 @@ export async function GET(request: Request) {
   const scheduleQuery = db
     .select({ id: schedules.id, name: schedules.name, status: schedules.status })
     .from(schedules);
+  const tableQuery = db
+    .select({ id: userTables.id, name: userTables.name, rowCount: userTables.rowCount, source: userTables.source })
+    .from(userTables);
 
   // Search in parallel across all entity types
-  const [projectRows, taskRows, workflowRows, documentRows, scheduleRows] =
+  const [projectRows, taskRows, workflowRows, documentRows, scheduleRows, tableRows] =
     await Promise.all([
       (hasQuery ? projectQuery.where(like(projects.name, pattern)) : projectQuery)
         .orderBy(desc(projects.updatedAt))
@@ -63,6 +66,9 @@ export async function GET(request: Request) {
         .limit(perType),
       (hasQuery ? scheduleQuery.where(like(schedules.name, pattern)) : scheduleQuery)
         .orderBy(desc(schedules.updatedAt))
+        .limit(perType),
+      (hasQuery ? tableQuery.where(like(userTables.name, pattern)) : tableQuery)
+        .orderBy(desc(userTables.updatedAt))
         .limit(perType),
     ]);
 
@@ -80,6 +86,9 @@ export async function GET(request: Request) {
   }
   for (const s of scheduleRows) {
     results.push({ entityType: "schedule", entityId: s.id, label: s.name, status: s.status });
+  }
+  for (const t of tableRows) {
+    results.push({ entityType: "table", entityId: t.id, label: t.name, description: `${t.rowCount ?? 0} rows · ${t.source}` });
   }
 
   // Search profiles in-memory (file-based registry)

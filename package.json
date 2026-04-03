@@ -94,6 +94,7 @@
     "react-dom": "^19",
     "react-hook-form": "^7.71.2",
     "react-markdown": "^10.1.0",
+    "recharts": "^3.8.1",
     "remark-gfm": "^4.0.1",
     "sharp": "^0.34.5",
     "smol-toml": "^1.6.1",

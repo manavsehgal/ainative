@@ -755,6 +755,332 @@ export const projectDocumentDefaults = sqliteTable(
 
 export type ProjectDocumentDefaultRow = InferSelectModel<typeof projectDocumentDefaults>;
 
+// ── User-Defined Tables (structured data) ───────────────────────────────
+
+export const userTables = sqliteTable(
+  "user_tables",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id").references(() => projects.id),
+    name: text("name").notNull(),
+    description: text("description"),
+    /** JSON array of column definitions — denormalized for fast reads */
+    columnSchema: text("column_schema").notNull().default("[]"),
+    /** Denormalized row count for list views */
+    rowCount: integer("row_count").default(0).notNull(),
+    /** How this table was created */
+    source: text("source", {
+      enum: ["manual", "imported", "agent", "template"],
+    })
+      .default("manual")
+      .notNull(),
+    /** Template ID if created from a template */
+    templateId: text("template_id"),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_user_tables_project_id").on(table.projectId),
+    index("idx_user_tables_source").on(table.source),
+  ]
+);
+
+export const userTableColumns = sqliteTable(
+  "user_table_columns",
+  {
+    id: text("id").primaryKey(),
+    tableId: text("table_id")
+      .references(() => userTables.id)
+      .notNull(),
+    name: text("name").notNull(),
+    displayName: text("display_name").notNull(),
+    dataType: text("data_type", {
+      enum: [
+        "text",
+        "number",
+        "date",
+        "boolean",
+        "select",
+        "url",
+        "email",
+        "relation",
+        "computed",
+      ],
+    }).notNull(),
+    position: integer("position").notNull(),
+    required: integer("required", { mode: "boolean" }).default(false).notNull(),
+    defaultValue: text("default_value"),
+    /** JSON config for type-specific settings (select options, formula, relation target, etc.) */
+    config: text("config"),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_user_table_columns_table_id").on(table.tableId),
+    index("idx_user_table_columns_position").on(table.tableId, table.position),
+  ]
+);
+
+export const userTableRows = sqliteTable(
+  "user_table_rows",
+  {
+    id: text("id").primaryKey(),
+    tableId: text("table_id")
+      .references(() => userTables.id)
+      .notNull(),
+    /** JSON object with column values keyed by column name */
+    data: text("data").notNull().default("{}"),
+    position: integer("position").notNull(),
+    /** Who created this row: 'user' or agent profile ID */
+    createdBy: text("created_by").default("user"),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_user_table_rows_table_id").on(table.tableId),
+    index("idx_user_table_rows_position").on(table.tableId, table.position),
+  ]
+);
+
+export const userTableViews = sqliteTable(
+  "user_table_views",
+  {
+    id: text("id").primaryKey(),
+    tableId: text("table_id")
+      .references(() => userTables.id)
+      .notNull(),
+    name: text("name").notNull(),
+    type: text("type", { enum: ["grid", "chart", "joined"] })
+      .default("grid")
+      .notNull(),
+    /** JSON config: filters, sorting, column visibility, chart config, join config */
+    config: text("config"),
+    isDefault: integer("is_default", { mode: "boolean" })
+      .default(false)
+      .notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_user_table_views_table_id").on(table.tableId),
+  ]
+);
+
+export const userTableRelationships = sqliteTable(
+  "user_table_relationships",
+  {
+    id: text("id").primaryKey(),
+    fromTableId: text("from_table_id")
+      .references(() => userTables.id)
+      .notNull(),
+    fromColumn: text("from_column").notNull(),
+    toTableId: text("to_table_id")
+      .references(() => userTables.id)
+      .notNull(),
+    toColumn: text("to_column").notNull(),
+    relationshipType: text("relationship_type", {
+      enum: ["one_to_one", "one_to_many", "many_to_many"],
+    }).notNull(),
+    /** JSON config for display column, cascade behavior, etc. */
+    config: text("config"),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_user_table_rels_from").on(table.fromTableId),
+    index("idx_user_table_rels_to").on(table.toTableId),
+  ]
+);
+
+export const userTableTemplates = sqliteTable(
+  "user_table_templates",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    description: text("description"),
+    category: text("category", {
+      enum: ["business", "personal", "pm", "finance", "content"],
+    }).notNull(),
+    /** JSON array of column definitions */
+    columnSchema: text("column_schema").notNull(),
+    /** JSON array of sample row data */
+    sampleData: text("sample_data"),
+    scope: text("scope", { enum: ["system", "user"] })
+      .default("system")
+      .notNull(),
+    icon: text("icon"),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_user_table_templates_category").on(table.category),
+    index("idx_user_table_templates_scope").on(table.scope),
+  ]
+);
+
+export const userTableImports = sqliteTable(
+  "user_table_imports",
+  {
+    id: text("id").primaryKey(),
+    tableId: text("table_id")
+      .references(() => userTables.id)
+      .notNull(),
+    documentId: text("document_id").references(() => documents.id),
+    /** Number of rows imported */
+    rowCount: integer("row_count").default(0).notNull(),
+    /** Number of rows that failed validation */
+    errorCount: integer("error_count").default(0).notNull(),
+    /** JSON array of error details */
+    errors: text("errors"),
+    status: text("status", { enum: ["pending", "completed", "failed"] })
+      .default("pending")
+      .notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_user_table_imports_table_id").on(table.tableId),
+  ]
+);
+
+// ── Table Junction Tables ───────────────────────────────────────────────
+
+export const tableDocumentInputs = sqliteTable(
+  "table_document_inputs",
+  {
+    id: text("id").primaryKey(),
+    tableId: text("table_id")
+      .references(() => userTables.id)
+      .notNull(),
+    documentId: text("document_id")
+      .references(() => documents.id)
+      .notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_tdi_table").on(table.tableId),
+    uniqueIndex("idx_tdi_table_doc").on(table.tableId, table.documentId),
+  ]
+);
+
+export const taskTableInputs = sqliteTable(
+  "task_table_inputs",
+  {
+    id: text("id").primaryKey(),
+    taskId: text("task_id")
+      .references(() => tasks.id)
+      .notNull(),
+    tableId: text("table_id")
+      .references(() => userTables.id)
+      .notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_tti_task").on(table.taskId),
+    uniqueIndex("idx_tti_task_table").on(table.taskId, table.tableId),
+  ]
+);
+
+export const workflowTableInputs = sqliteTable(
+  "workflow_table_inputs",
+  {
+    id: text("id").primaryKey(),
+    workflowId: text("workflow_id")
+      .references(() => workflows.id)
+      .notNull(),
+    tableId: text("table_id")
+      .references(() => userTables.id)
+      .notNull(),
+    /** null = table available to all steps; set = scoped to specific step */
+    stepId: text("step_id"),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_wti_workflow").on(table.workflowId),
+    uniqueIndex("idx_wti_workflow_table_step").on(
+      table.workflowId,
+      table.tableId,
+      table.stepId
+    ),
+  ]
+);
+
+export const scheduleTableInputs = sqliteTable(
+  "schedule_table_inputs",
+  {
+    id: text("id").primaryKey(),
+    scheduleId: text("schedule_id")
+      .references(() => schedules.id)
+      .notNull(),
+    tableId: text("table_id")
+      .references(() => userTables.id)
+      .notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_sti_schedule").on(table.scheduleId),
+    uniqueIndex("idx_sti_schedule_table").on(
+      table.scheduleId,
+      table.tableId
+    ),
+  ]
+);
+
+// ── Table Workflow Triggers ──────────────────────────────────────────
+
+export const userTableTriggers = sqliteTable(
+  "user_table_triggers",
+  {
+    id: text("id").primaryKey(),
+    tableId: text("table_id")
+      .references(() => userTables.id)
+      .notNull(),
+    name: text("name").notNull(),
+    triggerEvent: text("trigger_event", {
+      enum: ["row_added", "row_updated", "row_deleted"],
+    }).notNull(),
+    /** JSON condition using filter format (null = always fire) */
+    condition: text("condition"),
+    actionType: text("action_type", {
+      enum: ["run_workflow", "create_task"],
+    }).notNull(),
+    /** JSON config: { workflowId } or { title, description, projectId } */
+    actionConfig: text("action_config").notNull(),
+    status: text("status", { enum: ["active", "paused"] })
+      .default("active")
+      .notNull(),
+    fireCount: integer("fire_count").default(0).notNull(),
+    lastFiredAt: integer("last_fired_at", { mode: "timestamp" }),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_user_table_triggers_table_id").on(table.tableId),
+    index("idx_user_table_triggers_status").on(table.status),
+  ]
+);
+
+// ── Table Row Version History ────────────────────────────────────────
+
+export const userTableRowHistory = sqliteTable(
+  "user_table_row_history",
+  {
+    id: text("id").primaryKey(),
+    rowId: text("row_id").notNull(),
+    tableId: text("table_id")
+      .references(() => userTables.id)
+      .notNull(),
+    /** JSON snapshot of the row data before the change */
+    previousData: text("previous_data").notNull(),
+    changedBy: text("changed_by").default("user"),
+    changeType: text("change_type", { enum: ["update", "delete"] }).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_row_history_row_id").on(table.rowId),
+    index("idx_row_history_table_id").on(table.tableId),
+    index("idx_row_history_created_at").on(table.createdAt),
+  ]
+);
+
 // Shared types derived from schema — use these in components instead of `as any`
 export type ProjectRow = InferSelectModel<typeof projects>;
 export type TaskRow = InferSelectModel<typeof tasks>;
@@ -780,3 +1106,16 @@ export type ReadingProgressRow = InferSelectModel<typeof readingProgress>;
 export type BookmarkRow = InferSelectModel<typeof bookmarks>;
 export type RepoImportRow = InferSelectModel<typeof repoImports>;
 export type AgentMessageRow = InferSelectModel<typeof agentMessages>;
+export type UserTableRow = InferSelectModel<typeof userTables>;
+export type UserTableColumnRow = InferSelectModel<typeof userTableColumns>;
+export type UserTableRowRow = InferSelectModel<typeof userTableRows>;
+export type UserTableViewRow = InferSelectModel<typeof userTableViews>;
+export type UserTableRelationshipRow = InferSelectModel<typeof userTableRelationships>;
+export type UserTableTemplateRow = InferSelectModel<typeof userTableTemplates>;
+export type UserTableImportRow = InferSelectModel<typeof userTableImports>;
+export type TableDocumentInputRow = InferSelectModel<typeof tableDocumentInputs>;
+export type TaskTableInputRow = InferSelectModel<typeof taskTableInputs>;
+export type WorkflowTableInputRow = InferSelectModel<typeof workflowTableInputs>;
+export type ScheduleTableInputRow = InferSelectModel<typeof scheduleTableInputs>;
+export type UserTableTriggerRow = InferSelectModel<typeof userTableTriggers>;
+export type UserTableRowHistoryRow = InferSelectModel<typeof userTableRowHistory>;

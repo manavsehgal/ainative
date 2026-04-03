@@ -1,0 +1,61 @@
+"use client";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Table2 } from "lucide-react";
+import { tableSourceVariant } from "@/lib/constants/table-status";
+import { formatRowCount, formatColumnCount } from "./utils";
+import type { TableWithRelations } from "./types";
+
+interface TableGridProps {
+  tables: TableWithRelations[];
+  onSelect: (id: string) => void;
+  onOpen: (id: string) => void;
+}
+
+export function TableGrid({ tables, onSelect, onOpen }: TableGridProps) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {tables.map((t) => (
+        <Card
+          key={t.id}
+          className="cursor-pointer hover:border-primary/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg"
+          tabIndex={0}
+          onClick={() => onSelect(t.id)}
+          onDoubleClick={() => onOpen(t.id)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") onOpen(t.id);
+          }}
+        >
+          <CardHeader className="pb-2">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-2">
+                <Table2 className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium">
+                  {t.name}
+                </CardTitle>
+              </div>
+              <Badge variant={tableSourceVariant[t.source]} className="text-xs">
+                {t.source}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {t.description && (
+              <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
+                {t.description}
+              </p>
+            )}
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <span>{formatColumnCount(t.columnCount)}</span>
+              <span>{formatRowCount(t.rowCount)}</span>
+              {t.projectName && (
+                <span className="truncate">{t.projectName}</span>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}

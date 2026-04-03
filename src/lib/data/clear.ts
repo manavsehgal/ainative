@@ -28,6 +28,19 @@ import {
   workflowDocumentInputs,
   scheduleDocumentInputs,
   projectDocumentDefaults,
+  userTables,
+  userTableColumns,
+  userTableRows,
+  userTableViews,
+  userTableRelationships,
+  userTableImports,
+  userTableTemplates,
+  userTableTriggers,
+  userTableRowHistory,
+  tableDocumentInputs,
+  taskTableInputs,
+  workflowTableInputs,
+  scheduleTableInputs,
 } from "@/lib/db/schema";
 import { readdirSync, unlinkSync, mkdirSync } from "fs";
 import { join } from "path";
@@ -74,6 +87,23 @@ export function clearAllData() {
   const usageLedgerDeleted = db.delete(usageLedger).run().changes;
   const logsDeleted = db.delete(agentLogs).run().changes;
   const notificationsDeleted = db.delete(notifications).run().changes;
+
+  // Table junction tables — delete before user_tables, tasks, workflows, schedules
+  const tableDocInputsDeleted = db.delete(tableDocumentInputs).run().changes;
+  const taskTableInputsDeleted = db.delete(taskTableInputs).run().changes;
+  const workflowTableInputsDeleted = db.delete(workflowTableInputs).run().changes;
+  const scheduleTableInputsDeleted = db.delete(scheduleTableInputs).run().changes;
+
+  // Table children — delete before user_tables
+  const userTableImportsDeleted = db.delete(userTableImports).run().changes;
+  const userTableViewsDeleted = db.delete(userTableViews).run().changes;
+  const userTableRelationshipsDeleted = db.delete(userTableRelationships).run().changes;
+  const userTableRowsDeleted = db.delete(userTableRows).run().changes;
+  const userTableRowHistoryDeleted = db.delete(userTableRowHistory).run().changes;
+  const userTableTriggersDeleted = db.delete(userTableTriggers).run().changes;
+  const userTableColumnsDeleted = db.delete(userTableColumns).run().changes;
+  const userTablesDeleted = db.delete(userTables).run().changes;
+  const userTableTemplatesDeleted = db.delete(userTableTemplates).run().changes;
 
   // Document junction tables — delete before documents, workflows, schedules, projects
   const workflowDocInputsDeleted = db.delete(workflowDocumentInputs).run().changes;
@@ -142,6 +172,19 @@ export function clearAllData() {
     workflowDocumentInputs: workflowDocInputsDeleted,
     scheduleDocumentInputs: scheduleDocInputsDeleted,
     projectDocumentDefaults: projectDocDefaultsDeleted,
+    userTables: userTablesDeleted,
+    userTableColumns: userTableColumnsDeleted,
+    userTableRows: userTableRowsDeleted,
+    userTableViews: userTableViewsDeleted,
+    userTableRelationships: userTableRelationshipsDeleted,
+    userTableImports: userTableImportsDeleted,
+    userTableTemplates: userTableTemplatesDeleted,
+    userTableTriggers: userTableTriggersDeleted,
+    userTableRowHistory: userTableRowHistoryDeleted,
+    tableDocumentInputs: tableDocInputsDeleted,
+    taskTableInputs: taskTableInputsDeleted,
+    workflowTableInputs: workflowTableInputsDeleted,
+    scheduleTableInputs: scheduleTableInputsDeleted,
     files: filesDeleted,
     screenshots: screenshotsDeleted,
   };

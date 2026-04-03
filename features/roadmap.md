@@ -214,6 +214,25 @@ Features that enhance the product but aren't essential for first use — homepag
 | [bidirectional-channel-chat](bidirectional-channel-chat.md) | P1 | completed | multi-channel-delivery, chat-engine |
 | [agent-async-handoffs](agent-async-handoffs.md) | P2 | completed | multi-agent-routing, heartbeat-scheduler |
 
+### Structured Data (Tables)
+
+| Feature | Priority | Status | Dependencies |
+|---------|----------|--------|--------------|
+| [tables-data-layer](tables-data-layer.md) | P0 | completed | — |
+| [tables-list-page](tables-list-page.md) | P0 | completed | tables-data-layer |
+| [tables-spreadsheet-editor](tables-spreadsheet-editor.md) | P0 | completed | tables-data-layer |
+| [tables-document-import](tables-document-import.md) | P0 | completed | tables-data-layer, tables-spreadsheet-editor |
+| [tables-template-gallery](tables-template-gallery.md) | P1 | completed | tables-data-layer |
+| [tables-computed-columns](tables-computed-columns.md) | P1 | completed | tables-spreadsheet-editor |
+| [tables-agent-integration](tables-agent-integration.md) | P1 | completed | tables-data-layer, tables-spreadsheet-editor |
+| [tables-chat-queries](tables-chat-queries.md) | P1 | completed | tables-data-layer, tables-agent-integration |
+| [tables-cross-joins](tables-cross-joins.md) | P2 | completed | tables-computed-columns |
+| [tables-agent-charts](tables-agent-charts.md) | P2 | completed | tables-agent-integration, tables-chat-queries |
+| [tables-workflow-triggers](tables-workflow-triggers.md) | P2 | completed | tables-agent-integration |
+| [tables-nl-creation](tables-nl-creation.md) | P3 | completed | tables-chat-queries |
+| [tables-export](tables-export.md) | P3 | completed | tables-spreadsheet-editor |
+| [tables-versioning](tables-versioning.md) | P3 | completed | tables-spreadsheet-editor |
+
 ### Entity Relationships
 
 | Feature | Priority | Status | Dependencies |
@@ -285,6 +304,25 @@ environment-scanner (completed) + environment-cache (completed)
 
 chat-engine (completed) + environment-scanner (completed)
     └── workspace-context-awareness (P1)
+```
+
+Structured data (Tables) chain:
+
+```
+tables-data-layer (P0)
+    ├── tables-list-page (P0)
+    ├── tables-spreadsheet-editor (P0)
+    │       ├── tables-document-import (P0)
+    │       ├── tables-computed-columns (P1)
+    │       │       └── tables-cross-joins (P2)
+    │       ├── tables-export (P3)
+    │       └── tables-versioning (P3)
+    ├── tables-template-gallery (P1)
+    └── tables-agent-integration (P1)
+            ├── tables-chat-queries (P1)
+            │       └── tables-nl-creation (P3)
+            ├── tables-agent-charts (P2)
+            └── tables-workflow-triggers (P2)
 ```
 
 - **Critical path**: database-schema → project-management → task-board → agent-integration → inbox-notifications / monitoring-dashboard
@@ -434,6 +472,15 @@ Phase 4 — Runtime Expansion
 35. **Sprint 35 — Agent Intelligence**: agent-episodic-memory (P1) + natural-language-scheduling (P1) — persistent knowledge memory and NLP schedule parsing (parallel)
 36. **Sprint 36 — Coordination**: multi-channel-delivery (P2) + agent-async-handoffs (P2) — Slack/Telegram delivery and inter-agent message bus (parallel)
 37. **Sprint 37 — Local Runtime**: ollama-runtime-provider (P2) — local model execution via Ollama
+
+38. **Sprint 38 — Tables Foundation**: tables-data-layer (P0) + tables-list-page (P0) — 12 new DB tables (hybrid JSON rows), CRUD API, query builder with json_extract(), 12 built-in templates, /tables list page with sidebar nav
+39. **Sprint 39 — Tables Editor**: tables-spreadsheet-editor (P0) — inline cell editing with type-aware controls, keyboard nav (Tab/Enter/Escape/Arrows), optimistic debounced saves, column management
+40. **Sprint 40 — Tables Import + Templates**: tables-document-import (P0) + tables-template-gallery (P1) — document picker integration, column type inference, mapping wizard; template gallery with preview + clone flow
+41. **Sprint 41 — Tables Agent Integration**: tables-agent-integration (P1) + tables-chat-queries (P1) — 12 agent tools, table context builder, TablePickerSheet, NL-to-query engine, chat inline table rendering
+42. **Sprint 42 — Tables Expansion**: tables-computed-columns (P1) + tables-cross-joins (P2) + tables-agent-charts (P2) + tables-workflow-triggers (P2) — formula engine, relation combobox, joined views, chart builder, event triggers
+43. **Sprint 43 — Tables Polish**: tables-nl-creation (P3) + tables-export (P3) + tables-versioning (P3) — NL table creation, CSV/XLSX/JSON export, row-level version history with rollback
+
+> Structured Data (Tables) initiative (14 features) fully shipped 2026-04-03. Sprints 38-43 completed. 52 new files, 13 new DB tables, 12 agent tools, 12 built-in templates.
 
 Browser automation chain:
 

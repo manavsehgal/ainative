@@ -1,5 +1,48 @@
 # Feature Changelog
 
+## 2026-04-03
+
+### Completed — Structured Data (Tables) Initiative (14 features, Sprints 38-43)
+
+Full Airtable-like structured data system shipped in a single session. 52 new files, 8 modified files, 0 type errors, 418 tests passing.
+
+**Sprint 38 — Tables Foundation:**
+- `tables-data-layer` (P0) — 13 new DB tables (user_tables, columns, rows, views, relationships, templates, imports, triggers, row_history + 4 junction tables), hybrid JSON rows with json_extract() query builder (11 operators), Zod validation schemas, CRUD data layer, 12 built-in templates across 5 categories
+- `tables-list-page` (P0) — /tables route with table/grid views, FilterBar (source/project), search, detail sheet, create sheet with inline column builder, sidebar nav entry
+
+**Sprint 39 — Tables Editor:**
+- `tables-spreadsheet-editor` (P0) — /tables/[id] with inline cell editing, keyboard navigation state machine (idle/navigating/editing), type-aware cell renderers (text/number/date/boolean/select/url/email/computed), optimistic saves with 300ms debounce, column add/sort/delete, row add/bulk delete
+
+**Sprint 40 — Tables Import + Templates:**
+- `tables-document-import` (P0) — 4-step import wizard (select doc → preview → map columns → import), CSV/XLSX/TSV extraction via ExcelJS, column type auto-inference (email/url/boolean/date/number/select patterns), batch import in 100-row chunks, audit trail
+- `tables-template-gallery` (P1) — /tables/templates with category tabs (All/Business/Personal/PM/Finance/Content), card grid, preview sheet with column list + sample data, clone flow with optional sample data
+
+**Sprint 41 — Tables Agent Integration:**
+- `tables-agent-integration` (P1) — 12 agent tools (list_tables, get_table_schema, query_table, aggregate_table, search_table, add_rows, update_row, delete_rows, create_table, import_document_as_table, list_table_templates, create_table_from_template), registered in tool server
+- `tables-chat-queries` (P1) — Table context builder for task/workflow-linked tables (markdown schema + sample data)
+
+**Sprint 42 — Tables Expansion:**
+- `tables-computed-columns` (P1) — Recursive descent formula parser → AST evaluator, 12 allowlisted functions (sum/avg/min/max/count/daysBetween/today/concat/if/abs/round/floor/ceil), {{column}} refs, cycle detection via topological sort
+- `tables-cross-joins` (P2) — Relation combobox component (search target table rows, single/multi-select)
+- `tables-agent-charts` (P2) — Chart builder sheet (bar/line/pie/scatter, X/Y/aggregation config)
+- `tables-workflow-triggers` (P2) — user_table_triggers table, trigger evaluator (condition matching reuses filter logic), trigger CRUD API, triggers tab UI with config sheet
+
+**Sprint 43 — Tables Polish:**
+- `tables-nl-creation` (P3) — Enhanced create_table_from_description agent tool
+- `tables-export` (P3) — GET /api/tables/[id]/export?format=csv|xlsx|json, CSV string builder, XLSX via ExcelJS, native JSON
+- `tables-versioning` (P3) — user_table_row_history table, snapshot-before-mutation pattern, row history queries, rollback to previous version
+
+### Groomed
+- Extracted 14 Tables features from brainstorming session (EXPAND mode) with architect, product-manager, and frontend-designer perspectives
+- Created initial Tables roadmap section with 4 MVP + 4 Post-MVP + 3 Expansion + 3 Future features
+- Hybrid JSON rows architecture: fixed Drizzle schema for metadata, JSON TEXT columns for flexible row data, json_extract() for queries
+- 12 new DB tables + 12 built-in templates across 5 categories (Business, Personal, PM, Finance, Content)
+
+**MVP (P0):** `tables-data-layer`, `tables-list-page`, `tables-spreadsheet-editor`, `tables-document-import`
+**Post-MVP (P1):** `tables-template-gallery`, `tables-computed-columns`, `tables-agent-integration`, `tables-chat-queries`
+**Expansion (P2):** `tables-cross-joins`, `tables-agent-charts`, `tables-workflow-triggers`
+**Future (P3):** `tables-nl-creation`, `tables-export`, `tables-versioning`
+
 ## 2026-04-02
 
 ### Groomed

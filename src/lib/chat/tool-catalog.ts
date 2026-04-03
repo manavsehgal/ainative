@@ -13,6 +13,7 @@ import {
   Sun,
   CheckCheck,
   Sparkles,
+  Table2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -24,6 +25,7 @@ export type ToolGroup =
   | "Workflows"
   | "Schedules"
   | "Documents"
+  | "Tables"
   | "Notifications"
   | "Profiles"
   | "Skills"
@@ -54,6 +56,7 @@ export const TOOL_GROUP_ICONS: Record<ToolGroup, LucideIcon> = {
   Workflows: GitBranch,
   Schedules: Clock,
   Documents: FileText,
+  Tables: Table2,
   Notifications: Bell,
   Profiles: Bot,
   Skills: Sparkles,
@@ -70,6 +73,7 @@ export const TOOL_GROUP_ORDER: ToolGroup[] = [
   "Projects",
   "Workflows",
   "Documents",
+  "Tables",
   "Schedules",
   "Profiles",
   "Skills",
@@ -137,6 +141,26 @@ const STAGENT_TOOLS: ToolCatalogEntry[] = [
   // ── Settings ──
   { name: "get_settings", description: "Get current Stagent settings", group: "Settings", paramHint: "key" },
   { name: "set_settings", description: "Update a Stagent setting (approval required)", group: "Settings", paramHint: "key, value" },
+
+  // ── Tables ──
+  { name: "list_tables", description: "List tables, filter by project or source", group: "Tables", paramHint: "projectId, source" },
+  { name: "get_table_schema", description: "Get column definitions for a table", group: "Tables", paramHint: "tableId" },
+  { name: "query_table", description: "Query rows with filters and sorting", group: "Tables", paramHint: "tableId, filters, sorts, limit" },
+  { name: "search_table", description: "Full-text search across table text columns", group: "Tables", paramHint: "tableId, query, limit" },
+  { name: "aggregate_table", description: "Run aggregate operations (sum, avg, count, min, max)", group: "Tables", paramHint: "tableId, column, operation" },
+  { name: "add_rows", description: "Add one or more rows to a table", group: "Tables", paramHint: "tableId, rows" },
+  { name: "update_row", description: "Update fields in a table row", group: "Tables", paramHint: "rowId, data" },
+  { name: "delete_rows", description: "Delete rows from a table", group: "Tables", paramHint: "rowIds" },
+  { name: "create_table", description: "Create a new table with column schema", group: "Tables", paramHint: "name, columns" },
+  { name: "import_document_as_table", description: "Import CSV/XLSX document into a table", group: "Tables", paramHint: "tableId, documentId" },
+  { name: "list_table_templates", description: "List available table templates", group: "Tables", paramHint: "category" },
+  { name: "create_table_from_template", description: "Create a table from a template", group: "Tables", paramHint: "templateId, name, includeSampleData" },
+  { name: "create_table_from_description", description: "Create a table from a natural language description", group: "Tables", paramHint: "description, name, columns" },
+  { name: "export_table", description: "Export table data as CSV, JSON, or XLSX", group: "Tables", paramHint: "tableId, format" },
+  { name: "add_column", description: "Add a column to a table", group: "Tables", paramHint: "tableId, name, dataType" },
+  { name: "update_column", description: "Update a column's name or type", group: "Tables", paramHint: "columnId, displayName, dataType" },
+  { name: "delete_column", description: "Delete a column from a table", group: "Tables", paramHint: "columnId" },
+  { name: "reorder_columns", description: "Reorder columns in a table", group: "Tables", paramHint: "tableId, columnIds" },
 
   // ── Chat History ──
   { name: "list_conversations", description: "List recent chat conversations", group: "Chat", paramHint: "search, limit" },
