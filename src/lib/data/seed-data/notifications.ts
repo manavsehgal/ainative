@@ -139,6 +139,7 @@ export function createNotifications(taskIds: string[]): NotificationSeed[] {
     },
 
     // ── permission_required (6) ─────────────────────────────────────
+    // All pre-responded with proper JSON format matching what the API writes
     {
       id: crypto.randomUUID(),
       taskId: taskIds[1], // Write copy — P1
@@ -151,7 +152,7 @@ export function createNotifications(taskIds: string[]): NotificationSeed[] {
         file_path: "launch-campaign-plan.docx",
         description: "Launch campaign plan with 3 headline variants and email sequence",
       }),
-      response: "approved",
+      response: JSON.stringify({ behavior: "allow" }),
       respondedAt: new Date(now - 15 * DAY),
       createdAt: new Date(now - 15 * DAY - 30 * MIN),
     },
@@ -161,15 +162,15 @@ export function createNotifications(taskIds: string[]): NotificationSeed[] {
       type: "permission_required",
       title: "Permission to schedule LinkedIn posts",
       body: "Agent wants to schedule 5 LinkedIn posts via the content distribution API. Posts are queued for Mon/Wed/Fri at 8:30am ET.",
-      read: false,
+      read: true,
       toolName: "SendEmail",
       toolInput: JSON.stringify({
         channel: "linkedin",
         posts: 5,
         schedule: "MWF 8:30am ET",
       }),
-      response: null,
-      respondedAt: null,
+      response: JSON.stringify({ behavior: "allow", alwaysAllow: true }),
+      respondedAt: new Date(now - 7 * DAY),
       createdAt: new Date(now - 8 * DAY),
     },
     {
@@ -184,7 +185,7 @@ export function createNotifications(taskIds: string[]): NotificationSeed[] {
         file_path: "churn-risk-report.xlsx",
         description: "Account health scores with intervention recommendations",
       }),
-      response: "approved",
+      response: JSON.stringify({ behavior: "allow" }),
       respondedAt: new Date(now - 9 * DAY),
       createdAt: new Date(now - 9 * DAY - 15 * MIN),
     },
@@ -194,14 +195,14 @@ export function createNotifications(taskIds: string[]): NotificationSeed[] {
       type: "permission_required",
       title: "Permission to run browser automation",
       body: "Agent wants to use Chrome automation to scrape product review pages on 3 e-commerce platforms for sentiment monitoring.",
-      read: false,
+      read: true,
       toolName: "Bash",
       toolInput: JSON.stringify({
         command: "playwright scrape --sites amazon,walmart,target --sku SKU-1042",
         description: "Scrape product reviews for Bamboo Kitchen Set",
       }),
-      response: null,
-      respondedAt: null,
+      response: JSON.stringify({ behavior: "deny", message: "Use the dedicated review API instead of browser scraping" }),
+      respondedAt: new Date(now - 1 * HOUR),
       createdAt: new Date(now - 2 * HOUR),
     },
     {
@@ -216,7 +217,7 @@ export function createNotifications(taskIds: string[]): NotificationSeed[] {
         file_path: "crm-export/deal-activity-log.csv",
         description: "CRM deal activity data for risk scoring",
       }),
-      response: "approved",
+      response: JSON.stringify({ behavior: "allow" }),
       respondedAt: new Date(now - 3 * DAY),
       createdAt: new Date(now - 3 * DAY - 10 * MIN),
     },
@@ -232,7 +233,7 @@ export function createNotifications(taskIds: string[]): NotificationSeed[] {
         query: "execution logs March 2026 permission decisions",
         scope: "internal audit trail",
       }),
-      response: "approved",
+      response: JSON.stringify({ behavior: "allow", alwaysAllow: true }),
       respondedAt: new Date(now - 4 * DAY),
       createdAt: new Date(now - 4 * DAY - 5 * MIN),
     },
@@ -332,22 +333,22 @@ export function createNotifications(taskIds: string[]): NotificationSeed[] {
       createdAt: new Date(now - 4 * HOUR),
     },
 
-    // ── context_proposal (4) ────────────────────────────────────────
+    // ── context_proposal (4) — all pre-responded ─────────────────────
     {
       id: crypto.randomUUID(),
       taskId: taskIds[1], // Copy variants — P1
       type: "context_proposal",
       title: "Learned: benefit-led headlines preferred",
       body: "From the launch copy task, I observed that you consistently chose benefit-led headlines over feature-led ones. I'd like to remember this for future marketing tasks so I prioritize pain/outcome framing over feature announcements.",
-      read: false,
+      read: true,
       toolName: null,
       toolInput: JSON.stringify({
         pattern: "headline_style_preference",
         value: "benefit-led over feature-led",
         confidence: 0.91,
       }),
-      response: null,
-      respondedAt: null,
+      response: JSON.stringify({ behavior: "allow" }),
+      respondedAt: new Date(now - 13 * DAY),
       createdAt: new Date(now - 14 * DAY),
     },
     {
@@ -363,7 +364,7 @@ export function createNotifications(taskIds: string[]): NotificationSeed[] {
         value: "1500-2000 words",
         confidence: 0.85,
       }),
-      response: "approved",
+      response: JSON.stringify({ behavior: "allow" }),
       respondedAt: new Date(now - 9 * DAY),
       createdAt: new Date(now - 10 * DAY),
     },
@@ -373,15 +374,15 @@ export function createNotifications(taskIds: string[]): NotificationSeed[] {
       type: "context_proposal",
       title: "Learned: deal stall threshold is 5 business days",
       body: "Your deal review process consistently flags deals at 5+ business days without activity. I'd like to use this as the default stall threshold for future pipeline analysis and coaching notes.",
-      read: false,
+      read: true,
       toolName: null,
       toolInput: JSON.stringify({
         pattern: "deal_stall_threshold",
         value: "5 business days",
         confidence: 0.94,
       }),
-      response: null,
-      respondedAt: null,
+      response: JSON.stringify({ behavior: "allow" }),
+      respondedAt: new Date(now - 2 * DAY),
       createdAt: new Date(now - 3 * DAY),
     },
     {
@@ -397,12 +398,12 @@ export function createNotifications(taskIds: string[]): NotificationSeed[] {
         value: "NPS < 30",
         confidence: 0.89,
       }),
-      response: "approved",
+      response: JSON.stringify({ behavior: "allow" }),
       respondedAt: new Date(now - 8 * DAY),
       createdAt: new Date(now - 9 * DAY),
     },
 
-    // ── context_proposal_batch (3) ──────────────────────────────────
+    // ── context_proposal_batch (3) — all pre-responded ──────────────
     {
       id: crypto.randomUUID(),
       taskId: taskIds[20], // DD memo — P4
@@ -420,7 +421,7 @@ export function createNotifications(taskIds: string[]): NotificationSeed[] {
         ],
         confidence: 0.92,
       }),
-      response: "approved",
+      response: JSON.stringify({ behavior: "allow" }),
       respondedAt: new Date(now - 4 * DAY),
       createdAt: new Date(now - 5 * DAY),
     },
@@ -430,7 +431,7 @@ export function createNotifications(taskIds: string[]): NotificationSeed[] {
       type: "context_proposal_batch",
       title: "3 patterns learned from deal review",
       body: "From the weekly deal review process, I identified 3 operating patterns:\n\n1. **Forecast buckets** — committed, best-case, and upside (not just total)\n2. **Coaching format** — 1-2 notes per rep, specific to their deals\n3. **Action limit** — top 3 actions only, ranked by leverage\n\nShall I apply these to future operating notes?",
-      read: false,
+      read: true,
       toolName: null,
       toolInput: JSON.stringify({
         patterns: [
@@ -440,8 +441,8 @@ export function createNotifications(taskIds: string[]): NotificationSeed[] {
         ],
         confidence: 0.88,
       }),
-      response: null,
-      respondedAt: null,
+      response: JSON.stringify({ behavior: "allow" }),
+      respondedAt: new Date(now - 3 * DAY),
       createdAt: new Date(now - 4 * DAY),
     },
     {
@@ -459,7 +460,7 @@ export function createNotifications(taskIds: string[]): NotificationSeed[] {
         ],
         confidence: 0.95,
       }),
-      response: "approved",
+      response: JSON.stringify({ behavior: "allow" }),
       respondedAt: new Date(now - 3 * DAY),
       createdAt: new Date(now - 3 * DAY - 30 * MIN),
     },
