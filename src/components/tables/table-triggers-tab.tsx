@@ -97,8 +97,17 @@ export function TableTriggersTab({ tableId }: TableTriggersTabProps) {
     try {
       const res = await fetch(`/api/tables/${tableId}/triggers`);
       if (res.ok) {
-        const data = await res.json();
-        setTriggers(data.triggers ?? data ?? []);
+        const raw = await res.json();
+        const list = raw.triggers ?? raw ?? [];
+        // Map API shape (triggerEvent, JSON strings) to component shape (eventType, parsed objects)
+        setTriggers(
+          list.map((t: Record<string, unknown>) => ({
+            ...t,
+            eventType: t.triggerEvent ?? t.eventType,
+            condition: typeof t.condition === "string" ? JSON.parse(t.condition) : t.condition ?? null,
+            actionConfig: typeof t.actionConfig === "string" ? JSON.parse(t.actionConfig) : t.actionConfig ?? {},
+          }))
+        );
       }
     } catch {
       // silent

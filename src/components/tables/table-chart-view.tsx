@@ -101,7 +101,7 @@ export function TableChartView({ config, title, rows }: TableChartViewProps) {
               <YAxis tick={{ fontSize: 12 }} />
               <Tooltip />
               <Legend />
-              <Bar dataKey="value" fill="oklch(0.65 0.18 250)" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="value" name={config.yColumn ?? config.aggregation ?? "value"} fill="oklch(0.65 0.18 250)" radius={[4, 4, 0, 0]} />
             </BarChart>
           ) : config.type === "line" ? (
             <LineChart data={chartData}>
@@ -110,7 +110,7 @@ export function TableChartView({ config, title, rows }: TableChartViewProps) {
               <YAxis tick={{ fontSize: 12 }} />
               <Tooltip />
               <Legend />
-              <Line type="monotone" dataKey="value" stroke="oklch(0.65 0.18 250)" strokeWidth={2} dot={{ r: 3 }} />
+              <Line type="monotone" dataKey="value" name={config.yColumn ?? config.aggregation ?? "value"} stroke="oklch(0.65 0.18 250)" strokeWidth={2} dot={{ r: 3 }} />
             </LineChart>
           ) : config.type === "pie" ? (
             <PieChart>
