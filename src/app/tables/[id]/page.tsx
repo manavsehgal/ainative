@@ -1,4 +1,7 @@
 import { notFound } from "next/navigation";
+import { db } from "@/lib/db";
+import { projects } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 import { getTable, listRows } from "@/lib/data/tables";
 import { PageShell } from "@/components/shared/page-shell";
 import { TableDetailTabs } from "@/components/tables/table-detail-tabs";
@@ -26,6 +29,17 @@ export default async function TableDetailPage({ params }: Props) {
     columns = [];
   }
 
+  // Fetch project name if table is linked to a project
+  let projectName: string | null = null;
+  if (table.projectId) {
+    const project = db
+      .select({ name: projects.name })
+      .from(projects)
+      .where(eq(projects.id, table.projectId))
+      .get();
+    projectName = project?.name ?? null;
+  }
+
   const rawRows = await listRows(id, { limit: 500 });
   const rows = evaluateComputedColumns(columns, rawRows);
 
@@ -40,6 +54,13 @@ export default async function TableDetailPage({ params }: Props) {
         tableId={id}
         columns={columns}
         initialRows={rows}
+        tableMeta={{
+          source: table.source,
+          projectName,
+          rowCount: table.rowCount,
+          createdAt: table.createdAt ? new Date(table.createdAt).toISOString() : null,
+          updatedAt: table.updatedAt ? new Date(table.updatedAt).toISOString() : null,
+        }}
       />
     </PageShell>
   );

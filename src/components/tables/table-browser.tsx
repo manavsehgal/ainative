@@ -16,7 +16,6 @@ import { toast } from "sonner";
 import { TableListTable } from "./table-list-table";
 import { TableGrid } from "./table-grid";
 import { TableCreateSheet } from "./table-create-sheet";
-import { TableDetailSheet } from "./table-detail-sheet";
 import { FilterBar } from "@/components/shared/filter-bar";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Table2 } from "lucide-react";
@@ -35,7 +34,6 @@ export function TableBrowser({ initialTables, projects }: TableBrowserProps) {
   const [projectFilter, setProjectFilter] = useState<string>("all");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [createOpen, setCreateOpen] = useState(false);
-  const [detailId, setDetailId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const router = useRouter();
 
@@ -104,9 +102,7 @@ export function TableBrowser({ initialTables, projects }: TableBrowserProps) {
     projectFilter !== "all",
   ].filter(Boolean).length;
 
-  const selectedTable = detailId
-    ? tables.find((t) => t.id === detailId) ?? null
-    : null;
+  const navigate = (id: string) => router.push(`/tables/${id}`);
 
   return (
     <div className="space-y-4">
@@ -216,14 +212,14 @@ export function TableBrowser({ initialTables, projects }: TableBrowserProps) {
           selected={selected}
           onToggleSelect={toggleSelect}
           onToggleSelectAll={toggleSelectAll}
-          onSelect={(id) => setDetailId(id)}
-          onOpen={(id) => router.push(`/tables/${id}`)}
+          onSelect={navigate}
+          onOpen={navigate}
         />
       ) : (
         <TableGrid
           tables={filtered}
-          onSelect={(id) => setDetailId(id)}
-          onOpen={(id) => router.push(`/tables/${id}`)}
+          onSelect={navigate}
+          onOpen={navigate}
         />
       )}
 
@@ -233,17 +229,6 @@ export function TableBrowser({ initialTables, projects }: TableBrowserProps) {
         projects={projects}
         onCreated={refresh}
       />
-
-      {selectedTable && (
-        <TableDetailSheet
-          table={selectedTable}
-          open={!!detailId}
-          onOpenChange={(open) => {
-            if (!open) setDetailId(null);
-          }}
-          onDeleted={refresh}
-        />
-      )}
     </div>
   );
 }

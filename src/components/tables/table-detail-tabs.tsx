@@ -7,6 +7,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { TableSpreadsheet } from "./table-spreadsheet";
 import { TableTriggersTab } from "./table-triggers-tab";
 import { TableHistoryTab } from "./table-history-tab";
@@ -17,6 +18,7 @@ import { BarChart3, Pencil, Plus, Trash2 } from "lucide-react";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { toast } from "sonner";
+import { tableSourceVariant } from "@/lib/constants/table-status";
 import type { ColumnDef } from "@/lib/tables/types";
 import type { UserTableRowRow } from "@/lib/db/schema";
 
@@ -31,22 +33,31 @@ interface ChartView {
   };
 }
 
+interface TableMeta {
+  source: string;
+  projectName: string | null;
+  rowCount: number;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
 interface TableDetailTabsProps {
   tableId: string;
   columns: ColumnDef[];
   initialRows: UserTableRowRow[];
+  tableMeta?: TableMeta;
 }
 
 export function TableDetailTabs({
   tableId,
   columns,
   initialRows,
+  tableMeta,
 }: TableDetailTabsProps) {
   const [charts, setCharts] = useState<ChartView[]>([]);
   const [chartBuilderOpen, setChartBuilderOpen] = useState(false);
   const [editChart, setEditChart] = useState<EditChartData | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ChartView | null>(null);
-  const [, setDeleting] = useState(false);
 
   // Parse rows for chart rendering
   const parsedRows = initialRows.map((r) => ({
@@ -73,7 +84,6 @@ export function TableDetailTabs({
 
   async function handleDelete() {
     if (!deleteTarget) return;
-    setDeleting(true);
     try {
       const res = await fetch(`/api/tables/${tableId}/charts/${deleteTarget.id}`, {
         method: "DELETE",
@@ -87,7 +97,6 @@ export function TableDetailTabs({
     } catch {
       toast.error("Failed to delete chart");
     } finally {
-      setDeleting(false);
       setDeleteTarget(null);
     }
   }
@@ -105,6 +114,7 @@ export function TableDetailTabs({
           <TabsTrigger value="charts">Charts</TabsTrigger>
           <TabsTrigger value="triggers">Triggers</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
+          {tableMeta && <TabsTrigger value="details">Details</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="data" className="mt-4">
@@ -195,6 +205,63 @@ export function TableDetailTabs({
         <TabsContent value="history" className="mt-4">
           <TableHistoryTab tableId={tableId} />
         </TabsContent>
+
+        {tableMeta && (
+          <TabsContent value="details" className="mt-4">
+            <div className="space-y-4 max-w-lg">
+              <div className="grid grid-cols-2 gap-y-3 text-sm">
+                <span className="text-muted-foreground">Source</span>
+                <div>
+                  <Badge variant={tableSourceVariant[tableMeta.source as keyof typeof tableSourceVariant] ?? "outline"}>
+                    {tableMeta.source}
+                  </Badge>
+                </div>
+
+                <span className="text-muted-foreground">Project</span>
+                <span>{tableMeta.projectName ?? "—"}</span>
+
+                <span className="text-muted-foreground">Columns</span>
+                <span>{columns.length}</span>
+
+                <span className="text-muted-foreground">Rows</span>
+                <span>{tableMeta.rowCount}</span>
+
+                <span className="text-muted-foreground">Created</span>
+                <span>
+                  {tableMeta.createdAt
+                    ? new Date(tableMeta.createdAt).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })
+                    : "—"}
+                </span>
+
+                <span className="text-muted-foreground">Updated</span>
+                <span>
+                  {tableMeta.updatedAt
+                    ? new Date(tableMeta.updatedAt).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })
+                    : "—"}
+                </span>
+              </div>
+
+              {columns.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium">Column Schema</h4>
+                  <div className="rounded-md border divide-y">
+                    {columns.map((col) => (
+                      <div
+                        key={col.name}
+                        className="flex items-center justify-between px-3 py-2 text-sm"
+                      >
+                        <span>{col.displayName}</span>
+                        <Badge variant="outline" className="text-xs">
+                          {col.dataType}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        )}
       </Tabs>
 
       <ConfirmDialog
