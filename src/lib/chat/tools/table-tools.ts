@@ -672,6 +672,124 @@ Guidelines for schema inference:
       }
     ),
 
+    defineTool(
+      "update_chart",
+      "Update an existing chart's title, type, columns, or aggregation.",
+      {
+        tableId: z.string().describe("Table ID"),
+        chartId: z.string().describe("Chart ID to update"),
+        title: z.string().optional().describe("New chart title"),
+        type: z.enum(["bar", "line", "pie", "scatter"]).optional().describe("New chart type"),
+        xColumn: z.string().optional().describe("New X axis column"),
+        yColumn: z.string().optional().describe("New Y axis column"),
+        aggregation: z.enum(["sum", "avg", "count", "min", "max"]).optional().describe("New aggregation"),
+      },
+      async (args) => {
+        try {
+          const res = await fetch(`${getBaseUrl()}/api/tables/${args.tableId}/charts/${args.chartId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title: args.title,
+              type: args.type,
+              xColumn: args.xColumn,
+              yColumn: args.yColumn,
+              aggregation: args.aggregation,
+            }),
+          });
+          if (!res.ok) return err("Failed to update chart");
+          return ok(await res.json());
+        } catch (e) {
+          return err(e instanceof Error ? e.message : "Failed to update chart");
+        }
+      }
+    ),
+
+    defineTool(
+      "delete_chart",
+      "Delete a chart from a table.",
+      {
+        tableId: z.string().describe("Table ID"),
+        chartId: z.string().describe("Chart ID to delete"),
+      },
+      async (args) => {
+        try {
+          const res = await fetch(`${getBaseUrl()}/api/tables/${args.tableId}/charts/${args.chartId}`, {
+            method: "DELETE",
+          });
+          if (!res.ok && res.status !== 204) return err("Failed to delete chart");
+          return ok({ deleted: true, chartId: args.chartId });
+        } catch (e) {
+          return err(e instanceof Error ? e.message : "Failed to delete chart");
+        }
+      }
+    ),
+
+    defineTool(
+      "render_chart",
+      "Render a chart inline by fetching chart config and table data. Returns the chart configuration and aggregated data points for display.",
+      {
+        tableId: z.string().describe("Table ID"),
+        chartId: z.string().describe("Chart ID to render"),
+      },
+      async (args) => {
+        try {
+          // Fetch chart config
+          const chartsRes = await fetch(`${getBaseUrl()}/api/tables/${args.tableId}/charts`);
+          if (!chartsRes.ok) return err("Failed to fetch charts");
+          const charts = await chartsRes.json() as Array<{ id: string; name: string; config: { type: string; xColumn: string; yColumn?: string; aggregation?: string } }>;
+          const chart = charts.find((c: { id: string }) => c.id === args.chartId);
+          if (!chart) return err("Chart not found");
+
+          // Fetch table rows
+          const rowsRes = await fetch(`${getBaseUrl()}/api/tables/${args.tableId}/rows`);
+          if (!rowsRes.ok) return err("Failed to fetch table rows");
+          const rows = await rowsRes.json() as Array<{ data: string | Record<string, unknown> }>;
+
+          // Parse row data
+          const parsedRows = rows.map((r) => {
+            const data = typeof r.data === "string" ? JSON.parse(r.data) : r.data;
+            return data as Record<string, unknown>;
+          });
+
+          // Aggregate data
+          const { xColumn, yColumn, aggregation = "count" } = chart.config;
+          const groups = new Map<string, number[]>();
+          for (const row of parsedRows) {
+            const key = String(row[xColumn] ?? "Unknown");
+            if (!groups.has(key)) groups.set(key, []);
+            if (yColumn && row[yColumn] != null) {
+              groups.get(key)!.push(Number(row[yColumn]));
+            } else {
+              groups.get(key)!.push(1);
+            }
+          }
+
+          const dataPoints = Array.from(groups.entries()).map(([label, values]) => {
+            let value: number;
+            switch (aggregation) {
+              case "sum": value = values.reduce((a, b) => a + b, 0); break;
+              case "avg": value = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0; break;
+              case "min": value = Math.min(...values); break;
+              case "max": value = Math.max(...values); break;
+              case "count": default: value = values.length; break;
+            }
+            return { label, value: Math.round(value * 100) / 100 };
+          });
+
+          return ok({
+            chart: { id: chart.id, name: chart.name, type: chart.config.type },
+            xAxis: xColumn,
+            yAxis: yColumn ?? "count",
+            aggregation,
+            dataPoints,
+          });
+        } catch (e) {
+          return err(e instanceof Error ? e.message : "Failed to render chart");
+        }
+      }
+    ),
+
     // ── Triggers ───────────────────────────────────────────────────────
 
     defineTool(

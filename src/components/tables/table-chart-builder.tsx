@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,12 +25,24 @@ import { cn } from "@/lib/utils";
 type ChartType = "bar" | "line" | "pie" | "scatter";
 type Aggregation = "sum" | "avg" | "count" | "min" | "max";
 
+export interface EditChartData {
+  id: string;
+  name: string;
+  config: {
+    type: ChartType;
+    xColumn: string;
+    yColumn?: string;
+    aggregation?: Aggregation;
+  };
+}
+
 interface TableChartBuilderProps {
   tableId: string;
   columns: Array<{ name: string; displayName: string; dataType: string }>;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onChartCreated: () => void;
+  onChartSaved: () => void;
+  editChart?: EditChartData | null;
 }
 
 const CHART_TYPES: Array<{
@@ -59,7 +71,8 @@ export function TableChartBuilder({
   columns,
   open,
   onOpenChange,
-  onChartCreated,
+  onChartSaved,
+  editChart,
 }: TableChartBuilderProps) {
   const [chartType, setChartType] = useState<ChartType>("bar");
   const [title, setTitle] = useState("");
@@ -68,7 +81,21 @@ export function TableChartBuilder({
   const [aggregation, setAggregation] = useState<Aggregation>("count");
   const [saving, setSaving] = useState(false);
 
+  const isEditing = !!editChart;
   const numericColumns = columns.filter((c) => NUMERIC_TYPES.has(c.dataType));
+
+  // Populate form when editing
+  useEffect(() => {
+    if (editChart) {
+      setChartType(editChart.config.type);
+      setTitle(editChart.name);
+      setXColumn(editChart.config.xColumn);
+      setYColumn(editChart.config.yColumn ?? "");
+      setAggregation(editChart.config.aggregation ?? "count");
+    } else {
+      resetForm();
+    }
+  }, [editChart]);
 
   function resetForm() {
     setChartType("bar");
@@ -78,7 +105,7 @@ export function TableChartBuilder({
     setAggregation("count");
   }
 
-  async function handleCreate() {
+  async function handleSave() {
     if (!title.trim()) {
       toast.error("Chart title is required");
       return;
@@ -94,7 +121,7 @@ export function TableChartBuilder({
 
     setSaving(true);
     try {
-      const chartConfig = {
+      const payload = {
         type: chartType,
         title: title.trim(),
         xColumn,
@@ -102,28 +129,29 @@ export function TableChartBuilder({
         aggregation,
       };
 
-      const res = await fetch(`/api/tables/${tableId}/charts`, {
-        method: "POST",
+      const url = isEditing
+        ? `/api/tables/${tableId}/charts/${editChart.id}`
+        : `/api/tables/${tableId}/charts`;
+
+      const res = await fetch(url, {
+        method: isEditing ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(chartConfig),
+        body: JSON.stringify(payload),
       });
 
       if (res.ok) {
-        toast.success(`Chart "${title}" created`);
+        toast.success(isEditing ? `Chart "${title}" updated` : `Chart "${title}" created`);
       } else {
-        // API may not exist yet -- save locally and notify
-        toast.success(`Chart "${title}" configured (rendering deferred)`);
+        const data = await res.json().catch(() => null);
+        toast.error(data?.error ?? `Failed to ${isEditing ? "update" : "create"} chart`);
+        return;
       }
 
       onOpenChange(false);
-      onChartCreated();
-      resetForm();
+      onChartSaved();
+      if (!isEditing) resetForm();
     } catch {
-      // API not implemented yet -- treat as success for config save
-      toast.success(`Chart "${title}" configured (rendering deferred)`);
-      onOpenChange(false);
-      onChartCreated();
-      resetForm();
+      toast.error(`Failed to ${isEditing ? "update" : "create"} chart`);
     } finally {
       setSaving(false);
     }
@@ -133,7 +161,7 @@ export function TableChartBuilder({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-[420px] sm:max-w-[420px]">
         <SheetHeader>
-          <SheetTitle>Create Chart</SheetTitle>
+          <SheetTitle>{isEditing ? "Edit Chart" : "Create Chart"}</SheetTitle>
         </SheetHeader>
 
         <div className="px-6 pb-6 space-y-5 overflow-y-auto">
@@ -248,8 +276,10 @@ export function TableChartBuilder({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleCreate} disabled={saving}>
-            {saving ? "Creating..." : "Create Chart"}
+          <Button onClick={handleSave} disabled={saving}>
+            {saving
+              ? isEditing ? "Updating..." : "Creating..."
+              : isEditing ? "Update Chart" : "Create Chart"}
           </Button>
         </SheetFooter>
       </SheetContent>
