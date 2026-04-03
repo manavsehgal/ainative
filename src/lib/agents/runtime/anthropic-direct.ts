@@ -39,6 +39,11 @@ import {
   recordUsageLedgerEntry,
   resolveUsageActivityType,
 } from "@/lib/usage/ledger";
+import {
+  scanTaskOutputDocuments,
+  prepareTaskOutputDirectory,
+  buildTaskOutputInstructions,
+} from "@/lib/documents/output-scanner";
 
 // ── SDK lazy import ──────────────────────────────────────────────────
 
@@ -283,6 +288,14 @@ async function executeAnthropicDirectTask(taskId: string, isResume = false): Pro
       .where(eq(tasks.id, taskId));
 
     const ctx = await buildTaskQueryContext(task, agentProfileId);
+
+    // Prepare output directory so the agent can write output files
+    if (!isResume) {
+      await prepareTaskOutputDirectory(taskId);
+    }
+    const outputInstructions = buildTaskOutputInstructions(taskId);
+    ctx.systemInstructions = `${ctx.systemInstructions}\n\n${outputInstructions}`;
+
     const apiKey = await getAnthropicApiKey();
     const sdk = await getAnthropicSDK();
     const client = new sdk.default({ apiKey });
@@ -430,6 +443,22 @@ async function executeAnthropicDirectTask(taskId: string, isResume = false): Pro
       }),
       timestamp: new Date(),
     });
+
+    // Scan output directory for generated documents
+    try {
+      await scanTaskOutputDocuments(taskId);
+    } catch (error) {
+      await db.insert(agentLogs).values({
+        id: crypto.randomUUID(),
+        taskId,
+        agentType: agentProfileId,
+        event: "output_scan_failed",
+        payload: JSON.stringify({
+          error: error instanceof Error ? error.message : String(error),
+        }),
+        timestamp: new Date(),
+      });
+    }
 
     // Record usage
     await recordUsageLedgerEntry({

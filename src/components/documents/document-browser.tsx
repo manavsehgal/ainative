@@ -89,7 +89,7 @@ export function DocumentBrowser({
     let deleted = 0;
     for (const id of selected) {
       try {
-        const res = await fetch(`/api/documents/${id}`, { method: "DELETE" });
+        const res = await fetch(`/api/documents/${id}?cascadeDelete=true`, { method: "DELETE" });
         if (res.ok) deleted++;
       } catch {
         // Continue with remaining
