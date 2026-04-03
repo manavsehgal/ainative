@@ -11,7 +11,7 @@ import * as schema from "@/lib/db/schema";
  * corresponding db.delete() call to clear.ts in the correct FK-safe order.
  */
 describe("clearAllData coverage", () => {
-  const INTENTIONALLY_PRESERVED = ["settings"];
+  const INTENTIONALLY_PRESERVED = ["settings", "snapshots"];
 
   it("deletes every schema table (except settings)", () => {
     const clearSource = readFileSync(

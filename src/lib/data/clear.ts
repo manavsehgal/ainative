@@ -81,6 +81,8 @@ export function clearAllData() {
   const agentMessagesDeleted = db.delete(agentMessages).run().changes;
   const channelConfigsDeleted = db.delete(channelConfigs).run().changes;
 
+  // Snapshots are intentionally preserved — they are backups, not working data
+
   const repoImportsDeleted = db.delete(repoImports).run().changes;
   const profileTestResultsDeleted = db.delete(profileTestResults).run().changes;
   const viewsDeleted = db.delete(views).run().changes;

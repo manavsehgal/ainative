@@ -76,7 +76,8 @@ export function DataManagementSection() {
                 Delete all projects, tasks, workflows, schedules, documents,
                 conversations, chat messages, usage ledger, learned context,
                 saved views, agent logs, notifications, seeded sample profiles,
-                and uploaded files. Authentication settings are preserved.
+                and uploaded files. Database snapshots and authentication
+                settings are preserved.
               </p>
               <Badge variant="destructive" className="shrink-0">Irreversible</Badge>
             </div>
@@ -127,7 +128,7 @@ export function DataManagementSection() {
         open={clearOpen}
         onOpenChange={setClearOpen}
         title="Clear all data?"
-        description="This will permanently delete all projects, tasks, workflows, schedules, documents, conversations, chat messages, usage ledger, learned context, saved views, agent logs, notifications, seeded sample profiles, and uploaded files. Authentication settings will be preserved. This action cannot be undone."
+        description="This will permanently delete all projects, tasks, workflows, schedules, documents, conversations, chat messages, usage ledger, learned context, saved views, agent logs, notifications, seeded sample profiles, and uploaded files. Database snapshots and authentication settings will be preserved. This action cannot be undone."
         confirmLabel="Clear All Data"
         onConfirm={handleClear}
         destructive
