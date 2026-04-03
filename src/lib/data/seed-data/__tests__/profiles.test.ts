@@ -39,27 +39,27 @@ describe("sample profile seeds", () => {
   });
 
   it("defines stable reserved sample profile ids", () => {
-    expect(SAMPLE_PROFILE_IDS).toHaveLength(3);
+    expect(SAMPLE_PROFILE_IDS).toHaveLength(5);
     expect(SAMPLE_PROFILE_IDS.every((id) => id.startsWith("stagent-sample-"))).toBe(true);
   });
 
   it("returns realistic sample profiles with skill markdown", () => {
     const profiles = getSampleProfiles();
 
-    expect(profiles).toHaveLength(3);
+    expect(profiles).toHaveLength(5);
     expect(profiles.map((profile) => profile.config.id)).toEqual(
       Array.from(SAMPLE_PROFILE_IDS)
     );
     expect(profiles[0].skillMd).toContain("description:");
-    expect(profiles[1].config.tags).toContain("messaging");
-    expect(profiles[2].config.domain).toBe("personal");
+    expect(profiles[1].config.tags).toContain("SEO");
+    expect(profiles[4].config.domain).toBe("work");
   });
 
   it("creates missing sample profiles", () => {
     const count = upsertSampleProfiles();
 
-    expect(count).toBe(3);
-    expect(createProfile).toHaveBeenCalledTimes(3);
+    expect(count).toBe(5);
+    expect(createProfile).toHaveBeenCalledTimes(5);
     expect(updateProfile).not.toHaveBeenCalled();
   });
 
@@ -71,14 +71,14 @@ describe("sample profile seeds", () => {
 
     const count = upsertSampleProfiles();
 
-    expect(count).toBe(3);
+    expect(count).toBe(5);
     expect(updateProfile).toHaveBeenCalledTimes(1);
     expect(updateProfile).toHaveBeenCalledWith(
       SAMPLE_PROFILE_IDS[0],
       expect.objectContaining({ id: SAMPLE_PROFILE_IDS[0] }),
-      expect.stringContaining("Revenue Operations Analyst")
+      expect.stringContaining("GTM Launch Strategist")
     );
-    expect(createProfile).toHaveBeenCalledTimes(2);
+    expect(createProfile).toHaveBeenCalledTimes(4);
   });
 
   it("throws if a sample id collides with a built-in profile", () => {
@@ -92,11 +92,11 @@ describe("sample profile seeds", () => {
 
   it("deletes only existing non-builtin sample profiles", () => {
     getProfile.mockImplementation((id: string) =>
-      id === SAMPLE_PROFILE_IDS[0] || id === SAMPLE_PROFILE_IDS[2]
+      id === SAMPLE_PROFILE_IDS[0] || id === SAMPLE_PROFILE_IDS[4]
         ? ({ id } as AgentProfile)
         : undefined
     );
-    isBuiltin.mockImplementation((id: string) => id === SAMPLE_PROFILE_IDS[2]);
+    isBuiltin.mockImplementation((id: string) => id === SAMPLE_PROFILE_IDS[4]);
 
     const deleted = clearSampleProfiles();
 
@@ -109,33 +109,38 @@ describe("sample profile seeds", () => {
 describe("schedule seeds", () => {
   it("creates schedules tied to seeded projects and profile surfaces", () => {
     const projectIds = [
-      "project-investments",
       "project-launch",
-      "project-pipeline",
-      "project-trip",
-      "project-tax",
+      "project-content",
+      "project-cs",
+      "project-tvp",
+      "project-greenleaf",
+      "project-medreach",
+      "project-revops",
+      "project-compliance",
     ];
 
     const schedules = createSchedules(projectIds);
 
-    expect(schedules).toHaveLength(4);
-    expect(schedules.map((schedule) => schedule.projectId)).toEqual([
-      projectIds[0],
-      projectIds[1],
-      projectIds[2],
-      projectIds[4],
-    ]);
+    expect(schedules).toHaveLength(8);
+    // Each project gets one schedule
+    expect(schedules.map((schedule) => schedule.projectId)).toEqual(projectIds);
+    // Active schedules have a nextFireAt
     expect(
       schedules.filter((schedule) => schedule.status === "active").every(
         (schedule) => schedule.nextFireAt instanceof Date
       )
     ).toBe(true);
+    // Non-active schedules have null nextFireAt
     expect(
       schedules.filter((schedule) => schedule.status !== "active").every(
         (schedule) => schedule.nextFireAt === null
       )
     ).toBe(true);
+    // At least one schedule uses a sample profile
     expect(schedules.some((schedule) => schedule.agentProfile === SAMPLE_PROFILE_IDS[0])).toBe(true);
-    expect(schedules.some((schedule) => schedule.agentProfile === "project-manager")).toBe(true);
+    // At least one heartbeat schedule exists
+    expect(schedules.some((schedule) => schedule.type === "heartbeat")).toBe(true);
+    // At least one schedule has delivery channels
+    expect(schedules.some((schedule) => schedule.deliveryChannels !== null)).toBe(true);
   });
 });

@@ -5,7 +5,7 @@ export interface WorkflowSeed {
   projectId: string;
   name: string;
   definition: string;
-  status: "draft" | "active" | "paused" | "completed";
+  status: "draft" | "active" | "paused" | "completed" | "failed";
   createdAt: Date;
   updatedAt: Date;
 }
@@ -13,152 +13,272 @@ export interface WorkflowSeed {
 export function createWorkflows(projectIds: string[]): WorkflowSeed[] {
   const now = Date.now();
   const DAY = 86_400_000;
-  const [p1, p2, p3, p4, p5] = projectIds;
+  const [p1, p2, p3, p4, p5, p6, p7, p8] = projectIds;
 
-  const portfolioRebalance: WorkflowDefinition = {
-    pattern: "sequence",
-    steps: [
-      {
-        id: "analyze",
-        name: "Analyze current allocation",
-        prompt:
-          "Read the portfolio holdings CSV and calculate current sector weights, position sizes, and concentration risks. Output a summary table.",
-      },
-      {
-        id: "compare",
-        name: "Compare to target allocation",
-        prompt:
-          "Compare current allocation against the target: Tech ≤35%, Healthcare 15-20%, Finance 15-20%, Consumer 10-15%, Energy 5-10%, Cash 5%. Identify overweight and underweight sectors.",
-      },
-      {
-        id: "recommend",
-        name: "Generate trade recommendations",
-        prompt:
-          "Based on the allocation gaps, recommend specific trades (buy/sell/trim) to rebalance. Minimize transaction count and tax impact. Output as a trade list.",
-      },
-    ],
-  };
-
-  const landingPageBuild: WorkflowDefinition = {
+  // P1: Product Launch Pipeline
+  const launchPipeline: WorkflowDefinition = {
     pattern: "checkpoint",
     steps: [
       {
         id: "research",
-        name: "Research & competitive analysis",
+        name: "Competitive & audience research",
         prompt:
-          "Audit 4 competitor landing pages (Notion, Linear, Vercel, Stripe). Document design patterns, CTAs, messaging, and identify gaps we can exploit.",
+          "Analyze 5 competing AI copilot products (Cursor, Windsurf, Cody, Tabnine, Copilot). Document positioning, pricing, feature gaps, and messaging angles we can own. Output a competitive matrix.",
       },
       {
         id: "copy",
-        name: "Write copy variants",
+        name: "Write launch copy variants",
         prompt:
-          "Using competitive insights, write 3 hero headline variants with supporting copy. Follow the design brief brand voice. Include CTA text.",
+          "Using competitive insights, write 3 hero headline variants, email subject lines for the 3-touch launch sequence, and a 280-char social post per channel (LinkedIn, Twitter). Follow the brand voice guide.",
         requiresApproval: true,
       },
       {
         id: "build",
-        name: "Build responsive hero",
+        name: "Build launch landing page",
         prompt:
-          "Implement the approved hero section as a responsive React component using Tailwind CSS. Include animations, responsive breakpoints, and dark mode.",
+          "Implement the approved hero section and feature grid as responsive React components using Tailwind CSS. Include OG meta tags, structured data, and conversion tracking pixels.",
         requiresApproval: true,
       },
       {
         id: "test",
-        name: "Set up A/B test",
+        name: "Configure A/B tests",
         prompt:
-          "Configure A/B test infrastructure for the top 2 hero variants. Set up event tracking for CTA clicks, scroll depth, and time on page.",
+          "Set up A/B test for the top 2 hero variants. Configure event tracking for CTA clicks, scroll depth, time on page, and email signup conversion. Define a 7-day test window with 95% confidence threshold.",
       },
     ],
   };
 
-  const leadGenPipeline: WorkflowDefinition = {
-    pattern: "planner-executor",
-    steps: [
-      {
-        id: "plan",
-        name: "Plan outreach campaign",
-        prompt:
-          "Given 15 qualified prospects across 8 companies, create a campaign plan: segment prospects by company size and role, assign email templates, set send schedule (stagger across 2 weeks), and define success metrics.",
-      },
-      {
-        id: "personalize",
-        name: "Personalize email sequences",
-        prompt:
-          "For each prospect, fill in personalization tokens in the assigned template: company name, recent events (from LinkedIn/Crunchbase), team size, similar customer references. Output ready-to-send emails.",
-      },
-      {
-        id: "enrich",
-        name: "Enrich with company data",
-        prompt:
-          "For each prospect company, pull: funding stage, employee count, tech stack (from job postings), recent news. Append to prospect records.",
-      },
-      {
-        id: "schedule",
-        name: "Schedule and send",
-        prompt:
-          "Schedule all personalized emails according to the campaign plan. Send Day 1 emails immediately, queue follow-ups at 3-day and 7-day intervals.",
-      },
-    ],
-  };
-
-  const tripPlanning: WorkflowDefinition = {
+  // P2: Weekly Content Cycle
+  const contentCycle: WorkflowDefinition = {
     pattern: "sequence",
     steps: [
       {
-        id: "flights",
-        name: "Book flights",
+        id: "research",
+        name: "Keyword & topic research",
         prompt:
-          "Search for round-trip flights SFO→JFK departing March 15 AM, returning March 18 PM. Prefer United (status match). Budget: $700 max. Book Economy Plus with aisle seats.",
+          "Pull this week's target keyword cluster from the editorial calendar. Research search volume, competition score, and top-ranking content. Identify 3 content gaps we can fill.",
       },
       {
-        id: "hotel",
-        name: "Reserve hotel",
+        id: "outline",
+        name: "Create article outline",
         prompt:
-          "Book hotel in Midtown Manhattan for 3 nights (Mar 15-18). Requirements: walking distance to Javits Center, standard king room, free cancellation. Budget: $300/night max.",
+          "Build a structured outline: H1, 5-7 H2 sections, target 1,800 words, 3 internal link opportunities, and a CTA placement plan. Include the primary and 2 secondary keywords.",
       },
       {
-        id: "itinerary",
-        name: "Create itinerary",
+        id: "draft",
+        name: "Write first draft",
         prompt:
-          "Build a day-by-day schedule combining: conference sessions, 3 client meetings (Acme Corp 350 5th Ave, DataFlow AI 85 Broad St, ScaleUp HQ 28 W 23rd St), team dinner, and ground transport estimates.",
+          "Write the full article following the approved outline. Use clear topic sentences, include 2-3 data points per section, and end with a compelling CTA. Maintain a Flesch-Kincaid score under 45.",
       },
       {
-        id: "expenses",
-        name: "Submit expense pre-approval",
+        id: "edit",
+        name: "Editorial review & polish",
         prompt:
-          "Compile all costs (flights, hotel, per diem meals at $75/day, estimated ground transport $200, misc $100) into an expense pre-approval form. Submit for manager approval.",
+          "Review the draft for factual accuracy, brand voice consistency, SEO optimization (keyword density 1-2%), and readability. Fix any issues and prepare the final version with meta description and alt text.",
+      },
+      {
+        id: "distribute",
+        name: "Prepare distribution assets",
+        prompt:
+          "Create a LinkedIn post (hook + 3 key takeaways), a newsletter intro paragraph, and a Twitter thread (5 tweets). Schedule all pieces in the content calendar.",
       },
     ],
   };
 
-  const taxPrepWorkflow: WorkflowDefinition = {
+  // P3: Customer Onboarding Flow
+  const onboardingFlow: WorkflowDefinition = {
     pattern: "checkpoint",
     steps: [
       {
+        id: "welcome",
+        name: "Send welcome sequence",
+        prompt:
+          "Trigger the 3-email welcome sequence: Day 0 welcome + quick start guide, Day 2 feature spotlight, Day 5 'how are things going?' check-in. Personalize with company name and plan tier.",
+      },
+      {
+        id: "setup",
+        name: "Verify account setup",
+        prompt:
+          "Check that the customer has completed key setup milestones: API key configured, first project created, first agent run completed. Flag any incomplete steps.",
+        requiresApproval: true,
+      },
+      {
+        id: "training",
+        name: "Schedule training session",
+        prompt:
+          "Based on the customer's plan tier and team size, recommend a training path: self-serve docs for Starter, live walkthrough for Pro, dedicated onboarding call for Team. Book the session if applicable.",
+      },
+      {
+        id: "review",
+        name: "14-day health check",
+        prompt:
+          "At day 14, assess: login frequency, feature adoption depth, support tickets filed. Score as green/yellow/red and recommend next touchpoint. Escalate red accounts to CS manager.",
+        requiresApproval: true,
+      },
+    ],
+  };
+
+  // P4: Due Diligence Workflow
+  const dueDiligence: WorkflowDefinition = {
+    pattern: "planner-executor",
+    steps: [
+      {
+        id: "scope",
+        name: "Define analysis scope",
+        prompt:
+          "Review the investment memo and define the DD scope: financial analysis depth, market sizing approach, competitive landscape breadth, and key risk factors to investigate. Output a scoping document.",
+      },
+      {
+        id: "financials",
+        name: "Financial deep dive",
+        prompt:
+          "Analyze 3 years of financials: ARR growth, gross margins, net retention, burn rate, and runway. Model 3 scenarios (base, upside, downside) with key assumptions. Flag any accounting irregularities.",
+      },
+      {
+        id: "market",
+        name: "Market & TAM analysis",
+        prompt:
+          "Size the total addressable market using top-down and bottom-up approaches. Map the competitive landscape with positioning matrix. Identify market tailwinds and headwinds.",
+      },
+      {
+        id: "competitive",
+        name: "Competitive positioning",
+        prompt:
+          "Deep-dive into 4-5 direct competitors: product comparison, pricing analysis, customer reviews, team strength, and funding history. Identify sustainable competitive advantages.",
+      },
+      {
+        id: "synthesis",
+        name: "Write DD memo",
+        prompt:
+          "Synthesize all findings into a structured DD memo: executive summary, investment thesis, financial highlights, market opportunity, competitive position, top risks with mitigants, and go/no-go recommendation.",
+      },
+    ],
+  };
+
+  // P5: Product Listing Optimizer
+  const listingOptimizer: WorkflowDefinition = {
+    pattern: "sequence",
+    steps: [
+      {
+        id: "scrape",
+        name: "Scrape current listings",
+        prompt:
+          "Pull the current product listings for the top 20 SKUs by revenue. Capture title, description, bullet points, images count, price, and review score. Store as structured data.",
+      },
+      {
+        id: "analyze",
+        name: "Analyze listing performance",
+        prompt:
+          "Compare listing quality against top 3 competitors per SKU. Score each listing on: keyword coverage (title + bullets), image count, review volume, and A+ content presence. Rank by optimization opportunity.",
+      },
+      {
+        id: "rewrite",
+        name: "Generate optimized copy",
+        prompt:
+          "For the top 10 opportunity SKUs, rewrite titles (under 200 chars), 5 bullet points (keyword-rich), and product descriptions. Maintain brand voice while improving keyword density. A/B test the top 3.",
+      },
+      {
+        id: "deploy",
+        name: "Stage updates for review",
+        prompt:
+          "Prepare a change log with before/after for each listing update. Stage the changes in the CMS draft queue and notify the client for approval before going live.",
+      },
+    ],
+  };
+
+  // P6: HIPAA Content Review
+  const hipaaReview: WorkflowDefinition = {
+    pattern: "checkpoint",
+    steps: [
+      {
+        id: "draft",
+        name: "Draft marketing content",
+        prompt:
+          "Write the campaign content: referral program landing page copy, 2 email templates for provider outreach, and 3 social media posts. Follow healthcare marketing guidelines — no unsubstantiated claims.",
+        requiresApproval: true,
+      },
+      {
+        id: "compliance",
+        name: "HIPAA compliance check",
+        prompt:
+          "Scan all content for PHI references, testimonial compliance, disclaimer requirements, and FDA marketing restrictions. Flag any language that could violate HIPAA, FTC, or state healthcare marketing laws.",
+        requiresApproval: true,
+      },
+      {
+        id: "legal",
+        name: "Legal counsel review",
+        prompt:
+          "Prepare the legal review package: all content pieces with compliance annotations, risk flags, and recommended disclaimer language. Route to legal@medreach.health for sign-off.",
+        requiresApproval: true,
+      },
+      {
+        id: "publish",
+        name: "Publish approved content",
+        prompt:
+          "After legal approval, schedule publication: landing page goes live immediately, emails queued for Tuesday 10am send, social posts staggered across the week. Update the compliance audit log.",
+        requiresApproval: true,
+      },
+    ],
+  };
+
+  // P7: Weekly Deal Review
+  const dealReview: WorkflowDefinition = {
+    pattern: "sequence",
+    steps: [
+      {
+        id: "pull",
+        name: "Pull pipeline data",
+        prompt:
+          "Export this week's pipeline snapshot: all deals in stages 2-5, new opportunities, stage changes, and closed-won/lost. Include deal owner, amount, close date, and days in stage.",
+      },
+      {
+        id: "risk",
+        name: "Score deal risk",
+        prompt:
+          "For each open deal, calculate a risk score based on: days in current stage (>5 = elevated), champion engagement (email opens, meeting frequency), competitive mentions, and budget confirmation status.",
+      },
+      {
+        id: "coaching",
+        name: "Generate coaching notes",
+        prompt:
+          "For each rep, identify 1-2 coaching opportunities based on their deals: stalled deals needing executive sponsorship, missing next steps, or pricing objections that need a value sell approach.",
+      },
+      {
+        id: "summary",
+        name: "Write executive summary",
+        prompt:
+          "Compile the weekly operating note: pipeline created vs target, forecast by confidence bucket (committed/best-case/upside), top risks, and the 3 highest-leverage actions for leadership.",
+      },
+    ],
+  };
+
+  // P8: Monthly Compliance Audit
+  const complianceAudit: WorkflowDefinition = {
+    pattern: "planner-executor",
+    steps: [
+      {
         id: "gather",
-        name: "Gather tax documents",
+        name: "Gather audit evidence",
         prompt:
-          "Create a checklist of all required 2025 tax documents: W-2s, 1099s (INT, DIV, B, NEC), 1098 mortgage, charitable receipts, estimated tax payment records. Track status of each.",
+          "Collect all governed execution logs, permission decisions, agent tool usage, and data access patterns for the audit period. Cross-reference against the SOC 2 control framework.",
       },
       {
-        id: "categorize",
-        name: "Categorize deductions",
+        id: "analyze",
+        name: "Analyze compliance gaps",
         prompt:
-          "Sort all expenses into IRS-recognized categories: home office (simplified vs actual method), professional development, software/tools, charitable donations, health (HSA). Calculate subtotals.",
-        requiresApproval: true,
+          "Compare execution logs against defined policies: tool approval rates, auto-approve bypass patterns, sensitive data access, and budget adherence. Identify gaps and rate severity (critical/high/medium/low).",
       },
       {
-        id: "calculate",
-        name: "Calculate home office deduction",
+        id: "report",
+        name: "Generate compliance report",
         prompt:
-          "Compare simplified method ($5/sq ft × 150 sq ft = $750) vs actual expense method (pro-rata utilities, internet, depreciation). Recommend the higher-value method with documentation requirements.",
-        requiresApproval: true,
+          "Write the monthly compliance report: executive summary, control effectiveness by category, gap analysis with remediation timelines, and trend analysis vs prior month. Include evidence references.",
       },
       {
-        id: "package",
-        name: "Prepare CPA package",
+        id: "brief",
+        name: "Executive briefing",
         prompt:
-          "Compile all documents, categorized deductions, and calculations into a CPA-ready package. Include summary cover sheet with key numbers: gross income, total deductions, estimated tax liability.",
+          "Prepare a 1-page executive brief: overall compliance posture (green/yellow/red), top 3 findings, remediation progress on prior findings, and recommended policy updates.",
       },
     ],
   };
@@ -167,47 +287,74 @@ export function createWorkflows(projectIds: string[]): WorkflowSeed[] {
     {
       id: crypto.randomUUID(),
       projectId: p1,
-      name: "Portfolio Rebalance Analysis",
-      definition: JSON.stringify(portfolioRebalance),
-      status: "completed",
-      createdAt: new Date(now - 13 * DAY),
-      updatedAt: new Date(now - 11 * DAY),
+      name: "Product Launch Pipeline",
+      definition: JSON.stringify(launchPipeline),
+      status: "active",
+      createdAt: new Date(now - 20 * DAY),
+      updatedAt: new Date(now - 1 * DAY),
     },
     {
       id: crypto.randomUUID(),
       projectId: p2,
-      name: "Landing Page Build Pipeline",
-      definition: JSON.stringify(landingPageBuild),
+      name: "Weekly Content Cycle",
+      definition: JSON.stringify(contentCycle),
       status: "active",
-      createdAt: new Date(now - 11 * DAY),
+      createdAt: new Date(now - 17 * DAY),
       updatedAt: new Date(now - 1 * DAY),
     },
     {
       id: crypto.randomUUID(),
       projectId: p3,
-      name: "Lead Generation Campaign",
-      definition: JSON.stringify(leadGenPipeline),
-      status: "paused",
-      createdAt: new Date(now - 9 * DAY),
-      updatedAt: new Date(now - 6 * DAY),
+      name: "Customer Onboarding Flow",
+      definition: JSON.stringify(onboardingFlow),
+      status: "active",
+      createdAt: new Date(now - 15 * DAY),
+      updatedAt: new Date(now - 2 * DAY),
     },
     {
       id: crypto.randomUUID(),
       projectId: p4,
-      name: "NYC Trip Logistics",
-      definition: JSON.stringify(tripPlanning),
+      name: "Due Diligence Workflow",
+      definition: JSON.stringify(dueDiligence),
       status: "completed",
-      createdAt: new Date(now - 7 * DAY),
+      createdAt: new Date(now - 13 * DAY),
       updatedAt: new Date(now - 3 * DAY),
     },
     {
       id: crypto.randomUUID(),
       projectId: p5,
-      name: "Tax Filing Workflow",
-      definition: JSON.stringify(taxPrepWorkflow),
+      name: "Product Listing Optimizer",
+      definition: JSON.stringify(listingOptimizer),
       status: "active",
-      createdAt: new Date(now - 5 * DAY),
+      createdAt: new Date(now - 11 * DAY),
+      updatedAt: new Date(now - 2 * DAY),
+    },
+    {
+      id: crypto.randomUUID(),
+      projectId: p6,
+      name: "HIPAA Content Review",
+      definition: JSON.stringify(hipaaReview),
+      status: "paused",
+      createdAt: new Date(now - 9 * DAY),
+      updatedAt: new Date(now - 4 * DAY),
+    },
+    {
+      id: crypto.randomUUID(),
+      projectId: p7,
+      name: "Weekly Deal Review",
+      definition: JSON.stringify(dealReview),
+      status: "draft",
+      createdAt: new Date(now - 7 * DAY),
       updatedAt: new Date(now - 1 * DAY),
+    },
+    {
+      id: crypto.randomUUID(),
+      projectId: p8,
+      name: "Monthly Compliance Audit",
+      definition: JSON.stringify(complianceAudit),
+      status: "completed",
+      createdAt: new Date(now - 5 * DAY),
+      updatedAt: new Date(now - 3 * DAY),
     },
   ];
 }

@@ -1,3 +1,5 @@
+import { SAMPLE_PROFILE_IDS } from "./profiles";
+
 export interface ProfileTestResultSeed {
   id: string;
   profileId: string;
@@ -56,39 +58,118 @@ export function createProfileTestResults(): ProfileTestResultSeed[] {
       }),
       totalPassed: 5,
       totalFailed: 1,
-      createdAt: new Date(now - 4 * DAY),
+      createdAt: new Date(now - 8 * DAY),
     },
     {
       id: crypto.randomUUID(),
-      profileId: "researcher",
+      profileId: SAMPLE_PROFILE_IDS[0], // GTM Launch Strategist
       runtimeId: "claude-agent-sdk",
       reportJson: JSON.stringify({
-        profileId: "researcher",
+        profileId: SAMPLE_PROFILE_IDS[0],
         runtimeId: "claude-agent-sdk",
         results: [
           {
-            task: "Research recent developments in battery technology",
+            task: "Draft a launch plan for a B2B SaaS feature release targeting mid-market ops teams",
             passed: true,
-            matchedKeywords: ["source", "findings", "citation"],
+            matchedKeywords: ["positioning", "channels", "timeline", "metrics"],
           },
           {
-            task: "Compare three competing frameworks with citations",
+            task: "Compare two headline variants and recommend which to A/B test first",
             passed: true,
-            matchedKeywords: ["comparison", "source", "framework"],
+            matchedKeywords: ["headline", "conversion", "test"],
           },
           {
-            task: "Fact-check a set of claims and provide references",
+            task: "Write a 3-touch email sequence for a product launch",
             passed: true,
-            matchedKeywords: ["verified", "reference", "claim"],
+            matchedKeywords: ["email", "sequence", "CTA"],
           },
           {
-            task: "Synthesize findings from multiple sources into a brief",
+            task: "Analyze competitor positioning and identify messaging gaps",
             passed: true,
-            matchedKeywords: ["synthesis", "sources", "brief"],
+            matchedKeywords: ["competitor", "gap", "positioning"],
+          },
+          {
+            task: "Create a social media launch calendar with channel-specific hooks",
+            passed: false,
+            matchedKeywords: ["social", "calendar"],
+            missingKeywords: ["hook", "channel-specific"],
           },
         ],
       }),
       totalPassed: 4,
+      totalFailed: 1,
+      createdAt: new Date(now - 6 * DAY),
+    },
+    {
+      id: crypto.randomUUID(),
+      profileId: SAMPLE_PROFILE_IDS[1], // Content Production Editor
+      runtimeId: "claude-agent-sdk",
+      reportJson: JSON.stringify({
+        profileId: SAMPLE_PROFILE_IDS[1],
+        runtimeId: "claude-agent-sdk",
+        results: [
+          {
+            task: "Write an SEO-optimized article outline for 'AI agent orchestration for small teams'",
+            passed: true,
+            matchedKeywords: ["keyword", "outline", "heading", "SEO"],
+          },
+          {
+            task: "Create a distribution plan for a published blog post",
+            passed: true,
+            matchedKeywords: ["LinkedIn", "newsletter", "distribution"],
+          },
+          {
+            task: "Research keyword clusters for a new topic area",
+            passed: true,
+            matchedKeywords: ["keyword", "volume", "difficulty"],
+          },
+          {
+            task: "Edit an article draft for brand voice consistency",
+            passed: true,
+            matchedKeywords: ["voice", "consistency", "edit"],
+          },
+        ],
+      }),
+      totalPassed: 4,
+      totalFailed: 0,
+      createdAt: new Date(now - 4 * DAY),
+    },
+    {
+      id: crypto.randomUUID(),
+      profileId: SAMPLE_PROFILE_IDS[4], // Revenue Operations Analyst
+      runtimeId: "claude-agent-sdk",
+      reportJson: JSON.stringify({
+        profileId: SAMPLE_PROFILE_IDS[4],
+        runtimeId: "claude-agent-sdk",
+        results: [
+          {
+            task: "Summarize weekly pipeline movement and highlight stalled deals",
+            passed: true,
+            matchedKeywords: ["pipeline", "stalled", "forecast"],
+          },
+          {
+            task: "Generate coaching notes for sales reps based on deal patterns",
+            passed: true,
+            matchedKeywords: ["coaching", "rep", "deal"],
+          },
+          {
+            task: "Calculate forecast confidence by pipeline stage",
+            passed: true,
+            matchedKeywords: ["forecast", "confidence", "committed"],
+          },
+          {
+            task: "Identify deals at risk of slipping from the current quarter",
+            passed: true,
+            matchedKeywords: ["risk", "slipping", "quarter"],
+          },
+          {
+            task: "Write an executive operating note with top 3 actions",
+            passed: true,
+            matchedKeywords: ["executive", "actions", "operating"],
+          },
+        ],
+      }),
+      totalPassed: 5,
       totalFailed: 0,
       createdAt: new Date(now - 2 * DAY),
     },

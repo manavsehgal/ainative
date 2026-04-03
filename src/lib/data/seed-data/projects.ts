@@ -2,7 +2,7 @@ export interface ProjectSeed {
   id: string;
   name: string;
   description: string;
-  status: "active" | "completed";
+  status: "active" | "paused" | "completed";
   createdAt: Date;
   updatedAt: Date;
 }
@@ -12,50 +12,82 @@ export function createProjects(): ProjectSeed[] {
   const DAY = 86_400_000;
 
   return [
+    // --- Solo Founder (3 projects) ---
     {
       id: crypto.randomUUID(),
-      name: "Investment Portfolio Analysis",
+      name: "Product Launch — AI Copilot v2",
       description:
-        "Retail investor research — analyze holdings, research ETFs, track performance",
+        "Multi-channel launch: landing page, email sequences, social campaigns, PR outreach for the v2 release",
+      status: "active",
+      createdAt: new Date(now - 21 * DAY),
+      updatedAt: new Date(now - 1 * DAY),
+    },
+    {
+      id: crypto.randomUUID(),
+      name: "Content Engine",
+      description:
+        "Weekly SEO articles, LinkedIn posts, and newsletter pipeline with agent-driven research and editorial",
+      status: "active",
+      createdAt: new Date(now - 18 * DAY),
+      updatedAt: new Date(now - 1 * DAY),
+    },
+    {
+      id: crypto.randomUUID(),
+      name: "Customer Success Automation",
+      description:
+        "Onboarding sequences, churn risk detection, NPS monitoring, and support ticket triage",
+      status: "active",
+      createdAt: new Date(now - 16 * DAY),
+      updatedAt: new Date(now - 2 * DAY),
+    },
+
+    // --- Agency Owner (3 projects) ---
+    {
+      id: crypto.randomUUID(),
+      name: "Client: TechVenture Partners",
+      description:
+        "PE portfolio company — due diligence automation, board deck generation, KPI tracking across 4 portcos",
       status: "active",
       createdAt: new Date(now - 14 * DAY),
       updatedAt: new Date(now - 1 * DAY),
     },
     {
       id: crypto.randomUUID(),
-      name: "SaaS Landing Page Redesign",
+      name: "Client: GreenLeaf Commerce",
       description:
-        "Design and build a high-converting landing page for a B2B SaaS product",
+        "E-commerce client — product listing optimization, review sentiment monitoring, ad copy rotation",
       status: "active",
       createdAt: new Date(now - 12 * DAY),
-      updatedAt: new Date(now - 1 * DAY),
-    },
-    {
-      id: crypto.randomUUID(),
-      name: "LinkedIn Lead Generation",
-      description:
-        "Find and qualify decision-makers at target companies via social media",
-      status: "active",
-      createdAt: new Date(now - 10 * DAY),
       updatedAt: new Date(now - 2 * DAY),
     },
     {
       id: crypto.randomUUID(),
-      name: "Q2 Business Trip — NYC",
+      name: "Client: MedReach Health",
       description:
-        "Plan end-to-end business travel: flights, hotels, meetings, expenses",
-      status: "completed",
+        "Healthcare marketing — HIPAA-compliant content review, referral campaign automation, provider outreach",
+      status: "paused",
+      createdAt: new Date(now - 10 * DAY),
+      updatedAt: new Date(now - 4 * DAY),
+    },
+
+    // --- PE Operating Partner (2 projects) ---
+    {
+      id: crypto.randomUUID(),
+      name: "Revenue Operations Command",
+      description:
+        "Pipeline forecasting, weekly deal review, rep coaching notes, and operating rhythm automation",
+      status: "active",
       createdAt: new Date(now - 8 * DAY),
-      updatedAt: new Date(now - 3 * DAY),
+      updatedAt: new Date(now - 1 * DAY),
     },
     {
       id: crypto.randomUUID(),
-      name: "2025 Tax Filing Preparation",
+      name: "Compliance & Audit Trail",
       description:
-        "Organize documents, calculate deductions, prepare for CPA review",
-      status: "active",
+        "Governed execution audit, policy drift detection, monthly compliance reports for SOC 2 readiness",
+      status: "completed",
       createdAt: new Date(now - 6 * DAY),
-      updatedAt: new Date(now - 1 * DAY),
+      updatedAt: new Date(now - 3 * DAY),
     },
   ];
 }

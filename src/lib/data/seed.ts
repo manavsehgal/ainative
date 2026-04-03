@@ -50,8 +50,22 @@ export async function seedSampleData() {
   }
   const projectIds = projectSeeds.map((p) => p.id);
 
-  // 4. Insert tasks
-  const taskSeeds = createTasks(projectIds);
+  // 4. Insert workflows BEFORE tasks (tasks reference workflowId)
+  const workflowSeeds = createWorkflows(projectIds);
+  for (const w of workflowSeeds) {
+    db.insert(workflows).values(w).run();
+  }
+  const workflowIds = workflowSeeds.map((w) => w.id);
+
+  // 5. Insert schedules BEFORE tasks (tasks reference scheduleId)
+  const scheduleSeeds = createSchedules(projectIds);
+  for (const schedule of scheduleSeeds) {
+    db.insert(schedules).values(schedule).run();
+  }
+  const scheduleIds = scheduleSeeds.map((s) => s.id);
+
+  // 6. Insert tasks (with workflow/schedule/profile references)
+  const taskSeeds = createTasks(projectIds, workflowIds, scheduleIds);
   for (const t of taskSeeds) {
     db.insert(tasks)
       .values({
@@ -62,24 +76,16 @@ export async function seedSampleData() {
         status: t.status,
         priority: t.priority,
         result: t.result,
+        agentProfile: t.agentProfile,
+        sourceType: t.sourceType,
+        workflowId: t.workflowId,
+        scheduleId: t.scheduleId,
         createdAt: t.createdAt,
         updatedAt: t.updatedAt,
       })
       .run();
   }
   const taskIds = taskSeeds.map((t) => t.id);
-
-  // 5. Insert workflows (one per project)
-  const workflowSeeds = createWorkflows(projectIds);
-  for (const w of workflowSeeds) {
-    db.insert(workflows).values(w).run();
-  }
-
-  // 6. Insert schedules for recently added automation surfaces
-  const scheduleSeeds = createSchedules(projectIds);
-  for (const schedule of scheduleSeeds) {
-    db.insert(schedules).values(schedule).run();
-  }
 
   // 7. Write document files + insert records
   const docSeeds = await createDocuments(projectIds, taskIds);
