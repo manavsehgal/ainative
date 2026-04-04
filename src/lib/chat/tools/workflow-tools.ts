@@ -79,7 +79,7 @@ export function workflowTools(ctx: ToolContext) {
         definition: z
           .string()
           .describe(
-            'Workflow definition as JSON string. Must include "pattern" and "steps" array. Example: {"pattern":"sequence","steps":[{"name":"step1","prompt":"Do X","assignedAgent":"claude"}]}'
+            'Workflow definition as JSON string. Must include "pattern" and "steps" array. Example: {"pattern":"sequence","steps":[{"id":"step-1","name":"step1","prompt":"Do X","assignedAgent":"claude"}]}'
           ),
         documentIds: z
           .array(z.string())
@@ -101,6 +101,14 @@ export function workflowTools(ctx: ToolContext) {
           if (!parsedDef.pattern || !Array.isArray(parsedDef.steps)) {
             return err('Definition must include "pattern" and "steps" array');
           }
+
+          // Auto-assign IDs to steps that don't have them (chat LLMs often omit IDs)
+          for (const step of parsedDef.steps) {
+            if (!step.id) {
+              step.id = crypto.randomUUID();
+            }
+          }
+          args.definition = JSON.stringify(parsedDef);
 
           const effectiveProjectId = args.projectId ?? ctx.projectId ?? null;
           const now = new Date();

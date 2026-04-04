@@ -119,7 +119,7 @@ export function createInitialState(definition: WorkflowDefinition): WorkflowStat
   return {
     currentStepIndex: 0,
     stepStates: definition.steps.map((step) => ({
-      stepId: step.id,
+      stepId: step.id ?? crypto.randomUUID(),
       status: "pending",
     })),
     status: "running",
