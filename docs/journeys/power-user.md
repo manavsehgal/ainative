@@ -4,9 +4,9 @@ category: "user-journey"
 persona: "power-user"
 difficulty: "advanced"
 estimatedTime: "30 minutes"
-sections: ["dashboard-kanban", "profiles", "chat", "workflows", "schedules", "monitoring", "settings"]
-tags: ["advanced", "automation", "workflows", "profiles", "schedules", "monitoring", "bulk-operations", "ollama", "episodic-memory", "nlp-scheduling"]
-lastUpdated: "2026-03-31"
+sections: ["dashboard-kanban", "profiles", "chat", "workflows", "tables", "schedules", "monitoring", "settings"]
+tags: ["advanced", "automation", "workflows", "profiles", "tables", "schedules", "monitoring", "bulk-operations", "ollama", "episodic-memory", "nlp-scheduling"]
+lastUpdated: "2026-04-03"
 ---
 
 # Power User Guide
@@ -63,7 +63,7 @@ Before building any automation, Sam reviews the available agent profiles. The ca
 
 Sam wants to run privacy-sensitive tasks on local models with zero API cost.
 
-![Ollama connected with local models](../screengrabs/settings-ollama-connected.png)
+![Settings Providers and Runtimes section with runtime configuration](../screengrabs/settings-auth.png)
 
 1. Install Ollama from [ollama.com](https://ollama.com) and pull a model: `ollama pull llama3`
 2. Open **Settings** and scroll to the **Ollama** section
@@ -74,7 +74,7 @@ Sam wants to run privacy-sensitive tasks on local models with zero API cost.
 
 ### Step 5: Optimize Chat with Model Selection
 
-![Chat model selector dropdown showing available models with cost tier indicators](../screengrabs/chat-model-selector.png)
+![Chat interface showing model selection and conversation controls](../screengrabs/chat-list.png)
 
 1. Navigate to **Chat** and click the **model selector** in the input area
 2. Review models with cost tier indicators ($ to $$$)
@@ -120,7 +120,33 @@ Sam customizes a workflow for a "Deploy & Verify" pipeline with specialized prof
 4. Click completed steps to read their full output
 5. Use the **Run Workflow** button to trigger a new execution
 
-### Step 9: Batch-Manage Tasks on the Kanban
+### Step 9: Add Formula Columns and Charts to Tables
+
+Sam tracks deployment metrics in a table and wants computed columns and visual dashboards without leaving Stagent.
+
+![Tables detail view with charts tab showing data visualizations](../screengrabs/tables-detail-charts.png)
+
+1. Open a table from the **Tables** page
+2. Click **Add Column** and select **Formula** as the column type
+3. Write a formula referencing other columns (e.g., `duration_hours / deploy_count` for average deploy time)
+4. Switch to the **Charts** tab to add visualizations -- bar, line, or pie charts built from the table data
+5. Configure chart axes and filters to highlight the metrics that matter
+
+> **Tip:** Formula columns recalculate automatically when source data changes. Combined with workflow triggers, a table can fire a workflow step whenever a metric crosses a threshold -- for example, triggering a rollback review when error rate exceeds 5%.
+
+### Step 10: Attach Workflow Triggers to Table Events
+
+Sam connects a table to the workflow engine so that row changes automatically kick off automation.
+
+1. Open a table and navigate to the **Triggers** tab
+2. Click **Add Trigger** and select the event type: row created, row updated, or column value changed
+3. Map the trigger to an existing workflow
+4. Configure field mappings so the workflow receives the changed row data as context
+5. Save the trigger -- new rows or edits now fire the connected workflow automatically
+
+> **Tip:** Table triggers turn spreadsheets into event-driven automation surfaces. Sam uses them to auto-run incident postmortems whenever an incident row status changes to "Resolved."
+
+### Step 11: Batch-Manage Tasks on the Kanban
 
 Sam cleans up the task board using bulk select mode.
 
@@ -134,9 +160,9 @@ Sam cleans up the task board using bulk select mode.
 
 > **Tip:** After a weekend of autonomous heartbeat runs, Sam's first Monday task is always a bulk cleanup.
 
-### Step 10: Schedule Automated Prompt Loops
+### Step 12: Schedule Automated Prompt Loops
 
-![Schedule detail sheet showing configuration and firing history](../screengrabs/schedules-detail.png)
+![Schedules list showing active schedules and firing status](../screengrabs/schedules-list.png)
 
 1. Click on a schedule to open its detail sheet
 2. Review the **firing history** with timestamps and outcomes (including suppressed heartbeat runs)
@@ -144,7 +170,7 @@ Sam cleans up the task board using bulk select mode.
 4. Verify stop conditions and delivery channels
 5. Toggle **Pause/Resume** as needed
 
-### Step 11: Leverage Episodic Memory
+### Step 13: Leverage Episodic Memory
 
 Sam notices agents are re-researching the same topics. Episodic memory lets agents retain factual knowledge across executions.
 
@@ -158,7 +184,7 @@ Sam notices agents are re-researching the same topics. Episodic memory lets agen
 
 > **Tip:** Episodic memory means a Financial Analyst profile that researches a company once can recall that research in future tasks without re-doing the work. It builds institutional knowledge automatically.
 
-### Step 12: Watch Agent Execution in Real-Time
+### Step 14: Watch Agent Execution in Real-Time
 
 ![Agent monitoring dashboard showing real-time execution logs](../screengrabs/monitor-list.png)
 
@@ -170,16 +196,16 @@ Sam notices agents are re-researching the same topics. Episodic memory lets agen
 
 > **Tip:** The Monitor is Sam's operational dashboard. When something goes wrong in an autonomous loop at 3am, the execution traces are the fastest path to diagnosis.
 
-### Step 13: Use Chat Suggested Prompts
+### Step 15: Use Chat Suggested Prompts
 
-![Chat suggested prompts with Create tab selected](../screengrabs/chat-create-tab.png)
+![Chat interface with suggested prompt categories](../screengrabs/chat-list.png)
 
 1. Navigate to **Chat** and notice the **suggested prompt tabs** (Explore, Create, Debug, Automate)
 2. Click the **Create** tab to see prompts for creating tasks, workflows, and schedules
 3. Click a suggested prompt to populate the input
 4. Edit and send -- these prompts are optimized for the best agent responses
 
-### Step 14: Chain Everything Together
+### Step 16: Chain Everything Together
 
 Sam connects the dots: profiles define *how*, workflows define *what*, schedules define *when*, Ollama handles the *cheap stuff*, episodic memory provides the *knowledge*, and delivery channels deliver the *results*.
 
@@ -195,7 +221,7 @@ Sam connects the dots: profiles define *how*, workflows define *what*, schedules
 
 > **Tip:** Sam's automation philosophy: start small, observe, then expand. Run a workflow manually three times before scheduling it. Trust builds incrementally -- and so should autonomy.
 
-### Step 15: What's Next
+### Step 17: What's Next
 
 Sam's workspace is a fully autonomous operations engine. The next step is going deeper into the platform layer.
 

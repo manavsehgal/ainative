@@ -1,64 +1,56 @@
 ---
-generated: 2026-03-27
+generated: 2026-04-03
 mode: health-check
 ---
 
 # Supervisor Report
 
-## Project Health Check — 2026-03-27
+## Project Health Check — 2026-04-03
 
 ### Dashboard
 
 | Dimension | Status | Signal |
 |-----------|--------|--------|
-| Velocity | 🟢 green | 26 commits in 7 days; Living Book (5 features), Chat (6 features), Environment (11 features) all shipped |
-| Pipeline | 🟡 yellow | 3 pending + 2 planned = 5 remaining features out of 72 total (92% complete) |
-| Ideas | 🟢 green | 14 idea files (6 groomed strategic, 8 raw/exploratory) |
-| Quality Debt | 🟢 green | E2E test automation completed, SDK runtime hardening done, 120s timeouts, 5 test files |
-| Design Consistency | 🟢 green | Calm Ops design system mature, OKLCH tokens, no forbidden patterns detected |
-| Documentation | 🟡 yellow | Docs last generated 2026-03-22 (5 days stale); missing Living Book, Environment, Chat updates |
-| Playbook Sync | 🟡 yellow | Screengrabs: 2026-03-25 (2d), Docs: 2026-03-22 (5d), Readme: 2026-03-22 (5d) — layers out of sync |
+| Velocity | green | 30 commits in 2 days; Tables initiative (14 features, 52 files) shipped; database-snapshot-backup started |
+| Pipeline | green | 5 features remaining (3 planned, 2 in-progress); 92% completion (67/72) |
+| Ideas | green | 17 items in ideas/ including strategic vision docs |
+| Quality Debt | green | 418 tests passing, 0 type errors after Tables initiative |
+| Design Consistency | green | Calm Ops design system active; OKLCH tokens consistent |
+| Documentation | red | All docs/journeys/features from 2026-04-01; missing Tables (14 features), entity relationships, database snapshots |
+| Playbook Sync | red | All 3 timestamps from 2026-04-01; 30+ commits with major UI changes not captured |
 
 ### Top Concern
 
-**Documentation** is yellow because 3 major feature families shipped since last doc generation:
-1. **Living Book** (5 features, 2026-03-24) — book reader, chapters, reading paths, author's notes, self-updating
-2. **Environment Onboarding** (11 features) — scanner, cache, dashboard, templates, health scoring, agent profiles
-3. **Chat Enhancements** (2026-03-25-27) — slash commands, @mentions, tool catalog redesign, browser screenshots, lightbox
+**Documentation** is red because the entire Tables initiative (14 features, 52 new files, new `/tables` route with editor, charts, triggers, import/templates, NL queries, and agent tools) shipped after the last documentation run. Entity relationship detail views, database snapshot/backup UI, and revamped seed data are also uncaptured.
 
-The screengrabs manifest (37 screenshots) was generated 2026-03-22 but `.last-run` shows 2026-03-25 — indicating partial capture without full manifest regeneration. No `.coverage-gaps.json` exists.
+**Action:** Run the full documentation pipeline:
+1. `/screengrab` — capture all new routes and UI states
+2. `/doc-generator` — regenerate feature docs and journey guides
+3. `/playbook-sync` — sync screenshots to public/readme/, validate references
 
 ### Secondary Concerns
 
-- **Pipeline**: Only 5 features remain. Consider grooming new features from ideas/ to maintain pipeline depth
-- **Playbook Sync**: 5-day gap between screengrabs and docs/readme — book and README may reference stale screenshots
+- **Pipeline depth (green but watch):** Only 5 features remain. Recommend `/product-manager` grooming session soon.
+- **Coverage gaps:** 3 pre-existing gaps (book-content-merge, book-reading-paths, browser-tool-orchestration) plus all uncaptured new features.
 
-### Recent Velocity (Last 7 Days)
+### Recent Velocity
 
-| Area | Commits | Key Deliverables |
-|------|---------|-----------------|
-| Chat Engine | 18 | Tool catalog redesign, slash commands, @mentions, browser screenshots |
-| Living Book | 6 | Content merge, markdown pipeline, self-updating, chapter regeneration |
-| Environment | 7 | Dashboard, scanner, templates, health scoring |
-| Feature Tracking | 11 | Roadmap/changelog updates |
+| Period | Commits | Key Deliverables |
+|--------|---------|-----------------|
+| 2026-04-03 | 14 | Tables initiative complete, database snapshot foundation, seed data revamp |
+| 2026-04-02 | 16 | Entity relationships, cross-project docs, book fixes, architect TDRs |
 
-### Hotspot Files
+### Feature Gap Analysis (since last doc run)
 
-| File | Commits | Notes |
-|------|---------|-------|
-| src/lib/chat/engine.ts | 18 | Active feature — chat redesign |
-| src/components/chat/chat-shell.tsx | 12 | Active feature — chat UI |
-| features/roadmap.md | 11 | Tracking updates |
-| src/lib/chat/types.ts | 10 | Active feature — chat types |
-| features/changelog.md | 10 | Tracking updates |
-
-### Recommended Action Sequence
-
-1. **`/screengrab`** — Full capture including Living Book, Environment, Chat updates
-2. **`/doc-generator`** — Regenerate all feature docs and journeys with coverage analysis
-3. **`/playbook-sync`** — Sync screenshots to public/readme, validate references
-4. **README update** — Reflect new feature families (Living Book, Environment, Chat enhancements)
-5. **AI Native Book update** — Update book chapters to reference new features
+| Feature Area | New Files | Captured |
+|-------------|-----------|----------|
+| Tables foundation | 20+ | No |
+| Table editor & import | 10+ | No |
+| Table charts & triggers | 8+ | No |
+| Table NL queries & agent tools | 10+ | No |
+| Entity relationships | 4+ | No |
+| Database snapshots | 3+ | No |
+| Seed data revamp | 5+ | No |
 
 ---
 

@@ -4,9 +4,9 @@ category: "user-journey"
 persona: "personal"
 difficulty: "beginner"
 estimatedTime: "30 minutes"
-sections: ["home-workspace", "dashboard-kanban", "projects", "chat", "schedules", "user-guide"]
-tags: ["beginner", "solo", "tasks", "kanban", "chat", "schedules", "delivery-channels"]
-lastUpdated: "2026-03-31"
+sections: ["home-workspace", "dashboard-kanban", "projects", "chat", "tables", "schedules", "user-guide"]
+tags: ["beginner", "solo", "tasks", "kanban", "chat", "tables", "schedules", "delivery-channels"]
+lastUpdated: "2026-04-03"
 ---
 
 # Personal Use Guide
@@ -141,14 +141,28 @@ Alex uses the quick-edit dialog for a fast priority change.
 
 Alex clicks on a task card to open the full detail sheet.
 
-![Task detail sheet showing full task information](../screengrabs/dashboard-card-detail.png)
+![Task edit dialog opened from a kanban card](../screengrabs/dashboard-card-edit.png)
 
 1. Click on any **task card** in the kanban board (not the edit icon -- the card itself)
 2. The **detail sheet** slides in from the right side of the screen
 3. Review the full **Description**, **Priority**, **Status**, **Project** assignment, and timestamps
 4. Press **Escape** or click outside the sheet to close it
 
-### Step 11: Set Up a Heartbeat Schedule
+### Step 11: Track Content in a Table
+
+Alex wants to keep a structured list of portfolio pages, their status, and target launch dates. A table is perfect for this kind of lightweight tracking.
+
+![Tables list view showing structured data tables](../screengrabs/tables-list.png)
+
+1. Click **Tables** in the sidebar under the **Work** group
+2. Click **Create Table** and enter a name: "Portfolio Pages"
+3. Add columns: **Page Name** (text), **Status** (select: Draft / In Progress / Done), **Target Date** (date)
+4. Start adding rows directly in the inline spreadsheet editor -- type into cells just like a regular spreadsheet
+5. Use the table to track which pages are done and which still need work
+
+> **Tip:** Tables are great for any structured tracking that does not need a full project board. Content calendars, feature lists, contact directories -- anything you would put in a spreadsheet fits naturally here.
+
+### Step 12: Set Up a Heartbeat Schedule
 
 Alex wants Stagent to proactively check on the portfolio project every morning. A heartbeat schedule evaluates conditions before deciding whether to act -- it only creates tasks when something meaningful needs attention.
 
@@ -163,11 +177,11 @@ Alex wants Stagent to proactively check on the portfolio project every morning. 
 
 > **Tip:** Heartbeat schedules are smarter than clock-driven ones -- they suppress no-op runs. If your portfolio project has no stale tasks, the heartbeat stays quiet and costs nothing.
 
-### Step 12: Connect Telegram for Notifications
+### Step 13: Connect Telegram for Notifications
 
 Alex wants to receive schedule results on the go. Setting up a Telegram delivery channel takes less than two minutes.
 
-![Settings delivery channels section](../screengrabs/settings-channels.png)
+![Settings page showing provider and runtime configuration](../screengrabs/settings-auth.png)
 
 1. Open **Settings** from the sidebar under **Configure**
 2. Scroll to the **Delivery Channels** section
@@ -180,7 +194,7 @@ Alex wants to receive schedule results on the go. Setting up a Telegram delivery
 
 > **Tip:** With Chat mode enabled, you can ask Stagent questions directly from Telegram. "What's the status of my portfolio project?" works just like the web chat.
 
-### Step 13: Browse the User Guide
+### Step 14: Browse the User Guide
 
 Alex discovers the built-in documentation hub.
 
@@ -191,7 +205,7 @@ Alex discovers the built-in documentation hub.
 3. Check the **guided journeys** for your current skill level
 4. Use the feature grid to discover areas you have not tried yet
 
-### Step 14: What's Next
+### Step 15: What's Next
 
 Alex now has a solid foundation: a project, organized tasks on a kanban board, a heartbeat schedule for proactive monitoring, and Telegram notifications for staying connected on the go. Here is where to go from here:
 

@@ -441,7 +441,7 @@ If clickable entities (detail links/cards/buttons) found:
    - If the detail has action buttons (edit, delete, execute), note them but do NOT click destructive actions
 5. `navigate_page` back to the route (don't rely on browser back)
 
-**Exhaustive coverage:** Ensure detail views are captured for ALL routes that have `[id]` or `[slug]` sub-routes. Key entities: tasks, projects, workflows, documents, profiles, schedules, playbook articles. If a route has entities but no detail link was found, log a warning.
+**Exhaustive coverage:** Ensure detail views are captured for ALL routes that have `[id]` or `[slug]` sub-routes. Key entities: tasks, projects, workflows, documents, profiles, schedules, user guide articles. If a route has entities but no detail link was found, log a warning.
 
 ### 4e. Tabs
 If tabs found:

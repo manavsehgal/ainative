@@ -1,9 +1,9 @@
 ---
-name: playbook-sync
-description: Sync playbook content with screengrab and doc-generator output. Copies screenshots from screengrabs/ to public/readme/, validates journey screenshot references against existing files, detects alt-text and step-text mismatches with actual screenshot content, and reports sync status. Triggers on "sync playbook", "playbook sync", "update playbook images", "sync screengrabs to public", "playbook check", "are docs in sync", "sync docs and screenshots", or after running /screengrab or /doc-generator.
+name: user-guide-sync
+description: Sync user guide content with screengrab and doc-generator output. Copies screenshots from screengrabs/ to public/readme/, validates journey screenshot references against existing files, detects alt-text and step-text mismatches with actual screenshot content, and reports sync status. Triggers on "sync user guide", "user guide sync", "sync screengrabs to public", "are docs in sync", "sync docs and screenshots", or after running /screengrab or /doc-generator.
 ---
 
-# Playbook Sync
+# User Guide Sync
 
 Reconciliation skill that ensures the three-layer documentation pipeline stays consistent:
 
@@ -12,7 +12,7 @@ Reconciliation skill that ensures the three-layer documentation pipeline stays c
      ↓
 /doc-generator → docs/journeys/*.md (refs ../../screengrabs/*.png)
      ↓
-/playbook-sync → public/readme/*.png (copies from screengrabs/, committed to git)
+/user-guide-sync → public/readme/*.png (copies from screengrabs/, committed to git)
                 + validates refs + audits content alignment
      ↓
 User Guide UI → /user-guide route renders journeys with GitHub raw URLs
@@ -21,7 +21,7 @@ User Guide UI → /user-guide route renders journeys with GitHub raw URLs
 ```
 
 ```
-/screengrab → /doc-generator (with coverage analysis) → /playbook-sync (validates + writes .coverage-gaps.json)
+/screengrab → /doc-generator (with coverage analysis) → /user-guide-sync (validates + writes .coverage-gaps.json)
                     ↑                                              │
                     └──────────── if gaps remain ──────────────────┘
 ```
@@ -34,11 +34,11 @@ The user guide UI resolves images from `public/readme/*.png` via GitHub raw URLs
 
 | Need | Skill | Not This Skill |
 |------|-------|----------------|
-| "Sync playbook images" | `playbook-sync` | — |
-| "Are docs in sync?" | `playbook-sync` | — |
-| "Take screenshots" | `screengrab` | `playbook-sync` |
-| "Generate journey docs" | `doc-generator` | `playbook-sync` |
-| "Fix mismatched alt text" | `doc-generator` (after sync report) | `playbook-sync` |
+| "Sync user guide images" | `user-guide-sync` | — |
+| "Are docs in sync?" | `user-guide-sync` | — |
+| "Take screenshots" | `screengrab` | `user-guide-sync` |
+| "Generate journey docs" | `doc-generator` | `user-guide-sync` |
+| "Fix mismatched alt text" | `doc-generator` (after sync report) | `user-guide-sync` |
 
 ## Core Principle
 
@@ -90,7 +90,7 @@ Evaluate staleness using these rules:
 
 | Condition | Meaning | Action |
 |-----------|---------|--------|
-| `screengrabs/.last-run` > latest `public/readme/*.png` mod time | Screenshots newer than playbook images | Phase 2 will copy updates |
+| `screengrabs/.last-run` > latest `public/readme/*.png` mod time | Screenshots newer than user guide images | Phase 2 will copy updates |
 | `screengrabs/.last-run` > `docs/.last-generated` | Screenshots taken after last doc generation | Docs may reference old screenshots — warn |
 | `docs/.last-generated` > `public/readme/.last-synced` | Docs updated but images not synced | Phase 2 will copy updates |
 | All three within 24h of each other | Pipeline is fresh | Report as synced |
@@ -106,7 +106,7 @@ Output a staleness dashboard:
 |-------|-----------|--------|
 | Screengrabs | 2026-03-20T23:19:12Z | [FRESH/STALE] |
 | Docs | 2026-03-21T03:52:00Z | [FRESH/STALE] |
-| Playbook Images | [timestamp or NEVER] | [FRESH/STALE/MISSING] |
+| User Guide Images | [timestamp or NEVER] | [FRESH/STALE/MISSING] |
 ```
 
 ---
@@ -161,7 +161,7 @@ cp screengrabs/{file}.png public/readme/{file}.png
 **Orphan guidance:** Orphaned files in `public/readme/` may be:
 - Screenshots manually placed there (not from `/screengrab`)
 - Screenshots from a previous screengrab run that were removed in a later run
-- Files the playbook UI still references — check before manual deletion
+- Files the user guide UI still references — check before manual deletion
 
 ---
 
@@ -281,7 +281,7 @@ Report as:
 | density-toggle | yes | no | Add to Personal Use journey |
 ```
 
-This ensures the playbook eventually covers all captured interactions and no new feature falls through the cracks.
+This ensures the user guide eventually covers all captured interactions and no new feature falls through the cracks.
 
 ### 4e-ii. Machine-Readable Gap Output
 
@@ -326,7 +326,7 @@ Use the same persona mapping as `/doc-generator` Phase 4.5d for the `suggestedPe
 | Schedules | power-user |
 | Runtime Quality | developer |
 
-This file enables the closed feedback loop: `/playbook-sync` detects gaps → `/doc-generator` reads gaps and remediates journeys.
+This file enables the closed feedback loop: `/user-guide-sync` detects gaps → `/doc-generator` reads gaps and remediates journeys.
 
 ---
 
@@ -337,7 +337,7 @@ Produce a final summary and write the sync timestamp.
 ### 5a. Summary
 
 ```
-### Playbook Sync Summary
+### User Guide Sync Summary
 
 | Metric | Value |
 |--------|-------|
@@ -366,7 +366,7 @@ Based on findings, recommend specific actions:
 |---------|---------------|
 | Broken references | Run `/doc-generator` to regenerate docs, or manually fix references |
 | WRONG mismatches | Run `/doc-generator` with specific fixes, or swap screenshots manually |
-| STALE mismatches | Run `/screengrab` to recapture, then `/playbook-sync` again |
+| STALE mismatches | Run `/screengrab` to recapture, then `/user-guide-sync` again |
 | Orphaned images | Review manually — delete if unused, or add references if needed |
 | Docs older than screengrabs | Run `/doc-generator` to pick up new screenshots |
 | Feature coverage gaps > 0 | Run `/doc-generator` to regenerate journeys with coverage gap remediation — it will read `docs/.coverage-gaps.json` and insert missing features into appropriate persona journeys |

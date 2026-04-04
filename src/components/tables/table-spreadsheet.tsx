@@ -11,7 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Expand, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { CellEditor, CellDisplay } from "./table-cell-editor";
@@ -19,6 +19,7 @@ import { SpreadsheetColumnHeader } from "./table-column-header";
 import { TableColumnSheet } from "./table-column-sheet";
 import { TableToolbar } from "./table-toolbar";
 import { TableImportWizard } from "./table-import-wizard";
+import { TableRowSheet } from "./table-row-sheet";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Table2 } from "lucide-react";
 import {
@@ -64,6 +65,8 @@ export function TableSpreadsheet({
   const [sorts, setSorts] = useState<SortSpec[]>([]);
   const [columnSheetOpen, setColumnSheetOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [rowSheetOpen, setRowSheetOpen] = useState(false);
+  const [rowSheetRow, setRowSheetRow] = useState<ParsedRow | null>(null);
   const [pendingSaves, setPendingSaves] = useState<Set<string>>(new Set());
 
   const debounceTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
@@ -238,6 +241,19 @@ export function TableSpreadsheet({
     }
   }, [tableId, selectedRows, refreshRows]);
 
+  // ── Row sheet ──────────────────────────────────────────────────────
+
+  const handleOpenRowSheet = useCallback((row: ParsedRow) => {
+    setRowSheetRow(row);
+    setRowSheetOpen(true);
+  }, []);
+
+  const handleRowUpdated = useCallback((rowId: string, data: Record<string, unknown>) => {
+    setRows((prev) =>
+      prev.map((r) => (r.id === rowId ? { ...r, data } : r))
+    );
+  }, []);
+
   // ── Column operations ───────────────────────────────────────────────
 
   const handleSort = useCallback(
@@ -349,6 +365,7 @@ export function TableSpreadsheet({
                   onCheckedChange={toggleSelectAll}
                 />
               </TableHead>
+              <TableHead className="w-10" />
               {columns.map((col) => {
                 const sortDir = sorts.find((s) => s.column === col.name)?.direction ?? null;
                 return (
@@ -379,7 +396,7 @@ export function TableSpreadsheet({
             {rows.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={columns.length + 2}
+                  colSpan={columns.length + 3}
                   className="h-24 text-center text-muted-foreground"
                 >
                   No rows yet.{" "}
@@ -404,6 +421,16 @@ export function TableSpreadsheet({
                       checked={selectedRows.has(row.id)}
                       onCheckedChange={() => toggleRowSelect(row.id)}
                     />
+                  </TableCell>
+                  <TableCell className="p-0" onClick={(e) => e.stopPropagation()}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={() => handleOpenRowSheet(row)}
+                    >
+                      <Expand className="h-3 w-3" />
+                    </Button>
                   </TableCell>
                   {columns.map((col, colIndex) => {
                     const isActive =
@@ -494,6 +521,17 @@ export function TableSpreadsheet({
         onOpenChange={setImportOpen}
         onImported={() => { refreshTable(); refreshRows(); }}
       />
+
+      {rowSheetRow && (
+        <TableRowSheet
+          tableId={tableId}
+          columns={columns}
+          row={rowSheetRow}
+          open={rowSheetOpen}
+          onOpenChange={setRowSheetOpen}
+          onRowUpdated={handleRowUpdated}
+        />
+      )}
     </div>
   );
 }

@@ -133,7 +133,7 @@ Generate docs for 11 app sections + 3 cross-cutting feature groups:
 | Schedules | `docs/features/schedules.md` | `/schedules` |
 | Cost & Usage | `docs/features/cost-usage.md` | `/costs` |
 | Settings | `docs/features/settings.md` | `/settings` |
-| User Guide | `docs/features/playbook.md` | `/user-guide` |
+| User Guide | `docs/features/user-guide.md` | `/user-guide` |
 | Provider Runtimes | `docs/features/provider-runtimes.md` | cross-cutting |
 | Agent Intelligence | `docs/features/agent-intelligence.md` | cross-cutting |
 | Tool Permissions | `docs/features/tool-permissions.md` | cross-cutting |
@@ -183,7 +183,7 @@ lastUpdated: "{ISO date}"
 
 - **Rewrite** technical specs into user-facing language (no P1, SDK, Drizzle, ORM, etc.)
 - **Only embed screenshots** that exist in the inventory (max 6 per doc)
-- **Use relative paths**: `../screengrabs/{filename}` for images (the playbook viewer resolves these to GitHub raw URLs at runtime; `public/readme/` is excluded from the npm package)
+- **Use relative paths**: `../screengrabs/{filename}` for images (the user guide viewer resolves these to GitHub raw URLs at runtime; `public/readme/` is excluded from the npm package)
 - **Derive How-To steps** from component form fields + spec acceptance criteria
 - **Never overwrite** docs with `manual: true` in frontmatter
 - **Cross-cutting docs** (Provider Runtimes, Agent Intelligence, Tool Permissions) aggregate content from multiple sections and reference those section docs
@@ -269,7 +269,7 @@ Output a summary consumed by Phase 5:
 | Developer | [list] | [list] |
 ```
 
-If `docs/.coverage-gaps.json` exists from a previous `/playbook-sync` run, read it and merge those findings into this analysis rather than duplicating effort.
+If `docs/.coverage-gaps.json` exists from a previous `/user-guide-sync` run, read it and merge those findings into this analysis rather than duplicating effort.
 
 ---
 
@@ -664,7 +664,7 @@ docs/
 │   ├── design-system.md              # Cross-cutting: Calm Ops design system
 │   ├── keyboard-navigation.md        # Cross-cutting: command palette + shortcuts
 │   ├── shared-components.md          # Cross-cutting: reusable component library
-│   └── playbook.md                   # Playbook documentation system
+│   └── user-guide.md                   # User Guide documentation system
 └── journeys/
     ├── personal-use.md               # Beginner persona
     ├── work-use.md                   # Intermediate persona
@@ -695,7 +695,7 @@ docs/
 - [ ] All cross-doc links validated
 - [ ] README.md generated/updated
 - [ ] Coverage report generated
-- [ ] Cross-cutting docs generated (Design System, Keyboard Navigation, Shared Components, Playbook)
+- [ ] Cross-cutting docs generated (Design System, Keyboard Navigation, Shared Components, User Guide)
 - [ ] Persona data profiles defined and used consistently in journeys
 - [ ] New shared component screenshots embedded in cross-cutting docs
 - [ ] Journey guides reference Command Palette, density toggle, view switching, trust tiers

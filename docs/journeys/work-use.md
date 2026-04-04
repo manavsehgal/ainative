@@ -4,9 +4,9 @@ category: "user-journey"
 persona: "work"
 difficulty: "intermediate"
 estimatedTime: "30 minutes"
-sections: ["projects", "chat", "documents", "workflows", "schedules", "cost-usage", "inbox-notifications", "delivery-channels"]
-tags: ["intermediate", "team", "documents", "workflows", "schedules", "costs", "inbox", "channels", "handoffs"]
-lastUpdated: "2026-03-31"
+sections: ["projects", "chat", "documents", "tables", "workflows", "schedules", "cost-usage", "inbox-notifications", "delivery-channels"]
+tags: ["intermediate", "team", "documents", "tables", "workflows", "schedules", "costs", "inbox", "channels", "handoffs"]
+lastUpdated: "2026-04-03"
 ---
 
 # Work Use Guide
@@ -50,7 +50,7 @@ Jordan clicks into a project to check on task progress.
 
 Rather than clicking through every page, Jordan asks Chat for a quick status update.
 
-![Active chat conversation with messages and Quick Access navigation pills](../screengrabs/chat-conversation.png)
+![Chat interface with conversation thread and Quick Access navigation](../screengrabs/chat-detail.png)
 
 1. Click **Chat** in the sidebar
 2. Type a question such as "What is the status of the Q2 planning project?"
@@ -82,7 +82,35 @@ Jordan switches to grid view for a visual overview.
 2. Browse document cards with file name, type icon, and project association
 3. Toggle back to **table view** when you need to sort or filter
 
-### Step 6: Browse Workflow Blueprints
+### Step 6: Create a Table from a Template
+
+Jordan needs a structured tracker for the team's quarterly OKRs. Instead of building one from scratch, the template gallery has a ready-made option.
+
+![Template gallery showing pre-built table templates](../screengrabs/tables-templates.png)
+
+1. Click **Tables** in the sidebar under the **Work** group
+2. Click **Create Table** and browse the **Template Gallery**
+3. Select a template that fits the use case (e.g., "OKR Tracker" or "Sprint Board")
+4. Review the pre-configured columns and customize as needed
+5. Click **Create** to generate the table with the template structure
+
+> **Tip:** Templates include pre-set column types and formulas. They save setup time and ensure the team starts with a proven structure.
+
+### Step 7: Import Document Data into a Table
+
+Jordan has a CSV export from the previous quarter's performance review. Importing it into a table takes seconds.
+
+![Create table dialog with fields filled in](../screengrabs/tables-create-form-filled.png)
+
+1. From the **Tables** page, click **Create Table**
+2. Choose **Import** and select the CSV or XLSX file
+3. Review the column mapping -- Stagent auto-detects column types from the data
+4. Assign the table to the relevant project
+5. Click **Create** to import the data into a fully editable spreadsheet view
+
+> **Tip:** Imported tables retain all their data as editable rows. You can add formula columns, charts, and workflow triggers on top of imported data.
+
+### Step 8: Browse Workflow Blueprints
 
 Jordan wants to set up a structured review process. The blueprint gallery now includes business-function templates alongside technical ones.
 
@@ -95,7 +123,7 @@ Jordan wants to set up a structured review process. The blueprint gallery now in
 
 > **Tip:** Business-function blueprints pair naturally with the corresponding business profiles (Marketing Strategist, Sales Researcher, Financial Analyst, etc.).
 
-### Step 7: Review Active Workflows
+### Step 9: Review Active Workflows
 
 ![Workflows list with tabs showing status and step progress](../screengrabs/workflows-list.png)
 
@@ -104,7 +132,7 @@ Jordan wants to set up a structured review process. The blueprint gallery now in
 3. Click on a running workflow for step-by-step details
 4. Check for steps in a "waiting" state that may need approval
 
-### Step 8: Schedule with Natural Language
+### Step 10: Schedule with Natural Language
 
 Jordan schedules a weekly status summary using plain English instead of cron syntax.
 
@@ -120,7 +148,7 @@ Jordan schedules a weekly status summary using plain English instead of cron syn
 
 > **Tip:** The interval parser understands plain English. You do not need to write cron expressions.
 
-### Step 9: Monitor Spending and Budgets
+### Step 11: Monitor Spending and Budgets
 
 ![Cost and Usage dashboard showing spend metrics and budget gauges](../screengrabs/cost-usage-list.png)
 
@@ -129,7 +157,7 @@ Jordan schedules a weekly status summary using plain English instead of cron syn
 3. Check the **budget gauge** for spend cap proximity
 4. Examine per-project and per-model breakdowns
 
-### Step 10: Analyze Cost Breakdown
+### Step 12: Analyze Cost Breakdown
 
 ![Cost and Usage page scrolled to show detailed usage breakdown table](../screengrabs/cost-usage-below-fold.png)
 
@@ -139,7 +167,7 @@ Jordan schedules a weekly status summary using plain English instead of cron syn
 
 > **Tip:** The breakdown table is your audit trail. Trace every dollar back to a specific task.
 
-### Step 11: Review Agent Notifications and Handoffs
+### Step 13: Review Agent Notifications and Handoffs
 
 Jordan's agents have been running in the background. Some have generated handoff requests where one agent wants to delegate work to another.
 
@@ -152,7 +180,7 @@ Jordan's agents have been running in the background. Some have generated handoff
 
 > **Tip:** Agent handoffs are governed -- chain depth limits prevent infinite loops, and self-handoffs are blocked automatically.
 
-### Step 12: Inspect Notification Details
+### Step 14: Inspect Notification Details
 
 ![Inbox with expanded notification showing full content and approval options](../screengrabs/inbox-expanded.png)
 
@@ -161,11 +189,11 @@ Jordan's agents have been running in the background. Some have generated handoff
 3. Choose **Approve**, **Deny**, or **Always Allow**
 4. For handoffs, approve to let the receiving agent begin work
 
-### Step 13: Configure Multi-Channel Notifications
+### Step 15: Configure Multi-Channel Notifications
 
 Jordan sets up Slack so the entire team receives schedule results and important alerts.
 
-![Settings delivery channels with configured channels](../screengrabs/settings-channels.png)
+![Settings page showing provider and runtime configuration](../screengrabs/settings-auth.png)
 
 1. Open **Settings** and scroll to **Delivery Channels**
 2. Click **+ Add Channel** and select **Slack**
@@ -175,7 +203,7 @@ Jordan sets up Slack so the entire team receives schedule results and important 
 
 > **Tip:** With Chat enabled on Slack, anyone in the channel can message Stagent and get workspace-aware responses. This turns Slack into a team-wide AI assistant interface.
 
-### Step 14: Manage Schedules
+### Step 16: Manage Schedules
 
 ![Schedules list with status indicators and next run timestamps](../screengrabs/schedules-list.png)
 
@@ -185,7 +213,7 @@ Jordan sets up Slack so the entire team receives schedule results and important 
 4. Click to review firing history and generated tasks
 5. Edit or pause as needed
 
-### Step 15: What's Next
+### Step 17: What's Next
 
 Jordan's working session covered team projects, documents, business-function workflows, natural language scheduling, multi-channel notifications, agent handoff approvals, and cost governance. To go deeper:
 

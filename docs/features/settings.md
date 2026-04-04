@@ -4,9 +4,9 @@ category: "feature-reference"
 section: "settings"
 route: "/settings"
 tags: ["settings", "configuration", "auth", "runtime", "browser-tools", "permissions", "budget", "ollama", "channels"]
-features: ["session-management", "tool-permission-persistence", "tool-permission-presets", "browser-use", "spend-budget-guardrails", "settings-interactive-controls", "ollama-runtime-provider", "multi-channel-delivery", "bidirectional-channel-chat"]
-screengrabCount: 9
-lastUpdated: "2026-03-31"
+features: ["session-management", "tool-permission-persistence", "tool-permission-presets", "browser-use", "spend-budget-guardrails", "settings-interactive-controls", "ollama-runtime-provider", "multi-channel-delivery", "bidirectional-channel-chat", "database-snapshot-backup"]
+screengrabCount: 10
+lastUpdated: "2026-04-03"
 ---
 
 # Settings
@@ -41,6 +41,9 @@ The Settings page is the central configuration hub for Stagent. From a single sc
 
 ![Data management section with clear and populate options](../screengrabs/settings-data.png)
 *Data Management section for resetting or populating workspace data.*
+
+![Database Snapshots settings](../screengrabs/settings-snapshots.png)
+*Database Snapshots section with automatic backup configuration, retention settings, and snapshot list with restore/delete actions.*
 
 ## Key Features
 
@@ -121,6 +124,15 @@ Two operations for managing workspace content:
 
 - **Clear Data** -- removes tasks, logs, documents, schedules, and other workspace content. Settings and permissions are preserved.
 - **Populate Sample Data** -- seeds the workspace with example projects, tasks, and documents.
+
+### Database Snapshots
+
+Protect your workspace with automatic and manual database backups:
+
+- **Automatic backup** -- enable scheduled backups with a configurable cron interval (e.g., every 6 hours, daily). Snapshots are created in the background without interrupting your workflow.
+- **Retention settings** -- control how many snapshots to keep with a maximum count and a maximum age in weeks. Older snapshots beyond the retention limits are pruned automatically.
+- **Snapshot list** -- view all existing snapshots with timestamps and sizes. Each snapshot has **Restore** and **Delete** action buttons for quick management.
+- **Pre-restore safety snapshot** -- before restoring an older snapshot, Stagent automatically creates a safety snapshot of the current database state so you can roll back if needed.
 
 ## How To
 

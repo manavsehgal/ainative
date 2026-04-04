@@ -1,7 +1,7 @@
 ---
 title: "Stagent Documentation"
 category: "index"
-lastUpdated: "2026-03-31"
+lastUpdated: "2026-04-03"
 ---
 
 # Stagent Documentation
@@ -39,13 +39,14 @@ Stagent is an AI Business Operating System that lets solo founders and micro-tea
 | [Projects](./features/projects.md) | `/projects` | Workspaces, task grouping, file context |
 | [Workflows](./features/workflows.md) | `/workflows` | 6 patterns, blueprints, business-function templates |
 | [Documents](./features/documents.md) | `/documents` | Upload, preprocessing, agent context |
+| [Tables](./features/tables.md) | `/tables` | Spreadsheet editor, charts, triggers, templates, import/export |
 | [Monitor](./features/monitoring.md) | `/monitor` | Activity logs, execution tracking |
 | [Profiles](./features/profiles.md) | `/profiles` | Agent profiles, business roles, auto-routing |
 | [Schedules](./features/schedules.md) | `/schedules` | Heartbeat, NLP intervals, delivery channels |
 | [Cost & Usage](./features/cost-usage.md) | `/costs` | Spend tracking, budget guardrails |
 | [Delivery Channels](./features/delivery-channels.md) | `/settings` | Slack, Telegram, webhook, bidirectional chat |
 | [Settings](./features/settings.md) | `/settings` | Auth, Ollama, channels, permissions, budgets |
-| [User Guide](./features/playbook.md) | `/user-guide` | In-app documentation and adoption tracking |
+| [User Guide](./features/user-guide.md) | `/user-guide` | In-app documentation and adoption tracking |
 
 ## Cross-Cutting Features
 

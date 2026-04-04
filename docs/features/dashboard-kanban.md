@@ -5,30 +5,36 @@ section: "dashboard-kanban"
 route: "/dashboard"
 tags: [tasks, kanban, board, table, filter, create, ai-assist, drag-and-drop, bulk-operations, heartbeat]
 features: ["task-board", "kanban-board-operations", "micro-visualizations", "task-definition-ai", "detail-view-redesign", "ui-density-refinement", "heartbeat-scheduler"]
-screengrabCount: 5
-lastUpdated: "2026-03-31"
+screengrabCount: 7
+lastUpdated: "2026-04-03"
 ---
 
 # Dashboard Kanban
 
-The Dashboard is your primary task management surface. It presents all tasks as a Kanban board with drag-and-drop columns, or as a sortable table -- whichever fits your workflow. A powerful filter bar, AI-assisted task creation, bulk operations, and inline editing let you manage agent work without switching context.
+The Dashboard is your primary task management surface. It presents all tasks as a Kanban board with drag-and-drop columns, or as a sortable table -- whichever fits your workflow. A powerful filter bar, AI-assisted task creation, bulk operations, and inline editing let you manage agent work without switching context. The default seed data populates the board with business-relevant tasks across three personas -- product launch, content engine, and customer success -- giving you a realistic starting point to explore the interface.
 
 ## Screenshots
 
 ![Dashboard board view](../screengrabs/dashboard-list.png)
-*Kanban board with columns for Planned, Queued, Running, Completed, and Failed tasks*
+*Kanban board with columns for Planned, Queued, Running, Completed, and Failed tasks showing business-relevant tasks across product launch, content engine, and customer success personas*
+
+![Dashboard below the fold](../screengrabs/dashboard-below-fold.png)
+*Below-the-fold view of the kanban board with additional task cards and columns*
 
 ![Dashboard table view](../screengrabs/dashboard-table.png)
 *Table view with sortable columns for title, status, priority, project, and timestamps*
-
-![Task detail sheet](../screengrabs/dashboard-card-detail.png)
-*Task detail sheet showing task properties, description, and execution history*
 
 ![Task edit dialog](../screengrabs/dashboard-card-edit.png)
 *Task edit dialog for updating task details from the kanban board*
 
 ![Bulk select mode](../screengrabs/dashboard-bulk-select.png)
 *Kanban board in select mode with checked cards and bulk action toolbar*
+
+![Create task form empty](../screengrabs/dashboard-create-form-empty.png)
+*Empty task creation form with fields for title, description, project, priority, runtime, and agent profile*
+
+![Create task form filled](../screengrabs/dashboard-create-form-filled.png)
+*Task creation form filled with business-relevant task details and AI-assisted description*
 
 ## Key Features
 

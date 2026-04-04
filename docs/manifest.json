@@ -1,6 +1,6 @@
 {
-  "generated": "2026-03-31T21:00:00Z",
-  "version": 2,
+  "generated": "2026-04-03T22:00:00Z",
+  "version": 3,
   "sections": [
     {
       "slug": "home-workspace",
@@ -73,6 +73,16 @@
       "screengrabCount": 2
     },
     {
+      "slug": "tables",
+      "title": "Tables",
+      "category": "feature-reference",
+      "path": "features/tables.md",
+      "route": "/tables",
+      "tags": ["tables", "structured-data", "spreadsheet", "charts", "triggers", "templates", "import", "export", "formulas"],
+      "features": ["tables-data-layer", "tables-list-page", "tables-spreadsheet-editor", "tables-document-import", "tables-template-gallery", "tables-agent-integration", "tables-chat-queries", "tables-computed-columns", "tables-cross-joins", "tables-agent-charts", "tables-workflow-triggers", "tables-nl-creation", "tables-export", "tables-versioning"],
+      "screengrabCount": 8
+    },
+    {
       "slug": "monitoring",
       "title": "Monitor",
       "category": "feature-reference",
@@ -118,8 +128,8 @@
       "category": "feature-reference",
       "path": "features/settings.md",
       "route": "/settings",
-      "tags": ["settings", "authentication", "permissions", "presets", "budgets", "browser-tools", "ollama", "channels"],
-      "features": ["session-management", "tool-permission-persistence", "tool-permission-presets", "browser-use", "spend-budget-guardrails", "ollama-runtime-provider", "multi-channel-delivery", "bidirectional-channel-chat"],
+      "tags": ["settings", "authentication", "permissions", "presets", "budgets", "browser-tools", "ollama", "channels", "snapshots"],
+      "features": ["session-management", "tool-permission-persistence", "tool-permission-presets", "browser-use", "spend-budget-guardrails", "ollama-runtime-provider", "multi-channel-delivery", "bidirectional-channel-chat", "database-snapshot-backup"],
       "screengrabCount": 9
     },
     {
@@ -136,7 +146,7 @@
       "slug": "playbook",
       "title": "User Guide",
       "category": "feature-reference",
-      "path": "features/playbook.md",
+      "path": "features/user-guide.md",
       "route": "/user-guide",
       "tags": ["user-guide", "documentation", "adoption-tracking"],
       "features": ["playbook-documentation", "documentation-adoption-tracking"],
@@ -232,8 +242,8 @@
       "persona": "personal",
       "difficulty": "beginner",
       "path": "journeys/personal-use.md",
-      "sections": ["home-workspace", "chat", "dashboard-kanban", "projects", "schedules", "delivery-channels", "user-guide"],
-      "stepCount": 14
+      "sections": ["home-workspace", "chat", "dashboard-kanban", "projects", "tables", "schedules", "delivery-channels", "user-guide"],
+      "stepCount": 15
     },
     {
       "slug": "work-use",
@@ -241,8 +251,8 @@
       "persona": "work",
       "difficulty": "intermediate",
       "path": "journeys/work-use.md",
-      "sections": ["projects", "chat", "documents", "workflows", "schedules", "cost-usage", "inbox-notifications", "delivery-channels"],
-      "stepCount": 15
+      "sections": ["projects", "chat", "documents", "tables", "workflows", "schedules", "cost-usage", "inbox-notifications", "delivery-channels"],
+      "stepCount": 16
     },
     {
       "slug": "power-user",
@@ -250,8 +260,8 @@
       "persona": "power-user",
       "difficulty": "advanced",
       "path": "journeys/power-user.md",
-      "sections": ["dashboard-kanban", "profiles", "chat", "workflows", "schedules", "monitoring", "settings"],
-      "stepCount": 15
+      "sections": ["dashboard-kanban", "profiles", "chat", "workflows", "tables", "schedules", "monitoring", "settings"],
+      "stepCount": 16
     },
     {
       "slug": "developer",
@@ -259,14 +269,14 @@
       "persona": "developer",
       "difficulty": "advanced",
       "path": "journeys/developer.md",
-      "sections": ["settings", "environment", "chat", "monitoring", "profiles", "workflows", "schedules", "delivery-channels"],
-      "stepCount": 14
+      "sections": ["settings", "environment", "chat", "monitoring", "profiles", "tables", "workflows", "schedules", "delivery-channels"],
+      "stepCount": 15
     }
   ],
   "metadata": {
-    "totalDocs": 29,
-    "totalScreengrabs": 44,
-    "featuresCovered": 68,
-    "appSections": 15
+    "totalDocs": 30,
+    "totalScreengrabs": 48,
+    "featuresCovered": 82,
+    "appSections": 16
   }
 }

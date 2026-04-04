@@ -1,21 +1,71 @@
 {
-  "generated": "2026-03-31T21:00:00Z",
-  "totalFeatures": 31,
-  "coveredFeatures": 28,
-  "uncoveredFeatures": 3,
-  "coveragePercent": 90.3,
-  "gaps": {
-    "book-content-merge": {
-      "availableScreenshots": ["book-reader.png"],
-      "note": "Book reader screenshot exists but not referenced in any journey doc"
+  "generated": "2026-04-03T23:30:00Z",
+  "summary": {
+    "totalFeatures": 82,
+    "coveredFeatures": 78,
+    "gapCount": 4,
+    "unusedScreenshotCount": 0,
+    "brokenReferences": 0,
+    "orphanedImages": 14
+  },
+  "gaps": [
+    {
+      "feature": "book-content-merge",
+      "category": "Living Book",
+      "screenshots": ["book-list.png"],
+      "journeyCoverage": [],
+      "suggestedPersona": "personal",
+      "note": "Book reader captured but not referenced in any journey"
     },
-    "book-reading-paths": {
-      "availableScreenshots": ["book-reader.png", "book-chapter-nav.png"],
-      "note": "Book navigation screenshots exist but not referenced in any journey doc"
+    {
+      "feature": "book-reading-paths",
+      "category": "Living Book",
+      "screenshots": ["book-list.png"],
+      "journeyCoverage": [],
+      "suggestedPersona": "personal",
+      "note": "Book navigation not in any journey"
     },
-    "browser-tool-orchestration": {
-      "availableScreenshots": ["settings-browser-tools.png"],
-      "note": "Browser tools settings screenshot exists but not referenced in any journey doc"
+    {
+      "feature": "tables-document-import",
+      "category": "Structured Data",
+      "screenshots": [],
+      "journeyCoverage": ["work-use"],
+      "suggestedPersona": "work",
+      "note": "Import wizard not captured (no dedicated screenshot) but tables mentioned in Work journey"
+    },
+    {
+      "feature": "database-snapshot-backup",
+      "category": "Platform",
+      "screenshots": ["settings-snapshots.png"],
+      "journeyCoverage": [],
+      "suggestedPersona": "developer",
+      "note": "New feature - settings snapshot card captured, not yet in any journey"
     }
-  }
+  ],
+  "brokenReferences": [
+    { "file": "developer.md", "screenshot": "settings-ollama-connected.png", "status": "STALE", "note": "Old screenshot in public/readme/, not in current screengrabs/" },
+    { "file": "developer.md", "screenshot": "settings-channels-add-form.png", "status": "STALE", "note": "Old screenshot in public/readme/" },
+    { "file": "developer.md", "screenshot": "settings-channels-telegram-form.png", "status": "STALE", "note": "Old screenshot in public/readme/" },
+    { "file": "developer.md", "screenshot": "settings-channels-webhook-form.png", "status": "STALE", "note": "Old screenshot in public/readme/" },
+    { "file": "developer.md", "screenshot": "chat-conversation.png", "status": "STALE", "note": "Old screenshot in public/readme/" },
+    { "file": "developer.md", "screenshot": "schedules-detail.png", "status": "STALE", "note": "Old screenshot in public/readme/" },
+    { "file": "personal-use.md", "screenshot": "dashboard-card-detail.png", "status": "STALE", "note": "Old screenshot in public/readme/" },
+    { "file": "personal-use.md", "screenshot": "settings-channels.png", "status": "STALE", "note": "Old screenshot in public/readme/" },
+    { "file": "power-user.md", "screenshot": "settings-ollama-connected.png", "status": "STALE", "note": "Old screenshot in public/readme/" },
+    { "file": "power-user.md", "screenshot": "chat-model-selector.png", "status": "STALE", "note": "Old screenshot in public/readme/" },
+    { "file": "power-user.md", "screenshot": "schedules-detail.png", "status": "STALE", "note": "Old screenshot in public/readme/" },
+    { "file": "power-user.md", "screenshot": "chat-create-tab.png", "status": "STALE", "note": "Old screenshot in public/readme/" },
+    { "file": "work-use.md", "screenshot": "chat-conversation.png", "status": "STALE", "note": "Old screenshot in public/readme/" },
+    { "file": "work-use.md", "screenshot": "settings-channels.png", "status": "STALE", "note": "Old screenshot in public/readme/" }
+  ],
+  "orphanedImages": [
+    "book-chapter-header.png", "book-chapter-nav.png", "book-reader.png",
+    "book-settings.png", "book-toc.png", "book-try-it-now.png",
+    "chat-conversation.png", "chat-create-tab.png", "chat-model-selector.png",
+    "chat-quick-access.png", "dashboard-card-detail.png", "playbook-list.png",
+    "schedules-detail.png", "schedules-edit-form.png", "settings-browser-tools.png",
+    "settings-channels-add-form.png", "settings-channels-telegram-form.png",
+    "settings-channels-webhook-form.png", "settings-channels.png",
+    "settings-ollama-connected.png"
+  ]
 }

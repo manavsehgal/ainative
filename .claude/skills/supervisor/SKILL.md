@@ -87,7 +87,7 @@ Produce a 7-dimension health dashboard with green/yellow/red signals.
 | **Quality Debt** | All completed features have passing tests | Some features lack test coverage | Multiple features shipped without tests |
 | **Design Consistency** | Design system tokens used consistently, no forbidden patterns | Minor inconsistencies | Hardcoded colors, missing tokens, forbidden patterns |
 | **Documentation** | README, changelog, roadmap current AND all features have journey coverage | 1 artifact stale OR <5 features missing journey coverage | Multiple artifacts stale OR >5 features missing journey coverage OR entire feature family missing from journeys |
-| **Playbook Sync** | All three timestamps (`screengrabs/.last-run`, `docs/.last-generated`, `public/readme/.last-synced`) within 24h | One layer >24h stale | Missing timestamps or broken references |
+| **User Guide Sync** | All three timestamps (`screengrabs/.last-run`, `docs/.last-generated`, `public/readme/.last-synced`) within 24h | One layer >24h stale | Missing timestamps or broken references |
 
 ### Process
 
@@ -113,7 +113,7 @@ Produce a 7-dimension health dashboard with green/yellow/red signals.
 | Quality Debt | [green/yellow/red] | [evidence] |
 | Design Consistency | [green/yellow/red] | [evidence] |
 | Documentation | [green/yellow/red] | [evidence] |
-| Playbook Sync | [green/yellow/red] | [evidence] |
+| User Guide Sync | [green/yellow/red] | [evidence] |
 
 ### Top Concern
 [Dimension] is [status] because [evidence]. Recommend: invoke `/[skill]` to [action].
@@ -470,8 +470,8 @@ mode: [health-check | next-steps | sprint-planning | vision-alignment | retrospe
 | Ready to build next feature | "Build [feature] with creative direction" | `/frontend-design` + `/taste` |
 | Reference docs missing | "Capture docs for [library]" | `/capture` |
 | Need to check library usage | "Look up [API] usage" | `/refer` |
-| Screenshots captured but docs/playbook not synced | "Sync playbook with latest screengrabs" | `/playbook-sync` |
-| Docs regenerated but playbook images stale | "Sync playbook images and validate references" | `/playbook-sync` |
+| Screenshots captured but docs/user guide not synced | "Sync user guide with latest screengrabs" | `/user-guide-sync` |
+| Docs regenerated but user guide images stale | "Sync user guide images and validate references" | `/user-guide-sync` |
 | Journey coverage gaps detected | "Regenerate journeys to cover N missing features" | `/doc-generator` (reads `.coverage-gaps.json`) |
 | Architecture drift detected | "Run architecture review for pattern compliance" | `/architect` (review) |
 | Major feature touches 2+ layers | "Run impact analysis before building" | `/architect` (impact) |
@@ -486,7 +486,7 @@ mode: [health-check | next-steps | sprint-planning | vision-alignment | retrospe
 - Build components or pages (that's `/frontend-design`)
 - Review UX or design (that's `/frontend-designer` or `/taste`)
 - Create or modify skills (that's `/skill-creator`)
-- Sync screenshots or fix documentation references (that's `/playbook-sync`)
+- Sync screenshots or fix documentation references (that's `/user-guide-sync`)
 - Assess architectural blast radius or pattern drift (that's `/architect`)
 - Write code of any kind
 
@@ -511,15 +511,15 @@ Some skills produce artifacts consumed by other skills. When the supervisor dete
 ### Documentation Pipeline
 
 ```
-/screengrab → /doc-generator (with coverage analysis) → /playbook-sync (validates + writes .coverage-gaps.json)
+/screengrab → /doc-generator (with coverage analysis) → /user-guide-sync (validates + writes .coverage-gaps.json)
                     ↑                                              │
                     └──────────── if gaps remain ──────────────────┘
 ```
 
 - `/screengrab` produces `screengrabs/*.png` + `screengrabs/manifest.json`
 - `/doc-generator` reads screengrab manifest, runs journey coverage analysis (Phase 4.5), writes `docs/journeys/*.md` and `docs/features/*.md` with 100% feature coverage target
-- `/playbook-sync` copies images to `public/readme/`, validates references, audits content alignment, writes `docs/.coverage-gaps.json`
-- **Feedback loop:** If `/playbook-sync` detects coverage gaps, recommend re-running `/doc-generator` which reads `.coverage-gaps.json` and remediates journey content
+- `/user-guide-sync` copies images to `public/readme/`, validates references, audits content alignment, writes `docs/.coverage-gaps.json`
+- **Feedback loop:** If `/user-guide-sync` detects coverage gaps, recommend re-running `/doc-generator` which reads `.coverage-gaps.json` and remediates journey content
 - **Staleness signal:** Compare `screengrabs/.last-run` vs `docs/.last-generated` vs `public/readme/.last-synced`
 - **Coverage signal:** Check `docs/.coverage-gaps.json` — if `summary.gapCount > 0`, the Documentation dimension is degraded
 
@@ -529,7 +529,7 @@ Add a 7th dimension to the Health Check:
 
 | Dimension | Green | Yellow | Red |
 |-----------|-------|--------|-----|
-| **Playbook Sync** | All three timestamps within 24h of each other | One layer >24h stale | Missing timestamps or broken references |
+| **User Guide Sync** | All three timestamps within 24h of each other | One layer >24h stale | Missing timestamps or broken references |
 
 Read these timestamps:
 - `screengrabs/.last-run`

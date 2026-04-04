@@ -4,9 +4,9 @@ category: "user-journey"
 persona: "developer"
 difficulty: "advanced"
 estimatedTime: "30 minutes"
-sections: ["settings", "environment", "chat", "monitoring", "profiles", "workflows", "schedules", "delivery-channels"]
-tags: ["advanced", "developer", "settings", "environment", "cli", "api", "monitoring", "profiles", "ollama", "channels", "handoffs", "memory"]
-lastUpdated: "2026-03-31"
+sections: ["settings", "environment", "chat", "monitoring", "profiles", "workflows", "tables", "schedules", "delivery-channels"]
+tags: ["advanced", "developer", "settings", "environment", "cli", "api", "monitoring", "profiles", "ollama", "channels", "handoffs", "memory", "tables"]
+lastUpdated: "2026-04-03"
 ---
 
 # Developer Guide
@@ -41,7 +41,7 @@ Riley starts at the Settings page. The first priority is getting authentication 
 
 Riley sets up Ollama as the fifth runtime adapter for private, zero-cost execution.
 
-![Ollama section with local models listed](../screengrabs/settings-ollama-connected.png)
+![Settings Providers and Runtimes section with authentication and runtime config](../screengrabs/settings-auth.png)
 
 1. Install Ollama from [ollama.com](https://ollama.com) and pull models: `ollama pull llama3 && ollama pull qwen3`
 2. Scroll to the **Ollama** section in Settings
@@ -55,21 +55,15 @@ Riley sets up Ollama as the fifth runtime adapter for private, zero-cost executi
 
 Riley sets up Slack and Telegram as delivery channels for schedule notifications and bidirectional chat.
 
-![Delivery channels with Slack configuration form](../screengrabs/settings-channels-add-form.png)
+![Settings data management section](../screengrabs/settings-data.png)
 
 1. Scroll to **Delivery Channels** in Settings
 2. Click **+ Add Channel** and select **Slack**
 3. Enter the webhook URL, bot token (xoxb-), signing secret, and channel ID
 4. Click **Create Channel** then **Test** to verify delivery
 5. Toggle **Chat** on for bidirectional mode
-
-![Telegram channel configuration](../screengrabs/settings-channels-telegram-form.png)
-
 6. Add a second channel for **Telegram** with bot token and chat ID
 7. Test and enable Chat mode
-
-![Webhook channel configuration](../screengrabs/settings-channels-webhook-form.png)
-
 8. Add a **Webhook** channel for custom integrations (outbound only)
 
 > **Tip:** The channel gateway architecture is straightforward: for local development, Stagent includes a built-in poller that checks Slack (`conversations.history` API) and Telegram (`getUpdates` API) every 5 seconds. No public URL or webhook registration needed. The poller only polls channels with both Chat and Active toggles on. Channel conversations flow through the same chat engine as web conversations, including tool access and permission handling.
@@ -122,7 +116,7 @@ Riley switches to the Environment page to understand the control plane.
 
 Riley traces the request lifecycle from input to streamed response across both web and channel interfaces.
 
-![Active chat conversation with streamed response](../screengrabs/chat-conversation.png)
+![Chat interface with conversation thread and streamed response](../screengrabs/chat-detail.png)
 
 1. Open **Chat** and start a conversation
 2. Trace the API flow: `POST /api/chat` (SSE stream), `GET/POST/DELETE /api/chat/conversations`, `GET /api/models`
@@ -172,9 +166,25 @@ Riley reviews the episodic memory system that gives agents persistent knowledge.
 3. Review total duration and aggregate token usage
 4. Note handoff steps where one agent delegated to another mid-workflow
 
-### Step 12: Review Schedule Configuration
+### Step 12: Explore the Tables API and Agent Tools
 
-![Schedule detail sheet showing configuration and firing history](../screengrabs/schedules-detail.png)
+Riley reviews the tables subsystem -- 12 agent tools that let AI agents create, query, and mutate structured data via chat or task execution.
+
+1. Review the tables API routes:
+   - `GET/POST /api/tables` -- list and create tables
+   - `GET/PATCH/DELETE /api/tables/[id]` -- single table CRUD
+   - `GET/POST /api/tables/[id]/charts` -- chart management per table
+   - `GET/POST /api/tables/[id]/triggers` -- workflow triggers attached to table events
+2. Inspect the 12 agent tools registered for tables: `create_table`, `list_tables`, `get_table`, `update_table`, `delete_table`, `add_row`, `update_row`, `delete_row`, `query_table`, `add_column`, `create_chart`, `create_trigger`
+3. Test from Chat: ask "Create a table called Deploy Log with columns: service, version, status, deployed_at" and verify the agent calls the `create_table` tool
+4. Verify that table mutations from agent tools appear in the web UI in real time
+5. Check that workflow triggers fire correctly when an agent adds or updates a row via tool call
+
+> **Tip:** The tables agent tools enable a powerful pattern: agents can build and populate structured datasets during task execution, then other agents or workflows can query those tables for downstream decisions. This turns tables into a shared knowledge layer between agents.
+
+### Step 13: Review Schedule Configuration
+
+![Schedules list showing active and configured schedules](../screengrabs/schedules-list.png)
 
 1. Select a schedule to open its detail sheet
 2. Review configuration: prompt, interval, heartbeat checklist, delivery channels
@@ -183,7 +193,7 @@ Riley reviews the episodic memory system that gives agents persistent knowledge.
 
 > **Tip:** The scheduler engine runs via the Next.js `instrumentation.ts` register hook. The interval parser supports both natural language and standard cron expressions.
 
-### Step 13: Build and Test the CLI
+### Step 14: Build and Test the CLI
 
 Riley builds the CLI for scripted operations and CI/CD integration.
 
@@ -194,7 +204,7 @@ Riley builds the CLI for scripted operations and CI/CD integration.
 3. Test CRUD operations: `node dist/cli.js projects list`, `node dist/cli.js tasks create --title "CLI test"`
 4. Verify CLI-created entities appear in the web UI (shared SQLite database)
 
-### Step 14: Verify Platform Health
+### Step 15: Verify Platform Health
 
 Riley performs a final platform health check.
 

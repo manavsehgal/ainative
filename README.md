@@ -57,6 +57,7 @@ Run the same business process on different AI providers without changing a line 
 | 🧠 | **[Agent Profiles](#agent-profiles)** | Reusable specialist definitions with prompts, tool policy, and runtime tuning |
 | ⏰ | **[Schedules](#schedules)** | Recurring and one-shot automations with cadence, expiry, and firing controls |
 | 📄 | **[Documents](#document-management)** | Upload, preprocess, inspect, and link files to tasks and projects |
+| 📊 | **[Tables](#tables)** | Airtable-like structured data with spreadsheet editing, charts, triggers, and agent tools |
 | 📥 | **[Human-in-the-Loop Inbox](#inbox--human-in-the-loop)** | Approve tool use, answer questions, and review results from one queue |
 | 💬 | **[Chat](#chat)** | Tool catalog with model selection, @ mentions, slash commands, and browser automation |
 | 👀 | **[Monitoring](#monitoring)** | Live runtime visibility with log streaming, filters, and health signals |
@@ -203,6 +204,24 @@ Automatic text extraction on upload for five file types: text, PDF (pdf-parse), 
 #### Agent Document Context
 Documents linked to a task are automatically injected into the agent's prompt as context. The context builder aggregates extracted text from all linked documents, giving agents access to uploaded reference material without manual copy-paste.
 
+#### Tables
+Airtable-like structured data system at `/tables` with 14 features. Create tables from scratch, import from CSV/XLSX documents, or use one of 12 built-in templates across 5 categories. Each table includes an inline spreadsheet editor with keyboard navigation, type-aware cell renderers, computed columns with formula support (12 functions including sum, avg, if, daysBetween), and optimistic saves.
+
+| Table List | Spreadsheet Editor |
+|:-:|:-:|
+| <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/tables-list.png" alt="Tables list view" width="580" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/tables-detail.png" alt="Table spreadsheet editor" width="580" /> |
+
+| Charts | Template Gallery |
+|:-:|:-:|
+| <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/tables-detail-charts.png" alt="Table charts tab" width="580" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/tables-templates.png" alt="Table template gallery" width="580" /> |
+
+- **Charts** — Bar, line, pie, and scatter charts with configurable X/Y axes and aggregation
+- **Workflow triggers** — Automated actions fired when row data matches conditions
+- **12 agent tools** — Agents can list, query, aggregate, search, add/update/delete rows, and create tables
+- **Cross-table relations** — Link rows across tables with searchable relation combobox
+- **Export** — CSV, XLSX, and JSON export for any table
+- **Row versioning** — History tab with snapshot-before-mutation and rollback to previous versions
+
 ### Knowledge
 
 #### Playbook
@@ -295,7 +314,7 @@ Real-time agent log streaming via Server-Sent Events. Filter by task or event ty
 File upload with drag-and-drop in task creation. Type-aware content preview for text, markdown (via react-markdown), code, and JSON. Copy-to-clipboard and download-as-file for task outputs.
 
 #### Settings
-Configuration hub with provider-aware sections: Claude authentication (API key or OAuth), OpenAI Codex runtime API-key management, chat defaults (model selection), **browser tools** (Chrome DevTools and Playwright MCP toggles), runtime configuration (SDK timeout and max turns), tool permissions (saved "Always Allow" patterns with revoke), permission presets, budget guardrails, and data management.
+Configuration hub with provider-aware sections: Claude authentication (API key or OAuth), OpenAI Codex runtime API-key management, chat defaults (model selection), **browser tools** (Chrome DevTools and Playwright MCP toggles), runtime configuration (SDK timeout and max turns), tool permissions (saved "Always Allow" patterns with revoke), permission presets, budget guardrails, **database snapshots** (automatic backups with configurable retention and one-click restore), and data management.
 
 <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/settings-list.png" alt="Stagent settings" width="1200" />
 
@@ -307,7 +326,7 @@ Configuration hub with provider-aware sections: Claude authentication (API key o
 The `npx stagent` entry point boots a Next.js server from the published npm package. It is built from `bin/cli.ts` into `dist/cli.js` using tsup, and serves as the primary distribution channel — no clone required.
 
 #### Database
-SQLite with WAL mode via better-sqlite3 + Drizzle ORM. Fourteen tables: `projects`, `tasks`, `workflows`, `agent_logs`, `notifications`, `documents`, `schedules`, `settings`, `learned_context`, `usage_ledger`, `conversations`, `chat_messages`, `environments`, `environment_configs`. Self-healing bootstrap — tables are created on startup if missing.
+SQLite with WAL mode via better-sqlite3 + Drizzle ORM. 27+ tables including core tables: `projects`, `tasks`, `workflows`, `agent_logs`, `notifications`, `documents`, `schedules`, `settings`, `learned_context`, `usage_ledger`, `conversations`, `chat_messages`, `environments`, `environment_configs`. Self-healing bootstrap — tables are created on startup if missing.
 
 #### Command Palette
 Global `⌘K` command palette for fast navigation and search across tasks, projects, workflows, and settings. Recent items, fuzzy search, and keyboard-driven navigation.
