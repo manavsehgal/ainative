@@ -155,14 +155,14 @@ function normalizeParallelSteps(
 
   const normalizedBranches = branches.map((branch, index) => ({
     ...branch,
-    id: options?.cloneIds ? crypto.randomUUID() : branch.id,
+    id: options?.cloneIds ? crypto.randomUUID() : (branch.id || crypto.randomUUID()),
     name: branch.name || `Research Branch ${index + 1}`,
   }));
 
   const normalizedSynthesis = rawSynthesis
     ? {
         ...rawSynthesis,
-        id: options?.cloneIds ? crypto.randomUUID() : rawSynthesis.id,
+        id: options?.cloneIds ? crypto.randomUUID() : (rawSynthesis.id || crypto.randomUUID()),
         name: rawSynthesis.name || "Synthesize findings",
       }
     : undefined;
@@ -257,7 +257,7 @@ function normalizeSwarmSteps(
     id:
       options?.cloneIds && mayorStep
         ? crypto.randomUUID()
-        : (mayorStep?.id ?? crypto.randomUUID()),
+        : (mayorStep?.id || crypto.randomUUID()),
     name: mayorStep?.name || "Mayor plan",
   };
 
@@ -268,7 +268,7 @@ function normalizeSwarmSteps(
 
   const normalizedWorkers = nextWorkers.map((worker, index) => ({
     ...worker,
-    id: options?.cloneIds ? crypto.randomUUID() : worker.id,
+    id: options?.cloneIds ? crypto.randomUUID() : (worker.id || crypto.randomUUID()),
     name: worker.name || `Worker ${index + 1}`,
   }));
 
@@ -277,7 +277,7 @@ function normalizeSwarmSteps(
     id:
       options?.cloneIds && refineryStep
         ? crypto.randomUUID()
-        : (refineryStep?.id ?? crypto.randomUUID()),
+        : (refineryStep?.id || crypto.randomUUID()),
     name: refineryStep?.name || "Refine and merge",
   };
 
@@ -472,7 +472,7 @@ export function WorkflowFormView({
               ? normalizeParallelSteps(def.steps)
               : def.pattern === "swarm"
                 ? normalizeSwarmSteps(def.steps)
-              : def.steps
+              : def.steps.map((s) => ({ ...s, id: s.id || crypto.randomUUID() }))
         );
       }
     }
