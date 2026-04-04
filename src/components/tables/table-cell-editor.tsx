@@ -206,7 +206,7 @@ export function CellDisplay({ column, value, onToggleBoolean }: CellDisplayProps
       return (
         <a
           href={`mailto:${value}`}
-          className="text-sm text-primary underline underline-offset-2 hover:text-primary/80"
+          className="text-sm text-primary underline underline-offset-2 hover:text-primary/80 truncate max-w-[200px] block"
           onClick={(e) => e.stopPropagation()}
         >
           {String(value)}
@@ -215,12 +215,12 @@ export function CellDisplay({ column, value, onToggleBoolean }: CellDisplayProps
 
     case "computed":
       return (
-        <span className="text-sm text-muted-foreground italic">
+        <span className="text-sm text-muted-foreground italic truncate max-w-[200px] block">
           {String(value)}
         </span>
       );
 
     default:
-      return <span className="text-sm">{String(value)}</span>;
+      return <span className="text-sm truncate max-w-[200px] block">{String(value)}</span>;
   }
 }
