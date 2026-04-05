@@ -146,6 +146,45 @@ The book repositions humans from task-doers to system architects:
 
 This book isn't *about* AI-native automation—it *is* the proof that Stagent's AI-native automation works. Every claim has a corresponding line of code, every pattern has a corresponding workflow execution log.
 
+## External Research Integration
+
+The book draws on external research and case studies to ground its arguments. When integrating external material, follow these principles:
+
+### Altitude Matching
+
+The book operates at the **implementation layer** — how to build AI-native organizations using working code and real case studies. External sources often operate at higher altitudes (macro-strategic, geopolitical, civilizational). When incorporating external material:
+
+1. **Translate, don't transplant.** Every external concept must be expressed through the book's existing patterns and case studies. "Scalable oversight" becomes "the swarm coordinator as a governance mechanism." "Orders of magnitude of progress" becomes "the quantitative explanation for why Stripe went from zero to 1,300 agent PRs per week."
+
+2. **Maintain practitioner tone.** Frame insights as engineering decisions, not predictions or warnings. Say "the trendlines have not stopped" rather than "AGI by 2027." Say "governance shifts from tool-level to reasoning-level" rather than "we must align superintelligence."
+
+3. **Connect to existing patterns.** Every addition must reference at least one existing chapter, case study, or Stagent feature. If an external insight doesn't map to something the reader has already encountered in the book, it doesn't belong.
+
+4. **Respect the grounding principle.** The book's credibility comes from every claim mapping to running code. External research that cannot be connected to implementation patterns should be referenced via pointer ("see Aschenbrenner's *Situational Awareness* for the macro trajectory") rather than absorbed into the narrative.
+
+### Integrated Sources
+
+| Source | What It Provides | Chapters Using It |
+|---|---|---|
+| Aschenbrenner, *Situational Awareness* (2024) | OOMs framework for "why now"; compute cost trajectory; alignment-informed governance (scalable oversight, CoT auditability); recursive improvement bottleneck analysis | Ch 1, 4, 6, 9, 11, 12 |
+| Anthropic Autonomy Research (Feb 2026) | Autonomy as co-constructed (model x user x product); theoretical foundation for contextual governance | Ch 9 |
+| Sequoia/Block, *From Hierarchy to Intelligence* (Mar 2026) | IC/DRI/Player-Coach roles; dual world models; intelligence replacing hierarchy | Ch 1, 10, 12 |
+| ICLR 2026 RSI Workshop | Recursive self-improvement moving from theory to deployment | Ch 11 |
+
+### Forbidden Patterns
+
+When integrating external research, **never**:
+- Use the word "superintelligence" in book chapters
+- Adopt specific AGI timeline predictions
+- Include geopolitical competition framing (US vs China, national security)
+- Include civilizational-stakes rhetoric ("most important century," existential risk)
+- Discuss infrastructure economics (TSMC fabs, datacenter locations, CHIPS Act)
+- Add content that doesn't connect to at least one Stagent feature or case study
+
+### Tone Check
+
+After any chapter update that draws on external sources, grep for: `superintelligence`, `AGI by 2027`, `existential risk`, `national security`, `geopolitical`. None should appear in book chapters. The single pre-existing use of "existential" in Ch 12 (referring to business decisions) is acceptable.
+
 ---
 
 **Status**: Strategy document (this file)

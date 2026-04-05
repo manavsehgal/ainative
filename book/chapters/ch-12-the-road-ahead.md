@@ -80,6 +80,18 @@ This inverts the traditional calculus of software development. When engineering 
 
 Matt Shumer described the shift from his direct experience: "I am no longer needed for the actual technical work of my job. I describe what I want built, in plain English, and it just appears. Not a rough draft I need to fix. The finished thing." And then the critical follow-up: this happened to engineers first because code is machine-readable. It is happening to every other function next.
 
+## The Pace of Change
+
+The capability trajectory described throughout this book — from GPT-2's semi-coherent paragraphs to GPT-4's bar exam performance in four years, from zero agent-generated PRs to over a thousand per week at Stripe in under twelve months — is not slowing down. Leopold Aschenbrenner's *Situational Awareness* provides one of the more rigorous attempts to project this trajectory forward, decomposing progress into orders of magnitude of compute scaling, algorithmic efficiency, and what he calls "unhobbling" — the transition from chatbot to agent that this entire book depends on. His trendlines suggest the pace of the last four years will continue, and possibly accelerate, as investment and research compound.
+
+This pace creates both opportunity and risk for organizations. The opportunity is compounding: organizations that build agent infrastructure now — governance, memory, orchestration, world models — accumulate capability with each model generation. A permission cascade designed today works with more capable agents tomorrow. A workflow blueprint written this quarter executes faster and more reliably next quarter. The infrastructure appreciates because the intelligence that runs on it improves independently.
+
+The risk is the mirror image. Organizations that defer this investment face a capability gap that widens with each generation of models. The companies in our case studies — Stripe, Ramp, Harvey, Block — are not waiting for a perfect moment. They are building now and iterating, because the cost of experimentation is low and the cost of falling behind is high.
+
+This book does not address the broader questions that the pace of AI progress raises — the geopolitical competition, the regulatory evolution, the alignment challenges of increasingly capable systems. Readers who want to engage with that macro picture will find Aschenbrenner's essay and Anthropic's autonomy research valuable starting points. This book's scope is organizational architecture: what to build, how to build it, and why the patterns matter.
+
+The reason the patterns matter is precisely because they are durable. The governance architecture described in Chapter 9 — permission cascades, reasoning audits, scalable oversight — is the same architecture that governs agents at every capability level. The institutional memory described in Chapter 7 becomes more valuable, not less, as agents become more capable and organizational knowledge becomes a differentiator. The world model described in Chapter 10 is the foundation on which all future capability is composed. Building these systems now is not premature optimization. It is the responsible foundation for whatever comes next.
+
 ## Your Factory
 
 We have used a factory metaphor throughout this book, borrowed from Chamath Palihapitiya's 8090 and from the Industrial Revolution itself. The factory metaphor works because it captures a real structural insight: the shift from craftsman workshops (one person, one task, one room) to coordinated production systems (specialized stations, institutional memory, repeatable processes).

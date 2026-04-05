@@ -3,7 +3,7 @@ title: "From Hierarchy to Intelligence"
 subtitle: "Two Thousand Years of Organizational Design — and Why It's About to Break"
 chapter: 1
 part: 1
-readingTime: 14
+readingTime: 15
 lastGeneratedBy: "2026-04-05T00:00:00.000Z"
 ---
 
@@ -54,6 +54,24 @@ Why? Because the constraint never changed. Humans are still the only routing mec
 This is not a failure of imagination or will. It is a fundamental limitation of the substrate. When your only coordination technology is human attention, the span of control is a law of nature.
 
 Until it isn't.
+
+## Why Now: The Capability Threshold
+
+Every few years, someone declares that artificial intelligence will transform how organizations work. The declarations have been premature — until recently. What changed is not ambition or hype. What changed is capability, and the pace of that change has a quantitative explanation.
+
+Leopold Aschenbrenner's 2024 essay *Situational Awareness* offers the clearest framework for understanding the trajectory. Progress from GPT-2 to GPT-4 — roughly four years — can be decomposed into three sources of improvement, each measured in orders of magnitude (OOMs):
+
+**Compute scaling** contributed approximately 0.5 OOMs per year. Not from Moore's Law, which delivered barely one OOM per decade, but from raw investment — training budgets growing from millions to hundreds of millions to billions of dollars. GPT-2 trained on roughly 4×10²¹ floating-point operations. GPT-4 trained on roughly 10²⁵. That is a ten-thousand-fold increase in four years.
+
+**Algorithmic efficiency** contributed another 0.5 OOMs per year. Better architectures, better training recipes, better data curation. The inference cost to achieve 50% accuracy on the MATH benchmark dropped roughly a thousand-fold in two years. Techniques like mixture-of-experts and improved scaling laws meant each dollar of compute bought more capability than the year before.
+
+**Unhobbling gains** contributed the rest — and these matter most for our argument. RLHF made a small fine-tuned model equivalent to one a hundred times larger. Chain-of-thought prompting gave models ten times the effective reasoning power on mathematical tasks. Agent scaffolding transformed GPT-4's performance on the SWE-Bench coding benchmark from 2% to over 14%. Context windows expanded from two thousand tokens to over a million. Each of these was not a marginal improvement. Each was a qualitative unlock — a new kind of thing the system could do that it could not do before.
+
+The total: roughly five orders of magnitude of effective improvement in four years. A system that could barely count to five in 2019 was passing the bar exam by 2023 and generating a thousand production pull requests per week at Stripe by early 2026.
+
+The critical insight for this book is the third category — unhobbling. The transition from chatbot to agent is itself an unhobbling gain. When a model can be onboarded like a new hire, given access to a codebase and development tools, and left to work independently for hours, it is not simply a better chatbot. It is a new kind of organizational participant. It can route information, decompose tasks, and coordinate work — exactly the functions that hierarchy was invented to perform.
+
+These trendlines have not stopped. Compute investment continues to accelerate. Algorithmic efficiency continues to compound. And the agent transition — the specific unhobbling that matters for organizational design — is still in its early stages. The companies profiled in this book are not riding a hype cycle. They are riding a capability curve with a quantitative foundation, and that curve explains why the two-thousand-year-old constraint is breaking now.
 
 ## Intelligence Replaces Hierarchy
 

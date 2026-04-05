@@ -124,6 +124,18 @@ Karpathy's `program.md` is equivalent to Stagent's book strategy document. Both 
 > [!case-study]
 > **ICLR 2026 Workshop: Recursive Self-Improvement** -- RSI has moved from theory to deployed systems. Frontier labs are automating their own R&D pipelines. Karpathy's autoresearch runs 100 ML experiments overnight from a single `program.md` specification. The gap between specification and execution is collapsing: write what you want, the machine iterates until it works.
 
+### Where Recursive Improvement Stalls
+
+Recursive self-improvement sounds like a perpetual motion machine — agents improve agents that improve agents, without limit. In practice, every recursive loop encounters bottlenecks. Aschenbrenner's analysis of the intelligence explosion trajectory identifies four, and three of them map directly to challenges we have encountered in Stagent's self-building pipeline.
+
+**Limited compute.** Even when agents can generate improvements, they need resources to test them. Karpathy's autoresearch enforces a five-minute budget per experiment precisely because GPU time is finite. Stagent's arena pattern enforces the same constraint via budget caps and max iterations. Recursive improvement does not escape resource limits — it operates within them. The art is in designing arenas that extract maximum learning per unit of compute spent. An agent that can reason for longer about which experiment to run next, before running it, uses its compute budget more efficiently than one that runs experiments at random.
+
+**The long tail of complementarities.** Automating seventy percent of a process does not yield seventy percent of the value if the remaining thirty percent becomes the new bottleneck. We have seen this repeatedly. The book pipeline can generate chapters, but a human still reviews them for accuracy and tone. Agent-generated PRs at Stripe still require human code review. The verification gap described in Chapter 4 — where PR volume increased 98% but review times increased 91% — is a concrete instance of this bottleneck. Recursive improvement accelerates the automated portion while the manual portion remains fixed, producing diminishing returns until the manual portion is also addressed.
+
+**Diminishing returns on ideas.** Early improvements are easy to find. Stagent's self-building pipeline discovered obvious wins quickly — auto-generating documentation, composing existing skills into new pipelines, updating agent profiles based on execution patterns. Later improvements require deeper insight. The emergent roadmap concept from Chapter 12 is the design pattern that addresses this: when the system tries to compose a solution and fails, that failure signal identifies the next improvement to pursue. Failure-driven discovery replaces exhaustive search when easy wins are depleted.
+
+The fourth bottleneck Aschenbrenner identifies — inherent limits to what algorithmic improvement can achieve — has not yet been relevant at Stagent's scale. Current architectures have enormous headroom. The practical constraint is not that improvement has reached a ceiling, but that each incremental improvement requires more effort to discover and validate than the last. This is an engineering challenge with known mitigations: better arenas, better evaluation metrics, and recursive loops that allocate more reasoning time to harder problems.
+
 ## Stagent Today
 
 Let us inventory the concrete pieces of the self-building system as they exist today.

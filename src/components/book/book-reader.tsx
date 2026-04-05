@@ -5,6 +5,7 @@ import {
   BookOpen,
   BookmarkPlus,
   BookmarkMinus,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   List,
@@ -87,6 +88,7 @@ export function BookReader({ chapters: CHAPTERS }: { chapters: BookChapter[] }) 
   const [tocOpen, setTocOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [tocTab, setTocTab] = useState<"chapters" | "bookmarks">("chapters");
+  const [collapsedParts, setCollapsedParts] = useState<Set<number>>(new Set());
   const [activePath, setActivePath] = useState<string | null>(null);
   const [recommendedPath, setRecommendedPath] = useState<string | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -159,6 +161,31 @@ export function BookReader({ chapters: CHAPTERS }: { chapters: BookChapter[] }) 
       localStorage.removeItem("stagent-book-path");
     }
   }, []);
+
+  const togglePart = useCallback((partNumber: number) => {
+    setCollapsedParts((prev) => {
+      const next = new Set(prev);
+      if (next.has(partNumber)) {
+        next.delete(partNumber);
+      } else {
+        next.add(partNumber);
+      }
+      return next;
+    });
+  }, []);
+
+  // Auto-expand the current chapter's part so it's always visible in TOC
+  useEffect(() => {
+    const currentPart = currentChapter.part.number;
+    setCollapsedParts((prev) => {
+      if (prev.has(currentPart)) {
+        const next = new Set(prev);
+        next.delete(currentPart);
+        return next;
+      }
+      return prev;
+    });
+  }, [currentChapter]);
 
   // Track scroll progress
   useEffect(() => {
@@ -431,15 +458,38 @@ export function BookReader({ chapters: CHAPTERS }: { chapters: BookChapter[] }) 
                       onSelectPath={handlePathChange}
                     />
 
-                    {PARTS.map((part) => (
+                    {PARTS.map((part) => {
+                      const isPartOpen = !collapsedParts.has(part.number);
+                      return (
                       <div key={part.number}>
-                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                          Part {part.number}: {part.title}
-                        </p>
-                        <p className="text-xs text-muted-foreground mb-3">
-                          {part.description}
-                        </p>
-                        <div className="space-y-1">
+                        <button
+                          onClick={() => togglePart(part.number)}
+                          className="flex w-full items-center justify-between gap-2 text-left cursor-pointer group"
+                          aria-expanded={isPartOpen}
+                        >
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                              Part {part.number}: {part.title}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {part.description}
+                            </p>
+                          </div>
+                          <ChevronDown
+                            className={cn(
+                              "h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-300 ease-in-out",
+                              isPartOpen && "rotate-180"
+                            )}
+                          />
+                        </button>
+                        <div
+                          className={cn(
+                            "grid transition-[grid-template-rows] duration-300 ease-in-out",
+                            isPartOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+                          )}
+                        >
+                          <div className="overflow-hidden">
+                        <div className="space-y-1 pt-2">
                           {(chaptersByPart.get(part.number) ?? []).map((ch) => {
                             const chProgress = progress[ch.id]?.progress ?? 0;
                             const chPct = Math.round(chProgress * 100);
@@ -488,8 +538,11 @@ export function BookReader({ chapters: CHAPTERS }: { chapters: BookChapter[] }) 
                             );
                           })}
                         </div>
+                          </div>
+                        </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="space-y-1">
