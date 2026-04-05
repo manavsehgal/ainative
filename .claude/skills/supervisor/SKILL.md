@@ -70,6 +70,8 @@ All modes read from the same artifact set. Read only what's needed for the activ
 | `git log --oneline -20` | Recent velocity, commit frequency, active areas | Health, Retro |
 | `MEMORY.md` | Lessons learned, known issues, project state | Retro, Vision |
 | `.claude/skills/architect/references/tdr-*.md` | TDR status, staleness, pattern compliance | Health, Vision |
+| `book/chapters/*.md` | Chapter freshness, case study coverage, API example currency | Health, Next Steps |
+| `ai-native-notes/*.md` | Case study source material for book chapters | Health |
 
 ---
 
@@ -87,6 +89,7 @@ Produce a 7-dimension health dashboard with green/yellow/red signals.
 | **Quality Debt** | All completed features have passing tests | Some features lack test coverage | Multiple features shipped without tests |
 | **Design Consistency** | Design system tokens used consistently, no forbidden patterns | Minor inconsistencies | Hardcoded colors, missing tokens, forbidden patterns |
 | **Documentation** | README, changelog, roadmap current AND all features have journey coverage | 1 artifact stale OR <5 features missing journey coverage | Multiple artifacts stale OR >5 features missing journey coverage OR entire feature family missing from journeys |
+| **Book Health** | All 12 chapters have ≥2 case study callouts AND "Building with Stagent" examples AND none stale | Some chapters missing case studies or API examples OR 1-2 chapters stale | Multiple chapters stale OR missing case study integration OR no roadmap section |
 | **User Guide Sync** | All three timestamps (`screengrabs/.last-run`, `docs/.last-generated`, `public/readme/.last-synced`) within 24h | One layer >24h stale | Missing timestamps or broken references |
 
 ### Process

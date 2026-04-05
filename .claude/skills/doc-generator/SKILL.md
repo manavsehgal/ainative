@@ -118,6 +118,8 @@ This matrix drives all subsequent generation phases.
 
 ## Phase 4: Feature Reference Generation
 
+**Book integration note:** Book chapters in `book/chapters/*.md` now contain `> [!case-study]` callouts referencing `ai-native-notes/` source files and "Building with Stagent" API examples. When regenerating feature docs, cross-reference book chapters but do not duplicate case study narrative. Feature docs should focus on implementation details; book chapters provide the narrative context.
+
 Generate docs for 11 app sections + 3 cross-cutting feature groups:
 
 | Section | Doc File | Route |

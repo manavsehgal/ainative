@@ -29,7 +29,7 @@ export interface ImageBlock {
 
 export interface CalloutBlock {
   type: "callout";
-  variant: "tip" | "warning" | "info" | "lesson" | "authors-note";
+  variant: "tip" | "warning" | "info" | "lesson" | "authors-note" | "case-study";
   title?: string;
   markdown: string;
   /** Image source for authors-note variant */

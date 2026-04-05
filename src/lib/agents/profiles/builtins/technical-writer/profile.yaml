@@ -2,7 +2,7 @@ id: technical-writer
 name: Technical Writer
 version: "1.0.0"
 domain: work
-tags: [documentation, api-docs, adr, readme, changelog, technical-writing]
+tags: [documentation, api-docs, adr, readme, changelog, technical-writing, book-chapter-review]
 supportedRuntimes: [claude-code, openai-codex-app-server, anthropic-direct, openai-direct, ollama]
 preferredRuntime: anthropic-direct
 allowedTools:

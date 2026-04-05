@@ -8,6 +8,7 @@ import {
   AlertTriangle,
   BookOpen,
   PenLine,
+  Building2,
   ArrowRight,
   ChevronDown,
   Copy,
@@ -203,6 +204,10 @@ const calloutConfig = {
     icon: PenLine,
     className: "book-callout-authors-note",
   },
+  "case-study": {
+    icon: Building2,
+    className: "book-callout-case-study",
+  },
 };
 
 function CalloutBlockView({
@@ -213,7 +218,7 @@ function CalloutBlockView({
   imageAlt,
   defaultCollapsed,
 }: {
-  variant: "tip" | "warning" | "info" | "lesson" | "authors-note";
+  variant: "tip" | "warning" | "info" | "lesson" | "authors-note" | "case-study";
   title?: string;
   markdown: string;
   imageSrc?: string;

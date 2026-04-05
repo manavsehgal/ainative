@@ -166,7 +166,7 @@ function parseContentBlocks(lines: string[]): ContentBlock[] {
 
     // --- Callout blockquote: > [!variant] ---
     const calloutMatch = line.match(
-      /^>\s*\[!(tip|warning|info|lesson|authors-note)\]\s*$/
+      /^>\s*\[!(tip|warning|info|lesson|authors-note|case-study)\]\s*$/
     );
     if (calloutMatch) {
       flushText();

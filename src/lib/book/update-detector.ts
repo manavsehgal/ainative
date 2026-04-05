@@ -99,7 +99,10 @@ export function detectStaleChapters(): ChapterStaleness[] {
 
   for (const chapterId of Object.keys(CHAPTER_SLUGS)) {
     const mapping = CHAPTER_MAPPING[chapterId];
-    const sourceFiles = mapping?.docs?.map((d) => `docs/features/${d}.md`) ?? [];
+    const docFiles = mapping?.docs?.map((d) => `docs/features/${d}.md`) ?? [];
+    const caseStudyFiles = mapping?.caseStudies?.map((cs) => `ai-native-notes/${cs}.md`) ?? [];
+    const codeFiles = mapping?.sourceFiles ?? [];
+    const sourceFiles = [...docFiles, ...caseStudyFiles, ...codeFiles];
     const lastGenerated = getLastGenerated(chapterId);
 
     if (!gitAvailable) {

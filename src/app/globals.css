@@ -810,6 +810,12 @@ body {
 .book-callout-lesson .book-callout-icon { color: oklch(0.55 0.20 300); }
 .book-callout-lesson .book-callout-title { color: oklch(0.45 0.16 300); }
 
+.book-callout-case-study {
+  border-left-color: oklch(0.62 0.16 55);
+  background: oklch(0.62 0.16 55 / 0.05);
+}
+.book-callout-case-study .book-callout-icon { color: oklch(0.62 0.16 55); }
+.book-callout-case-study .book-callout-title { color: oklch(0.50 0.12 55); }
 
 /* callout body inline code */
 .book-callout-body code {
@@ -821,6 +827,7 @@ body {
 [data-book-theme="sepia"] .book-callout-warning { background: oklch(0.65 0.18 75 / 0.08); }
 [data-book-theme="sepia"] .book-callout-info { background: oklch(0.55 0.20 260 / 0.08); }
 [data-book-theme="sepia"] .book-callout-lesson { background: oklch(0.55 0.20 300 / 0.08); }
+[data-book-theme="sepia"] .book-callout-case-study { background: oklch(0.62 0.16 55 / 0.08); }
 [data-book-theme="sepia"] .book-callout-body code { background: oklch(0 0 0 / 0.06); }
 
 /* dark callout overrides */
@@ -848,6 +855,11 @@ body {
 [data-book-theme="dark"] .book-callout-lesson .book-callout-icon { color: oklch(0.70 0.18 300); }
 [data-book-theme="dark"] .book-callout-lesson .book-callout-title { color: oklch(0.75 0.14 300); }
 
+[data-book-theme="dark"] .book-callout-case-study {
+  background: oklch(0.62 0.16 55 / 0.10);
+}
+[data-book-theme="dark"] .book-callout-case-study .book-callout-icon { color: oklch(0.75 0.16 55); }
+[data-book-theme="dark"] .book-callout-case-study .book-callout-title { color: oklch(0.80 0.12 55); }
 
 [data-book-theme="dark"] .book-callout-body code { background: oklch(1 0 0 / 0.10); }
 
@@ -860,6 +872,8 @@ body {
 .dark .book-callout-info .book-callout-title { color: oklch(0.75 0.14 260); }
 .dark .book-callout-lesson .book-callout-icon { color: oklch(0.70 0.18 300); }
 .dark .book-callout-lesson .book-callout-title { color: oklch(0.75 0.14 300); }
+.dark .book-callout-case-study .book-callout-icon { color: oklch(0.75 0.16 55); }
+.dark .book-callout-case-study .book-callout-title { color: oklch(0.80 0.12 55); }
 .dark .book-callout-body code { background: oklch(1 0 0 / 0.10); }
 
 /* ─── Book Interactive Blocks ─── */
