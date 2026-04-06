@@ -67,6 +67,27 @@ export const CHAT_MODELS: ChatModelOption[] = [
 
 export const DEFAULT_CHAT_MODEL = "haiku";
 
+// Validate CHAT_MODELS against runtime catalog at module load
+// Warns on stale model IDs that don't appear in any runtime's supported list
+try {
+  const { listRuntimeCatalog } = require("@/lib/agents/runtime/catalog");
+  const allSupportedModels = new Set<string>();
+  for (const runtime of listRuntimeCatalog()) {
+    for (const model of runtime.models.supported) {
+      allSupportedModels.add(model);
+    }
+  }
+  for (const model of CHAT_MODELS) {
+    if (!allSupportedModels.has(model.id)) {
+      console.warn(
+        `[chat-models] CHAT_MODELS entry "${model.id}" not found in any runtime's supported models — may be stale`
+      );
+    }
+  }
+} catch {
+  // Catalog not available during build/test — skip validation
+}
+
 /** Resolve a model ID to its display label (e.g., "opus" → "Opus", "gpt-5.4" → "GPT-5.4") */
 export function resolveModelLabel(modelId: string): string {
   const model = CHAT_MODELS.find((m) => m.id === modelId);

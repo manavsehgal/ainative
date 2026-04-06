@@ -87,6 +87,12 @@ export function workflowTools(ctx: ToolContext) {
           .describe(
             "Optional array of document IDs from the project pool to attach as input context. These documents will be injected into all workflow steps at execution time."
           ),
+        runtime: z
+          .string()
+          .optional()
+          .describe(
+            "Runtime to use for workflow execution (e.g., 'openai-direct', 'anthropic-direct'). Use list_runtimes to see available options. Omit to use the system default."
+          ),
       },
       async (args) => {
         try {
@@ -110,6 +116,16 @@ export function workflowTools(ctx: ToolContext) {
           }
           args.definition = JSON.stringify(parsedDef);
 
+          // Validate runtime if provided
+          let runtimeId: string | null = null;
+          if (args.runtime) {
+            const { isAgentRuntimeId } = await import("@/lib/agents/runtime/catalog");
+            if (!isAgentRuntimeId(args.runtime)) {
+              return err(`Invalid runtime "${args.runtime}". Use list_runtimes to see available options.`);
+            }
+            runtimeId = args.runtime;
+          }
+
           const effectiveProjectId = args.projectId ?? ctx.projectId ?? null;
           const now = new Date();
           const id = crypto.randomUUID();
@@ -119,12 +135,13 @@ export function workflowTools(ctx: ToolContext) {
             name: args.name,
             projectId: effectiveProjectId,
             definition: args.definition,
+            runtimeId,
             status: "draft",
             createdAt: now,
             updatedAt: now,
           });
 
-          // Attach pool documents if provided
+          // Attach global pool documents if provided
           const attachedDocs: string[] = [];
           if (args.documentIds && args.documentIds.length > 0) {
             for (const docId of args.documentIds) {
@@ -143,6 +160,27 @@ export function workflowTools(ctx: ToolContext) {
             }
           }
 
+          // Attach per-step documents from step definitions
+          let stepDocCount = 0;
+          for (const step of parsedDef.steps) {
+            if (step.documentIds && Array.isArray(step.documentIds)) {
+              for (const docId of step.documentIds) {
+                try {
+                  await db.insert(workflowDocumentInputs).values({
+                    id: crypto.randomUUID(),
+                    workflowId: id,
+                    documentId: docId,
+                    stepId: step.id,
+                    createdAt: now,
+                  });
+                  stepDocCount++;
+                } catch {
+                  // Skip duplicates or invalid doc IDs
+                }
+              }
+            }
+          }
+
           const [workflow] = await db
             .select()
             .from(workflows)
@@ -154,8 +192,10 @@ export function workflowTools(ctx: ToolContext) {
             name: workflow.name,
             projectId: workflow.projectId,
             status: workflow.status,
+            runtimeId: workflow.runtimeId,
             createdAt: workflow.createdAt,
             attachedDocuments: attachedDocs.length,
+            stepScopedDocuments: stepDocCount,
           });
         } catch (e) {
           return err(e instanceof Error ? e.message : "Failed to create workflow");
@@ -328,10 +368,59 @@ export function workflowTools(ctx: ToolContext) {
             .get();
 
           if (!workflow) return err(`Workflow not found: ${args.workflowId}`);
-          if (workflow.status === "active")
-            return err("Workflow is already running");
-          if (workflow.status !== "draft" && workflow.status !== "paused" && workflow.status !== "failed")
+
+          // Allow re-execution from crashed "active" if no live tasks
+          if (workflow.status === "active") {
+            const liveTasks = await db
+              .select({ id: tasks.id })
+              .from(tasks)
+              .where(
+                and(
+                  eq(tasks.workflowId, args.workflowId),
+                  inArray(tasks.status, ["running", "queued"])
+                )
+              );
+            if (liveTasks.length > 0) {
+              return err("Workflow is already running");
+            }
+            // Crashed — fall through to reset + re-execute
+          }
+
+          if (
+            workflow.status !== "draft" &&
+            workflow.status !== "paused" &&
+            workflow.status !== "failed" &&
+            workflow.status !== "active" &&
+            workflow.status !== "completed"
+          ) {
             return err(`Cannot execute a workflow in '${workflow.status}' status`);
+          }
+
+          // Reset state for re-execution from non-draft status
+          if (workflow.status !== "draft") {
+            // Cancel orphaned tasks
+            await db
+              .update(tasks)
+              .set({ status: "cancelled", updatedAt: new Date() })
+              .where(
+                and(
+                  eq(tasks.workflowId, args.workflowId),
+                  inArray(tasks.status, ["running", "queued"])
+                )
+              );
+
+            // Clear execution state
+            const { parseWorkflowState } = await import("@/lib/workflows/engine");
+            const { definition } = parseWorkflowState(workflow.definition);
+            await db
+              .update(workflows)
+              .set({
+                definition: JSON.stringify(definition),
+                status: "draft",
+                updatedAt: new Date(),
+              })
+              .where(eq(workflows.id, args.workflowId));
+          }
 
           // Atomic claim: set to active
           await db

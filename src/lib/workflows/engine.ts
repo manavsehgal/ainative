@@ -24,6 +24,10 @@ import {
   buildWorkflowDocumentContext,
   buildPoolDocumentContext,
 } from "@/lib/documents/context-builder";
+import { resolveStepBudget, estimateWorkflowCost } from "./cost-estimator";
+import { resolveAgentRuntime } from "@/lib/agents/runtime/catalog";
+import { getSetting } from "@/lib/settings/helpers";
+import { updateExecutionStats } from "./execution-stats";
 
 /**
  * Execute a workflow by advancing through its steps according to the pattern.
@@ -43,6 +47,20 @@ export async function executeWorkflow(workflowId: string): Promise<void> {
   // Extract parent task ID for document context propagation to child steps
   const parentTaskId: string | undefined = definition.sourceTaskId ?? undefined;
 
+  // Pre-flight cost estimation — advisory, never blocks execution
+  try {
+    const costEstimate = await estimateWorkflowCost(workflowId);
+    state.costEstimate = costEstimate;
+    if (costEstimate.warnings.length > 0) {
+      console.warn(`[workflow-engine] Cost warnings for ${workflowId}:`, costEstimate.warnings);
+    }
+  } catch (err) {
+    console.error(`[workflow-engine] Cost estimation failed (non-blocking):`, err);
+  }
+
+  // Workflow-level runtime (stored on workflow row or system setting)
+  const workflowRuntimeId = workflow.runtimeId ?? undefined;
+
   await updateWorkflowState(workflowId, state, "active");
 
   await db.insert(agentLogs).values({
@@ -50,7 +68,12 @@ export async function executeWorkflow(workflowId: string): Promise<void> {
     taskId: null,
     agentType: "workflow-engine",
     event: "workflow_started",
-    payload: JSON.stringify({ workflowId, pattern: definition.pattern }),
+    payload: JSON.stringify({
+      workflowId,
+      pattern: definition.pattern,
+      runtimeId: workflowRuntimeId ?? "default",
+      costEstimate: state.costEstimate,
+    }),
     timestamp: new Date(),
   });
 
@@ -84,6 +107,10 @@ export async function executeWorkflow(workflowId: string): Promise<void> {
         timestamp: new Date(),
       });
     } finally {
+      // Update execution stats — fire-and-forget, never breaks execution
+      updateExecutionStats(workflowId).catch((err) => {
+        console.error("[workflow-engine] Stats update failed:", err);
+      });
       // Close learning session — flush buffered proposals as batch notification
       await closeLearningSession(workflowId).catch((err) => {
         console.error("[workflow-engine] Failed to close learning session:", err);
@@ -95,19 +122,19 @@ export async function executeWorkflow(workflowId: string): Promise<void> {
   try {
     switch (definition.pattern) {
       case "sequence":
-        await executeSequence(workflowId, definition, state, parentTaskId);
+        await executeSequence(workflowId, definition, state, parentTaskId, workflowRuntimeId);
         break;
       case "planner-executor":
-        await executePlannerExecutor(workflowId, definition, state, parentTaskId);
+        await executePlannerExecutor(workflowId, definition, state, parentTaskId, workflowRuntimeId);
         break;
       case "checkpoint":
-        await executeCheckpoint(workflowId, definition, state, parentTaskId);
+        await executeCheckpoint(workflowId, definition, state, parentTaskId, workflowRuntimeId);
         break;
       case "parallel":
-        await executeParallel(workflowId, definition, state, parentTaskId);
+        await executeParallel(workflowId, definition, state, parentTaskId, workflowRuntimeId);
         break;
       case "swarm":
-        await executeSwarm(workflowId, definition, state, parentTaskId);
+        await executeSwarm(workflowId, definition, state, parentTaskId, workflowRuntimeId);
         break;
     }
 
@@ -139,6 +166,10 @@ export async function executeWorkflow(workflowId: string): Promise<void> {
       timestamp: new Date(),
     });
   } finally {
+    // Update execution stats — fire-and-forget, never breaks execution
+    updateExecutionStats(workflowId).catch((err) => {
+      console.error("[workflow-engine] Stats update failed:", err);
+    });
     // Close learning session — flush buffered proposals as batch notification
     await closeLearningSession(workflowId).catch((err) => {
       console.error("[workflow-engine] Failed to close learning session:", err);
@@ -153,7 +184,8 @@ async function executeSequence(
   workflowId: string,
   definition: WorkflowDefinition,
   state: WorkflowState,
-  parentTaskId?: string
+  parentTaskId?: string,
+  workflowRuntimeId?: string
 ): Promise<void> {
   let previousOutput = "";
 
@@ -174,7 +206,10 @@ async function executeSequence(
       state,
       step.assignedAgent,
       step.agentProfile,
-      parentTaskId
+      parentTaskId,
+      step.budgetUsd,
+      step.runtimeId,
+      workflowRuntimeId
     );
 
     if (result.status === "failed") {
@@ -192,7 +227,8 @@ async function executePlannerExecutor(
   workflowId: string,
   definition: WorkflowDefinition,
   state: WorkflowState,
-  parentTaskId?: string
+  parentTaskId?: string,
+  workflowRuntimeId?: string
 ): Promise<void> {
   if (definition.steps.length < 2) {
     throw new Error("Planner-Executor requires at least 2 steps (planner + executor)");
@@ -209,7 +245,10 @@ async function executePlannerExecutor(
     state,
     plannerStep.assignedAgent,
     plannerStep.agentProfile,
-    parentTaskId
+    parentTaskId,
+    plannerStep.budgetUsd,
+    plannerStep.runtimeId,
+    workflowRuntimeId
   );
 
   if (planResult.status === "failed") {
@@ -230,7 +269,10 @@ async function executePlannerExecutor(
       state,
       step.assignedAgent,
       step.agentProfile,
-      parentTaskId
+      parentTaskId,
+      step.budgetUsd,
+      step.runtimeId,
+      workflowRuntimeId
     );
 
     if (result.status === "failed") {
@@ -246,7 +288,8 @@ async function executeCheckpoint(
   workflowId: string,
   definition: WorkflowDefinition,
   state: WorkflowState,
-  parentTaskId?: string
+  parentTaskId?: string,
+  workflowRuntimeId?: string
 ): Promise<void> {
   let previousOutput = "";
 
@@ -279,7 +322,10 @@ async function executeCheckpoint(
       state,
       step.assignedAgent,
       step.agentProfile,
-      parentTaskId
+      parentTaskId,
+      step.budgetUsd,
+      step.runtimeId,
+      workflowRuntimeId
     );
 
     if (result.status === "failed") {
@@ -297,7 +343,8 @@ async function executeParallel(
   workflowId: string,
   definition: WorkflowDefinition,
   state: WorkflowState,
-  parentTaskId?: string
+  parentTaskId?: string,
+  workflowRuntimeId?: string
 ): Promise<void> {
   const structure = getParallelWorkflowStructure(definition);
   if (!structure) {
@@ -356,6 +403,9 @@ async function executeParallel(
         stepState.result = undefined;
       });
 
+      const stepBudget = await resolveStepBudget(step);
+      const stepRuntime = await resolveStepRuntime(step.runtimeId, workflowRuntimeId);
+
       const result = await executeChildTask(
         workflowId,
         step.name,
@@ -363,7 +413,9 @@ async function executeParallel(
         step.assignedAgent,
         step.agentProfile,
         parentTaskId,
-        step.id
+        step.id,
+        stepBudget,
+        stepRuntime
       );
 
       const completedAt = new Date().toISOString();
@@ -431,6 +483,9 @@ async function executeParallel(
     synthesisPrompt: synthesisStep.prompt,
   });
 
+  const synthesisBudget = await resolveStepBudget(synthesisStep);
+  const synthesisRuntime = await resolveStepRuntime(synthesisStep.runtimeId, workflowRuntimeId);
+
   const synthesisResult = await executeChildTask(
     workflowId,
     synthesisStep.name,
@@ -438,7 +493,9 @@ async function executeParallel(
     synthesisStep.assignedAgent,
     synthesisStep.agentProfile,
     parentTaskId,
-    synthesisStep.id
+    synthesisStep.id,
+    synthesisBudget,
+    synthesisRuntime
   );
 
   await commitState((draft) => {
@@ -474,7 +531,8 @@ async function executeSwarm(
   workflowId: string,
   definition: WorkflowDefinition,
   state: WorkflowState,
-  parentTaskId?: string
+  parentTaskId?: string,
+  workflowRuntimeId?: string
 ): Promise<void> {
   const structure = getSwarmWorkflowStructure(definition);
   if (!structure) {
@@ -501,7 +559,10 @@ async function executeSwarm(
     state,
     mayorStep.assignedAgent,
     mayorStep.agentProfile,
-    parentTaskId
+    parentTaskId,
+    mayorStep.budgetUsd,
+    mayorStep.runtimeId,
+    workflowRuntimeId
   );
 
   if (mayorResult.status === "failed") {
@@ -558,6 +619,9 @@ async function executeSwarm(
         stepState.result = undefined;
       });
 
+      const workerBudget = await resolveStepBudget(step);
+      const workerRuntime = await resolveStepRuntime(step.runtimeId, workflowRuntimeId);
+
       const result = await executeChildTask(
         workflowId,
         step.name,
@@ -565,7 +629,9 @@ async function executeSwarm(
         step.assignedAgent,
         step.agentProfile,
         parentTaskId,
-        step.id
+        step.id,
+        workerBudget,
+        workerRuntime
       );
 
       const completedAt = new Date().toISOString();
@@ -618,6 +684,7 @@ async function executeSwarm(
       result: worker.result.result ?? "",
     })),
     parentTaskId,
+    workflowRuntimeId,
   });
 }
 
@@ -648,10 +715,13 @@ async function runSwarmRefinery(input: {
     prompt: string;
     assignedAgent?: string;
     agentProfile?: string;
+    budgetUsd?: number;
+    runtimeId?: string;
   };
   refineryIndex: number;
   workerOutputs: Array<{ stepName: string; result: string }>;
   parentTaskId?: string;
+  workflowRuntimeId?: string;
 }): Promise<void> {
   const {
     workflowId,
@@ -662,6 +732,7 @@ async function runSwarmRefinery(input: {
     refineryIndex,
     workerOutputs,
     parentTaskId,
+    workflowRuntimeId,
   } = input;
 
   state.currentStepIndex = refineryIndex;
@@ -680,6 +751,9 @@ async function runSwarmRefinery(input: {
     refineryPrompt: refineryStep.prompt,
   });
 
+  const refineryBudget = await resolveStepBudget(refineryStep as import("./types").WorkflowStep);
+  const refineryRuntime = await resolveStepRuntime(refineryStep.runtimeId, workflowRuntimeId);
+
   const refineryResult = await executeChildTask(
     workflowId,
     refineryStep.name,
@@ -687,7 +761,9 @@ async function runSwarmRefinery(input: {
     refineryStep.assignedAgent,
     refineryStep.agentProfile,
     parentTaskId,
-    refineryStep.id
+    refineryStep.id,
+    refineryBudget,
+    refineryRuntime
   );
 
   refineryState.taskId = refineryResult.taskId;
@@ -714,6 +790,26 @@ async function runSwarmRefinery(input: {
 }
 
 /**
+ * Resolve the runtime for a workflow step.
+ *
+ * Precedence (highest wins):
+ *   1. step.runtimeId (per-step override)
+ *   2. workflow.runtimeId (per-workflow)
+ *   3. routing.preference setting
+ *   4. DEFAULT_AGENT_RUNTIME
+ */
+async function resolveStepRuntime(
+  stepRuntimeId?: string,
+  workflowRuntimeId?: string
+): Promise<string | undefined> {
+  if (stepRuntimeId) return resolveAgentRuntime(stepRuntimeId);
+  if (workflowRuntimeId) return resolveAgentRuntime(workflowRuntimeId);
+  const routingPref = await getSetting("default_runtime");
+  if (routingPref) return resolveAgentRuntime(routingPref);
+  return undefined; // Let executeTaskWithRuntime use its own default
+}
+
+/**
  * Create and execute a child task, returning its result.
  * Shared by step-based patterns and the loop executor.
  */
@@ -724,7 +820,9 @@ export async function executeChildTask(
   assignedAgent?: string,
   agentProfile?: string,
   parentTaskId?: string,
-  stepId?: string
+  stepId?: string,
+  maxBudgetUsd?: number,
+  runtimeId?: string
 ): Promise<{ taskId: string; status: string; result?: string; error?: string }> {
   const [workflow] = await db
     .select()
@@ -766,6 +864,7 @@ export async function executeChildTask(
     assignedAgent: assignedAgent ?? null,
     agentProfile: resolvedProfile ?? null,
     workflowRunNumber: workflow?.runNumber ?? null,
+    maxBudgetUsd: maxBudgetUsd ?? null,
     createdAt: new Date(),
     updatedAt: new Date(),
   });
@@ -776,9 +875,18 @@ export async function executeChildTask(
     .where(eq(tasks.id, taskId));
 
   try {
-    await executeTaskWithRuntime(taskId);
+    await executeTaskWithRuntime(taskId, runtimeId);
   } catch (err) {
     console.error(`[workflow-engine] Runtime execution failed for task ${taskId}:`, err);
+    // Mark task as failed in DB so the status check below correctly detects failure
+    await db
+      .update(tasks)
+      .set({
+        status: "failed",
+        result: err instanceof Error ? err.message : String(err),
+        updatedAt: new Date(),
+      })
+      .where(eq(tasks.id, taskId));
   }
 
   const [completedTask] = await db
@@ -798,6 +906,11 @@ export async function executeChildTask(
 
 /**
  * Execute a single workflow step by creating a task and waiting for completion.
+ *
+ * State write is deferred until after task creation succeeds (Feature 3 fix).
+ * On failure, step state is explicitly rolled back to "failed".
+ *
+ * @param promptOverride — optional modified prompt (e.g., with context from previous step)
  */
 async function executeStep(
   workflowId: string,
@@ -807,36 +920,111 @@ async function executeStep(
   state: WorkflowState,
   assignedAgent?: string,
   agentProfile?: string,
-  parentTaskId?: string
+  parentTaskId?: string,
+  stepBudgetUsd?: number,
+  stepRuntimeId?: string,
+  workflowRuntimeId?: string
 ): Promise<StepState> {
   const stepState = state.stepStates.find((s) => s.stepId === stepId);
   if (!stepState) throw new Error(`Step ${stepId} not found in state`);
 
+  // Set in-memory only — do NOT persist "running" until task exists (deferred write)
   stepState.status = "running";
   stepState.startedAt = new Date().toISOString();
-  await updateWorkflowState(workflowId, state, "active");
 
-  const result = await executeChildTask(
-    workflowId,
-    stepName,
-    prompt,
-    assignedAgent,
-    agentProfile,
-    parentTaskId,
-    stepId
-  );
+  // Log step_started event for live execution dashboard
+  await db.insert(agentLogs).values({
+    id: crypto.randomUUID(),
+    taskId: null,
+    agentType: "workflow-engine",
+    event: "step_started",
+    payload: JSON.stringify({ workflowId, stepId, stepName, stepIndex: state.currentStepIndex }),
+    timestamp: new Date(),
+  });
 
-  stepState.taskId = result.taskId;
-  if (result.status === "completed") {
-    stepState.status = "completed";
-    stepState.result = result.result ?? "";
-    stepState.completedAt = new Date().toISOString();
-  } else {
+  try {
+    // Resolve per-step budget and runtime
+    const budgetUsd = await resolveStepBudget(
+      stepBudgetUsd ? ({ budgetUsd: stepBudgetUsd } as import("./types").WorkflowStep) : undefined
+    );
+    const resolvedRuntime = await resolveStepRuntime(stepRuntimeId, workflowRuntimeId);
+
+    const result = await executeChildTask(
+      workflowId,
+      stepName,
+      prompt,
+      assignedAgent,
+      agentProfile,
+      parentTaskId,
+      stepId,
+      budgetUsd,
+      resolvedRuntime
+    );
+
+    stepState.taskId = result.taskId;
+    if (result.status === "completed") {
+      stepState.status = "completed";
+      stepState.result = result.result ?? "";
+      stepState.completedAt = new Date().toISOString();
+
+      // Log step_completed event for live execution dashboard
+      await db.insert(agentLogs).values({
+        id: crypto.randomUUID(),
+        taskId: result.taskId,
+        agentType: "workflow-engine",
+        event: "step_completed",
+        payload: JSON.stringify({ workflowId, stepId, stepName, stepIndex: state.currentStepIndex }),
+        timestamp: new Date(),
+      });
+    } else {
+      stepState.status = "failed";
+      stepState.error = result.error ?? "Task did not complete successfully";
+
+      // Log step_failed event for live execution dashboard
+      await db.insert(agentLogs).values({
+        id: crypto.randomUUID(),
+        taskId: result.taskId,
+        agentType: "workflow-engine",
+        event: "step_failed",
+        payload: JSON.stringify({
+          workflowId,
+          stepId,
+          stepName,
+          stepIndex: state.currentStepIndex,
+          error: result.error ?? "Task did not complete successfully",
+        }),
+        timestamp: new Date(),
+      });
+    }
+
+    // Now safe to persist — task exists and has a final status
+    await updateWorkflowState(workflowId, state, "active");
+  } catch (err) {
+    // Explicit rollback on failure — step state reflects the error
     stepState.status = "failed";
-    stepState.error = result.error ?? "Task did not complete successfully";
+    stepState.error = err instanceof Error ? err.message : String(err);
+    stepState.completedAt = new Date().toISOString();
+
+    // Log step_failed event for live execution dashboard (catch path)
+    await db.insert(agentLogs).values({
+      id: crypto.randomUUID(),
+      taskId: stepState.taskId ?? null,
+      agentType: "workflow-engine",
+      event: "step_failed",
+      payload: JSON.stringify({
+        workflowId,
+        stepId,
+        stepName,
+        stepIndex: state.currentStepIndex,
+        error: err instanceof Error ? err.message : String(err),
+      }),
+      timestamp: new Date(),
+    });
+
+    await updateWorkflowState(workflowId, state, "active");
+    throw err; // Propagate — don't swallow
   }
 
-  await updateWorkflowState(workflowId, state, "active");
   return stepState;
 }
 
@@ -911,7 +1099,7 @@ export async function updateWorkflowState(
     .from(workflows)
     .where(eq(workflows.id, workflowId));
 
-  if (!workflow) return;
+  if (!workflow) throw new Error(`Workflow ${workflowId} not found — cannot update state`);
 
   const definition = JSON.parse(workflow.definition);
   const combined = { ...definition, _state: state };
@@ -981,6 +1169,7 @@ export async function retryWorkflowStep(
 
   // Re-execute from this step
   const step = definition.steps[stepIndex];
+  const workflowRtId = workflow.runtimeId ?? undefined;
   const result = await executeStep(
     workflowId,
     step.id,
@@ -988,7 +1177,11 @@ export async function retryWorkflowStep(
     step.prompt,
     state,
     step.assignedAgent,
-    step.agentProfile
+    step.agentProfile,
+    undefined,
+    step.budgetUsd,
+    step.runtimeId,
+    workflowRtId
   );
 
   if (result.status === "completed") {
@@ -1006,7 +1199,11 @@ export async function retryWorkflowStep(
           contextPrompt,
           state,
           nextStep.assignedAgent,
-          nextStep.agentProfile
+          nextStep.agentProfile,
+          undefined,
+          nextStep.budgetUsd,
+          nextStep.runtimeId,
+          workflowRtId
         );
         if (nextResult.status === "failed") break;
         previousOutput = nextResult.result ?? "";
@@ -1121,7 +1318,10 @@ async function retrySwarmStep(
     }),
     state,
     targetStep.assignedAgent,
-    targetStep.agentProfile
+    targetStep.agentProfile,
+    undefined,
+    targetStep.budgetUsd,
+    targetStep.runtimeId
   );
 
   if (retriedWorker.status !== "completed") {

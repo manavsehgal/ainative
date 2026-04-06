@@ -145,7 +145,7 @@ async function callAnthropicModel(
   emitEvent: (event: AgentStreamEvent) => void,
   options: AnthropicCallOptions = {},
 ): Promise<ModelTurnResult> {
-  const modelId = options.modelId ?? "claude-sonnet-4-20250514";
+  const modelId = options.modelId ?? getRuntimeCatalogEntry("anthropic-direct").models.default;
   const maxTokens = options.maxTokens ?? 8192;
 
   // Build system content with optional caching
@@ -315,7 +315,7 @@ async function executeAnthropicDirectTask(taskId: string, isResume = false): Pro
 
     // Resolve model from settings
     const { getSetting } = await import("@/lib/settings/helpers");
-    const modelId = (await getSetting("anthropic_direct_model")) ?? "claude-sonnet-4-20250514";
+    const modelId = (await getSetting("anthropic_direct_model")) ?? getRuntimeCatalogEntry("anthropic-direct").models.default;
 
     const maxTurns = ctx.maxTurns ?? DEFAULT_MAX_TURNS;
 
@@ -407,7 +407,7 @@ async function executeAnthropicDirectTask(taskId: string, isResume = false): Pro
       },
 
       maxTurns,
-      maxBudgetUsd: DEFAULT_MAX_BUDGET_USD,
+      maxBudgetUsd: task.maxBudgetUsd ?? DEFAULT_MAX_BUDGET_USD,
       signal: abortController.signal,
     });
 

@@ -46,6 +46,7 @@ const STAGENT_TABLES = [
   "user_table_row_history",
   "snapshots",
   "license",
+  "workflow_execution_stats",
 ] as const;
 
 export function bootstrapStagentDatabase(sqlite: Database.Database): void {

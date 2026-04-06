@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { workflows } from "@/lib/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { workflows, tasks } from "@/lib/db/schema";
+import { eq, and, sql, inArray } from "drizzle-orm";
 import { executeWorkflow } from "@/lib/workflows/engine";
 import type { WorkflowDefinition } from "@/lib/workflows/types";
 
@@ -20,16 +20,46 @@ export async function POST(
     return NextResponse.json({ error: "Workflow not found" }, { status: 404 });
   }
 
+  // Check if genuinely running vs crashed "active" state
   if (workflow.status === "active") {
-    return NextResponse.json(
-      { error: "Workflow is already running" },
-      { status: 409 }
-    );
+    const liveTasks = await db
+      .select({ id: tasks.id })
+      .from(tasks)
+      .where(
+        and(
+          eq(tasks.workflowId, id),
+          inArray(tasks.status, ["running", "queued"])
+        )
+      );
+
+    if (liveTasks.length > 0) {
+      return NextResponse.json(
+        { error: "Workflow is already running" },
+        { status: 409 }
+      );
+    }
+    // Crashed "active" with 0 live tasks — fall through to re-execution
   }
 
-  // Re-run: reset state for completed/failed workflows
-  if (workflow.status === "completed" || workflow.status === "failed") {
+  // Re-run: comprehensive reset for completed, failed, or crashed-active workflows
+  if (
+    workflow.status === "completed" ||
+    workflow.status === "failed" ||
+    workflow.status === "active" // crashed recovery
+  ) {
     try {
+      // 1. Cancel orphaned tasks (running/queued from previous execution)
+      await db
+        .update(tasks)
+        .set({ status: "cancelled", updatedAt: new Date() })
+        .where(
+          and(
+            eq(tasks.workflowId, id),
+            inArray(tasks.status, ["running", "queued"])
+          )
+        );
+
+      // 2. Clear execution state from definition
       const def = JSON.parse(workflow.definition) as WorkflowDefinition & {
         _state?: unknown;
         _loopState?: unknown;
@@ -37,6 +67,7 @@ export async function POST(
       delete def._state;
       delete def._loopState;
 
+      // 3. Reset to draft
       await db
         .update(workflows)
         .set({

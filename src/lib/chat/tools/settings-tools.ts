@@ -64,6 +64,29 @@ const WRITABLE_SETTINGS: Record<string, WritableSetting> = {
     validate: (v) =>
       v.trim().length === 0 ? "Must be non-empty string" : null,
   },
+  "budget_max_cost_per_task": {
+    description: "Max cost per task in USD (0.5–50)",
+    validate: (v) => {
+      const n = parseFloat(v);
+      return isNaN(n) || n < 0.5 || n > 50 ? "Must be number 0.5–50" : null;
+    },
+  },
+  "budget_max_tokens_per_task": {
+    description: "Max tokens per task (1000–500000)",
+    validate: (v) => {
+      const n = parseInt(v, 10);
+      return isNaN(n) || n < 1000 || n > 500000
+        ? "Must be integer 1000–500000"
+        : null;
+    },
+  },
+  "budget_max_daily_cost": {
+    description: "Max daily spend in USD (1–500)",
+    validate: (v) => {
+      const n = parseFloat(v);
+      return isNaN(n) || n < 1 || n > 500 ? "Must be number 1–500" : null;
+    },
+  },
 };
 
 const WRITABLE_KEYS_DOC = Object.entries(WRITABLE_SETTINGS)
@@ -109,10 +132,14 @@ export function settingsTools(_ctx: ToolContext) {
 
           if (args.key) {
             const value = await getSetting(args.key);
-            return ok({ key: args.key, value });
+            return ok({
+              key: args.key,
+              value,
+              writable: args.key in WRITABLE_SETTINGS,
+            });
           }
 
-          // Return common settings + workspace context
+          // Return common settings + workspace context with writability tags
           const keys = [
             "auth_method",
             "default_runtime",
@@ -121,17 +148,20 @@ export function settingsTools(_ctx: ToolContext) {
             "budget_max_cost_per_task",
             "budget_max_daily_cost",
           ];
-          const entries: Record<string, string | null> = {};
+          const entries: Record<string, { value: string | null; writable: boolean }> = {};
           for (const key of keys) {
-            entries[key] = await getSetting(key);
+            entries[key] = {
+              value: await getSetting(key),
+              writable: key in WRITABLE_SETTINGS,
+            };
           }
 
-          // Append workspace context
+          // Append workspace context (read-only)
           const ws = getWorkspaceContext();
-          entries.workspace_cwd = ws.cwd;
-          entries.workspace_git_branch = ws.gitBranch;
-          entries.workspace_is_worktree = ws.isWorktree ? "true" : "false";
-          entries.workspace_folder_name = ws.folderName;
+          entries.workspace_cwd = { value: ws.cwd, writable: false };
+          entries.workspace_git_branch = { value: ws.gitBranch, writable: false };
+          entries.workspace_is_worktree = { value: ws.isWorktree ? "true" : "false", writable: false };
+          entries.workspace_folder_name = { value: ws.folderName, writable: false };
 
           return ok(entries);
         } catch (e) {
@@ -151,7 +181,7 @@ export function settingsTools(_ctx: ToolContext) {
         const spec = WRITABLE_SETTINGS[args.key];
         if (!spec) {
           return err(
-            `Key "${args.key}" is not writable. Valid keys: ${Object.keys(WRITABLE_SETTINGS).join(", ")}`
+            `Key "${args.key}" is not writable via set_settings. Use get_settings to see which keys are writable (writable: true). Writable keys: ${Object.keys(WRITABLE_SETTINGS).join(", ")}`
           );
         }
         const validationError = spec.validate(args.value);

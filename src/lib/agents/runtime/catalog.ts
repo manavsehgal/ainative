@@ -21,12 +21,21 @@ export interface RuntimeCapabilities {
   authHealthCheck: boolean;
 }
 
+export interface RuntimeModelConfig {
+  /** Default model ID for this runtime */
+  default: string;
+  /** All supported model IDs for this runtime */
+  supported: string[];
+}
+
 export interface RuntimeCatalogEntry {
   id: AgentRuntimeId;
   label: string;
   description: string;
   providerId: "anthropic" | "openai" | "ollama";
   capabilities: RuntimeCapabilities;
+  /** Model catalog — default and supported model IDs for this runtime */
+  models: RuntimeModelConfig;
 }
 
 const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
@@ -45,6 +54,10 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
       profileAssist: true,
       authHealthCheck: true,
     },
+    models: {
+      default: "sonnet",
+      supported: ["haiku", "sonnet", "opus"],
+    },
   },
   "openai-codex-app-server": {
     id: "openai-codex-app-server",
@@ -55,11 +68,15 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
       resume: true,
       cancel: true,
       approvals: true,
-      mcpServers: false, // Not yet wired — configs not passed to codex subprocess
+      mcpServers: false,
       profileTests: false,
       taskAssist: true,
       profileAssist: false,
       authHealthCheck: true,
+    },
+    models: {
+      default: "gpt-5.4",
+      supported: ["gpt-5.4", "gpt-5.4-mini", "gpt-5.3-codex"],
     },
   },
   "anthropic-direct": {
@@ -77,6 +94,10 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
       profileAssist: true,
       authHealthCheck: true,
     },
+    models: {
+      default: "claude-sonnet-4-20250514",
+      supported: ["claude-haiku-4-5-20251001", "claude-sonnet-4-20250514", "claude-opus-4-20250514"],
+    },
   },
   "openai-direct": {
     id: "openai-direct",
@@ -93,6 +114,10 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
       profileAssist: false,
       authHealthCheck: true,
     },
+    models: {
+      default: "gpt-4.1",
+      supported: ["gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano"],
+    },
   },
   ollama: {
     id: "ollama",
@@ -108,6 +133,10 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
       taskAssist: true,
       profileAssist: false,
       authHealthCheck: true,
+    },
+    models: {
+      default: "llama3",
+      supported: [],  // Dynamic — populated from Ollama API at runtime
     },
   },
 };

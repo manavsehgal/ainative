@@ -454,8 +454,8 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
           : { type: "preset" as const, preset: "claude_code" as const },
         // F9: Bounded turn limit from profile or default
         maxTurns: ctx.maxTurns,
-        // F4: Per-execution budget cap
-        maxBudgetUsd: DEFAULT_MAX_BUDGET_USD,
+        // F4: Per-execution budget cap — use task-specific override if set
+        maxBudgetUsd: task.maxBudgetUsd ?? DEFAULT_MAX_BUDGET_USD,
         ...(ctx.payload?.allowedTools && { allowedTools: ctx.payload.allowedTools }),
         ...(Object.keys(mergedMcpServers).length > 0 && {
           mcpServers: mergedMcpServers,
@@ -568,8 +568,8 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
           : { type: "preset" as const, preset: "claude_code" as const },
         // F9: Bounded turn limit from profile or default
         maxTurns: ctx.maxTurns,
-        // F4: Per-execution budget cap
-        maxBudgetUsd: DEFAULT_MAX_BUDGET_USD,
+        // F4: Per-execution budget cap — use task-specific override if set
+        maxBudgetUsd: task.maxBudgetUsd ?? DEFAULT_MAX_BUDGET_USD,
         ...(ctx.payload?.allowedTools && { allowedTools: ctx.payload.allowedTools }),
         ...(Object.keys(mergedMcpServers).length > 0 && {
           mcpServers: mergedMcpServers,

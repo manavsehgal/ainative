@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, index, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, real, index, uniqueIndex } from "drizzle-orm/sqlite-core";
 import type { InferSelectModel } from "drizzle-orm";
 
 export const projects = sqliteTable("projects", {
@@ -38,6 +38,8 @@ export const tasks = sqliteTable(
       enum: ["manual", "scheduled", "heartbeat", "workflow"],
     }),
     workflowRunNumber: integer("workflow_run_number"),
+    /** Resolved per-task budget cap in USD — set by workflow engine for child tasks */
+    maxBudgetUsd: real("max_budget_usd"),
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
   },
@@ -61,6 +63,8 @@ export const workflows = sqliteTable("workflows", {
     .default("draft")
     .notNull(),
   runNumber: integer("run_number").default(0).notNull(),
+  /** Runtime to use for all steps (nullable — falls back to system default) */
+  runtimeId: text("runtime_id"),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
 });
@@ -1172,3 +1176,31 @@ export const license = sqliteTable("license", {
 });
 
 export type LicenseRow = InferSelectModel<typeof license>;
+
+// ── Workflow Execution Stats ─────────────────────────────────────────
+
+export const workflowExecutionStats = sqliteTable("workflow_execution_stats", {
+  id: text("id").primaryKey(),
+  /** Workflow pattern: sequence, parallel, swarm, etc. */
+  pattern: text("pattern").notNull(),
+  /** Number of steps in the workflow */
+  stepCount: integer("step_count").notNull(),
+  /** Average documents injected per step */
+  avgDocsPerStep: real("avg_docs_per_step"),
+  /** Average cost per step in microdollars */
+  avgCostPerStepMicros: integer("avg_cost_per_step_micros"),
+  /** Average duration per step in milliseconds */
+  avgDurationPerStepMs: integer("avg_duration_per_step_ms"),
+  /** Success rate (0.0 to 1.0) */
+  successRate: real("success_rate"),
+  /** JSON: common failure types and counts, e.g., {"budget_exceeded": 4, "timeout": 1} */
+  commonFailures: text("common_failures"),
+  /** JSON: per-runtime success rates, e.g., {"claude-code": 0.92, "openai-direct": 0.71} */
+  runtimeBreakdown: text("runtime_breakdown"),
+  /** Number of workflow runs included in these stats */
+  sampleCount: integer("sample_count").notNull().default(0),
+  lastUpdated: text("last_updated").notNull(),
+  createdAt: text("created_at").notNull(),
+});
+
+export type WorkflowExecutionStatsRow = InferSelectModel<typeof workflowExecutionStats>;

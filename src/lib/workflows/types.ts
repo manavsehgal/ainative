@@ -16,6 +16,10 @@ export interface WorkflowStep {
   agentProfile?: string;
   /** Document IDs from the project pool to inject as context for this step */
   documentIds?: string[];
+  /** Per-step budget override in USD — takes precedence over workflow and global settings */
+  budgetUsd?: number;
+  /** Per-step runtime override — takes precedence over workflow.runtimeId and global settings */
+  runtimeId?: string;
 }
 
 /** Selector for auto-discovering documents from the project pool */
@@ -113,6 +117,8 @@ export interface WorkflowState {
   status: "running" | "completed" | "failed" | "paused";
   startedAt: string;
   completedAt?: string;
+  /** Pre-flight cost estimate — advisory, populated before execution */
+  costEstimate?: unknown;
 }
 
 export function createInitialState(definition: WorkflowDefinition): WorkflowState {

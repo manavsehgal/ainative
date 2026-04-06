@@ -85,7 +85,7 @@ async function callOpenAIModel(
   emitEvent: (event: AgentStreamEvent) => void,
   options: OpenAICallOptions = {},
 ): Promise<ModelTurnResult & { responseId?: string }> {
-  const modelId = options.modelId ?? "gpt-4.1";
+  const modelId = options.modelId ?? getRuntimeCatalogEntry("openai-direct").models.default;
 
   // Build tool array: Stagent function tools + enabled server-side tools
   const serverToolConfig = options.serverTools ?? { web_search_preview: true };
@@ -231,7 +231,7 @@ async function executeOpenAIDirectTask(taskId: string, isResume = false): Promis
 
     // Resolve model
     const { getSetting } = await import("@/lib/settings/helpers");
-    const modelId = (await getSetting("openai_direct_model")) ?? "gpt-4.1";
+    const modelId = (await getSetting("openai_direct_model")) ?? getRuntimeCatalogEntry("openai-direct").models.default;
     const maxTurns = ctx.maxTurns ?? DEFAULT_MAX_TURNS;
 
     // For resume: load previous response ID
@@ -324,7 +324,7 @@ async function executeOpenAIDirectTask(taskId: string, isResume = false): Promis
       },
 
       maxTurns,
-      maxBudgetUsd: DEFAULT_MAX_BUDGET_USD,
+      maxBudgetUsd: task.maxBudgetUsd ?? DEFAULT_MAX_BUDGET_USD,
       signal: abortController.signal,
     });
 

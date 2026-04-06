@@ -42,6 +42,7 @@ import {
   taskTableInputs,
   workflowTableInputs,
   scheduleTableInputs,
+  workflowExecutionStats,
 } from "@/lib/db/schema";
 import { readdirSync, unlinkSync, mkdirSync } from "fs";
 import { join } from "path";
@@ -119,6 +120,7 @@ export function clearAllData() {
   const documentsDeleted = db.delete(documents).run().changes;
   const agentMemoryDeleted = db.delete(agentMemory).run().changes;
   const learnedContextDeleted = db.delete(learnedContext).run().changes;
+  const executionStatsDeleted = db.delete(workflowExecutionStats).run().changes;
   const tasksDeleted = db.delete(tasks).run().changes;
   const workflowsDeleted = db.delete(workflows).run().changes;
   const schedulesDeleted = db.delete(schedules).run().changes;
@@ -194,5 +196,6 @@ export function clearAllData() {
     files: filesDeleted,
     screenshots: screenshotsDeleted,
     license: licenseDeleted,
+    workflowExecutionStats: executionStatsDeleted,
   };
 }

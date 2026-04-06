@@ -149,6 +149,10 @@ Features that enhance the product but aren't essential for first use — homepag
 | [usage-metering-ledger](usage-metering-ledger.md) | P1 | completed | provider-runtime-abstraction, openai-codex-app-server, monitoring-dashboard |
 | [spend-budget-guardrails](spend-budget-guardrails.md) | P1 | completed | usage-metering-ledger, inbox-notifications, provider-runtime-abstraction |
 | [cost-and-usage-dashboard](cost-and-usage-dashboard.md) | P2 | completed | usage-metering-ledger, spend-budget-guardrails, micro-visualizations |
+| [workflow-budget-governance](workflow-budget-governance.md) | P1 | completed | spend-budget-guardrails, workflow-engine |
+| [workflow-runtime-configuration](workflow-runtime-configuration.md) | P1 | completed | provider-runtime-abstraction, workflow-engine, smart-runtime-router |
+| [workflow-execution-resilience](workflow-execution-resilience.md) | P1 | completed | workflow-engine, workflow-document-pool |
+| [workflow-intelligence-observability](workflow-intelligence-observability.md) | P2 | completed | workflow-budget-governance, workflow-runtime-configuration, workflow-execution-resilience, usage-metering-ledger, monitoring-dashboard |
 
 ### Environment Onboarding (Control Plane)
 

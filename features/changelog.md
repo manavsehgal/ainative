@@ -1,5 +1,39 @@
 # Feature Changelog
 
+## 2026-04-06
+
+### Implemented — Workflow Intelligence Stack (4 features, EXPANDED scope)
+
+Implemented all 4 features across 2 phases with expanded scope (per-step budget and runtime overrides).
+
+**Phase 1 — Close the Gaps (completed):**
+- `workflow-budget-governance` — 4-level budget resolution chain (step → user setting → $5 constant → $2 default), writable budget settings (3 keys), pre-flight cost estimation, per-step budgetUsd override
+- `workflow-runtime-configuration` — RuntimeCatalogEntry.models field, hardcoded fallback replacement, runtimeId column on workflows, list_runtimes chat tool (13th tool module), per-step runtimeId override, settings writability tags, CHAT_MODELS catalog validation
+- `workflow-execution-resilience` — deferred state writes in executeStep (write-after-execute), error propagation in executeChildTask (no more swallowing), updateWorkflowState throws on missing workflow, crash recovery for stuck "active" workflows, comprehensive reset with orphan cancellation, per-step document binding in create_workflow
+
+**Phase 2 — Intelligence Stack (completed):**
+- `workflow-intelligence-observability` — execution stats table + bucket aggregation, step event logging, step progress bar component, live metrics tiles (SSE), error analysis with root cause detection, debug panel with timeline + tiered suggestions, optimizer co-pilot with suggestion cards
+
+**Schema changes:** 2 migrations (0022: tasks.max_budget_usd + workflows.runtime_id, 0023: workflow_execution_stats table)
+**New files:** 12 (cost-estimator, execution-stats, error-analysis, optimizer, runtime-tools, step-progress-bar, step-live-metrics, error-timeline, workflow-debug-panel, workflow-optimizer-panel, 2 API routes)
+**Modified files:** 12 (engine.ts, types.ts, schema.ts, catalog.ts, claude-agent.ts, anthropic-direct.ts, openai-direct.ts, settings-tools.ts, workflow-tools.ts, stagent-tools.ts, execute/route.ts, clear.ts)
+
+### Groomed — Workflow Intelligence Stack (4 features)
+
+Real user session (investor research workflow) surfaced 9 cascading failures across workflow execution, budget management, model routing, and chat intelligence. Analysis at `ideas/analysis-chat-issues.md`. Brainstormed in EXPAND mode — beyond reactive fixes into proactive optimization. Design spec at `docs/superpowers/specs/2026-04-06-workflow-intelligence-stack-design.md`.
+
+**Phase 1 — Close the Gaps (3 P1 features, parallelizable):**
+- `workflow-budget-governance` — wire dead $5 constant, writable budget settings, pre-flight cost estimation
+- `workflow-runtime-configuration` — unified model catalog, per-workflow runtimeId, list_runtimes tool, settings writability tagging
+- `workflow-execution-resilience` — state machine atomicity (deferred writes + rollback), retry from crashed "active", per-step document binding
+
+**Phase 2 — Intelligence Stack (1 P2 feature, 4 sub-capabilities):**
+- `workflow-intelligence-observability` — optimizer co-pilot, live execution dashboard, embedded debug panel, execution-informed learning
+
+**Key insight:** Most Phase 1 infrastructure already exists but isn't wired — `WORKFLOW_STEP_MAX_BUDGET_USD`, `workflowDocumentInputs.stepId`, `executeTaskWithRuntime(taskId, runtimeId?)` are all dead code or unexposed parameters. Phase 1 is primarily connecting plumbing.
+
+**Dependency chain:** Phase 1 features enable Phase 2 (reliable state → metrics, budget info → optimizer, runtime catalog → recommendations).
+
 ## 2026-04-05
 
 ### Groomed — PLG Monetization Initiative (17 features)
