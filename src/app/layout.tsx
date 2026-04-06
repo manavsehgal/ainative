@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -66,9 +67,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Static CSS/JS — no user input, safe from XSS */}
+        {/* Static CSS — no user input, safe from XSS */}
         <style dangerouslySetInnerHTML={{ __html: CRITICAL_THEME_CSS }} />
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        {/* Theme bootstrap — runs before paint to prevent FOUC */}
+        <Script id="theme-init" strategy="beforeInteractive">{THEME_INIT_SCRIPT}</Script>
       </head>
       <body
         className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased bg-background text-foreground`}

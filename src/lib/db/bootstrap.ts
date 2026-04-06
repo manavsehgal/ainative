@@ -75,6 +75,7 @@ export function bootstrapStagentDatabase(sqlite: Database.Database): void {
       session_id TEXT,
       resume_count INTEGER DEFAULT 0 NOT NULL,
       workflow_run_number INTEGER,
+      max_budget_usd REAL,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL,
       FOREIGN KEY (project_id) REFERENCES projects(id) ON UPDATE NO ACTION ON DELETE NO ACTION,
@@ -89,6 +90,7 @@ export function bootstrapStagentDatabase(sqlite: Database.Database): void {
       definition TEXT NOT NULL,
       status TEXT DEFAULT 'draft' NOT NULL,
       run_number INTEGER DEFAULT 0 NOT NULL,
+      runtime_id TEXT,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL,
       FOREIGN KEY (project_id) REFERENCES projects(id) ON UPDATE NO ACTION ON DELETE NO ACTION
@@ -857,7 +859,31 @@ export function bootstrapStagentDatabase(sqlite: Database.Database): void {
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS workflow_execution_stats (
+      id TEXT PRIMARY KEY,
+      pattern TEXT NOT NULL,
+      step_count INTEGER NOT NULL,
+      avg_docs_per_step REAL,
+      avg_cost_per_step_micros INTEGER,
+      avg_duration_per_step_ms INTEGER,
+      success_rate REAL,
+      common_failures TEXT,
+      runtime_breakdown TEXT,
+      sample_count INTEGER NOT NULL DEFAULT 0,
+      last_updated TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `);
+
+  // Safety: add columns that may be missing on existing databases.
+  // SQLite ALTER TABLE ADD COLUMN is a no-op if column exists (throws, caught).
+  for (const alter of [
+    "ALTER TABLE tasks ADD COLUMN max_budget_usd REAL",
+    "ALTER TABLE workflows ADD COLUMN runtime_id TEXT",
+  ]) {
+    try { sqlite.exec(alter); } catch { /* column already exists — expected */ }
+  }
 }
 
 export function hasLegacyStagentTables(sqlite: Database.Database): boolean {
