@@ -53,8 +53,11 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "priceId is required" }, corsHeaders, 400);
     }
 
-    const successUrl = returnUrl || "https://stagent.io";
-    const cancelUrl = returnUrl || "https://stagent.io";
+    const baseUrl = returnUrl || "https://stagent.io";
+    const successUrl = baseUrl.includes("?")
+      ? `${baseUrl}&success=true`
+      : `${baseUrl}?success=true`;
+    const cancelUrl = baseUrl.replace(/[?&]success=true/, "");
 
     // Verify the caller is authenticated via Supabase JWT
     const authHeader = req.headers.get("Authorization");

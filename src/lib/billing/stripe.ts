@@ -44,7 +44,7 @@ export async function createCheckoutSession(
         },
         body: JSON.stringify({
           priceId,
-          returnUrl: returnUrl ?? `${typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"}/settings?success=true`,
+          returnUrl: returnUrl ?? `${typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"}/settings`,
         }),
       }
     );
