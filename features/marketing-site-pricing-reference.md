@@ -8,9 +8,9 @@ The main Stagent codebase provides the constants; this page consumes them.
 | Tier | Monthly | Annual | Stripe Payment Link |
 |------|---------|--------|---------------------|
 | Community | Free | Free | N/A |
-| Solo | $19 | $190 ($15.83/mo) | `https://buy.stripe.com/SOLO_LINK` |
-| Operator | $49 | $490 ($40.83/mo) | `https://buy.stripe.com/OPERATOR_LINK` |
-| Scale | $99 | $990 ($82.50/mo) | `https://buy.stripe.com/SCALE_LINK` |
+| Solo | $19 | $190 ($15.83/mo) | `https://buy.stagent.io/SOLO_LINK` |
+| Operator | $49 | $490 ($40.83/mo) | `https://buy.stagent.io/OPERATOR_LINK` |
+| Scale | $99 | $990 ($82.50/mo) | `https://buy.stagent.io/SCALE_LINK` |
 
 ## Files to Modify in stagent.github.io
 

@@ -51,9 +51,9 @@ Marketing site (stagent.io)              Product (/settings/subscription)
 ### Payment Links (Marketing Site Entry)
 
 Stripe Payment Links are static URLs that can be embedded directly in Pricing.astro:
-- `https://buy.stripe.com/SOLO_LINK` — Solo monthly
-- `https://buy.stripe.com/OPERATOR_LINK` — Operator monthly
-- `https://buy.stripe.com/SCALE_LINK` — Scale monthly
+- `https://buy.stagent.io/SOLO_LINK` — Solo monthly
+- `https://buy.stagent.io/OPERATOR_LINK` — Operator monthly
+- `https://buy.stagent.io/SCALE_LINK` — Scale monthly
 - Each Payment Link collects email (required) — this is the identity anchor
 - After payment, Stripe redirects to `https://stagent.io/confirmed?session_id={CHECKOUT_SESSION_ID}`
 - The `/confirmed` page (already exists in site) shows: "Welcome! Install `npx stagent` and sign in with {email} to activate your subscription."
