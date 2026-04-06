@@ -4,7 +4,7 @@
  * Writes go directly to Supabase with RLS.
  */
 
-import { getSupabaseClient, isCloudConfigured } from "@/lib/cloud/supabase-client";
+import { getSupabaseClient, isCloudConfigured, getSupabaseUrl, getSupabaseAnonKey } from "@/lib/cloud/supabase-client";
 
 export interface MarketplaceBlueprint {
   id: string;
@@ -36,8 +36,8 @@ export async function browseBlueprints(
     return { blueprints: [], total: 0, page, limit: 20 };
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const supabaseUrl = getSupabaseUrl();
+  const anonKey = getSupabaseAnonKey();
 
   const params = new URLSearchParams({ page: String(page) });
   if (category) params.set("category", category);

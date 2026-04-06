@@ -15,6 +15,16 @@ const DEFAULT_SUPABASE_URL = "https://yznantjbmacbllhcyzwc.supabase.co";
 const DEFAULT_SUPABASE_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl6bmFudGpibWFjYmxsaGN5endjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1MDg1ODMsImV4cCI6MjA4ODA4NDU4M30.i-P7MXpR1_emBjhUkzbFeSX7fgjgPDv90_wkqF7sW3Y";
 
+/** Resolved Supabase URL (env override or production default) */
+export function getSupabaseUrl(): string {
+  return process.env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+}
+
+/** Resolved Supabase anon key (env override or production default) */
+export function getSupabaseAnonKey(): string {
+  return process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
+}
+
 let client: SupabaseClient | null = null;
 let initialized = false;
 

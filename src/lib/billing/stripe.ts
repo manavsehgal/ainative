@@ -6,7 +6,7 @@
  * Edge Functions to create Checkout Sessions and Portal Sessions.
  */
 
-import { isCloudConfigured } from "@/lib/cloud/supabase-client";
+import { isCloudConfigured, getSupabaseUrl, getSupabaseAnonKey } from "@/lib/cloud/supabase-client";
 import { getProductForTier } from "./products";
 import type { LicenseTier } from "@/lib/license/tier-limits";
 import type { BillingInterval } from "./products";
@@ -30,8 +30,8 @@ export async function createCheckoutSession(
   }
 
   const priceId = product.prices[billingPeriod].id;
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const supabaseUrl = getSupabaseUrl();
+  const anonKey = getSupabaseAnonKey();
 
   try {
     const response = await fetch(
@@ -72,8 +72,8 @@ export async function createPortalSession(
     return { error: "Cloud backend not configured" };
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const supabaseUrl = getSupabaseUrl();
+  const anonKey = getSupabaseAnonKey();
 
   try {
     const response = await fetch(

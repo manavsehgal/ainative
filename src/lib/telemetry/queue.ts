@@ -11,7 +11,7 @@
 
 import { getSettingSync, setSetting } from "@/lib/settings/helpers";
 import { SETTINGS_KEYS } from "@/lib/constants/settings";
-import { isCloudConfigured } from "@/lib/cloud/supabase-client";
+import { isCloudConfigured, getSupabaseUrl, getSupabaseAnonKey } from "@/lib/cloud/supabase-client";
 
 const MAX_BATCH_SIZE = 200;
 const FLUSH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
@@ -75,8 +75,8 @@ export async function flushTelemetryBatch(): Promise<void> {
   const batch = loadBatch();
   if (batch.length === 0) return;
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const supabaseUrl = getSupabaseUrl();
+  const anonKey = getSupabaseAnonKey();
 
   try {
     const res = await fetch(`${supabaseUrl}/functions/v1/telemetry-ingest`, {

@@ -9,7 +9,7 @@
  * No-op if Supabase is not configured.
  */
 
-import { isCloudConfigured } from "@/lib/cloud/supabase-client";
+import { isCloudConfigured, getSupabaseUrl, getSupabaseAnonKey } from "@/lib/cloud/supabase-client";
 import { getSettingSync, setSetting } from "@/lib/settings/helpers";
 
 const SESSION_KEY = "conversion.sessionId";
@@ -49,10 +49,8 @@ export function trackConversionEvent(
   if (!isCloudConfigured()) return;
 
   const sessionId = getSessionId();
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !anonKey) return;
+  const supabaseUrl = getSupabaseUrl();
+  const anonKey = getSupabaseAnonKey();
 
   // Fire-and-forget — don't await, don't block
   fetch(`${supabaseUrl}/functions/v1/conversion-ingest`, {

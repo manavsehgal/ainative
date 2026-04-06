@@ -6,7 +6,7 @@
  * the cloud backend is not configured.
  */
 
-import { isCloudConfigured } from "@/lib/cloud/supabase-client";
+import { isCloudConfigured, getSupabaseUrl, getSupabaseAnonKey } from "@/lib/cloud/supabase-client";
 
 async function sendEmail(
   template: string,
@@ -15,8 +15,8 @@ async function sendEmail(
 ): Promise<void> {
   if (!isCloudConfigured()) return;
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const supabaseUrl = getSupabaseUrl();
+  const anonKey = getSupabaseAnonKey();
 
   try {
     await fetch(`${supabaseUrl}/functions/v1/send-email`, {
