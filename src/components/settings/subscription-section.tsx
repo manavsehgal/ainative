@@ -265,10 +265,13 @@ export function SubscriptionSection() {
             </div>
             <div className="grid grid-cols-3 gap-3">
               {/* Solo */}
-              <div className="surface-card-muted rounded-lg p-4 flex flex-col">
+              <div className={`surface-card-muted rounded-lg p-4 flex flex-col ${tier === "solo" ? "ring-1 ring-primary" : ""}`}>
                 <div className="space-y-3 flex-1">
                   <div>
-                    <span className="text-sm font-semibold">Solo</span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold">Solo</span>
+                      {tier === "solo" && <Badge variant="outline" className="text-[10px]">Current Plan</Badge>}
+                    </div>
                     <p className="text-lg font-bold mt-1">
                       ${TIER_PRICING.solo[billingPeriod]}
                       <span className="text-xs font-normal text-muted-foreground">
@@ -294,19 +297,22 @@ export function SubscriptionSection() {
                   size="sm"
                   variant="outline"
                   className="w-full mt-4"
-                  disabled={checkoutLoading}
+                  disabled={checkoutLoading || tier === "solo"}
                   onClick={() => handleUpgrade("solo")}
                 >
-                  {checkoutLoading ? "Loading..." : "Get Solo"}
+                  {tier === "solo" ? "Current Plan" : checkoutLoading ? "Loading..." : "Get Solo"}
                 </Button>
               </div>
 
               {/* Operator */}
-              <div className="surface-card-muted rounded-lg p-4 flex flex-col ring-1 ring-primary/30">
+              <div className={`surface-card-muted rounded-lg p-4 flex flex-col ${tier === "operator" ? "ring-1 ring-primary" : "ring-1 ring-primary/30"}`}>
                 <div className="space-y-3 flex-1">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-semibold">Operator</span>
-                    <Badge variant="secondary" className="text-[10px]">Popular</Badge>
+                    <div className="flex items-center gap-1.5">
+                      {tier === "operator" && <Badge variant="outline" className="text-[10px]">Current Plan</Badge>}
+                      <Badge variant="secondary" className="text-[10px]">Popular</Badge>
+                    </div>
                   </div>
                   <p className="text-lg font-bold">
                     ${TIER_PRICING.operator[billingPeriod]}
@@ -332,18 +338,21 @@ export function SubscriptionSection() {
                 <Button
                   size="sm"
                   className="w-full mt-4"
-                  disabled={checkoutLoading}
+                  disabled={checkoutLoading || tier === "operator"}
                   onClick={() => handleUpgrade("operator")}
                 >
-                  {checkoutLoading ? "Loading..." : "Get Operator"}
+                  {tier === "operator" ? "Current Plan" : checkoutLoading ? "Loading..." : "Get Operator"}
                 </Button>
               </div>
 
               {/* Scale */}
-              <div className="surface-card-muted rounded-lg p-4 flex flex-col">
+              <div className={`surface-card-muted rounded-lg p-4 flex flex-col ${tier === "scale" ? "ring-1 ring-primary" : ""}`}>
                 <div className="space-y-3 flex-1">
                   <div>
-                    <span className="text-sm font-semibold">Scale</span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold">Scale</span>
+                      {tier === "scale" && <Badge variant="outline" className="text-[10px]">Current Plan</Badge>}
+                    </div>
                     <p className="text-lg font-bold mt-1">
                       ${TIER_PRICING.scale[billingPeriod]}
                       <span className="text-xs font-normal text-muted-foreground">
@@ -369,10 +378,10 @@ export function SubscriptionSection() {
                   size="sm"
                   variant="outline"
                   className="w-full mt-4"
-                  disabled={checkoutLoading}
+                  disabled={checkoutLoading || tier === "scale"}
                   onClick={() => handleUpgrade("scale")}
                 >
-                  {checkoutLoading ? "Loading..." : "Get Scale"}
+                  {tier === "scale" ? "Current Plan" : checkoutLoading ? "Loading..." : "Get Scale"}
                 </Button>
               </div>
             </div>
