@@ -90,9 +90,10 @@ Deno.serve(async (req) => {
     });
 
     if (!stripeRes.ok) {
-      const text = await stripeRes.text();
-      console.error("Stripe error:", stripeRes.status, text);
-      return jsonResponse({ error: "Failed to create checkout session" }, corsHeaders, 502);
+      const errBody = await stripeRes.json().catch(() => ({}));
+      const msg = errBody?.error?.message || `Stripe HTTP ${stripeRes.status}`;
+      console.error("Stripe error:", stripeRes.status, JSON.stringify(errBody));
+      return jsonResponse({ error: msg }, corsHeaders, 502);
     }
 
     const session = await stripeRes.json();
