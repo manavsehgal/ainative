@@ -18,83 +18,112 @@ interface EmailRequest {
   data: Record<string, unknown>;
 }
 
+function tierBenefits(tier: string): string {
+  const t = tier.toLowerCase();
+  if (t === "operator") {
+    return [
+      "- ROI analytics dashboard",
+      "- Encrypted cloud sync & backup",
+      "- Marketplace publishing (70/30 split)",
+      "- 500 agent memories per profile",
+      "- 50 active schedules",
+      "- 1-year execution history",
+    ].join("\n");
+  }
+  if (t === "scale") {
+    return [
+      "- Everything in Operator",
+      "- Unlimited memories & schedules",
+      "- Unlimited history retention",
+      "- Featured marketplace listings (80/20)",
+      "- Priority support",
+    ].join("\n");
+  }
+  return [
+    "- 200 agent memories per profile",
+    "- 20 active schedules",
+    "- 180-day execution history",
+    "- Marketplace blueprint imports",
+  ].join("\n");
+}
+
 const TEMPLATES: Record<string, (data: Record<string, unknown>) => { subject: string; text: string }> = {
-  "welcome-install": (data) => ({
-    subject: `Welcome to Stagent ${data.tier ?? ""} — You're In`,
-    text: `Hi,
+  "welcome-install": (data) => {
+    const tier = String(data.tier ?? "");
+    return {
+      subject: `Welcome to Stagent ${tier}`,
+      text: [
+        "Hi,",
+        "",
+        `Thanks for subscribing to Stagent ${tier}.`,
+        "Your AI agents just got a serious upgrade.",
+        "",
+        "Get started in one command:",
+        "",
+        "  npx stagent",
+        "",
+        "When it launches, go to Settings and sign in",
+        "with this email address. Your premium features",
+        "will activate automatically.",
+        "",
+        "No license key needed. Just sign in and go.",
+        "",
+        "Questions? Reply to this email.",
+        "",
+        FOOTER,
+      ].join("\n"),
+    };
+  },
 
-Thanks for subscribing to Stagent ${data.tier ?? ""}. Your AI agents
-just got a serious upgrade.
+  "upgrade-confirmation": (data) => {
+    const tier = String(data.tier ?? "");
+    return {
+      subject: `You're now on Stagent ${tier}`,
+      text: [
+        "Hi,",
+        "",
+        `Your plan has been upgraded to ${tier}.`,
+        "",
+        "Here's what just unlocked:",
+        "",
+        tierBenefits(tier),
+        "",
+        "Open Stagent and go to Settings to see your",
+        "expanded limits. Your features are already active.",
+        "",
+        FOOTER,
+      ].join("\n"),
+    };
+  },
 
-Get started in one command:
-
-  npx stagent
-
-When it launches, go to Settings and sign in with this email
-address. Your ${data.tier ?? ""} features will activate automatically —
-expanded memory, longer history, and everything that comes
-with your plan.
-
-No license key needed. Just sign in and go.
-
-If you have any questions, reply to this email.
-
-${FOOTER}`,
-  }),
-
-  "upgrade-confirmation": (data) => ({
-    subject: `You're now on Stagent ${data.tier ?? ""}`,
-    text: `Hi,
-
-Your Stagent subscription has been upgraded to ${data.tier ?? ""}.
-
-Here's what just unlocked:
-${data.tier === "operator" || data.tier === "Operator" ? `
-  - ROI analytics dashboard
-  - Encrypted cloud sync & backup
-  - Marketplace publishing (70/30 revenue split)
-  - 500 agent memories per profile
-  - 50 active schedules
-  - 1-year execution history
-` : data.tier === "scale" || data.tier === "Scale" ? `
-  - Everything in Operator
-  - Unlimited memories & schedules
-  - Unlimited history retention
-  - Featured marketplace listings (80/20 split)
-  - Priority support
-` : `
-  - 200 agent memories per profile
-  - 20 active schedules
-  - 180-day execution history
-  - Marketplace blueprint imports
-`}
-Open Stagent and go to Settings to see your expanded limits.
-Your features are already active.
-
-${FOOTER}`,
-  }),
-
-  "memory-warning": (data) => ({
-    subject: `Heads up — ${data.profileName ?? "your agent"} is running low on memory`,
-    text: `Hi,
-
-Your agent profile "${data.profileName ?? ""}" has used ${data.current ?? 0}
-of ${data.limit ?? 0} available memories.
-
-When you hit the limit, your agent will still run tasks — but it
-won't be able to store new memories until you free up space or
-upgrade your plan.
-
-You can:
-
-  1. Archive old memories you no longer need
-  2. Upgrade your plan for more capacity
-
-Manage your plan:
-  Open Stagent → Settings → Subscription
-
-${FOOTER}`,
-  }),
+  "memory-warning": (data) => {
+    const profile = String(data.profileName ?? "your agent");
+    const current = Number(data.current ?? 0);
+    const limit = Number(data.limit ?? 0);
+    return {
+      subject: `${profile} is running low on memory`,
+      text: [
+        "Hi,",
+        "",
+        `Your agent profile "${profile}" has used`,
+        `${current} of ${limit} available memories.`,
+        "",
+        "When you hit the limit, your agent will still",
+        "run tasks but won't store new memories until",
+        "you free up space or upgrade.",
+        "",
+        "You can:",
+        "",
+        "  1. Archive old memories you no longer need",
+        "  2. Upgrade your plan for more capacity",
+        "",
+        "Manage your plan:",
+        "  Open Stagent > Settings > Subscription",
+        "",
+        FOOTER,
+      ].join("\n"),
+    };
+  },
 };
 
 Deno.serve(async (req: Request) => {
