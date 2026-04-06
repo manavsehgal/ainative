@@ -24,42 +24,37 @@ export interface StripePrice {
   currency: string;
 }
 
-/**
- * Stripe product catalog.
- *
- * TODO: Replace placeholder IDs with actual Stripe dashboard values.
- * Payment Link URLs are generated in Stripe dashboard.
- */
+/** Stripe product catalog — live Price IDs and Payment Links. */
 export const STRIPE_PRODUCTS: StripeProduct[] = [
   {
     tier: "solo",
     name: "Stagent Solo",
     description: "Power users — expanded limits and advanced history",
     prices: {
-      monthly: { id: "price_solo_monthly", amount: 1900, currency: "usd" },
-      annual: { id: "price_solo_annual", amount: 19000, currency: "usd" },
+      monthly: { id: "price_1TJ2d5RCxnzBPkIX4SnajFok", amount: 1900, currency: "usd" },
+      annual: { id: "price_1TJ2d5RCxnzBPkIXjjiyc7lb", amount: 19000, currency: "usd" },
     },
-    paymentLink: "https://buy.stripe.com/SOLO_LINK",
+    paymentLink: "https://buy.stripe.com/fZufZjgKC4q9azrgDzdwc06",
   },
   {
     tier: "operator",
     name: "Stagent Operator",
     description: "Professionals — analytics, cloud sync, marketplace publishing",
     prices: {
-      monthly: { id: "price_operator_monthly", amount: 4900, currency: "usd" },
-      annual: { id: "price_operator_annual", amount: 49000, currency: "usd" },
+      monthly: { id: "price_1TJ2e1RCxnzBPkIXZg47cNbO", amount: 4900, currency: "usd" },
+      annual: { id: "price_1TJ2e1RCxnzBPkIXODs5fZW2", amount: 49000, currency: "usd" },
     },
-    paymentLink: "https://buy.stripe.com/OPERATOR_LINK",
+    paymentLink: "https://buy.stripe.com/aFa4gB0LE9Kt22Vevrdwc07",
   },
   {
     tier: "scale",
     name: "Stagent Scale",
     description: "Teams — unlimited everything, featured marketplace, priority support",
     prices: {
-      monthly: { id: "price_scale_monthly", amount: 9900, currency: "usd" },
-      annual: { id: "price_scale_annual", amount: 99000, currency: "usd" },
+      monthly: { id: "price_1TJ2evRCxnzBPkIXy9mBqBHB", amount: 9900, currency: "usd" },
+      annual: { id: "price_1TJ2evRCxnzBPkIXqIRaDxQp", amount: 99000, currency: "usd" },
     },
-    paymentLink: "https://buy.stripe.com/SCALE_LINK",
+    paymentLink: "https://buy.stripe.com/9B628t2TM5udazr72Zdwc08",
   },
 ];
 

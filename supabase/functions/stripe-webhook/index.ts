@@ -13,12 +13,12 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const TIER_MAP: Record<string, string> = {
-  price_solo_monthly: "solo",
-  price_solo_annual: "solo",
-  price_operator_monthly: "operator",
-  price_operator_annual: "operator",
-  price_scale_monthly: "scale",
-  price_scale_annual: "scale",
+  "price_1TJ2d5RCxnzBPkIX4SnajFok": "solo",
+  "price_1TJ2d5RCxnzBPkIXjjiyc7lb": "solo",
+  "price_1TJ2e1RCxnzBPkIXZg47cNbO": "operator",
+  "price_1TJ2e1RCxnzBPkIXODs5fZW2": "operator",
+  "price_1TJ2evRCxnzBPkIXy9mBqBHB": "scale",
+  "price_1TJ2evRCxnzBPkIXqIRaDxQp": "scale",
 };
 
 Deno.serve(async (req: Request) => {
