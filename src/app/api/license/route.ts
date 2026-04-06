@@ -9,7 +9,8 @@ import type { LicenseTier } from "@/lib/license/tier-limits";
  * GET /api/license — current license status, feature flags, and limits.
  */
 export async function GET() {
-  const status = licenseManager.getStatus();
+  // Read from DB directly — avoids stale singleton cache in Turbopack dev mode
+  const status = licenseManager.getStatusFromDb();
   const tier = status.tier;
 
   // Build feature access map
@@ -33,7 +34,7 @@ export async function GET() {
     expiresAt: status.expiresAt?.toISOString() ?? null,
     lastValidatedAt: status.lastValidatedAt?.toISOString() ?? null,
     gracePeriodExpiresAt: status.gracePeriodExpiresAt?.toISOString() ?? null,
-    isPremium: licenseManager.isPremium(),
+    isPremium: tier !== "community",
     features,
     limits,
   });

@@ -142,6 +142,32 @@ class LicenseManager {
   }
 
   /**
+   * Read full license state directly from DB — bypasses in-memory cache.
+   * Use in API routes to avoid stale Turbopack module singleton state.
+   */
+  getStatusFromDb(): CachedLicense & { tier: LicenseTier } {
+    const row = db
+      .select()
+      .from(licenseTable)
+      .where(eq(licenseTable.id, LICENSE_ROW_ID))
+      .get();
+
+    if (!row) {
+      return {
+        tier: "community",
+        status: "inactive",
+        email: null,
+        activatedAt: null,
+        expiresAt: null,
+        lastValidatedAt: null,
+        gracePeriodExpiresAt: null,
+      };
+    }
+
+    return this.rowToCache(row);
+  }
+
+  /**
    * Activate a license locally. Called after successful cloud validation.
    */
   activate(params: {

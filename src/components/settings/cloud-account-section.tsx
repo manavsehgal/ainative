@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { User, LogOut, Mail, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -47,21 +47,23 @@ export function CloudAccountSection() {
     toast.success("Signed out");
   }
 
-  // Handle auth callback URL params
-  if (typeof window !== "undefined") {
+  // Handle auth callback URL params — must be in useEffect, not during render
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get("auth") === "success" && !loading) {
+    const authParam = params.get("auth");
+    if (!authParam || loading) return;
+
+    if (authParam === "success") {
       toast.success("Signed in successfully");
-      const url = new URL(window.location.href);
-      url.searchParams.delete("auth");
-      window.history.replaceState({}, "", url.toString());
-    } else if (params.get("auth") === "error") {
+    } else if (authParam === "error") {
       toast.error("Sign-in failed — try again");
-      const url = new URL(window.location.href);
-      url.searchParams.delete("auth");
-      window.history.replaceState({}, "", url.toString());
     }
-  }
+
+    // Clean up URL
+    const url = new URL(window.location.href);
+    url.searchParams.delete("auth");
+    window.history.replaceState({}, "", url.toString());
+  }, [loading]);
 
   if (loading) {
     return (
