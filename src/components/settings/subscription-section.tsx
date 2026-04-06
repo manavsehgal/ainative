@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Crown, BarChart3, Brain, Calendar, Zap, ExternalLink } from "lucide-react";
+import { Crown, BarChart3, Brain, Calendar, Zap, ExternalLink, TrendingUp, Cloud, Store } from "lucide-react";
 import { toast } from "sonner";
 import {
   Card,
@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { TIER_LABELS, TIER_PRICING, TIERS, type LicenseTier } from "@/lib/license/tier-limits";
+import { TIER_LABELS, TIER_PRICING, type LicenseTier } from "@/lib/license/tier-limits";
 import { ActivationForm } from "./activation-form";
 
 interface LicenseStatus {
@@ -41,21 +41,43 @@ const TIER_BADGE_VARIANT: Record<LicenseTier, "secondary" | "default" | "destruc
   scale: "outline",
 };
 
+const USAGE_HINTS: Record<string, { sub: string; atLimit: string }> = {
+  agentMemories: {
+    sub: "Cumulative per profile. New writes blocked at limit — existing memories preserved.",
+    atLimit: "At capacity — archive old memories or upgrade to continue learning.",
+  },
+  contextVersions: {
+    sub: "Cumulative per profile. New proposals blocked at limit — existing versions preserved.",
+    atLimit: "At capacity — upgrade to unlock more self-improvement cycles.",
+  },
+  activeSchedules: {
+    sub: "Concurrent active schedules. Pausing a schedule frees a slot.",
+    atLimit: "All slots used — pause an existing schedule or upgrade for more.",
+  },
+  parallelWorkflows: {
+    sub: "Concurrent running workflows. Slots free when tasks complete.",
+    atLimit: "All slots busy — wait for a task to finish or upgrade.",
+  },
+};
+
 function UsageCard({
   icon: Icon,
   label,
   current,
   limit,
+  resourceKey,
 }: {
   icon: typeof Brain;
   label: string;
   current: number;
   limit: number;
+  resourceKey: string;
 }) {
   const isUnlimited = limit === -1;
   const ratio = isUnlimited ? 0 : (current / limit) * 100;
   const isWarning = !isUnlimited && ratio >= 80;
   const isBlocked = !isUnlimited && ratio >= 100;
+  const hints = USAGE_HINTS[resourceKey];
 
   return (
     <div className="surface-card-muted rounded-lg p-3 space-y-2">
@@ -64,7 +86,7 @@ function UsageCard({
           <Icon className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="text-xs font-medium">{label}</span>
         </div>
-        <span className="text-xs text-muted-foreground">
+        <span className={`text-xs ${isBlocked ? "text-destructive font-medium" : "text-muted-foreground"}`}>
           {current} / {isUnlimited ? "∞" : limit}
         </span>
       </div>
@@ -74,7 +96,21 @@ function UsageCard({
           className={`h-1.5 ${isBlocked ? "[&>div]:bg-destructive" : isWarning ? "[&>div]:bg-amber-500" : ""}`}
         />
       )}
+      {hints && (
+        <p className="text-[10px] leading-relaxed text-muted-foreground">
+          {isBlocked ? hints.atLimit : hints.sub}
+        </p>
+      )}
     </div>
+  );
+}
+
+function TierBenefit({ icon: Icon, text }: { icon: typeof Brain; text: string }) {
+  return (
+    <li className="flex items-center gap-2">
+      <Icon className="h-3 w-3 text-primary shrink-0" />
+      <span className="text-[11px] text-muted-foreground">{text}</span>
+    </li>
   );
 }
 
@@ -197,44 +233,102 @@ export function SubscriptionSection() {
         {/* Usage Summary */}
         {usage && (
           <div className="grid grid-cols-2 gap-3">
-            <UsageCard icon={Brain} label="Agent Memories" current={usage.agentMemories.current} limit={usage.agentMemories.limit} />
-            <UsageCard icon={BarChart3} label="Context Versions" current={usage.contextVersions.current} limit={usage.contextVersions.limit} />
-            <UsageCard icon={Calendar} label="Active Schedules" current={usage.activeSchedules.current} limit={usage.activeSchedules.limit} />
-            <UsageCard icon={Zap} label="Parallel Workflows" current={usage.parallelWorkflows.current} limit={usage.parallelWorkflows.limit} />
+            <UsageCard icon={Brain} label="Agent Memories" current={usage.agentMemories.current} limit={usage.agentMemories.limit} resourceKey="agentMemories" />
+            <UsageCard icon={BarChart3} label="Context Versions" current={usage.contextVersions.current} limit={usage.contextVersions.limit} resourceKey="contextVersions" />
+            <UsageCard icon={Calendar} label="Active Schedules" current={usage.activeSchedules.current} limit={usage.activeSchedules.limit} resourceKey="activeSchedules" />
+            <UsageCard icon={Zap} label="Parallel Workflows" current={usage.parallelWorkflows.current} limit={usage.parallelWorkflows.limit} resourceKey="parallelWorkflows" />
           </div>
         )}
 
         {/* Tier Comparison */}
         {!isPremium && (
           <div className="space-y-3">
-            <h4 className="text-sm font-medium">Upgrade</h4>
+            <h4 className="text-sm font-medium">Upgrade your plan</h4>
             <div className="grid grid-cols-3 gap-3">
-              {TIERS.filter((t) => t !== "community").map((t) => (
-                <div
-                  key={t}
-                  className={`surface-card-muted rounded-lg p-3 space-y-2 ${t === "operator" ? "ring-1 ring-primary/30" : ""}`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">{TIER_LABELS[t]}</span>
-                    {t === "operator" && (
-                      <Badge variant="secondary" className="text-[10px]">Popular</Badge>
-                    )}
-                  </div>
-                  <p className="text-lg font-bold">
-                    ${TIER_PRICING[t].monthly}
+              {/* Solo */}
+              <div className="surface-card-muted rounded-lg p-4 space-y-3">
+                <div>
+                  <span className="text-sm font-semibold">Solo</span>
+                  <p className="text-lg font-bold mt-1">
+                    ${TIER_PRICING.solo.monthly}
                     <span className="text-xs font-normal text-muted-foreground">/mo</span>
                   </p>
-                  <Button
-                    size="sm"
-                    variant={t === "operator" ? "default" : "outline"}
-                    className="w-full"
-                    disabled={checkoutLoading}
-                    onClick={() => handleUpgrade(t)}
-                  >
-                    {checkoutLoading ? "Loading..." : "Upgrade"}
-                  </Button>
                 </div>
-              ))}
+                <p className="text-[11px] leading-relaxed text-muted-foreground">
+                  For power users who need room to grow. 4x the memory, longer history, and marketplace access.
+                </p>
+                <ul className="space-y-1">
+                  <TierBenefit icon={Brain} text="200 memories per profile" />
+                  <TierBenefit icon={Calendar} text="20 active schedules" />
+                  <TierBenefit icon={Store} text="Import marketplace blueprints" />
+                </ul>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full"
+                  disabled={checkoutLoading}
+                  onClick={() => handleUpgrade("solo")}
+                >
+                  {checkoutLoading ? "Loading..." : "Get Solo"}
+                </Button>
+              </div>
+
+              {/* Operator */}
+              <div className="surface-card-muted rounded-lg p-4 space-y-3 ring-1 ring-primary/30">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold">Operator</span>
+                  <Badge variant="secondary" className="text-[10px]">Popular</Badge>
+                </div>
+                <p className="text-lg font-bold">
+                  ${TIER_PRICING.operator.monthly}
+                  <span className="text-xs font-normal text-muted-foreground">/mo</span>
+                </p>
+                <p className="text-[11px] leading-relaxed text-muted-foreground">
+                  For professionals who run AI at scale. Full analytics, cloud sync, and marketplace publishing.
+                </p>
+                <ul className="space-y-1">
+                  <TierBenefit icon={TrendingUp} text="ROI analytics dashboard" />
+                  <TierBenefit icon={Cloud} text="Encrypted cloud sync" />
+                  <TierBenefit icon={Store} text="Publish to marketplace" />
+                  <TierBenefit icon={Brain} text="500 memories per profile" />
+                </ul>
+                <Button
+                  size="sm"
+                  className="w-full"
+                  disabled={checkoutLoading}
+                  onClick={() => handleUpgrade("operator")}
+                >
+                  {checkoutLoading ? "Loading..." : "Get Operator"}
+                </Button>
+              </div>
+
+              {/* Scale */}
+              <div className="surface-card-muted rounded-lg p-4 space-y-3">
+                <div>
+                  <span className="text-sm font-semibold">Scale</span>
+                  <p className="text-lg font-bold mt-1">
+                    ${TIER_PRICING.scale.monthly}
+                    <span className="text-xs font-normal text-muted-foreground">/mo</span>
+                  </p>
+                </div>
+                <p className="text-[11px] leading-relaxed text-muted-foreground">
+                  No limits, no compromises. Unlimited everything with featured marketplace placement.
+                </p>
+                <ul className="space-y-1">
+                  <TierBenefit icon={Zap} text="Unlimited memories & schedules" />
+                  <TierBenefit icon={Store} text="Featured marketplace listings" />
+                  <TierBenefit icon={Calendar} text="Unlimited history retention" />
+                </ul>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full"
+                  disabled={checkoutLoading}
+                  onClick={() => handleUpgrade("scale")}
+                >
+                  {checkoutLoading ? "Loading..." : "Get Scale"}
+                </Button>
+              </div>
             </div>
           </div>
         )}
