@@ -246,26 +246,28 @@ export function SubscriptionSection() {
             <h4 className="text-sm font-medium">Upgrade your plan</h4>
             <div className="grid grid-cols-3 gap-3">
               {/* Solo */}
-              <div className="surface-card-muted rounded-lg p-4 space-y-3">
-                <div>
-                  <span className="text-sm font-semibold">Solo</span>
-                  <p className="text-lg font-bold mt-1">
-                    ${TIER_PRICING.solo.monthly}
-                    <span className="text-xs font-normal text-muted-foreground">/mo</span>
+              <div className="surface-card-muted rounded-lg p-4 flex flex-col">
+                <div className="space-y-3 flex-1">
+                  <div>
+                    <span className="text-sm font-semibold">Solo</span>
+                    <p className="text-lg font-bold mt-1">
+                      ${TIER_PRICING.solo.monthly}
+                      <span className="text-xs font-normal text-muted-foreground">/mo</span>
+                    </p>
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-muted-foreground">
+                    For power users who need room to grow. 4x the memory, longer history, and marketplace access.
                   </p>
+                  <ul className="space-y-1">
+                    <TierBenefit icon={Brain} text="200 memories per profile" />
+                    <TierBenefit icon={Calendar} text="20 active schedules" />
+                    <TierBenefit icon={Store} text="Import marketplace blueprints" />
+                  </ul>
                 </div>
-                <p className="text-[11px] leading-relaxed text-muted-foreground">
-                  For power users who need room to grow. 4x the memory, longer history, and marketplace access.
-                </p>
-                <ul className="space-y-1">
-                  <TierBenefit icon={Brain} text="200 memories per profile" />
-                  <TierBenefit icon={Calendar} text="20 active schedules" />
-                  <TierBenefit icon={Store} text="Import marketplace blueprints" />
-                </ul>
                 <Button
                   size="sm"
                   variant="outline"
-                  className="w-full"
+                  className="w-full mt-4"
                   disabled={checkoutLoading}
                   onClick={() => handleUpgrade("solo")}
                 >
@@ -274,27 +276,29 @@ export function SubscriptionSection() {
               </div>
 
               {/* Operator */}
-              <div className="surface-card-muted rounded-lg p-4 space-y-3 ring-1 ring-primary/30">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold">Operator</span>
-                  <Badge variant="secondary" className="text-[10px]">Popular</Badge>
+              <div className="surface-card-muted rounded-lg p-4 flex flex-col ring-1 ring-primary/30">
+                <div className="space-y-3 flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold">Operator</span>
+                    <Badge variant="secondary" className="text-[10px]">Popular</Badge>
+                  </div>
+                  <p className="text-lg font-bold">
+                    ${TIER_PRICING.operator.monthly}
+                    <span className="text-xs font-normal text-muted-foreground">/mo</span>
+                  </p>
+                  <p className="text-[11px] leading-relaxed text-muted-foreground">
+                    For professionals who run AI at scale. Full analytics, cloud sync, and marketplace publishing.
+                  </p>
+                  <ul className="space-y-1">
+                    <TierBenefit icon={TrendingUp} text="ROI analytics dashboard" />
+                    <TierBenefit icon={Cloud} text="Encrypted cloud sync" />
+                    <TierBenefit icon={Store} text="Publish to marketplace" />
+                    <TierBenefit icon={Brain} text="500 memories per profile" />
+                  </ul>
                 </div>
-                <p className="text-lg font-bold">
-                  ${TIER_PRICING.operator.monthly}
-                  <span className="text-xs font-normal text-muted-foreground">/mo</span>
-                </p>
-                <p className="text-[11px] leading-relaxed text-muted-foreground">
-                  For professionals who run AI at scale. Full analytics, cloud sync, and marketplace publishing.
-                </p>
-                <ul className="space-y-1">
-                  <TierBenefit icon={TrendingUp} text="ROI analytics dashboard" />
-                  <TierBenefit icon={Cloud} text="Encrypted cloud sync" />
-                  <TierBenefit icon={Store} text="Publish to marketplace" />
-                  <TierBenefit icon={Brain} text="500 memories per profile" />
-                </ul>
                 <Button
                   size="sm"
-                  className="w-full"
+                  className="w-full mt-4"
                   disabled={checkoutLoading}
                   onClick={() => handleUpgrade("operator")}
                 >
@@ -303,26 +307,28 @@ export function SubscriptionSection() {
               </div>
 
               {/* Scale */}
-              <div className="surface-card-muted rounded-lg p-4 space-y-3">
-                <div>
-                  <span className="text-sm font-semibold">Scale</span>
-                  <p className="text-lg font-bold mt-1">
-                    ${TIER_PRICING.scale.monthly}
-                    <span className="text-xs font-normal text-muted-foreground">/mo</span>
+              <div className="surface-card-muted rounded-lg p-4 flex flex-col">
+                <div className="space-y-3 flex-1">
+                  <div>
+                    <span className="text-sm font-semibold">Scale</span>
+                    <p className="text-lg font-bold mt-1">
+                      ${TIER_PRICING.scale.monthly}
+                      <span className="text-xs font-normal text-muted-foreground">/mo</span>
+                    </p>
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-muted-foreground">
+                    No limits, no compromises. Unlimited everything with featured marketplace placement.
                   </p>
+                  <ul className="space-y-1">
+                    <TierBenefit icon={Zap} text="Unlimited memories & schedules" />
+                    <TierBenefit icon={Store} text="Featured marketplace listings" />
+                    <TierBenefit icon={Calendar} text="Unlimited history retention" />
+                  </ul>
                 </div>
-                <p className="text-[11px] leading-relaxed text-muted-foreground">
-                  No limits, no compromises. Unlimited everything with featured marketplace placement.
-                </p>
-                <ul className="space-y-1">
-                  <TierBenefit icon={Zap} text="Unlimited memories & schedules" />
-                  <TierBenefit icon={Store} text="Featured marketplace listings" />
-                  <TierBenefit icon={Calendar} text="Unlimited history retention" />
-                </ul>
                 <Button
                   size="sm"
                   variant="outline"
-                  className="w-full"
+                  className="w-full mt-4"
                   disabled={checkoutLoading}
                   onClick={() => handleUpgrade("scale")}
                 >
