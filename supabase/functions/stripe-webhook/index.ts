@@ -88,9 +88,24 @@ Deno.serve(async (req: Request) => {
       const customerId = session.customer;
       const subscriptionId = session.subscription;
 
-      // Look up the price to determine tier
-      // TODO: Fetch subscription items to get price ID
-      const tier = "solo"; // Default — will be resolved from price ID
+      // Resolve tier from subscription's price ID
+      let tier = "solo"; // Fallback
+      if (subscriptionId) {
+        const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+        if (stripeKey) {
+          const subRes = await fetch(
+            `https://api.stripe.com/v1/subscriptions/${subscriptionId}`,
+            { headers: { Authorization: `Bearer ${stripeKey}` } },
+          );
+          if (subRes.ok) {
+            const sub = await subRes.json();
+            const priceId = sub.items?.data?.[0]?.price?.id;
+            if (priceId && TIER_MAP[priceId]) {
+              tier = TIER_MAP[priceId];
+            }
+          }
+        }
+      }
 
       const { error } = await supabase
         .from("licenses")

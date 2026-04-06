@@ -15,7 +15,7 @@ export interface StripeProduct {
   name: string;
   description: string;
   prices: Record<BillingInterval, StripePrice>;
-  paymentLink: string; // Static URL for marketing site
+  paymentLinks: Record<BillingInterval, string>; // Static Stripe Payment Links for marketing site
 }
 
 export interface StripePrice {
@@ -34,7 +34,10 @@ export const STRIPE_PRODUCTS: StripeProduct[] = [
       monthly: { id: "price_1TJ2d5RCxnzBPkIX4SnajFok", amount: 1900, currency: "usd" },
       annual: { id: "price_1TJ2d5RCxnzBPkIXjjiyc7lb", amount: 19000, currency: "usd" },
     },
-    paymentLink: "https://buy.stripe.com/fZufZjgKC4q9azrgDzdwc06",
+    paymentLinks: {
+      monthly: "https://buy.stripe.com/fZufZjgKC4q9azrgDzdwc06",
+      annual: "https://buy.stripe.com/bJe00l1PI7Cl7nf1IFdwc0b",
+    },
   },
   {
     tier: "operator",
@@ -44,7 +47,10 @@ export const STRIPE_PRODUCTS: StripeProduct[] = [
       monthly: { id: "price_1TJ2e1RCxnzBPkIXZg47cNbO", amount: 4900, currency: "usd" },
       annual: { id: "price_1TJ2e1RCxnzBPkIXODs5fZW2", amount: 49000, currency: "usd" },
     },
-    paymentLink: "https://buy.stripe.com/aFa4gB0LE9Kt22Vevrdwc07",
+    paymentLinks: {
+      monthly: "https://buy.stripe.com/aFa4gB0LE9Kt22Vevrdwc07",
+      annual: "https://buy.stripe.com/bJe6oJdyq2i1bDv1IFdwc0a",
+    },
   },
   {
     tier: "scale",
@@ -54,7 +60,10 @@ export const STRIPE_PRODUCTS: StripeProduct[] = [
       monthly: { id: "price_1TJ2evRCxnzBPkIXy9mBqBHB", amount: 9900, currency: "usd" },
       annual: { id: "price_1TJ2evRCxnzBPkIXqIRaDxQp", amount: 99000, currency: "usd" },
     },
-    paymentLink: "https://buy.stripe.com/9B628t2TM5udazr72Zdwc08",
+    paymentLinks: {
+      monthly: "https://buy.stripe.com/9B628t2TM5udazr72Zdwc08",
+      annual: "https://buy.stripe.com/dRmfZjbqicWF5f7873dwc09",
+    },
   },
 ];
 

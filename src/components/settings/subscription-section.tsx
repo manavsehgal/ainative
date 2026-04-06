@@ -119,6 +119,7 @@ export function SubscriptionSection() {
   const [usage, setUsage] = useState<UsageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annual">("monthly");
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -179,7 +180,7 @@ export function SubscriptionSection() {
       const res = await fetch("/api/license/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tier: targetTier, billingPeriod: "monthly" }),
+        body: JSON.stringify({ tier: targetTier, billingPeriod }),
       });
       const data = await res.json();
       if (data.url) {
@@ -221,9 +222,9 @@ export function SubscriptionSection() {
               </span>
             )}
           </div>
-          {isPremium && (
+          {isPremium && license?.email && (
             <Button variant="outline" size="sm" asChild>
-              <a href="/api/license/portal" target="_blank" rel="noopener">
+              <a href={`/api/license/portal?email=${encodeURIComponent(license.email)}`} target="_blank" rel="noopener">
                 Manage Billing <ExternalLink className="ml-1 h-3 w-3" />
               </a>
             </Button>
@@ -243,7 +244,25 @@ export function SubscriptionSection() {
         {/* Tier Comparison */}
         {!isPremium && (
           <div className="space-y-3">
-            <h4 className="text-sm font-medium">Upgrade your plan</h4>
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-medium">Upgrade your plan</h4>
+              <div className="flex items-center gap-1 rounded-lg border p-0.5">
+                <button
+                  type="button"
+                  className={`px-3 py-1 text-xs rounded-md transition-colors ${billingPeriod === "monthly" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  onClick={() => setBillingPeriod("monthly")}
+                >
+                  Monthly
+                </button>
+                <button
+                  type="button"
+                  className={`px-3 py-1 text-xs rounded-md transition-colors ${billingPeriod === "annual" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  onClick={() => setBillingPeriod("annual")}
+                >
+                  Annual
+                </button>
+              </div>
+            </div>
             <div className="grid grid-cols-3 gap-3">
               {/* Solo */}
               <div className="surface-card-muted rounded-lg p-4 flex flex-col">
@@ -251,9 +270,16 @@ export function SubscriptionSection() {
                   <div>
                     <span className="text-sm font-semibold">Solo</span>
                     <p className="text-lg font-bold mt-1">
-                      ${TIER_PRICING.solo.monthly}
-                      <span className="text-xs font-normal text-muted-foreground">/mo</span>
+                      ${TIER_PRICING.solo[billingPeriod]}
+                      <span className="text-xs font-normal text-muted-foreground">
+                        {billingPeriod === "monthly" ? "/mo" : "/yr"}
+                      </span>
                     </p>
+                    {billingPeriod === "annual" && (
+                      <p className="text-[10px] text-primary font-medium mt-0.5">
+                        Save ${TIER_PRICING.solo.monthly * 12 - TIER_PRICING.solo.annual}/yr
+                      </p>
+                    )}
                   </div>
                   <p className="text-[11px] leading-relaxed text-muted-foreground">
                     For power users who need room to grow. 4x the memory, longer history, and marketplace access.
@@ -283,9 +309,16 @@ export function SubscriptionSection() {
                     <Badge variant="secondary" className="text-[10px]">Popular</Badge>
                   </div>
                   <p className="text-lg font-bold">
-                    ${TIER_PRICING.operator.monthly}
-                    <span className="text-xs font-normal text-muted-foreground">/mo</span>
+                    ${TIER_PRICING.operator[billingPeriod]}
+                    <span className="text-xs font-normal text-muted-foreground">
+                      {billingPeriod === "monthly" ? "/mo" : "/yr"}
+                    </span>
                   </p>
+                  {billingPeriod === "annual" && (
+                    <p className="text-[10px] text-primary font-medium">
+                      Save ${TIER_PRICING.operator.monthly * 12 - TIER_PRICING.operator.annual}/yr
+                    </p>
+                  )}
                   <p className="text-[11px] leading-relaxed text-muted-foreground">
                     For professionals who run AI at scale. Full analytics, cloud sync, and marketplace publishing.
                   </p>
@@ -312,9 +345,16 @@ export function SubscriptionSection() {
                   <div>
                     <span className="text-sm font-semibold">Scale</span>
                     <p className="text-lg font-bold mt-1">
-                      ${TIER_PRICING.scale.monthly}
-                      <span className="text-xs font-normal text-muted-foreground">/mo</span>
+                      ${TIER_PRICING.scale[billingPeriod]}
+                      <span className="text-xs font-normal text-muted-foreground">
+                        {billingPeriod === "monthly" ? "/mo" : "/yr"}
+                      </span>
                     </p>
+                    {billingPeriod === "annual" && (
+                      <p className="text-[10px] text-primary font-medium mt-0.5">
+                        Save ${TIER_PRICING.scale.monthly * 12 - TIER_PRICING.scale.annual}/yr
+                      </p>
+                    )}
                   </div>
                   <p className="text-[11px] leading-relaxed text-muted-foreground">
                     No limits, no compromises. Unlimited everything with featured marketplace placement.
