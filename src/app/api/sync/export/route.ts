@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { licenseManager } from "@/lib/license/manager";
 import { exportAndUpload } from "@/lib/sync/cloud-sync";
 import { getSettingSync } from "@/lib/settings/helpers";
@@ -7,9 +7,10 @@ import { SETTINGS_KEYS } from "@/lib/constants/settings";
 /**
  * POST /api/sync/export
  * Export and encrypt the database, upload to Supabase Storage.
- * Requires Operator+ tier.
+ * Requires Operator+ tier and an authenticated Supabase session.
+ * Body: { accessToken: string } — the user's Supabase JWT
  */
-export async function POST() {
+export async function POST(req: NextRequest) {
   if (!licenseManager.isFeatureAllowed("cloud-sync")) {
     return NextResponse.json(
       { error: "Cloud sync requires Operator tier or above" },
@@ -20,26 +21,28 @@ export async function POST() {
   const email = licenseManager.getStatus().email;
   if (!email) {
     return NextResponse.json(
-      { error: "No license email — activate your license first" },
+      { error: "Sign in with your email first (Settings → Cloud Account)" },
       { status: 400 }
     );
   }
 
+  // Get the user's access token for authenticated Storage uploads
+  const body = await req.json().catch(() => ({}));
+  const accessToken = body.accessToken as string | undefined;
+
   let deviceId = getSettingSync(SETTINGS_KEYS.DEVICE_ID);
   if (!deviceId) {
     deviceId = crypto.randomUUID();
-    // Store device ID for future syncs
     const { setSetting } = await import("@/lib/settings/helpers");
     await setSetting(SETTINGS_KEYS.DEVICE_ID, deviceId);
   }
 
-  const result = await exportAndUpload(email, deviceId);
+  const result = await exportAndUpload(email, deviceId, accessToken);
 
   if (!result.success) {
     return NextResponse.json({ error: result.error }, { status: 500 });
   }
 
-  // Update last sync timestamp
   const { setSetting } = await import("@/lib/settings/helpers");
   await setSetting(SETTINGS_KEYS.LAST_SYNC_AT, new Date().toISOString());
 

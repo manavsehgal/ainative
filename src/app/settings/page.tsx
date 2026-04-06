@@ -1,4 +1,5 @@
 import { SubscriptionSection } from "@/components/settings/subscription-section";
+import { CloudAccountSection } from "@/components/settings/cloud-account-section";
 import { CloudSyncSection } from "@/components/settings/cloud-sync-section";
 import { TelemetrySection } from "@/components/settings/telemetry-section";
 import { ProvidersAndRuntimesSection } from "@/components/settings/providers-runtimes-section";
@@ -22,6 +23,7 @@ export default function SettingsPage() {
     <PageShell title="Settings" description="Manage your Stagent configuration">
       <div className="space-y-6">
         <SubscriptionSection />
+        <CloudAccountSection />
         <CloudSyncSection />
         <ProvidersAndRuntimesSection />
         <OllamaSection />

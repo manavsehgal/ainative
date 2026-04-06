@@ -78,9 +78,24 @@ function decrypt(envelope: Buffer, userId: string): Buffer {
 /**
  * Export the SQLite database, encrypt it, and upload to Supabase Storage.
  */
-export async function exportAndUpload(userId: string, deviceId: string): Promise<SyncResult> {
-  const supabase = getSupabaseClient();
+export async function exportAndUpload(
+  userId: string,
+  deviceId: string,
+  accessToken?: string
+): Promise<SyncResult> {
+  let supabase = getSupabaseClient();
   if (!supabase) return { success: false, error: "Cloud not configured" };
+
+  // If an access token is provided, create an authenticated client for Storage RLS
+  if (accessToken) {
+    const { createClient } = await import("@supabase/supabase-js");
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://yznantjbmacbllhcyzwc.supabase.co";
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl6bmFudGpibWFjYmxsaGN5endjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1MDg1ODMsImV4cCI6MjA4ODA4NDU4M30.i-P7MXpR1_emBjhUkzbFeSX7fgjgPDv90_wkqF7sW3Y";
+    supabase = createClient(url, anonKey, {
+      global: { headers: { Authorization: `Bearer ${accessToken}` } },
+      auth: { persistSession: false },
+    });
+  }
 
   try {
     // 1. Create a consistent backup using better-sqlite3 .backup()

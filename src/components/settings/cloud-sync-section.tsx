@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Cloud, Upload, Download } from "lucide-react";
+import { getSupabaseBrowserClient } from "@/lib/cloud/supabase-browser";
 import { toast } from "sonner";
 import {
   Card,
@@ -36,7 +37,16 @@ export function CloudSyncSection() {
   async function handleExport() {
     setExporting(true);
     try {
-      const res = await fetch("/api/sync/export", { method: "POST" });
+      // Get the user's access token for authenticated Storage uploads
+      const supabase = getSupabaseBrowserClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+
+      const res = await fetch("/api/sync/export", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accessToken }),
+      });
       const data = await res.json();
       if (res.ok) {
         toast.success(`Backup uploaded (${formatBytes(data.sizeBytes)})`);
