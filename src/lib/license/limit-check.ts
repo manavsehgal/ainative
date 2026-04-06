@@ -9,6 +9,8 @@
 import { licenseManager } from "./manager";
 import { TIER_LIMITS, type LimitResource, TIER_LABELS } from "./tier-limits";
 import { createTierLimitNotification } from "./notifications";
+import { sendMemoryWarning } from "@/lib/billing/email";
+import { trackConversionEvent } from "@/lib/telemetry/conversion-events";
 
 export interface LimitCheckResult {
   allowed: boolean;
@@ -74,7 +76,20 @@ export async function checkLimitAndNotify(
   const result = checkLimit(resource, currentCount);
   if (!result.allowed) {
     await createTierLimitNotification(resource, currentCount, result.limit, taskId);
+    trackConversionEvent("limit_hit", resource, { current: currentCount, limit: result.limit });
   }
+
+  // Send email warning when approaching memory limit (75%+)
+  if (resource === "agentMemories" && result.allowed && result.limit > 0) {
+    const ratio = currentCount / result.limit;
+    if (ratio >= 0.75) {
+      const email = licenseManager.getStatus().email;
+      if (email) {
+        sendMemoryWarning(email, "agent", currentCount, result.limit).catch(() => {});
+      }
+    }
+  }
+
   return result;
 }
 

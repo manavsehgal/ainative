@@ -12,6 +12,8 @@ import { QuickActions } from "@/components/dashboard/quick-actions";
 import { RecentProjects } from "@/components/dashboard/recent-projects";
 import type { RecentProject } from "@/components/dashboard/recent-projects";
 import { WelcomeLanding } from "@/components/dashboard/welcome-landing";
+import { EmailCaptureCard } from "@/components/onboarding/email-capture-card";
+import { ActivationChecklist } from "@/components/onboarding/activation-checklist";
 import {
   getCompletionsByDay,
   getTaskCreationsByDay,
@@ -104,7 +106,8 @@ export default async function HomePage() {
   if (isFreshInstance) {
     return (
       <div className="bg-background min-h-screen p-4 sm:p-6">
-        <div className="surface-page-shell min-h-[calc(100dvh-2rem)] rounded-xl p-5 sm:p-6 lg:p-7">
+        <div className="surface-page-shell min-h-[calc(100dvh-2rem)] rounded-xl p-5 sm:p-6 lg:p-7 space-y-6">
+          <EmailCaptureCard />
           <WelcomeLanding />
         </div>
       </div>
@@ -231,8 +234,9 @@ export default async function HomePage() {
           <div className="lg:col-span-3">
             <RecentProjects projects={recentProjectData} />
           </div>
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-6">
             <QuickActions />
+            <ActivationChecklist />
           </div>
         </div>
       </div>

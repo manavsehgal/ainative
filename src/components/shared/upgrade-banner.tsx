@@ -1,11 +1,13 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { AlertTriangle, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { TIER_LABELS, type LicenseTier } from "@/lib/license/tier-limits";
 import type { LimitResource } from "@/lib/license/tier-limits";
+import { trackConversionEvent } from "@/lib/telemetry/conversion-events";
 
 const BANNER_TITLES: Record<LimitResource, string> = {
   agentMemories: "Memory limit approaching",
@@ -60,6 +62,11 @@ export function UpgradeBanner({
   const Icon = variant === "blocked" ? Lock : AlertTriangle;
   const tierLabel = TIER_LABELS[requiredTier as LicenseTier] ?? requiredTier;
 
+  // Track banner impression on mount
+  useEffect(() => {
+    trackConversionEvent("banner_impression", resource);
+  }, [resource]);
+
   return (
     <div
       role="alert"
@@ -83,7 +90,7 @@ export function UpgradeBanner({
           {getBannerMessage(resource, current, max, requiredTier)}
         </p>
         <div className="flex items-center gap-2 pt-2">
-          <Button size="sm" asChild>
+          <Button size="sm" asChild onClick={() => trackConversionEvent("banner_click", resource)}>
             <Link href={`/settings?highlight=${requiredTier}`}>
               Upgrade to {tierLabel}
             </Link>

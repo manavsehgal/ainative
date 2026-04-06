@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { licenseManager } from "@/lib/license/manager";
 import { validateLicenseWithCloud } from "@/lib/license/cloud-validation";
+import { sendUpgradeConfirmation } from "@/lib/billing/email";
 
 const DEFAULT_SUPABASE_URL = "https://yznantjbmacbllhcyzwc.supabase.co";
 const DEFAULT_SUPABASE_ANON_KEY =
@@ -59,6 +60,8 @@ export async function GET(req: NextRequest) {
       email,
       expiresAt: validation.expiresAt,
     });
+    // Send upgrade confirmation email (fire-and-forget)
+    sendUpgradeConfirmation(email, validation.tier).catch(() => {});
   } else {
     // No paid subscription — still link the email for future activation
     // This sets the email so cloud sync and marketplace work when they upgrade
