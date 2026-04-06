@@ -1,12 +1,17 @@
 /**
  * Cloud license validation via Supabase Edge Function.
  *
- * Stub implementation — returns "not configured" until supabase-cloud-backend
- * is set up. The LicenseManager gracefully handles validation failures by
- * entering the 7-day grace period.
+ * Calls the validate-license Edge Function to check if the user's
+ * email has an active subscription. Uses the same Supabase client
+ * defaults as supabase-client.ts (production backend by default).
  */
 
+import { isCloudConfigured } from "@/lib/cloud/supabase-client";
 import type { LicenseTier } from "./tier-limits";
+
+const DEFAULT_SUPABASE_URL = "https://yznantjbmacbllhcyzwc.supabase.co";
+const DEFAULT_SUPABASE_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl6bmFudGpibWFjYmxsaGN5endjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1MDg1ODMsImV4cCI6MjA4ODA4NDU4M30.i-P7MXpR1_emBjhUkzbFeSX7fgjgPDv90_wkqF7sW3Y";
 
 export interface CloudValidationResult {
   valid: boolean;
@@ -17,23 +22,24 @@ export interface CloudValidationResult {
 
 /**
  * Validate a license against the cloud backend.
- * Returns { valid: false } if Supabase is not configured.
+ * Returns { valid: false } if cloud is disabled or email is empty.
  */
 export async function validateLicenseWithCloud(
   email: string
 ): Promise<CloudValidationResult> {
-  // Check if Supabase is configured
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!supabaseUrl || !email) {
-    return { valid: false, tier: "community", error: "Cloud backend not configured" };
+  if (!isCloudConfigured() || !email) {
+    return { valid: false, tier: "community", error: "Cloud disabled or no email" };
   }
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
 
   try {
     const response = await fetch(`${supabaseUrl}/functions/v1/validate-license`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""}`,
+        Authorization: `Bearer ${anonKey}`,
       },
       body: JSON.stringify({ email }),
     });
