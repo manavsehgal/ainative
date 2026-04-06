@@ -98,6 +98,20 @@ class LicenseManager {
     return this.cache?.tier ?? "community";
   }
 
+  /**
+   * Read tier directly from DB — bypasses in-memory cache.
+   * Use this in Server Components where the singleton cache may be stale
+   * due to Turbopack module instance separation.
+   */
+  getTierFromDb(): LicenseTier {
+    const row = db
+      .select({ tier: licenseTable.tier })
+      .from(licenseTable)
+      .where(eq(licenseTable.id, LICENSE_ROW_ID))
+      .get();
+    return (row?.tier as LicenseTier) ?? "community";
+  }
+
   /** True if tier is solo or above */
   isPremium(): boolean {
     const tier = this.getTier();

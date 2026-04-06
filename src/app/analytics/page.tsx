@@ -14,7 +14,7 @@ import {
 export const dynamic = "force-dynamic";
 
 function AnalyticsContent() {
-  const tier = licenseManager.getTier();
+  const tier = licenseManager.getTierFromDb();
   const isAllowed = tier !== "community";
 
   const outcomes = getOutcomeCounts(30);
