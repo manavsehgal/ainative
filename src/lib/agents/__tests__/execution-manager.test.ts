@@ -1,9 +1,22 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
+
+vi.mock("@/lib/license/manager", () => ({
+  licenseManager: {
+    getLimit: vi.fn().mockReturnValue(Infinity),
+    getTier: vi.fn().mockReturnValue("scale"),
+  },
+}));
+
+vi.mock("@/lib/license/notifications", () => ({
+  createTierLimitNotification: vi.fn().mockResolvedValue(undefined),
+}));
+
 import {
   getExecution,
   setExecution,
   removeExecution,
   getAllExecutions,
+  ParallelLimitError,
 } from "@/lib/agents/execution-manager";
 
 function makeExecution(taskId: string) {
@@ -59,5 +72,19 @@ describe("execution-manager", () => {
 
   it("removing non-existent task does not throw", () => {
     expect(() => removeExecution("nonexistent")).not.toThrow();
+  });
+
+  it("throws ParallelLimitError when limit is reached", async () => {
+    const { licenseManager } = await import("@/lib/license/manager");
+    (licenseManager.getLimit as ReturnType<typeof vi.fn>).mockReturnValue(2);
+    (licenseManager.getTier as ReturnType<typeof vi.fn>).mockReturnValue("community");
+
+    setExecution("task-1", makeExecution("task-1"));
+    setExecution("task-2", makeExecution("task-2"));
+
+    expect(() => setExecution("task-3", makeExecution("task-3"))).toThrow(ParallelLimitError);
+
+    // Restore unlimited for other tests
+    (licenseManager.getLimit as ReturnType<typeof vi.fn>).mockReturnValue(Infinity);
   });
 });

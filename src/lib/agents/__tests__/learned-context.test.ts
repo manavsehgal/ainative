@@ -67,6 +67,7 @@ vi.mock("drizzle-orm", () => ({
   eq: vi.fn((_col: string, val: unknown) => ({ col: _col, val })),
   and: vi.fn((...conditions: unknown[]) => conditions),
   desc: vi.fn((col: string) => ({ desc: col })),
+  sql: Object.assign((strings: TemplateStringsArray, ..._values: unknown[]) => strings.join(""), { raw: (s: string) => s }),
 }));
 
 // Mock runMetaCompletion for summarization
@@ -85,6 +86,18 @@ vi.mock("@/lib/constants/settings", () => ({
   SETTINGS_KEYS: {
     LEARNING_CONTEXT_CHAR_LIMIT: "learning.contextCharLimit",
   },
+}));
+
+vi.mock("@/lib/license/limit-check", () => ({
+  checkLimit: vi.fn().mockReturnValue({ allowed: true, current: 0, limit: 10, tier: "community", requiredTier: "community" }),
+}));
+
+vi.mock("@/lib/license/limit-queries", () => ({
+  getContextVersionCount: vi.fn().mockReturnValue(0),
+}));
+
+vi.mock("@/lib/license/notifications", () => ({
+  createTierLimitNotification: vi.fn().mockResolvedValue(undefined),
 }));
 
 // ─── Import under test ────────────────────────────────────────────────

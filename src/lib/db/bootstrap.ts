@@ -45,6 +45,7 @@ const STAGENT_TABLES = [
   "user_table_triggers",
   "user_table_row_history",
   "snapshots",
+  "license",
 ] as const;
 
 export function bootstrapStagentDatabase(sqlite: Database.Database): void {
@@ -840,6 +841,21 @@ export function bootstrapStagentDatabase(sqlite: Database.Database): void {
 
     CREATE INDEX IF NOT EXISTS idx_snapshots_type ON snapshots(type);
     CREATE INDEX IF NOT EXISTS idx_snapshots_created_at ON snapshots(created_at);
+
+    CREATE TABLE IF NOT EXISTS license (
+      id TEXT PRIMARY KEY NOT NULL,
+      supabase_user_id TEXT,
+      tier TEXT DEFAULT 'community' NOT NULL,
+      status TEXT DEFAULT 'inactive' NOT NULL,
+      email TEXT,
+      activated_at INTEGER,
+      expires_at INTEGER,
+      last_validated_at INTEGER,
+      grace_period_expires_at INTEGER,
+      encrypted_token TEXT,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
   `);
 }
 

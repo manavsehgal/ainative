@@ -25,6 +25,7 @@ import {
   channelBindings,
   channelConfigs,
   agentMessages,
+  license,
   workflowDocumentInputs,
   scheduleDocumentInputs,
   projectDocumentDefaults,
@@ -80,6 +81,9 @@ export function clearAllData() {
   // Agent messages reference tasks — delete before tasks
   const agentMessagesDeleted = db.delete(agentMessages).run().changes;
   const channelConfigsDeleted = db.delete(channelConfigs).run().changes;
+
+  // License table — no FK dependencies
+  const licenseDeleted = db.delete(license).run().changes;
 
   // Snapshots are intentionally preserved — they are backups, not working data
 
@@ -189,5 +193,6 @@ export function clearAllData() {
     scheduleTableInputs: scheduleTableInputsDeleted,
     files: filesDeleted,
     screenshots: screenshotsDeleted,
+    license: licenseDeleted,
   };
 }

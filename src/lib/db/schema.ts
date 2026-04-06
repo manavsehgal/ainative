@@ -95,6 +95,7 @@ export const notifications = sqliteTable(
         "budget_alert",
         "context_proposal",
         "context_proposal_batch",
+        "tier_limit",
       ],
     }).notNull(),
     title: text("title").notNull(),
@@ -1148,3 +1149,26 @@ export const snapshots = sqliteTable(
 );
 
 export type SnapshotRow = InferSelectModel<typeof snapshots>;
+
+// ── License ──────────────────────────────────────────────────────────
+
+export const license = sqliteTable("license", {
+  id: text("id").primaryKey(),
+  supabaseUserId: text("supabase_user_id"),
+  tier: text("tier", { enum: ["community", "solo", "operator", "scale"] })
+    .default("community")
+    .notNull(),
+  status: text("status", { enum: ["active", "inactive", "grace"] })
+    .default("inactive")
+    .notNull(),
+  email: text("email"),
+  activatedAt: integer("activated_at", { mode: "timestamp" }),
+  expiresAt: integer("expires_at", { mode: "timestamp" }),
+  lastValidatedAt: integer("last_validated_at", { mode: "timestamp" }),
+  gracePeriodExpiresAt: integer("grace_period_expires_at", { mode: "timestamp" }),
+  encryptedToken: text("encrypted_token"),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+});
+
+export type LicenseRow = InferSelectModel<typeof license>;

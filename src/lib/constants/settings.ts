@@ -19,6 +19,24 @@ export const SETTINGS_KEYS = {
   ROUTING_PREFERENCE: "routing.preference",
   OLLAMA_BASE_URL: "ollama.baseUrl",
   OLLAMA_DEFAULT_MODEL: "ollama.defaultModel",
+  // License / PLG
+  LICENSE_TIER: "license.tier",
+  LICENSE_EMAIL: "license.email",
+  LICENSE_ACTIVATED_AT: "license.activatedAt",
+  LICENSE_EXPIRES_AT: "license.expiresAt",
+  LICENSE_GRACE_UNTIL: "license.graceUntil",
+  // Supabase cloud
+  SUPABASE_URL: "cloud.supabaseUrl",
+  SUPABASE_ANON_KEY: "cloud.supabaseAnonKey",
+  // Telemetry (opt-in)
+  TELEMETRY_ENABLED: "telemetry.enabled",
+  TELEMETRY_RUNTIME_ID: "telemetry.runtimeId",
+  TELEMETRY_BATCH: "telemetry.batch",
+  // Cloud sync
+  DEVICE_ID: "sync.deviceId",
+  LAST_SYNC_AT: "sync.lastSyncAt",
+  // Stripe
+  STRIPE_CUSTOMER_ID: "billing.stripeCustomerId",
 } as const;
 
 export type RoutingPreference = "cost" | "latency" | "quality" | "manual";

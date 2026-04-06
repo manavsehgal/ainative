@@ -1,5 +1,71 @@
 # Feature Changelog
 
+## 2026-04-05
+
+### Groomed — PLG Monetization Initiative (17 features)
+
+Comprehensive free→paid strategy brainstormed and groomed using `/product-manager`, `/architect`, and `/frontend-designer` skills in parallel. Target: first paid customer in 6-8 weeks.
+
+**Strategy decisions:**
+- Community Edition stays free forever (Apache 2.0), Premium via pure subscription ($19/$49/$99)
+- Solo operators (founders, freelancers) as primary target
+- Memory cap (50 items/profile) as #1 conversion trigger (loss aversion)
+- Cloud stack: Supabase + Stripe + Resend (all existing paid accounts, $0 incremental cost)
+- Moat: data flywheel → fine-tuned open models → workflow marketplace (18-month layered build)
+
+**Foundation Layer (3 features, P0):**
+- `local-license-manager` — SQLite license table, LicenseManager singleton, tier limits, offline grace period
+- `supabase-cloud-backend` — 4 Supabase tables (licenses, telemetry, blueprints, sync_sessions), RLS, 4 Edge Functions
+- `stripe-billing-integration` — 3 products × 2 prices, Customer Portal, webhook → Edge Function → license
+
+**Core Layer (8 features, P0-P2):**
+- `community-edition-soft-limits` — 4 soft limits: 50 memory, 10 context versions, 5 schedules, 30-day history
+- `subscription-management-ui` — /settings/subscription with tier comparison, Stripe Checkout/Portal
+- `upgrade-cta-banners` — contextual prompts at friction moments (memory cap, schedule limit, history retention)
+- `outcome-analytics-dashboard` — /analytics with success rates, cost-per-outcome, ROI calculator (Operator+ gate)
+- `parallel-workflow-limit` — Community=3, Operator=10, Scale=unlimited concurrent workflows
+- `cloud-sync` — AES-256-GCM encrypted SQLite backup to Supabase Storage (Operator+ gate)
+- `license-activation-flow` — end-to-end purchase → email → activate → unlock
+- `marketplace-access-gate` — /marketplace browse + Scale-tier import gate
+
+**Growth Layer (6 features, P1-P3):**
+- `edition-readme-update` — Community vs Premium positioning in README (no code deps, Week 1)
+- `first-run-onboarding` — email capture + 6-milestone activation checklist
+- `marketing-site-pricing-page` — static /pricing on stagent.github.io
+- `transactional-email-flows` — 5 Resend email types via Edge Functions
+- `telemetry-foundation` — opt-in anonymized telemetry, default OFF, 5-min batch flush
+- `upgrade-conversion-instrumentation` — anonymous funnel tracking for A/B testing
+
+**Dual-entry payment model established:**
+- Marketing site (stagent.io) uses Stripe Payment Links — static URLs, no API calls
+- Product (/settings/subscription) uses Stripe Checkout Sessions via Supabase Edge Function
+- Both paths create same license row in Supabase, keyed by email
+- Primary activation: email-based auto-matching (pay → sign in with same email → done)
+- Fallback: manual license key entry form for edge cases
+- Marketing site purchasers get "Install + sign in" email; in-app purchasers get instant activation
+- Updated 4 specs: stripe-billing-integration, license-activation-flow, marketing-site-pricing-page, subscription-management-ui
+
+**Marketing site spec rewritten for actual Astro 5 codebase:**
+- Discovered stagent.github.io is Astro 5 + React + Tailwind v4 (not plain HTML)
+- Existing Pricing.astro has outdated tiers (Pro $149, Team $499, Advisory Services)
+- Spec now targets exact files: Pricing.astro (rewrite), Hero.astro (copy refresh), PersonaLanes.astro (CTA alignment), CTAFooter.astro (copy refresh)
+- Advisory Services block replaced with Marketplace Creator Pitch (revenue math, 70/30 split)
+- Added /pricing standalone page, FAQ accordion, monthly/annual toggle
+- Hero email form reframed from "waitlist" to "State of AI Agents report"
+
+**Marketplace strategy refined (creator-first economics):**
+- Marketplace buying unlocked at Solo ($19) not Scale ($99) — maximizes buyer pool
+- Marketplace selling unlocked at Operator ($49) — the subscription-pays-for-itself tier
+- Revenue split: Operator 70/30, Scale 80/20 — economic upgrade trigger, not feature gate
+- Featured listings for Scale tier — visibility advantage, not access restriction
+- Creator analytics tab added to outcome-analytics-dashboard
+- Marketplace bumped from P2 to P1 — it's a network effect engine, not a nice-to-have
+
+**Architecture decisions (3 new TDRs recommended):**
+- TDR-028: Local-First License Enforcement (process-memory cache, daily validation, 7-day grace)
+- TDR-029: Telemetry Batching via Settings Table (JSON batch in settings, 200-event cap)
+- TDR-030: Encryption-First Cloud Sync (AES-256-GCM, HKDF from user ID, no plaintext in cloud)
+
 ## 2026-04-03
 
 ### Started

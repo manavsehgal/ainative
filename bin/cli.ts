@@ -188,11 +188,12 @@ async function main() {
   });
   const sidecarUrl = buildSidecarUrl(actualPort);
 
-  console.log(`Stagent ${pkg.version}`);
+  console.log(`Stagent ${pkg.version} — Community Edition`);
   console.log(`Data dir: ${DATA_DIR}`);
   console.log(`Mode: ${isPrebuilt ? "production" : "development"}`);
   console.log(`Next entry: ${nextEntrypoint}`);
   console.log(`Starting Stagent on ${sidecarUrl}`);
+  console.log(`Upgrade to Premium for cloud sync, expanded limits, and analytics → stagent.io/pricing`);
 
   const child = spawn(process.execPath, [nextEntrypoint, ...nextArgs], {
     cwd: effectiveCwd,

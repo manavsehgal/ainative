@@ -19,6 +19,8 @@ import {
   Settings,
   MessageCircle,
   Table2,
+  BarChart3,
+  Store,
 } from "lucide-react";
 import {
   Sidebar,
@@ -58,6 +60,7 @@ const workItems: NavItem[] = [
   { title: "Workflows", href: "/workflows", icon: Workflow },
   { title: "Documents", href: "/documents", icon: FileText },
   { title: "Tables", href: "/tables", icon: Table2, alsoMatches: ["/tables/"] },
+  { title: "Marketplace", href: "/marketplace", icon: Store },
 ];
 
 const manageItems: NavItem[] = [
@@ -65,6 +68,7 @@ const manageItems: NavItem[] = [
   { title: "Profiles", href: "/profiles", icon: Bot },
   { title: "Schedules", href: "/schedules", icon: Clock },
   { title: "Cost & Usage", href: "/costs", icon: Wallet },
+  { title: "Analytics", href: "/analytics", icon: BarChart3 },
 ];
 
 const learnItems: NavItem[] = [

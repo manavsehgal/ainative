@@ -242,6 +242,38 @@ Features that enhance the product but aren't essential for first use — homepag
 | [entity-relationship-detail-views](entity-relationship-detail-views.md) | P2 | planned | workflow-run-history, detail-view-redesign |
 | [relationship-summary-cards](relationship-summary-cards.md) | P2 | planned | entity-relationship-detail-views |
 
+### PLG Monetization — Foundation Layer
+
+| Feature | Priority | Status | Dependencies |
+|---------|----------|--------|--------------|
+| [local-license-manager](local-license-manager.md) | P0 | completed | — |
+| [supabase-cloud-backend](supabase-cloud-backend.md) | P0 | completed | — |
+| [stripe-billing-integration](stripe-billing-integration.md) | P0 | completed | supabase-cloud-backend |
+
+### PLG Monetization — Core Layer
+
+| Feature | Priority | Status | Dependencies |
+|---------|----------|--------|--------------|
+| [community-edition-soft-limits](community-edition-soft-limits.md) | P0 | completed | local-license-manager |
+| [subscription-management-ui](subscription-management-ui.md) | P1 | completed | local-license-manager, stripe-billing-integration |
+| [upgrade-cta-banners](upgrade-cta-banners.md) | P1 | completed | local-license-manager, community-edition-soft-limits, subscription-management-ui |
+| [outcome-analytics-dashboard](outcome-analytics-dashboard.md) | P1 | completed | local-license-manager |
+| [parallel-workflow-limit](parallel-workflow-limit.md) | P2 | completed | local-license-manager |
+| [cloud-sync](cloud-sync.md) | P1 | completed | local-license-manager, supabase-cloud-backend, stripe-billing-integration |
+| [license-activation-flow](license-activation-flow.md) | P1 | completed | local-license-manager, stripe-billing-integration, subscription-management-ui |
+| [marketplace-access-gate](marketplace-access-gate.md) | P1 | completed | local-license-manager, supabase-cloud-backend |
+
+### PLG Monetization — Growth Layer
+
+| Feature | Priority | Status | Dependencies |
+|---------|----------|--------|--------------|
+| [edition-readme-update](edition-readme-update.md) | P1 | completed | — |
+| [first-run-onboarding](first-run-onboarding.md) | P1 | completed | local-license-manager, supabase-cloud-backend |
+| [marketing-site-pricing-page](marketing-site-pricing-page.md) | P1 | completed | stripe-billing-integration |
+| [transactional-email-flows](transactional-email-flows.md) | P2 | completed | supabase-cloud-backend, stripe-billing-integration, community-edition-soft-limits |
+| [telemetry-foundation](telemetry-foundation.md) | P2 | completed | supabase-cloud-backend, local-license-manager |
+| [upgrade-conversion-instrumentation](upgrade-conversion-instrumentation.md) | P3 | completed | supabase-cloud-backend, upgrade-cta-banners, community-edition-soft-limits |
+
 ### Vision Alignment — Runtime Expansion
 
 | Feature | Priority | Status | Dependencies |
@@ -400,6 +432,33 @@ playbook-documentation (completed)
             ├── living-book-reading-paths (completed)
             └── living-book-markdown-pipeline (completed)
                     └── living-book-self-updating (completed)
+```
+
+PLG Monetization chain:
+
+```
+local-license-manager (P0) ─────────┐
+supabase-cloud-backend (P0) ────────┤
+                                    │
+                    stripe-billing-integration (P0)
+                                    │
+              ┌─────────────────────┼──────────────────────┐
+              │                     │                       │
+community-edition-soft-limits  subscription-management-ui  license-activation-flow
+              │                     │
+    upgrade-cta-banners       outcome-analytics-dashboard
+              │
+    parallel-workflow-limit
+              │
+    cloud-sync (also needs supabase + stripe)
+    marketplace-access-gate
+              │
+    first-run-onboarding (also needs supabase)
+    transactional-email-flows (also needs supabase + stripe + soft-limits)
+    marketing-site-pricing-page (needs stripe)
+    telemetry-foundation (needs supabase + license)
+    upgrade-conversion-instrumentation (needs supabase + banners + soft-limits)
+    edition-readme-update (no dependencies — parallel from Week 1)
 ```
 
 Vision alignment chain:

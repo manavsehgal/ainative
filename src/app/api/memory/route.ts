@@ -3,6 +3,9 @@ import { db } from "@/lib/db";
 import { agentMemory } from "@/lib/db/schema";
 import { and, eq, desc } from "drizzle-orm";
 import { randomUUID } from "crypto";
+import { checkLimit, buildLimitErrorBody } from "@/lib/license/limit-check";
+import { getMemoryCount } from "@/lib/license/limit-queries";
+import { createTierLimitNotification } from "@/lib/license/notifications";
 
 /**
  * GET /api/memory?profileId=xxx&category=fact&status=active
@@ -73,6 +76,14 @@ export async function POST(req: NextRequest) {
         { error: `category must be one of: ${validCategories.join(", ")}` },
         { status: 400 }
       );
+    }
+
+    // Tier limit check — memory cap per profile
+    const currentCount = getMemoryCount(profileId);
+    const limitResult = checkLimit("agentMemories", currentCount);
+    if (!limitResult.allowed) {
+      createTierLimitNotification("agentMemories", currentCount, limitResult.limit).catch(() => {});
+      return NextResponse.json(buildLimitErrorBody("agentMemories", limitResult), { status: 402 });
     }
 
     const now = new Date();

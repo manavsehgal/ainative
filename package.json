@@ -1,6 +1,6 @@
 {
   "name": "stagent",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "AI Business Operating System — run your business with AI agents. Local-first, multi-provider, governed.",
   "keywords": [
     "ai",
@@ -67,6 +67,7 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@hookform/resolvers": "^5.2.2",
+    "@supabase/supabase-js": "^2.101.1",
     "@tailwindcss/postcss": "^4",
     "@tailwindcss/typography": "^0.5",
     "@tanstack/react-table": "^8.21.3",
