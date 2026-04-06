@@ -151,20 +151,46 @@ class LicenseManager {
     encryptedToken?: string;
   }): void {
     const now = new Date();
-    db.update(licenseTable)
-      .set({
-        tier: params.tier,
-        status: "active",
-        email: params.email,
-        activatedAt: now,
-        expiresAt: params.expiresAt ?? null,
-        lastValidatedAt: now,
-        gracePeriodExpiresAt: null,
-        encryptedToken: params.encryptedToken ?? null,
-        updatedAt: now,
-      })
+
+    // Ensure the license row exists (may be missing if initialize() hasn't run)
+    const existing = db
+      .select({ id: licenseTable.id })
+      .from(licenseTable)
       .where(eq(licenseTable.id, LICENSE_ROW_ID))
-      .run();
+      .get();
+
+    if (existing) {
+      db.update(licenseTable)
+        .set({
+          tier: params.tier,
+          status: "active",
+          email: params.email,
+          activatedAt: now,
+          expiresAt: params.expiresAt ?? null,
+          lastValidatedAt: now,
+          gracePeriodExpiresAt: null,
+          encryptedToken: params.encryptedToken ?? null,
+          updatedAt: now,
+        })
+        .where(eq(licenseTable.id, LICENSE_ROW_ID))
+        .run();
+    } else {
+      db.insert(licenseTable)
+        .values({
+          id: LICENSE_ROW_ID,
+          tier: params.tier,
+          status: "active",
+          email: params.email,
+          activatedAt: now,
+          expiresAt: params.expiresAt ?? null,
+          lastValidatedAt: now,
+          gracePeriodExpiresAt: null,
+          encryptedToken: params.encryptedToken ?? null,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .run();
+    }
 
     this.refreshCache();
   }
