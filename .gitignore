@@ -35,3 +35,4 @@ output/
 
 # local package artifacts
 stagent-*.tgz
+supabase/.temp/

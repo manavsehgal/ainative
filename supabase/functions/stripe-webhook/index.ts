@@ -21,15 +21,60 @@ const TIER_MAP: Record<string, string> = {
   "price_1TJ2evRCxnzBPkIXqIRaDxQp": "scale",
 };
 
+async function verifyStripeSignature(
+  payload: string,
+  signature: string,
+  secret: string
+): Promise<boolean> {
+  const parts = signature.split(",").reduce((acc, part) => {
+    const [key, value] = part.split("=");
+    acc[key.trim()] = value;
+    return acc;
+  }, {} as Record<string, string>);
+
+  const timestamp = parts["t"];
+  const expectedSig = parts["v1"];
+  if (!timestamp || !expectedSig) return false;
+
+  // Reject events older than 5 minutes (replay attack prevention)
+  const age = Math.floor(Date.now() / 1000) - parseInt(timestamp, 10);
+  if (age > 300) return false;
+
+  const signedPayload = `${timestamp}.${payload}`;
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(signedPayload));
+  const computed = Array.from(new Uint8Array(sig))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+
+  return computed === expectedSig;
+}
+
 Deno.serve(async (req: Request) => {
   const signature = req.headers.get("stripe-signature");
   if (!signature) {
     return new Response("Missing signature", { status: 400 });
   }
 
-  // TODO: Verify webhook signature with Stripe secret
-  const body = await req.json();
-  const event = body;
+  const rawBody = await req.text();
+  const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
+  if (!webhookSecret) {
+    console.error("STRIPE_WEBHOOK_SECRET not configured");
+    return new Response("Webhook secret not configured", { status: 500 });
+  }
+
+  const valid = await verifyStripeSignature(rawBody, signature, webhookSecret);
+  if (!valid) {
+    return new Response("Invalid signature", { status: 401 });
+  }
+
+  const event = JSON.parse(rawBody);
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
