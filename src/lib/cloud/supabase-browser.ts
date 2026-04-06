@@ -9,10 +9,7 @@
  */
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-
-const DEFAULT_SUPABASE_URL = "https://yznantjbmacbllhcyzwc.supabase.co";
-const DEFAULT_SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl6bmFudGpibWFjYmxsaGN5endjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1MDg1ODMsImV4cCI6MjA4ODA4NDU4M30.i-P7MXpR1_emBjhUkzbFeSX7fgjgPDv90_wkqF7sW3Y";
+import { getSupabaseUrl, getSupabaseAnonKey } from "@/lib/cloud/supabase-client";
 
 let browserClient: SupabaseClient | null = null;
 
@@ -23,10 +20,7 @@ let browserClient: SupabaseClient | null = null;
 export function getSupabaseBrowserClient(): SupabaseClient {
   if (browserClient) return browserClient;
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
-
-  browserClient = createClient(url, anonKey, {
+  browserClient = createClient(getSupabaseUrl(), getSupabaseAnonKey(), {
     auth: {
       autoRefreshToken: true,
       persistSession: true,

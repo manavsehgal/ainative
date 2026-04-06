@@ -6,12 +6,8 @@
  * defaults as supabase-client.ts (production backend by default).
  */
 
-import { isCloudConfigured } from "@/lib/cloud/supabase-client";
+import { isCloudConfigured, getSupabaseUrl, getSupabaseAnonKey } from "@/lib/cloud/supabase-client";
 import type { LicenseTier } from "./tier-limits";
-
-const DEFAULT_SUPABASE_URL = "https://yznantjbmacbllhcyzwc.supabase.co";
-const DEFAULT_SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl6bmFudGpibWFjYmxsaGN5endjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1MDg1ODMsImV4cCI6MjA4ODA4NDU4M30.i-P7MXpR1_emBjhUkzbFeSX7fgjgPDv90_wkqF7sW3Y";
 
 export interface CloudValidationResult {
   valid: boolean;
@@ -31,8 +27,8 @@ export async function validateLicenseWithCloud(
     return { valid: false, tier: "community", error: "Cloud disabled or no email" };
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
+  const supabaseUrl = getSupabaseUrl();
+  const anonKey = getSupabaseAnonKey();
 
   try {
     const response = await fetch(`${supabaseUrl}/functions/v1/validate-license`, {

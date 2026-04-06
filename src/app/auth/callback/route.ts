@@ -3,10 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { licenseManager } from "@/lib/license/manager";
 import { validateLicenseWithCloud } from "@/lib/license/cloud-validation";
 import { sendUpgradeConfirmation } from "@/lib/billing/email";
-
-const DEFAULT_SUPABASE_URL = "https://yznantjbmacbllhcyzwc.supabase.co";
-const DEFAULT_SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl6bmFudGpibWFjYmxsaGN5endjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1MDg1ODMsImV4cCI6MjA4ODA4NDU4M30.i-P7MXpR1_emBjhUkzbFeSX7fgjgPDv90_wkqF7sW3Y";
+import { getSupabaseUrl, getSupabaseAnonKey } from "@/lib/cloud/supabase-client";
 
 /**
  * GET /auth/callback
@@ -30,10 +27,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL("/settings?auth=error", req.url));
   }
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
-
-  const supabase = createClient(url, anonKey, {
+  const supabase = createClient(getSupabaseUrl(), getSupabaseAnonKey(), {
     auth: { persistSession: false },
   });
 

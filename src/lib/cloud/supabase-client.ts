@@ -37,10 +37,7 @@ export function getSupabaseClient(): SupabaseClient | null {
   if (initialized) return client;
   initialized = true;
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
-
-  client = createClient(url, anonKey, {
+  client = createClient(getSupabaseUrl(), getSupabaseAnonKey(), {
     auth: {
       autoRefreshToken: true,
       persistSession: false, // Server-side — no browser session

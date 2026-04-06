@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { homedir } from "node:os";
 import path from "node:path";
 import yaml from "js-yaml";
 import { ProfileConfigSchema } from "@/lib/validators/profile";
@@ -30,7 +31,7 @@ function getBuiltinsDir(): string {
 }
 
 const SKILLS_DIR = path.join(
-  process.env.HOME ?? process.env.USERPROFILE ?? ".",
+  process.env.HOME ?? process.env.USERPROFILE ?? homedir(),
   ".claude",
   "skills"
 );
