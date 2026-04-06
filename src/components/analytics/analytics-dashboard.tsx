@@ -116,7 +116,7 @@ export function AnalyticsDashboard({
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                 <XAxis dataKey="date" tick={{ fontSize: 10 }} tickFormatter={(v) => v.slice(5)} />
                 <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `$${(v / 1_000_000).toFixed(2)}`} />
-                <Tooltip formatter={(v: number) => [`$${(v / 1_000_000).toFixed(4)}`, "Avg Cost"]} />
+                <Tooltip formatter={(v) => [`$${(Number(v) / 1_000_000).toFixed(4)}`, "Avg Cost"]} />
                 <Line type="monotone" dataKey="avgCostMicros" stroke="oklch(0.6 0.2 250)" strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
