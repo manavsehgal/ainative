@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { PageShell } from "@/components/shared/page-shell";
-import { PremiumGateOverlay } from "@/components/shared/premium-gate-overlay";
 import { AnalyticsDashboard } from "@/components/analytics/analytics-dashboard";
+import { AnalyticsGateCard } from "@/components/analytics/analytics-gate-card";
 import { licenseManager } from "@/lib/license/manager";
 import {
   getOutcomeCounts,
@@ -36,9 +36,16 @@ function AnalyticsContent() {
   if (isAllowed) return dashboard;
 
   return (
-    <PremiumGateOverlay feature="Outcome Analytics" requiredTier="operator">
-      {dashboard}
-    </PremiumGateOverlay>
+    <div className="relative">
+      {/* Blurred dashboard preview */}
+      <div className="opacity-20 pointer-events-none select-none blur-[2px]" aria-hidden>
+        {dashboard}
+      </div>
+      {/* Upgrade CTA */}
+      <div className="absolute inset-0 flex items-start justify-center pt-16">
+        <AnalyticsGateCard />
+      </div>
+    </div>
   );
 }
 
