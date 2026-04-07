@@ -83,4 +83,13 @@ describe("RealGitOps", () => {
     const ops = createGitOps(tempDir);
     expect(ops.getGitDir()).toBe(join(tempDir, ".git"));
   });
+
+  it("getCurrentBranch returns null when HEAD is detached", async () => {
+    // Detach HEAD by checking out the commit SHA directly
+    const sha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: tempDir, encoding: "utf-8" }).trim();
+    execFileSync("git", ["checkout", sha], { cwd: tempDir, stdio: "pipe" });
+    const { createGitOps } = await import("../git-ops");
+    const ops = createGitOps(tempDir);
+    expect(ops.getCurrentBranch()).toBeNull();
+  });
 });

@@ -1,16 +1,20 @@
 import { execFileSync } from "child_process";
-import { join } from "path";
+import { join, resolve } from "path";
 import type { GitOps } from "./types";
 
 /**
  * Real git operations wrapper. All commands use execFileSync with argv arrays —
  * no shell interpolation, ever. File is the literal "git"; user-provided values
  * flow through the args array which git parses without shell involvement.
+ *
+ * The cwd parameter is normalized to an absolute path at factory creation time
+ * so getGitDir() honors its interface contract of returning an absolute path.
  */
 export function createGitOps(cwd: string = process.cwd()): GitOps {
+  const absoluteCwd = resolve(cwd);
   function run(args: string[]): string {
     return execFileSync("git", args, {
-      cwd,
+      cwd: absoluteCwd,
       encoding: "utf-8",
       stdio: ["ignore", "pipe", "pipe"],
     }).trim();
@@ -27,7 +31,7 @@ export function createGitOps(cwd: string = process.cwd()): GitOps {
     },
 
     getGitDir(): string {
-      return join(cwd, ".git");
+      return join(absoluteCwd, ".git");
     },
 
     getCurrentBranch(): string | null {
