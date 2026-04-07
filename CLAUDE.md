@@ -21,6 +21,10 @@ npm run test:coverage
 - Claude-local settings may live in `.claude/settings.local.json`.
 - Claude memory may also exist under `~/.claude/projects/.../memory/`, but the repo-level shared files should be treated as canonical first.
 
+## Instance Bootstrap Dev-Mode Gate
+
+This dev repo sets `STAGENT_DEV_MODE=true` in `.env.local` and has a `.git/stagent-dev-mode` sentinel file, both of which make the planned `instance-bootstrap` feature a no-op here. Do **not** remove either — they prevent the auto-upgrade machinery from installing a pre-push hook that would block contributor pushes. Full rationale and testing override (`STAGENT_INSTANCE_MODE=true`) documented in `AGENTS.md` → "Instance Bootstrap Dev-Mode Gate".
+
 ## Cross-Tool Sync (Codex ↔ Claude)
 
 - Codex config: `~/.codex/config.toml` (model, trust levels, MCP servers)

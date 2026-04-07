@@ -67,6 +67,21 @@ These 7 directives apply to all skills, all code, and all reviews. They are the 
 - In a dogfooding worktree: focus on using the app. Report bugs — don't fix them here.
 - On main: normal FLOW.md lifecycle. Check dogfooding feedback before picking next work.
 
+## Instance Bootstrap Dev-Mode Gate
+
+The canonical stagent dev repo (`/Users/manavsehgal/Developer/stagent`) must skip the `instance-bootstrap` feature's auto-upgrade machinery — otherwise a pre-push hook would be installed on first `npm run dev` and block contributor pushes to `origin/main`.
+
+Two independent gates prevent this, both already in place:
+
+1. **`STAGENT_DEV_MODE=true` in `.env.local`** (primary, per-developer). Set on this machine. Required for every contributor's local setup — add it to your `.env.local` before first `npm run dev` after pulling in the instance-bootstrap feature.
+2. **`.git/stagent-dev-mode` sentinel file** (secondary, git-dir-scoped). Never cloned, never committed, persists across `.env.local` edits. Create once per clone: `touch .git/stagent-dev-mode`.
+
+When either gate is active, `ensureInstance()` returns immediately with no side effects — no branches created, no hooks installed, no scheduled tasks registered.
+
+**To test the instance-bootstrap feature in the main repo** (e.g., verifying the consent flow): set `STAGENT_INSTANCE_MODE=true` in your shell — this override wins over both dev-mode gates. Unset it when done testing.
+
+See `features/instance-bootstrap.md` for the full gate logic and `PRIVATE-INSTANCES.md` (gitignored) for the end-user workflow this feature automates.
+
 ## Cross-Tool Compatibility
 
 - `MEMORY.md` is the shared evolving context file for this project.

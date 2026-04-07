@@ -36,3 +36,9 @@ output/
 # local package artifacts
 stagent-*.tgz
 supabase/.temp/
+
+# superpowers skill scratch output (local only)
+.superpowers/
+
+# private operational docs (local only)
+PRIVATE-INSTANCES.md
