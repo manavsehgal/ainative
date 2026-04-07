@@ -1,26 +1,15 @@
 import { randomUUID } from "crypto";
-import { existsSync } from "fs";
-import { join } from "path";
 import type { EnsureStepResult, GitOps } from "./types";
 import { getInstanceConfig, setInstanceConfig } from "./settings";
+import { isPrivateInstance } from "./detect";
 
 const DEFAULT_BRANCH_NAME = "local";
-
-/**
- * Detect whether this git working directory is a dedicated private stagent
- * instance. We check for a `.stagent-private` sentinel file committed to the
- * repo root rather than relying on STAGENT_DATA_DIR (which may be overridden
- * for test isolation and is unrelated to the repo's identity).
- */
-function detectPrivateInstance(cwd: string): boolean {
-  return existsSync(join(cwd, ".stagent-private"));
-}
 
 /**
  * Phase A step 1: ensure the instance config row exists with a stable instanceId.
  * Idempotent — returns early if config already exists.
  */
-export async function ensureInstanceConfig(_cwd: string = process.cwd()): Promise<EnsureStepResult> {
+export async function ensureInstanceConfig(): Promise<EnsureStepResult> {
   const existing = getInstanceConfig();
   if (existing) {
     return { step: "instance-config", status: "skipped", reason: "already_exists" };
@@ -28,7 +17,7 @@ export async function ensureInstanceConfig(_cwd: string = process.cwd()): Promis
   await setInstanceConfig({
     instanceId: randomUUID(),
     branchName: DEFAULT_BRANCH_NAME,
-    isPrivateInstance: detectPrivateInstance(_cwd),
+    isPrivateInstance: isPrivateInstance(),
     createdAt: Math.floor(Date.now() / 1000),
   });
   return { step: "instance-config", status: "ok" };

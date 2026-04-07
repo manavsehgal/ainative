@@ -38,23 +38,25 @@ afterEach(() => {
 describe("ensureInstanceConfig (Phase A)", () => {
   it("generates a new instanceId on first call", async () => {
     const { ensureInstanceConfig } = await import("../bootstrap");
-    const result = await ensureInstanceConfig(tempDir);
+    const result = await ensureInstanceConfig();
     expect(result.status).toBe("ok");
     const { getInstanceConfig } = await import("../settings");
     const config = getInstanceConfig();
     expect(config).not.toBeNull();
     expect(config!.instanceId).toMatch(/^[a-f0-9-]{36}$/);
     expect(config!.branchName).toBe("local");
-    expect(config!.isPrivateInstance).toBe(false);
+    // STAGENT_DATA_DIR is stubbed to a temp dir (non-default), so this clone
+    // correctly registers as a private instance in the test environment.
+    expect(config!.isPrivateInstance).toBe(true);
     expect(config!.createdAt).toBeGreaterThan(0);
   });
 
   it("does not regenerate instanceId on subsequent calls", async () => {
     const { ensureInstanceConfig } = await import("../bootstrap");
-    await ensureInstanceConfig(tempDir);
+    await ensureInstanceConfig();
     const { getInstanceConfig } = await import("../settings");
     const firstId = getInstanceConfig()!.instanceId;
-    await ensureInstanceConfig(tempDir);
+    await ensureInstanceConfig();
     const secondId = getInstanceConfig()!.instanceId;
     expect(secondId).toBe(firstId);
   });
