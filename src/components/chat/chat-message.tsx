@@ -117,7 +117,10 @@ export function ChatMessage({ message, isStreaming, conversationId, onStatusChan
         ) : (
           <div className="text-sm">
             {message.content ? (
-              <ChatMessageMarkdown content={message.content} />
+              <ChatMessageMarkdown
+                content={message.content}
+                attachments={attachments}
+              />
             ) : isStreaming ? (
               <span className="text-muted-foreground text-xs animate-pulse">
                 {(() => {
@@ -128,9 +131,14 @@ export function ChatMessage({ message, isStreaming, conversationId, onStatusChan
                 })()}
               </span>
             ) : null}
-            {attachments.length > 0 && (
-              <ScreenshotGallery attachments={attachments} />
-            )}
+            {/* Legacy fallback: messages saved before inline screenshot rendering
+                stored attachments in metadata but never embedded markdown image
+                refs in `content`. Detect that case and show the trailing gallery
+                so historical conversations don't lose their visuals. */}
+            {attachments.length > 0 &&
+              !attachments.some((att) =>
+                message.content?.includes(`](${att.thumbnailUrl})`)
+              ) && <ScreenshotGallery attachments={attachments} />}
             {isStreaming && message.content && (
               <span className="inline-block w-0.5 h-4 bg-foreground animate-pulse ml-0.5 align-text-bottom" />
             )}

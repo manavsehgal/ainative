@@ -1,14 +1,62 @@
 "use client";
 
-import { memo, useState, useCallback } from "react";
+import { memo, useMemo, useState, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Check, Copy } from "lucide-react";
+import { Check, Copy, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ScreenshotLightbox } from "@/components/shared/screenshot-lightbox";
+import type { ScreenshotAttachment } from "@/lib/chat/types";
 import type { Components } from "react-markdown";
 
 interface ChatMessageMarkdownProps {
   content: string;
+  attachments?: ScreenshotAttachment[];
+}
+
+function InlineScreenshot({ attachment }: { attachment: ScreenshotAttachment }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        className="relative rounded-lg overflow-hidden border border-border hover:border-primary transition-colors cursor-pointer group my-3 block w-full"
+        onClick={() => setOpen(true)}
+      >
+        <img
+          src={attachment.thumbnailUrl}
+          alt={`Screenshot ${attachment.width}×${attachment.height}`}
+          className="object-contain w-full"
+          style={{ maxHeight: 400 }}
+          loading="lazy"
+          onError={(e) => {
+            const img = e.currentTarget;
+            if (!img.src.includes(attachment.originalUrl)) {
+              img.src = attachment.originalUrl;
+            } else {
+              img.style.display = "none";
+              img.parentElement?.classList.add("bg-muted");
+            }
+          }}
+        />
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+          <ImageIcon className="h-5 w-5 text-white opacity-0 group-hover:opacity-70 transition-opacity" />
+        </div>
+        <span className="absolute bottom-1 right-1 text-[9px] bg-black/50 text-white px-1.5 py-0.5 rounded">
+          {attachment.width}×{attachment.height}
+        </span>
+      </button>
+      {open && (
+        <ScreenshotLightbox
+          open={open}
+          onClose={() => setOpen(false)}
+          imageUrl={attachment.originalUrl}
+          width={attachment.width}
+          height={attachment.height}
+        />
+      )}
+    </>
+  );
 }
 
 function CodeBlock({
@@ -119,10 +167,37 @@ const components: Components = {
 
 export const ChatMessageMarkdown = memo(function ChatMessageMarkdown({
   content,
+  attachments,
 }: ChatMessageMarkdownProps) {
+  // Resolve markdown img refs back to their full attachment record so the
+  // inline thumbnail can open the lightbox at the original resolution.
+  const attachmentBySrc = useMemo(() => {
+    const map = new Map<string, ScreenshotAttachment>();
+    for (const att of attachments ?? []) {
+      map.set(att.thumbnailUrl, att);
+      map.set(att.originalUrl, att);
+    }
+    return map;
+  }, [attachments]);
+
+  const componentsWithImg: Components = useMemo(
+    () => ({
+      ...components,
+      img: ({ src, alt }) => {
+        const key = typeof src === "string" ? src : "";
+        const att = attachmentBySrc.get(key);
+        if (att) {
+          return <InlineScreenshot attachment={att} />;
+        }
+        return <img src={key} alt={alt ?? ""} className="max-w-full rounded my-2" />;
+      },
+    }),
+    [attachmentBySrc]
+  );
+
   return (
     <div className="prose-chat">
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={componentsWithImg}>
         {content}
       </ReactMarkdown>
     </div>

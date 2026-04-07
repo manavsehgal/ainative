@@ -102,6 +102,30 @@ function diagnoseProcessError(rawMessage: string, stderr: string): string {
   return rawMessage;
 }
 
+// ── Stream-shaping helpers (exported for unit tests) ──────────────────
+
+/**
+ * Returns the separator to insert before appending new text to `fullText`.
+ * The Anthropic stream delivers text in `content_block`s with no trailing
+ * newline, so adjacent blocks (e.g. before/after a tool_use turn break) fuse
+ * together visually unless we inject a paragraph break.
+ */
+export function paragraphSeparator(fullText: string): string {
+  return fullText.length > 0 && !fullText.endsWith("\n") ? "\n\n" : "";
+}
+
+/**
+ * Builds the inline markdown segment for a captured screenshot. The leading
+ * separator preserves paragraph spacing relative to the prose that came
+ * before; the trailing `\n\n` makes sure subsequent text starts a new block.
+ */
+export function inlineScreenshotMarkdown(
+  fullText: string,
+  thumbnailUrl: string
+): string {
+  return `${paragraphSeparator(fullText)}![screenshot](${thumbnailUrl})\n\n`;
+}
+
 // ── Public API ─────────────────────────────────────────────────────────
 
 /**
@@ -417,13 +441,28 @@ export async function* sendMessage(
       if (raw.type === "stream_event") {
         // SDK wraps Anthropic API events inside stream_event.event
         const innerEvent = raw.event as Record<string, unknown> | undefined;
-        if (innerEvent?.type === "content_block_delta") {
+        if (innerEvent?.type === "content_block_start") {
+          const block = innerEvent.content_block as Record<string, unknown> | undefined;
+          if (block?.type === "text" && fullText.length > 0 && !fullText.endsWith("\n")) {
+            // New text block after a previous block (often a tool_use turn break) —
+            // models don't end blocks with paragraph breaks, so insert one to keep
+            // sequential turns visually separated in the chat bubble.
+            fullText += "\n\n";
+            yield { type: "delta", content: "\n\n" };
+          }
+        } else if (innerEvent?.type === "content_block_delta") {
           const delta = innerEvent.delta as Record<string, unknown> | undefined;
           if (delta?.type === "text_delta" && typeof delta.text === "string") {
             fullText += delta.text;
             hasStreamedDeltas = true;
             yield { type: "delta", content: delta.text };
           }
+        }
+      } else if (raw.type === "content_block_start") {
+        const block = (raw as Record<string, unknown>).content_block as Record<string, unknown> | undefined;
+        if (block?.type === "text" && fullText.length > 0 && !fullText.endsWith("\n")) {
+          fullText += "\n\n";
+          yield { type: "delta", content: "\n\n" };
         }
       } else if (raw.type === "content_block_delta") {
         const delta = raw.delta as Record<string, unknown> | undefined;
@@ -457,6 +496,10 @@ export async function* sendMessage(
         if (assistantBlocks) {
           for (const block of assistantBlocks) {
             if (block.type === "text" && typeof block.text === "string" && !fullText.includes(block.text)) {
+              if (fullText.length > 0 && !fullText.endsWith("\n")) {
+                fullText += "\n\n";
+                yield { type: "delta", content: "\n\n" };
+              }
               fullText += block.text;
               yield { type: "delta", content: block.text };
             }
@@ -486,6 +529,16 @@ export async function* sendMessage(
                       if (attachment) {
                         screenshotAttachments.push(attachment);
                         yield { type: "screenshot" as const, ...attachment };
+                        // Also inject the screenshot inline into the text stream as a
+                        // markdown image so it renders next to the prose that captured
+                        // it (the markdown renderer resolves the thumbnail src back to
+                        // the full attachment via the message's metadata.attachments).
+                        const inlineMd = inlineScreenshotMarkdown(
+                          fullText,
+                          attachment.thumbnailUrl
+                        );
+                        fullText += inlineMd;
+                        yield { type: "delta" as const, content: inlineMd };
                       }
                     }
                   }
@@ -513,13 +566,21 @@ export async function* sendMessage(
           const result = (raw as Record<string, unknown>).result;
           if (typeof result === "string" && result.length > 0) {
             if (result !== fullText) {
-              const remainder = result.startsWith(fullText)
-                ? result.slice(fullText.length)
-                : result;
-              if (remainder) {
-                yield { type: "delta" as const, content: remainder };
+              if (result.startsWith(fullText)) {
+                const remainder = result.slice(fullText.length);
+                if (remainder) {
+                  yield { type: "delta" as const, content: remainder };
+                }
+              } else {
+                // Result is unrelated to what we have so far — treat as a new
+                // text block and insert a paragraph break before appending.
+                if (fullText.length > 0 && !fullText.endsWith("\n")) {
+                  yield { type: "delta" as const, content: "\n\n" };
+                  fullText += "\n\n";
+                }
+                yield { type: "delta" as const, content: result };
               }
-              fullText = result;
+              fullText = result.startsWith(fullText) ? result : fullText + result;
             }
           }
         }
