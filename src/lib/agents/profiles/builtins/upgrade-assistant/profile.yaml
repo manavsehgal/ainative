@@ -1,0 +1,32 @@
+id: upgrade-assistant
+name: Upgrade Assistant
+version: "1.0.0"
+domain: work
+tags: [upgrade, git, merge, maintenance, instance]
+supportedRuntimes: [claude-code, anthropic-direct]
+preferredRuntime: anthropic-direct
+
+maxTurns: 40
+
+author: stagent
+
+# Bash tool allowlist — tight scope.
+# The upgrade assistant should only ever run git and npm install, nothing else.
+# Cross-reference: TDR-028 "self-upgrade via task pipeline, not chat tools"
+# explains why this profile is the only safe surface for git shell access.
+allowedTools:
+  - Bash(git fetch *)
+  - Bash(git status)
+  - Bash(git status *)
+  - Bash(git stash *)
+  - Bash(git checkout *)
+  - Bash(git merge *)
+  - Bash(git merge --abort)
+  - Bash(git commit *)
+  - Bash(git diff *)
+  - Bash(git rev-parse *)
+  - Bash(git log *)
+  - Bash(git branch *)
+  - Bash(npm install)
+  - Read
+  - Write

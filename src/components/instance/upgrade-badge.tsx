@@ -1,19 +1,51 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import type { UpgradeState } from "@/lib/instance/types";
 
+interface InstanceConfig {
+  instanceId: string;
+  branchName: string;
+  isPrivateInstance: boolean;
+  createdAt: number;
+}
+
+interface ConfigResponse {
+  config: InstanceConfig | null;
+  upgrade: UpgradeState;
+}
+
 /**
- * Small info chip rendered in the sidebar when upstream has new commits.
+ * Sidebar upgrade badge + pre-flight modal combined into a single Client
+ * Component. Fetches status on mount and every 5 minutes; renders nothing
+ * when no upgrade is available. When clicked, opens the pre-flight modal
+ * and loads the full config for the fact panel.
  *
- * Deliberately tertiary in the visual hierarchy — it's ambient awareness,
- * not a call to action. Fetches status on mount and every 5 minutes while
- * mounted (lightweight — the endpoint is a single settings read).
- *
- * Placement: above the Settings nav item in the Configure group.
+ * Combined into one component because Next.js 16's stricter client/server
+ * boundary rules reject passing callback props between separately-imported
+ * client components unless they're Server Actions. Bundling the two here
+ * preserves the spec's separation of concerns at the design level while
+ * satisfying the framework.
  */
 export function UpgradeBadge() {
+  const router = useRouter();
   const [state, setState] = useState<UpgradeState | null>(null);
+  const [open, setOpen] = useState(false);
+  const [config, setConfig] = useState<ConfigResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -28,8 +60,8 @@ export function UpgradeBadge() {
         if (!cancelled) setState(data);
       } catch {
         // Silent — the badge is ambient; status fetch failures should not
-        // produce UI noise. Persistent poll failures surface as notifications
-        // from the upgrade poller itself.
+        // produce UI noise. Persistent poll failures surface as a warning
+        // variant via state.pollFailureCount >= 3.
       }
     }
 
@@ -41,28 +73,137 @@ export function UpgradeBadge() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    (async () => {
+      try {
+        const res = await fetch("/api/instance/config", { cache: "no-store" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = (await res.json()) as ConfigResponse;
+        if (!cancelled) setConfig(data);
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : String(err));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
+  async function startUpgrade() {
+    setStarting(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/instance/upgrade", { method: "POST" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? `HTTP ${res.status}`);
+      }
+      const data = (await res.json()) as { taskId: string };
+      setOpen(false);
+      router.push(`/monitor/${data.taskId}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setStarting(false);
+    }
+  }
+
   if (!state || !state.upgradeAvailable) return null;
 
   const failing = state.pollFailureCount >= 3;
+  const count = state.commitsBehind;
   const label = failing
     ? "Check failing"
-    : `${state.commitsBehind} commit${state.commitsBehind === 1 ? "" : "s"}`;
+    : `${count} commit${count === 1 ? "" : "s"}`;
   const tooltip = failing
     ? "Upgrade check failing — click to retry"
-    : `${state.commitsBehind} upstream commit${state.commitsBehind === 1 ? "" : "s"} ready to merge`;
+    : `${count} upstream commit${count === 1 ? "" : "s"} ready to merge`;
+  const chipClass = failing
+    ? "ml-2 inline-flex items-center rounded-full border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400 hover:bg-amber-500/20 transition-colors"
+    : "ml-2 inline-flex items-center rounded-full border border-blue-500/30 bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-medium text-blue-700 dark:text-blue-400 hover:bg-blue-500/20 transition-colors";
+
+  const modalCount = config?.upgrade.commitsBehind ?? count;
+  const lastUpgradeText = config?.upgrade.lastSuccessfulUpgradeAt
+    ? new Date(config.upgrade.lastSuccessfulUpgradeAt * 1000).toLocaleString()
+    : "never";
 
   return (
-    <span
-      role="status"
-      aria-label={tooltip}
-      title={tooltip}
-      className={
-        failing
-          ? "ml-2 inline-flex items-center rounded-full border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400"
-          : "ml-2 inline-flex items-center rounded-full border border-blue-500/30 bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-medium text-blue-700 dark:text-blue-400"
-      }
-    >
-      {label}
-    </span>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <button
+          type="button"
+          role="status"
+          aria-label={tooltip}
+          title={tooltip}
+          className={chipClass}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setOpen(true);
+          }}
+        >
+          {label}
+        </button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Upgrade available</DialogTitle>
+          <DialogDescription>
+            {modalCount} commit{modalCount === 1 ? "" : "s"} ready to merge into{" "}
+            <code className="font-mono text-xs">
+              {config?.config?.branchName ?? "…"}
+            </code>
+          </DialogDescription>
+        </DialogHeader>
+
+        {loading && (
+          <div className="py-4 text-sm text-muted-foreground">Loading instance state…</div>
+        )}
+
+        {error && (
+          <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
+
+        {config && !loading && (
+          <div className="space-y-3 py-2">
+            <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+              <span className="text-muted-foreground">Branch</span>
+              <code className="font-mono text-xs">{config.config?.branchName ?? "—"}</code>
+              <span className="text-muted-foreground">Data directory</span>
+              <code className="font-mono text-xs break-all">
+                {config.config?.isPrivateInstance ? "custom" : "default"}
+              </code>
+              <span className="text-muted-foreground">Commits behind</span>
+              <span>{modalCount}</span>
+              <span className="text-muted-foreground">Last successful upgrade</span>
+              <span>{lastUpgradeText}</span>
+            </div>
+
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Stagent will stash any uncommitted work, merge <code className="font-mono">main</code> into{" "}
+              <code className="font-mono">{config.config?.branchName ?? "your branch"}</code>, install any new
+              dependencies, and ask you to resolve conflicts if any appear.
+            </p>
+          </div>
+        )}
+
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => setOpen(false)} disabled={starting}>
+            Cancel
+          </Button>
+          <Button onClick={startUpgrade} disabled={loading || starting || !config?.config}>
+            {starting ? "Starting…" : "Start upgrade"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

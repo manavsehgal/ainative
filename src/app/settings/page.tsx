@@ -14,6 +14,7 @@ import { WebSearchSection } from "@/components/settings/web-search-section";
 import { LearningContextSection } from "@/components/settings/learning-context-section";
 import { OllamaSection } from "@/components/settings/ollama-section";
 import { ChannelsSection } from "@/components/settings/channels-section";
+import { InstanceSection } from "@/components/instance/instance-section";
 import { PageShell } from "@/components/shared/page-shell";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +23,7 @@ export default function SettingsPage() {
   return (
     <PageShell title="Settings" description="Manage your Stagent configuration">
       <div className="space-y-6">
+        <InstanceSection />
         <SubscriptionSection />
         <CloudAccountSection />
         <CloudSyncSection />
