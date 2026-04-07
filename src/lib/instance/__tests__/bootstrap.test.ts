@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { execFileSync } from "child_process";
-import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 
@@ -229,5 +229,100 @@ describe("resolveConsentDecision", () => {
     const after = getGuardrails();
     expect(after.consentStatus).toBe("not_yet");
     expect(after.firstBootCompletedAt).not.toBeNull();
+  });
+});
+
+describe("ensureInstance orchestrator", () => {
+  it("returns skipped with dev_mode_env when STAGENT_DEV_MODE=true", async () => {
+    vi.stubEnv("STAGENT_DEV_MODE", "true");
+    const { ensureInstance } = await import("../bootstrap");
+    const result = await ensureInstance(tempDir);
+    expect(result.skipped).toBe("dev_mode_env");
+    expect(result.steps).toEqual([]);
+    expect(existsSync(join(tempDir, ".git", "hooks", "pre-push"))).toBe(false);
+    const { createGitOps } = await import("../git-ops");
+    expect(createGitOps(tempDir).branchExists("local")).toBe(false);
+  });
+
+  it("returns skipped with dev_mode_sentinel when sentinel file exists", async () => {
+    writeFileSync(join(tempDir, ".git", "stagent-dev-mode"), "");
+    const { ensureInstance } = await import("../bootstrap");
+    const result = await ensureInstance(tempDir);
+    expect(result.skipped).toBe("dev_mode_sentinel");
+    expect(result.steps).toEqual([]);
+  });
+
+  it("returns skipped with no_git when .git directory is absent", async () => {
+    const noGitDir = mkdtempSync(join(tmpdir(), "stagent-nogit-"));
+    try {
+      const { ensureInstance } = await import("../bootstrap");
+      const result = await ensureInstance(noGitDir);
+      expect(result.skipped).toBe("no_git");
+    } finally {
+      rmSync(noGitDir, { recursive: true, force: true });
+    }
+  });
+
+  it("runs Phase A and stamps consent state on fresh clone (consent not_yet)", async () => {
+    const { ensureInstance } = await import("../bootstrap");
+    const result = await ensureInstance(tempDir);
+    expect(result.skipped).toBeUndefined();
+    const steps = result.steps.map((s) => s.step);
+    expect(steps).toContain("instance-config");
+    expect(steps).toContain("local-branch");
+    expect(steps).not.toContain("pre-push-hook");
+    expect(steps).not.toContain("branch-push-config");
+    const { createGitOps } = await import("../git-ops");
+    expect(createGitOps(tempDir).branchExists("local")).toBe(true);
+    expect(existsSync(join(tempDir, ".git", "hooks", "pre-push"))).toBe(false);
+    const { getGuardrails } = await import("../settings");
+    expect(getGuardrails().firstBootCompletedAt).not.toBeNull();
+    expect(getGuardrails().consentStatus).toBe("not_yet");
+  });
+
+  it("runs Phase B when consent is enabled", async () => {
+    const { setGuardrails } = await import("../settings");
+    await setGuardrails({
+      prePushHookInstalled: false,
+      prePushHookVersion: "",
+      pushRemoteBlocked: [],
+      consentStatus: "enabled",
+      firstBootCompletedAt: null,
+    });
+    const { ensureInstance } = await import("../bootstrap");
+    const result = await ensureInstance(tempDir);
+    const steps = result.steps.map((s) => s.step);
+    expect(steps).toContain("pre-push-hook");
+    expect(steps).toContain("branch-push-config");
+    expect(existsSync(join(tempDir, ".git", "hooks", "pre-push"))).toBe(true);
+  });
+
+  it("STAGENT_INSTANCE_MODE=true override beats STAGENT_DEV_MODE=true", async () => {
+    vi.stubEnv("STAGENT_DEV_MODE", "true");
+    vi.stubEnv("STAGENT_INSTANCE_MODE", "true");
+    const { ensureInstance } = await import("../bootstrap");
+    const result = await ensureInstance(tempDir);
+    expect(result.skipped).toBeUndefined();
+    expect(result.steps.length).toBeGreaterThan(0);
+  });
+
+  it("is a full no-op on the second call (idempotent)", async () => {
+    const { ensureInstance } = await import("../bootstrap");
+    await ensureInstance(tempDir);
+    const result = await ensureInstance(tempDir);
+    for (const step of result.steps) {
+      if (step.step === "instance-config" || step.step === "local-branch") {
+        expect(step.status).toBe("skipped");
+      }
+    }
+  });
+
+  it("skips ensureLocalBranch with warning when rebase is in progress", async () => {
+    mkdirSync(join(tempDir, ".git", "rebase-merge"));
+    const { ensureInstance } = await import("../bootstrap");
+    const result = await ensureInstance(tempDir);
+    const branchStep = result.steps.find((s) => s.step === "local-branch");
+    expect(branchStep?.status).toBe("skipped");
+    expect(branchStep?.reason).toBe("rebase_in_progress");
   });
 });

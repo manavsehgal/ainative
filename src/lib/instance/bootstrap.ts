@@ -1,9 +1,10 @@
 import { randomUUID } from "crypto";
 import { existsSync, readFileSync, writeFileSync, chmodSync, renameSync } from "fs";
 import { join } from "path";
-import type { EnsureStepResult, GitOps, ConsentStatus } from "./types";
+import type { EnsureStepResult, EnsureResult, GitOps, ConsentStatus } from "./types";
 import { getInstanceConfig, setInstanceConfig, getGuardrails, setGuardrails } from "./settings";
-import { isPrivateInstance } from "./detect";
+import { isPrivateInstance, isDevMode, hasGitDir, detectRebaseInProgress } from "./detect";
+import { createGitOps } from "./git-ops";
 
 const DEFAULT_BRANCH_NAME = "local";
 
@@ -198,4 +199,55 @@ export async function resolveConsentDecision(): Promise<ConsentDecision> {
     shouldRunPhaseB: current.consentStatus === "enabled",
     reason: current.consentStatus,
   };
+}
+
+/**
+ * Main entry point called from src/instrumentation.ts.
+ * Idempotent — safe to run on every boot.
+ *
+ * Execution order:
+ * 1. Dev-mode gates (env + sentinel) — skip entirely if active
+ * 2. .git presence check — skip if absent (npx runtime)
+ * 3. Phase A: instanceId, local branch (non-destructive, always runs)
+ * 4. Consent: resolves consent decision (stamps firstBootCompletedAt on first call)
+ * 5. Phase B: pre-push hook, pushRemote config (only if consent=enabled)
+ */
+export async function ensureInstance(cwd: string = process.cwd()): Promise<EnsureResult> {
+  if (isDevMode(cwd)) {
+    const reason = process.env.STAGENT_DEV_MODE === "true" ? "dev_mode_env" : "dev_mode_sentinel";
+    return { skipped: reason, steps: [] };
+  }
+
+  if (!hasGitDir(cwd)) {
+    return { skipped: "no_git", steps: [] };
+  }
+
+  const steps: EnsureStepResult[] = [];
+  const git = createGitOps(cwd);
+
+  // Phase A step 1: instance config
+  steps.push(await ensureInstanceConfig());
+
+  // Phase A step 2: local branch — skip if rebase in progress
+  if (detectRebaseInProgress(cwd)) {
+    steps.push({ step: "local-branch", status: "skipped", reason: "rebase_in_progress" });
+  } else {
+    steps.push(ensureLocalBranch(git));
+  }
+
+  // Resolve consent (stamps firstBootCompletedAt on first call, returns decision)
+  const decision = await resolveConsentDecision();
+
+  // Phase B — only if user has explicitly enabled guardrails
+  if (decision.shouldRunPhaseB) {
+    steps.push(ensurePrePushHook(git));
+
+    const config = getInstanceConfig();
+    const blockedBranches = config ? [config.branchName] : [];
+    if (blockedBranches.length > 0) {
+      steps.push(ensureBranchPushConfig(git, blockedBranches));
+    }
+  }
+
+  return { steps };
 }
