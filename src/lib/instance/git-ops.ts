@@ -59,6 +59,28 @@ export function createGitOps(cwd: string = process.cwd()): GitOps {
     setConfig(key: string, value: string): void {
       run(["config", key, value]);
     },
+
+    fetchOrigin(): void {
+      run(["fetch", "origin", "main"]);
+    },
+
+    revParse(ref: string): string | null {
+      try {
+        return run(["rev-parse", ref]);
+      } catch {
+        return null;
+      }
+    },
+
+    countCommitsAhead(from: string, to: string): number {
+      try {
+        const out = run(["rev-list", "--count", `${from}..${to}`]);
+        const n = parseInt(out, 10);
+        return Number.isFinite(n) ? n : 0;
+      } catch {
+        return 0;
+      }
+    },
   };
 }
 

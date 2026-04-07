@@ -20,6 +20,18 @@ export interface Guardrails {
   firstBootCompletedAt: number | null;
 }
 
+export interface UpgradeState {
+  lastPolledAt: number | null;
+  lastUpstreamSha: string | null;
+  localMainSha: string | null;
+  upgradeAvailable: boolean;
+  commitsBehind: number;
+  lastSuccessfulUpgradeAt: number | null;
+  lastUpgradeTaskId: string | null;
+  pollFailureCount: number;
+  lastPollError: string | null;
+}
+
 export type EnsureSkipReason =
   | "dev_mode_env"
   | "dev_mode_sentinel"
@@ -56,4 +68,10 @@ export interface GitOps {
   createAndCheckoutBranch(name: string): void;
   /** Sets a git config value. Throws on failure. */
   setConfig(key: string, value: string): void;
+  /** Fetches from origin. Throws on failure. */
+  fetchOrigin(): void;
+  /** Returns the SHA for a given ref (branch name or remote ref like "origin/main"). Returns null if the ref is unknown. */
+  revParse(ref: string): string | null;
+  /** Returns the count of commits reachable from `to` but not from `from`. Returns 0 if either ref is unknown. */
+  countCommitsAhead(from: string, to: string): number;
 }
