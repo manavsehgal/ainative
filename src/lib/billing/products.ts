@@ -35,8 +35,8 @@ export const STRIPE_PRODUCTS: StripeProduct[] = [
       annual: { id: "price_1TJ2d5RCxnzBPkIXjjiyc7lb", amount: 19000, currency: "usd" },
     },
     paymentLinks: {
-      monthly: "https://buy.stagent.io/fZufZjgKC4q9azrgDzdwc06",
-      annual: "https://buy.stagent.io/bJe00l1PI7Cl7nf1IFdwc0b",
+      monthly: "https://buy.stagent.io/b/fZufZjgKC4q9azrgDzdwc06",
+      annual: "https://buy.stagent.io/b/bJe00l1PI7Cl7nf1IFdwc0b",
     },
   },
   {
@@ -48,8 +48,8 @@ export const STRIPE_PRODUCTS: StripeProduct[] = [
       annual: { id: "price_1TJ2e1RCxnzBPkIXODs5fZW2", amount: 49000, currency: "usd" },
     },
     paymentLinks: {
-      monthly: "https://buy.stagent.io/aFa4gB0LE9Kt22Vevrdwc07",
-      annual: "https://buy.stagent.io/bJe6oJdyq2i1bDv1IFdwc0a",
+      monthly: "https://buy.stagent.io/b/aFa4gB0LE9Kt22Vevrdwc07",
+      annual: "https://buy.stagent.io/b/bJe6oJdyq2i1bDv1IFdwc0a",
     },
   },
   {
@@ -61,8 +61,8 @@ export const STRIPE_PRODUCTS: StripeProduct[] = [
       annual: { id: "price_1TJ2evRCxnzBPkIXqIRaDxQp", amount: 99000, currency: "usd" },
     },
     paymentLinks: {
-      monthly: "https://buy.stagent.io/9B628t2TM5udazr72Zdwc08",
-      annual: "https://buy.stagent.io/dRmfZjbqicWF5f7873dwc09",
+      monthly: "https://buy.stagent.io/b/9B628t2TM5udazr72Zdwc08",
+      annual: "https://buy.stagent.io/b/dRmfZjbqicWF5f7873dwc09",
     },
   },
 ];

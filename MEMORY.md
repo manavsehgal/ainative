@@ -55,6 +55,7 @@ This file captures evolving project facts, decisions, and recurring gotchas that
 - Raw Drizzle `sql` interpolation for column references is easy to misuse; prefer typed query builder patterns.
 - Tailwind v4 utility layers can beat naive custom selectors; increased specificity may be required when overriding `data-slot` components.
 - New sheet or dialog bodies often need explicit inner padding; do not assume Radix/shadcn body spacing exists by default.
+- **All stagent clones on a machine share `~/.stagent/stagent.db`** (see `src/lib/utils/stagent-paths.ts`) unless `STAGENT_DATA_DIR` is set in `.env.local`. Any clone used for license/tier experiments — e.g. the wealth-manager evaluation branch at `/Users/manavsehgal/Developer/stagent-wealth` (isolated to `~/.stagent-wealth/`) — MUST override `STAGENT_DATA_DIR` or its `licenseManager.activate()` writes (and any other DB mutations) will leak into every other clone. Symptom: main repo's Settings page shows `scale` instead of `community` after the wealth clone runs.
 
 ## Browser and Capture Notes
 
