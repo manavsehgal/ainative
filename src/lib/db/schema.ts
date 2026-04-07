@@ -202,6 +202,14 @@ export const schedules = sqliteTable(
     }),
     /** JSON array of channel config IDs for delivery after firing */
     deliveryChannels: text("delivery_channels"),
+    /** Exponential moving average of turns used per child task firing */
+    avgTurnsPerFiring: integer("avg_turns_per_firing"),
+    /** Turns used by the most recent firing */
+    lastTurnCount: integer("last_turn_count"),
+    /** Consecutive failed firings (reset to 0 on success). Auto-pause at 3. */
+    failureStreak: integer("failure_streak").default(0).notNull(),
+    /** Detected reason for the most recent failure (turn_limit_exceeded, timeout, etc.) */
+    lastFailureReason: text("last_failure_reason"),
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
   },

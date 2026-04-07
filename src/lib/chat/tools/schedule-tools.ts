@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { schedules } from "@/lib/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { ok, err, type ToolContext } from "./helpers";
+import { analyzePromptEfficiency } from "@/lib/schedules/prompt-analyzer";
 
 const VALID_SCHEDULE_STATUSES = [
   "active",
@@ -97,6 +98,39 @@ export function scheduleTools(ctx: ToolContext) {
           const effectiveProjectId = args.projectId ?? ctx.projectId ?? null;
           const now = new Date();
           const id = crypto.randomUUID();
+
+          // Auto-stagger: if other active schedules in this project would
+          // collide with the requested cron, offset its minute field. We scope
+          // to the same project so unrelated workspaces don't interfere.
+          const { computeStaggeredCron } = await import(
+            "@/lib/schedules/interval-parser"
+          );
+          const existing = await db
+            .select({ cron: schedules.cronExpression })
+            .from(schedules)
+            .where(
+              effectiveProjectId
+                ? and(
+                    eq(schedules.status, "active"),
+                    eq(schedules.projectId, effectiveProjectId)
+                  )
+                : eq(schedules.status, "active")
+            );
+          const staggerResult = computeStaggeredCron(
+            cronExpression,
+            existing.map((s) => s.cron)
+          );
+          if (staggerResult.offsetApplied > 0) {
+            console.log(
+              `[scheduler] staggered "${args.name}" by ${staggerResult.offsetApplied}min to avoid collision (${cronExpression} → ${staggerResult.cronExpression})`
+            );
+            cronExpression = staggerResult.cronExpression;
+          }
+
+          // Surface prompt-efficiency warnings before creating the schedule.
+          // We still create the schedule — these are guidance, not blockers.
+          const warnings = analyzePromptEfficiency(args.prompt);
+
           const nextFireAt = computeNextFireTime(cronExpression, now);
           const expiresAt = args.expiresInHours
             ? new Date(now.getTime() + args.expiresInHours * 60 * 60 * 1000)
@@ -126,7 +160,16 @@ export function scheduleTools(ctx: ToolContext) {
             .where(eq(schedules.id, id));
 
           ctx.onToolResult?.("create_schedule", schedule);
-          return ok(schedule);
+          return ok({
+            schedule,
+            warnings,
+            staggered: staggerResult.offsetApplied > 0
+              ? {
+                  offsetMinutes: staggerResult.offsetApplied,
+                  originalCron: staggerResult.collided ? args.interval : undefined,
+                }
+              : undefined,
+          });
         } catch (e) {
           return err(e instanceof Error ? e.message : "Failed to create schedule");
         }
