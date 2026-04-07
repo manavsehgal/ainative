@@ -93,9 +93,15 @@ class LicenseManager {
     }
   }
 
-  /** Current tier — synchronous, zero-latency (reads from cache) */
+  /**
+   * Current tier — reads directly from DB to avoid stale singleton cache
+   * under Turbopack module instance separation. SQLite primary-key lookup
+   * is sub-millisecond, so the previous cache shortcut is not worth the
+   * staleness risk that caused gated limits to fall back to community
+   * even on paid tiers.
+   */
   getTier(): LicenseTier {
-    return this.cache?.tier ?? "community";
+    return this.getTierFromDb();
   }
 
   /**
@@ -128,17 +134,14 @@ class LicenseManager {
     return TIER_LIMITS[this.getTier()][resource];
   }
 
-  /** Get the full cached license state */
+  /**
+   * Get the full license state — reads directly from DB for the same
+   * reason as getTier(): the in-memory cache can be stale across
+   * Turbopack module instances, causing tier/email/expiry to disagree
+   * with what activate() just wrote.
+   */
   getStatus(): CachedLicense & { tier: LicenseTier } {
-    return {
-      tier: this.getTier(),
-      status: this.cache?.status ?? "inactive",
-      email: this.cache?.email ?? null,
-      activatedAt: this.cache?.activatedAt ?? null,
-      expiresAt: this.cache?.expiresAt ?? null,
-      lastValidatedAt: this.cache?.lastValidatedAt ?? null,
-      gracePeriodExpiresAt: this.cache?.gracePeriodExpiresAt ?? null,
-    };
+    return this.getStatusFromDb();
   }
 
   /**
