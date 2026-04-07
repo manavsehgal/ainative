@@ -1,5 +1,74 @@
 # Feature Changelog
 
+## 2026-04-07
+
+### Hardened — Dev repo safety & single-clone generalization
+
+User review caught two gaps in the initial grooming pass:
+
+**Gap 1 — Main dev repo safety:** if `instance-bootstrap` ships without gates, the canonical dev repo (`/Users/manavsehgal/Developer/stagent`) will have a pre-push hook installed and `branch.main.pushRemote=no_push` set on first `npm run dev` after merge, breaking contributor push workflow catastrophically.
+
+Added **layered defense**:
+- Primary gate: `STAGENT_DEV_MODE=true` env var (per-developer, via `.env.local`)
+- Secondary gate: `.git/stagent-dev-mode` sentinel file (git-dir-scoped, never cloned, persists across `.env.local` churn)
+- Tertiary gate: **two-phase bootstrap with explicit consent for destructive ops** — Phase A (instanceId, local branch creation) runs without consent because it's fully non-destructive; Phase B (pre-push hook, pushRemote config) requires user consent via a first-boot notification with `[Enable guardrails] [Not now] [Never on this clone]` actions
+- Opt-in override: `STAGENT_INSTANCE_MODE=true` beats `STAGENT_DEV_MODE=true` so contributors can test the feature in the main repo
+- **Pre-ship checklist:** implementing PR MUST add `STAGENT_DEV_MODE=true` to main dev repo's `.env.local` AND document in `AGENTS.md` + `CLAUDE.md` before merge
+
+**Gap 2 — Single-clone user generalization:** original spec said "create `local` branch if on `main` with zero local commits, else record current branch as instance branch". The "else" branch would mark a casual user's `main` as protected if they happened to have any local commits predating the feature install — then future upgrades would fail on `main ≠ origin/main`.
+
+Fixed by making `ensureLocalBranch()` **always create `local` at current HEAD** regardless of whether `main` has drifted. `git checkout -b local` is non-destructive — it preserves `main` wherever it was. The upgrade-assistant profile's SKILL.md now includes explicit handling for the "main has drifted from origin/main" case: stops, asks the user interactively, does not auto-resolve.
+
+**New acceptance criteria added to all three feature specs (17 new ACs total):**
+- `instance-bootstrap`: 13 new ACs covering dev-mode gates (env var, sentinel, override), consent flow (all 3 states), non-destructive local branch creation, drifted-main scenario, single-clone generalization test
+- `upgrade-detection`: 3 new ACs — scheduled poll NOT registered in dev mode, badge handles missing instance settings, single-clone user test
+- `upgrade-session`: 6 new ACs — single-clone full flow test, dev-mode skip verification, main dev repo manual safety checklist, drifted-main interactive prompt, Settings → Instance "Dev mode" banner state, upgrade-assistant SKILL.md rule for drifted main
+
+**Upgrade-assistant SKILL.md** now has 4 crucial rules (up from 2): never modify main, abort on failure, **detect and interactively resolve drifted main**, and **treat single-clone `local` branch identically to named private-instance branches**.
+
+### Design-Bridged — upgrade-detection + upgrade-session
+
+`/frontend-designer` UX Recommendation mode produced full UX specification for both features same-day as initial grooming. Added to feature files as new "UX Specification" sections with:
+- Persona, core task, success metric, emotional arc
+- Information architecture (4-touchpoint flow: badge → modal → session → settings)
+- Interaction pattern selection with rationale
+- Complete state tables for all touchpoints (badge 4 states, modal 5 states, session 7 states)
+- Conflict resolution UX (3-card cluster pattern inside PendingApprovalHost)
+- Settings → Instance layout (9 rows of DetailPane content)
+- Load-bearing copy direction (headlines, CTAs, banners)
+- Accessibility requirements (focus management, aria-live regions, radiogroup semantics)
+- Design metric calibration for `/taste` (DV=3, MI=3, VD=6 sheet / VD=4 modal)
+
+17 new UX-testable acceptance criteria added to `upgrade-session`, 7 to `upgrade-detection`. All flagged items from initial grooming now resolved — no UX blockers remain before implementation.
+
+Key UX decisions locked:
+- Session view: **right-side Sheet overlay** (not full page) — user glances back at app during run
+- Pre-flight tone: **educational, non-urgent** — "Upgrade available" not "New version!", "Start upgrade" not "Install"
+- Conflict resolution: **3-card cluster** (Keep mine / Take theirs / Show diff) inside existing PendingApprovalHost
+- Restart notice: **success banner inside session sheet** (not toast/modal) with explicit "Restart dev server" button
+- Badge placement: above Settings in Configure group (not dot indicator on Settings itself)
+
+Zero new design tokens, zero new components — all via existing Calm Ops primitives (StatusChip, Dialog, Sheet, DetailPane, AgentLogsView, PendingApprovalHost, SectionHeading).
+
+### Groomed — Clone Lifecycle & Self-Upgrade (4 features)
+
+Extracted from the architect integration design report for a self-upgrade system. The work automates the manual PRIVATE-INSTANCES runbook (local branch creation, upstream sync, push guardrails, scale activation) into a guided in-app flow available to every git-clone user — not just power users with multiple private instances.
+
+Key architectural decision: upgrade execution runs through the **task pipeline**, not chat tools. Chat tools are DB-only by design (TDR-024); adding shell access would cross a trust boundary. The upgrade session is a `task` row with a new `upgrade-assistant` profile, reusing 100% of existing infrastructure (fire-and-forget execution, canUseTool approval caching, SSE log streaming, pending-approval conflict resolution). Zero new DB tables — all state lives in `settings` key-value JSON rows.
+
+**4 features created (all planned):**
+- `instance-bootstrap` (P1) — idempotent first-boot installer from `instrumentation.ts` alongside scheduler. Creates `local` branch if on clean main, installs pre-push hook, writes per-branch `pushRemote=no_push`, generates stable `instanceId`. Injectable GitOps for testability. Unblocks the other three features.
+- `upgrade-detection` (P1) — hourly scheduled poll via `git fetch` (no GitHub REST — sidesteps rate limits). Sidebar badge as Server Component reading `settings.instance.upgrade`. Persistent failure notification after 3 consecutive polls.
+- `upgrade-session` (P1) — `upgrade-assistant` builtin profile + merge modal + live session sheet view. Conflict resolution via existing pending-approval pattern. Abort path with `git merge --abort` + stash pop. Settings → Instance section surfacing instance metadata. **Flagged for `/frontend-designer` UX review before implementation.**
+- `instance-license-metering` (P2) — hybrid model: local features unlimited, cloud features metered via `(email, machineFingerprint, instanceId)` tuple. `LicenseManager.validateAndRefresh` extended to send the tuple. Supabase edge function work is acknowledged as a separate server-side workstream.
+
+**Proposed TDRs (to be created during implementation):**
+- TDR-028: Self-upgrade via task execution pipeline (rejecting chat-based git tools)
+- TDR-029: Instance bootstrap in instrumentation.ts (idempotent lifecycle hook)
+- TDR-030: Hybrid instance licensing via cloud seat counting
+
+**Zero schema changes.** All new state in `settings` JSON-in-TEXT. Full architect blueprint at `features/architect-report.md`. Motivation and runbook at `PRIVATE-INSTANCES.md` (root, gitignored).
+
 ## 2026-04-06
 
 ### Implemented — Workflow Intelligence Stack (4 features, EXPANDED scope)

@@ -284,6 +284,17 @@ Features that enhance the product but aren't essential for first use — homepag
 |---------|----------|--------|--------------|
 | [ollama-runtime-provider](ollama-runtime-provider.md) | P2 | completed | provider-runtime-abstraction |
 
+### Clone Lifecycle & Self-Upgrade
+
+Automates the PRIVATE-INSTANCES runbook — turns the manual `git merge main` + scale activation dance into a guided in-app flow for every git-clone user. Foundation for the self-modifying dev env model where users customize stagent via stagent chat itself.
+
+| Feature | Priority | Status | Dependencies |
+|---------|----------|--------|--------------|
+| [instance-bootstrap](instance-bootstrap.md) | P1 | planned | — |
+| [upgrade-detection](upgrade-detection.md) | P1 | planned | instance-bootstrap, scheduled-prompt-loops |
+| [upgrade-session](upgrade-session.md) | P1 | planned | instance-bootstrap, upgrade-detection, agent-integration, agent-profile-catalog |
+| [instance-license-metering](instance-license-metering.md) | P2 | planned | instance-bootstrap, local-license-manager, license-activation-flow |
+
 ## Dependency Graph
 
 Critical path through the MVP:
