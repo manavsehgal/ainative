@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { execFileSync } from "child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "fs";
+import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 
@@ -108,5 +108,76 @@ describe("ensureLocalBranch (Phase A)", () => {
     expect(localSha).toBe(mainSha);
     const mainShaAfter = execFileSync("git", ["rev-parse", "main"], { cwd: tempDir, encoding: "utf-8" }).trim();
     expect(mainShaAfter).toBe(mainSha);
+  });
+});
+
+describe("ensurePrePushHook (Phase B)", () => {
+  it("writes a pre-push hook with the STAGENT_HOOK_VERSION marker", async () => {
+    const { createGitOps } = await import("../git-ops");
+    const { ensurePrePushHook } = await import("../bootstrap");
+    const ops = createGitOps(tempDir);
+    const result = ensurePrePushHook(ops);
+    expect(result.status).toBe("ok");
+    const hookPath = join(tempDir, ".git", "hooks", "pre-push");
+    expect(existsSync(hookPath)).toBe(true);
+    const content = readFileSync(hookPath, "utf-8");
+    expect(content).toContain("STAGENT_HOOK_VERSION=");
+    expect(content).toContain("ALLOW_PRIVATE_PUSH");
+    const mode = statSync(hookPath).mode & 0o777;
+    expect(mode & 0o100).toBeTruthy();
+  });
+
+  it("is a no-op when a hook with matching version already exists", async () => {
+    const { createGitOps } = await import("../git-ops");
+    const { ensurePrePushHook } = await import("../bootstrap");
+    const ops = createGitOps(tempDir);
+    ensurePrePushHook(ops); // first install
+    const firstMtime = statSync(join(tempDir, ".git", "hooks", "pre-push")).mtimeMs;
+    const result = ensurePrePushHook(ops);
+    expect(result.status).toBe("skipped");
+    expect(result.reason).toBe("already_installed");
+    const secondMtime = statSync(join(tempDir, ".git", "hooks", "pre-push")).mtimeMs;
+    expect(secondMtime).toBe(firstMtime);
+  });
+
+  it("backs up a pre-existing non-stagent hook before installing", async () => {
+    const customHook = "#!/bin/sh\necho custom hook\n";
+    writeFileSync(join(tempDir, ".git", "hooks", "pre-push"), customHook);
+    chmodSync(join(tempDir, ".git", "hooks", "pre-push"), 0o755);
+    const { createGitOps } = await import("../git-ops");
+    const { ensurePrePushHook } = await import("../bootstrap");
+    const ops = createGitOps(tempDir);
+    const result = ensurePrePushHook(ops);
+    expect(result.status).toBe("ok");
+    const backupPath = join(tempDir, ".git", "hooks", "pre-push.stagent-backup");
+    expect(existsSync(backupPath)).toBe(true);
+    expect(readFileSync(backupPath, "utf-8")).toBe(customHook);
+    expect(readFileSync(join(tempDir, ".git", "hooks", "pre-push"), "utf-8"))
+      .toContain("STAGENT_HOOK_VERSION=");
+  });
+});
+
+describe("ensureBranchPushConfig (Phase B)", () => {
+  it("sets branch.local.pushRemote=no_push", async () => {
+    const { createGitOps } = await import("../git-ops");
+    const { ensureLocalBranch, ensureBranchPushConfig } = await import("../bootstrap");
+    const ops = createGitOps(tempDir);
+    ensureLocalBranch(ops);
+    const result = ensureBranchPushConfig(ops, ["local"]);
+    expect(result.status).toBe("ok");
+    const value = execFileSync("git", ["config", "--get", "branch.local.pushRemote"], { cwd: tempDir, encoding: "utf-8" }).trim();
+    expect(value).toBe("no_push");
+  });
+
+  it("handles multiple blocked branches", async () => {
+    const { createGitOps } = await import("../git-ops");
+    const { ensureBranchPushConfig } = await import("../bootstrap");
+    const ops = createGitOps(tempDir);
+    ops.createAndCheckoutBranch("wealth-mgr");
+    ops.createAndCheckoutBranch("investor-mgr");
+    const result = ensureBranchPushConfig(ops, ["wealth-mgr", "investor-mgr"]);
+    expect(result.status).toBe("ok");
+    expect(execFileSync("git", ["config", "--get", "branch.wealth-mgr.pushRemote"], { cwd: tempDir, encoding: "utf-8" }).trim()).toBe("no_push");
+    expect(execFileSync("git", ["config", "--get", "branch.investor-mgr.pushRemote"], { cwd: tempDir, encoding: "utf-8" }).trim()).toBe("no_push");
   });
 });
