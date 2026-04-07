@@ -87,6 +87,12 @@ describe("isPrivateInstance", () => {
     const { isPrivateInstance } = await loadDetect();
     expect(isPrivateInstance()).toBe(true);
   });
+
+  it("returns false when STAGENT_DATA_DIR equals default with trailing slash", async () => {
+    vi.stubEnv("STAGENT_DATA_DIR", join(homedir(), ".stagent") + "/");
+    const { isPrivateInstance } = await loadDetect();
+    expect(isPrivateInstance()).toBe(false);
+  });
 });
 
 describe("detectRebaseInProgress", () => {

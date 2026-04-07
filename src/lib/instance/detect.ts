@@ -1,5 +1,5 @@
 import { existsSync } from "fs";
-import { join } from "path";
+import { join, resolve } from "path";
 import { homedir } from "os";
 
 /**
@@ -33,7 +33,7 @@ export function isPrivateInstance(): boolean {
   const override = process.env.STAGENT_DATA_DIR;
   if (!override) return false;
   const defaultDir = join(homedir(), ".stagent");
-  return override !== defaultDir;
+  return resolve(override) !== resolve(defaultDir);
 }
 
 /**
