@@ -25,7 +25,6 @@ import {
   channelBindings,
   channelConfigs,
   agentMessages,
-  license,
   workflowDocumentInputs,
   scheduleDocumentInputs,
   projectDocumentDefaults,
@@ -55,7 +54,9 @@ const screenshotsDir = join(dataDir, "screenshots");
 
 /**
  * Wipe all data tables (FK-safe order) and uploaded files.
- * Preserves the settings table (auth config).
+ * Preserves the settings table (auth config) and the license table
+ * (paid tier activation) — clearing operational data should never
+ * silently downgrade a paid instance back to community.
  */
 export function clearAllData() {
   const sampleProfilesDeleted = clearSampleProfiles();
@@ -83,8 +84,8 @@ export function clearAllData() {
   const agentMessagesDeleted = db.delete(agentMessages).run().changes;
   const channelConfigsDeleted = db.delete(channelConfigs).run().changes;
 
-  // License table — no FK dependencies
-  const licenseDeleted = db.delete(license).run().changes;
+  // License table is intentionally preserved — clearing operational data
+  // should never downgrade a paid instance back to community tier.
 
   // Snapshots are intentionally preserved — they are backups, not working data
 
@@ -195,7 +196,6 @@ export function clearAllData() {
     scheduleTableInputs: scheduleTableInputsDeleted,
     files: filesDeleted,
     screenshots: screenshotsDeleted,
-    license: licenseDeleted,
     workflowExecutionStats: executionStatsDeleted,
   };
 }
