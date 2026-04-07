@@ -2,6 +2,22 @@ export async function register() {
   // Only start background services on the server (not during build or edge)
   if (process.env.NEXT_RUNTIME === "nodejs") {
     try {
+      // Instance bootstrap — creates local branch, handles dev-mode gates, consent flow.
+      // Runs BEFORE other startup so instance config is available downstream.
+      // Safe in the canonical stagent dev repo thanks to STAGENT_DEV_MODE=true
+      // in .env.local plus the .git/stagent-dev-mode sentinel file.
+      const { ensureInstance } = await import("@/lib/instance/bootstrap");
+      const instanceResult = await ensureInstance();
+      if (instanceResult.skipped) {
+        console.log(`[instance] bootstrap skipped: ${instanceResult.skipped}`);
+      } else {
+        for (const step of instanceResult.steps) {
+          if (step.status === "failed") {
+            console.error(`[instance] ${step.step} failed: ${step.reason}`);
+          }
+        }
+      }
+
       // License manager — initialize from DB (creates default row if needed)
       const { licenseManager } = await import("@/lib/license/manager");
       licenseManager.initialize();
