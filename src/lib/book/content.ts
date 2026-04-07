@@ -156,6 +156,16 @@ export const CHAPTERS: BookChapter[] = [
     readingTime: 10,
     sections: [],
   },
+  {
+    id: "ch-13",
+    number: 13,
+    title: "The Wealth Manager",
+    subtitle: "When a Solo Founder Builds a Domain Application in a Day Using the Machine That Built Itself",
+    part: PARTS[3],
+    readingTime: 16,
+    relatedDocs: ["workflows", "profiles", "schedules"],
+    sections: [],
+  },
 ];
 
 /**

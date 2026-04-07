@@ -11,14 +11,14 @@ Update AI Native book chapters when their upstream dependencies change, then pro
 
 | Metric | Value |
 |--------|-------|
-| Chapters | 12 |
+| Chapters | 13 |
 | Parts | 4 |
-| Total Words | 33,627 |
-| Avg Words/Chapter | 2,802 |
-| Total Reading Time | 156 min (2.6 hrs) |
-| Est. Paperback Pages | ~135 (at 250 words/page) |
-| Case Studies | 43 across 10+ entities |
-| Code Examples | 15 TypeScript blocks |
+| Total Words | 37,603 |
+| Avg Words/Chapter | 2,893 |
+| Total Reading Time | 172 min (2.87 hrs) |
+| Est. Paperback Pages | ~151 (at 250 words/page) |
+| Case Studies | 45 across 11+ entities |
+| Code Examples | 17 TypeScript blocks |
 | Callout Types | case-study (primary) |
 | License | Apache 2.0 (repository-level) |
 
@@ -38,6 +38,7 @@ Update AI Native book chapters when their upstream dependencies change, then pro
 | 10 | The World Model | 4 | 2,699 | 15 min |
 | 11 | The Machine That Builds Machines | 4 | 3,281 | 14 min |
 | 12 | The Road Ahead | 4 | 2,416 | 10 min |
+| 13 | The Wealth Manager | 4 | 3,976 | 16 min |
 
 **After any update, recount words and update this table and the stats above.** Use `wc -w book/chapters/*.md` for totals and per-chapter counts. Paperback pages = total words / 250 (rounded up).
 

@@ -18,6 +18,7 @@ export const CHAPTER_SLUGS: Record<string, string> = {
   "ch-10": "ch-10-the-world-model",
   "ch-11": "ch-11-the-machine-that-builds-machines",
   "ch-12": "ch-12-the-road-ahead",
+  "ch-13": "ch-13-the-wealth-manager",
 };
 
 interface ChapterMapping {
@@ -98,6 +99,11 @@ export const CHAPTER_MAPPING: Record<string, ChapterMapping> = {
     docs: ["workflows", "profiles", "schedules"],
     sourceFiles: [],
     caseStudies: ["stripe-minions", "ramp-background-agent", "harvey-legal-is-next", "sequoa-hierarchy-to-intelligence", "karpathy-one-gpu-research-lab", "making-machine-that-builds-machines"],
+  },
+  "ch-13": {
+    docs: ["workflows", "profiles", "schedules"],
+    sourceFiles: ["src/lib/workflows/engine.ts", "src/lib/schedules/scheduler.ts", "src/lib/agents/profiles/registry.ts"],
+    caseStudies: ["making-machine-that-builds-machines"],
   },
 };
 
