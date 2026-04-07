@@ -123,7 +123,11 @@ Run the same business process on different AI providers without changing a line 
 
 ## Architecture
 
-<img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/architecture.svg" alt="Stagent architecture diagram" width="900" />
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/architecture-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/architecture-light.svg">
+  <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/architecture-light.svg" alt="Stagent architecture diagram" width="900" />
+</picture>
 
 **Key design decisions:**
 
