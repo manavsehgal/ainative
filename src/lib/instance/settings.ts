@@ -26,18 +26,14 @@ export function getInstanceConfig(): InstanceConfig | null {
   return readJson<InstanceConfig>(INSTANCE_KEY);
 }
 
-export function setInstanceConfig(config: InstanceConfig): void {
-  // setSetting returns a Promise but the underlying better-sqlite3 operation
-  // completes synchronously. Discarding the Promise with `void` is safe and
-  // lets this module expose a synchronous surface that the bootstrap
-  // orchestrator can call without forcing all callers to be async.
-  void setSetting(INSTANCE_KEY, JSON.stringify(config));
+export async function setInstanceConfig(config: InstanceConfig): Promise<void> {
+  await setSetting(INSTANCE_KEY, JSON.stringify(config));
 }
 
 export function getGuardrails(): Guardrails {
   return readJson<Guardrails>(GUARDRAILS_KEY) ?? { ...DEFAULT_GUARDRAILS };
 }
 
-export function setGuardrails(guardrails: Guardrails): void {
-  void setSetting(GUARDRAILS_KEY, JSON.stringify(guardrails));
+export async function setGuardrails(guardrails: Guardrails): Promise<void> {
+  await setSetting(GUARDRAILS_KEY, JSON.stringify(guardrails));
 }
