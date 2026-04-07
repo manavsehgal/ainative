@@ -179,6 +179,10 @@ export function bootstrapStagentDatabase(sqlite: Database.Database): void {
       heartbeat_budget_per_day INTEGER,
       heartbeat_spent_today INTEGER DEFAULT 0 NOT NULL,
       heartbeat_budget_reset_at INTEGER,
+      avg_turns_per_firing INTEGER,
+      last_turn_count INTEGER,
+      failure_streak INTEGER DEFAULT 0 NOT NULL,
+      last_failure_reason TEXT,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL,
       FOREIGN KEY (project_id) REFERENCES projects(id) ON UPDATE NO ACTION ON DELETE NO ACTION
@@ -539,6 +543,13 @@ export function bootstrapStagentDatabase(sqlite: Database.Database): void {
   `);
 
   addColumnIfMissing(`ALTER TABLE schedules ADD COLUMN delivery_channels TEXT;`);
+  // Schedule health-monitoring columns (collision-prevention feature).
+  // Nullable so existing rows backfill cleanly; failure_streak defaults to 0
+  // so the auto-pause logic treats existing schedules as "no failures yet".
+  addColumnIfMissing(`ALTER TABLE schedules ADD COLUMN avg_turns_per_firing INTEGER;`);
+  addColumnIfMissing(`ALTER TABLE schedules ADD COLUMN last_turn_count INTEGER;`);
+  addColumnIfMissing(`ALTER TABLE schedules ADD COLUMN failure_streak INTEGER DEFAULT 0 NOT NULL;`);
+  addColumnIfMissing(`ALTER TABLE schedules ADD COLUMN last_failure_reason TEXT;`);
   addColumnIfMissing(`ALTER TABLE channel_configs ADD COLUMN direction TEXT DEFAULT 'outbound' NOT NULL;`);
 
   // ── Bidirectional Channel Chat ──────────────────────────────────────────

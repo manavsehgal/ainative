@@ -13,9 +13,11 @@
 
 import { db } from "@/lib/db";
 import { schedules, tasks, agentLogs, scheduleDocumentInputs, documents } from "@/lib/db/schema";
-import { eq, and, lte, inArray, sql } from "drizzle-orm";
+import { eq, and, lte, inArray, sql, asc } from "drizzle-orm";
 import { computeNextFireTime } from "./interval-parser";
 import { executeTaskWithRuntime } from "@/lib/agents/runtime";
+import { getSetting } from "@/lib/settings/helpers";
+import { SETTINGS_KEYS } from "@/lib/constants/settings";
 import { checkActiveHours } from "./active-hours";
 import {
   buildHeartbeatPrompt,
@@ -29,6 +31,158 @@ import { processHandoffs } from "@/lib/agents/handoff/bus";
 const POLL_INTERVAL_MS = 60_000; // 60 seconds
 
 let intervalHandle: ReturnType<typeof setInterval> | null = null;
+let draining = false;
+
+/**
+ * Drain queued schedule/heartbeat tasks after a firing completes.
+ *
+ * Background: schedule firings used to be fire-and-forget. When multiple
+ * schedules collided on the same minute (e.g. three `*​/30 * * * *` schedules
+ * all firing at :00), one task would execute and the others would sit in
+ * "queued" until the next poll cycle 30+ minutes later. This drain hook walks
+ * the queue immediately on completion so collisions resolve in seconds.
+ *
+ * Sequential by design: the executor processes one task at a time to avoid
+ * concurrent agent costs and write conflicts. We use a module-level `draining`
+ * flag to ensure only one drain loop runs even if multiple firings finish in
+ * close succession.
+ */
+export async function drainQueue(): Promise<void> {
+  if (draining) return;
+  draining = true;
+  try {
+    // Loop until the queue is empty so a single drain cycle clears all
+    // collided tasks rather than only the next one.
+    while (true) {
+      const [nextQueued] = await db
+        .select({ id: tasks.id })
+        .from(tasks)
+        .where(
+          and(
+            eq(tasks.status, "queued"),
+            inArray(tasks.sourceType, ["scheduled", "heartbeat"])
+          )
+        )
+        .orderBy(asc(tasks.createdAt))
+        .limit(1);
+
+      if (!nextQueued) return;
+
+      console.log(`[scheduler] draining queue → executing task ${nextQueued.id}`);
+      try {
+        await executeTaskWithRuntime(nextQueued.id);
+      } catch (err) {
+        console.error(`[scheduler] drain task ${nextQueued.id} failed:`, err);
+      }
+
+      // Record health metrics for the schedule that owns this task (if any).
+      try {
+        const [taskRow] = await db
+          .select({ scheduleId: tasks.scheduleId })
+          .from(tasks)
+          .where(eq(tasks.id, nextQueued.id));
+        if (taskRow?.scheduleId) {
+          await recordFiringMetrics(taskRow.scheduleId, nextQueued.id);
+        }
+      } catch (err) {
+        console.error(`[scheduler] metrics recording failed for ${nextQueued.id}:`, err);
+      }
+    }
+  } finally {
+    draining = false;
+  }
+}
+
+/**
+ * Build the turn-budget guidance header that prepends to schedule-spawned
+ * task descriptions. Reads `runtime.maxTurns` so the agent sees the same
+ * limit the runtime will enforce, and gives concrete batching guidance to
+ * head off per-item loop patterns that exhaust turns.
+ */
+async function buildTurnBudgetHeader(): Promise<string> {
+  const raw = await getSetting(SETTINGS_KEYS.MAX_TURNS);
+  const maxTurns = raw ? Number.parseInt(raw, 10) || 50 : 50;
+  return [
+    `TURN BUDGET: You have ${maxTurns} turns maximum. Plan accordingly.`,
+    `IMPORTANT: Batch operations to minimize turns.`,
+    `- Use ONE web search with multiple keywords instead of per-item searches`,
+    `- Read multiple tables in a single turn when possible`,
+    `- Do NOT loop through items with individual tool calls`,
+    ``,
+    ``,
+  ].join("\n");
+}
+
+/**
+ * Detect a failure reason from a completed task by inspecting its result text.
+ * Used by recordFiringMetrics to surface meaningful causes (turn limit, timeout,
+ * generic) without needing additional schema columns on tasks.
+ */
+function detectFailureReason(result: string | null): string {
+  if (!result) return "unknown";
+  const lower = result.toLowerCase();
+  if (lower.includes("turn") && (lower.includes("limit") || lower.includes("max"))) {
+    return "turn_limit_exceeded";
+  }
+  if (lower.includes("timeout") || lower.includes("timed out")) {
+    return "timeout";
+  }
+  if (lower.includes("budget")) return "budget_exceeded";
+  return "error";
+}
+
+/**
+ * Record per-firing health metrics on a schedule and auto-pause after
+ * 3 consecutive failures. Uses an exponential moving average for turn count
+ * so the metric reflects recent behavior more than ancient firings.
+ */
+export async function recordFiringMetrics(
+  scheduleId: string,
+  taskId: string
+): Promise<void> {
+  const [task] = await db
+    .select({ status: tasks.status, result: tasks.result })
+    .from(tasks)
+    .where(eq(tasks.id, taskId));
+  if (!task) return;
+
+  const [schedule] = await db
+    .select()
+    .from(schedules)
+    .where(eq(schedules.id, scheduleId));
+  if (!schedule) return;
+
+  const turnCountResult = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(agentLogs)
+    .where(eq(agentLogs.taskId, taskId));
+  const turns = Number(turnCountResult[0]?.count ?? 0);
+
+  const prevAvg = schedule.avgTurnsPerFiring ?? turns;
+  const newAvg = Math.round(prevAvg * 0.7 + turns * 0.3);
+
+  const isFailure = task.status === "failed";
+  const newStreak = isFailure ? (schedule.failureStreak ?? 0) + 1 : 0;
+  const shouldAutoPause = isFailure && newStreak >= 3 && schedule.status === "active";
+
+  await db
+    .update(schedules)
+    .set({
+      lastTurnCount: turns,
+      avgTurnsPerFiring: newAvg,
+      failureStreak: newStreak,
+      lastFailureReason: isFailure ? detectFailureReason(task.result) : null,
+      status: shouldAutoPause ? "paused" : schedule.status,
+      updatedAt: new Date(),
+    })
+    .where(eq(schedules.id, scheduleId));
+
+  if (shouldAutoPause) {
+    console.warn(
+      `[scheduler] auto-paused "${schedule.name}" after 3 consecutive failures`
+    );
+  }
+}
 
 /**
  * Start the scheduler singleton. Safe to call multiple times — subsequent
@@ -162,13 +316,17 @@ async function fireSchedule(
   const taskId = crypto.randomUUID();
   const firingNumber = schedule.firingCount + 1;
 
+  // Prepend turn-budget guidance so the agent can plan batched tool calls
+  // instead of per-item loops that exhaust maxTurns mid-task.
+  const budgetHeader = await buildTurnBudgetHeader();
+
   await db.insert(tasks).values({
     id: taskId,
     projectId: schedule.projectId,
     workflowId: null,
     scheduleId: schedule.id,
     title: `${schedule.name} — firing #${firingNumber}`,
-    description: schedule.prompt,
+    description: budgetHeader + schedule.prompt,
     status: "queued",
     assignedAgent: schedule.assignedAgent,
     agentProfile: schedule.agentProfile,
@@ -220,13 +378,19 @@ async function fireSchedule(
     })
     .where(eq(schedules.id, schedule.id));
 
-  // Fire-and-forget task execution
-  executeTaskWithRuntime(taskId).catch((err) => {
-    console.error(
-      `[scheduler] task execution failed for schedule ${schedule.id}, task ${taskId}:`,
-      err
-    );
-  });
+  // Drain-aware task execution. We still don't await in fireSchedule (the
+  // poll loop must keep claiming other due schedules), but on completion we
+  // record metrics and trigger drainQueue() so any tasks queued by colliding
+  // schedules execute immediately instead of waiting for the next poll.
+  executeTaskWithRuntime(taskId)
+    .catch((err) => {
+      console.error(
+        `[scheduler] task execution failed for schedule ${schedule.id}, task ${taskId}:`,
+        err
+      );
+    })
+    .then(() => recordFiringMetrics(schedule.id, taskId).catch(() => {}))
+    .then(() => drainQueue().catch(() => {}));
 
   console.log(
     `[scheduler] fired schedule "${schedule.name}" → task ${taskId} (firing #${firingNumber})`
@@ -371,6 +535,12 @@ async function fireHeartbeat(
   } catch (err) {
     console.error(`[scheduler] heartbeat evaluation failed for "${schedule.name}":`, err);
   }
+
+  // Record health metrics and trigger drain (fire-and-forget — we still need
+  // to finish heartbeat post-processing below before returning).
+  recordFiringMetrics(schedule.id, evalTaskId)
+    .catch(() => {})
+    .then(() => drainQueue().catch(() => {}));
 
   // 6. Read the completed task result
   const [evalTask] = await db
