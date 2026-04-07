@@ -258,9 +258,38 @@ class LicenseManager {
       // Skip validation for community tier — no license to validate
       if (this.getTier() === "community") return;
 
-      // Dynamic import to avoid circular deps and allow Supabase to be optional
+      // Dynamic imports to avoid circular deps and allow both modules to
+      // stay optional (cloud-validation depends on Supabase; instance
+      // modules depend on the settings helpers which must also be lazy
+      // loaded to avoid pulling in DB wiring during tests).
       const { validateLicenseWithCloud } = await import("./cloud-validation");
-      const result = await validateLicenseWithCloud(this.cache?.email ?? "");
+
+      // Construct the (email, machineFingerprint, instanceId) tuple per
+      // TDR-030: hybrid instance licensing. Local features are never gated
+      // by instance count; the server uses the tuple to meter cloud-side
+      // features like sync and marketplace.
+      let machineFingerprint: string | undefined;
+      let instanceId: string | undefined;
+      try {
+        const { getMachineFingerprint } = await import(
+          "@/lib/instance/fingerprint"
+        );
+        machineFingerprint = getMachineFingerprint();
+      } catch {
+        // Fingerprint is optional; omit on failure.
+      }
+      try {
+        const { getInstanceConfig } = await import("@/lib/instance/settings");
+        instanceId = getInstanceConfig()?.instanceId;
+      } catch {
+        // instanceId is optional; omit when the instance module hasn't run.
+      }
+
+      const result = await validateLicenseWithCloud({
+        email: this.cache?.email ?? "",
+        machineFingerprint,
+        instanceId,
+      });
 
       if (result.valid) {
         const now = new Date();
@@ -275,6 +304,25 @@ class LicenseManager {
           })
           .where(eq(licenseTable.id, LICENSE_ROW_ID))
           .run();
+
+        // Surface seat-over-limit state without downgrading local tier.
+        // Local features stay unlimited per TDR-030; only cloud features
+        // (rendered via the upgrade-cta-banners feature) meter on this.
+        if (result.seatStatus && result.seatStatus !== "ok") {
+          try {
+            const { setSetting } = await import("@/lib/settings/helpers");
+            await setSetting("license.seatStatus", result.seatStatus);
+          } catch {
+            // Best-effort; seat status is advisory.
+          }
+        } else {
+          try {
+            const { setSetting } = await import("@/lib/settings/helpers");
+            await setSetting("license.seatStatus", "ok");
+          } catch {
+            // Best-effort.
+          }
+        }
       } else {
         this.enterGracePeriod();
       }

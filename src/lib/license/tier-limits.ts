@@ -21,7 +21,8 @@ export type LimitResource =
   | "contextVersions"
   | "activeSchedules"
   | "historyRetentionDays"
-  | "parallelWorkflows";
+  | "parallelWorkflows"
+  | "maxCloudInstances";
 
 export const TIER_LIMITS: Record<LicenseTier, Record<LimitResource, number>> = {
   community: {
@@ -30,6 +31,9 @@ export const TIER_LIMITS: Record<LicenseTier, Record<LimitResource, number>> = {
     activeSchedules: 5,
     historyRetentionDays: 30,
     parallelWorkflows: 3,
+    // Advisory client-side only; authoritative enforcement is server-side.
+    // See TDR-030: hybrid instance licensing.
+    maxCloudInstances: 1,
   },
   solo: {
     agentMemories: 200,
@@ -37,6 +41,7 @@ export const TIER_LIMITS: Record<LicenseTier, Record<LimitResource, number>> = {
     activeSchedules: 20,
     historyRetentionDays: 180,
     parallelWorkflows: 5,
+    maxCloudInstances: 2,
   },
   operator: {
     agentMemories: 500,
@@ -44,6 +49,7 @@ export const TIER_LIMITS: Record<LicenseTier, Record<LimitResource, number>> = {
     activeSchedules: 50,
     historyRetentionDays: 365,
     parallelWorkflows: 10,
+    maxCloudInstances: 5,
   },
   scale: {
     agentMemories: Infinity,
@@ -51,6 +57,7 @@ export const TIER_LIMITS: Record<LicenseTier, Record<LimitResource, number>> = {
     activeSchedules: Infinity,
     historyRetentionDays: Infinity,
     parallelWorkflows: Infinity,
+    maxCloudInstances: Infinity,
   },
 } as const;
 
