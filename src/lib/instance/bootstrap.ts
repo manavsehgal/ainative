@@ -240,12 +240,29 @@ export async function ensureInstance(cwd: string = process.cwd()): Promise<Ensur
 
   // Phase B — only if user has explicitly enabled guardrails
   if (decision.shouldRunPhaseB) {
-    steps.push(ensurePrePushHook(git));
+    const hookResult = ensurePrePushHook(git);
+    steps.push(hookResult);
 
     const config = getInstanceConfig();
     const blockedBranches = config ? [config.branchName] : [];
     if (blockedBranches.length > 0) {
-      steps.push(ensureBranchPushConfig(git, blockedBranches));
+      const configResult = ensureBranchPushConfig(git, blockedBranches);
+      steps.push(configResult);
+
+      // Persist guardrail state back to settings so the pre-push hook can
+      // read the list of blocked branches at push time (the hook greps the
+      // serialized JSON of settings.instance.guardrails for the current
+      // branch name). Without this write, the hook would silently allow
+      // all pushes because pushRemoteBlocked would stay [].
+      if (hookResult.status !== "failed" && configResult.status !== "failed") {
+        const current = getGuardrails();
+        await setGuardrails({
+          ...current,
+          prePushHookInstalled: true,
+          prePushHookVersion: STAGENT_HOOK_VERSION,
+          pushRemoteBlocked: blockedBranches,
+        });
+      }
     }
   }
 

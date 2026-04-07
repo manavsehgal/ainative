@@ -325,4 +325,38 @@ describe("ensureInstance orchestrator", () => {
     expect(branchStep?.status).toBe("skipped");
     expect(branchStep?.reason).toBe("rebase_in_progress");
   });
+
+  it("populates guardrails state after a Phase B run with consent=enabled", async () => {
+    // Regression test for the critical bug where ensureBranchPushConfig() set
+    // the git config values but never wrote the blocked branch list back to
+    // settings.instance.guardrails. The hook's grep would never match and all
+    // pushes would be silently allowed.
+    const { setGuardrails, getGuardrails } = await import("../settings");
+    await setGuardrails({
+      prePushHookInstalled: false,
+      prePushHookVersion: "",
+      pushRemoteBlocked: [],
+      consentStatus: "enabled",
+      firstBootCompletedAt: null,
+    });
+    const { ensureInstance, STAGENT_HOOK_VERSION } = await import("../bootstrap");
+    const result = await ensureInstance(tempDir);
+    expect(result.skipped).toBeUndefined();
+    const guardrails = getGuardrails();
+    expect(guardrails.prePushHookInstalled).toBe(true);
+    expect(guardrails.prePushHookVersion).toBe(STAGENT_HOOK_VERSION);
+    expect(guardrails.pushRemoteBlocked).toContain("local");
+  });
+
+  // NOTE: We do not test "single-clone user (STAGENT_DATA_DIR equals default)" at the
+  // orchestrator level here because vi.spyOn(os, "homedir") is not possible in ESM —
+  // Node's os module exports are non-configurable and cannot be redefined (vitest throws
+  // "Cannot redefine property: homedir"). Stubbing STAGENT_DATA_DIR to the real ~/.stagent
+  // would pollute the developer's live database, which is also unacceptable.
+  //
+  // The single-clone path is fully covered at the unit level by
+  // src/lib/instance/__tests__/detect.test.ts → "isPrivateInstance" describe block,
+  // specifically the test "returns false when STAGENT_DATA_DIR equals default ~/.stagent".
+  // That test directly exercises the detect.isPrivateInstance() function that
+  // ensureInstanceConfig() delegates to, making an orchestrator-level duplicate redundant.
 });

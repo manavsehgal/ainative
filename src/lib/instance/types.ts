@@ -23,8 +23,7 @@ export interface Guardrails {
 export type EnsureSkipReason =
   | "dev_mode_env"
   | "dev_mode_sentinel"
-  | "no_git"
-  | "rebase_in_progress";
+  | "no_git";
 
 export type EnsureStepStatus = "ok" | "skipped" | "failed";
 
