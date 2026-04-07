@@ -43,6 +43,7 @@ import {
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { TrustTierBadge } from "@/components/shared/trust-tier-badge";
 import { UnreadBadge } from "@/components/notifications/unread-badge";
+import { UpgradeBadge } from "@/components/instance/upgrade-badge";
 import { AuthStatusDot } from "@/components/settings/auth-status-dot";
 import { StagentLogo } from "@/components/shared/stagent-logo";
 import { WorkspaceIndicator } from "@/components/shared/workspace-indicator";
@@ -183,6 +184,11 @@ function NavGroup({
                       {item.badge && (
                         <span className="group-data-[collapsible=icon]:hidden">
                           <UnreadBadge />
+                        </span>
+                      )}
+                      {item.href === "/settings" && (
+                        <span className="group-data-[collapsible=icon]:hidden">
+                          <UpgradeBadge />
                         </span>
                       )}
                     </Link>

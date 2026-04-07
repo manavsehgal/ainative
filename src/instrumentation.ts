@@ -23,6 +23,11 @@ export async function register() {
       licenseManager.initialize();
       licenseManager.startValidationTimer();
 
+      // Instance upgrade poller — hourly `git fetch` to detect upstream commits.
+      // Skipped in dev mode; lightweight; uses advisory lock to prevent overlap.
+      const { startUpgradePoller } = await import("@/lib/instance/upgrade-poller");
+      startUpgradePoller();
+
       const { startScheduler } = await import("@/lib/schedules/scheduler");
       startScheduler();
 
