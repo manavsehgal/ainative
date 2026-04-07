@@ -181,3 +181,53 @@ describe("ensureBranchPushConfig (Phase B)", () => {
     expect(execFileSync("git", ["config", "--get", "branch.investor-mgr.pushRemote"], { cwd: tempDir, encoding: "utf-8" }).trim()).toBe("no_push");
   });
 });
+
+describe("resolveConsentDecision", () => {
+  it("returns {shouldRunPhaseB: false, reason: 'not_yet'} when consent is not_yet (default)", async () => {
+    const { resolveConsentDecision } = await import("../bootstrap");
+    const decision = await resolveConsentDecision();
+    expect(decision.shouldRunPhaseB).toBe(false);
+    expect(decision.reason).toBe("not_yet");
+  });
+
+  it("returns {shouldRunPhaseB: true} when consent is enabled", async () => {
+    const { setGuardrails } = await import("../settings");
+    await setGuardrails({
+      prePushHookInstalled: false,
+      prePushHookVersion: "",
+      pushRemoteBlocked: [],
+      consentStatus: "enabled",
+      firstBootCompletedAt: null,
+    });
+    const { resolveConsentDecision } = await import("../bootstrap");
+    const decision = await resolveConsentDecision();
+    expect(decision.shouldRunPhaseB).toBe(true);
+    expect(decision.reason).toBe("enabled");
+  });
+
+  it("returns {shouldRunPhaseB: false, reason: 'declined_permanently'}", async () => {
+    const { setGuardrails } = await import("../settings");
+    await setGuardrails({
+      prePushHookInstalled: false,
+      prePushHookVersion: "",
+      pushRemoteBlocked: [],
+      consentStatus: "declined_permanently",
+      firstBootCompletedAt: null,
+    });
+    const { resolveConsentDecision } = await import("../bootstrap");
+    const decision = await resolveConsentDecision();
+    expect(decision.shouldRunPhaseB).toBe(false);
+    expect(decision.reason).toBe("declined_permanently");
+  });
+
+  it("stamps firstBootCompletedAt on first call when it was null", async () => {
+    const { getGuardrails } = await import("../settings");
+    expect(getGuardrails().consentStatus).toBe("not_yet");
+    expect(getGuardrails().firstBootCompletedAt).toBeNull();
+    const { resolveConsentDecision } = await import("../bootstrap");
+    await resolveConsentDecision();
+    const after = getGuardrails();
+    expect(after.consentStatus).toBe("not_yet");
+    expect(after.firstBootCompletedAt).not.toBeNull();
+  });
+});

@@ -1,8 +1,8 @@
 import { randomUUID } from "crypto";
 import { existsSync, readFileSync, writeFileSync, chmodSync, renameSync } from "fs";
 import { join } from "path";
-import type { EnsureStepResult, GitOps } from "./types";
-import { getInstanceConfig, setInstanceConfig } from "./settings";
+import type { EnsureStepResult, GitOps, ConsentStatus } from "./types";
+import { getInstanceConfig, setInstanceConfig, getGuardrails, setGuardrails } from "./settings";
 import { isPrivateInstance } from "./detect";
 
 const DEFAULT_BRANCH_NAME = "local";
@@ -164,4 +164,38 @@ export function ensureBranchPushConfig(git: GitOps, branches: string[]): EnsureS
     };
   }
   return { step: "branch-push-config", status: "ok" };
+}
+
+export interface ConsentDecision {
+  shouldRunPhaseB: boolean;
+  reason: ConsentStatus;
+}
+
+/**
+ * Reads the current consent status from settings and returns a decision
+ * about whether Phase B (destructive guardrail installation) should run.
+ *
+ * On first call, stamps firstBootCompletedAt so the system has a record
+ * that bootstrap has run at least once. This enables the upgrade-session
+ * feature to distinguish "never booted" from "booted but consent not yet
+ * given" in its Settings → Instance UI.
+ *
+ * Does NOT create any UI artifact. The prompt surface is owned by
+ * upgrade-session, which renders a "Enable guardrails" action in the
+ * Settings → Instance section reading from settings.instance.guardrails.
+ */
+export async function resolveConsentDecision(): Promise<ConsentDecision> {
+  const current = getGuardrails();
+
+  if (current.firstBootCompletedAt === null) {
+    await setGuardrails({
+      ...current,
+      firstBootCompletedAt: Math.floor(Date.now() / 1000),
+    });
+  }
+
+  return {
+    shouldRunPhaseB: current.consentStatus === "enabled",
+    reason: current.consentStatus,
+  };
 }
