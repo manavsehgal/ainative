@@ -66,6 +66,12 @@ describe("schedule orchestration end-to-end", () => {
     await tickScheduler();
 
     expect(countRunningScheduledSlots()).toBe(2);
+    const running = db
+      .select()
+      .from(tasks)
+      .where(eq(tasks.status, "running"))
+      .all();
+    expect(running.length).toBe(2);
     const queued = db
       .select()
       .from(tasks)
