@@ -738,11 +738,32 @@ export function WorkflowFormView({
         return;
       }
     } else {
-      if (steps.some((s) => !s.name.trim() || !s.prompt.trim())) {
-        setError("All steps must have a name and prompt");
-        return;
+      // Delay steps are exempted from the name+prompt rule (delay-only steps
+      // have an empty prompt by design). They must instead have a valid
+      // delayDuration that parses cleanly.
+      for (const [index, step] of steps.entries()) {
+        if (step.delayDuration !== undefined) {
+          if (!step.name.trim()) {
+            setError(`Step ${index + 1}: delay step needs a name`);
+            return;
+          }
+          try {
+            parseDelayDuration(step.delayDuration);
+          } catch (err) {
+            setError(
+              `Step ${index + 1}: ${err instanceof Error ? err.message : "invalid delay duration"}`,
+            );
+            return;
+          }
+          continue;
+        }
+        if (!step.name.trim() || !step.prompt.trim()) {
+          setError("All steps must have a name and prompt");
+          return;
+        }
       }
       for (const [index, step] of steps.entries()) {
+        if (step.delayDuration !== undefined) continue;
         const compatibilityError = getProfileCompatibilityError(
           step.agentProfile,
           step.assignedAgent
