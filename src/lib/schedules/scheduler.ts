@@ -28,6 +28,13 @@ import {
 import { sendToChannels } from "@/lib/channels/registry";
 import type { ChannelMessage } from "@/lib/channels/types";
 import { processHandoffs } from "@/lib/agents/handoff/bus";
+import { claimSlot, reapExpiredLeases, countRunningScheduledSlots } from "./slot-claim";
+import { isAnyChatStreaming } from "@/lib/chat/active-streams";
+import {
+  getScheduleMaxConcurrent,
+  getScheduleMaxRunDurationSec,
+  getScheduleChatPressureDelaySec,
+} from "./config";
 
 const POLL_INTERVAL_MS = 60_000; // 60 seconds
 
@@ -55,6 +62,10 @@ export async function drainQueue(): Promise<void> {
     // Loop until the queue is empty so a single drain cycle clears all
     // collided tasks rather than only the next one.
     while (true) {
+      // Respect the global cap — stop draining if we're already at capacity
+      const cap = getScheduleMaxConcurrent();
+      if (countRunningScheduledSlots() >= cap) return;
+
       const [nextQueued] = await db
         .select({ id: tasks.id })
         .from(tasks)
@@ -69,7 +80,17 @@ export async function drainQueue(): Promise<void> {
 
       if (!nextQueued) return;
 
-      console.log(`[scheduler] draining queue → executing task ${nextQueued.id}`);
+      // Atomic claim — could lose the race if a concurrent tick already took
+      // this specific task, OR the cap filled between the select and the claim.
+      // On a lost-race (task-level) we should try the next queued task; on a
+      // cap-full the next iteration's cap check at the top of the loop will
+      // return. Continue rather than return so we don't strand other queued
+      // tasks that could still claim.
+      const leaseSec = getScheduleMaxRunDurationSec();
+      const { claimed } = claimSlot(nextQueued.id, cap, leaseSec);
+      if (!claimed) continue;
+
+      console.log(`[scheduler] draining queue → running task ${nextQueued.id}`);
       try {
         await executeTaskWithRuntime(nextQueued.id);
       } catch (err) {
@@ -221,6 +242,18 @@ export function stopScheduler(): void {
 export async function tickScheduler(): Promise<void> {
   const now = new Date();
 
+  // Reap any running tasks whose lease has expired before claiming new slots.
+  try {
+    const reaped = reapExpiredLeases();
+    if (reaped.length > 0) {
+      console.warn(
+        `[scheduler] reaped ${reaped.length} expired lease(s): ${reaped.join(", ")}`,
+      );
+    }
+  } catch (err) {
+    console.error("[scheduler] lease reaper error:", err);
+  }
+
   const dueSchedules = await db
     .select()
     .from(schedules)
@@ -230,6 +263,34 @@ export async function tickScheduler(): Promise<void> {
         lte(schedules.nextFireAt, now)
       )
     );
+
+  // Chat soft pressure: defer new firings by N seconds when any chat stream
+  // is in flight. In-flight scheduled runs are NOT affected — this only gates
+  // new claims. Per-iteration try/catch so a single failed deferral doesn't
+  // silently skip the remaining schedules in this tick.
+  if (isAnyChatStreaming() && dueSchedules.length > 0) {
+    const delayMs = getScheduleChatPressureDelaySec() * 1000;
+    const deferredUntil = new Date(now.getTime() + delayMs);
+    let deferredCount = 0;
+    for (const schedule of dueSchedules) {
+      try {
+        await db
+          .update(schedules)
+          .set({ nextFireAt: deferredUntil, updatedAt: now })
+          .where(eq(schedules.id, schedule.id));
+        deferredCount++;
+      } catch (err) {
+        console.error(
+          `[scheduler] failed to defer schedule ${schedule.id} under chat pressure:`,
+          err,
+        );
+      }
+    }
+    console.warn(
+      `[scheduler] chat streaming — deferred ${deferredCount}/${dueSchedules.length} firings by ${delayMs}ms`,
+    );
+    return;
+  }
 
   for (const schedule of dueSchedules) {
     try {
@@ -404,6 +465,23 @@ async function fireSchedule(
       updatedAt: now,
     })
     .where(eq(schedules.id, schedule.id));
+
+  // Atomic slot claim — if the global cap is full, leave the task in queued
+  // state. The task will be picked up by drainQueue when a currently-running
+  // task completes (its .then(drainQueue) chain runs the drain loop), OR by
+  // the next tickScheduler pass up to POLL_INTERVAL_MS (60s) later — whichever
+  // comes first. In a saturated-cap scenario where no running task completes
+  // before the next poll, expect up to a 60s drain latency.
+  const cap = getScheduleMaxConcurrent();
+  const leaseSec = schedule.maxRunDurationSec ?? getScheduleMaxRunDurationSec();
+  const { claimed } = claimSlot(taskId, cap, leaseSec);
+
+  if (!claimed) {
+    console.warn(
+      `[scheduler] schedule "${schedule.name}" queued — cap full (${countRunningScheduledSlots()}/${cap})`,
+    );
+    return;
+  }
 
   // Drain-aware task execution. We still don't await in fireSchedule (the
   // poll loop must keep claiming other due schedules), but on completion we
