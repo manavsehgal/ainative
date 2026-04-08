@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   buildIterationPrompt,
+  buildRowIterationPrompt,
   detectCompletionSignal,
 } from "../loop-executor";
 
@@ -50,5 +51,58 @@ describe("detectCompletionSignal", () => {
 
   it("uses defaults when signals array is empty", () => {
     expect(detectCompletionSignal("LOOP_COMPLETE", [])).toBe(true);
+  });
+});
+
+describe("buildRowIterationPrompt", () => {
+  it("renders the iteration header using row index out of total rows", () => {
+    const result = buildRowIterationPrompt(
+      "Research {{row}}",
+      { name: "Alice", company: "Acme" },
+      "row",
+      1,
+      3
+    );
+    expect(result).toContain("Row 1 of 3.");
+  });
+
+  it("includes the bound row data so the agent can read it", () => {
+    const row = { name: "Alice", company: "Acme" };
+    const result = buildRowIterationPrompt(
+      "Find LinkedIn for the contact above",
+      row,
+      "row",
+      1,
+      3
+    );
+    // Row payload must be visible in the prompt under the bound name
+    expect(result).toContain("row");
+    expect(result).toContain("Alice");
+    expect(result).toContain("Acme");
+    expect(result).toContain("Find LinkedIn for the contact above");
+  });
+
+  it("respects a custom itemVariable name", () => {
+    const result = buildRowIterationPrompt(
+      "Process item",
+      { id: 42, label: "widget" },
+      "contact",
+      2,
+      5
+    );
+    expect(result).toContain("contact");
+    expect(result).toContain("widget");
+    expect(result).toContain("Row 2 of 5.");
+  });
+
+  it("does not append the LOOP_COMPLETE instruction (row-driven loops finish when items are exhausted)", () => {
+    const result = buildRowIterationPrompt(
+      "Do work",
+      { x: 1 },
+      "row",
+      1,
+      1
+    );
+    expect(result).not.toContain("LOOP_COMPLETE");
   });
 });

@@ -77,9 +77,12 @@ function buildFilterClause(
       return sql`${col} IN (${sql.join(placeholders, sql`, `)})`;
     }
     case "is_empty":
-      return sql`(${col} IS NULL OR ${col} = '')`;
+      // Treat whitespace-only as empty so the filter agrees with the
+      // server-side `filterUnpopulatedRows` / `shouldSkipPostActionValue`
+      // semantics used by bulk row enrichment.
+      return sql`(${col} IS NULL OR TRIM(${col}) = '')`;
     case "is_not_empty":
-      return sql`(${col} IS NOT NULL AND ${col} != '')`;
+      return sql`(${col} IS NOT NULL AND TRIM(${col}) != '')`;
     default:
       throw new Error(`Unknown filter operator: ${filter.operator}`);
   }

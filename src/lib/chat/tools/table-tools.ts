@@ -25,6 +25,7 @@ import {
   importRows,
   createImportRecord,
 } from "@/lib/tables/import";
+import { createEnrichmentWorkflow } from "@/lib/tables/enrichment";
 import type { ColumnDef } from "@/lib/tables/types";
 
 export function tableTools(ctx: ToolContext) {
@@ -297,6 +298,76 @@ export function tableTools(ctx: ToolContext) {
           return ok({ deleted: args.rowIds.length });
         } catch (e) {
           return err(e instanceof Error ? e.message : "Failed to delete rows");
+        }
+      }
+    ),
+
+    // ── Bulk row enrichment ──────────────────────────────────────────
+
+    defineTool(
+      "enrich_table",
+      `Bulk-enrich rows in a user table by running an agent task per row and writing the result back to a target column. Creates a row-driven loop workflow that fans out one task per matching row.
+
+The prompt may reference row fields with {{row.fieldName}} placeholders — they are passed to the agent as JSON context. To skip a row at agent-time, return the literal string "NOT_FOUND". Already-populated rows (target column has a non-empty value) are skipped automatically for idempotency.
+
+Returns the workflowId so the caller can poll status, plus the rowCount that will actually be processed.`,
+      {
+        tableId: z.string().describe("Table ID to enrich"),
+        prompt: z
+          .string()
+          .min(1)
+          .max(8192)
+          .describe(
+            "Per-row prompt template. Use {{row.fieldName}} to reference row fields. Instruct the agent to return NOT_FOUND when no value can be determined."
+          ),
+        targetColumn: z
+          .string()
+          .min(1)
+          .describe("Column name to write the agent's result into"),
+        filter: z
+          .object({
+            column: z.string(),
+            operator: z.enum([
+              "eq", "neq", "gt", "gte", "lt", "lte",
+              "contains", "starts_with", "in", "is_empty", "is_not_empty",
+            ]),
+            value: z
+              .union([z.string(), z.number(), z.boolean(), z.array(z.string())])
+              .optional(),
+          })
+          .optional()
+          .describe(
+            "Optional row filter — typically {column: targetColumn, operator: 'is_empty'} to enrich only blank cells"
+          ),
+        agentProfile: z
+          .string()
+          .optional()
+          .describe("Agent profile to use (defaults to 'sales-researcher')"),
+        projectId: z
+          .string()
+          .optional()
+          .describe("Project ID. Omit to use the active project."),
+        batchSize: z
+          .number()
+          .int()
+          .min(1)
+          .optional()
+          .describe("Maximum rows to process in this run (default 50, capped at 200)"),
+      },
+      async (args) => {
+        try {
+          const effectiveProjectId = args.projectId ?? ctx.projectId ?? undefined;
+          const result = await createEnrichmentWorkflow(args.tableId, {
+            prompt: args.prompt,
+            targetColumn: args.targetColumn,
+            filter: args.filter,
+            agentProfile: args.agentProfile,
+            projectId: effectiveProjectId,
+            batchSize: args.batchSize,
+          });
+          return ok(result);
+        } catch (e) {
+          return err(e instanceof Error ? e.message : "Failed to start enrichment");
         }
       }
     ),

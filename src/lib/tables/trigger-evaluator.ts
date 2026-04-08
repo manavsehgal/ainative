@@ -99,9 +99,10 @@ function matchesCondition(
     case "in":
       return Array.isArray(condition.value) && condition.value.includes(strValue);
     case "is_empty":
-      return value == null || strValue === "";
+      // Whitespace-only counts as empty (matches SQL `is_empty` operator).
+      return value == null || strValue.trim() === "";
     case "is_not_empty":
-      return value != null && strValue !== "";
+      return value != null && strValue.trim() !== "";
     default:
       return true;
   }

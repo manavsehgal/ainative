@@ -171,6 +171,7 @@ const STAGENT_TOOLS: ToolCatalogEntry[] = [
   { name: "delete_trigger", description: "Delete a trigger", group: "Tables", paramHint: "tableId, triggerId" },
   { name: "get_table_history", description: "Get row change history for a table", group: "Tables", paramHint: "tableId, limit" },
   { name: "save_as_template", description: "Save a table as a reusable template", group: "Tables", paramHint: "tableId, name, category" },
+  { name: "enrich_table", description: "Bulk-enrich rows by running an agent task per row, writing results to a target column", group: "Tables", paramHint: "tableId, prompt, targetColumn, filter" },
 
   // ── Chat History ──
   { name: "list_conversations", description: "List recent chat conversations", group: "Chat", paramHint: "search, limit" },

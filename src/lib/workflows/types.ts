@@ -28,7 +28,28 @@ export interface WorkflowStep {
    * a prompt/profile/runtime. See features/workflow-step-delays.md.
    */
   delayDuration?: string;
+  /**
+   * Optional declarative side-effect to apply after the step's task completes
+   * successfully. Used by bulk row enrichment to write the agent's result back
+   * into a user table cell. Discriminated union — `type` selects the variant.
+   * See features/bulk-row-enrichment.md.
+   */
+  postAction?: StepPostAction;
 }
+
+/**
+ * Declarative post-step side effect. Currently only `update_row` is supported;
+ * adding new variants is purely additive (extend the union, add a dispatcher
+ * branch). The `tableId` is informational/audit-only — `updateRow` finds the
+ * row by `rowId`. The `rowId` field may contain `{{itemVariable.field}}`
+ * placeholders that are resolved against the current loop iteration's row.
+ */
+export type StepPostAction = {
+  type: "update_row";
+  tableId: string;
+  rowId: string;
+  column: string;
+};
 
 /** Selector for auto-discovering documents from the project pool */
 export interface DocumentSelector {
@@ -48,6 +69,16 @@ export interface LoopConfig {
   assignedAgent?: string;
   agentProfile?: string;
   completionSignals?: string[];
+  /**
+   * Row-driven loop: when set, the loop iterates once per item instead of
+   * looping autonomously until completionSignals fire. Each item is bound
+   * into the prompt template under the name in `itemVariable` (default
+   * "item"). Used by bulk row enrichment workflows. Iteration count is
+   * still capped by `maxIterations`. See features/bulk-row-enrichment.md.
+   */
+  items?: unknown[];
+  /** Variable name the current item is bound to (default "item"). */
+  itemVariable?: string;
 }
 
 export interface SwarmConfig {

@@ -4,6 +4,12 @@ import { eq } from "drizzle-orm";
 import { executeChildTask, updateWorkflowState } from "./engine";
 import type { WorkflowDefinition, LoopState, IterationState, LoopStopReason } from "./types";
 import { createInitialLoopState } from "./types";
+import {
+  resolvePostAction,
+  shouldSkipPostActionValue,
+  extractPostActionValue,
+} from "./post-action";
+import { updateRow } from "@/lib/data/tables";
 
 /**
  * Execute the loop pattern — autonomous iteration with stop conditions.
@@ -27,8 +33,19 @@ export async function executeLoop(
     assignedAgent,
     agentProfile,
     completionSignals,
+    items,
+    itemVariable,
   } = definition.loopConfig;
   const loopPrompt = definition.steps[0].prompt;
+
+  // Row-driven loop: iterate exactly once per item (capped at maxIterations).
+  // Items array presence flips the loop into a finite fan-out pattern.
+  const isRowDriven = Array.isArray(items);
+  const rowItems = isRowDriven ? (items as unknown[]) : [];
+  const boundVarName = itemVariable && itemVariable.length > 0 ? itemVariable : "item";
+  const effectiveMax = isRowDriven
+    ? Math.min(rowItems.length, maxIterations)
+    : maxIterations;
 
   // Restore existing state (resume) or create fresh
   const loopState = await restoreOrCreateLoopState(workflowId);
@@ -49,7 +66,7 @@ export async function executeLoop(
   }
 
   try {
-    while (loopState.currentIteration < maxIterations) {
+    while (loopState.currentIteration < effectiveMax) {
       // Check pause: re-fetch workflow status from DB
       const [workflow] = await db
         .select()
@@ -81,13 +98,22 @@ export async function executeLoop(
 
       const iterationNum = loopState.currentIteration + 1;
 
-      // Build iteration prompt
-      const prompt = buildIterationPrompt(
-        loopPrompt,
-        previousOutput,
-        iterationNum,
-        maxIterations
-      );
+      // Build iteration prompt — row-driven loops bind the current row;
+      // autonomous loops carry forward the previous iteration's output.
+      const prompt = isRowDriven
+        ? buildRowIterationPrompt(
+            loopPrompt,
+            rowItems[loopState.currentIteration],
+            boundVarName,
+            iterationNum,
+            effectiveMax
+          )
+        : buildIterationPrompt(
+            loopPrompt,
+            previousOutput,
+            iterationNum,
+            maxIterations
+          );
 
       // Create iteration state
       const iterationState: IterationState = {
@@ -138,11 +164,28 @@ export async function executeLoop(
         return;
       }
 
+      // Dispatch postAction for row-driven enrichment loops. Failures are
+      // logged but never throw — one bad row must not abort the fan-out.
+      const postAction = definition.steps[0].postAction;
+      if (isRowDriven && postAction && result.result !== undefined) {
+        await applyRowPostAction({
+          workflowId,
+          taskId: result.taskId,
+          postAction,
+          row: rowItems[loopState.currentIteration],
+          itemVariable: boundVarName,
+          taskResult: result.result,
+        });
+      }
+
       loopState.currentIteration = iterationNum;
       await updateLoopState(workflowId, loopState, "active");
 
-      // Check completion signal
+      // Check completion signal — only for autonomous loops. Row-driven
+      // loops always run through every item; per-row completion text like
+      // "NOT_FOUND" must not abort the fan-out.
       if (
+        !isRowDriven &&
         result.result &&
         detectCompletionSignal(result.result, completionSignals)
       ) {
@@ -162,6 +205,30 @@ export async function executeLoop(
     await updateLoopState(workflowId, loopState, "active");
     throw error;
   }
+}
+
+/**
+ * Build the prompt for a single row-driven iteration.
+ *
+ * Row-driven loops fan out one iteration per item in `loopConfig.items` and
+ * stop when items are exhausted (no LOOP_COMPLETE signal needed). The row
+ * payload is serialized as JSON under the bound variable name so the agent
+ * can read every field without us pre-committing to a templating syntax.
+ */
+export function buildRowIterationPrompt(
+  template: string,
+  row: unknown,
+  itemVariable: string,
+  iteration: number,
+  totalRows: number
+): string {
+  const parts: string[] = [];
+  parts.push(`Row ${iteration} of ${totalRows}.`);
+  parts.push(
+    `\nCurrent ${itemVariable}:\n\`\`\`json\n${JSON.stringify(row, null, 2)}\n\`\`\``
+  );
+  parts.push(`\n---\n\n${template}`);
+  return parts.join("");
 }
 
 /**
@@ -251,6 +318,107 @@ async function restoreOrCreateLoopState(
   }
 
   return createInitialLoopState();
+}
+
+/**
+ * Apply a `postAction` for a single row-driven iteration. Resolves any
+ * `{{row.field}}` placeholders, runs the skip rules, and writes the value
+ * via `updateRow`. Every outcome is logged to `agent_logs` so enrichment
+ * runs are auditable end-to-end. Errors are caught and logged — never
+ * thrown — so a single bad row can't abort the fan-out.
+ */
+async function applyRowPostAction(params: {
+  workflowId: string;
+  taskId: string;
+  postAction: NonNullable<import("./types").WorkflowStep["postAction"]>;
+  row: unknown;
+  itemVariable: string;
+  taskResult: string;
+}): Promise<void> {
+  const { workflowId, taskId, postAction, row, itemVariable, taskResult } = params;
+
+  try {
+    if (postAction.type !== "update_row") {
+      // Future-proofing: unknown variants log + return rather than throwing.
+      await db.insert(agentLogs).values({
+        id: crypto.randomUUID(),
+        taskId,
+        agentType: "loop-executor",
+        event: "post_action_unknown_type",
+        payload: JSON.stringify({ workflowId, postAction }),
+        timestamp: new Date(),
+      });
+      return;
+    }
+
+    const resolved = resolvePostAction(postAction, row, itemVariable);
+    const value = extractPostActionValue(taskResult);
+
+    if (shouldSkipPostActionValue(value)) {
+      await db.insert(agentLogs).values({
+        id: crypto.randomUUID(),
+        taskId,
+        agentType: "loop-executor",
+        event: "post_action_skipped",
+        payload: JSON.stringify({
+          workflowId,
+          rowId: resolved.rowId,
+          column: resolved.column,
+          reason: value.trim() === "" ? "empty" : "not_found",
+        }),
+        timestamp: new Date(),
+      });
+      return;
+    }
+
+    if (!resolved.rowId) {
+      await db.insert(agentLogs).values({
+        id: crypto.randomUUID(),
+        taskId,
+        agentType: "loop-executor",
+        event: "post_action_failed",
+        payload: JSON.stringify({
+          workflowId,
+          error: "rowId resolved to empty string — check postAction template",
+          postAction,
+        }),
+        timestamp: new Date(),
+      });
+      return;
+    }
+
+    const updated = await updateRow(resolved.rowId, {
+      data: { [resolved.column]: value },
+    });
+
+    await db.insert(agentLogs).values({
+      id: crypto.randomUUID(),
+      taskId,
+      agentType: "loop-executor",
+      event: updated ? "post_action_applied" : "post_action_failed",
+      payload: JSON.stringify({
+        workflowId,
+        rowId: resolved.rowId,
+        column: resolved.column,
+        tableId: resolved.tableId,
+        ...(updated ? {} : { error: "row not found" }),
+      }),
+      timestamp: new Date(),
+    });
+  } catch (err) {
+    // Never let postAction failures abort the loop iteration.
+    await db.insert(agentLogs).values({
+      id: crypto.randomUUID(),
+      taskId,
+      agentType: "loop-executor",
+      event: "post_action_failed",
+      payload: JSON.stringify({
+        workflowId,
+        error: err instanceof Error ? err.message : String(err),
+      }),
+      timestamp: new Date(),
+    }).catch(() => {});
+  }
 }
 
 /**
