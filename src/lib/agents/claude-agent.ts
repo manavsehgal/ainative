@@ -669,6 +669,7 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
           status: "failed",
           result: "Session expired — re-queue for fresh start",
           sessionId: null,
+          failureReason: "auth_failed",
           updatedAt: new Date(),
         })
         .where(eq(tasks.id, taskId));
