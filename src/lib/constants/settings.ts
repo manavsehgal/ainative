@@ -37,6 +37,10 @@ export const SETTINGS_KEYS = {
   LAST_SYNC_AT: "sync.lastSyncAt",
   // Stripe
   STRIPE_CUSTOMER_ID: "billing.stripeCustomerId",
+  // Schedule orchestration
+  SCHEDULE_MAX_CONCURRENT: "schedule.maxConcurrent",
+  SCHEDULE_MAX_RUN_DURATION_SEC: "schedule.maxRunDurationSec",
+  SCHEDULE_CHAT_PRESSURE_DELAY_SEC: "schedule.chatPressureDelaySec",
 } as const;
 
 export type RoutingPreference = "cost" | "latency" | "quality" | "manual";
