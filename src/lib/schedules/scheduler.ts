@@ -12,7 +12,7 @@
  */
 
 import { db } from "@/lib/db";
-import { schedules, tasks, agentLogs, scheduleDocumentInputs, documents, workflows } from "@/lib/db/schema";
+import { schedules, tasks, agentLogs, scheduleDocumentInputs, documents, workflows, scheduleFiringMetrics } from "@/lib/db/schema";
 import { eq, and, lte, inArray, sql, asc, isNotNull } from "drizzle-orm";
 import { resumeWorkflow } from "@/lib/workflows/engine";
 import { computeNextFireTime } from "./interval-parser";
@@ -251,6 +251,46 @@ export async function recordFiringMetrics(
     console.warn(
       `[scheduler] auto-paused "${schedule.name}" after 5 consecutive turn-budget breaches (avg: ${newAvg} steps, cap: ${schedule.maxTurns})`,
     );
+  }
+
+  try {
+    const [taskRow] = await db
+      .select()
+      .from(tasks)
+      .where(eq(tasks.id, taskId));
+    if (taskRow) {
+      const firedAtDate = taskRow.createdAt;
+      const slotClaimedAt = taskRow.slotClaimedAt;
+      const completedAt = taskRow.updatedAt;
+      const slotWaitMs =
+        slotClaimedAt && firedAtDate
+          ? slotClaimedAt.getTime() - firedAtDate.getTime()
+          : null;
+      const durationMs =
+        slotClaimedAt && completedAt
+          ? completedAt.getTime() - slotClaimedAt.getTime()
+          : null;
+
+      await db.insert(scheduleFiringMetrics).values({
+        id: crypto.randomUUID(),
+        scheduleId,
+        taskId,
+        firedAt: firedAtDate,
+        slotClaimedAt,
+        completedAt,
+        slotWaitMs,
+        durationMs,
+        turnCount: turns,
+        maxTurnsAtFiring: schedule.maxTurns,
+        eventLoopLagMs: null,
+        peakRssMb: null,
+        chatStreamsActive: null,
+        concurrentSchedules: null,
+        failureReason,
+      });
+    }
+  } catch (err) {
+    console.error(`[scheduler] failed to insert firing metrics for ${taskId}:`, err);
   }
 }
 

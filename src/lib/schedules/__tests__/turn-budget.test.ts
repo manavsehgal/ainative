@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { db } from "@/lib/db";
-import { tasks, schedules, projects, settings } from "@/lib/db/schema";
+import { tasks, schedules, projects, settings, scheduleFiringMetrics } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { tickScheduler, recordFiringMetrics } from "../scheduler";
@@ -11,6 +11,7 @@ vi.mock("@/lib/agents/runtime", () => ({
 
 describe("per-schedule turn budget propagation", () => {
   beforeEach(() => {
+    db.delete(scheduleFiringMetrics).run();
     db.delete(tasks).run();
     db.delete(schedules).run();
     db.delete(projects).run();
@@ -111,6 +112,7 @@ async function seedBreachedTask(scheduleId: string): Promise<string> {
 
 describe("turn_budget_breach_streak", () => {
   beforeEach(() => {
+    db.delete(scheduleFiringMetrics).run();
     db.delete(tasks).run();
     db.delete(schedules).run();
     db.delete(projects).run();
