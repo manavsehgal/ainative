@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowUpCircle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -22,9 +23,12 @@ interface InstanceConfig {
 }
 
 interface ConfigResponse {
+  devMode?: boolean;
   config: InstanceConfig | null;
-  upgrade: UpgradeState;
+  upgrade: UpgradeState | null;
 }
+
+type StatusResponse = UpgradeState & { devMode?: boolean };
 
 /**
  * Sidebar upgrade badge + pre-flight modal combined into a single Client
@@ -40,7 +44,7 @@ interface ConfigResponse {
  */
 export function UpgradeBadge() {
   const router = useRouter();
-  const [state, setState] = useState<UpgradeState | null>(null);
+  const [state, setState] = useState<StatusResponse | null>(null);
   const [open, setOpen] = useState(false);
   const [config, setConfig] = useState<ConfigResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -56,7 +60,7 @@ export function UpgradeBadge() {
           cache: "no-store",
         });
         if (!res.ok) return;
-        const data = (await res.json()) as UpgradeState;
+        const data = (await res.json()) as StatusResponse;
         if (!cancelled) setState(data);
       } catch {
         // Silent — the badge is ambient; status fetch failures should not
@@ -114,23 +118,24 @@ export function UpgradeBadge() {
     }
   }
 
-  if (!state || !state.upgradeAvailable) return null;
+  if (!state || state.devMode || !state.upgradeAvailable) return null;
 
   const failing = state.pollFailureCount >= 3;
   const count = state.commitsBehind;
   const label = failing
     ? "Check failing"
-    : `${count} commit${count === 1 ? "" : "s"}`;
+    : `${count} update${count === 1 ? "" : "s"}`;
   const tooltip = failing
     ? "Upgrade check failing — click to retry"
-    : `${count} upstream commit${count === 1 ? "" : "s"} ready to merge`;
-  const chipClass = failing
-    ? "ml-2 inline-flex items-center rounded-full border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400 hover:bg-amber-500/20 transition-colors"
-    : "ml-2 inline-flex items-center rounded-full border border-blue-500/30 bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-medium text-blue-700 dark:text-blue-400 hover:bg-blue-500/20 transition-colors";
+    : `${count} upstream update${count === 1 ? "" : "s"} ready to merge`;
+  const buttonClass = failing
+    ? "h-7 px-2 rounded-md border border-amber-500/40 bg-amber-500/10 text-[11px] font-medium text-amber-700 dark:text-amber-400 hover:bg-amber-500/20 transition-colors cursor-pointer inline-flex items-center gap-1.5 group-data-[collapsible=icon]:hidden"
+    : "h-7 px-2 rounded-md border border-blue-500/40 bg-blue-500/10 text-[11px] font-medium text-blue-700 dark:text-blue-400 hover:bg-blue-500/20 transition-colors cursor-pointer inline-flex items-center gap-1.5 group-data-[collapsible=icon]:hidden";
 
-  const modalCount = config?.upgrade.commitsBehind ?? count;
-  const lastUpgradeText = config?.upgrade.lastSuccessfulUpgradeAt
-    ? new Date(config.upgrade.lastSuccessfulUpgradeAt * 1000).toLocaleString()
+  const modalUpgrade = config?.upgrade ?? null;
+  const modalCount = modalUpgrade?.commitsBehind ?? count;
+  const lastUpgradeText = modalUpgrade?.lastSuccessfulUpgradeAt
+    ? new Date(modalUpgrade.lastSuccessfulUpgradeAt * 1000).toLocaleString()
     : "never";
 
   return (
@@ -138,17 +143,17 @@ export function UpgradeBadge() {
       <DialogTrigger asChild>
         <button
           type="button"
-          role="status"
           aria-label={tooltip}
           title={tooltip}
-          className={chipClass}
+          className={buttonClass}
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
             setOpen(true);
           }}
         >
-          {label}
+          <ArrowUpCircle className="h-3 w-3" aria-hidden />
+          <span>{label}</span>
         </button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">

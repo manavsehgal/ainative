@@ -186,11 +186,6 @@ function NavGroup({
                           <UnreadBadge />
                         </span>
                       )}
-                      {item.href === "/settings" && (
-                        <span className="group-data-[collapsible=icon]:hidden">
-                          <UpgradeBadge />
-                        </span>
-                      )}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -254,6 +249,9 @@ export function AppSidebar() {
         ))}
       </SidebarContent>
       <SidebarFooter className="px-4 py-3">
+        <div className="group-data-[collapsible=icon]:hidden mb-2 empty:hidden">
+          <UpgradeBadge />
+        </div>
         <div className="group-data-[collapsible=icon]:hidden mb-2">
           <WorkspaceIndicator variant="sidebar" />
         </div>
