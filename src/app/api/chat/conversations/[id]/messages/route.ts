@@ -94,7 +94,11 @@ export async function POST(
         );
       } finally {
         clearInterval(keepalive);
-        controller.close();
+        try {
+          controller.close();
+        } catch {
+          // Stream may already be closed by peer; safe to ignore
+        }
       }
     },
   });

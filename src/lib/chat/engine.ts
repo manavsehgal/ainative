@@ -21,6 +21,7 @@ import {
   updateConversation,
 } from "@/lib/data/chat";
 import { buildChatContext, type MentionReference } from "./context-builder";
+import { finalizeStreamingMessage } from "./reconcile";
 import {
   detectEntities,
   extractToolResultEntities,
@@ -647,7 +648,12 @@ export async function* sendMessage(
 
     // Enrich the error with stderr diagnostics when available
     const stderrTail = stderrChunks.join("").trim();
-    const errorMessage = diagnoseProcessError(rawMessage, stderrTail);
+    const rawErrorMessage = diagnoseProcessError(rawMessage, stderrTail);
+    // Truncate at 4KB to prevent multi-MB stderr dumps bloating chat_messages
+    const errorMessage =
+      rawErrorMessage.length > 4096
+        ? rawErrorMessage.slice(0, 4096) + "... (truncated)"
+        : rawErrorMessage;
 
     if (fullText && fullText.length > 50) {
       // Substantial content was already streamed — complete gracefully with warning
@@ -674,10 +680,14 @@ export async function* sendMessage(
 
       yield { type: "done", messageId: assistantMsg.id, quickAccess: [] };
     } else {
-      // No meaningful content — show as error
+      // No meaningful content — show as error. Fallback chain ensures we
+      // never write an empty string even if both fullText and errorMessage
+      // happen to be blank.
       await updateMessageContent(
         assistantMsg.id,
-        fullText || errorMessage
+        fullText ||
+          errorMessage ||
+          "(Response failed — no error detail available.)"
       );
       await updateMessageStatus(assistantMsg.id, "error");
 
@@ -698,6 +708,16 @@ export async function* sendMessage(
       yield { type: "error", message: errorMessage };
     }
   } finally {
+    // Safety net: guarantee the placeholder row never remains in
+    // status='streaming' after the generator exits. Catches code paths that
+    // bypass the catch block — most notably async iterator abandonment, where
+    // a consumer `break`ing out of a `for await` loop triggers the generator's
+    // return() method and jumps straight here, skipping catch entirely.
+    try {
+      await finalizeStreamingMessage(assistantMsg.id, fullText);
+    } catch (finalizeErr) {
+      console.error("[chat] finalize safety net failed:", finalizeErr);
+    }
     cleanupConversation(conversationId);
   }
 }
