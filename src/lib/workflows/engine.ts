@@ -1156,7 +1156,20 @@ export async function updateWorkflowState(
 
   if (!workflow) throw new Error(`Workflow ${workflowId} not found — cannot update state`);
 
-  const definition = JSON.parse(workflow.definition);
+  // Defensive parse: a workflow row with a missing or corrupted definition
+  // should not crash the engine. We still write the new _state on top, so a
+  // recoverable run can continue even from a partially-written row.
+  let definition: Record<string, unknown> = {};
+  if (workflow.definition) {
+    try {
+      definition = JSON.parse(workflow.definition);
+    } catch (err) {
+      console.error(
+        `[workflow-engine] Failed to parse definition for ${workflowId}, writing fresh state:`,
+        err
+      );
+    }
+  }
   const combined = { ...definition, _state: state };
 
   await db

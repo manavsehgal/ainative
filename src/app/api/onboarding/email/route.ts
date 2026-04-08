@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getSupabaseClient } from "@/lib/cloud/supabase-client";
 
 const emailSchema = z.object({
-  email: z.string().email(),
+  email: z.email(),
 });
 
 /**

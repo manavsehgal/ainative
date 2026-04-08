@@ -33,6 +33,7 @@ const RESOURCE_LABELS: Record<LimitResource, string> = {
   activeSchedules: "Active Schedules",
   historyRetentionDays: "History Retention",
   parallelWorkflows: "Parallel Workflows",
+  maxCloudInstances: "Cloud Instances",
 };
 
 /**

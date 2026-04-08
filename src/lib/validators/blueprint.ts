@@ -96,7 +96,7 @@ export const BlueprintSchema = z.object({
   variables: z.array(BlueprintVariableSchema),
   steps: z.array(BlueprintStepSchema).min(1),
   author: z.string().optional(),
-  source: z.string().url().optional(),
+  source: z.url().optional(),
   estimatedDuration: z.string().optional(),
   difficulty: z.enum(["beginner", "intermediate", "advanced"]).optional(),
 });

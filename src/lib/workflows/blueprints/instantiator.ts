@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { workflows } from "@/lib/db/schema";
 import { getBlueprint } from "./registry";
 import { resolveTemplate, evaluateCondition } from "./template";
-import type { BlueprintVariable, WorkflowBlueprint } from "./types";
+import type { BlueprintVariable } from "./types";
 import type { WorkflowStep } from "../types";
 
 interface InstantiateResult {

@@ -11,7 +11,6 @@ import {
   Clock,
   Globe,
   Sun,
-  CheckCheck,
   Sparkles,
   Table2,
 } from "lucide-react";

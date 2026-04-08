@@ -10,7 +10,7 @@ export const activateLicenseSchema = z.object({
       "Invalid license key format (expected STAG-XXXX-XXXX-XXXX-XXXX)"
     )
     .optional(),
-  email: z.string().email("Invalid email address").optional(),
+  email: z.email("Invalid email address").optional(),
   tier: z.enum(TIERS).optional(),
   token: z.string().optional(),
 });

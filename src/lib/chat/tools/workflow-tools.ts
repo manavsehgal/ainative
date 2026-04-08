@@ -215,7 +215,7 @@ export function workflowTools(ctx: ToolContext) {
       },
       async (args) => {
         try {
-          const workflow = await db
+          const workflow = db
             .select()
             .from(workflows)
             .where(eq(workflows.id, args.workflowId))
@@ -270,7 +270,7 @@ export function workflowTools(ctx: ToolContext) {
       },
       async (args) => {
         try {
-          const existing = await db
+          const existing = db
             .select()
             .from(workflows)
             .where(eq(workflows.id, args.workflowId))
@@ -325,7 +325,7 @@ export function workflowTools(ctx: ToolContext) {
       },
       async (args) => {
         try {
-          const existing = await db
+          const existing = db
             .select()
             .from(workflows)
             .where(eq(workflows.id, args.workflowId))
@@ -365,7 +365,7 @@ export function workflowTools(ctx: ToolContext) {
       },
       async (args) => {
         try {
-          const workflow = await db
+          const workflow = db
             .select()
             .from(workflows)
             .where(eq(workflows.id, args.workflowId))
@@ -452,7 +452,7 @@ export function workflowTools(ctx: ToolContext) {
       },
       async (args) => {
         try {
-          const workflow = await db
+          const workflow = db
             .select()
             .from(workflows)
             .where(eq(workflows.id, args.workflowId))
@@ -492,7 +492,7 @@ export function workflowTools(ctx: ToolContext) {
       },
       async (args) => {
         try {
-          const workflow = await db
+          const workflow = db
             .select()
             .from(workflows)
             .where(eq(workflows.id, args.workflowId))

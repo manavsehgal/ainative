@@ -15,6 +15,7 @@ const BANNER_TITLES: Record<LimitResource, string> = {
   activeSchedules: "Schedule limit reached",
   historyRetentionDays: "History retention limit",
   parallelWorkflows: "Parallel workflow limit reached",
+  maxCloudInstances: "Cloud instance limit reached",
 };
 
 function getBannerMessage(
@@ -35,6 +36,8 @@ function getBannerMessage(
       return `Execution history limited to ${max} days. Upgrade to ${tierLabel} for longer retention.`;
     case "parallelWorkflows":
       return `${current} of ${max} parallel workflows running. Upgrade to ${tierLabel} for more concurrency.`;
+    case "maxCloudInstances":
+      return `${current} of ${max} cloud instances in use. Upgrade to ${tierLabel} for additional instance seats.`;
   }
 }
 

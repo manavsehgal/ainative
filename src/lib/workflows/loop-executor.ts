@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { workflows, agentLogs } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { executeChildTask, updateWorkflowState } from "./engine";
+import { executeChildTask } from "./engine";
 import type { WorkflowDefinition, LoopState, IterationState, LoopStopReason } from "./types";
 import { createInitialLoopState } from "./types";
 import {

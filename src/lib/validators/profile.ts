@@ -33,7 +33,7 @@ const profileRuntimeCapabilityOverrideSchema = z.object({
 });
 
 export const importMetaSchema = z.object({
-  repoUrl: z.string().url(),
+  repoUrl: z.url(),
   repoOwner: z.string(),
   repoName: z.string(),
   branch: z.string(),
@@ -64,7 +64,7 @@ export const ProfileConfigSchema = z.object({
   maxTurns: z.number().positive().optional(),
   outputFormat: z.string().optional(),
   author: z.string().optional(),
-  source: z.string().url().optional(),
+  source: z.url().optional(),
   tests: profileTestsSchema.optional(),
   importMeta: importMetaSchema.optional(),
   supportedRuntimes: z.array(runtimeIdSchema).optional(),
