@@ -69,16 +69,25 @@ export function clearAllData() {
   const envScansDeleted = db.delete(environmentScans).run().changes;
   const envTemplatesDeleted = db.delete(environmentTemplates).run().changes;
 
-  // Chat tables (messages before conversations — FK safety)
+  // Document junction tables — delete before documents (they reference documents).
+  // Also referenced by projects/workflows/schedules, deleted later.
+  const workflowDocInputsDeleted = db.delete(workflowDocumentInputs).run().changes;
+  const scheduleDocInputsDeleted = db.delete(scheduleDocumentInputs).run().changes;
+  const projectDocDefaultsDeleted = db.delete(projectDocumentDefaults).run().changes;
+
+  // Documents reference conversations (documents.conversation_id) — must delete
+  // before conversations to avoid FK violation when chat-attached documents exist.
+  const documentsDeleted = db.delete(documents).run().changes;
+
+  // Chat tables: channel_bindings + chat_messages + documents all reference
+  // conversations — delete them before conversations.
+  const channelBindingsDeleted = db.delete(channelBindings).run().changes;
   const chatMessagesDeleted = db.delete(chatMessages).run().changes;
   const conversationsDeleted = db.delete(conversations).run().changes;
 
   // Book tables (no FK dependencies)
   const bookmarksDeleted = db.delete(bookmarks).run().changes;
   const readingProgressDeleted = db.delete(readingProgress).run().changes;
-
-  // Channel bindings reference channel_configs + conversations — delete before both
-  const channelBindingsDeleted = db.delete(channelBindings).run().changes;
 
   // Agent messages reference tasks — delete before tasks
   const agentMessagesDeleted = db.delete(agentMessages).run().changes;
@@ -113,12 +122,6 @@ export function clearAllData() {
   const userTablesDeleted = db.delete(userTables).run().changes;
   const userTableTemplatesDeleted = db.delete(userTableTemplates).run().changes;
 
-  // Document junction tables — delete before documents, workflows, schedules, projects
-  const workflowDocInputsDeleted = db.delete(workflowDocumentInputs).run().changes;
-  const scheduleDocInputsDeleted = db.delete(scheduleDocumentInputs).run().changes;
-  const projectDocDefaultsDeleted = db.delete(projectDocumentDefaults).run().changes;
-
-  const documentsDeleted = db.delete(documents).run().changes;
   const agentMemoryDeleted = db.delete(agentMemory).run().changes;
   const learnedContextDeleted = db.delete(learnedContext).run().changes;
   const executionStatsDeleted = db.delete(workflowExecutionStats).run().changes;
