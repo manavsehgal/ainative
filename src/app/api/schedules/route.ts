@@ -9,6 +9,7 @@ import { validateRuntimeProfileAssignment } from "@/lib/agents/profiles/assignme
 import { checkLimit, buildLimitErrorBody } from "@/lib/license/limit-check";
 import { getActiveScheduleCount } from "@/lib/license/limit-queries";
 import { createTierLimitNotification } from "@/lib/license/notifications";
+import { checkCollision } from "@/lib/schedules/collision-check";
 
 export async function GET() {
   const result = await db
@@ -201,5 +202,6 @@ export async function POST(req: NextRequest) {
     .from(schedules)
     .where(eq(schedules.id, id));
 
-  return NextResponse.json(created, { status: 201 });
+  const warnings = checkCollision(cronExpression, 0, projectId ?? null, null);
+  return NextResponse.json({ schedule: created, warnings }, { status: 201 });
 }

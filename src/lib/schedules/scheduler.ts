@@ -12,7 +12,7 @@
  */
 
 import { db } from "@/lib/db";
-import { schedules, tasks, agentLogs, scheduleDocumentInputs, documents, workflows } from "@/lib/db/schema";
+import { schedules, tasks, agentLogs, scheduleDocumentInputs, documents, workflows, scheduleFiringMetrics } from "@/lib/db/schema";
 import { eq, and, lte, inArray, sql, asc, isNotNull } from "drizzle-orm";
 import { resumeWorkflow } from "@/lib/workflows/engine";
 import { computeNextFireTime } from "./interval-parser";
@@ -153,17 +153,31 @@ function detectFailureReason(result: string | null): string {
   return "error";
 }
 
+const TURN_BUDGET_BREACH_AUTO_PAUSE_THRESHOLD = 5;
+const GRACE_PERIOD_MULTIPLIER = 2; // grace window = 2 × cron interval
+
 /**
  * Record per-firing health metrics on a schedule and auto-pause after
- * 3 consecutive failures. Uses an exponential moving average for turn count
- * so the metric reflects recent behavior more than ancient firings.
+ * 3 consecutive generic failures or 5 consecutive turn-budget breaches.
+ * Uses an exponential moving average for turn count so the metric reflects
+ * recent behavior more than ancient firings.
+ *
+ * Turn-budget breaches are tracked separately (turnBudgetBreachStreak) so a
+ * misconfigured maxTurns doesn't auto-pause via the generic threshold of 3.
+ * A first-breach grace window (2× cron interval after maxTurnsSetAt) forgives
+ * the first firing that hits a newly-lowered cap.
  */
 export async function recordFiringMetrics(
   scheduleId: string,
-  taskId: string
+  taskId: string,
 ): Promise<void> {
   const [task] = await db
-    .select({ status: tasks.status, result: tasks.result })
+    .select({
+      status: tasks.status,
+      result: tasks.result,
+      failureReason: tasks.failureReason,
+      updatedAt: tasks.updatedAt,
+    })
     .from(tasks)
     .where(eq(tasks.id, taskId));
   if (!task) return;
@@ -184,25 +198,123 @@ export async function recordFiringMetrics(
   const newAvg = Math.round(prevAvg * 0.7 + turns * 0.3);
 
   const isFailure = task.status === "failed";
-  const newStreak = isFailure ? (schedule.failureStreak ?? 0) + 1 : 0;
-  const shouldAutoPause = isFailure && newStreak >= 3 && schedule.status === "active";
+  const failureReason =
+    task.failureReason ?? (isFailure ? detectFailureReason(task.result) : null);
+  const isTurnBudgetBreach = failureReason === "turn_limit_exceeded";
+  const isGenericFailure = isFailure && !isTurnBudgetBreach;
+
+  // First-breach grace: if this is the first firing after maxTurns was edited,
+  // don't count the breach toward the auto-pause streak.
+  let turnBudgetStreakDelta = 0;
+  if (isTurnBudgetBreach) {
+    const graceApplies = shouldApplyGrace(
+      schedule.maxTurnsSetAt,
+      schedule.cronExpression,
+      task.updatedAt,
+    );
+    if (!graceApplies) turnBudgetStreakDelta = 1;
+  }
+
+  const newFailureStreak = isGenericFailure ? (schedule.failureStreak ?? 0) + 1 : 0;
+  const newBudgetStreak =
+    turnBudgetStreakDelta > 0
+      ? (schedule.turnBudgetBreachStreak ?? 0) + 1
+      : isTurnBudgetBreach
+      ? (schedule.turnBudgetBreachStreak ?? 0)  // hold-steady but coerce null→0
+      : 0;
+  const shouldAutoPauseGeneric =
+    isGenericFailure && newFailureStreak >= 3 && schedule.status === "active";
+  const shouldAutoPauseBudget =
+    newBudgetStreak >= TURN_BUDGET_BREACH_AUTO_PAUSE_THRESHOLD &&
+    schedule.status === "active";
+  const shouldAutoPause = shouldAutoPauseGeneric || shouldAutoPauseBudget;
 
   await db
     .update(schedules)
     .set({
       lastTurnCount: turns,
       avgTurnsPerFiring: newAvg,
-      failureStreak: newStreak,
-      lastFailureReason: isFailure ? detectFailureReason(task.result) : null,
+      failureStreak: newFailureStreak,
+      turnBudgetBreachStreak: newBudgetStreak,
+      lastFailureReason: failureReason,
       status: shouldAutoPause ? "paused" : schedule.status,
       updatedAt: new Date(),
     })
     .where(eq(schedules.id, scheduleId));
 
-  if (shouldAutoPause) {
+  if (shouldAutoPauseGeneric) {
     console.warn(
-      `[scheduler] auto-paused "${schedule.name}" after 3 consecutive failures`
+      `[scheduler] auto-paused "${schedule.name}" after 3 consecutive failures`,
     );
+  }
+  if (shouldAutoPauseBudget) {
+    console.warn(
+      `[scheduler] auto-paused "${schedule.name}" after 5 consecutive turn-budget breaches (avg: ${newAvg} steps, cap: ${schedule.maxTurns})`,
+    );
+  }
+
+  try {
+    const [taskRow] = await db
+      .select()
+      .from(tasks)
+      .where(eq(tasks.id, taskId));
+    if (taskRow) {
+      const firedAtDate = taskRow.createdAt;
+      const slotClaimedAt = taskRow.slotClaimedAt;
+      const completedAt = taskRow.updatedAt;
+      const slotWaitMs =
+        slotClaimedAt && firedAtDate
+          ? slotClaimedAt.getTime() - firedAtDate.getTime()
+          : null;
+      const durationMs =
+        slotClaimedAt && completedAt
+          ? completedAt.getTime() - slotClaimedAt.getTime()
+          : null;
+
+      await db.insert(scheduleFiringMetrics).values({
+        id: crypto.randomUUID(),
+        scheduleId,
+        taskId,
+        firedAt: firedAtDate,
+        slotClaimedAt,
+        completedAt,
+        slotWaitMs,
+        durationMs,
+        turnCount: turns,
+        maxTurnsAtFiring: schedule.maxTurns,
+        eventLoopLagMs: null,
+        peakRssMb: null,
+        chatStreamsActive: null,
+        concurrentSchedules: null,
+        failureReason,
+      });
+    }
+  } catch (err) {
+    console.error(`[scheduler] failed to insert firing metrics for ${taskId}:`, err);
+  }
+}
+
+/**
+ * First-breach grace: if maxTurnsSetAt was recent enough that this is the
+ * first-or-second firing after the edit, don't count the breach toward the
+ * auto-pause streak.
+ */
+function shouldApplyGrace(
+  maxTurnsSetAt: Date | null,
+  cronExpression: string,
+  completedAt: Date | null,
+): boolean {
+  if (!maxTurnsSetAt || !completedAt) return false;
+  try {
+    const t1 = computeNextFireTime(cronExpression, maxTurnsSetAt);
+    const t2 = computeNextFireTime(cronExpression, t1);
+    const cronIntervalMs = t2.getTime() - t1.getTime();
+    const graceWindowEnd = new Date(
+      maxTurnsSetAt.getTime() + GRACE_PERIOD_MULTIPLIER * cronIntervalMs,
+    );
+    return completedAt <= graceWindowEnd;
+  } catch {
+    return false;
   }
 }
 
@@ -420,6 +532,7 @@ async function fireSchedule(
     agentProfile: schedule.agentProfile,
     priority: 2,
     sourceType: "scheduled",
+    maxTurns: schedule.maxTurns, // per-schedule override, NULL = inherit global
     createdAt: now,
     updatedAt: now,
   });
@@ -615,6 +728,7 @@ async function fireHeartbeat(
     agentProfile: schedule.agentProfile,
     priority: 2,
     sourceType: "heartbeat",
+    maxTurns: schedule.maxTurns, // per-schedule override, NULL = inherit global
     createdAt: now,
     updatedAt: now,
   });

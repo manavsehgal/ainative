@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { db } from "@/lib/db";
-import { tasks, schedules, projects, settings } from "@/lib/db/schema";
+import { tasks, schedules, projects, settings, scheduleFiringMetrics } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { tickScheduler } from "../scheduler";
@@ -47,6 +47,7 @@ function seedScheduleDue(projectId: string, nextFireAt: Date): string {
 
 describe("tickScheduler with concurrency cap", () => {
   beforeEach(() => {
+    db.delete(scheduleFiringMetrics).run();
     db.delete(tasks).run();
     db.delete(schedules).run();
     db.delete(projects).run();

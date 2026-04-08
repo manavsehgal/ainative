@@ -4,6 +4,7 @@ import { schedules, tasks } from "@/lib/db/schema";
 import { eq, like } from "drizzle-orm";
 import { parseInterval, computeNextFireTime } from "@/lib/schedules/interval-parser";
 import { parseNaturalLanguage } from "@/lib/schedules/nlp-parser";
+import { checkCollision } from "@/lib/schedules/collision-check";
 import { resolveAgentRuntime } from "@/lib/agents/runtime/catalog";
 import { validateRuntimeProfileAssignment } from "@/lib/agents/profiles/assignment-validation";
 
@@ -199,7 +200,14 @@ export async function PATCH(
     .from(schedules)
     .where(eq(schedules.id, id));
 
-  return NextResponse.json(updated);
+  const effectiveCron = (updates.cronExpression as string | undefined) ?? schedule.cronExpression;
+  const warnings = checkCollision(
+    effectiveCron,
+    schedule.avgTurnsPerFiring ?? 0,
+    schedule.projectId ?? null,
+    schedule.id,
+  );
+  return NextResponse.json({ schedule: updated, warnings });
 }
 
 export async function DELETE(

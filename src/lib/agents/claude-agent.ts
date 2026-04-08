@@ -35,6 +35,50 @@ import {
   clearPermissionCache,
 } from "./tool-permissions";
 
+/**
+ * Classify an error into a machine-readable failure reason string.
+ * Used by writeTerminalFailureReason and handleExecutionError.
+ */
+function classifyError(error: unknown): string {
+  if (!(error instanceof Error)) return "sdk_error";
+  if (error.name === "AbortError" || error.message.includes("aborted")) {
+    return "aborted";
+  }
+  const lower = error.message.toLowerCase();
+  if (
+    lower.includes("turn") &&
+    (lower.includes("limit") || lower.includes("exhausted") || lower.includes("max"))
+  ) {
+    return "turn_limit_exceeded";
+  }
+  if (lower.includes("timeout") || lower.includes("timed out")) return "timeout";
+  if (lower.includes("budget")) return "budget_exceeded";
+  if (lower.includes("authentication") || lower.includes("oauth")) {
+    return "auth_failed";
+  }
+  if (lower.includes("rate limit") || lower.includes("429")) {
+    return "rate_limited";
+  }
+  return "sdk_error";
+}
+
+/**
+ * Write an explicit failure_reason to tasks at terminal-state transitions.
+ * Called from handleExecutionError and the execute/resume functions on known
+ * error classes. Prefer this over reverse-engineering reasons from text via
+ * detectFailureReason in scheduler.ts, which is fragile to SDK message changes.
+ */
+export async function writeTerminalFailureReason(
+  taskId: string,
+  error: unknown,
+): Promise<void> {
+  const reason = classifyError(error);
+  await db
+    .update(tasks)
+    .set({ failureReason: reason, updatedAt: new Date() })
+    .where(eq(tasks.id, taskId));
+}
+
 /** Typed representation of messages from the Agent SDK stream */
 interface AgentStreamMessage {
   type?: string;
@@ -314,11 +358,14 @@ async function processAgentStream(
       ? `Agent exhausted its turn limit (${turnCount} turns used) without producing a final result. The task may need fewer sub-queries or a higher maxTurns setting.`
       : "Agent stream ended without producing a result";
 
+    const streamFailureReason = turnCount > 0 ? "turn_limit_exceeded" : "sdk_error";
+
     await db
       .update(tasks)
       .set({
         status: "failed",
         result: errorDetail,
+        failureReason: streamFailureReason,
         updatedAt: new Date(),
       })
       .where(eq(tasks.id, taskId));
@@ -432,6 +479,11 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
     await prepareTaskOutputDirectory(taskId, { clearExisting: true });
     const ctx = await buildTaskQueryContext(task, agentProfileId);
 
+    // Per-schedule override: if the task carries its own maxTurns (set by
+    // fireSchedule from schedules.maxTurns), it takes precedence over the
+    // profile default. This is the runtime-enforced budget cap.
+    const effectiveMaxTurns = task.maxTurns ?? ctx.maxTurns;
+
     // Merge browser + external MCP servers when enabled globally
     const [browserServers, externalServers] = await Promise.all([
       getBrowserMcpServers(),
@@ -452,8 +504,8 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
         systemPrompt: ctx.systemInstructions
           ? { type: "preset" as const, preset: "claude_code" as const, append: ctx.systemInstructions }
           : { type: "preset" as const, preset: "claude_code" as const },
-        // F9: Bounded turn limit from profile or default
-        maxTurns: ctx.maxTurns,
+        // F9: Bounded turn limit from profile or default; per-schedule override wins
+        maxTurns: effectiveMaxTurns,
         // F4: Per-execution budget cap — use task-specific override if set
         maxBudgetUsd: task.maxBudgetUsd ?? DEFAULT_MAX_BUDGET_USD,
         ...(ctx.payload?.allowedTools && { allowedTools: ctx.payload.allowedTools }),
@@ -545,6 +597,11 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
     await prepareTaskOutputDirectory(taskId);
     const ctx = await buildTaskQueryContext(task, profileId);
 
+    // Per-schedule override: if the task carries its own maxTurns (set by
+    // fireSchedule from schedules.maxTurns), it takes precedence over the
+    // profile default. This is the runtime-enforced budget cap.
+    const effectiveMaxTurns = task.maxTurns ?? ctx.maxTurns;
+
     // Merge browser + external MCP servers when enabled globally
     const [browserServers, externalServers] = await Promise.all([
       getBrowserMcpServers(),
@@ -566,8 +623,8 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
         systemPrompt: ctx.systemInstructions
           ? { type: "preset" as const, preset: "claude_code" as const, append: ctx.systemInstructions }
           : { type: "preset" as const, preset: "claude_code" as const },
-        // F9: Bounded turn limit from profile or default
-        maxTurns: ctx.maxTurns,
+        // F9: Bounded turn limit from profile or default; per-schedule override wins
+        maxTurns: effectiveMaxTurns,
         // F4: Per-execution budget cap — use task-specific override if set
         maxBudgetUsd: task.maxBudgetUsd ?? DEFAULT_MAX_BUDGET_USD,
         ...(ctx.payload?.allowedTools && { allowedTools: ctx.payload.allowedTools }),
@@ -612,6 +669,7 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
           status: "failed",
           result: "Session expired — re-queue for fresh start",
           sessionId: null,
+          failureReason: "auth_failed",
           updatedAt: new Date(),
         })
         .where(eq(tasks.id, taskId));
@@ -667,11 +725,14 @@ async function handleExecutionError(
     return;
   }
 
+  const failureReason = classifyError(error);
+
   await db
     .update(tasks)
     .set({
       status: "failed",
       result: errorMessage,
+      failureReason,
       updatedAt: new Date(),
     })
     .where(eq(tasks.id, taskId));
