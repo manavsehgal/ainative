@@ -344,6 +344,7 @@ export const usageLedger = sqliteTable(
         "context_summarization",
         "chat_turn",
         "profile_assist",
+        "manual_force_bypass",
       ],
     }).notNull(),
     runtimeId: text("runtime_id").notNull(),

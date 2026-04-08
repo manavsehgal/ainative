@@ -80,6 +80,9 @@ describe("POST /api/schedules/:id/execute", () => {
     const body = await res2.json();
     expect(body.error).toBe("capacity_full");
     expect(body.slotEtaSec).toBeGreaterThanOrEqual(0);
+
+    const remaining = db.select().from(tasks).all();
+    expect(remaining.length).toBe(1); // only sid1's task remains; sid2's was cleaned up on refusal
   });
 
   it("bypasses the cap when ?force=true and writes audit-log entry", async () => {
@@ -95,13 +98,15 @@ describe("POST /api/schedules/:id/execute", () => {
       { params: Promise.resolve({ id: sid2 }) },
     );
     expect(res2.status).toBe(200);
+    const body2 = await res2.json();
 
     const ledger = db
       .select()
       .from(usageLedger)
-      .where(eq(usageLedger.activityType, "manual_force_bypass" as typeof usageLedger.activityType._.data))
+      .where(eq(usageLedger.activityType, "manual_force_bypass"))
       .all();
     expect(ledger.length).toBe(1);
+    expect(ledger[0].taskId).toBe(body2.taskId);
   });
 
   it("returns 404 when the schedule does not exist", async () => {

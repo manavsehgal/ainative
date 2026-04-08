@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { schedules, tasks } from "@/lib/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { schedules, tasks, usageLedger } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 import { executeTaskWithRuntime } from "@/lib/agents/runtime";
 import { claimSlot, countRunningScheduledSlots } from "@/lib/schedules/slot-claim";
 import {
@@ -82,20 +82,23 @@ export async function POST(
 
   // Audit log written synchronously before task execution so that a force
   // bypass is always recorded even if the task itself fails immediately.
-  // We use a raw SQL insert because "manual_force_bypass" is not in the
-  // Drizzle-typed enum (which covers metered activity types only).
   if (force) {
-    const nowSec = Math.ceil(Date.now() / 1000);
-    db.run(
-      sql`INSERT INTO usage_ledger
-            (id, task_id, schedule_id, project_id,
-             activity_type, runtime_id, provider_id,
-             status, cost_micros, started_at, finished_at)
-          VALUES
-            (${randomUUID()}, ${taskId}, ${schedule.id}, ${schedule.projectId},
-             'manual_force_bypass', 'manual', 'manual',
-             'completed', 0, ${nowSec}, ${nowSec})`,
-    );
+    const nowTs = new Date();
+    db.insert(usageLedger)
+      .values({
+        id: randomUUID(),
+        taskId,
+        scheduleId: schedule.id,
+        projectId: schedule.projectId,
+        activityType: "manual_force_bypass",
+        runtimeId: "manual",
+        providerId: "manual",
+        status: "completed",
+        costMicros: 0,
+        startedAt: nowTs,
+        finishedAt: nowTs,
+      })
+      .run();
   }
 
   // Fire-and-forget: the route returns immediately with taskId; execution runs
