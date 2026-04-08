@@ -220,7 +220,7 @@ export async function recordFiringMetrics(
     turnBudgetStreakDelta > 0
       ? (schedule.turnBudgetBreachStreak ?? 0) + 1
       : isTurnBudgetBreach
-      ? schedule.turnBudgetBreachStreak
+      ? (schedule.turnBudgetBreachStreak ?? 0)  // hold-steady but coerce null→0
       : 0;
   const shouldAutoPauseGeneric =
     isGenericFailure && newFailureStreak >= 3 && schedule.status === "active";
@@ -266,8 +266,9 @@ function shouldApplyGrace(
 ): boolean {
   if (!maxTurnsSetAt || !completedAt) return false;
   try {
-    const nextAfterSet = computeNextFireTime(cronExpression, maxTurnsSetAt);
-    const cronIntervalMs = nextAfterSet.getTime() - maxTurnsSetAt.getTime();
+    const t1 = computeNextFireTime(cronExpression, maxTurnsSetAt);
+    const t2 = computeNextFireTime(cronExpression, t1);
+    const cronIntervalMs = t2.getTime() - t1.getTime();
     const graceWindowEnd = new Date(
       maxTurnsSetAt.getTime() + GRACE_PERIOD_MULTIPLIER * cronIntervalMs,
     );
