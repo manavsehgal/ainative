@@ -71,9 +71,14 @@ export function UpgradeBadge() {
 
     fetchStatus();
     const interval = setInterval(fetchStatus, 5 * 60 * 1000);
+    // Refetch when the tab regains focus — picks up DB changes made by the
+    // hourly poller or by a manual "Check for upgrades" click while the user
+    // was running git commands in the terminal.
+    window.addEventListener("focus", fetchStatus);
     return () => {
       cancelled = true;
       clearInterval(interval);
+      window.removeEventListener("focus", fetchStatus);
     };
   }, []);
 
@@ -110,7 +115,7 @@ export function UpgradeBadge() {
       }
       const data = (await res.json()) as { taskId: string };
       setOpen(false);
-      router.push(`/monitor/${data.taskId}`);
+      router.push(`/tasks/${data.taskId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {

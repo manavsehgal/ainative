@@ -75,10 +75,16 @@ export async function POST() {
       })
       .run();
 
-    // Record which task id owns this upgrade so the UI can deep-link to it.
+    // Record which task id owns this upgrade so the UI can deep-link to it,
+    // and optimistically clear the pending-count so the sidebar badge and
+    // settings card reflect the user's intent immediately. If the merge task
+    // fails or is cancelled, the next scheduled poll (or a manual "Check for
+    // upgrades") will restore the real count by re-running git rev-list.
     await setUpgradeState({
       ...upgrade,
       lastUpgradeTaskId: id,
+      commitsBehind: 0,
+      upgradeAvailable: false,
     });
 
     return NextResponse.json({ taskId: id }, { status: 202 });
