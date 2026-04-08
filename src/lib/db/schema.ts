@@ -40,6 +40,21 @@ export const tasks = sqliteTable(
     workflowRunNumber: integer("workflow_run_number"),
     /** Resolved per-task budget cap in USD — set by workflow engine for child tasks */
     maxBudgetUsd: real("max_budget_usd"),
+    /** When the slot for this task was atomically claimed */
+    slotClaimedAt: integer("slot_claimed_at", { mode: "timestamp" }),
+    /** Wall-clock expiry; reaper aborts tasks whose lease has passed */
+    leaseExpiresAt: integer("lease_expires_at", { mode: "timestamp" }),
+    /**
+     * Explicit terminal-state reason written by the runtime adapter at
+     * failure/abort transitions (e.g. 'turn_limit_exceeded', 'lease_expired',
+     * 'aborted', 'sdk_error'). Distinct from `result` — `result` holds the
+     * agent's final output text, while `failureReason` holds a machine-readable
+     * classifier that drives scheduler failure-streak logic without re-parsing
+     * error prose.
+     */
+    failureReason: text("failure_reason"),
+    /** Per-task turn budget copied from schedules.maxTurns at firing time */
+    maxTurns: integer("max_turns"),
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
   },
@@ -49,6 +64,7 @@ export const tasks = sqliteTable(
     index("idx_tasks_workflow_id").on(table.workflowId),
     index("idx_tasks_schedule_id").on(table.scheduleId),
     index("idx_tasks_agent_profile").on(table.agentProfile),
+    index("idx_tasks_running_scheduled").on(table.status, table.sourceType, table.leaseExpiresAt),
   ]
 );
 
@@ -217,6 +233,20 @@ export const schedules = sqliteTable(
     failureStreak: integer("failure_streak").default(0).notNull(),
     /** Detected reason for the most recent failure (turn_limit_exceeded, timeout, etc.) */
     lastFailureReason: text("last_failure_reason"),
+    /** Hard cap on turns per firing; NULL inherits the global MAX_TURNS setting */
+    maxTurns: integer("max_turns"),
+    /** Timestamp when maxTurns was last edited — drives first-breach grace */
+    maxTurnsSetAt: integer("max_turns_set_at", { mode: "timestamp" }),
+    /** Wall-clock lease override in seconds; NULL inherits global default (1200s) */
+    maxRunDurationSec: integer("max_run_duration_sec"),
+    /**
+     * Counter separate from failureStreak — increments only on maxTurns breach.
+     * Reset to 0 on any non-breach outcome (successful run, generic failure, or
+     * first-breach grace window after maxTurnsSetAt). Auto-pause at 5. This
+     * higher threshold + grace window protects users from tripping auto-pause
+     * via a misconfigured maxTurns edit.
+     */
+    turnBudgetBreachStreak: integer("turn_budget_breach_streak").default(0).notNull(),
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
   },
@@ -1219,3 +1249,33 @@ export const workflowExecutionStats = sqliteTable("workflow_execution_stats", {
 });
 
 export type WorkflowExecutionStatsRow = InferSelectModel<typeof workflowExecutionStats>;
+
+// ── Schedule Firing Metrics ───────────────────────────────────────────
+
+export const scheduleFiringMetrics = sqliteTable(
+  "schedule_firing_metrics",
+  {
+    id: text("id").primaryKey(),
+    scheduleId: text("schedule_id")
+      .references(() => schedules.id)
+      .notNull(),
+    taskId: text("task_id").references(() => tasks.id),
+    firedAt: integer("fired_at", { mode: "timestamp" }).notNull(),
+    slotClaimedAt: integer("slot_claimed_at", { mode: "timestamp" }),
+    completedAt: integer("completed_at", { mode: "timestamp" }),
+    slotWaitMs: integer("slot_wait_ms"),
+    durationMs: integer("duration_ms"),
+    turnCount: integer("turn_count"),
+    maxTurnsAtFiring: integer("max_turns_at_firing"),
+    eventLoopLagMs: real("event_loop_lag_ms"),
+    peakRssMb: integer("peak_rss_mb"),
+    chatStreamsActive: integer("chat_streams_active"),
+    concurrentSchedules: integer("concurrent_schedules"),
+    failureReason: text("failure_reason"),
+  },
+  (table) => [
+    index("idx_sfm_schedule_time").on(table.scheduleId, table.firedAt),
+  ]
+);
+
+export type ScheduleFiringMetricRow = InferSelectModel<typeof scheduleFiringMetrics>;

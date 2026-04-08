@@ -47,6 +47,7 @@ const STAGENT_TABLES = [
   "snapshots",
   "license",
   "workflow_execution_stats",
+  "schedule_firing_metrics",
 ] as const;
 
 export function bootstrapStagentDatabase(sqlite: Database.Database): void {
@@ -192,6 +193,32 @@ export function bootstrapStagentDatabase(sqlite: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_schedules_status ON schedules(status);
     CREATE INDEX IF NOT EXISTS idx_schedules_next_fire_at ON schedules(next_fire_at);
     CREATE INDEX IF NOT EXISTS idx_schedules_project_id ON schedules(project_id);
+
+    -- schedule_firing_metrics is placed here (between schedules indexes and
+    -- notifications indexes) to satisfy its foreign-key dependency on schedules.
+    -- Future tables with FK dependencies should follow the same "place after
+    -- parent table" discipline rather than batching all CREATE TABLE at the top.
+    CREATE TABLE IF NOT EXISTS schedule_firing_metrics (
+      id TEXT PRIMARY KEY NOT NULL,
+      schedule_id TEXT NOT NULL,
+      task_id TEXT,
+      fired_at INTEGER NOT NULL,
+      slot_claimed_at INTEGER,
+      completed_at INTEGER,
+      slot_wait_ms INTEGER,
+      duration_ms INTEGER,
+      turn_count INTEGER,
+      max_turns_at_firing INTEGER,
+      event_loop_lag_ms REAL,
+      peak_rss_mb INTEGER,
+      chat_streams_active INTEGER,
+      concurrent_schedules INTEGER,
+      failure_reason TEXT,
+      FOREIGN KEY (schedule_id) REFERENCES schedules(id) ON UPDATE NO ACTION ON DELETE NO ACTION,
+      FOREIGN KEY (task_id) REFERENCES tasks(id) ON UPDATE NO ACTION ON DELETE NO ACTION
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_sfm_schedule_time ON schedule_firing_metrics(schedule_id, fired_at);
 
     CREATE INDEX IF NOT EXISTS idx_notifications_task_id ON notifications(task_id);
     CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(read);
@@ -556,6 +583,18 @@ export function bootstrapStagentDatabase(sqlite: Database.Database): void {
   addColumnIfMissing(`ALTER TABLE schedules ADD COLUMN failure_streak INTEGER DEFAULT 0 NOT NULL;`);
   addColumnIfMissing(`ALTER TABLE schedules ADD COLUMN last_failure_reason TEXT;`);
   addColumnIfMissing(`ALTER TABLE channel_configs ADD COLUMN direction TEXT DEFAULT 'outbound' NOT NULL;`);
+
+  // ── Schedule Orchestration columns ───────────────────────────────────────
+  addColumnIfMissing(`ALTER TABLE tasks ADD COLUMN slot_claimed_at INTEGER;`);
+  addColumnIfMissing(`ALTER TABLE tasks ADD COLUMN lease_expires_at INTEGER;`);
+  addColumnIfMissing(`ALTER TABLE tasks ADD COLUMN failure_reason TEXT;`);
+  addColumnIfMissing(`ALTER TABLE tasks ADD COLUMN max_turns INTEGER;`);
+  addColumnIfMissing(`ALTER TABLE schedules ADD COLUMN max_turns INTEGER;`);
+  addColumnIfMissing(`ALTER TABLE schedules ADD COLUMN max_turns_set_at INTEGER;`);
+  addColumnIfMissing(`ALTER TABLE schedules ADD COLUMN max_run_duration_sec INTEGER;`);
+  addColumnIfMissing(`ALTER TABLE schedules ADD COLUMN turn_budget_breach_streak INTEGER DEFAULT 0 NOT NULL;`);
+  // Create the composite index for lease-reaper queries (idempotent)
+  sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_tasks_running_scheduled ON tasks(status, source_type, lease_expires_at);`);
 
   // ── Bidirectional Channel Chat ──────────────────────────────────────────
   sqlite.exec(`

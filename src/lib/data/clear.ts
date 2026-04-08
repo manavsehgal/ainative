@@ -42,6 +42,7 @@ import {
   workflowTableInputs,
   scheduleTableInputs,
   workflowExecutionStats,
+  scheduleFiringMetrics,
 } from "@/lib/db/schema";
 import { readdirSync, unlinkSync, mkdirSync } from "fs";
 import { join } from "path";
@@ -127,6 +128,7 @@ export function clearAllData() {
   const executionStatsDeleted = db.delete(workflowExecutionStats).run().changes;
   const tasksDeleted = db.delete(tasks).run().changes;
   const workflowsDeleted = db.delete(workflows).run().changes;
+  const scheduleFiringMetricsDeleted = db.delete(scheduleFiringMetrics).run().changes;
   const schedulesDeleted = db.delete(schedules).run().changes;
   const projectsDeleted = db.delete(projects).run().changes;
 
@@ -160,6 +162,7 @@ export function clearAllData() {
     projects: projectsDeleted,
     tasks: tasksDeleted,
     workflows: workflowsDeleted,
+    scheduleFiringMetrics: scheduleFiringMetricsDeleted,
     schedules: schedulesDeleted,
     usageLedger: usageLedgerDeleted,
     agentLogs: logsDeleted,
