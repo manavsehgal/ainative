@@ -22,6 +22,7 @@ import {
 } from "@/lib/data/chat";
 import { buildChatContext, type MentionReference } from "./context-builder";
 import { finalizeStreamingMessage } from "./reconcile";
+import { registerChatStream, unregisterChatStream } from "./active-streams";
 import {
   detectEntities,
   extractToolResultEntities,
@@ -250,6 +251,8 @@ export async function* sendMessage(
     content: "",
     status: "streaming",
   });
+
+  registerChatStream(conversationId);
 
   // Create side channel for canUseTool → SSE bridge communication
   const sideChannel = createSideChannel(conversationId);
@@ -718,6 +721,7 @@ export async function* sendMessage(
     } catch (finalizeErr) {
       console.error("[chat] finalize safety net failed:", finalizeErr);
     }
+    unregisterChatStream(conversationId);
     cleanupConversation(conversationId);
   }
 }
