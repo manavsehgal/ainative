@@ -420,6 +420,7 @@ async function fireSchedule(
     agentProfile: schedule.agentProfile,
     priority: 2,
     sourceType: "scheduled",
+    maxTurns: schedule.maxTurns, // per-schedule override, NULL = inherit global
     createdAt: now,
     updatedAt: now,
   });
@@ -615,6 +616,7 @@ async function fireHeartbeat(
     agentProfile: schedule.agentProfile,
     priority: 2,
     sourceType: "heartbeat",
+    maxTurns: schedule.maxTurns, // per-schedule override, NULL = inherit global
     createdAt: now,
     updatedAt: now,
   });

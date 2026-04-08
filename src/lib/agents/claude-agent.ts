@@ -432,6 +432,11 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
     await prepareTaskOutputDirectory(taskId, { clearExisting: true });
     const ctx = await buildTaskQueryContext(task, agentProfileId);
 
+    // Per-schedule override: if the task carries its own maxTurns (set by
+    // fireSchedule from schedules.maxTurns), it takes precedence over the
+    // profile default. This is the runtime-enforced budget cap.
+    const effectiveMaxTurns = task.maxTurns ?? ctx.maxTurns;
+
     // Merge browser + external MCP servers when enabled globally
     const [browserServers, externalServers] = await Promise.all([
       getBrowserMcpServers(),
@@ -452,8 +457,8 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
         systemPrompt: ctx.systemInstructions
           ? { type: "preset" as const, preset: "claude_code" as const, append: ctx.systemInstructions }
           : { type: "preset" as const, preset: "claude_code" as const },
-        // F9: Bounded turn limit from profile or default
-        maxTurns: ctx.maxTurns,
+        // F9: Bounded turn limit from profile or default; per-schedule override wins
+        maxTurns: effectiveMaxTurns,
         // F4: Per-execution budget cap — use task-specific override if set
         maxBudgetUsd: task.maxBudgetUsd ?? DEFAULT_MAX_BUDGET_USD,
         ...(ctx.payload?.allowedTools && { allowedTools: ctx.payload.allowedTools }),
@@ -545,6 +550,11 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
     await prepareTaskOutputDirectory(taskId);
     const ctx = await buildTaskQueryContext(task, profileId);
 
+    // Per-schedule override: if the task carries its own maxTurns (set by
+    // fireSchedule from schedules.maxTurns), it takes precedence over the
+    // profile default. This is the runtime-enforced budget cap.
+    const effectiveMaxTurns = task.maxTurns ?? ctx.maxTurns;
+
     // Merge browser + external MCP servers when enabled globally
     const [browserServers, externalServers] = await Promise.all([
       getBrowserMcpServers(),
@@ -566,8 +576,8 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
         systemPrompt: ctx.systemInstructions
           ? { type: "preset" as const, preset: "claude_code" as const, append: ctx.systemInstructions }
           : { type: "preset" as const, preset: "claude_code" as const },
-        // F9: Bounded turn limit from profile or default
-        maxTurns: ctx.maxTurns,
+        // F9: Bounded turn limit from profile or default; per-schedule override wins
+        maxTurns: effectiveMaxTurns,
         // F4: Per-execution budget cap — use task-specific override if set
         maxBudgetUsd: task.maxBudgetUsd ?? DEFAULT_MAX_BUDGET_USD,
         ...(ctx.payload?.allowedTools && { allowedTools: ctx.payload.allowedTools }),
