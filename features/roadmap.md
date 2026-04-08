@@ -295,6 +295,15 @@ Automates the PRIVATE-INSTANCES runbook — turns the manual `git merge main` + 
 | [upgrade-session](upgrade-session.md) | P1 | planned | instance-bootstrap, upgrade-detection, agent-integration, agent-profile-catalog |
 | [instance-license-metering](instance-license-metering.md) | P2 | planned | instance-bootstrap, local-license-manager, license-activation-flow |
 
+### Growth-Enabling Primitives
+
+General-purpose workflow and table capabilities identified while building the Growth module — both deliberately added to Stagent core (not Growth) because they serve every user, not just revenue operators. Extracted from `2026-04-08-stagent-core-growth-primitives-design.md`.
+
+| Feature | Priority | Status | Dependencies |
+|---------|----------|--------|--------------|
+| [workflow-step-delays](workflow-step-delays.md) | P1 | planned | workflow-engine, scheduled-prompt-loops |
+| [bulk-row-enrichment](bulk-row-enrichment.md) | P1 | planned | workflow-engine, tables-data-layer, tables-workflow-triggers, multi-agent-routing |
+
 ## Dependency Graph
 
 Critical path through the MVP:

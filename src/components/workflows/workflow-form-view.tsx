@@ -29,7 +29,9 @@ import {
   ShieldCheck,
   FileText,
   X,
+  Clock3,
 } from "lucide-react";
+import { parseDuration as parseDelayDuration } from "@/lib/workflows/delay";
 import { toast } from "sonner";
 import { FormSectionCard } from "@/components/shared/form-section-card";
 import type {
@@ -77,6 +79,16 @@ function createEmptyStep(): WorkflowStep {
     name: "",
     prompt: "",
     requiresApproval: false,
+  };
+}
+
+function createEmptyDelayStep(): WorkflowStep {
+  return {
+    id: crypto.randomUUID(),
+    name: "Wait",
+    prompt: "",
+    requiresApproval: false,
+    delayDuration: "1d",
   };
 }
 
@@ -555,6 +567,10 @@ export function WorkflowFormView({
     });
   }
 
+  function addDelayStep() {
+    setSteps((prev) => [...prev, createEmptyDelayStep()]);
+  }
+
   function removeStep(index: number) {
     setSteps((prev) => {
       if (pattern === "parallel") {
@@ -912,6 +928,71 @@ export function WorkflowFormView({
       badgeLabel?: string;
     }
   ) {
+    // Delay step: simplified card with only a duration picker. No profile,
+    // no runtime, no prompt. The XOR rule is enforced at blueprint validation
+    // time; here we just render the appropriate shape based on step.delayDuration.
+    if (step.delayDuration !== undefined) {
+      let durationError: string | null = null;
+      try {
+        parseDelayDuration(step.delayDuration);
+      } catch (err) {
+        durationError = err instanceof Error ? err.message : "Invalid duration";
+      }
+      return (
+        <FormSectionCard
+          key={step.id}
+          icon={Clock3}
+          title={options?.title ?? `Delay ${index + 1}`}
+          hint="Pauses the workflow before the next step. Format: 30m, 2h, 3d, 1w (1 minute to 30 days)."
+        >
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="text-[10px] uppercase tracking-wide shrink-0">
+                Delay
+              </Badge>
+              <Input
+                value={step.name}
+                onChange={(e) => updateStep(index, { name: e.target.value })}
+                placeholder="Step name (e.g. 'Wait 3 days')"
+                className="flex-1"
+              />
+              {(options?.removable ?? true) && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={() => removeStep(index)}
+                  aria-label={`Remove delay step ${index + 1}`}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Input
+                value={step.delayDuration}
+                onChange={(e) => updateStep(index, { delayDuration: e.target.value })}
+                placeholder="3d"
+                className="font-mono"
+                aria-invalid={durationError ? true : undefined}
+                aria-describedby={durationError ? `${step.id}-duration-error` : undefined}
+              />
+              {durationError ? (
+                <p id={`${step.id}-duration-error`} className="text-xs text-destructive">
+                  {durationError}
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Duration to wait. Examples: <code>30m</code>, <code>2h</code>, <code>3d</code>, <code>1w</code>.
+                </p>
+              )}
+            </div>
+          </div>
+        </FormSectionCard>
+      );
+    }
+
     return (
       <FormSectionCard
         key={step.id}
@@ -1430,19 +1511,34 @@ export function WorkflowFormView({
                           ? `${swarmWorkerSteps.length} worker${swarmWorkerSteps.length === 1 ? "" : "s"}`
                         : `${steps.length} step${steps.length === 1 ? "" : "s"}`}
                     </Badge>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={addStep}
-                      disabled={
-                        (isParallel && branchSteps.length >= MAX_PARALLEL_BRANCHES) ||
-                        (isSwarm && swarmWorkerSteps.length >= MAX_SWARM_WORKERS)
-                      }
-                    >
-                      <Plus className="h-3 w-3 mr-1" />
-                      {isParallel ? "Add Branch" : isSwarm ? "Add Worker" : "Add Step"}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={addStep}
+                        disabled={
+                          (isParallel && branchSteps.length >= MAX_PARALLEL_BRANCHES) ||
+                          (isSwarm && swarmWorkerSteps.length >= MAX_SWARM_WORKERS)
+                        }
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        {isParallel ? "Add Branch" : isSwarm ? "Add Worker" : "Add Step"}
+                      </Button>
+                      {/* Delay steps are only supported in sequence pattern per the feature spec. */}
+                      {pattern === "sequence" && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={addDelayStep}
+                          title="Insert a pure time delay between steps (30m, 2h, 3d, 1w)"
+                        >
+                          <Clock3 className="h-3 w-3 mr-1" />
+                          Add Delay
+                        </Button>
+                      )}
+                    </div>
                   </div>
                   <div className="space-y-1">
                     {isParallel ? (

@@ -46,16 +46,24 @@ vi.mock("@/lib/db", () => ({
 vi.mock("@/lib/db/schema", () => ({
   workflows: {
     id: "workflows.id",
+    status: "workflows.status",
   },
   tasks: {
     id: "tasks.id",
   },
   agentLogs: {},
   notifications: {},
+  // usageLedger is read by execution-stats.ts in the finally-block fire-and-forget.
+  // Without this export the import throws, cascading through the catch handler
+  // and causing downstream updateWorkflowState reads to run out of mock entries.
+  usageLedger: {
+    workflowId: "usageLedger.workflowId",
+  },
 }));
 
 vi.mock("drizzle-orm", () => ({
   eq: vi.fn((column: string, value: unknown) => ({ column, value })),
+  and: vi.fn((...conditions: unknown[]) => ({ and: conditions })),
 }));
 
 vi.mock("@/lib/agents/runtime", () => ({

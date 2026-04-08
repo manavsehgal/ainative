@@ -91,6 +91,7 @@ export function bootstrapStagentDatabase(sqlite: Database.Database): void {
       status TEXT DEFAULT 'draft' NOT NULL,
       run_number INTEGER DEFAULT 0 NOT NULL,
       runtime_id TEXT,
+      resume_at INTEGER,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL,
       FOREIGN KEY (project_id) REFERENCES projects(id) ON UPDATE NO ACTION ON DELETE NO ACTION
@@ -305,6 +306,10 @@ export function bootstrapStagentDatabase(sqlite: Database.Database): void {
   addColumnIfMissing(`ALTER TABLE documents ADD COLUMN source TEXT DEFAULT 'upload';`);
   addColumnIfMissing(`ALTER TABLE documents ADD COLUMN conversation_id TEXT REFERENCES conversations(id);`);
   addColumnIfMissing(`ALTER TABLE documents ADD COLUMN message_id TEXT;`);
+  // Workflow step delays — resume_at for schedule-based delay resumption.
+  // The partial index on resume_at is created by migration 0024 for fresh DBs;
+  // existing DBs that don't run migrations will do a small table scan instead.
+  addColumnIfMissing(`ALTER TABLE workflows ADD COLUMN resume_at INTEGER;`);
   sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_documents_source ON documents(source);`);
   sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_documents_conversation_id ON documents(conversation_id);`);
 

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { parseDuration } from "@/lib/workflows/delay";
 
 export const BlueprintVariableSchema = z.object({
   id: z.string(),
@@ -15,14 +16,74 @@ export const BlueprintVariableSchema = z.object({
   max: z.number().optional(),
 });
 
-export const BlueprintStepSchema = z.object({
-  name: z.string(),
-  profileId: z.string(),
-  promptTemplate: z.string(),
-  requiresApproval: z.boolean(),
-  expectedOutput: z.string().optional(),
-  condition: z.string().optional(),
-});
+/**
+ * A blueprint step is either a task step (profileId + promptTemplate) OR a
+ * delay step (delayDuration). The discriminator lives in the cross-field
+ * refinement below — we can't use Zod's discriminatedUnion directly because
+ * YAML blueprints don't carry an explicit `type` field, and we want validation
+ * errors to point at the actual offending field, not a missing discriminator.
+ *
+ * See features/workflow-step-delays.md for the XOR rule rationale.
+ */
+export const BlueprintStepSchema = z
+  .object({
+    name: z.string(),
+    profileId: z.string().optional(),
+    promptTemplate: z.string().optional(),
+    delayDuration: z.string().optional(),
+    requiresApproval: z.boolean(),
+    expectedOutput: z.string().optional(),
+    condition: z.string().optional(),
+  })
+  .superRefine((step, ctx) => {
+    const hasDelay = step.delayDuration != null;
+    const hasProfile = step.profileId != null;
+    const hasPrompt = step.promptTemplate != null;
+    const hasAnyTaskField = hasProfile || hasPrompt;
+
+    // XOR: exactly one of (delay step) or (task step) must be present.
+    if (hasDelay && hasAnyTaskField) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["delayDuration"],
+        message:
+          "Step cannot be both a delay and a task: remove delayDuration, or remove profileId/promptTemplate.",
+      });
+      return;
+    }
+
+    if (hasDelay) {
+      // Delay step: validate the duration string parses and is within bounds.
+      try {
+        parseDuration(step.delayDuration as string);
+      } catch (err) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["delayDuration"],
+          message: err instanceof Error ? err.message : String(err),
+        });
+      }
+      return;
+    }
+
+    // Task step: profileId AND promptTemplate are both required.
+    if (!hasProfile) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["profileId"],
+        message:
+          "Task step requires profileId. For a delay step, set delayDuration instead (e.g. '3d').",
+      });
+    }
+    if (!hasPrompt) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["promptTemplate"],
+        message:
+          "Task step requires promptTemplate. For a delay step, set delayDuration instead (e.g. '3d').",
+      });
+    }
+  });
 
 export const BlueprintSchema = z.object({
   id: z.string(),

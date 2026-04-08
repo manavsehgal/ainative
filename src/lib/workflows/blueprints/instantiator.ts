@@ -48,6 +48,27 @@ export async function instantiateBlueprint(
       continue;
     }
 
+    // Delay step: a pure time wait with no prompt/profile. Blueprint validation
+    // enforces that delayDuration and profileId+promptTemplate are mutually
+    // exclusive (XOR), so branching here is safe.
+    if (step.delayDuration) {
+      resolvedSteps.push({
+        id: crypto.randomUUID(),
+        name: step.name,
+        prompt: "",
+        requiresApproval: step.requiresApproval,
+        delayDuration: step.delayDuration,
+      });
+      continue;
+    }
+
+    // Task step: profileId + promptTemplate must be present (XOR contract).
+    if (!step.promptTemplate) {
+      throw new Error(
+        `Blueprint step "${step.name}" has no promptTemplate — blueprint validation should have caught this.`,
+      );
+    }
+
     const resolvedPrompt = resolveTemplate(step.promptTemplate, resolvedVars);
 
     resolvedSteps.push({

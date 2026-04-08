@@ -12,8 +12,9 @@
  */
 
 import { db } from "@/lib/db";
-import { schedules, tasks, agentLogs, scheduleDocumentInputs, documents } from "@/lib/db/schema";
-import { eq, and, lte, inArray, sql, asc } from "drizzle-orm";
+import { schedules, tasks, agentLogs, scheduleDocumentInputs, documents, workflows } from "@/lib/db/schema";
+import { eq, and, lte, inArray, sql, asc, isNotNull } from "drizzle-orm";
+import { resumeWorkflow } from "@/lib/workflows/engine";
 import { computeNextFireTime } from "./interval-parser";
 import { executeTaskWithRuntime } from "@/lib/agents/runtime";
 import { getSetting } from "@/lib/settings/helpers";
@@ -267,6 +268,32 @@ export async function tickScheduler(): Promise<void> {
     await processHandoffs();
   } catch (err) {
     console.error("[scheduler] handoff processing error:", err);
+  }
+
+  // Resume delayed workflows whose resume_at has passed. Uses the partial index
+  // idx_workflows_resume_at (WHERE resume_at IS NOT NULL) for efficiency.
+  // resumeWorkflow is idempotent via atomic status transition, so even if the
+  // scheduler tick races a user's "Resume Now" click, exactly one resume wins.
+  try {
+    const nowMs = now.getTime();
+    const dueDelayedWorkflows = await db
+      .select({ id: workflows.id })
+      .from(workflows)
+      .where(
+        and(
+          eq(workflows.status, "paused"),
+          isNotNull(workflows.resumeAt),
+          lte(workflows.resumeAt, nowMs),
+        ),
+      );
+
+    for (const wf of dueDelayedWorkflows) {
+      resumeWorkflow(wf.id).catch((err) => {
+        console.error(`[scheduler] failed to resume workflow ${wf.id}:`, err);
+      });
+    }
+  } catch (err) {
+    console.error("[scheduler] delayed-workflow check error:", err);
   }
 }
 

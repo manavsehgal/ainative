@@ -65,6 +65,13 @@ export const workflows = sqliteTable("workflows", {
   runNumber: integer("run_number").default(0).notNull(),
   /** Runtime to use for all steps (nullable — falls back to system default) */
   runtimeId: text("runtime_id"),
+  /**
+   * Epoch millisecond timestamp at which a paused (delayed) workflow is due to resume.
+   * Null for workflows that are not waiting on a delay step. Indexed via
+   * idx_workflows_resume_at (partial index on non-null values) so the scheduler tick
+   * can efficiently find due workflows. See features/workflow-step-delays.md.
+   */
+  resumeAt: integer("resume_at"),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
 });

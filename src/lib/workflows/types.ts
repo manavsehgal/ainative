@@ -20,6 +20,14 @@ export interface WorkflowStep {
   budgetUsd?: number;
   /** Per-step runtime override — takes precedence over workflow.runtimeId and global settings */
   runtimeId?: string;
+  /**
+   * If set, this step is a pure time delay (not a task). Format: Nm|Nh|Nd|Nw
+   * (1 minute to 30 days). When the engine reaches a delay step, the workflow
+   * is marked paused with resume_at = now + delayDuration. The scheduler tick
+   * resumes the workflow when resume_at is reached. Delay steps must NOT have
+   * a prompt/profile/runtime. See features/workflow-step-delays.md.
+   */
+  delayDuration?: string;
 }
 
 /** Selector for auto-discovering documents from the project pool */
@@ -99,7 +107,9 @@ export type WorkflowStepStatus =
   | "completed"
   | "failed"
   | "waiting_approval"
-  | "waiting_dependencies";
+  | "waiting_dependencies"
+  /** Step is a time delay and the workflow is paused waiting for resume_at. */
+  | "delayed";
 
 export interface StepState {
   stepId: string;

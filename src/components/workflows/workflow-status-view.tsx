@@ -38,6 +38,7 @@ import { PROSE_NOTIFICATION } from "@/lib/constants/prose-styles";
 import { SwarmDashboard } from "./swarm-dashboard";
 import { WorkflowFullOutput } from "./workflow-full-output";
 import type { LoopState, LoopConfig, SwarmConfig } from "@/lib/workflows/types";
+import { formatDuration } from "@/lib/workflows/delay";
 
 interface StepWithState {
   id: string;
@@ -45,6 +46,8 @@ interface StepWithState {
   prompt: string;
   requiresApproval?: boolean;
   dependsOn?: string[];
+  /** If set, this step is a pure time delay (no prompt/profile). Format: Nm|Nh|Nd|Nw. */
+  delayDuration?: string;
   state: {
     stepId: string;
     status: string;
@@ -66,6 +69,8 @@ interface WorkflowStatusData {
   id: string;
   name: string;
   status: string;
+  /** Epoch ms when a paused (delayed) workflow is due to resume, or null. */
+  resumeAt?: number | null;
   pattern: string;
   projectId?: string | null;
   definition?: string;
@@ -95,7 +100,101 @@ const stepStatusIcons: Record<string, React.ReactNode> = {
   failed: <XCircle className="h-4 w-4 text-destructive" />,
   waiting_approval: <ShieldQuestion className="h-4 w-4 text-status-warning" />,
   waiting_dependencies: <Clock3 className="h-4 w-4 text-status-warning" />,
+  delayed: <Clock3 className="h-4 w-4 text-status-warning" />,
 };
+
+/**
+ * Body content for a delay step row in the workflow status view.
+ * Renders three visual states:
+ *   - Pending (workflow hasn't reached this step yet): "Will wait 3d"
+ *   - Active delay (workflow paused, waiting): absolute resume time + remaining duration + Resume Now button
+ *   - Completed (workflow has already passed this step): "Delayed 3d — completed"
+ *
+ * Countdown is static on mount/focus — no per-second ticking (accessibility concern).
+ */
+function DelayStepBody({
+  workflowId,
+  delayDuration,
+  stepStatus,
+  resumeAt,
+}: {
+  workflowId: string;
+  delayDuration: string;
+  stepStatus: string;
+  resumeAt: number | null;
+}) {
+  const [resuming, setResuming] = useState(false);
+
+  const handleResumeNow = useCallback(async () => {
+    setResuming(true);
+    try {
+      const res = await fetch(`/api/workflows/${workflowId}/resume`, { method: "POST" });
+      if (res.status === 202) {
+        toast.success("Resume dispatched");
+      } else if (res.status === 409) {
+        toast.info("Workflow already resumed by scheduler");
+      } else {
+        const body = await res.json().catch(() => ({}));
+        toast.error(body.error ?? "Failed to resume workflow");
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to resume workflow");
+    } finally {
+      setResuming(false);
+    }
+  }, [workflowId]);
+
+  if (stepStatus === "completed") {
+    return (
+      <p className="text-xs text-muted-foreground mt-0.5">
+        Delayed {delayDuration} — completed
+      </p>
+    );
+  }
+
+  if (stepStatus === "delayed" && resumeAt) {
+    const resumeDate = new Date(resumeAt);
+    const remainingMs = Math.max(0, resumeAt - Date.now());
+    const remainingLabel = remainingMs < 60_000
+      ? "less than a minute"
+      : formatDuration(Math.round(remainingMs / 60_000) * 60_000);
+    return (
+      <div className="mt-1 space-y-2">
+        <p className="text-xs text-status-warning">
+          Resumes{" "}
+          <time dateTime={resumeDate.toISOString()}>
+            {resumeDate.toLocaleString(undefined, {
+              weekday: "short",
+              month: "short",
+              day: "numeric",
+              hour: "numeric",
+              minute: "2-digit",
+              timeZoneName: "short",
+            })}
+          </time>{" "}
+          <span className="text-muted-foreground">({remainingLabel} remaining)</span>
+        </p>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={handleResumeNow}
+          disabled={resuming}
+          aria-label="Resume workflow now"
+        >
+          <Play className="h-3 w-3 mr-1" />
+          {resuming ? "Resuming..." : "Resume Now"}
+        </Button>
+      </div>
+    );
+  }
+
+  // Pending / upcoming delay — workflow hasn't reached this step yet
+  return (
+    <p className="text-xs text-muted-foreground mt-0.5">
+      Will wait {delayDuration}
+    </p>
+  );
+}
 
 /** Expandable step result with gradient fade progressive disclosure */
 export function ExpandableResult({ result }: { result: string }) {
@@ -543,63 +642,85 @@ export function WorkflowStatusView({ workflowId }: WorkflowStatusViewProps) {
                 </>
               ) : (
                 <div className="space-y-3">
-                  {data.steps.map((step, index) => (
-                    <div key={`${step.id}-${index}`} className="flex items-start gap-3">
-                      <div className="mt-0.5 flex flex-col items-center">
-                        {stepStatusIcons[step.state.status] ?? stepStatusIcons.pending}
-                        {index < data.steps.length - 1 && (
-                          <div className="mt-1 h-6 w-px bg-border" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium">{step.name}</span>
-                          {step.requiresApproval && (
-                            <Badge variant="outline" className="text-xs">
-                              checkpoint
-                            </Badge>
+                  {data.steps.map((step, index) => {
+                    const isDelayStep = !!step.delayDuration;
+                    const isActiveDelay = isDelayStep && step.state.status === "delayed";
+                    return (
+                      <div key={`${step.id}-${index}`} className="flex items-start gap-3">
+                        <div className="mt-0.5 flex flex-col items-center">
+                          {isDelayStep && step.state.status === "pending" ? (
+                            <Clock3 className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            stepStatusIcons[step.state.status] ?? stepStatusIcons.pending
+                          )}
+                          {index < data.steps.length - 1 && (
+                            <div className="mt-1 h-6 w-px bg-border" />
                           )}
                         </div>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <p className="text-xs text-muted-foreground truncate">
-                            {step.prompt.slice(0, 100)}
-                            {step.prompt.length > 100 ? "..." : ""}
-                          </p>
-                          {step.state.taskId && (
-                            <a
-                              href={`/tasks/${step.state.taskId}`}
-                              className="text-[10px] text-primary hover:underline shrink-0"
-                            >
-                              view task
-                            </a>
-                          )}
-                        </div>
-                        {/* Parent document context indicator */}
-                        {data.parentDocuments && data.parentDocuments.length > 0 && index === 0 && (
-                          <div className="flex items-center gap-1 mt-1">
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                              {data.parentDocuments.length} doc{data.parentDocuments.length !== 1 ? "s" : ""} attached
-                            </Badge>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">{step.name}</span>
+                            {isDelayStep && (
+                              <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">
+                                Delay
+                              </Badge>
+                            )}
+                            {step.requiresApproval && !isDelayStep && (
+                              <Badge variant="outline" className="text-xs">
+                                checkpoint
+                              </Badge>
+                            )}
                           </div>
-                        )}
-                        {step.state.error && (
-                          <p className="text-xs text-destructive mt-1">
-                            {step.state.error}
-                          </p>
-                        )}
-                        {step.state.result && step.state.status === "completed" && (
-                          <ExpandableResult result={step.state.result} />
-                        )}
-                        {/* Step output documents */}
-                        {step.state.taskId && data.stepDocuments?.[step.state.taskId] && (
-                          <DocumentList
-                            docs={data.stepDocuments[step.state.taskId]}
-                            label="Generated Files"
-                          />
-                        )}
+                          {isDelayStep ? (
+                            <DelayStepBody
+                              workflowId={data.id}
+                              delayDuration={step.delayDuration!}
+                              stepStatus={step.state.status}
+                              resumeAt={isActiveDelay ? data.resumeAt ?? null : null}
+                            />
+                          ) : (
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <p className="text-xs text-muted-foreground truncate">
+                                {step.prompt.slice(0, 100)}
+                                {step.prompt.length > 100 ? "..." : ""}
+                              </p>
+                              {step.state.taskId && (
+                                <a
+                                  href={`/tasks/${step.state.taskId}`}
+                                  className="text-[10px] text-primary hover:underline shrink-0"
+                                >
+                                  view task
+                                </a>
+                              )}
+                            </div>
+                          )}
+                          {/* Parent document context indicator */}
+                          {data.parentDocuments && data.parentDocuments.length > 0 && index === 0 && !isDelayStep && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                {data.parentDocuments.length} doc{data.parentDocuments.length !== 1 ? "s" : ""} attached
+                              </Badge>
+                            </div>
+                          )}
+                          {step.state.error && (
+                            <p className="text-xs text-destructive mt-1">
+                              {step.state.error}
+                            </p>
+                          )}
+                          {step.state.result && step.state.status === "completed" && !isDelayStep && (
+                            <ExpandableResult result={step.state.result} />
+                          )}
+                          {/* Step output documents */}
+                          {step.state.taskId && data.stepDocuments?.[step.state.taskId] && (
+                            <DocumentList
+                              docs={data.stepDocuments[step.state.taskId]}
+                              label="Generated Files"
+                            />
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

@@ -69,7 +69,7 @@ export function workflowTools(ctx: ToolContext) {
 
     defineTool(
       "create_workflow",
-      "Create a new workflow with a definition. The definition must include a pattern (sequence, parallel, checkpoint, planner-executor, swarm, loop) and steps array.",
+      "Create a new workflow with a definition. The definition must include a pattern (sequence, parallel, checkpoint, planner-executor, swarm, loop) and steps array. Sequence-pattern steps can be either task steps (with prompt + assignedAgent/agentProfile) or delay steps (with delayDuration like '3d', '2h', '30m', '1w') that pause the workflow between tasks — use delay steps for time-distributed sequences (outreach cadences, drip campaigns, cooling periods) rather than creating separate workflows or schedules.",
       {
         name: z.string().min(1).max(200).describe("Workflow name"),
         projectId: z
@@ -79,7 +79,11 @@ export function workflowTools(ctx: ToolContext) {
         definition: z
           .string()
           .describe(
-            'Workflow definition as JSON string. Must include "pattern" and "steps" array. Example: {"pattern":"sequence","steps":[{"id":"step-1","name":"step1","prompt":"Do X","assignedAgent":"claude"}]}'
+            'Workflow definition as JSON string. Must include "pattern" and "steps" array. ' +
+            'Task step example: {"id":"s1","name":"Research","prompt":"Do X","assignedAgent":"claude"}. ' +
+            'Delay step example (sequence pattern only): {"id":"s2","name":"Wait 3 days","delayDuration":"3d"}. ' +
+            'A complete drip sequence: {"pattern":"sequence","steps":[{"id":"s1","name":"Initial","prompt":"Send first email","assignedAgent":"claude"},{"id":"s2","name":"Wait","delayDuration":"3d"},{"id":"s3","name":"Follow-up","prompt":"Send follow-up","assignedAgent":"claude"}]}. ' +
+            'Delay bounds: 1m to 30d. Delay steps must NOT have prompt/profile fields.'
           ),
         documentIds: z
           .array(z.string())
@@ -438,6 +442,46 @@ export function workflowTools(ctx: ToolContext) {
           return err(e instanceof Error ? e.message : "Failed to execute workflow");
         }
       }
+    ),
+
+    defineTool(
+      "resume_workflow",
+      "Resume a workflow that is paused at a delay step, immediately skipping the remaining delay. Use when the user says 'resume now' or 'skip the wait' for a paused workflow. Only works if the workflow status is 'paused' — a 409 response means the scheduler already resumed it. Requires approval.",
+      {
+        workflowId: z.string().describe("The workflow ID to resume"),
+      },
+      async (args) => {
+        try {
+          const workflow = await db
+            .select()
+            .from(workflows)
+            .where(eq(workflows.id, args.workflowId))
+            .get();
+
+          if (!workflow) return err(`Workflow not found: ${args.workflowId}`);
+
+          if (workflow.status !== "paused") {
+            return err(
+              `Workflow is not paused (current status: ${workflow.status}). Only paused workflows can be resumed.`,
+            );
+          }
+
+          const { resumeWorkflow } = await import("@/lib/workflows/engine");
+          // Fire-and-forget: resumeWorkflow performs atomic status transition internally.
+          resumeWorkflow(args.workflowId).catch((error) => {
+            console.error(`Workflow ${args.workflowId} resume failed:`, error);
+          });
+
+          ctx.onToolResult?.("resume_workflow", { id: args.workflowId, name: workflow.name });
+          return ok({
+            message: "Workflow resume dispatched",
+            workflowId: args.workflowId,
+            name: workflow.name,
+          });
+        } catch (e) {
+          return err(e instanceof Error ? e.message : "Failed to resume workflow");
+        }
+      },
     ),
 
     defineTool(

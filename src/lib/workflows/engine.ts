@@ -1,11 +1,12 @@
 import { db } from "@/lib/db";
 import { workflows, tasks, agentLogs, notifications } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { executeTaskWithRuntime } from "@/lib/agents/runtime";
 import { classifyTaskProfile } from "@/lib/agents/router";
 import type { WorkflowDefinition, WorkflowState, StepState, LoopState } from "./types";
 import { createInitialState } from "./types";
 import { executeLoop } from "./loop-executor";
+import { checkDelayStep } from "./delay";
 import {
   buildParallelSynthesisPrompt,
   getParallelWorkflowStructure,
@@ -138,6 +139,24 @@ export async function executeWorkflow(workflowId: string): Promise<void> {
         break;
     }
 
+    // A delay step may have paused the workflow. The sequence executor already
+    // persisted the paused state and wrote resume_at; we just need to log the
+    // pause and return without marking the workflow "completed".
+    if (state.status === "paused") {
+      await db.insert(agentLogs).values({
+        id: crypto.randomUUID(),
+        taskId: null,
+        agentType: "workflow-engine",
+        event: "workflow_paused_for_delay",
+        payload: JSON.stringify({
+          workflowId,
+          delayedStepIndex: state.currentStepIndex,
+        }),
+        timestamp: new Date(),
+      });
+      return;
+    }
+
     state.status = "completed";
     state.completedAt = new Date().toISOString();
     await updateWorkflowState(workflowId, state, "completed");
@@ -179,19 +198,55 @@ export async function executeWorkflow(workflowId: string): Promise<void> {
 
 /**
  * Sequence pattern: execute steps one after another, passing output forward.
+ *
+ * @param fromStepIndex  Start index for resuming after a delay. Defaults to 0
+ *                       for fresh executions. resumeWorkflow passes the index
+ *                       of the step after the one that was delayed.
  */
 async function executeSequence(
   workflowId: string,
   definition: WorkflowDefinition,
   state: WorkflowState,
   parentTaskId?: string,
-  workflowRuntimeId?: string
+  workflowRuntimeId?: string,
+  fromStepIndex: number = 0,
 ): Promise<void> {
   let previousOutput = "";
 
-  for (let i = 0; i < definition.steps.length; i++) {
+  for (let i = fromStepIndex; i < definition.steps.length; i++) {
     const step = definition.steps[i];
     state.currentStepIndex = i;
+
+    // Delay step: pause the workflow and return. The scheduler tick will call
+    // resumeWorkflow when workflows.resume_at <= now(). See features/workflow-step-delays.md.
+    const delayCheck = checkDelayStep(step, Date.now());
+    if (delayCheck.type === "delay") {
+      state.stepStates[i].status = "delayed";
+      state.stepStates[i].startedAt = new Date().toISOString();
+      state.status = "paused";
+      await updateWorkflowState(workflowId, state, "paused");
+      // Write resume_at to the indexed workflows column so the scheduler tick
+      // can find this workflow efficiently via the partial index.
+      await db
+        .update(workflows)
+        .set({ resumeAt: delayCheck.resumeAt, updatedAt: new Date() })
+        .where(eq(workflows.id, workflowId));
+      await db.insert(agentLogs).values({
+        id: crypto.randomUUID(),
+        taskId: null,
+        agentType: "workflow-engine",
+        event: "step_delayed",
+        payload: JSON.stringify({
+          workflowId,
+          stepId: step.id,
+          stepName: step.name,
+          delayDuration: step.delayDuration,
+          resumeAt: delayCheck.resumeAt,
+        }),
+        timestamp: new Date(),
+      });
+      return;
+    }
 
     // Build prompt with context from previous step
     const contextPrompt = previousOutput
@@ -1112,6 +1167,141 @@ export async function updateWorkflowState(
       updatedAt: new Date(),
     })
     .where(eq(workflows.id, workflowId));
+}
+
+/**
+ * Resume a workflow that was paused at a delay step.
+ *
+ * Called by the scheduler tick when workflows.resume_at <= now(), and also
+ * by the manual POST /api/workflows/[id]/resume endpoint when the user clicks
+ * "Resume Now". The status transition is atomic (UPDATE ... WHERE status='paused')
+ * so a scheduler tick and a user click racing each other produces exactly one
+ * resume — the loser sees zero affected rows and returns silently.
+ *
+ * Only supports sequence-pattern workflows — other patterns never enter the
+ * paused state in the first place (delay steps are sequence-only per spec).
+ */
+export async function resumeWorkflow(workflowId: string): Promise<void> {
+  // Atomic status transition: only proceed if still paused.
+  const updated = await db
+    .update(workflows)
+    .set({ status: "active", resumeAt: null, updatedAt: new Date() })
+    .where(and(eq(workflows.id, workflowId), eq(workflows.status, "paused")))
+    .returning();
+
+  if (updated.length === 0) {
+    // Workflow is not paused — either already resumed (scheduler raced user,
+    // or vice versa) or doesn't exist. Idempotent: no error, no action.
+    return;
+  }
+
+  const workflow = updated[0];
+  const { definition, state } = parseWorkflowState(workflow.definition);
+
+  if (!state) {
+    throw new Error(
+      `Workflow ${workflowId} is marked paused but has no persisted state to resume`,
+    );
+  }
+
+  if (definition.pattern !== "sequence") {
+    throw new Error(
+      `Workflow ${workflowId} has pattern "${definition.pattern}" — resume is only supported for sequence pattern`,
+    );
+  }
+
+  // Mark the delayed step as completed, advance to the next step.
+  const delayedIdx = state.currentStepIndex;
+  const delayedStepState = state.stepStates[delayedIdx];
+  if (delayedStepState && delayedStepState.status === "delayed") {
+    delayedStepState.status = "completed";
+    delayedStepState.completedAt = new Date().toISOString();
+  }
+  state.status = "running";
+  const resumeFromIndex = delayedIdx + 1;
+
+  await db.insert(agentLogs).values({
+    id: crypto.randomUUID(),
+    taskId: null,
+    agentType: "workflow-engine",
+    event: "workflow_resumed",
+    payload: JSON.stringify({ workflowId, resumeFromIndex }),
+    timestamp: new Date(),
+  });
+
+  const parentTaskId = definition.sourceTaskId;
+  const workflowRuntimeId = workflow.runtimeId ?? undefined;
+
+  // Reopen the learning session for this resume. Context proposals gathered
+  // during the pre-pause run were already flushed when the original execute
+  // closed its session; resume starts a fresh batch.
+  openLearningSession(workflowId);
+
+  try {
+    await executeSequence(
+      workflowId,
+      definition,
+      state,
+      parentTaskId,
+      workflowRuntimeId,
+      resumeFromIndex,
+    );
+
+    // Another delay step may have been encountered during resume. TS narrows
+    // state.status to "running" at this point because of the assignment above,
+    // but executeSequence mutates state.status to "paused" when it hits a delay
+    // step — the `as` cast forces TS to forget the narrowing and evaluate the
+    // comparison at runtime.
+    if ((state.status as WorkflowState["status"]) === "paused") {
+      await db.insert(agentLogs).values({
+        id: crypto.randomUUID(),
+        taskId: null,
+        agentType: "workflow-engine",
+        event: "workflow_paused_for_delay",
+        payload: JSON.stringify({
+          workflowId,
+          delayedStepIndex: state.currentStepIndex,
+        }),
+        timestamp: new Date(),
+      });
+      return;
+    }
+
+    state.status = "completed";
+    state.completedAt = new Date().toISOString();
+    await updateWorkflowState(workflowId, state, "completed");
+
+    await db.insert(agentLogs).values({
+      id: crypto.randomUUID(),
+      taskId: null,
+      agentType: "workflow-engine",
+      event: "workflow_completed",
+      payload: JSON.stringify({ workflowId }),
+      timestamp: new Date(),
+    });
+  } catch (error) {
+    state.status = "failed";
+    await updateWorkflowState(workflowId, state, "failed");
+
+    await db.insert(agentLogs).values({
+      id: crypto.randomUUID(),
+      taskId: null,
+      agentType: "workflow-engine",
+      event: "workflow_failed",
+      payload: JSON.stringify({
+        workflowId,
+        error: error instanceof Error ? error.message : String(error),
+      }),
+      timestamp: new Date(),
+    });
+  } finally {
+    updateExecutionStats(workflowId).catch((err) => {
+      console.error("[workflow-engine] Stats update failed:", err);
+    });
+    await closeLearningSession(workflowId).catch((err) => {
+      console.error("[workflow-engine] Failed to close learning session:", err);
+    });
+  }
 }
 
 /**

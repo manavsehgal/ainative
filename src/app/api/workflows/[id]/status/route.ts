@@ -121,6 +121,7 @@ export async function GET(
     id: workflow.id,
     name: workflow.name,
     status: workflow.status,
+    resumeAt: workflow.resumeAt ?? null,
     projectId: workflow.projectId,
     definition: workflow.definition,
     pattern: definition.pattern,

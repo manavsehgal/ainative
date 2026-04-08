@@ -1,5 +1,41 @@
 # Feature Changelog
 
+## 2026-04-08
+
+### Groomed — Growth-Enabling Primitives (2 features)
+
+Split `features/2026-04-08-stagent-core-growth-primitives-design.md` into two independent, implementable feature files. The source spec bundled two orthogonal capabilities identified while building the Growth module — both are general-purpose Stagent primitives, not Growth-specific, and they became cleaner when tracked separately.
+
+**New features (both P1, post-MVP, planned):**
+
+- `workflow-step-delays` — adds optional `delayDuration` field to workflow steps ("3d", "2h", "30m", "1w"), schedule-based pause/resume using a new indexed `workflows.resume_at` column, idempotent atomic resume so scheduler + user "Resume Now" click cannot double-fire. Chosen execution model: schedule-based (survives process restarts) over sleep-based (loses timers on restart). Reuses existing `"paused"` status enum value and the `PATCH /api/workflows/[id]` pause transition — the spec claimed these needed to be built from scratch, but ground-truth verification showed the pause half already exists.
+- `bulk-row-enrichment` — new `POST /api/tables/:id/enrich` endpoint plus `enrich_table` MCP chat tool, generates a loop workflow iterating over matching rows with `{{row.field}}` template binding, writes results back via a new `postAction` framework (single `update_row` variant, designed as a discriminated union so future variants are additive). Sequential execution for budget safety; idempotent skip-if-populated.
+
+**Spec-vs-code drift caught during verification** (resolved before implementation):
+
+1. `LoopConfig` currently lacks `items`/`itemVariable` data-binding — adding these is Track B's highest-risk work, not an afterthought
+2. `BlueprintStepSchema` fields are *required*, not optional — delay-step addition requires converting to optional plus a cross-field XOR `refine()` rule
+3. Workflow `"paused"` status and PATCH pause transition already exist — less new surface than the spec implied
+
+**Chat context exposure added (per user request during planning):**
+
+Both feature specs include a new "Chat Context Exposure" section covering system-prompt updates, tool description wording, and suggested-prompts additions. The trigger was a realization that the current `STAGENT_SYSTEM_PROMPT` in `src/lib/chat/system-prompt.ts` has **no Tables section at all**, even though 30+ table tools are already registered — they're effectively invisible to the LLM in tool-use planning. Adding `enrich_table` is the natural moment to close that gap. Specs now require:
+
+- `STAGENT_SYSTEM_PROMPT` gets a new `### Tables` section listing all existing table tools plus the new `enrich_table`
+- Intent-routing rules steer "for each row" prompts to `enrich_table` and steer time-distributed sequences to delay steps
+- `create_workflow` tool description gets an anti-pattern steer pointing users to `enrich_table` for row fan-out
+- `suggested-prompts.ts` adds a Create-category prompt each (drip-sequence and table-enrichment)
+- Blueprint validator and `create_workflow` chat tool share a single exported Zod schema for step shape (no duplicated types)
+
+**Proposed TDRs (to be created post-ship):**
+
+- TDR-031 — Workflow step `postAction` framework (discriminated union pattern, additive variant design)
+- TDR-032 — Loop workflow data binding (`items`/`itemVariable` + `{{row.*}}` template resolution)
+
+**Track order locked:** Workflow Step Delays first, Bulk Row Enrichment second. Delays is smaller, exercises the scheduler extension in isolation, and has lower drift risk. Enrichment's LoopConfig data-binding changes benefit from building on a stable foundation.
+
+**Reviewed with:** `/architect` (integration design, blast radius Medium across 4 layers, 7 existing TDRs apply), `/product-manager` (feature split, scope boundaries, acceptance criteria), `/frontend-designer` (delay-step UX: 12 new UX-testable acceptance criteria including timezone clarity, compact duration format, no live aria-live ticking, Execute-button pattern reuse). Full plan at `/Users/manavsehgal/.claude/plans/polished-tickling-pearl.md`.
+
 ## 2026-04-07
 
 ### Hardened — Dev repo safety & single-clone generalization
