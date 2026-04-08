@@ -16,6 +16,7 @@ import {
   type ScheduleFormValues,
   type ScheduleFormInitialValues,
 } from "./schedule-form";
+import type { CronCollisionWarning } from "@/lib/schedules/collision-check";
 
 interface ScheduleEditSheetProps {
   scheduleId: string | null;
@@ -49,6 +50,7 @@ export function ScheduleEditSheet({
   const [loaded, setLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [warnings, setWarnings] = useState<CronCollisionWarning[]>([]);
 
   const fetchSchedule = useCallback(async () => {
     if (!scheduleId) return;
@@ -63,6 +65,7 @@ export function ScheduleEditSheet({
       setSchedule(null);
       setLoaded(false);
       setError(null);
+      setWarnings([]);
       return;
     }
     fetchSchedule();
@@ -102,9 +105,14 @@ export function ScheduleEditSheet({
       });
 
       if (res.ok) {
+        const { warnings: newWarnings } = await res.json();
+        setWarnings(newWarnings ?? []);
         toast.success("Schedule updated");
-        onOpenChange(false);
         onUpdated();
+        if (!newWarnings || newWarnings.length === 0) {
+          onOpenChange(false);
+        }
+        // Keep sheet open if there are warnings so the user sees the banner
       } else {
         const data = await res.json().catch(() => null);
         setError(data?.error ?? `Failed to update schedule (${res.status})`);
@@ -131,6 +139,17 @@ export function ScheduleEditSheet({
 
         {/* Body — px-6 pb-6 per project convention (SheetContent has NO body padding) */}
         <div className="px-6 pb-6 overflow-y-auto">
+          {warnings.length > 0 && (
+            <div className="mb-4 rounded-lg border border-amber-500/40 bg-amber-50 p-3 text-sm">
+              <p className="font-medium text-amber-900">
+                Overlap detected with: {warnings[0].overlappingSchedules.join(", ")}
+              </p>
+              <p className="text-amber-800">
+                Combined load: ~{warnings[0].estimatedConcurrentSteps} agent steps.
+                Schedules will take turns; the last to run may be delayed.
+              </p>
+            </div>
+          )}
           {!loaded ? (
             <div className="space-y-4">
               <Skeleton className="h-8 w-full" />

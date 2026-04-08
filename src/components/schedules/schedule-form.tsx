@@ -63,6 +63,7 @@ export interface ScheduleFormValues {
   activeTimezone: string;
   heartbeatBudgetPerDay: number | "";
   documentIds: string[];
+  maxTurns: number | null;
 }
 
 export interface ScheduleFormInitialValues {
@@ -76,6 +77,7 @@ export interface ScheduleFormInitialValues {
   recurs: boolean;
   maxFirings: number | null;
   expiresAt: string | null;
+  maxTurns?: number | null;
 }
 
 interface ScheduleFormProps {
@@ -140,6 +142,7 @@ export function ScheduleForm({
   const [expiresInHours, setExpiresInHours] = useState<number | "">(
     initialValues ? "" : ""
   );
+  const [maxTurns, setMaxTurns] = useState<number | null>(initialValues?.maxTurns ?? null);
   const [profiles, setProfiles] = useState<ProfileOption[]>([]);
 
   // NL schedule input state
@@ -279,6 +282,7 @@ export function ScheduleForm({
       activeTimezone,
       heartbeatBudgetPerDay,
       documentIds: [...selectedDocIds],
+      maxTurns,
     });
   }
 
@@ -507,6 +511,13 @@ export function ScheduleForm({
             ? "Extra instructions appended to the heartbeat evaluation"
             : "Instructions for each execution"}
         </p>
+        {scheduleType === "scheduled" && (
+          <p className="text-muted-foreground text-xs">
+            Note: writing &quot;MAX N turns&quot; in your prompt is a hint to the model,
+            not a runtime limit. Use <strong>Max agent steps</strong> below to enforce
+            a budget.
+          </p>
+        )}
       </div>
 
       {/* Natural Language Schedule Input */}
@@ -638,6 +649,26 @@ export function ScheduleForm({
             </div>
           </div>
         )}
+      </div>
+
+      {/* Max agent steps */}
+      <div className="space-y-2">
+        <Label htmlFor="max-turns">Max agent steps per run</Label>
+        <Input
+          id="max-turns"
+          type="number"
+          min={1}
+          max={10000}
+          placeholder="Inherits global default"
+          value={maxTurns ?? ""}
+          onChange={(e) =>
+            setMaxTurns(e.target.value ? parseInt(e.target.value, 10) : null)
+          }
+        />
+        <p className="text-muted-foreground text-xs">
+          One step = one agent action (message, tool call, or sub-response). Most
+          schedules use 50–500 steps; heavy research runs 2,000+.
+        </p>
       </div>
 
       {/* Project */}
