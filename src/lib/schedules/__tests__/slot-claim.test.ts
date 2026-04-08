@@ -4,6 +4,7 @@ import { tasks, schedules, projects, settings } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { claimSlot, countRunningScheduledSlots } from "../slot-claim";
+import { reapExpiredLeases } from "../slot-claim";
 
 function seedProject(): string {
   const id = randomUUID();
@@ -171,5 +172,71 @@ describe("claimSlot", () => {
     expect(
       row!.leaseExpiresAt!.getTime() - row!.slotClaimedAt!.getTime(),
     ).toBe(60 * 1000);
+  });
+});
+
+describe("reapExpiredLeases", () => {
+  beforeEach(() => {
+    db.delete(tasks).run();
+    db.delete(schedules).run();
+    db.delete(projects).run();
+  });
+
+  it("marks an expired running task as failed with failure_reason=lease_expired", () => {
+    const pid = seedProject();
+    const sid = seedSchedule(pid);
+    const tid = seedQueuedTask(sid);
+
+    // Claim with a 1-second lease, then fast-forward via direct DB edit
+    claimSlot(tid, 10, 1);
+    const past = new Date(Date.now() - 5000);
+    db.update(tasks)
+      .set({ leaseExpiresAt: past })
+      .where(eq(tasks.id, tid))
+      .run();
+
+    const reaped = reapExpiredLeases();
+
+    expect(reaped).toEqual([tid]);
+    const row = db.select().from(tasks).where(eq(tasks.id, tid)).get();
+    expect(row?.status).toBe("failed");
+    expect(row?.failureReason).toBe("lease_expired");
+  });
+
+  it("leaves fresh running tasks alone", () => {
+    const pid = seedProject();
+    const sid = seedSchedule(pid);
+    const tid = seedQueuedTask(sid);
+
+    claimSlot(tid, 10, 3600); // 1-hour lease
+
+    const reaped = reapExpiredLeases();
+
+    expect(reaped).toEqual([]);
+    const row = db.select().from(tasks).where(eq(tasks.id, tid)).get();
+    expect(row?.status).toBe("running");
+  });
+
+  it("reaps multiple expired tasks in one sweep", () => {
+    const pid = seedProject();
+    const tids: string[] = [];
+    for (let i = 0; i < 3; i++) {
+      const sid = seedSchedule(pid);
+      const tid = seedQueuedTask(sid);
+      claimSlot(tid, 10, 1);
+      tids.push(tid);
+    }
+    const past = new Date(Date.now() - 5000);
+    for (const tid of tids) {
+      db.update(tasks)
+        .set({ leaseExpiresAt: past })
+        .where(eq(tasks.id, tid))
+        .run();
+    }
+
+    const reaped = reapExpiredLeases();
+
+    expect(reaped.sort()).toEqual([...tids].sort());
+    expect(countRunningScheduledSlots()).toBe(0);
   });
 });

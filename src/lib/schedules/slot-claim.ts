@@ -1,4 +1,5 @@
 import { sqlite } from "@/lib/db";
+import { getExecution } from "@/lib/agents/execution-manager";
 
 export interface ClaimResult {
   claimed: boolean;
@@ -57,4 +58,48 @@ export function claimSlot(
 export function countRunningScheduledSlots(): number {
   const row = countRunningStmt.get() as { n: number } | undefined;
   return row?.n ?? 0;
+}
+
+// Module-level prepared statements for the reaper hot path
+const selectExpiredStmt = sqlite.prepare(
+  "SELECT id FROM tasks WHERE status = 'running' AND source_type IN ('scheduled', 'heartbeat') AND lease_expires_at IS NOT NULL AND lease_expires_at < ?",
+);
+
+const reapUpdateStmt = sqlite.prepare(
+  "UPDATE tasks SET status = 'failed', failure_reason = 'lease_expired', updated_at = ? WHERE id = ? AND status = 'running'",
+);
+
+/**
+ * Reap running scheduled tasks whose lease has expired. For each expired
+ * task: (1) abort the in-memory execution via AbortController, (2) mark
+ * the DB row as failed with failure_reason='lease_expired'. Returns the
+ * list of reaped task IDs for logging.
+ *
+ * Idempotent — safe to call on every scheduler tick.
+ */
+export function reapExpiredLeases(): string[] {
+  // Drizzle mode: "timestamp" stores seconds; raw SQL comparisons must use
+  // seconds. Use Math.floor (strict < comparison, so floor catches everything
+  // already past).
+  const nowSec = Math.floor(Date.now() / 1000);
+
+  const expiredRows = selectExpiredStmt.all(nowSec) as Array<{ id: string }>;
+
+  const reaped: string[] = [];
+  for (const { id } of expiredRows) {
+    // Abort the in-process execution so the SDK stops immediately
+    const execution = getExecution(id);
+    if (execution) {
+      try {
+        execution.abortController.abort();
+      } catch {
+        // Already aborted — safe to ignore
+      }
+    }
+
+    const updateResult = reapUpdateStmt.run(nowSec, id);
+    if (updateResult.changes === 1) reaped.push(id);
+  }
+
+  return reaped;
 }
