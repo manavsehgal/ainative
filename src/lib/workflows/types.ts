@@ -173,3 +173,100 @@ export function createInitialState(definition: WorkflowDefinition): WorkflowStat
     startedAt: new Date().toISOString(),
   };
 }
+
+/**
+ * Document reference returned by the workflow status API alongside each step
+ * (output) or parent task (input). The shape matches what the API route
+ * actually selects from the documents table.
+ */
+export interface WorkflowStatusDocument {
+  id: string;
+  originalName: string;
+  mimeType: string;
+  storagePath: string;
+  direction: string;
+}
+
+/**
+ * Step with computed state — the shape returned by the status API for every
+ * non-loop pattern (sequence, parallel, swarm, planner-executor, checkpoint).
+ * `state` is always present because the route synthesizes a pending placeholder
+ * when the real stepState hasn't been created yet.
+ */
+export interface StepWithState extends WorkflowStep {
+  state: StepState;
+}
+
+/**
+ * Run-history summary row returned alongside every status response — counts
+ * of tasks per workflow run number.
+ */
+export interface WorkflowRunHistoryEntry {
+  runNumber: number | null;
+  taskCount: number;
+  completedCount: number;
+  failedCount: number;
+}
+
+/**
+ * All non-loop workflow patterns share one response shape. Alias exists so
+ * the union arm and the new-pattern checklist (TDR-031) can both reference
+ * it — when a new pattern is added to WorkflowPattern, it automatically
+ * joins this arm unless the author explicitly adds a new arm with different
+ * fields.
+ */
+export type NonLoopPattern = Exclude<WorkflowPattern, "loop">;
+
+/**
+ * Discriminated union shape for `GET /api/workflows/[id]/status` responses.
+ * Consumers MUST narrow on `pattern` before reading pattern-specific fields.
+ * See TDR-031: Workflow status API is a pattern-discriminated union.
+ *
+ *   - Loop arm: raw step definitions (no `.state`), plus `loopState` carrying
+ *     the real iteration progress in `loopState.iterations[]`. Consumers that
+ *     need completed outputs for a loop workflow should read from
+ *     `loopState.iterations[].result`, not `steps[].state.result` (which does
+ *     not exist on this arm — it's a compile error).
+ *
+ *   - Non-loop arm: each step wrapped with `.state` synthesized from
+ *     `workflowState.stepStates[i]`, plus `resumeAt` for delay pauses. The
+ *     non-loop arm covers sequence, parallel, swarm, planner-executor, and
+ *     checkpoint patterns — they all share the step-state rendering path.
+ */
+export type WorkflowStatusResponse =
+  | {
+      pattern: "loop";
+      id: string;
+      name: string;
+      status: string;
+      projectId?: string | null;
+      definition?: string;
+      loopConfig?: LoopConfig;
+      loopState: LoopState | null;
+      swarmConfig?: SwarmConfig;
+      /** Raw step definitions — no `.state` on this arm. Reading from the
+       *  iteration stream (`loopState.iterations[]`) is the correct path. */
+      steps: WorkflowStep[];
+      stepDocuments?: Record<string, WorkflowStatusDocument[]>;
+      parentDocuments?: WorkflowStatusDocument[];
+      runNumber?: number;
+      runHistory?: WorkflowRunHistoryEntry[];
+    }
+  | {
+      pattern: NonLoopPattern;
+      id: string;
+      name: string;
+      status: string;
+      /** Epoch ms for a paused (delay-step) workflow's scheduled resume. */
+      resumeAt: number | null;
+      projectId?: string | null;
+      definition?: string;
+      swarmConfig?: SwarmConfig;
+      /** Each step wrapped with `.state` — always present on this arm. */
+      steps: StepWithState[];
+      workflowState: WorkflowState | null;
+      stepDocuments?: Record<string, WorkflowStatusDocument[]>;
+      parentDocuments?: WorkflowStatusDocument[];
+      runNumber?: number;
+      runHistory?: WorkflowRunHistoryEntry[];
+    };

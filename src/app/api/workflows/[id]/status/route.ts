@@ -3,6 +3,11 @@ import { db } from "@/lib/db";
 import { workflows, tasks, documents } from "@/lib/db/schema";
 import { eq, and, inArray, count, desc, sql as drizzleSql } from "drizzle-orm";
 import { parseWorkflowState } from "@/lib/workflows/engine";
+import type {
+  WorkflowStatusResponse,
+  NonLoopPattern,
+  StepWithState,
+} from "@/lib/workflows/types";
 
 /** Collect output documents for workflow step tasks + input documents from parent task */
 async function getWorkflowDocuments(
@@ -97,15 +102,18 @@ export async function GET(
   const sourceTaskId: string | undefined = definition.sourceTaskId;
   const { stepDocuments, parentDocuments } = await getWorkflowDocuments(state, sourceTaskId);
 
-  // Loop pattern returns loop-specific data instead of step states
+  // Loop pattern returns loop-specific data instead of step states.
+  // The `satisfies` annotation enforces the TDR-031 contract: the loop arm
+  // of WorkflowStatusResponse cannot emit `workflowState` or `resumeAt`, and
+  // its `steps` field is raw WorkflowStep[] (not StepWithState[]).
   if (definition.pattern === "loop") {
-    return NextResponse.json({
+    const loopBody = {
       id: workflow.id,
       name: workflow.name,
       status: workflow.status,
       projectId: workflow.projectId,
       definition: workflow.definition,
-      pattern: definition.pattern,
+      pattern: "loop" as const,
       loopConfig: definition.loopConfig,
       swarmConfig: definition.swarmConfig,
       loopState,
@@ -114,19 +122,23 @@ export async function GET(
       parentDocuments,
       runNumber: workflow.runNumber,
       runHistory,
-    });
+    } satisfies WorkflowStatusResponse;
+    return NextResponse.json(loopBody);
   }
 
-  return NextResponse.json({
+  // Non-loop arm: sequence, parallel, swarm, planner-executor, checkpoint all
+  // share the step-state rendering path. `satisfies` enforces that this branch
+  // cannot accidentally emit `loopState`, and that every step has `.state`.
+  const nonLoopBody = {
     id: workflow.id,
     name: workflow.name,
     status: workflow.status,
     resumeAt: workflow.resumeAt ?? null,
     projectId: workflow.projectId,
     definition: workflow.definition,
-    pattern: definition.pattern,
+    pattern: definition.pattern as NonLoopPattern,
     swarmConfig: definition.swarmConfig,
-    steps: definition.steps.map((step, i) => ({
+    steps: definition.steps.map((step, i): StepWithState => ({
       ...step,
       state: state?.stepStates[i] ?? { stepId: step.id, status: "pending" },
     })),
@@ -135,5 +147,6 @@ export async function GET(
     parentDocuments,
     runNumber: workflow.runNumber,
     runHistory,
-  });
+  } satisfies WorkflowStatusResponse;
+  return NextResponse.json(nonLoopBody);
 }

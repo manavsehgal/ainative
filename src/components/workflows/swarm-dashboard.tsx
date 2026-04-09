@@ -5,21 +5,8 @@ import { Brain, GitBranch, MessageSquareMore, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ExpandableResult } from "./workflow-status-view";
-import type { SwarmConfig } from "@/lib/workflows/types";
-
-interface StepWithState {
-  id: string;
-  name: string;
-  prompt: string;
-  state: {
-    stepId: string;
-    status: string;
-    taskId?: string;
-    result?: string;
-    error?: string;
-  };
-}
+import { ExpandableResult } from "./shared/step-result";
+import type { StepWithState, SwarmConfig } from "@/lib/workflows/types";
 
 interface SwarmDashboardProps {
   workflowId: string;

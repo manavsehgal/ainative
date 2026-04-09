@@ -1,6 +1,6 @@
 import { Separator } from "@/components/ui/separator";
 import { LightMarkdown } from "@/components/shared/light-markdown";
-import { ExpandableResult } from "@/components/workflows/workflow-status-view";
+import { ExpandableResult } from "@/components/workflows/shared/step-result";
 
 interface TaskResultRendererProps {
   description: string | null;

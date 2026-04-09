@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ExpandableResult } from "./workflow-status-view";
+import { ExpandableResult } from "./shared/step-result";
 import {
   CheckCircle,
   Circle,
