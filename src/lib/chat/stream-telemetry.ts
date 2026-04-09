@@ -8,12 +8,20 @@
  * than port a speculative fix, we instrument the termination boundaries
  * and let real data decide whether a resume protocol is worth building.
  *
- * Five server-side reason codes:
- *   - stream.completed        — normal end-of-generator
- *   - stream.aborted.signal   — req.signal fired mid-generation
+ * Six server-side reason codes:
+ *   - stream.completed        — normal end-of-generator (success path)
+ *   - stream.aborted.signal   — req.signal fired, engine catch block entered
  *   - stream.aborted.client   — ReadableStream cancel callback fired
- *   - stream.finalized.error  — exception path in engine's finally block
+ *   - stream.finalized.error  — non-abort exception in engine catch block
+ *   - stream.abandoned        — generator return() called by consumer
+ *                               (finally ran but catch was skipped). Covers
+ *                               iterator abandonment — the case where the
+ *                               route's for-await breaks out gracefully and
+ *                               the engine's own happy/catch paths are both
+ *                               bypassed. Recorded from finalizeStreamingMessage
+ *                               when it actually performs a salvage update.
  *   - stream.reconciled.stale — reconcileStreamingMessages swept an orphan
+ *                               at chat page load (10-min cutoff)
  *
  * Three client-side reason codes (logged via console.info with a stable
  * prefix so tests and grep can find them):
@@ -32,6 +40,7 @@ export type TerminationReason =
   | "stream.aborted.signal"
   | "stream.aborted.client"
   | "stream.finalized.error"
+  | "stream.abandoned"
   | "stream.reconciled.stale";
 
 export interface TerminationEvent {
@@ -93,6 +102,7 @@ export function countTerminations(windowMs = 0): Record<TerminationReason, numbe
     "stream.aborted.signal": 0,
     "stream.aborted.client": 0,
     "stream.finalized.error": 0,
+    "stream.abandoned": 0,
     "stream.reconciled.stale": 0,
   };
   const cutoff = windowMs > 0 ? Date.now() - windowMs : 0;

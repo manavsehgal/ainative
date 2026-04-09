@@ -61,7 +61,8 @@ This returns counts by reason code for the last 10 minutes. What to look for:
 - Elevated `stream.aborted.client` → clients are disconnecting mid-stream. Check for accidental `AbortController.abort()` calls, stale React effects unmounting the chat, or Next.js dev HMR remounting the shell.
 - Any `stream.aborted.signal` → `req.signal` fired. Expected for the user clicking Stop; unexpected otherwise.
 - Any `stream.finalized.error` → the engine's generator threw. The `error` field on each event has a 500-char snippet; grep logs for the full trace.
-- Any `stream.reconciled.stale` → the 10-minute safety net swept an orphan row. If this number is non-zero, the engine's `finally` block missed a cleanup — that's a real bug worth investigating.
+- Any `stream.abandoned` → the generator was abandoned via `iterator.return()` (consumer broke out of the for-await without an error). Happens when the client disconnects cleanly or when Next.js dev HMR interrupts an active stream. Non-zero counts are a signal that something is terminating streams through a path that skips both the success and catch branches.
+- Any `stream.reconciled.stale` → the 10-minute safety net swept an orphan row at page load. If this number is non-zero, even the finalize safety net missed a cleanup — that's a real bug worth investigating.
 
 Client-side exits are logged via `console.info` with a `[chat-stream]` prefix — filter DevTools for that string to see `client.stream.done`, `client.stream.user-abort`, and `client.stream.reader-error`. Attach the diagnostics response + DevTools filter output to any stream-cutoff bug report so we don't waste a review cycle chasing symptoms.
 

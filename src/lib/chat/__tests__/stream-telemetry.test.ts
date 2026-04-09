@@ -75,13 +75,31 @@ describe("stream-telemetry ring buffer", () => {
     recordTermination({ reason: "stream.completed", conversationId: "c", messageId: "m", durationMs: 1 });
     recordTermination({ reason: "stream.aborted.client", conversationId: "c", messageId: "m", durationMs: 1 });
     recordTermination({ reason: "stream.finalized.error", conversationId: "c", messageId: "m", durationMs: 1, error: "boom" });
+    recordTermination({ reason: "stream.abandoned", conversationId: "c", messageId: "m", durationMs: 42 });
 
     const counts = countTerminations();
     expect(counts["stream.completed"]).toBe(2);
     expect(counts["stream.aborted.client"]).toBe(1);
     expect(counts["stream.finalized.error"]).toBe(1);
+    expect(counts["stream.abandoned"]).toBe(1);
     expect(counts["stream.aborted.signal"]).toBe(0);
     expect(counts["stream.reconciled.stale"]).toBe(0);
+  });
+
+  it("stream.abandoned is a valid reason code for iterator abandonment", () => {
+    // finalizeStreamingMessage records this when the engine's happy and
+    // catch paths both missed the termination — the canonical "gap"
+    // indicator. Make sure it round-trips through the buffer.
+    recordTermination({
+      reason: "stream.abandoned",
+      conversationId: "c1",
+      messageId: "m1",
+      durationMs: 100,
+      error: "no content streamed before abandonment",
+    });
+    const events = readTerminations();
+    expect(events[0].reason).toBe("stream.abandoned");
+    expect(events[0].error).toBe("no content streamed before abandonment");
   });
 
   it("countTerminations honors the windowMs filter", async () => {

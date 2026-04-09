@@ -20,6 +20,14 @@ const ORPHAN_FALLBACK =
  * skipping `catch` entirely.
  *
  * No-op if the message is already in a terminal state. Idempotent.
+ *
+ * When the salvage path actually fires (row was still in streaming → now
+ * updated to complete/error), records a `stream.abandoned` telemetry event
+ * so maintainers can see that the engine's own happy/catch paths both
+ * missed the termination. A non-zero count here signals a real gap that
+ * may warrant investigation — e.g., the dev HMR interrupting a stream,
+ * or a consumer break pattern that bypasses the telemetry in both primary
+ * code paths.
  */
 export async function finalizeStreamingMessage(
   messageId: string,
@@ -43,6 +51,19 @@ export async function finalizeStreamingMessage(
     .set({ status: nextStatus, content: salvage })
     .where(eq(chatMessages.id, messageId))
     .run();
+
+  // Telemetry: this code path means neither stream.completed nor the
+  // engine's catch-block recordTermination fired. Capture the gap so
+  // the diagnostics endpoint can surface it.
+  recordTermination({
+    reason: "stream.abandoned",
+    conversationId: current.conversationId ?? null,
+    messageId,
+    durationMs: current.createdAt
+      ? Date.now() - new Date(current.createdAt).getTime()
+      : null,
+    error: hasContent ? undefined : "no content streamed before abandonment",
+  });
 }
 
 /**

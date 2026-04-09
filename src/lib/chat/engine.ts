@@ -666,6 +666,21 @@ export async function* sendMessage(
         ? rawErrorMessage.slice(0, 4096) + "... (truncated)"
         : rawErrorMessage;
 
+    // Telemetry: record BEFORE the yield below. If this code is reached
+    // via iterator abandonment (consumer broke the for-await and the
+    // generator's own yield throws GeneratorReturn), control would skip
+    // past any post-yield statement. Recording up front guarantees the
+    // event lands in the ring buffer regardless of whether the yield
+    // completes or aborts. Matches the same invariant we rely on for
+    // the success-path recordTermination before the done yield.
+    recordTermination({
+      reason: signal?.aborted ? "stream.aborted.signal" : "stream.finalized.error",
+      conversationId,
+      messageId: assistantMsg.id,
+      durationMs: Date.now() - startedAt.getTime(),
+      error: errorMessage.slice(0, 500),
+    });
+
     if (fullText && fullText.length > 50) {
       // Substantial content was already streamed — complete gracefully with warning
       const warning = `\n\n---\n\n*Response may be incomplete: ${errorMessage}*`;
@@ -718,14 +733,6 @@ export async function* sendMessage(
 
       yield { type: "error", message: errorMessage };
     }
-
-    recordTermination({
-      reason: signal?.aborted ? "stream.aborted.signal" : "stream.finalized.error",
-      conversationId,
-      messageId: assistantMsg.id,
-      durationMs: Date.now() - startedAt.getTime(),
-      error: errorMessage.slice(0, 500),
-    });
   } finally {
     // Safety net: guarantee the placeholder row never remains in
     // status='streaming' after the generator exits. Catches code paths that

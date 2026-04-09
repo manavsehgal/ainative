@@ -33,15 +33,16 @@ As a maintainer, I want to know when and why chat SSE streams terminate abnormal
 
 ### 1. Structured termination logging
 
-Instrument the chat stream lifecycle with five reason codes, each logged with `conversationId`, `messageId`, elapsed duration (ms), and (where applicable) error message:
+Instrument the chat stream lifecycle with six reason codes, each logged with `conversationId`, `messageId`, elapsed duration (ms), and (where applicable) error message:
 
 | Reason code | Where to log | Condition |
 |---|---|---|
 | `stream.completed` | `src/lib/chat/engine.ts` (end of `sendMessage` generator, on successful exhaustion) | Normal end — reader hit `done: true` |
 | `stream.aborted.client` | `src/app/api/chat/conversations/[id]/messages/route.ts` (cancel callback on the `ReadableStream`) | Client closed the connection / called AbortController.abort() |
-| `stream.aborted.signal` | `src/lib/chat/engine.ts` (req.signal abort handler) | `req.signal` fired mid-generation (e.g., user navigated away) |
-| `stream.finalized.error` | `src/lib/chat/engine.ts` (finally block, when exception was caught) | Exception path — the finally block is running because an error was thrown |
-| `stream.reconciled.stale` | `src/lib/chat/reconcile.ts` (for each row marked as error) | Safety net caught a row stuck in `streaming` state older than 10 min |
+| `stream.aborted.signal` | `src/lib/chat/engine.ts` (catch block when `signal?.aborted`) | `req.signal` fired mid-generation and SDK iterator threw |
+| `stream.finalized.error` | `src/lib/chat/engine.ts` (catch block when no signal abort) | Exception path — the SDK threw during generation |
+| `stream.abandoned` | `src/lib/chat/reconcile.ts` `finalizeStreamingMessage()` when it performs a salvage update | Consumer broke out of the for-await without an error, invoking `iterator.return()` which unwinds through `finally` and skips `catch`. This covers HMR mid-stream, clean client disconnects, and any other code path that bypasses both primary termination branches. **Added after E2E evaluation revealed the original 5-code set missed this case.** |
+| `stream.reconciled.stale` | `src/lib/chat/reconcile.ts` `reconcileStreamingMessages()` (per orphan swept) | Safety net caught a row stuck in `streaming` state older than 10 min at chat page load |
 
 Use the existing structured logger (not `console.log` directly) — check what pattern `src/lib/chat/engine.ts` already uses and match it.
 
@@ -89,7 +90,7 @@ If telemetry shows >1% of streams terminating with `stream.aborted.client` / `st
 
 ## Acceptance Criteria
 
-- [ ] Five server-side termination reason codes logged at the correct lifecycle points with `conversationId`, `messageId`, and `durationMs`.
+- [ ] Six server-side termination reason codes logged at the correct lifecycle points with `conversationId`, `messageId`, and `durationMs`.
 - [ ] Three client-side reader-loop exit paths logged with distinguishable reason codes.
 - [ ] `src/lib/chat/stream-telemetry.ts` exists and exposes `recordTermination()` + ring-buffer read accessors.
 - [ ] `GET /api/diagnostics/chat-streams` returns counts and recent events, gated behind dev mode.
