@@ -402,8 +402,8 @@ export function WorkflowStatusView({ workflowId }: WorkflowStatusViewProps) {
 
   // Collect all completed step outputs for full output sheet
   const completedStepOutputs = data.steps
-    .filter((s) => s.state.result && s.state.status === "completed")
-    .map((s) => ({ name: s.name, result: s.state.result! }));
+    .filter((s) => s.state?.result && s.state?.status === "completed")
+    .map((s) => ({ name: s.name, result: s.state!.result! }));
 
   // Check for any documents
   const hasStepDocs = data.stepDocuments && Object.keys(data.stepDocuments).length > 0;
