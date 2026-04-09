@@ -2,6 +2,48 @@
 
 ## 2026-04-09
 
+### Completed — chat-stream-resilience-telemetry
+
+Shipped as the second half of the handoff/ grooming session. Lightweight termination telemetry now observes every exit path of the chat SSE lifecycle so we can decide whether to invest in an SSE resume protocol — or confidently close the risk as already-mitigated.
+
+**All 9 acceptance criteria met:**
+
+1. **`src/lib/chat/stream-telemetry.ts`** — new 500-slot in-memory ring buffer. Exports `recordTermination`, `readTerminations`, `countTerminations`, and `__resetForTesting`. Writes are O(1); reads copy out in chronological order (oldest → newest). Pure module-level state — Next.js dev HMR resetting the buffer is expected, not a bug.
+
+2. **Five server-side reason codes wired at termination boundaries**:
+   - `stream.completed` — `src/lib/chat/engine.ts` just before the success `yield { type: "done" }`, with `durationMs` computed from `startedAt`.
+   - `stream.aborted.signal` — engine.ts catch block when `signal?.aborted` is true (user clicked Stop / navigated away).
+   - `stream.finalized.error` — engine.ts catch block otherwise, with a 500-char snippet of the error message.
+   - `stream.aborted.client` — `src/app/api/chat/conversations/[id]/messages/route.ts` new `cancel(reason)` callback on the SSE ReadableStream, which fires when the client tears down the stream independently of the engine's signal path.
+   - `stream.reconciled.stale` — `src/lib/chat/reconcile.ts` per orphan row swept by the 10-minute safety net. If this ever logs, the engine's `finally` block missed a cleanup — that's an actionable bug.
+
+3. **Three client-side codes via `console.info` with stable `[chat-stream]` prefix** — `src/components/chat/chat-shell.tsx` reader loop now distinguishes `client.stream.done` (normal `done: true`), `client.stream.user-abort` (AbortError), and `client.stream.reader-error` (other throw). Grep DevTools for `[chat-stream]` to see them.
+
+4. **`GET /api/diagnostics/chat-streams`** — new dev-only endpoint at `src/app/api/diagnostics/chat-streams/route.ts`. Guarded by `process.env.NODE_ENV === "production"` matching the existing data/clear + data/seed convention. Supports `?windowMinutes=N` and `?limit=N` query params. Returns `{windowMinutes, totalEvents, counts, recent}` where `recent` is newest-first.
+
+5. **Runbook note** added to `AGENTS.md` under "Testing and Verification". Includes a `curl` example and per-reason-code interpretation guide so future stream-cutoff bug reports arrive with diagnostics attached rather than wasting a review cycle.
+
+6. **9 unit tests** in `src/lib/chat/__tests__/stream-telemetry.test.ts`:
+   - Empty state returns `[]`
+   - Events recorded in chronological order with stable timestamps
+   - Wrap-around at 500 events preserves newest-500 in correct order (written 520, asserted `events[0].durationMs === 20` and `events[499].durationMs === 519`)
+   - `countTerminations()` aggregates all five reason codes correctly
+   - `countTerminations(windowMs)` honors the window filter
+   - `readTerminations()` returns snapshot copies, not live references
+   - Optional `error` field preserved
+   - Null `conversationId` / `messageId` / `durationMs` tolerated (for the reconcile-sweep edge case where conversationId may not be joined)
+
+7. **Scope respected — nothing speculative shipped**: the original sibling-repo fix proposed an SSE resume protocol, Web Worker isolation, and module-level state persistence across HMR. All three are explicitly excluded from this feature. If telemetry shows >1% of streams terminating with unexpected codes during normal use, a follow-up `chat-stream-resume-protocol` feature would be filed with evidence. Until then, no code speculating on a bug we can't reproduce.
+
+**Verification run:**
+- `npx vitest run` → **721 passed**, 11 skipped (e2e), 0 failures. Baseline before this feature was 712 (post-dedup); delta +9 matches the 9 new ring buffer tests.
+- `npx tsc --noEmit` → **exit 0**, fully clean.
+- Zero-latency guarantee: every termination point does a single synchronous `recordTermination()` call = array write + `Date.now()`. No added `await`, no network, no DB.
+
+**Files:**
+- Created: `src/lib/chat/stream-telemetry.ts`, `src/lib/chat/__tests__/stream-telemetry.test.ts`, `src/app/api/diagnostics/chat-streams/route.ts`
+- Modified: `src/lib/chat/engine.ts` (2 recordTermination calls), `src/lib/chat/reconcile.ts` (1 call per orphan), `src/app/api/chat/conversations/[id]/messages/route.ts` (cancel callback), `src/components/chat/chat-shell.tsx` (3 console.info exits), `AGENTS.md` (runbook note)
+
 ### Completed — workflow-create-dedup
 
 Shipped in the same session as grooming. Duplicate workflow creation in long chat conversations is now blocked at the tool layer.

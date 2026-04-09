@@ -256,6 +256,15 @@ export function ChatShell({
       setIsStreaming(true);
       const controller = new AbortController();
       setAbortController(controller);
+      // Client-side stream telemetry — logged via console.info with a
+      // stable `[chat-stream]` prefix so maintainers can filter DevTools
+      // and see how their reader loop actually terminated. Complements
+      // the five server-side reason codes recorded in
+      // src/lib/chat/stream-telemetry.ts. Three client codes:
+      //   client.stream.done        — reader.read() returned done: true
+      //   client.stream.user-abort  — AbortController fired (Stop button)
+      //   client.stream.reader-error — read() or decode threw
+      const streamStartedAt = Date.now();
 
       try {
         const res = await fetch(
@@ -278,7 +287,14 @@ export function ChatShell({
 
         while (true) {
           const { done, value } = await reader.read();
-          if (done) break;
+          if (done) {
+            console.info("[chat-stream] client.stream.done", {
+              conversationId,
+              messageId: assistantMsgId,
+              durationMs: Date.now() - streamStartedAt,
+            });
+            break;
+          }
 
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split("\n");
@@ -394,7 +410,20 @@ export function ChatShell({
           }
         }
       } catch (error) {
-        if ((error as Error).name !== "AbortError") {
+        const isAbort = (error as Error).name === "AbortError";
+        if (isAbort) {
+          console.info("[chat-stream] client.stream.user-abort", {
+            conversationId,
+            messageId: assistantMsgId,
+            durationMs: Date.now() - streamStartedAt,
+          });
+        } else {
+          console.info("[chat-stream] client.stream.reader-error", {
+            conversationId,
+            messageId: assistantMsgId,
+            durationMs: Date.now() - streamStartedAt,
+            error: (error as Error).message,
+          });
           setMessages((prev) =>
             prev.map((m) =>
               m.id === assistantMsgId

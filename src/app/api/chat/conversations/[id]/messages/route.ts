@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getConversation, getMessages } from "@/lib/data/chat";
 import { sendMessage } from "@/lib/chat/engine";
+import { recordTermination } from "@/lib/chat/stream-telemetry";
 
 /**
  * GET /api/chat/conversations/[id]/messages?after=xxx&limit=100
@@ -58,6 +59,7 @@ export async function POST(
 
   // Bridge the async generator to an SSE ReadableStream
   const encoder = new TextEncoder();
+  const streamStartedAt = Date.now();
   const stream = new ReadableStream({
     async start(controller) {
       const keepalive = setInterval(() => {
@@ -100,6 +102,21 @@ export async function POST(
           // Stream may already be closed by peer; safe to ignore
         }
       }
+    },
+    // Fires when the client disconnects mid-stream (browser tab closed,
+    // user navigated away, AbortController.abort() fired on the fetch).
+    // The engine's own `req.signal` abort already records
+    // `stream.aborted.signal` in its catch path — this cancel callback
+    // only fires when the ReadableStream is torn down independently,
+    // so record it as a distinct `stream.aborted.client` code.
+    cancel(reason) {
+      recordTermination({
+        reason: "stream.aborted.client",
+        conversationId: id,
+        messageId: null,
+        durationMs: Date.now() - streamStartedAt,
+        error: reason ? String(reason).slice(0, 200) : undefined,
+      });
     },
   });
 

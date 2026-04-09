@@ -1,6 +1,6 @@
 ---
 title: Chat Stream Resilience Telemetry
-status: planned
+status: completed
 priority: P2
 milestone: post-mvp
 source: handoff/bug-conversation-refresh-midstream.md

@@ -22,6 +22,7 @@ import {
 } from "@/lib/data/chat";
 import { buildChatContext, type MentionReference } from "./context-builder";
 import { finalizeStreamingMessage } from "./reconcile";
+import { recordTermination } from "./stream-telemetry";
 import { registerChatStream, unregisterChatStream } from "./active-streams";
 import {
   detectEntities,
@@ -640,6 +641,13 @@ export async function* sendMessage(
       finishedAt: new Date(),
     });
 
+    recordTermination({
+      reason: "stream.completed",
+      conversationId,
+      messageId: assistantMsg.id,
+      durationMs: Date.now() - startedAt.getTime(),
+    });
+
     yield {
       type: "done",
       messageId: assistantMsg.id,
@@ -710,6 +718,14 @@ export async function* sendMessage(
 
       yield { type: "error", message: errorMessage };
     }
+
+    recordTermination({
+      reason: signal?.aborted ? "stream.aborted.signal" : "stream.finalized.error",
+      conversationId,
+      messageId: assistantMsg.id,
+      durationMs: Date.now() - startedAt.getTime(),
+      error: errorMessage.slice(0, 500),
+    });
   } finally {
     // Safety net: guarantee the placeholder row never remains in
     // status='streaming' after the generator exits. Catches code paths that

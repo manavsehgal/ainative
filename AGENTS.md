@@ -47,6 +47,24 @@ This repository supports both Codex and Claude Code. Treat this file as the stab
 - For UI work, use browser evaluation when the user asks or when a visual change needs real verification.
 - Save browser artifacts under `output/` unless the task explicitly wants another location.
 
+### Chat stream termination runbook
+
+Before filing a bug report about chat streams cutting off mid-response ("conversation refreshed", "my answer got lost"), hit the diagnostics endpoint:
+
+```
+curl http://localhost:3000/api/diagnostics/chat-streams?windowMinutes=10
+```
+
+This returns counts by reason code for the last 10 minutes. What to look for:
+
+- Mostly `stream.completed` → normal end-of-generation. Symptom is likely client-side (browser extension, tab suspension, misattributed cutoff).
+- Elevated `stream.aborted.client` → clients are disconnecting mid-stream. Check for accidental `AbortController.abort()` calls, stale React effects unmounting the chat, or Next.js dev HMR remounting the shell.
+- Any `stream.aborted.signal` → `req.signal` fired. Expected for the user clicking Stop; unexpected otherwise.
+- Any `stream.finalized.error` → the engine's generator threw. The `error` field on each event has a 500-char snippet; grep logs for the full trace.
+- Any `stream.reconciled.stale` → the 10-minute safety net swept an orphan row. If this number is non-zero, the engine's `finally` block missed a cleanup — that's a real bug worth investigating.
+
+Client-side exits are logged via `console.info` with a `[chat-stream]` prefix — filter DevTools for that string to see `client.stream.done`, `client.stream.user-abort`, and `client.stream.reader-error`. Attach the diagnostics response + DevTools filter output to any stream-cutoff bug report so we don't waste a review cycle chasing symptoms.
+
 ## Engineering Principles
 
 These 7 directives apply to all skills, all code, and all reviews. They are the shared engineering vocabulary.

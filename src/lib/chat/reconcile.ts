@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { chatMessages } from "@/lib/db/schema";
 import { and, eq, lt } from "drizzle-orm";
+import { recordTermination } from "./stream-telemetry";
 
 const INTERRUPTED_FALLBACK =
   "(Response interrupted. Please try again.)";
@@ -76,6 +77,19 @@ export async function reconcileStreamingMessages(): Promise<number> {
       .set({ status: "error", content: salvage })
       .where(eq(chatMessages.id, row.id))
       .run();
+
+    // Telemetry: record the orphan sweep so diagnostics can tell how often
+    // the safety net actually fires vs. how often the normal finalize path
+    // catches everything first. If this code ever logs a row, the engine's
+    // `finally` block missed it.
+    recordTermination({
+      reason: "stream.reconciled.stale",
+      conversationId: row.conversationId ?? null,
+      messageId: row.id,
+      durationMs: row.createdAt
+        ? Date.now() - new Date(row.createdAt).getTime()
+        : null,
+    });
   }
 
   return orphans.length;
