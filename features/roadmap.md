@@ -311,7 +311,7 @@ Durable fixes that replace symptom-level hotfixes with architectural contracts. 
 | Feature | Priority | Status | Dependencies |
 |---------|----------|--------|--------------|
 | [workflow-status-view-pattern-router](workflow-status-view-pattern-router.md) | P2 | completed | workflow-engine, autonomous-loop-execution, bulk-row-enrichment |
-| [workflow-create-dedup](workflow-create-dedup.md) | P1 | planned | chat-engine, workflow-engine |
+| [workflow-create-dedup](workflow-create-dedup.md) | P1 | completed | chat-engine, workflow-engine |
 | [chat-stream-resilience-telemetry](chat-stream-resilience-telemetry.md) | P2 | planned | chat-engine, chat-api-routes |
 
 ## Dependency Graph

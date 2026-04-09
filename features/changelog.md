@@ -2,6 +2,42 @@
 
 ## 2026-04-09
 
+### Completed — workflow-create-dedup
+
+Shipped in the same session as grooming. Duplicate workflow creation in long chat conversations is now blocked at the tool layer.
+
+**All 9 acceptance criteria met (1 partial, scoped as intended):**
+
+1. **`src/lib/util/similarity.ts`** — new shared module (78 lines). Exports `extractKeywords`, `jaccard`, `tagOverlap`, and `STOP_WORDS`. Pure, dependency-free, used by both the profile import dedup engine and the new workflow tool dedup check.
+
+2. **`src/lib/import/dedup.ts` refactored** — the keyword/Jaccard/tag-overlap math moved out to the shared module; `checkDuplicates()` now imports the helpers. Net -38 lines in dedup.ts. No behavior change for profile imports — verified by the `pattern-extractor.test.ts` which exercises that path (still green).
+
+3. **`findSimilarWorkflows()` added to `src/lib/chat/tools/workflow-tools.ts`** — new exported helper that runs a two-tier check against workflows in the same project: (1) exact name match case-insensitive → similarity 1.0, (2) Jaccard ≥ 0.7 over extracted keywords from name + step titles + step prompts. Returns up to 3 matches sorted by similarity descending. Returns `[]` when `projectId` is null (no cross-project dedup, avoiding misleading matches in the "no active project" edge case). Companion helper `workflowComparableText()` extracts comparable text from a definition JSON string and degrades gracefully on malformed JSON.
+
+4. **`create_workflow` tool handler updated** — new optional `force: boolean` parameter on the Zod schema. When `force !== true`, the handler calls `findSimilarWorkflows` before inserting. If matches are returned, the tool responds with `{status: "similar-found", message: "...", matches: [...]}` instead of creating a row, so the LLM can decide whether to `update_workflow` on an existing match or retry with `force: true` after user confirmation.
+
+5. **System prompt guardrail added** to `src/lib/chat/system-prompt.ts` — new guideline instructs the LLM to call `list_workflows` before `create_workflow`, prefer `update_workflow` for "redesign" / "redo" / "update" requests, surface `similar-found` responses to the user, and only pass `force: true` when the user has explicitly confirmed a second variant.
+
+6. **Unit tests** — 25 new tests across two files:
+    - `src/lib/util/__tests__/similarity.test.ts` (18 tests) — `extractKeywords` edge cases (empty, lowercasing, stop words, length filter, limit, frequency ordering, hyphens), `jaccard` semantics (empty, disjoint, identical, partial, asymmetric empty), `tagOverlap` semantics (empty candidate, case-insensitivity, partial, full).
+    - `src/lib/chat/tools/__tests__/workflow-tools-dedup.test.ts` (7 tests) — null projectId returns [], empty project, exact-name case-insensitive match, Jaccard redesign scenario with ≥ 0.7 similarity, disjoint no-match, result cap at 3, malformed definition JSON handled gracefully. Uses a minimal thenable drizzle-orm mock (`{from, where, then}`) rather than the full DB layer, isolating the unit from bootstrap/schema concerns.
+
+7. **Acceptance criterion 7 (integration test for multi-turn conversation) scoped as partial**: tool-level verification via unit tests is complete — the "Jaccard redesign scenario" test simulates exactly the bug pattern (same definition, slightly different name, exceeds threshold, blocks insert). A full multi-turn chat-engine E2E that drives the LLM through context-window truncation would require mocking the LLM + context-builder and belongs in a broader chat test suite, not this dedup feature. The tool contract is the actual boundary being tested.
+
+**Scoping decisions confirmed:**
+- No DB unique constraint (SQLite lacks partial JSON indexes; users may want v1/v2 variants).
+- No session-level tool-call dedup (fragile across conversation boundaries).
+- No cascade-delete work needed — already implemented at `src/app/api/workflows/[id]/route.ts:129-185`, verified during grooming validation.
+
+**Verification run:**
+- `npx vitest run` → **712 passed, 11 skipped (e2e), 0 failures**. Baseline was 687; delta +25 matches the 25 new tests added.
+- `npx tsc --noEmit` → **exit 0**, fully clean.
+- `git diff --stat` → 5 files modified (+149/-54), 3 new files (similarity.ts, similarity.test.ts, workflow-tools-dedup.test.ts). `handoff/` untouched.
+
+**Files:**
+- Created: `src/lib/util/similarity.ts`, `src/lib/util/__tests__/similarity.test.ts`, `src/lib/chat/tools/__tests__/workflow-tools-dedup.test.ts`
+- Modified: `src/lib/import/dedup.ts`, `src/lib/chat/tools/workflow-tools.ts`, `src/lib/chat/system-prompt.ts`
+
 ### Groomed — handoff/ bug reports into two Platform Hardening specs
 
 Two bug reports from a sibling stagent instance (written against a different `src/features/` / `src/db/` file layout) were validated against this repo's actual structure and groomed into feature specs under the Platform Hardening section of the roadmap.

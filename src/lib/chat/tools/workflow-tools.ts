@@ -11,6 +11,7 @@ import {
 } from "@/lib/db/schema";
 import { eq, and, desc, inArray, like } from "drizzle-orm";
 import { ok, err, type ToolContext } from "./helpers";
+import { extractKeywords, jaccard } from "@/lib/util/similarity";
 
 const VALID_WORKFLOW_STATUSES = [
   "draft",
@@ -19,6 +20,107 @@ const VALID_WORKFLOW_STATUSES = [
   "completed",
   "failed",
 ] as const;
+
+/** Minimum Jaccard score for two workflows to count as "near duplicates". */
+const WORKFLOW_DEDUP_THRESHOLD = 0.7;
+
+/**
+ * Pull the comparable text out of a workflow definition JSON string:
+ * name + each step's name + each step's prompt. Invalid JSON returns "".
+ *
+ * Shared by findSimilarWorkflows for the candidate and each existing row.
+ */
+function workflowComparableText(name: string, definitionJson: string | null): string {
+  const parts: string[] = [name];
+  if (!definitionJson) return parts.join(" ");
+  try {
+    const def = JSON.parse(definitionJson);
+    if (Array.isArray(def?.steps)) {
+      for (const step of def.steps) {
+        if (typeof step?.name === "string") parts.push(step.name);
+        if (typeof step?.prompt === "string") parts.push(step.prompt);
+      }
+    }
+  } catch {
+    // Malformed JSON — fall back to just the name.
+  }
+  return parts.join(" ");
+}
+
+export interface SimilarWorkflowMatch {
+  id: string;
+  name: string;
+  similarity: number;
+  reason: string;
+}
+
+/**
+ * Find workflows in the same project that look similar to a candidate.
+ *
+ * Two-tier check:
+ *   1. Exact name match (case-insensitive) → similarity 1.0
+ *   2. Jaccard similarity over extracted keywords from name+step titles+prompts
+ *
+ * Returns up to 3 matches with similarity >= WORKFLOW_DEDUP_THRESHOLD,
+ * sorted by similarity descending. Used by `create_workflow` to warn the
+ * LLM before blindly inserting another row in long conversations where
+ * the sliding-window context builder evicts earlier creations.
+ *
+ * When projectId is null (no active project), returns [] — cross-project
+ * dedup would be misleading, and the handful of null-project rows that
+ * exist aren't worth de-duplicating against each other.
+ */
+export async function findSimilarWorkflows(
+  projectId: string | null,
+  candidateName: string,
+  candidateDefinitionJson: string
+): Promise<SimilarWorkflowMatch[]> {
+  if (!projectId) return [];
+
+  const existing = await db
+    .select({
+      id: workflows.id,
+      name: workflows.name,
+      definition: workflows.definition,
+    })
+    .from(workflows)
+    .where(eq(workflows.projectId, projectId));
+
+  const matches: SimilarWorkflowMatch[] = [];
+  const candidateKeywords = extractKeywords(
+    workflowComparableText(candidateName, candidateDefinitionJson)
+  );
+  const candidateNameLower = candidateName.trim().toLowerCase();
+
+  for (const row of existing) {
+    // Tier 1: exact name match (case-insensitive)
+    if (row.name.trim().toLowerCase() === candidateNameLower) {
+      matches.push({
+        id: row.id,
+        name: row.name,
+        similarity: 1,
+        reason: `Same name: "${row.name}"`,
+      });
+      continue;
+    }
+
+    // Tier 2: Jaccard similarity on keywords
+    const existingKeywords = extractKeywords(
+      workflowComparableText(row.name, row.definition)
+    );
+    const similarity = jaccard(candidateKeywords, existingKeywords);
+    if (similarity >= WORKFLOW_DEDUP_THRESHOLD) {
+      matches.push({
+        id: row.id,
+        name: row.name,
+        similarity,
+        reason: `Similar content to "${row.name}" (${Math.round(similarity * 100)}%)`,
+      });
+    }
+  }
+
+  return matches.sort((a, b) => b.similarity - a.similarity).slice(0, 3);
+}
 
 export function workflowTools(ctx: ToolContext) {
   return [
@@ -97,6 +199,12 @@ export function workflowTools(ctx: ToolContext) {
           .describe(
             "Runtime to use for workflow execution (e.g., 'openai-direct', 'anthropic-direct'). Use list_runtimes to see available options. Omit to use the system default."
           ),
+        force: z
+          .boolean()
+          .optional()
+          .describe(
+            "Set to true to bypass the near-duplicate check and always create a new workflow. Only use this when the user has explicitly confirmed they want a second workflow alongside a similar existing one (e.g., 'v2', 'alternate approach'). Default false."
+          ),
       },
       async (args) => {
         try {
@@ -131,6 +239,28 @@ export function workflowTools(ctx: ToolContext) {
           }
 
           const effectiveProjectId = args.projectId ?? ctx.projectId ?? null;
+
+          // Dedup guard: long chat conversations can truncate the earlier
+          // create_workflow tool call out of the sliding-window context, so
+          // the LLM loses its own history and re-creates on "redesign"
+          // requests. Check for near-duplicates in the same project before
+          // inserting. Pass force=true to bypass.
+          if (!args.force) {
+            const similar = await findSimilarWorkflows(
+              effectiveProjectId,
+              args.name,
+              args.definition
+            );
+            if (similar.length > 0) {
+              return ok({
+                status: "similar-found",
+                message:
+                  "Found similar workflow(s) in this project. Use update_workflow to modify an existing one, or pass force=true to create a new workflow alongside them.",
+                matches: similar,
+              });
+            }
+          }
+
           const now = new Date();
           const id = crypto.randomUUID();
 

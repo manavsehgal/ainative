@@ -1,6 +1,6 @@
 ---
 title: Workflow Creation Deduplication
-status: planned
+status: completed
 priority: P1
 milestone: post-mvp
 source: handoff/bug-duplicate-workflow-creation.md
