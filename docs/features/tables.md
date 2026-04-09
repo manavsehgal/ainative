@@ -4,9 +4,9 @@ category: "feature-reference"
 section: "tables"
 route: "/tables"
 tags: [tables, structured-data, spreadsheet, charts, triggers, templates, import, export, formulas]
-features: ["tables-data-layer", "tables-list-page", "tables-spreadsheet-editor", "tables-document-import", "tables-template-gallery", "tables-agent-integration", "tables-chat-queries", "tables-computed-columns", "tables-cross-joins", "tables-agent-charts", "tables-workflow-triggers", "tables-nl-creation", "tables-export", "tables-versioning"]
+features: ["tables-data-layer", "tables-list-page", "tables-spreadsheet-editor", "tables-document-import", "tables-template-gallery", "tables-agent-integration", "tables-chat-queries", "tables-computed-columns", "tables-cross-joins", "tables-agent-charts", "tables-workflow-triggers", "tables-nl-creation", "tables-export", "tables-versioning", "bulk-row-enrichment"]
 screengrabCount: 8
-lastUpdated: "2026-04-03"
+lastUpdated: "2026-04-08"
 ---
 
 # Tables
@@ -113,6 +113,13 @@ Every row edit is tracked. The History tab shows a timeline of changes, and you 
 1. Create a task and mention a table by name in the prompt (e.g., "Query the Sales Pipeline table for deals closing this month").
 2. The agent will use its table tools to read, filter, aggregate, or update the data as needed.
 3. Results appear in the task output, and any row changes are reflected in the table immediately.
+
+### Bulk Row Enrichment
+Enrich every matching row in a table by generating a loop workflow that iterates over the rows and writes results back via a `postAction`. Trigger it two ways:
+- **From chat:** ask "enrich the Leads table with a one-line company summary for each row" — the `enrich_table` chat tool plans a loop workflow scoped to the matching rows.
+- **From the Tables API:** `POST /api/tables/:id/enrich` with a prompt, target column, and optional row filter.
+
+Each iteration binds the current row's fields as `{{row.field}}` in the prompt template, so the agent sees only that row's context. Execution is sequential (not parallel) to keep the spend budget predictable, and the loop is idempotent — already-populated cells are skipped on re-run so you can safely resume an interrupted enrichment. The generated workflow appears in the Workflows list so you can watch progress, pause, or inspect per-row results.
 
 ## Related
 

@@ -1,71 +1,29 @@
 {
-  "generated": "2026-04-03T23:30:00Z",
+  "generated": "2026-04-08T20:00:00Z",
   "summary": {
-    "totalFeatures": 82,
-    "coveredFeatures": 78,
-    "gapCount": 4,
+    "totalFeatures": 86,
+    "coveredFeatures": 85,
+    "gapCount": 1,
     "unusedScreenshotCount": 0,
     "brokenReferences": 0,
-    "orphanedImages": 14
+    "orphanedImages": 0
   },
   "gaps": [
-    {
-      "feature": "book-content-merge",
-      "category": "Living Book",
-      "screenshots": ["book-list.png"],
-      "journeyCoverage": [],
-      "suggestedPersona": "personal",
-      "note": "Book reader captured but not referenced in any journey"
-    },
-    {
-      "feature": "book-reading-paths",
-      "category": "Living Book",
-      "screenshots": ["book-list.png"],
-      "journeyCoverage": [],
-      "suggestedPersona": "personal",
-      "note": "Book navigation not in any journey"
-    },
     {
       "feature": "tables-document-import",
       "category": "Structured Data",
       "screenshots": [],
       "journeyCoverage": ["work-use"],
       "suggestedPersona": "work",
-      "note": "Import wizard not captured (no dedicated screenshot) but tables mentioned in Work journey"
-    },
-    {
-      "feature": "database-snapshot-backup",
-      "category": "Platform",
-      "screenshots": ["settings-snapshots.png"],
-      "journeyCoverage": [],
-      "suggestedPersona": "developer",
-      "note": "New feature - settings snapshot card captured, not yet in any journey"
+      "note": "Import wizard has no dedicated screenshot. The feature is referenced narratively in the Work journey at Step 7, but a dedicated capture is blocked by the Tables list being empty (no seed data). Residual gap — revisit after seeding sample tables."
     }
   ],
-  "brokenReferences": [
-    { "file": "developer.md", "screenshot": "settings-ollama-connected.png", "status": "STALE", "note": "Old screenshot in public/readme/, not in current screengrabs/" },
-    { "file": "developer.md", "screenshot": "settings-channels-add-form.png", "status": "STALE", "note": "Old screenshot in public/readme/" },
-    { "file": "developer.md", "screenshot": "settings-channels-telegram-form.png", "status": "STALE", "note": "Old screenshot in public/readme/" },
-    { "file": "developer.md", "screenshot": "settings-channels-webhook-form.png", "status": "STALE", "note": "Old screenshot in public/readme/" },
-    { "file": "developer.md", "screenshot": "chat-conversation.png", "status": "STALE", "note": "Old screenshot in public/readme/" },
-    { "file": "developer.md", "screenshot": "schedules-detail.png", "status": "STALE", "note": "Old screenshot in public/readme/" },
-    { "file": "personal-use.md", "screenshot": "dashboard-card-detail.png", "status": "STALE", "note": "Old screenshot in public/readme/" },
-    { "file": "personal-use.md", "screenshot": "settings-channels.png", "status": "STALE", "note": "Old screenshot in public/readme/" },
-    { "file": "power-user.md", "screenshot": "settings-ollama-connected.png", "status": "STALE", "note": "Old screenshot in public/readme/" },
-    { "file": "power-user.md", "screenshot": "chat-model-selector.png", "status": "STALE", "note": "Old screenshot in public/readme/" },
-    { "file": "power-user.md", "screenshot": "schedules-detail.png", "status": "STALE", "note": "Old screenshot in public/readme/" },
-    { "file": "power-user.md", "screenshot": "chat-create-tab.png", "status": "STALE", "note": "Old screenshot in public/readme/" },
-    { "file": "work-use.md", "screenshot": "chat-conversation.png", "status": "STALE", "note": "Old screenshot in public/readme/" },
-    { "file": "work-use.md", "screenshot": "settings-channels.png", "status": "STALE", "note": "Old screenshot in public/readme/" }
-  ],
-  "orphanedImages": [
-    "book-chapter-header.png", "book-chapter-nav.png", "book-reader.png",
-    "book-settings.png", "book-toc.png", "book-try-it-now.png",
-    "chat-conversation.png", "chat-create-tab.png", "chat-model-selector.png",
-    "chat-quick-access.png", "dashboard-card-detail.png", "playbook-list.png",
-    "schedules-detail.png", "schedules-edit-form.png", "settings-browser-tools.png",
-    "settings-channels-add-form.png", "settings-channels-telegram-form.png",
-    "settings-channels-webhook-form.png", "settings-channels.png",
-    "settings-ollama-connected.png"
+  "brokenReferences": [],
+  "orphanedImages": [],
+  "notes": [
+    "Closed 3 of 4 prior gaps: book-content-merge, book-reading-paths, database-snapshot-backup.",
+    "Closed 14 prior broken references — journey docs now reference only fixtures that exist in public/readme/.",
+    "Cleared 20 orphaned images by overwriting public/readme/ with the fresh screengrab set.",
+    "Added 4 new feature entries to reflect schedule-orchestration-v2, workflow-step-delays, bulk-row-enrichment, instance-bootstrap/upgrade-session/license-metering."
   ]
 }

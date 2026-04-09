@@ -4,9 +4,9 @@ category: "user-journey"
 persona: "personal"
 difficulty: "beginner"
 estimatedTime: "30 minutes"
-sections: ["home-workspace", "dashboard-kanban", "projects", "chat", "tables", "schedules", "user-guide"]
-tags: ["beginner", "solo", "tasks", "kanban", "chat", "tables", "schedules", "delivery-channels"]
-lastUpdated: "2026-04-03"
+sections: ["home-workspace", "dashboard-kanban", "projects", "chat", "tables", "schedules", "user-guide", "book"]
+tags: ["beginner", "solo", "tasks", "kanban", "chat", "tables", "schedules", "delivery-channels", "book"]
+lastUpdated: "2026-04-08"
 ---
 
 # Personal Use Guide
@@ -205,7 +205,24 @@ Alex discovers the built-in documentation hub.
 3. Check the **guided journeys** for your current skill level
 4. Use the feature grid to discover areas you have not tried yet
 
-### Step 15: What's Next
+### Step 15: Read the AI Native Book
+
+Alex wants deeper context on how Stagent fits into the broader shift to AI-native work. The Living Book is built into the sidebar under the **Learn** group.
+
+![AI Native Book — chapter list with reading progress](../screengrabs/book-list.png)
+
+1. Click **AI Native Book** in the sidebar under the **Learn** group to open the chapter list
+2. Scan the table of contents — chapters are organised from foundational concepts (From Hierarchy to Intelligence) through advanced topics (Autonomous Organization, The Road Ahead)
+3. Pick a reading path that matches your current focus:
+   - **Newcomer path** — start with the intro chapters on the AI-native blueprint and refinery
+   - **Practitioner path** — jump straight to the chapters on workflow orchestration, scheduled intelligence, and human-in-the-loop
+   - **Visionary path** — skip ahead to agent self-improvement, multi-agent swarms, and the governance layer
+4. As you read, the book merges content updates on each upgrade — new chapters and revisions appear automatically when you pull the latest release, so the book stays in sync with the product
+5. Reading progress persists per chapter, so you can dip in and out without losing your place
+
+> **Tip:** The book treats every example project as a case study — when you see a workflow or schedule described in a chapter, try building the same thing in your own workspace to anchor the idea in muscle memory.
+
+### Step 16: What's Next
 
 Alex now has a solid foundation: a project, organized tasks on a kanban board, a heartbeat schedule for proactive monitoring, and Telegram notifications for staying connected on the go. Here is where to go from here:
 

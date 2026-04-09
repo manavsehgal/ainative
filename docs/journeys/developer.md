@@ -6,7 +6,7 @@ difficulty: "advanced"
 estimatedTime: "30 minutes"
 sections: ["settings", "environment", "chat", "monitoring", "profiles", "workflows", "tables", "schedules", "delivery-channels"]
 tags: ["advanced", "developer", "settings", "environment", "cli", "api", "monitoring", "profiles", "ollama", "channels", "handoffs", "memory", "tables"]
-lastUpdated: "2026-04-03"
+lastUpdated: "2026-04-08"
 ---
 
 # Developer Guide
@@ -97,6 +97,20 @@ Riley sets up Slack and Telegram as delivery channels for schedule notifications
 2. Review database location (`~/.stagent/stagent.db`) and storage usage
 3. Use **Clear Data** cautiously -- it removes all workspace content while preserving settings
 4. Use **Populate Sample Data** for demos or testing
+
+### Step 6a: Take a Database Snapshot Backup
+
+Riley wants a point-in-time backup before running a risky migration or a destructive clear.
+
+![Settings snapshots card with create/restore/download controls](../screengrabs/settings-snapshots.png)
+
+1. Scroll to the **Snapshots** card inside **Data Management**
+2. Click **Create Snapshot** — Stagent copies the SQLite database (with WAL checkpoint) into a named, timestamped snapshot file stored alongside the live DB
+3. Give the snapshot a descriptive label ("before-v2-migration", "post-sample-seed") so future-you can find it
+4. To restore, pick a snapshot from the list and click **Restore** — the live DB is atomically swapped with the snapshot contents
+5. To archive off-host, click **Download** to get a `.sqlite` file you can stash in your backup system
+
+> **Tip:** Snapshots are the fastest safety net for experiments that touch tables, workflows, or schedules. Always take one before clearing data or trying an unfamiliar migration path.
 
 ### Step 7: Explore the Environment Dashboard
 

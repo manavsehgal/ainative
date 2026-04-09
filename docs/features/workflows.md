@@ -3,10 +3,10 @@ title: "Workflows"
 category: "feature-reference"
 section: "workflows"
 route: "/workflows"
-tags: [workflows, patterns, sequence, parallel, swarm, autonomous, templates, multi-step, blueprints]
-features: ["workflow-engine", "workflow-blueprints", "ai-assist-workflow-creation", "workflow-context-batching", "business-function-profiles"]
-screengrabCount: 3
-lastUpdated: "2026-03-31"
+tags: [workflows, patterns, sequence, parallel, swarm, autonomous, templates, multi-step, blueprints, delays, drip]
+features: ["workflow-engine", "workflow-blueprints", "ai-assist-workflow-creation", "workflow-context-batching", "business-function-profiles", "workflow-step-delays"]
+screengrabCount: 4
+lastUpdated: "2026-04-08"
 ---
 
 # Workflows
@@ -24,6 +24,9 @@ Workflows let you orchestrate multi-step agent operations using six built-in pat
 ![Workflow blueprints gallery](../screengrabs/workflows-blueprints.png)
 *Workflow blueprints gallery with pre-built workflow templates*
 
+![Workflow create form with a delay step inserted between sequence steps](../screengrabs/workflows-create-form-delay.png)
+*The workflow create form exposes an "Add Delay" button alongside "Add Step". Delay steps pause execution for a schedule-based duration (30m, 2h, 3d, 1w) before the next step runs — ideal for drip sequences and cooldown windows.*
+
 ## Key Features
 
 ### Six Pattern Types
@@ -34,6 +37,9 @@ Workflows support six orchestration patterns:
 - **Autonomous Loop** -- Repeats a step until a stop condition is met (max iterations, goal reached, error threshold, or timeout).
 - **Parallel Research** -- Fans out multiple steps to run concurrently, then merges results.
 - **Multi-Agent Swarm** -- Multiple agent profiles collaborate on a shared objective with dynamic handoffs.
+
+### Step Delays (Drip Sequences & Cooldowns)
+Insert pure time-delay steps between agent steps using the **Add Delay** button in the create form. Delays accept compact durations like `30m`, `2h`, `3d`, or `1w`. Execution model is schedule-based, not sleep-based: the delay is persisted in `workflows.resume_at` and the scheduler resumes the workflow when the time is up. This means delays survive process restarts — a 3-day cooldown will resume correctly even if the dev server is stopped and restarted in between. Resume is atomic and idempotent: the scheduler and a manual "Resume Now" click cannot double-fire the same delay. Delay steps are the primitive behind drip email campaigns, staggered onboarding sequences, and cooldown windows between automated actions.
 
 ### Workflow Blueprints
 The blueprint gallery offers pre-built workflow templates for common patterns:

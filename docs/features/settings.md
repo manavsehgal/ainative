@@ -3,10 +3,10 @@ title: "Settings"
 category: "feature-reference"
 section: "settings"
 route: "/settings"
-tags: ["settings", "configuration", "auth", "runtime", "browser-tools", "permissions", "budget", "ollama", "channels"]
-features: ["session-management", "tool-permission-persistence", "tool-permission-presets", "browser-use", "spend-budget-guardrails", "settings-interactive-controls", "ollama-runtime-provider", "multi-channel-delivery", "bidirectional-channel-chat", "database-snapshot-backup"]
-screengrabCount: 10
-lastUpdated: "2026-04-03"
+tags: ["settings", "configuration", "auth", "runtime", "browser-tools", "permissions", "budget", "ollama", "channels", "instance", "upgrade"]
+features: ["session-management", "tool-permission-persistence", "tool-permission-presets", "browser-use", "spend-budget-guardrails", "settings-interactive-controls", "ollama-runtime-provider", "multi-channel-delivery", "bidirectional-channel-chat", "database-snapshot-backup", "instance-bootstrap", "upgrade-detection", "upgrade-session", "instance-license-metering"]
+screengrabCount: 11
+lastUpdated: "2026-04-08"
 ---
 
 # Settings
@@ -171,6 +171,29 @@ Protect your workspace with automatic and manual database backups:
 1. Scroll to **Permission Presets**.
 2. Toggle on the preset that matches your comfort level.
 3. The preset's tools are added to your approved list immediately.
+
+## Instance & Upgrades
+
+![Settings page scrolled to the Instance section](../screengrabs/settings-instance.png)
+*The Instance section shows the installation metadata and the upgrade flow entry point.*
+
+### Instance Section
+The **Instance** card surfaces metadata about this installation: the stable `instanceId`, the current instance branch (e.g., `local` for single-clone users, `wealth-mgr` for private instances), the upstream remote it tracks, and whether the first-boot bootstrap has completed. Power users also see the guardrail state — whether a pre-push hook is installed and whether `pushRemote=no_push` is set on the instance branch.
+
+### Dev Mode Gate
+When `STAGENT_DEV_MODE=true` is set in `.env.local` or the `.git/stagent-dev-mode` sentinel file is present, the Instance section displays a "Dev mode" banner and the upgrade machinery is intentionally bypassed. This is the gate that protects the main dev repo from having a pre-push hook installed by the instance-bootstrap flow — contributors working on Stagent itself must not have their own push workflow broken.
+
+### Upgrade Detection
+An hourly scheduled poll runs `git fetch` against the upstream remote and compares `HEAD` to `origin/main`. When upstream is ahead, the sidebar shows a small **Upgrade available** badge next to Settings and the Instance card surfaces a "New version available" card with the number of commits behind. Detection is `git`-based rather than GitHub REST to avoid rate limits. Three consecutive poll failures escalate to a persistent notification.
+
+### Upgrade Session
+Clicking **Start upgrade** opens the upgrade session as a right-side sheet — not a full-page navigation, so you can glance back at your workspace while the upgrade runs. The session is backed by a task row with the `upgrade-assistant` profile, so it reuses all the existing execution infrastructure: fire-and-forget launch, canUseTool approval caching, SSE log streaming, and conflict resolution via the pending-approval host. If merge conflicts occur, a 3-card cluster (Keep mine / Take theirs / Show diff) appears inline and you resolve them without leaving the sheet.
+
+### Footer Upgrade Button
+A subtle **Upgrade** button appears in the sidebar footer once an upgrade is available — the same surface that shows trust tier and the command palette shortcut. Clicking it opens the same upgrade session sheet from any page without navigating to Settings first.
+
+### Hybrid Licensing
+Local-only features (task execution, workflows, schedules, tables) remain unlimited regardless of license state. Cloud features (sync, marketplace, team sharing) are metered via a `(email, machineFingerprint, instanceId)` tuple so the same user on the same machine counts as one seat across multiple instance branches. Seat state is refreshed on each boot via the LicenseManager.
 
 ## Related
 

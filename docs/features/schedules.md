@@ -3,10 +3,10 @@ title: "Schedules"
 category: "feature-reference"
 section: "schedules"
 route: "/schedules"
-tags: ["schedules", "automation", "recurring", "prompts", "heartbeat", "natural-language", "proactive"]
-features: ["scheduled-prompt-loops", "heartbeat-scheduler", "natural-language-scheduling"]
-screengrabCount: 2
-lastUpdated: "2026-03-31"
+tags: ["schedules", "automation", "recurring", "prompts", "heartbeat", "natural-language", "proactive", "orchestration", "concurrency"]
+features: ["scheduled-prompt-loops", "heartbeat-scheduler", "natural-language-scheduling", "schedule-orchestration-v2"]
+screengrabCount: 4
+lastUpdated: "2026-04-08"
 ---
 
 # Schedules
@@ -20,6 +20,12 @@ Automate recurring AI prompts on configurable intervals with two distinct schedu
 
 ![Schedule detail sheet showing configuration and firing history](../screengrabs/schedules-detail.png)
 *The schedule detail sheet shows full configuration, checklist items (for heartbeats), execution statistics, and chronological firing history.*
+
+![Schedule creation form with max agent steps and budget controls](../screengrabs/schedules-create-form-empty.png)
+*The Create Schedule sheet exposes the new per-schedule turn-budget field. Max agent steps per run caps how many actions the agent takes in a single firing before the runtime aborts.*
+
+![Schedule creation form filled with realistic data](../screengrabs/schedules-create-form-filled.png)
+*Filled schedule form showing a weekday 9am security audit with a 250-step budget. Writing "MAX N turns" in your prompt is a hint to the model — the Max agent steps field is the enforced runtime limit.*
 
 ## Key Features
 
@@ -65,6 +71,28 @@ Every schedule firing creates a tracked child task. The detail view shows a chro
 
 ### Pause and Resume
 Suspend a schedule without losing its configuration or execution history. Pausing stops future runs while preserving the next-run calculation, so resuming picks up right where it left off.
+
+## Orchestration & Safety
+
+Schedule orchestration v2 adds four orchestration primitives that keep concurrent schedules, long-running firings, and noisy prompts from destabilising the workspace.
+
+### Global Concurrency Cap
+A configurable ceiling on how many scheduled runs can execute simultaneously. When the cap is reached, new firings are queued rather than launched in parallel. The atomic slot-claim primitive ensures that two schedules firing at the exact same tick cannot both slip past the limit — at most one claims each available slot. The cap adapts to chat pressure: active streaming chat sessions count against the ceiling so scheduled runs do not contend with interactive work.
+
+### Lease Reaper
+Each running firing holds a lease recorded in the slot registry. A background reaper periodically checks for stale leases — firings whose host process died or whose runtime never responded — and reclaims their slots via `AbortController`. This is the safety net that prevents hung runs from permanently occupying capacity.
+
+### Pre-Flight Cron Collision Warning
+When you save a schedule whose cron expression overlaps with an existing schedule (both would fire in the same minute on the same day), the form shows a warning banner at save time listing the conflicting schedules. You can still save — collisions are not blocked — but you see the conflict before committing so you can spread the load if desired.
+
+### Per-Schedule Turn Budget
+The **Max agent steps per run** field caps the number of agent actions (messages, tool calls, sub-responses) allowed in a single firing. The runtime enforces this as a hard limit — not a prompt hint — and emits an explicit `failure_reason` if the budget is exceeded. Most schedules run comfortably in the 50–500 step range; heavy research runs sometimes need 2,000+. A separate streak counter grants one grace breach before the schedule is auto-paused, so a single over-budget run does not kill a stable schedule.
+
+### Manual Execute with Force-Bypass
+The schedule detail view exposes a manual execute action that runs the schedule once, immediately, without waiting for the next scheduled tick. Manual runs still honour the concurrency cap by default; power users can force-bypass the cap for urgent one-off runs, with the bypass recorded in the audit ledger as a `manual_force_bypass` usage event.
+
+### Firing Metrics for Tuning
+Every firing writes a row into `schedule_firing_metrics` capturing start time, end time, steps consumed, tool calls made, and terminal reason. This is the forensic trail you use to tune `Max agent steps`, detect runaway prompts, and spot schedules that routinely run close to their budget.
 
 ## How To
 
