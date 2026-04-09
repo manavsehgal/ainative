@@ -69,7 +69,7 @@ export function workflowTools(ctx: ToolContext) {
 
     defineTool(
       "create_workflow",
-      "Create a new workflow with a definition. The definition must include a pattern (sequence, parallel, checkpoint, planner-executor, swarm, loop) and steps array. Sequence-pattern steps can be either task steps (with prompt + assignedAgent/agentProfile) or delay steps (with delayDuration like '3d', '2h', '30m', '1w') that pause the workflow between tasks — use delay steps for time-distributed sequences (outreach cadences, drip campaigns, cooling periods) rather than creating separate workflows or schedules.",
+      "Create a new workflow with a definition. The definition must include a pattern (sequence, parallel, checkpoint, planner-executor, swarm, loop) and steps array. Sequence-pattern steps can be either task steps (with prompt + assignedAgent/agentProfile) or delay steps (with delayDuration like '3d', '2h', '30m', '1w') that pause the workflow between tasks — use delay steps for time-distributed sequences (outreach cadences, drip campaigns, cooling periods) rather than creating separate workflows or schedules. IMPORTANT: for the 'run agent on every row of a table' pattern, prefer enrich_table over create_workflow — enrich_table generates the optimal loop configuration, binds each row as {{row.field}} context, wires up the postAction row writeback, and handles idempotent skip of already-populated rows. Hand-rolled equivalents miss these safeguards.",
       {
         name: z.string().min(1).max(200).describe("Workflow name"),
         projectId: z

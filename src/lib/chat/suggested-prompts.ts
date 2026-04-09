@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { projects, tasks, workflows, schedules } from "@/lib/db/schema";
+import { projects, tasks, schedules, userTables } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import type { PromptCategory, SuggestedPrompt } from "./types";
 
@@ -40,6 +40,25 @@ async function buildExplorePrompts(): Promise<SuggestedPrompt[]> {
     });
   }
 
+  // Context-sensitive suggestion: if any user tables exist, surface an
+  // enrichment prompt for the most recently updated one. Users commonly have
+  // tables with empty cells waiting to be enriched; even without a column-level
+  // scan, pointing the chat LLM at enrich_table makes the bulk-row fan-out
+  // capability discoverable via suggested prompts rather than only via direct
+  // intent.
+  const recentTable = await db
+    .select({ id: userTables.id, name: userTables.name })
+    .from(userTables)
+    .orderBy(desc(userTables.updatedAt))
+    .limit(1);
+
+  if (recentTable.length > 0) {
+    prompts.push({
+      label: `Enrich "${truncate(recentTable[0].name, 28)}" rows`,
+      prompt: `I'd like to enrich rows in the "${recentTable[0].name}" table (id: ${recentTable[0].id}) using an agent. Ask me which column is missing data, what prompt template to use (reference row fields naturally), and which agent profile is best. Then use enrich_table to kick off the loop workflow.`,
+    });
+  }
+
   // Fill with static fallbacks
   const fallbacks: SuggestedPrompt[] = [
     {
@@ -75,6 +94,14 @@ function buildCreatePrompts(): SuggestedPrompt[] {
     {
       label: "Set up a multi-step workflow",
       prompt: "Help me design a multi-step workflow. I want to define a sequence of tasks with dependencies. Ask me what the workflow should accomplish and suggest a structure.",
+    },
+    {
+      label: "Design a drip sequence",
+      prompt: "Help me build a drip workflow with delay steps between sends. Ask me about the cadence (e.g. 3 days between touches), the number of touches, and the content goal for each step. Then use create_workflow with a sequence pattern, interleaving task steps and delay steps (delayDuration format: Nm|Nh|Nd|Nw, bounds 1m..30d). Do not create separate workflows or schedules — a single workflow with inline delay steps is the idiomatic pattern.",
+    },
+    {
+      label: "Enrich a table with an agent",
+      prompt: "I have a table with missing data that I want an agent to fill in. Help me use enrich_table to fan out rows to the agent. Ask me which table, which column is missing, what prompt template to use (the row is available as JSON context — tell the agent to read the relevant fields and return just the value, or NOT_FOUND if none can be determined), and which agent profile is best (sales-researcher, content-creator, data-analyst, etc.). Do not hand-roll a loop workflow — enrich_table already handles the loop, row binding, postAction writeback, and idempotent skip.",
     },
     {
       label: "Draft a document outline",
