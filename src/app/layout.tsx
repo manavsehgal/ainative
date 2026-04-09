@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Script from "next/script";
+import { cookies } from "next/headers";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,6 +8,12 @@ import { CommandPalette } from "@/components/shared/command-palette";
 import { PendingApprovalHost } from "@/components/notifications/pending-approval-host";
 import { GlobalShortcuts } from "@/components/shared/global-shortcuts";
 import { Toaster } from "@/components/ui/sonner";
+import {
+  DEFAULT_THEME,
+  THEME_COOKIE,
+  isResolvedTheme,
+  type ResolvedTheme,
+} from "@/lib/theme";
 import "./globals.css";
 
 const inter = Inter({
@@ -55,22 +61,34 @@ const CRITICAL_THEME_CSS = `
   html { background: var(--background); font-size: 14px; }
 `.replace(/\s+/g, " ").trim();
 
-// Light-first: defaults to 'light' when no localStorage preference exists.
-// Static theme initialization script — no user input, safe from XSS.
-const THEME_INIT_SCRIPT = `(function(){try{var d=document.documentElement;var s=localStorage.getItem('stagent-theme');var t=s==='dark'||s==='light'?s:'light';d.classList.toggle('dark',t==='dark');d.dataset.theme=t;d.style.colorScheme=t;d.style.backgroundColor=t==='dark'?'oklch(0.14 0.02 250)':'oklch(0.985 0.004 250)';document.cookie='stagent-theme='+t+';path=/;max-age=31536000;SameSite=Lax';}catch(e){}})()`;
-
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Resolve theme server-side from the stagent-theme cookie. Every client-side
+  // theme toggle writes this cookie (see src/lib/theme.ts), so SSR stays in
+  // sync with the user's preference and there is no FOUC — and no pre-hydration
+  // <script> tag, which is what React 19 warns about.
+  const cookieStore = await cookies();
+  const cookieValue = cookieStore.get(THEME_COOKIE)?.value;
+  const theme: ResolvedTheme = isResolvedTheme(cookieValue)
+    ? cookieValue
+    : DEFAULT_THEME;
+  const htmlClass = theme === "dark" ? "dark" : undefined;
+  const htmlBackground =
+    theme === "dark" ? "oklch(0.14 0.02 250)" : "oklch(0.985 0.004 250)";
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      className={htmlClass}
+      data-theme={theme}
+      style={{ colorScheme: theme, backgroundColor: htmlBackground }}
+      suppressHydrationWarning
+    >
       <head>
         {/* Static CSS — no user input, safe from XSS */}
         <style dangerouslySetInnerHTML={{ __html: CRITICAL_THEME_CSS }} />
-        {/* Theme bootstrap — runs before paint to prevent FOUC */}
-        <Script id="theme-init" strategy="beforeInteractive">{THEME_INIT_SCRIPT}</Script>
       </head>
       <body
         className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased bg-background text-foreground`}

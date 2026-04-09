@@ -23,6 +23,7 @@ import {
   BookOpen,
 } from "lucide-react";
 import { navigationItems, createItems } from "@/lib/chat/command-data";
+import { toggleTheme } from "@/lib/theme";
 
 interface RecentProject {
   id: string;
@@ -115,11 +116,9 @@ export function CommandPalette() {
     [router]
   );
 
-  function toggleTheme() {
+  function handleToggleTheme() {
     setOpen(false);
-    const isDark = document.documentElement.classList.contains("dark");
-    document.documentElement.classList.toggle("dark");
-    localStorage.setItem("stagent-theme", isDark ? "light" : "dark");
+    toggleTheme();
   }
 
   async function markAllRead() {
@@ -239,7 +238,7 @@ export function CommandPalette() {
 
         {/* Utility */}
         <CommandGroup heading="Utility">
-          <CommandItem onSelect={toggleTheme} value="Toggle Theme" keywords={["dark", "light", "mode"]}>
+          <CommandItem onSelect={handleToggleTheme} value="Toggle Theme" keywords={["dark", "light", "mode"]}>
             <Sun className="h-4 w-4 dark:hidden" />
             <Moon className="h-4 w-4 hidden dark:block" />
             Toggle Theme

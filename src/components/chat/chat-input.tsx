@@ -9,6 +9,7 @@ import { ChatCommandPopover } from "./chat-command-popover";
 import { useChatAutocomplete, type MentionReference } from "@/hooks/use-chat-autocomplete";
 import { getToolCatalog } from "@/lib/chat/tool-catalog";
 import { useProjectSkills } from "@/hooks/use-project-skills";
+import { toggleTheme } from "@/lib/theme";
 import type { ChatModelOption } from "@/lib/chat/types";
 
 interface ChatInputProps {
@@ -112,9 +113,7 @@ export function ChatInput({
         if (entry?.behavior === "execute_immediately") {
           autocomplete.close();
           if (entry.name === "toggle_theme") {
-            const isDark = document.documentElement.classList.contains("dark");
-            document.documentElement.classList.toggle("dark");
-            localStorage.setItem("stagent-theme", isDark ? "light" : "dark");
+            toggleTheme();
           } else if (entry.name === "mark_all_read") {
             fetch("/api/notifications/mark-all-read", { method: "PATCH" });
           }

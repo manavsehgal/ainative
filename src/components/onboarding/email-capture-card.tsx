@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Mail, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,14 +11,27 @@ const DISMISSED_KEY = "onboarding-email-dismissed";
 /**
  * Non-blocking email capture card for first-run users.
  * Appears once, never again after submit or dismiss.
+ *
+ * Hydration note: server cannot read localStorage, so first render always
+ * returns null on both server and client. A post-mount effect checks
+ * localStorage and reveals the card only if the user hasn't dismissed it.
+ * This avoids a hydration mismatch where the server renders the next sibling
+ * (WelcomeLanding) at a position the client then replaces with the Card.
  */
 export function EmailCaptureCard() {
-  const [dismissed, setDismissed] = useState(() => {
-    if (typeof window === "undefined") return true;
-    return localStorage.getItem(DISMISSED_KEY) === "true";
-  });
+  const [mounted, setMounted] = useState(false);
+  const [dismissed, setDismissed] = useState(true);
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+
+  useEffect(() => {
+    setMounted(true);
+    try {
+      setDismissed(localStorage.getItem(DISMISSED_KEY) === "true");
+    } catch {
+      setDismissed(true);
+    }
+  }, []);
 
   function dismiss() {
     localStorage.setItem(DISMISSED_KEY, "true");
@@ -47,7 +60,7 @@ export function EmailCaptureCard() {
     }
   }
 
-  if (dismissed) return null;
+  if (!mounted || dismissed) return null;
 
   if (status === "success") {
     return (
