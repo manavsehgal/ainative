@@ -2,6 +2,18 @@
 
 ## 2026-04-09
 
+### Groomed — handoff/ bug reports into two Platform Hardening specs
+
+Two bug reports from a sibling stagent instance (written against a different `src/features/` / `src/db/` file layout) were validated against this repo's actual structure and groomed into feature specs under the Platform Hardening section of the roadmap.
+
+- **`workflow-create-dedup` (P1, planned)** — Direct port of the duplicate-workflow bug. Every claim validated: `workflows` table has no uniqueness constraint (`src/lib/db/schema.ts:71-93`), `create_workflow` tool performs zero dedup (`src/lib/chat/tools/workflow-tools.ts:70-208`), sliding-window context truncation at ~8K tokens is real (`src/lib/chat/context-builder.ts:60-80`), and a reusable 3-tier dedup pattern already exists for profile imports (`src/lib/import/dedup.ts`). Spec wires Option A (tool-level dedup reusing the existing pattern) + Option B (system prompt guardrail), extracts the shared keyword/Jaccard helpers into `src/lib/util/similarity.ts`, and rejects Options C/D/E (DB constraint too strict, session dedup fragile, cascade-delete already done at `src/app/api/workflows/[id]/route.ts:129-185`).
+
+- **`chat-stream-resilience-telemetry` (P2, planned)** — Reframed from the original mid-stream-refresh bug report. Investigation found the sibling's proposed root cause (HMR remounting `ChatShell`) is already mitigated in this repo: `finalizeStreamingMessage()` runs in a `finally` block (`src/lib/chat/engine.ts:720`), `reconcileStreamingMessages()` safety net runs on page load (`src/lib/chat/reconcile.ts:59-82`, `src/app/chat/page.tsx:18-22`), AbortController-based client control exists (`src/components/chat/chat-shell.tsx:257-268`), and the permission bridge is explicitly HMR-tolerant with a "request may already be gone" comment. Rather than speculatively port the resume-protocol / Web Worker / module-state-persistence fixes, the spec adds lightweight termination telemetry (5 server reason codes + 3 client codes, in-memory ring buffer, dev-only `GET /api/diagnostics/chat-streams` endpoint, runbook note) so we build a resume protocol only if the signal justifies it.
+
+Both features land in the **Platform Hardening** section. No new TDR was created — the dedup feature reuses an existing pattern, and the telemetry feature defers the architectural decision (SSE resume protocol) until evidence exists to support it. A follow-up `chat-stream-resume-protocol` feature with a supporting api-design TDR would be filed only if telemetry shows >1% abnormal terminations in normal use.
+
+Source handoff docs remain in `handoff/` as archive — the spec `source:` frontmatter references them so traceability is preserved.
+
 ### Completed — workflow-status-view-pattern-router (full refactor)
 
 Unlike the two ship-verifications earlier today (workflow-step-delays, bulk-row-enrichment), this was a real greenfield implementation of the TDR-031 contract that was groomed and architected this morning in response to PR manavsehgal/stagent#6. Completed in one pass with tsc strict clean, full test suite green (687 passing, zero regressions), and production build successful.
