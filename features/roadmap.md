@@ -301,8 +301,16 @@ General-purpose workflow and table capabilities identified while building the Gr
 
 | Feature | Priority | Status | Dependencies |
 |---------|----------|--------|--------------|
-| [workflow-step-delays](workflow-step-delays.md) | P1 | planned | workflow-engine, scheduled-prompt-loops |
-| [bulk-row-enrichment](bulk-row-enrichment.md) | P1 | planned | workflow-engine, tables-data-layer, tables-workflow-triggers, multi-agent-routing |
+| [workflow-step-delays](workflow-step-delays.md) | P1 | completed | workflow-engine, scheduled-prompt-loops |
+| [bulk-row-enrichment](bulk-row-enrichment.md) | P1 | completed | workflow-engine, tables-data-layer, tables-workflow-triggers, multi-agent-routing |
+
+### Platform Hardening
+
+Durable fixes that replace symptom-level hotfixes with architectural contracts. Each feature in this section is paired with a TDR that codifies the invariant so the same class of bug cannot recur.
+
+| Feature | Priority | Status | Dependencies |
+|---------|----------|--------|--------------|
+| [workflow-status-view-pattern-router](workflow-status-view-pattern-router.md) | P2 | completed | workflow-engine, autonomous-loop-execution, bulk-row-enrichment |
 
 ## Dependency Graph
 

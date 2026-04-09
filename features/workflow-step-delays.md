@@ -1,6 +1,6 @@
 ---
 title: Workflow Step Delays
-status: planned
+status: completed
 priority: P1
 milestone: post-mvp
 source: changelog.md#2026-04-08 (split from growth-primitives design spec)

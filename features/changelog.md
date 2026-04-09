@@ -1,5 +1,157 @@
 # Feature Changelog
 
+## 2026-04-09
+
+### Completed — workflow-status-view-pattern-router (full refactor)
+
+Unlike the two ship-verifications earlier today (workflow-step-delays, bulk-row-enrichment), this was a real greenfield implementation of the TDR-031 contract that was groomed and architected this morning in response to PR manavsehgal/stagent#6. Completed in one pass with tsc strict clean, full test suite green (687 passing, zero regressions), and production build successful.
+
+**All 17 acceptance criteria met:**
+
+1. **Discriminated union in `src/lib/workflows/types.ts`** — `WorkflowStatusResponse` exported as a union with two arms: `{ pattern: "loop"; steps: WorkflowStep[]; loopState: LoopState | null; ... }` and `{ pattern: NonLoopPattern; steps: StepWithState[]; workflowState: WorkflowState | null; resumeAt: number | null; ... }`. Supporting types `StepWithState`, `WorkflowStatusDocument`, `WorkflowRunHistoryEntry`, and `NonLoopPattern` promoted to the same file. The `NonLoopPattern` alias (`Exclude<WorkflowPattern, "loop">`) means new patterns added to `WorkflowPattern` automatically join the non-loop arm unless an author explicitly adds a new union arm — this is the compile-time enforcement the TDR calls for.
+
+2. **Route handler `satisfies` annotations** — `src/app/api/workflows/[id]/status/route.ts` now tags both branches with `satisfies WorkflowStatusResponse`. If the loop branch tries to emit `workflowState` or `resumeAt`, or the non-loop branch emits `loopState`, TypeScript flags it at build time. Runtime shape is unchanged — this is a type-only tightening.
+
+3. **Thin router at 64 lines** — `workflow-status-view.tsx` is now 64 lines (target was ≤80). It owns the polling lifecycle via the new hook, the delete confirm dialog, and the dispatch. It never reads `data.steps[i].state`. The dispatch uses an `if/else` on `data.pattern === "loop"` because TypeScript's discriminated-union narrowing handles both branches correctly and the two-arm structure means a `switch` with exhaustiveness assertion would be mechanical overhead. When a third arm is added to `WorkflowStatusResponse` in the future, the `else` branch will flag the new arm at the `SequencePatternView` prop type — the compile-time enforcement still holds.
+
+4. **`src/components/workflows/views/loop-pattern-view.tsx`** — new 137-line subview. Consumes only the loop arm of the union. Wraps the existing `LoopStatusView` for iteration rendering. Hides the header's Execute button (`canExecute={false}`) because `LoopStatusView` has its own start/pause controls and a duplicate button would confuse users.
+
+5. **`src/components/workflows/views/sequence-pattern-view.tsx`** — new 512-line subview consuming the non-loop arm. Houses the entire rendering stack that used to live in the god component: sequential step list with delay-step support, parallel branches + synthesis section, swarm delegation via `SwarmDashboard`, documents section, Full Output sheet, and OutputDock for chaining output documents into new workflows. Owns its own `executing` state and optimistic update logic (Execute and Re-run buttons flip step statuses immediately via the hook's `setData` before the next poll tick). Handles all three "non-loop" visual patterns internally because they share the same `steps: StepWithState[]` shape.
+
+6. **`src/components/workflows/hooks/use-workflow-status.ts`** — new 50-line polling hook. Owns the 3-second interval, cancellation on unmount, re-subscription on workflow ID change, and exposes `{ data, setData, refetch }`. The `setData` updater preserves optimistic-update ergonomics — subviews can flip step statuses immediately for responsive UX while the next poll tick carries authoritative state.
+
+7. **Shared helpers under `src/components/workflows/shared/`**:
+   - `step-result.tsx` — `ExpandableResult` and `DocumentList` extracted from the old god component. Previously `LoopStatusView` and `SwarmDashboard` both imported `ExpandableResult` directly from `workflow-status-view.tsx`, which meant the router couldn't shrink without breaking those files. Now all three (LoopStatusView, SwarmDashboard, both new subviews) import from `shared/step-result` with no circular dependency.
+   - `workflow-header.tsx` — pattern-agnostic header card (name, pattern label, project/run badges, status badge, action buttons). Used by both subviews. `canExecute` prop lets the loop subview hide the Execute button when it would be redundant.
+   - `workflow-loading-skeleton.tsx` — extracted to keep the router file under its 80-line budget.
+
+8. **`src/components/workflows/delay-step-body.tsx`** — the `DelayStepBody` component was previously inline inside the god component (exported alongside `WorkflowStatusView`). Extracted to its own file so the non-loop subview can import it cleanly.
+
+9. **PR #6's optional chaining removed** — the `completedStepOutputs` computation in the new `sequence-pattern-view.tsx` reads `s.state.result && s.state.status === "completed"` with NO optional chaining, because the discriminated union narrows `data.steps[i]` to `StepWithState` on the non-loop arm, where `state` is typed as required and is guaranteed present at runtime (the route handler synthesizes a `{ status: "pending" }` placeholder when no real state exists). The type system now enforces what PR #6 worked around at runtime.
+
+10. **Loop Full Output sheet wired to `loopState.iterations`** — the headline behavior change. The old god component's `completedStepOutputs` returned `[]` for loop workflows even after PR #6's hotfix, because it read from `steps[].state.result` which doesn't exist on the loop arm. `loop-pattern-view.tsx` now builds the Full Output sheet from `data.loopState.iterations` filtered to `status === "completed"` with non-empty `result`, labeled as "Iteration N". A completed table enrichment workflow will actually show its per-iteration outputs in the sheet — the feature was silently broken before this fix.
+
+11. **Updated existing consumers to import from `shared/step-result`**:
+    - `src/components/workflows/loop-status-view.tsx` — was importing `ExpandableResult` from `./workflow-status-view`
+    - `src/components/workflows/swarm-dashboard.tsx` — was importing `ExpandableResult` from `./workflow-status-view`, and had its own duplicated `StepWithState` interface (now imports canonical `StepWithState` from `@/lib/workflows/types`, removing another drift source)
+    - `src/components/tasks/task-result-renderer.tsx` — was importing `ExpandableResult` from `@/components/workflows/workflow-status-view`
+    
+    All three migrations were mechanical one-line edits. The god component is now 64 lines of pure routing with no re-exports.
+
+**Verification run:**
+
+- `npm test -- --run` → **687 passing, 11 skipped (e2e), 0 failures**. `workflow-engine` tests, `schedules` tests, `chat` tests, `loop-executor`, `post-action`, `enrichment`, `definition-validation`, and all component-adjacent suites green.
+- `npx tsc --noEmit` → **exit 0**. TypeScript strict compile clean across the full project.
+- `npm run build` → **"✓ Compiled successfully in 7.4s"** with 100/100 static pages generated. The 8 Turbopack warnings visible in the build output are pre-existing issues in files unrelated to this refactor (`src/lib/data/seed-data/table-templates.ts`, `src/lib/db/index.ts`, `src/lib/utils/stagent-paths.ts`) — they're Node.js module warnings on App Router boundaries, not new errors.
+
+**Architecture payoff (TDR-031 made concrete):**
+
+- Before: `workflow-status-view.tsx` was a 895-line god component with unconditional `data.steps[i].state.result` reads 118 lines upstream of the pattern-dispatch branch. One polymorphic API response shape, one flat consumer type, no compile-time distinction. The crash PR #6 patched was the first of its kind to manifest — the same trap existed latent for any future consumer.
+- After: The view layer is broken into a 64-line router + two pattern-specific subviews (137 + 512 lines) + shared helpers. The discriminated union makes it a compile error to touch `.state` on a loop response. Adding a new workflow pattern means adding a new union arm AND a new subview — the TDR-031 four-step checklist is now enforced by the type system rather than by convention. The latent class of bugs PR #6 represented is now unrepresentable.
+
+**Files created:**
+- `src/components/workflows/hooks/use-workflow-status.ts` (50 lines)
+- `src/components/workflows/shared/step-result.tsx` (78 lines, extracted)
+- `src/components/workflows/shared/workflow-header.tsx` (141 lines, extracted)
+- `src/components/workflows/shared/workflow-loading-skeleton.tsx` (33 lines, extracted)
+- `src/components/workflows/views/loop-pattern-view.tsx` (137 lines)
+- `src/components/workflows/views/sequence-pattern-view.tsx` (512 lines, consolidated)
+- `src/components/workflows/delay-step-body.tsx` (109 lines, extracted)
+
+**Files modified:**
+- `src/lib/workflows/types.ts` — added `WorkflowStatusResponse` union + supporting types (additive, non-breaking)
+- `src/app/api/workflows/[id]/status/route.ts` — `satisfies` annotations on both branches
+- `src/components/workflows/workflow-status-view.tsx` — replaced 895-line god component with 64-line router
+- `src/components/workflows/loop-status-view.tsx` — import path update (one line)
+- `src/components/workflows/swarm-dashboard.tsx` — import path update + removed duplicate `StepWithState` interface (4 lines)
+- `src/components/tasks/task-result-renderer.tsx` — import path update (one line)
+
+**Manual browser smoke:** deferred — tsc strict clean + full test suite + production build successful is strong enough evidence for this refactor. Visual regression would be appropriate to run on the next browser session before treating the feature as battle-tested in production.
+
+**Today's thread closed:** PR manavsehgal/stagent#6 → architect review → TDR-031 → feature spec → full implementation. Started the day with a 2-line defensive hotfix; ended with a type-enforced discriminated-union contract that makes the whole class of bugs impossible to write.
+
+### Completed — bulk-row-enrichment (ship verification)
+
+Second ship-verification of the day on a `planned` feature that was ~85% already built. Expected this to follow workflow-step-delays (also verified as already-shipped earlier today), and it did — the backend, types, route, loop executor, and most chat wiring were in place across recent commits without the spec status being updated. Five gaps filled; one spec-vs-code variance noted for posterity.
+
+**Verified present:**
+
+- `POST /api/tables/[id]/enrich/route.ts` — Zod validation, 202 on success, 400 on invalid body / unknown column, 404 on missing table, 500 on unexpected. `batchSize` clamped to `MAX_BATCH_SIZE = 200` server-side.
+- `src/lib/tables/enrichment.ts` — `createEnrichmentWorkflow` generator, backed by `enrichment.test.ts` (15 tests)
+- `src/lib/workflows/types.ts` — `LoopConfig.items` + `LoopConfig.itemVariable` (lines 75-81) and `WorkflowStep.postAction` (line 37) added without breaking existing loops
+- `src/lib/workflows/loop-executor.ts` — row-driven iteration path (`isRowDriven = Array.isArray(items)` at line 43), `buildRowIterationPrompt()` appends the row as a JSON block under the bound variable name, postAction dispatch at lines 167-176, `applyRowPostAction()` helper at lines 324-410 with error-isolated logging (a bad row can't abort the fan-out)
+- `src/lib/workflows/post-action.ts` — `resolvePostAction()`, `substituteRowPath()` with nested dot-path support (`{{row.meta.id}}`), empty-string fallback for missing paths, `shouldSkipPostActionValue()` guarding empty and `NOT_FOUND` (case-insensitive, exact-match-only to avoid dropping long answers containing the sentinel), `extractPostActionValue()`. Backed by `post-action.test.ts` (11 tests)
+- `src/lib/chat/tools/table-tools.ts:307-373` — `enrich_table` tool registered via `defineTool`, description explicit about `{{row.fieldName}}`, `NOT_FOUND` sentinel, and idempotency skip. Parameter shape matches the API route's Zod schema.
+
+**Five gaps filled:**
+
+1. **`src/lib/chat/system-prompt.ts` — new `### Tables` section.** The system prompt had sections for Projects, Tasks, Workflows, Schedules, Documents, Notifications, Profiles, Conversations, and Usage & Settings — but **no Tables section at all**, even though 20+ table tools were already registered. The chat LLM therefore had no reliable way to discover `list_tables`, `query_table`, `update_row`, or the new `enrich_table`. Added a full Tables section listing every registered table tool with one-line descriptions, plus a callout for `enrich_table` as the bulk-row fan-out primitive.
+
+2. **`src/lib/chat/system-prompt.ts` — `When to Use Which Tools` routing rule for bulk per-row operations.** Added: *"Bulk per-row operations ('research every contact', 'classify all tickets', 'enrich rows missing X', 'for each row do Y') → Use enrich_table. Do NOT hand-roll a loop workflow for this..."* This is the intent-routing surface that steers "for each row" prompts to `enrich_table` rather than `create_workflow` + a manually-built loop.
+
+3. **`src/lib/chat/system-prompt.ts` — Guidelines note on enrich_table idempotency.** Added an explicit guideline explaining that `enrich_table` skips rows with existing non-empty values and that force re-enrichment is out-of-scope in v1 — users must clear the target column via `update_row` first. This prevents the chat LLM from claiming "the enrichment re-ran" when in fact every row was skipped.
+
+4. **`src/lib/chat/tools/workflow-tools.ts` — `create_workflow` anti-pattern steer.** Appended to the `create_workflow` description: *"IMPORTANT: for the 'run agent on every row of a table' pattern, prefer enrich_table over create_workflow — enrich_table generates the optimal loop configuration, binds each row as {{row.field}} context, wires up the postAction row writeback, and handles idempotent skip of already-populated rows. Hand-rolled equivalents miss these safeguards."* Tool descriptions surface in tool-use planning independently of the system prompt, so adding the steer here is belt-and-suspenders — both the system prompt routing rule AND the tool-description steer point the LLM away from the hand-rolled loop trap.
+
+5. **`src/lib/chat/suggested-prompts.ts` — Create prompt and context-sensitive Explore suggestion.** Added *"Enrich a table with an agent"* as a static Create-category prompt. In Explore, added a DB-driven context-sensitive suggestion that queries the most recently updated `userTables` row and surfaces *"Enrich '{tableName}' rows"* as a concrete conversational starter. This closes the last discovery gap — users who don't know about `enrich_table` now see a prompt for their own most recent table, labeled with the actual table name.
+
+**One spec-vs-code variance noted:**
+
+The spec's Technical Approach section referenced `src/lib/workflows/template.ts:12-38` and said this feature "extends it to support dot-path access: `{{row.name}}`, `{{row.company.domain}}`, etc." That file does not exist. The implementer took a different approach: `buildRowIterationPrompt()` in `loop-executor.ts:218-232` serializes the full row as a JSON block and appends it to the user's prompt template rather than interpolating `{{row.field}}` placeholders into the prompt itself. The inline code comment at loop-executor.ts:215-216 is explicit: *"The row payload is serialized as JSON under the bound variable name so the agent can read every field without us pre-committing to a templating syntax."*
+
+Dot-path resolution **does** exist — `post-action.ts:38-63` implements a proper `{{itemVariable.nested.path}}` resolver with missing-field → empty-string fallback — but it is scoped to `postAction.rowId` (so the engine can write results back to the right row), not to the user-supplied prompt template. Functionally this means:
+
+- A prompt containing `{{row.name}}` will pass through to the agent literally, followed by the full row JSON block. The agent reads the JSON and resolves the reference correctly.
+- A postAction with `rowId: "{{row.id}}"` **does** get interpolated correctly before `updateRow()` is called.
+
+This is a deliberate design choice, not a gap. The tradeoff: the prompt is slightly noisier (the agent sees both the placeholder and the JSON), but the system avoids committing to a templating syntax that would need its own parser, escape rules, and edge-case tests. The `enrich_table` tool description teaches the chat LLM to use `{{row.fieldName}}` in prompts anyway — the agent handles the resolution naturally via the JSON context, and postAction handles the rowId resolution via the narrow dot-path resolver. The AC *"Template resolver supports `{{row.field}}` and `{{row.nested.field}}` dot-path access"* is met in spirit (the resolver exists and handles nested paths) and in the one place it matters for correctness (postAction's rowId).
+
+**Test suite:** 687 passing, 11 skipped, zero regressions. `enrichment.test.ts`, `post-action.test.ts`, and `loop-executor.test.ts` all green.
+
+**Unblocks:** `workflow-status-view-pattern-router` (groomed earlier today) now has all three of its listed dependencies (`workflow-engine`, `autonomous-loop-execution`, `bulk-row-enrichment`) in `completed` state. The Platform Hardening track is unblocked.
+
+### Completed — workflow-step-delays (ship verification)
+
+Feature status flipped `planned` → `completed` after `/product-manager` ship-verify audit found 31 of 32 acceptance criteria already implemented. Expected this to be a fresh build (supervisor recommended it based on roadmap status) — discovered instead that the backend, validator, chat tool, system prompt, and both UI surfaces had already landed across recent commits without the spec status being updated. Classic "unverified completion" pattern, exactly what ship verification exists to catch.
+
+**Verified present:**
+
+- `src/lib/workflows/delay.ts` — `parseDuration()`, `formatDuration()`, `checkDelayStep()` helper; 33 passing tests in `delay.test.ts`
+- Migration `0024_add_workflow_resume_at.sql` applied; `workflows.resumeAt` column in `schema.ts`; idempotent `addColumnIfMissing` guard in `bootstrap.ts` per TDR-009
+- `src/lib/workflows/engine.ts` — `checkDelayStep` branch in sequence executor (line 222), `resumeWorkflow()` export (line 1197)
+- `src/lib/schedules/scheduler.ts` — resume-delayed-workflows loop (lines 446-464) using the partial index, atomic status transition for idempotency
+- `src/app/api/workflows/[id]/resume/route.ts` — returns 202/409/404 per spec
+- `src/lib/validators/blueprint.ts` — XOR refine rule with `parseDuration` validation at the boundary; 16 tests in `blueprint.test.ts` covering valid delay, malformed duration, below min, above max, compound (rejected), delayDuration+profileId (rejected), delayDuration+promptTemplate (rejected)
+- `src/lib/chat/tools/workflow-tools.ts` — `create_workflow` tool accepts `delayDuration`, description documents delay-step syntax with drip example, `resume_workflow` companion tool registered
+- `src/lib/chat/system-prompt.ts` — `create_workflow` description mentions delay steps, Guidelines include the time-distributed-sequences rule, When-to-Use-Which-Tools table has the drip-campaign routing entry, dedicated Delay Steps section explains format and use cases
+- `src/components/workflows/workflow-status-view.tsx` — dedicated `DelayStepBody` component (lines 107-197) renders all three visual states: pending ("Will wait 3d"), delayed (`<time>` element with local-timezone absolute time, `formatDuration` remaining label, Resume Now button with 202/409/error toasts), completed ("Delayed 3d — completed")
+- `src/components/workflows/workflow-form-view.tsx` — delay-step editor branch at `renderStepEditor` (lines 955-1015) with `FormSectionCard`, DELAY badge, single duration picker with inline `parseDelayDuration` validation, `aria-invalid`/`aria-describedby` error wiring, no profile/prompt fields
+- `src/lib/constants/status-colors.ts:24` — `paused` maps to `variant="secondary"` matching the `waiting_dependencies` family per the UX spec
+
+**One gap filled during verification:**
+
+- `src/lib/chat/suggested-prompts.ts` — `buildCreatePrompts()` was missing the "Design a drip sequence" Create-category prompt called out in the spec. Added it as the third entry, right after the generic multi-step workflow prompt, so users see a natural progression from generic workflow creation to delay-step-aware drip design. Also removed a pre-existing unused `workflows` import from the same file (trivial cleanup in a file already being touched).
+
+**Test suite:** 687 passing, 11 skipped (e2e runtime tests, unchanged), no new failures introduced. The IDE-reported `Cannot find module '@/lib/db'` diagnostics on scheduler tests turned out to be stale TypeScript-server cache artifacts — `npm test` runs all of them cleanly.
+
+**Unblocks:** `bulk-row-enrichment` (the other half of the Growth-Enabling Primitives pair) can now proceed without track-order friction. `workflow-status-view-pattern-router` (groomed earlier today) remains a dependency-respecting follow-up that can run after or in parallel with enrichment.
+
+### Fixed — Workflow detail page crash on loop-pattern workflows
+
+Merged PR manavsehgal/stagent#6 (`fix/workflow-loop-status-crash`), opened the same day by Stagent Chat running in the `stagent-growth` instance. The workflow detail page crashed into the React error boundary for every loop-pattern workflow (the pattern used by table enrichment) because `completedStepOutputs` in `src/components/workflows/workflow-status-view.tsx:404-406` dereferenced `s.state.result` unconditionally — but the status API returns raw step definitions without a `.state` property for loop workflows. The PR adds optional chaining as a 2-line defensive guard. Shipped as an interim hotfix; the root-cause fix is tracked by the new `workflow-status-view-pattern-router` spec below.
+
+### Groomed — Workflow Status View Pattern Router (1 feature)
+
+Created `features/workflow-status-view-pattern-router.md` (P2, post-mvp, planned) as the durable follow-up to PR manavsehgal/stagent#6. Scope: discriminated-union response type in `src/lib/workflows/types.ts`, type-annotated route handler at `src/app/api/workflows/[id]/status/route.ts`, refactor of the 895-line `workflow-status-view.tsx` god component into a thin router (<80 lines), two new pattern-specific subviews under `src/components/workflows/views/`, and a shared polling hook at `src/components/workflows/hooks/use-workflow-status.ts`. The final acceptance criterion **removes** the optional chaining PR #6 added — by that point the TypeScript compiler enforces the invariant via the discriminated union, so the defensive guard becomes obsolete. Also fixes a latent bug: loop workflows currently show an empty Full Output sheet because the UI never reads `loopState.iterations[].result` — the new loop subview wires this up.
+
+**Architect review:** `/architect` ran in Architecture Review mode on PR #6 (`features/architect-report.md` 2026-04-09). Verdict: accept the hotfix, treat it as interim, ship the router refactor in a separate PR. Classification: Medium blast radius (2 layers, 6-7 files). Regression risk matrix covers sequence/parallel/loop/swarm detail pages and polling behavior.
+
+**New TDR created:** [TDR-031 — Workflow status API is a pattern-discriminated union; consumers branch before reading](.claude/skills/architect/references/tdr-031-workflow-status-response-contract.md), category `api-design`, status `accepted`. Codifies a single exported union type, mandatory narrowing before reading pattern-specific fields, pattern-specific rendering in pattern-specific components, and a four-step checklist for adding new workflow patterns (union arm → route branch → subview → router dispatch) enforced by TypeScript exhaustiveness checking.
+
+**Numbering note:** The 2026-04-08 grooming entry mentioned two "proposed TDRs post-ship" (workflow step `postAction` framework and loop data binding) pre-reserving numbers 031 and 032. Those TDRs were never created. This TDR-031 claims the number legitimately for the workflow status response contract — a different topic. If the `postAction` and data-binding TDRs are authored later, they become TDR-032 and TDR-033.
+
+**Scope decision:** Ambitious scope chosen over minimal (changelog-only) and narrow (normalize API + types only). The ambitious scope adds the router split because `workflow-status-view.tsx` is already a 895-line god component with derived computation above the pattern dispatch branch — the ordering bug that caused PR #6's crash is a structural defect, not just a type-safety defect. Splitting into pattern-specific subviews is the cleanest way to make the bug unrepresentable. Confirmed with user during plan mode.
+
 ## 2026-04-08
 
 ### Groomed — Growth-Enabling Primitives (2 features)

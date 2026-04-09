@@ -1,57 +1,51 @@
 ---
-generated: 2026-04-03
-mode: health-check
+generated: 2026-04-09
+mode: next-steps
 ---
 
 # Supervisor Report
 
-## Project Health Check — 2026-04-03
+## Next Steps — 2026-04-09
 
-### Dashboard
+### Recommendation
 
-| Dimension | Status | Signal |
-|-----------|--------|--------|
-| Velocity | green | 30 commits in 2 days; Tables initiative (14 features, 52 files) shipped; database-snapshot-backup started |
-| Pipeline | green | 5 features remaining (3 planned, 2 in-progress); 92% completion (67/72) |
-| Ideas | green | 17 items in ideas/ including strategic vision docs |
-| Quality Debt | green | 418 tests passing, 0 type errors after Tables initiative |
-| Design Consistency | green | Calm Ops design system active; OKLCH tokens consistent |
-| Documentation | red | All docs/journeys/features from 2026-04-01; missing Tables (14 features), entity relationships, database snapshots |
-| Playbook Sync | red | All 3 timestamps from 2026-04-01; 30+ commits with major UI changes not captured |
+**Do this:** Build `workflow-step-delays` — the smaller, lower-risk half of the Growth-Enabling Primitives pair, track-locked as "first" in the 2026-04-08 grooming entry.
 
-### Top Concern
+**Why:**
+- P1, post-mvp, `planned` with all dependencies met (`workflow-engine` and `scheduled-prompt-loops` are both `completed`).
+- The 2026-04-08 changelog explicitly locks track order: **"Workflow Step Delays first, Bulk Row Enrichment second."** That decision stands.
+- Thematic continuity with today's work — you just merged PR manavsehgal/stagent#6 and groomed `workflow-status-view-pattern-router`. Three workflow-layer touchpoints in a row compound your context.
+- **Three-deep unblock chain:** `workflow-step-delays` → `bulk-row-enrichment` → `workflow-status-view-pattern-router` (your newly groomed spec lists `bulk-row-enrichment` as a dependency). Building delays first walks the chain toward the architectural cleanup you advocated for this morning.
+- The spec calls out reusable surface area already in place: the `"paused"` workflow status enum and the `PATCH /api/workflows/[id]` pause transition. Less new code than the spec originally implied.
 
-**Documentation** is red because the entire Tables initiative (14 features, 52 new files, new `/tables` route with editor, charts, triggers, import/templates, NL queries, and agent tools) shipped after the last documentation run. Entity relationship detail views, database snapshot/backup UI, and revamped seed data are also uncaptured.
+**Invoke:** `/frontend-designer` first (12 UX-testable ACs were added during grooming — timezone clarity, compact duration format, Execute-button pattern reuse), then `/frontend-design` for the build, then `/quality-manager` for tests.
 
-**Action:** Run the full documentation pipeline:
-1. `/screengrab` — capture all new routes and UI states
-2. `/doc-generator` — regenerate feature docs and journey guides
-3. `/playbook-sync` — sync screenshots to public/readme/, validate references
+**Priority category:** Phase advancement — next planned feature with all dependencies met, in a track with an already-locked order.
 
-### Secondary Concerns
+### Context
 
-- **Pipeline depth (green but watch):** Only 5 features remain. Recommend `/product-manager` grooming session soon.
-- **Coverage gaps:** 3 pre-existing gaps (book-content-merge, book-reading-paths, browser-tool-orchestration) plus all uncaptured new features.
+**In-progress (5 features — WIP is high):**
+- `chat-settings-tool` (P1), `database-snapshot-backup` (P1), `dynamic-slash-commands` (P2), `runtime-validation-hardening` (P1), `profile-environment-sync` (P1)
 
-### Recent Velocity
+**Planned and ready (deps met):**
+- `workflow-step-delays` (P1) ← recommended
+- `instance-bootstrap` (P1, no deps) — but dev-mode gate friction; building in main repo requires `STAGENT_INSTANCE_MODE=true` overrides (per MEMORY.md)
+- `workflow-document-pool` (P1) — 6 deps, all met
+- `workflow-run-history` (P1) — `workflow-editing` status unclear, verify before starting
+- `direct-runtime-prompt-caching`, `direct-runtime-advanced-capabilities` (both P2)
 
-| Period | Commits | Key Deliverables |
-|--------|---------|-----------------|
-| 2026-04-03 | 14 | Tables initiative complete, database snapshot foundation, seed data revamp |
-| 2026-04-02 | 16 | Entity relationships, cross-project docs, book fixes, architect TDRs |
+**Pipeline depth:** Healthy — 8+ `planned` features with met dependencies, plus the `ideas/` backlog.
 
-### Feature Gap Analysis (since last doc run)
+**Latent signal (not a blocker, worth a glance):** Session-start diagnostics flagged `Cannot find module '@/lib/db'` in ~10 scheduler test files (`reconcile.test.ts`, `tick-scheduler.test.ts`, `slot-claim.test.ts`, etc.). These are likely TypeScript-server cache artifacts from the recent schedule-orchestration-v2 merge (`df9a7cb`, `aeeded1`, `d895484`) — but if `npm test` actually fails on them, that's a real blocker and should be fixed before starting new work. Worth running `npm test` once before committing to `workflow-step-delays`.
 
-| Feature Area | New Files | Captured |
-|-------------|-----------|----------|
-| Tables foundation | 20+ | No |
-| Table editor & import | 10+ | No |
-| Table charts & triggers | 8+ | No |
-| Table NL queries & agent tools | 10+ | No |
-| Entity relationships | 4+ | No |
-| Database snapshots | 3+ | No |
-| Seed data revamp | 5+ | No |
+### If You Have More Time
+
+1. **Close one in-progress feature before starting new work.** `database-snapshot-backup` (P1, no deps) is the cheapest WIP to retire — no dependency context to re-page in. Invoke `/product-manager` ship verify mode to see what's actually left. WIP of 5 is high; retiring one brings you to a healthier 4.
+
+2. **Run `/architect` drift detection on the Clone Lifecycle & Self-Upgrade track.** `instance-bootstrap` is P1 planned with no deps, unblocks 3 downstream features (`upgrade-detection`, `upgrade-session`, `instance-license-metering`), but the dev-mode gate means you'd be building against a partially-mocked surface. Drift detection would tell you whether the track is ready to pull or still needs prep.
+
+3. **Verify the latent test-import signal.** If `npm test` fails on the scheduler tests, that blocks every other recommendation. 30-second check: `npm test -- --listTests` or similar to see if module resolution is actually broken.
 
 ---
 
-*Generated by `/supervisor` — health-check mode*
+*Generated by `/supervisor` — Next Steps mode*
