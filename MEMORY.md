@@ -78,6 +78,33 @@ This file captures evolving project facts, decisions, and recurring gotchas that
   - OpenAI Codex SDK / App Server docs
   - Claude Agent SDK docs
 - `.claude/skills/` contains Claude-first source material for shared project workflows. The overlapping Stagent-specific skills also exist under `~/.codex/skills/`, but the Codex versions are adapted for Codex tooling and should not be expected to stay byte-identical to the Claude copies.
+- Verified Codex-installed Stagent workflow ports currently include:
+  - `architect`
+  - `book-updater`
+  - `brainstorming`
+  - `capture`
+  - `code-review`
+  - `commit-push-pr`
+  - `doc-generator`
+  - `docx`
+  - `frontend-design`
+  - `frontend-designer`
+  - `product-manager`
+  - `pptx`
+  - `quality-manager`
+  - `refer`
+  - `screengrab`
+  - `supervisor`
+  - `taste`
+  - `user-guide-sync`
+  - `worktree-production`
+  - `writing-plans`
+  - `xlsx`
+- Claude-local skill files remain the detailed source material for the Stagent-specific ports above. The Codex versions intentionally stay concise and point back to `.claude/skills/...` when deeper workflow detail is needed.
+- Some Claude skill names are covered by existing Codex or system skills rather than separate project ports:
+  - `skill-creator` -> Codex system `skill-creator`
+  - `docx` -> Codex `doc` workflow plus the local compatibility shim
+  - `xlsx` -> Codex `spreadsheet` workflow plus the local compatibility shim
 - Claude-local settings live in `.claude/settings.local.json`; treat them as tool-specific execution preferences, not as the canonical shared instruction source.
 
 ## Tooling Conventions
