@@ -2,7 +2,13 @@ import { db } from "@/lib/db";
 import { workflows, agentLogs } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { executeChildTask } from "./engine";
-import type { WorkflowDefinition, LoopState, IterationState, LoopStopReason } from "./types";
+import type {
+  WorkflowDefinition,
+  LoopState,
+  IterationState,
+  LoopStopReason,
+  WorkflowEnrichmentTargetContract,
+} from "./types";
 import { createInitialLoopState } from "./types";
 import {
   resolvePostAction,
@@ -10,6 +16,7 @@ import {
   extractPostActionValue,
 } from "./post-action";
 import { updateRow } from "@/lib/data/tables";
+import { normalizeEnrichmentOutput } from "@/lib/tables/enrichment-planner";
 
 /**
  * Execute the loop pattern — autonomous iteration with stop conditions.
@@ -36,7 +43,6 @@ export async function executeLoop(
     items,
     itemVariable,
   } = definition.loopConfig;
-  const loopPrompt = definition.steps[0].prompt;
 
   // Row-driven loop: iterate exactly once per item (capped at maxIterations).
   // Items array presence flips the loop into a finite fan-out pattern.
@@ -98,23 +104,6 @@ export async function executeLoop(
 
       const iterationNum = loopState.currentIteration + 1;
 
-      // Build iteration prompt — row-driven loops bind the current row;
-      // autonomous loops carry forward the previous iteration's output.
-      const prompt = isRowDriven
-        ? buildRowIterationPrompt(
-            loopPrompt,
-            rowItems[loopState.currentIteration],
-            boundVarName,
-            iterationNum,
-            effectiveMax
-          )
-        : buildIterationPrompt(
-            loopPrompt,
-            previousOutput,
-            iterationNum,
-            maxIterations
-          );
-
       // Create iteration state
       const iterationState: IterationState = {
         iteration: iterationNum,
@@ -138,14 +127,29 @@ export async function executeLoop(
         timestamp: new Date(),
       });
 
-      // Execute child task
-      const result = await executeChildTask(
-        workflowId,
-        `Loop Iteration ${iterationNum}`,
-        prompt,
-        assignedAgent ?? definition.steps[0].assignedAgent,
-        agentProfile ?? definition.steps[0].agentProfile
-      );
+      const result = isRowDriven
+        ? await executeRowDrivenIteration({
+            workflowId,
+            definition,
+            row: rowItems[loopState.currentIteration],
+            itemVariable: boundVarName,
+            iteration: iterationNum,
+            totalRows: effectiveMax,
+            loopAssignedAgent: assignedAgent,
+            loopAgentProfile: agentProfile,
+          })
+        : await executeChildTask(
+            workflowId,
+            `Loop Iteration ${iterationNum}`,
+            buildIterationPrompt(
+              definition.steps[0].prompt,
+              previousOutput,
+              iterationNum,
+              maxIterations
+            ),
+            assignedAgent ?? definition.steps[0].assignedAgent,
+            agentProfile ?? definition.steps[0].agentProfile
+          );
 
       // Update iteration state
       const iterStartTime = new Date(iterationState.startedAt!).getTime();
@@ -156,26 +160,19 @@ export async function executeLoop(
       if (result.status === "completed") {
         iterationState.status = "completed";
         iterationState.result = result.result;
-        previousOutput = result.result ?? "";
+        if (!isRowDriven) {
+          previousOutput = result.result ?? "";
+        }
       } else {
         iterationState.status = "failed";
         iterationState.error = result.error;
-        await finalizeLoop(workflowId, loopState, "error");
-        return;
-      }
-
-      // Dispatch postAction for row-driven enrichment loops. Failures are
-      // logged but never throw — one bad row must not abort the fan-out.
-      const postAction = definition.steps[0].postAction;
-      if (isRowDriven && postAction && result.result !== undefined) {
-        await applyRowPostAction({
-          workflowId,
-          taskId: result.taskId,
-          postAction,
-          row: rowItems[loopState.currentIteration],
-          itemVariable: boundVarName,
-          taskResult: result.result,
-        });
+        loopState.currentIteration = iterationNum;
+        await updateLoopState(workflowId, loopState, "active");
+        if (!isRowDriven) {
+          await finalizeLoop(workflowId, loopState, "error");
+          return;
+        }
+        continue;
       }
 
       loopState.currentIteration = iterationNum;
@@ -220,15 +217,47 @@ export function buildRowIterationPrompt(
   row: unknown,
   itemVariable: string,
   iteration: number,
-  totalRows: number
+  totalRows: number,
+  previousStepOutput: string,
+  stepOutputs: Record<string, string>
 ): string {
+  const resolvedTemplate = resolveRowTemplate(template, {
+    [itemVariable]: row,
+    previous: previousStepOutput,
+    stepOutputs,
+  });
   const parts: string[] = [];
   parts.push(`Row ${iteration} of ${totalRows}.`);
   parts.push(
     `\nCurrent ${itemVariable}:\n\`\`\`json\n${JSON.stringify(row, null, 2)}\n\`\`\``
   );
-  parts.push(`\n---\n\n${template}`);
+  if (previousStepOutput) {
+    parts.push(`\nPrevious step output:\n${previousStepOutput}`);
+  }
+  parts.push(`\n---\n\n${resolvedTemplate}`);
   return parts.join("");
+}
+
+function resolveRowTemplate(
+  template: string,
+  context: Record<string, unknown>
+): string {
+  return template.replace(/\{\{\s*([^}]+)\s*\}\}/g, (_match, path: string) => {
+    const value = readContextPath(context, path.trim());
+    if (value === undefined || value === null) return "";
+    return typeof value === "string" ? value : JSON.stringify(value);
+  });
+}
+
+function readContextPath(value: unknown, path: string): unknown {
+  const parts = path.split(".");
+  let current = value;
+  for (const part of parts) {
+    if (current === null || current === undefined) return undefined;
+    if (typeof current !== "object") return undefined;
+    current = (current as Record<string, unknown>)[part];
+  }
+  return current;
 }
 
 /**
@@ -334,8 +363,17 @@ async function applyRowPostAction(params: {
   row: unknown;
   itemVariable: string;
   taskResult: string;
+  targetContract?: WorkflowEnrichmentTargetContract;
 }): Promise<void> {
-  const { workflowId, taskId, postAction, row, itemVariable, taskResult } = params;
+  const {
+    workflowId,
+    taskId,
+    postAction,
+    row,
+    itemVariable,
+    taskResult,
+    targetContract,
+  } = params;
 
   try {
     if (postAction.type !== "update_row") {
@@ -352,9 +390,9 @@ async function applyRowPostAction(params: {
     }
 
     const resolved = resolvePostAction(postAction, row, itemVariable);
-    const value = extractPostActionValue(taskResult);
+    const rawValue = extractPostActionValue(taskResult);
 
-    if (shouldSkipPostActionValue(value)) {
+    if (!targetContract && shouldSkipPostActionValue(rawValue)) {
       await db.insert(agentLogs).values({
         id: crypto.randomUUID(),
         taskId,
@@ -364,7 +402,46 @@ async function applyRowPostAction(params: {
           workflowId,
           rowId: resolved.rowId,
           column: resolved.column,
-          reason: value.trim() === "" ? "empty" : "not_found",
+          reason: rawValue.trim() === "" ? "empty" : "not_found",
+        }),
+        timestamp: new Date(),
+      });
+      return;
+    }
+
+    const normalized = targetContract
+      ? normalizeEnrichmentOutput(rawValue, targetContract)
+      : { kind: "valid" as const, value: rawValue };
+
+    if (normalized.kind === "skip") {
+      await db.insert(agentLogs).values({
+        id: crypto.randomUUID(),
+        taskId,
+        agentType: "loop-executor",
+        event: "post_action_skipped",
+        payload: JSON.stringify({
+          workflowId,
+          rowId: resolved.rowId,
+          column: resolved.column,
+          reason: normalized.reason,
+        }),
+        timestamp: new Date(),
+      });
+      return;
+    }
+
+    if (normalized.kind === "invalid") {
+      await db.insert(agentLogs).values({
+        id: crypto.randomUUID(),
+        taskId,
+        agentType: "loop-executor",
+        event: "post_action_contract_invalid",
+        payload: JSON.stringify({
+          workflowId,
+          rowId: resolved.rowId,
+          column: resolved.column,
+          error: normalized.reason,
+          rawValue,
         }),
         timestamp: new Date(),
       });
@@ -388,7 +465,7 @@ async function applyRowPostAction(params: {
     }
 
     const updated = await updateRow(resolved.rowId, {
-      data: { [resolved.column]: value },
+      data: { [resolved.column]: normalized.value },
     });
 
     await db.insert(agentLogs).values({
@@ -419,6 +496,86 @@ async function applyRowPostAction(params: {
       timestamp: new Date(),
     }).catch(() => {});
   }
+}
+
+async function executeRowDrivenIteration(params: {
+  workflowId: string;
+  definition: WorkflowDefinition;
+  row: unknown;
+  itemVariable: string;
+  iteration: number;
+  totalRows: number;
+  loopAssignedAgent?: string;
+  loopAgentProfile?: string;
+}): Promise<{ taskId: string; status: string; result?: string; error?: string }> {
+  const {
+    workflowId,
+    definition,
+    row,
+    itemVariable,
+    iteration,
+    totalRows,
+    loopAssignedAgent,
+    loopAgentProfile,
+  } = params;
+
+  let previousStepOutput = "";
+  let lastTaskId = "";
+  const stepOutputs: Record<string, string> = {};
+
+  for (const step of definition.steps) {
+    const prompt = buildRowIterationPrompt(
+      step.prompt,
+      row,
+      itemVariable,
+      iteration,
+      totalRows,
+      previousStepOutput,
+      stepOutputs
+    );
+
+    const result = await executeChildTask(
+      workflowId,
+      `${step.name} · Row ${iteration}`,
+      prompt,
+      loopAssignedAgent ?? step.assignedAgent,
+      loopAgentProfile ?? step.agentProfile,
+      undefined,
+      step.id,
+      step.budgetUsd,
+      step.runtimeId
+    );
+    lastTaskId = result.taskId;
+
+    if (result.status !== "completed") {
+      return {
+        taskId: lastTaskId,
+        status: "failed",
+        error: `${step.name}: ${result.error ?? "Task did not complete successfully"}`,
+      };
+    }
+
+    previousStepOutput = result.result ?? "";
+    stepOutputs[step.id] = previousStepOutput;
+
+    if (step.postAction) {
+      await applyRowPostAction({
+        workflowId,
+        taskId: result.taskId,
+        postAction: step.postAction,
+        row,
+        itemVariable,
+        taskResult: previousStepOutput,
+        targetContract: definition.metadata?.enrichment?.targetContract,
+      });
+    }
+  }
+
+  return {
+    taskId: lastTaskId,
+    status: "completed",
+    result: previousStepOutput,
+  };
 }
 
 /**

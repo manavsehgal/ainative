@@ -25,16 +25,57 @@ const filterSchema = z.object({
 });
 
 const enrichRequestSchema = z.object({
-  prompt: z.string().min(1).max(8192),
   targetColumn: z.string().min(1).max(128),
+  promptMode: z.enum(["auto", "custom"]).optional(),
+  prompt: z.string().min(1).max(8192).optional(),
   filter: filterSchema.optional(),
   agentProfile: z.string().min(1).max(128).optional(),
+  agentProfileOverride: z.string().min(1).max(128).optional(),
   projectId: z.string().nullable().optional(),
   // Reject non-positive ints; the upper bound is *clamped* in the handler so
   // callers asking for too much get a working (smaller) batch instead of a 400.
   batchSize: z.number().int().min(1).optional(),
   itemVariable: z.string().min(1).max(64).optional(),
   workflowName: z.string().min(1).max(256).optional(),
+  plan: z
+    .object({
+      promptMode: z.enum(["auto", "custom"]),
+      strategy: z.enum([
+        "single-pass-lookup",
+        "single-pass-classify",
+        "research-and-synthesize",
+      ]),
+      agentProfile: z.string().min(1),
+      reasoning: z.string(),
+      steps: z.array(
+        z.object({
+          id: z.string().min(1),
+          name: z.string().min(1),
+          purpose: z.string().min(1),
+          prompt: z.string().min(1),
+          agentProfile: z.string().min(1).optional(),
+        })
+      ),
+      targetContract: z.object({
+        columnName: z.string().min(1),
+        columnLabel: z.string().min(1),
+        dataType: z.enum(["text", "number", "boolean", "select", "url", "email"]),
+        allowedOptions: z.array(z.string()).optional(),
+      }),
+      eligibleRowCount: z.number().int().min(0),
+      sampleBindings: z.array(z.record(z.string(), z.unknown())),
+    })
+    .optional(),
+}).superRefine((value, ctx) => {
+  const hasPlan = Boolean(value.plan);
+  const mode = value.promptMode ?? (value.prompt ? "custom" : "auto");
+  if (!hasPlan && mode === "custom" && !value.prompt?.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["prompt"],
+      message: "Custom enrichment requires a prompt",
+    });
+  }
 });
 
 /**
@@ -67,7 +108,12 @@ export async function POST(
   const parsed = enrichRequestSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: parsed.error.flatten() },
+      {
+        error: parsed.error.issues.map((issue) => ({
+          path: issue.path.join("."),
+          message: issue.message,
+        })),
+      },
       { status: 400 }
     );
   }
@@ -88,7 +134,7 @@ export async function POST(
     if (/not found/i.test(message)) {
       return NextResponse.json({ error: message }, { status: 404 });
     }
-    if (/does not exist/i.test(message)) {
+    if (/does not exist|unsupported/i.test(message)) {
       return NextResponse.json({ error: message }, { status: 400 });
     }
 

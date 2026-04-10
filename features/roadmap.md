@@ -234,6 +234,9 @@ Features that enhance the product but aren't essential for first use — homepag
 | [tables-computed-columns](tables-computed-columns.md) | P1 | completed | tables-spreadsheet-editor |
 | [tables-agent-integration](tables-agent-integration.md) | P1 | completed | tables-data-layer, tables-spreadsheet-editor |
 | [tables-chat-queries](tables-chat-queries.md) | P1 | completed | tables-data-layer, tables-agent-integration |
+| [tables-enrichment-runtime-v2](tables-enrichment-runtime-v2.md) | P1 | completed | bulk-row-enrichment, workflow-engine, workflow-runtime-configuration |
+| [tables-enrichment-planner-api](tables-enrichment-planner-api.md) | P1 | completed | tables-enrichment-runtime-v2, provider-runtime-abstraction, tables-agent-integration |
+| [tables-enrichment-planner-ux](tables-enrichment-planner-ux.md) | P1 | completed | tables-enrichment-planner-api, workflow-ux-overhaul, operational-surface-foundation |
 | [tables-cross-joins](tables-cross-joins.md) | P2 | completed | tables-computed-columns |
 | [tables-agent-charts](tables-agent-charts.md) | P2 | completed | tables-agent-integration, tables-chat-queries |
 | [tables-workflow-triggers](tables-workflow-triggers.md) | P2 | completed | tables-agent-integration |

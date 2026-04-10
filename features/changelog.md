@@ -2,6 +2,22 @@
 
 ## 2026-04-10
 
+### Completed — table enrichment planner v2
+
+Shipped the planner-backed follow-on to `bulk-row-enrichment` as three completed features:
+
+- **`tables-enrichment-runtime-v2`** — row-driven enrichment loops can now run multiple inner steps per row, interpolate `{{row.field}}`, `{{previous}}`, and `{{stepOutputs.stepId}}`, validate final outputs against the target column type, and continue later rows when one row fails. Typed writeback now supports `text`, `url`, `email`, `select`, `boolean`, and `number`.
+- **`tables-enrichment-planner-api`** — added `POST /api/tables/[id]/enrich/plan` preview, expanded `POST /api/tables/[id]/enrich` to accept planner-backed launches, kept legacy custom-prompt callers compatible, and persisted enrichment metadata on workflow definitions so planner runs can be surfaced later without schema changes.
+- **`tables-enrichment-planner-ux`** — added a first-class `Enrich` action to the table Data tab, a right-side planner sheet for setup + preview + launch, and a compact recent-run surface for planner-backed enrichment jobs.
+
+**Verification run:**
+- `npx vitest run src/lib/tables/__tests__/enrichment-planner.test.ts src/lib/tables/__tests__/enrichment.test.ts src/lib/workflows/__tests__/post-action.test.ts src/lib/chat/tools/__tests__/enrich-table-tool.test.ts src/app/api/tables/[id]/enrich/__tests__/route.test.ts` → 44 passing tests
+- `npx tsc --noEmit` → exit 0
+
+**Files:**
+- Created: `src/lib/tables/enrichment-planner.ts`, `src/app/api/tables/[id]/enrich/plan/route.ts`, `src/app/api/tables/[id]/enrich/runs/route.ts`, `src/components/tables/table-enrichment-sheet.tsx`, `src/components/tables/table-enrichment-runs.tsx`, `src/lib/tables/__tests__/enrichment-planner.test.ts`
+- Modified: `src/lib/tables/enrichment.ts`, `src/lib/workflows/loop-executor.ts`, `src/lib/workflows/types.ts`, `src/app/api/tables/[id]/enrich/route.ts`, `src/components/tables/table-spreadsheet.tsx`, `src/components/tables/table-toolbar.tsx`
+
 ### Completed — Codex ChatGPT auth, isolated session storage, and OpenAI subscription-state UX
 
 Codex App Server inside Stagent no longer requires an API key. OpenAI provider settings now support browser-based ChatGPT sign-in for the Codex runtime, while preserving the separate API-key path for OpenAI Direct.

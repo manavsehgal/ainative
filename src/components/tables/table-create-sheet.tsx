@@ -15,6 +15,7 @@ import {
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
   SheetFooter,
@@ -132,6 +133,9 @@ export function TableCreateSheet({
       <SheetContent side="right" className="w-[480px] sm:max-w-[480px]">
         <SheetHeader>
           <SheetTitle>Create Table</SheetTitle>
+          <SheetDescription>
+            Name the table, optionally assign a project, and define the first set of columns.
+          </SheetDescription>
         </SheetHeader>
 
         <div className="px-6 pb-6 space-y-4 overflow-y-auto">

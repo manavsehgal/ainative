@@ -26,7 +26,7 @@ describe("POST /api/tables/[id]/enrich", () => {
   });
 
   it("rejects requests with missing required fields (400)", async () => {
-    const res = await POST(makeRequest({ targetColumn: "linkedin" }) as never, {
+    const res = await POST(makeRequest({}) as never, {
       params,
     });
     expect(res.status).toBe(400);

@@ -90,8 +90,35 @@ export interface WorkflowDefinition {
   steps: WorkflowStep[];
   loopConfig?: LoopConfig;
   swarmConfig?: SwarmConfig;
+  metadata?: WorkflowMetadata;
   /** Parent task ID — set when workflow is created from AI assist, used to propagate document context */
   sourceTaskId?: string;
+}
+
+export interface WorkflowMetadata {
+  enrichment?: WorkflowEnrichmentMetadata;
+}
+
+export interface WorkflowEnrichmentTargetContract {
+  columnName: string;
+  columnLabel: string;
+  dataType: "text" | "number" | "boolean" | "select" | "url" | "email";
+  allowedOptions?: string[];
+}
+
+export interface WorkflowEnrichmentMetadata {
+  tableId: string;
+  tableName: string;
+  targetColumn: string;
+  targetColumnLabel: string;
+  promptMode: "auto" | "custom";
+  strategy:
+    | "single-pass-lookup"
+    | "single-pass-classify"
+    | "research-and-synthesize";
+  agentProfile: string;
+  eligibleRowCount: number;
+  targetContract: WorkflowEnrichmentTargetContract;
 }
 
 export type LoopStopReason =

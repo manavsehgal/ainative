@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Columns3, Trash2, Upload, Download } from "lucide-react";
+import { Plus, Columns3, Trash2, Upload, Download, Sparkles } from "lucide-react";
 
 interface TableToolbarProps {
   tableId: string;
@@ -17,6 +17,7 @@ interface TableToolbarProps {
   onAddColumn: () => void;
   onBulkDelete: () => void;
   onImport?: () => void;
+  onEnrich?: () => void;
 }
 
 export function TableToolbar({
@@ -27,6 +28,7 @@ export function TableToolbar({
   onAddColumn,
   onBulkDelete,
   onImport,
+  onEnrich,
 }: TableToolbarProps) {
   function handleExport(format: string) {
     window.open(`/api/tables/${tableId}/export?format=${format}`, "_blank");
@@ -47,6 +49,13 @@ export function TableToolbar({
         <Button variant="outline" size="sm" onClick={onImport}>
           <Upload className="h-4 w-4 mr-1" />
           Import
+        </Button>
+      )}
+
+      {onEnrich && (
+        <Button size="sm" onClick={onEnrich}>
+          <Sparkles className="h-4 w-4 mr-1" />
+          Enrich
         </Button>
       )}
 

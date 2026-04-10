@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
@@ -20,6 +20,8 @@ import { TableColumnSheet } from "./table-column-sheet";
 import { TableToolbar } from "./table-toolbar";
 import { TableImportWizard } from "./table-import-wizard";
 import { TableRowSheet } from "./table-row-sheet";
+import { TableEnrichmentSheet } from "./table-enrichment-sheet";
+import { TableEnrichmentRuns } from "./table-enrichment-runs";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Table2 } from "lucide-react";
 import { evaluateComputedColumns } from "@/lib/tables/computed";
@@ -61,6 +63,8 @@ export function TableSpreadsheet({
   const [importOpen, setImportOpen] = useState(false);
   const [rowSheetOpen, setRowSheetOpen] = useState(false);
   const [rowSheetRow, setRowSheetRow] = useState<ParsedRow | null>(null);
+  const [enrichmentOpen, setEnrichmentOpen] = useState(false);
+  const [enrichmentRefreshKey, setEnrichmentRefreshKey] = useState(0);
 
   // ── Refresh helpers ─────────────────────────────────────────────────
 
@@ -178,12 +182,15 @@ export function TableSpreadsheet({
     []
   );
 
-  // Trigger row refresh when sorts change
+  // Trigger row refresh when sorts change without mutating state during render.
   const prevSortsRef = useRef(sorts);
-  if (prevSortsRef.current !== sorts) {
+  useEffect(() => {
+    if (prevSortsRef.current === sorts) {
+      return;
+    }
     prevSortsRef.current = sorts;
-    refreshRows();
-  }
+    void refreshRows();
+  }, [sorts, refreshRows]);
 
   // ── Selection helpers ───────────────────────────────────────────────
 
@@ -249,6 +256,12 @@ export function TableSpreadsheet({
         onAddColumn={() => setColumnSheetOpen(true)}
         onBulkDelete={handleBulkDelete}
         onImport={() => setImportOpen(true)}
+        onEnrich={() => setEnrichmentOpen(true)}
+      />
+
+      <TableEnrichmentRuns
+        tableId={tableId}
+        refreshKey={enrichmentRefreshKey}
       />
 
       <div className="rounded-lg border overflow-auto">
@@ -377,6 +390,17 @@ export function TableSpreadsheet({
         open={importOpen}
         onOpenChange={setImportOpen}
         onImported={() => { refreshTable(); refreshRows(); }}
+      />
+
+      <TableEnrichmentSheet
+        open={enrichmentOpen}
+        onOpenChange={setEnrichmentOpen}
+        tableId={tableId}
+        columns={columns}
+        onLaunched={() => {
+          setEnrichmentRefreshKey((current) => current + 1);
+          refreshRows();
+        }}
       />
 
       {rowSheetRow && (
