@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowUpRight,
   Inbox,
@@ -108,12 +108,14 @@ function PendingApprovalDetail({
   selected,
   overflow,
   onResponded,
+  onRequestFailed,
   onOpenInbox,
   onSelect,
 }: {
   selected: PendingApprovalPayload;
   overflow: PendingApprovalPayload[];
   onResponded: () => void;
+  onRequestFailed: () => void;
   onOpenInbox: () => void;
   onSelect: (notificationId: string) => void;
 }) {
@@ -172,6 +174,7 @@ function PendingApprovalDetail({
               profileIds={parsed.profileIds}
               body={selected.body ?? ""}
               onResponded={onResponded}
+              onRequestFailed={onRequestFailed}
             />
           );
         })()
@@ -264,6 +267,33 @@ export function PendingApprovalHost() {
   const router = useRouter();
   const pathname = usePathname();
 
+  const applySnapshot = useCallback((snapshot: PendingApprovalPayload[]) => {
+    const nextItems = dedupePendingApprovals(snapshot);
+    const previousIds = new Set(knownIdsRef.current);
+    const newestNew = nextItems.find(
+      (item) => !previousIds.has(item.notificationId)
+    );
+
+    if (newestNew) {
+      setAnnouncement(
+        `Permission required for ${buildContextLabel(newestNew)}. ${newestNew.compactSummary}`
+      );
+    }
+
+    knownIdsRef.current = nextItems.map((item) => item.notificationId);
+    setItems(nextItems);
+  }, []);
+
+  const refreshApprovals = useCallback(async () => {
+    const res = await fetch("/api/notifications/pending-approvals", {
+      cache: "no-store",
+    });
+    if (!res.ok) return;
+
+    const snapshot = (await res.json()) as PendingApprovalPayload[];
+    applySnapshot(snapshot);
+  }, [applySnapshot]);
+
   const primary = items[0] ?? null;
   const selected = useMemo(() => {
     if (!items.length) return null;
@@ -287,51 +317,25 @@ export function PendingApprovalHost() {
     let pollId: ReturnType<typeof setInterval> | null = null;
     let eventSource: EventSource | null = null;
 
-    function applySnapshot(snapshot: PendingApprovalPayload[]) {
-      if (cancelled) return;
-
-      const nextItems = dedupePendingApprovals(snapshot);
-      const previousIds = new Set(knownIdsRef.current);
-      const newestNew = nextItems.find(
-        (item) => !previousIds.has(item.notificationId)
-      );
-
-      if (newestNew) {
-        setAnnouncement(
-          `Permission required for ${buildContextLabel(newestNew)}. ${newestNew.compactSummary}`
-        );
-      }
-
-      knownIdsRef.current = nextItems.map((item) => item.notificationId);
-      setItems(nextItems);
-    }
-
-    async function refresh() {
-      try {
-        const res = await fetch("/api/notifications/pending-approvals", {
-          cache: "no-store",
-        });
-        if (!res.ok) return;
-
-        const snapshot = (await res.json()) as PendingApprovalPayload[];
-        applySnapshot(snapshot);
-      } catch {
-        // Fallback refresh should fail quietly.
-      }
-    }
-
     const startPolling = () => {
       if (pollId) return;
-      pollId = setInterval(refresh, 15_000);
+      pollId = setInterval(() => {
+        refreshApprovals().catch(() => {
+          // Fallback refresh should fail quietly.
+        });
+      }, 15_000);
     };
 
-    refresh();
+    refreshApprovals().catch(() => {
+      // Initial refresh should fail quietly.
+    });
 
     try {
       eventSource = new EventSource("/api/notifications/pending-approvals/stream");
       eventSource.onmessage = (event) => {
         try {
           const snapshot = JSON.parse(event.data) as PendingApprovalPayload[];
+          if (cancelled) return;
           applySnapshot(snapshot);
         } catch {
           startPolling();
@@ -351,7 +355,7 @@ export function PendingApprovalHost() {
       if (pollId) clearInterval(pollId);
       eventSource?.close();
     };
-  }, []);
+  }, [applySnapshot, refreshApprovals]);
 
   function removeNotification(notificationId: string) {
     setItems((current) =>
@@ -453,6 +457,11 @@ export function PendingApprovalHost() {
                     profileIds={parsed.profileIds}
                     body={primary.body ?? ""}
                     onResponded={() => removeNotification(primary.notificationId)}
+                    onRequestFailed={() => {
+                      refreshApprovals().catch(() => {
+                        // Refresh failures are surfaced by the batch review toast.
+                      });
+                    }}
                     compact
                   />
                 );
@@ -518,6 +527,11 @@ export function PendingApprovalHost() {
                   selected={selected}
                   overflow={overflowItems}
                   onResponded={() => removeNotification(selected.notificationId)}
+                  onRequestFailed={() => {
+                    refreshApprovals().catch(() => {
+                      // Refresh failures are surfaced by the batch review toast.
+                    });
+                  }}
                   onOpenInbox={handleOpenInbox}
                   onSelect={setSelectedId}
                 />
@@ -545,6 +559,11 @@ export function PendingApprovalHost() {
                   selected={selected}
                   overflow={overflowItems}
                   onResponded={() => removeNotification(selected.notificationId)}
+                  onRequestFailed={() => {
+                    refreshApprovals().catch(() => {
+                      // Refresh failures are surfaced by the batch review toast.
+                    });
+                  }}
                   onOpenInbox={handleOpenInbox}
                   onSelect={setSelectedId}
                 />

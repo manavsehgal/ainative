@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +13,7 @@ interface BatchProposalReviewProps {
   profileIds: string[];
   body: string;
   onResponded?: () => void;
+  onRequestFailed?: () => void;
   compact?: boolean;
 }
 
@@ -20,6 +22,7 @@ export function BatchProposalReview({
   profileIds,
   body,
   onResponded,
+  onRequestFailed,
   compact = false,
 }: BatchProposalReviewProps) {
   const [loading, setLoading] = useState<"approve" | "reject" | null>(null);
@@ -31,18 +34,30 @@ export function BatchProposalReview({
 
   async function handleBatchAction(action: "approve" | "reject") {
     setLoading(action);
+    setResponded(true);
+    onResponded?.();
+
     try {
       const res = await fetch("/api/context/batch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ proposalIds, action }),
       });
-      if (res.ok) {
-        const data = await res.json();
-        setResult({ action: data.action, count: data.count });
-        setResponded(true);
-        onResponded?.();
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? `Failed to ${action} batch proposal`);
       }
+
+      const data = await res.json();
+      setResult({ action: data.action, count: data.count });
+    } catch (error) {
+      setResponded(false);
+      setResult(null);
+      toast.error(
+        error instanceof Error ? error.message : "Batch approval failed"
+      );
+      onRequestFailed?.();
     } finally {
       setLoading(null);
     }

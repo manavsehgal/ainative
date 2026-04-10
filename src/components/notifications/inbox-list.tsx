@@ -158,6 +158,11 @@ export function InboxList({
             <NotificationItem
               key={n.id}
               notification={n}
+              onRemoved={(notificationId) =>
+                setNotifications((current) =>
+                  current.filter((item) => item.id !== notificationId)
+                )
+              }
               onUpdated={refresh}
             />
           ))

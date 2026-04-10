@@ -181,6 +181,7 @@ export async function batchApproveProposals(
     await import("./learned-context");
 
   let approved = 0;
+  const touchedProfileIds = new Set<string>();
   for (const rowId of proposalRowIds) {
     const [row] = db
       .select()
@@ -229,15 +230,27 @@ export async function batchApproveProposals(
     }
 
     approved++;
-
-    const sizeInfo = checkContextSize(row.profileId);
-    if (sizeInfo.needsSummarization) {
-      await summarizeContext(row.profileId);
-    }
+    touchedProfileIds.add(row.profileId);
   }
 
   // Mark the batch notification as responded
   await markBatchNotificationResponded(proposalRowIds, "approved");
+
+  const profilesNeedingSummarization = [...touchedProfileIds].filter(
+    (profileId) => checkContextSize(profileId).needsSummarization
+  );
+  void Promise.allSettled(
+    profilesNeedingSummarization.map(async (profileId) => {
+      try {
+        await summarizeContext(profileId);
+      } catch (error) {
+        console.error(
+          "[learning-session] Failed to summarize approved context batch:",
+          error
+        );
+      }
+    })
+  );
 
   return approved;
 }

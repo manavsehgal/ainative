@@ -37,6 +37,7 @@ interface Notification {
 
 interface NotificationItemProps {
   notification: Notification;
+  onRemoved?: (notificationId: string) => void;
   onUpdated: () => void;
 }
 
@@ -120,7 +121,11 @@ function parseBatchToolInput(toolInput: PermissionToolInput | null): {
   };
 }
 
-export function NotificationItem({ notification, onUpdated }: NotificationItemProps) {
+export function NotificationItem({
+  notification,
+  onRemoved,
+  onUpdated,
+}: NotificationItemProps) {
   const router = useRouter();
   const [toggling, setToggling] = useState(false);
   const [dismissing, setDismissing] = useState(false);
@@ -313,7 +318,8 @@ export function NotificationItem({ notification, onUpdated }: NotificationItemPr
                 proposalIds={parseBatchToolInput(parsedToolInput).proposalIds}
                 profileIds={parseBatchToolInput(parsedToolInput).profileIds}
                 body={notification.body ?? ""}
-                onResponded={onUpdated}
+                onResponded={() => onRemoved?.(notification.id)}
+                onRequestFailed={onUpdated}
               />
             </div>
           )}
