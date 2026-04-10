@@ -12,9 +12,11 @@ export const updateAuthSettingsSchema = z.object({
 export type UpdateAuthSettingsInput = z.infer<typeof updateAuthSettingsSchema>;
 
 export const updateOpenAISettingsSchema = z.object({
+  method: z.enum(["api_key", "oauth"]),
   apiKey: z
     .string()
-    .startsWith("sk-", "API key must start with sk-"),
+    .startsWith("sk-", "API key must start with sk-")
+    .optional(),
 });
 
 export type UpdateOpenAISettingsInput = z.infer<typeof updateOpenAISettingsSchema>;

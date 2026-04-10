@@ -1,0 +1,101 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const mockFrom = vi.fn();
+const mockWhere = vi.fn();
+const mockValues = vi.fn();
+const mockSet = vi.fn();
+const mockRun = vi.fn();
+
+vi.mock("@/lib/db", () => ({
+  db: {
+    select: () => ({ from: mockFrom }),
+    insert: () => ({ values: mockValues }),
+    update: () => ({ set: mockSet }),
+  },
+}));
+
+vi.mock("@/lib/db/schema", () => ({
+  settings: { key: "key" },
+}));
+
+vi.mock("@/lib/utils/crypto", () => ({
+  encrypt: vi.fn((v: string) => `encrypted:${v}`),
+  decrypt: vi.fn((v: string) => v.replace("encrypted:", "")),
+}));
+
+vi.mock("@/lib/utils/stagent-paths", () => ({
+  getStagentCodexAuthPath: () => "/tmp/stagent-codex/auth.json",
+}));
+
+mockFrom.mockReturnValue({ where: mockWhere });
+mockValues.mockReturnValue({ run: mockRun });
+mockSet.mockReturnValue({ where: vi.fn().mockReturnValue({ run: mockRun }) });
+
+function mockGetSettingSequence(values: (string | null)[]) {
+  let callIndex = 0;
+  mockWhere.mockImplementation(() => {
+    const val = values[callIndex] ?? null;
+    callIndex++;
+    return val !== null ? [{ value: val }] : [];
+  });
+}
+
+describe("openai auth settings", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.resetModules();
+    vi.unstubAllEnvs();
+    vi.stubEnv("OPENAI_API_KEY", "");
+    mockWhere.mockReturnValue([]);
+  });
+
+  it("defaults to api_key mode with no key", async () => {
+    const { getOpenAIAuthSettings } = await import("../openai-auth");
+    const result = await getOpenAIAuthSettings();
+    expect(result.method).toBe("api_key");
+    expect(result.hasKey).toBe(false);
+    expect(result.oauthConnected).toBe(false);
+  });
+
+  it("detects env-backed API key", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "sk-openai");
+    mockGetSettingSequence([null, null, null, null, null, null]);
+    const { getOpenAIAuthSettings } = await import("../openai-auth");
+    const result = await getOpenAIAuthSettings();
+    expect(result.hasKey).toBe(true);
+    expect(result.apiKeySource).toBe("env");
+  });
+
+  it("returns oauth connection metadata when stored", async () => {
+    mockGetSettingSequence([
+      "oauth",
+      null,
+      null,
+      "true",
+      JSON.stringify({
+        account: { type: "chatgpt", email: "dev@example.com", planType: "pro" },
+        authMode: "chatgpt",
+      }),
+      JSON.stringify({
+        limitId: "codex",
+        limitName: null,
+        primary: { usedPercent: 25, windowDurationMins: 15, resetsAt: 1730947200 },
+        secondary: null,
+      }),
+    ]);
+
+    const { getOpenAIAuthSettings } = await import("../openai-auth");
+    const result = await getOpenAIAuthSettings();
+
+    expect(result.method).toBe("oauth");
+    expect(result.oauthConnected).toBe(true);
+    expect(result.account?.email).toBe("dev@example.com");
+    expect(result.rateLimits?.primary?.usedPercent).toBe(25);
+  });
+
+  it("stores method changes without clearing existing key data", async () => {
+    const { setOpenAIAuthSettings } = await import("../openai-auth");
+    await setOpenAIAuthSettings({ method: "oauth" });
+    expect(mockValues).toHaveBeenCalled();
+  });
+});

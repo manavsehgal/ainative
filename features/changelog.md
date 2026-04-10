@@ -1,5 +1,20 @@
 # Feature Changelog
 
+## 2026-04-10
+
+### Completed — Codex ChatGPT auth, isolated session storage, and OpenAI subscription-state UX
+
+Codex App Server inside Stagent no longer requires an API key. OpenAI provider settings now support browser-based ChatGPT sign-in for the Codex runtime, while preserving the separate API-key path for OpenAI Direct.
+
+- **`codex-chatgpt-authentication`** — shipped ChatGPT sign-in for Codex App Server using the app-server JSON-RPC auth surface. Settings can start login, poll completion, cancel in-flight login, sign out, test the connection, and reuse cached ChatGPT sessions for both task execution and chat conversations. Codex task assist, task execution, connection tests, and the Codex chat engine now branch on the configured OpenAI auth method instead of assuming API-key-only startup.
+- **`codex-auth-session-isolation`** — Stagent-managed Codex auth now runs under an isolated `CODEX_HOME` inside the Stagent data directory, with `cli_auth_credentials_store = "file"` enforced via a Stagent-owned `config.toml`. This prevents Stagent login/logout from mutating the operator's normal `~/.codex` session and strips ambient `OPENAI_API_KEY` from ChatGPT-authenticated launches so OAuth mode cannot silently fall back to API-key auth.
+- **`codex-subscription-governance`** — runtime setup now treats ChatGPT-authenticated Codex App Server as subscription-priced, surfaces ChatGPT account identity plus Codex rate-limit metadata in Settings, and shows dual-billing messaging when ChatGPT-backed Codex and API-key-backed OpenAI Direct are both configured at the same time.
+
+**Verification run:**
+- `npx tsc --noEmit` → exit 0
+- `npx vitest run src/lib/settings/__tests__/openai-auth.test.ts src/lib/settings/__tests__/runtime-setup.test.ts src/lib/validators/__tests__/settings.test.ts` → 20 passing tests
+- `npx vitest run src/components/settings/__tests__/auth-config-section.test.tsx src/lib/settings/__tests__/budget-guardrails.test.ts` → 7 passing tests
+
 ## 2026-04-09
 
 ### Completed — chat-stream-resilience-telemetry

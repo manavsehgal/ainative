@@ -54,10 +54,20 @@ export async function getRuntimeSetupStates(): Promise<
       runtimeId: "openai-codex-app-server",
       label: openAIRuntime.label,
       providerId: openAIRuntime.providerId,
-      configured: openAIAuth.hasKey,
-      authMethod: openAIAuth.hasKey ? "api_key" : "none",
-      apiKeySource: openAIAuth.apiKeySource,
-      billingMode: "usage",
+      configured:
+        openAIAuth.method === "oauth" ? openAIAuth.oauthConnected : openAIAuth.hasKey,
+      authMethod:
+        openAIAuth.method === "oauth"
+          ? "oauth"
+          : openAIAuth.hasKey
+            ? "api_key"
+            : "none",
+      apiKeySource:
+        openAIAuth.method === "oauth" ? "oauth" : openAIAuth.apiKeySource,
+      billingMode:
+        openAIAuth.method === "oauth" && openAIAuth.oauthConnected
+          ? "subscription"
+          : "usage",
     },
     "anthropic-direct": {
       runtimeId: "anthropic-direct",

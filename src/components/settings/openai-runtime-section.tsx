@@ -13,12 +13,15 @@ import { ApiKeyForm } from "./api-key-form";
 import { AuthStatusBadge } from "./auth-status-badge";
 
 interface OpenAISettings {
+  method: "api_key" | "oauth";
   hasKey: boolean;
   apiKeySource: "db" | "env" | "unknown";
+  oauthConnected?: boolean;
 }
 
 export function OpenAIRuntimeSection() {
   const [settings, setSettings] = useState<OpenAISettings>({
+    method: "api_key",
     hasKey: false,
     apiKeySource: "unknown",
   });
@@ -41,7 +44,7 @@ export function OpenAIRuntimeSection() {
     const res = await fetch("/api/settings/openai", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ apiKey }),
+      body: JSON.stringify({ method: "api_key", apiKey }),
     });
     if (res.ok) {
       const data = (await res.json()) as OpenAISettings;
@@ -80,6 +83,9 @@ export function OpenAIRuntimeSection() {
           <AuthStatusBadge
             connected={connected}
             apiKeySource={settings.apiKeySource}
+            authMethod={settings.method}
+            oauthConnected={settings.oauthConnected}
+            oauthLabel="ChatGPT"
           />
         </div>
       </CardHeader>

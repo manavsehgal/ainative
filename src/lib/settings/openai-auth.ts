@@ -1,26 +1,77 @@
-import { SETTINGS_KEYS, type ApiKeySource } from "@/lib/constants/settings";
+import { existsSync } from "node:fs";
+import { SETTINGS_KEYS, type ApiKeySource, type AuthMethod } from "@/lib/constants/settings";
 import { decrypt, encrypt } from "@/lib/utils/crypto";
+import { getStagentCodexAuthPath } from "@/lib/utils/stagent-paths";
 import { getSetting, setSetting } from "./helpers";
 
+export type OpenAIAccountType = "apiKey" | "chatgpt" | "chatgptAuthTokens";
+export type OpenAIAuthMode = "apikey" | "chatgpt" | "chatgptAuthTokens" | null;
+
+export interface OpenAIAccountInfo {
+  type: OpenAIAccountType;
+  email?: string | null;
+  planType?: string | null;
+}
+
+export interface OpenAIRateLimitWindow {
+  usedPercent: number | null;
+  windowDurationMins: number | null;
+  resetsAt: number | null;
+}
+
+export interface OpenAIRateLimitInfo {
+  limitId: string | null;
+  limitName: string | null;
+  primary: OpenAIRateLimitWindow | null;
+  secondary: OpenAIRateLimitWindow | null;
+}
+
 export interface OpenAIAuthSettings {
+  method: AuthMethod;
   hasKey: boolean;
-  apiKeySource: ApiKeySource;
+  apiKeySource: Exclude<ApiKeySource, "oauth">;
+  oauthConnected: boolean;
+  account: OpenAIAccountInfo | null;
+  rateLimits: OpenAIRateLimitInfo | null;
 }
 
 export interface OpenAIAuthConfigInput {
-  apiKey: string;
+  method: AuthMethod;
+  apiKey?: string;
+}
+
+interface PersistedOpenAIAccountPayload {
+  account: OpenAIAccountInfo | null;
+  authMode?: OpenAIAuthMode;
+}
+
+function parseJson<T>(raw: string | null): T | null {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
 }
 
 export async function getOpenAIAuthSettings(): Promise<OpenAIAuthSettings> {
+  const method = ((await getSetting(SETTINGS_KEYS.OPENAI_AUTH_METHOD)) as AuthMethod) ?? "api_key";
   const encryptedKey = await getSetting(SETTINGS_KEYS.OPENAI_AUTH_API_KEY);
   const storedSource = (await getSetting(
     SETTINGS_KEYS.OPENAI_AUTH_API_KEY_SOURCE
-  )) as ApiKeySource | null;
+  )) as Exclude<ApiKeySource, "oauth"> | null;
+  const storedOauthConnected = await getSetting(SETTINGS_KEYS.OPENAI_AUTH_OAUTH_CONNECTED);
+  const storedAccount = parseJson<PersistedOpenAIAccountPayload>(
+    await getSetting(SETTINGS_KEYS.OPENAI_AUTH_ACCOUNT)
+  );
+  const storedRateLimits = parseJson<OpenAIRateLimitInfo>(
+    await getSetting(SETTINGS_KEYS.OPENAI_AUTH_RATE_LIMITS)
+  );
 
   const hasDbKey = encryptedKey !== null;
   const hasEnvKey = !!process.env.OPENAI_API_KEY;
 
-  let apiKeySource: ApiKeySource;
+  let apiKeySource: Exclude<ApiKeySource, "oauth">;
   if (storedSource) {
     apiKeySource = storedSource;
   } else if (hasDbKey) {
@@ -31,20 +82,32 @@ export async function getOpenAIAuthSettings(): Promise<OpenAIAuthSettings> {
     apiKeySource = "unknown";
   }
 
+  const oauthConnected =
+    storedOauthConnected === "true" ||
+    (storedOauthConnected == null && existsSync(getStagentCodexAuthPath()));
+
   return {
+    method,
     hasKey: hasDbKey || hasEnvKey,
     apiKeySource,
+    oauthConnected,
+    account: storedAccount?.account ?? null,
+    rateLimits: storedRateLimits,
   };
 }
 
 export async function setOpenAIAuthSettings(
   input: OpenAIAuthConfigInput
 ): Promise<void> {
-  await setSetting(
-    SETTINGS_KEYS.OPENAI_AUTH_API_KEY,
-    encrypt(input.apiKey)
-  );
-  await setSetting(SETTINGS_KEYS.OPENAI_AUTH_API_KEY_SOURCE, "db");
+  await setSetting(SETTINGS_KEYS.OPENAI_AUTH_METHOD, input.method);
+
+  if (input.apiKey) {
+    await setSetting(
+      SETTINGS_KEYS.OPENAI_AUTH_API_KEY,
+      encrypt(input.apiKey)
+    );
+    await setSetting(SETTINGS_KEYS.OPENAI_AUTH_API_KEY_SOURCE, "db");
+  }
 }
 
 export async function getOpenAIApiKey(): Promise<{
@@ -77,4 +140,36 @@ export async function updateOpenAIAuthStatus(
   source: Extract<ApiKeySource, "db" | "env" | "unknown">
 ): Promise<void> {
   await setSetting(SETTINGS_KEYS.OPENAI_AUTH_API_KEY_SOURCE, source);
+}
+
+export async function updateOpenAIOAuthStatus(input: {
+  connected: boolean;
+  account?: OpenAIAccountInfo | null;
+  authMode?: OpenAIAuthMode;
+  rateLimits?: OpenAIRateLimitInfo | null;
+}): Promise<void> {
+  await setSetting(
+    SETTINGS_KEYS.OPENAI_AUTH_OAUTH_CONNECTED,
+    input.connected ? "true" : "false"
+  );
+  await setSetting(
+    SETTINGS_KEYS.OPENAI_AUTH_ACCOUNT,
+    JSON.stringify({
+      account: input.account ?? null,
+      authMode: input.authMode ?? null,
+    } satisfies PersistedOpenAIAccountPayload)
+  );
+  await setSetting(
+    SETTINGS_KEYS.OPENAI_AUTH_RATE_LIMITS,
+    JSON.stringify(input.rateLimits ?? null)
+  );
+}
+
+export async function clearOpenAIOAuthStatus(): Promise<void> {
+  await updateOpenAIOAuthStatus({
+    connected: false,
+    account: null,
+    authMode: null,
+    rateLimits: null,
+  });
 }

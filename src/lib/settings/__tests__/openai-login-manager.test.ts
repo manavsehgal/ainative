@@ -1,0 +1,64 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const fakeClient = {
+  request: vi.fn(),
+  close: vi.fn(async () => {}),
+  onProcessError: undefined as ((error: Error) => void) | undefined,
+  onNotification: undefined as
+    | ((notification: { method: string; params?: unknown }) => void)
+    | undefined,
+};
+
+vi.mock("@/lib/agents/runtime/openai-codex-auth", () => ({
+  connectStagentCodexClient: vi.fn(async () => fakeClient),
+  initializeCodexClient: vi.fn(async () => {}),
+  readStagentCodexAuthState: vi.fn(async () => ({
+    connected: false,
+    account: null,
+    rateLimits: null,
+  })),
+}));
+
+vi.mock("@/lib/settings/openai-auth", () => ({
+  clearOpenAIOAuthStatus: vi.fn(async () => {}),
+}));
+
+describe("openai login manager", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
+    fakeClient.request.mockImplementation(async (method: string) => {
+      if (method === "account/login/start") {
+        return {
+          type: "chatgpt",
+          loginId: "login-1",
+          authUrl: "https://auth.openai.com/log-in",
+        };
+      }
+
+      if (method === "account/login/cancel") {
+        return {};
+      }
+
+      throw new Error(`Unexpected method: ${method}`);
+    });
+  });
+
+  it("returns a cancelled state when the active ChatGPT login is cancelled", async () => {
+    const {
+      startOpenAIChatGPTLogin,
+      cancelOpenAIChatGPTLogin,
+      getOpenAILoginState,
+    } = await import("@/lib/settings/openai-login-manager");
+
+    const started = await startOpenAIChatGPTLogin();
+    expect(started.phase).toBe("pending");
+
+    const cancelled = await cancelOpenAIChatGPTLogin();
+
+    expect(cancelled.phase).toBe("cancelled");
+    expect(cancelled.error).toBeNull();
+    expect(fakeClient.close).toHaveBeenCalledTimes(1);
+    expect(getOpenAILoginState().phase).toBe("cancelled");
+  });
+});

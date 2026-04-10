@@ -14,14 +14,15 @@ import {
   prepareTaskOutputDirectory,
   scanTaskOutputDocuments,
 } from "@/lib/documents/output-scanner";
-import {
-  getOpenAIApiKey,
-  updateOpenAIAuthStatus,
-} from "@/lib/settings/openai-auth";
 import { isToolAllowed } from "@/lib/settings/permissions";
 import { getRuntimeCatalogEntry } from "./catalog";
 import { getLaunchCwd } from "@/lib/environment/workspace-context";
 import { CodexAppServerClient } from "./codex-app-server-client";
+import {
+  ensureOpenAICodexClientAuthenticated,
+  readCodexAuthStateFromClient,
+  resolveOpenAICodexAuthContext,
+} from "./openai-codex-auth";
 import type {
   AgentRuntimeAdapter,
   RuntimeConnectionResult,
@@ -585,43 +586,19 @@ async function handleServerRequest(
   }
 }
 
-async function initializeOpenAIClient(
-  client: CodexAppServerClient,
-  apiKey: string
-) {
-  await client.request("initialize", {
-    clientInfo: {
-      name: "Stagent",
-      version: "0.1.1",
-    },
-    capabilities: null,
-  });
-
-  await client.request("account/login/start", {
-    type: "apiKey",
-    apiKey,
-  });
-}
-
 async function runAssistTurn({
   prompt,
   developerInstructions,
   cwd,
 }: AssistTurnOptions): Promise<{ text: string; usage: UsageSnapshot }> {
-  const { apiKey, source } = await getOpenAIApiKey();
-  if (!apiKey) {
-    throw new Error("OpenAI API key is not configured");
-  }
+  const auth = await resolveOpenAICodexAuthContext();
 
   let client: CodexAppServerClient | null = null;
   let text = "";
   let usage: UsageSnapshot = {};
 
   try {
-    client = await CodexAppServerClient.connect({
-      cwd,
-      env: { OPENAI_API_KEY: apiKey },
-    });
+    client = await auth.connect(cwd);
 
     client.onNotification = (notification: JsonRpcLikeNotification) => {
       if (notification.method !== "item/agentMessage/delta") return;
@@ -631,8 +608,7 @@ async function runAssistTurn({
       }
     };
 
-    await initializeOpenAIClient(client, apiKey);
-    await updateOpenAIAuthStatus(source);
+    await ensureOpenAICodexClientAuthenticated(client, auth);
 
     const threadResponse = (await client.request("thread/start", {
       cwd,
@@ -706,11 +682,7 @@ async function executeOpenAICodexTask(
 ): Promise<void> {
   const { task, profileId, instructions, prompt, cwd } =
     await resolveTaskExecutionContext(taskId, options);
-  const { apiKey, source } = await getOpenAIApiKey();
-
-  if (!apiKey) {
-    throw new Error("OpenAI API key is not configured");
-  }
+  const auth = await resolveOpenAICodexAuthContext();
 
   const abortController = new AbortController();
   let client: CodexAppServerClient | null = null;
@@ -729,10 +701,7 @@ async function executeOpenAICodexTask(
   };
 
   try {
-    client = await CodexAppServerClient.connect({
-      cwd,
-      env: { OPENAI_API_KEY: apiKey },
-    });
+    client = await auth.connect(cwd);
 
     client.onProcessError = (error) => {
       if (settled) return;
@@ -879,8 +848,7 @@ async function executeOpenAICodexTask(
       };
     });
 
-    await initializeOpenAIClient(client, apiKey);
-    await updateOpenAIAuthStatus(source);
+    await ensureOpenAICodexClientAuthenticated(client, auth);
 
     if (threadId) {
       await client.request("thread/resume", {
@@ -1051,29 +1019,30 @@ async function runOpenAITaskAssist(
 }
 
 async function testOpenAIConnection(): Promise<RuntimeConnectionResult> {
-  const { apiKey, source } = await getOpenAIApiKey();
-  if (!apiKey) {
-    return {
-      connected: false,
-      apiKeySource: "unknown",
-      error: "OpenAI API key is not configured",
-    };
-  }
-
   let client: CodexAppServerClient | null = null;
   try {
-    client = await CodexAppServerClient.connect({
-      cwd: getLaunchCwd(),
-      env: { OPENAI_API_KEY: apiKey },
+    const auth = await resolveOpenAICodexAuthContext();
+    client = await auth.connect(getLaunchCwd());
+    await ensureOpenAICodexClientAuthenticated(client, auth);
+    const accountState = await readCodexAuthStateFromClient(client, {
+      refreshToken: auth.apiKeySource === "oauth",
     });
-    await initializeOpenAIClient(client, apiKey);
-    await client.request("account/read", { refreshToken: false });
-    await updateOpenAIAuthStatus(source);
-    return { connected: true, apiKeySource: source };
+
+    return {
+      connected: auth.apiKeySource === "oauth" ? accountState.connected : true,
+      apiKeySource: auth.apiKeySource,
+      account: accountState.account,
+      rateLimits: accountState.rateLimits,
+      authMode: accountState.authMode,
+    };
   } catch (error) {
     return {
       connected: false,
-      apiKeySource: source,
+      apiKeySource:
+        error instanceof Error &&
+        error.message.includes("ChatGPT sign-in is not configured")
+          ? "oauth"
+          : "unknown",
       error: error instanceof Error ? error.message : String(error),
     };
   } finally {

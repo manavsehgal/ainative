@@ -1,17 +1,39 @@
 import { NextResponse } from "next/server";
+import { readStagentCodexAuthState } from "@/lib/agents/runtime/openai-codex-auth";
 import { getRuntimeSetupStates } from "@/lib/settings/runtime-setup";
 import { getRoutingPreference } from "@/lib/settings/routing";
 import { getAuthSettings } from "@/lib/settings/auth";
 import { getOpenAIAuthSettings } from "@/lib/settings/openai-auth";
+import { getOpenAILoginState } from "@/lib/settings/openai-login-manager";
 
 export async function GET() {
-  const [runtimeStates, routingPreference, anthropicAuth, openaiAuth] =
-    await Promise.all([
-      getRuntimeSetupStates(),
-      getRoutingPreference(),
-      getAuthSettings(),
-      getOpenAIAuthSettings(),
-    ]);
+  const [routingPreference, anthropicAuth, initialOpenaiAuth] = await Promise.all([
+    getRoutingPreference(),
+    getAuthSettings(),
+    getOpenAIAuthSettings(),
+  ]);
+
+  let openaiAuth = initialOpenaiAuth;
+  if (openaiAuth.method === "oauth") {
+    try {
+      const current = await readStagentCodexAuthState({ refreshToken: true });
+      openaiAuth = {
+        ...openaiAuth,
+        oauthConnected: current.connected,
+        account: current.account,
+        rateLimits: current.rateLimits,
+      };
+    } catch {
+      openaiAuth = {
+        ...openaiAuth,
+        oauthConnected: false,
+        account: null,
+        rateLimits: null,
+      };
+    }
+  }
+
+  const runtimeStates = await getRuntimeSetupStates();
 
   const anthropicConfigured =
     runtimeStates["claude-code"].configured ||
@@ -42,9 +64,14 @@ export async function GET() {
       },
       openai: {
         configured: openaiConfigured,
+        authMethod: openaiAuth.method,
         hasKey: openaiAuth.hasKey,
         apiKeySource: openaiAuth.apiKeySource,
-        dualBilling: false,
+        oauthConnected: openaiAuth.oauthConnected,
+        account: openaiAuth.account,
+        rateLimits: openaiAuth.rateLimits,
+        login: getOpenAILoginState(),
+        dualBilling: openaiAuth.oauthConnected && openaiAuth.hasKey,
         runtimes: [
           runtimeStates["openai-codex-app-server"],
           runtimeStates["openai-direct"],

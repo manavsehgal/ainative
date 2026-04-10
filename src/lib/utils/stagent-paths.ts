@@ -40,3 +40,15 @@ export function getStagentLogsDir(): string {
 export function getStagentDocumentsDir(): string {
   return join(getStagentDataDir(), "documents");
 }
+
+export function getStagentCodexDir(): string {
+  return join(getStagentDataDir(), "codex");
+}
+
+export function getStagentCodexConfigPath(): string {
+  return join(getStagentCodexDir(), "config.toml");
+}
+
+export function getStagentCodexAuthPath(): string {
+  return join(getStagentCodexDir(), "auth.json");
+}

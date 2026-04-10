@@ -51,6 +51,10 @@ The Codex runtime connects to the OpenAI Codex App Server over WebSocket using J
 
 - Resumable threads with persistent state across reconnections.
 - WebSocket transport for low-latency bidirectional communication.
+- Two auth modes for Codex App Server:
+  - **ChatGPT** -- browser sign-in tied to your ChatGPT plan, with cached session reuse in Stagent's isolated Codex home
+  - **API Key** -- direct API-key auth using `OPENAI_API_KEY`
+- OpenAI Direct remains a separate API-key-backed runtime even when Codex App Server uses ChatGPT auth.
 
 ### OpenAI Direct API Runtime
 

@@ -4,13 +4,22 @@ import { Key, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AuthMethod } from "@/lib/constants/settings";
 
+interface AuthMethodOption {
+  id: AuthMethod;
+  icon: typeof Key;
+  title: string;
+  description: string;
+}
+
 interface AuthMethodSelectorProps {
   value: AuthMethod;
   onChange: (method: AuthMethod) => void;
   recommendedMethod?: AuthMethod | null;
+  label?: string;
+  options?: AuthMethodOption[];
 }
 
-const methods = [
+const defaultMethods = [
   {
     id: "api_key" as const,
     icon: Key,
@@ -25,12 +34,18 @@ const methods = [
   },
 ];
 
-export function AuthMethodSelector({ value, onChange, recommendedMethod }: AuthMethodSelectorProps) {
+export function AuthMethodSelector({
+  value,
+  onChange,
+  recommendedMethod,
+  label = "Authentication Method",
+  options = defaultMethods,
+}: AuthMethodSelectorProps) {
   return (
     <div className="space-y-2">
-      <p className="text-sm font-medium">Authentication Method</p>
+      <p className="text-sm font-medium">{label}</p>
       <div className="grid grid-cols-2 gap-3">
-        {methods.map((method) => {
+        {options.map((method) => {
           const Icon = method.icon;
           const isSelected = value === method.id;
           return (

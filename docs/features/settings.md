@@ -49,7 +49,7 @@ The Settings page is the central configuration hub for Stagent. From a single sc
 
 ### Authentication
 
-Choose how Stagent connects to Claude. **OAuth** uses your existing Max subscription at no additional API cost. **API Key** uses the Anthropic key stored in your environment. A **Test Connection** button validates whichever method you select. A separate section configures the Codex App Server endpoint for tasks that run through the Codex runtime.
+Choose how Stagent connects to each provider runtime. For **Anthropic**, **OAuth** uses your existing Max subscription at no additional API cost, while **API Key** uses the Anthropic key stored in your environment. For **OpenAI**, Codex App Server can use either an **OpenAI API key** or **ChatGPT** browser sign-in, while OpenAI Direct continues to use an API key. Connection tests validate the currently selected runtime mode and the OpenAI section shows active ChatGPT account and Codex rate-limit state when available.
 
 ### Ollama Runtime (Local Models)
 

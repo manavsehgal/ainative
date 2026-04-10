@@ -2,7 +2,10 @@ import { db } from "@/lib/db";
 import { projects } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { CodexAppServerClient } from "@/lib/agents/runtime/codex-app-server-client";
-import { getOpenAIApiKey } from "@/lib/settings/openai-auth";
+import {
+  ensureOpenAICodexClientAuthenticated,
+  resolveOpenAICodexAuthContext,
+} from "@/lib/agents/runtime/openai-codex-auth";
 import {
   extractUsageSnapshot,
   mergeUsageSnapshot,
@@ -128,11 +131,17 @@ export async function* sendCodexMessage(
   });
 
   // Get OpenAI API key
-  const { apiKey } = await getOpenAIApiKey();
-  if (!apiKey) {
-    await updateMessageContent(assistantMsg.id, "OpenAI API key is not configured. Add it in Settings → Auth.");
+  let auth;
+  try {
+    auth = await resolveOpenAICodexAuthContext();
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "OpenAI Codex authentication is not configured.";
+    await updateMessageContent(assistantMsg.id, message);
     await updateMessageStatus(assistantMsg.id, "error");
-    yield { type: "error", message: "OpenAI API key is not configured. Add it in Settings → Auth." };
+    yield { type: "error", message };
     return;
   }
 
@@ -164,20 +173,10 @@ export async function* sendCodexMessage(
   }
 
   try {
-    client = await CodexAppServerClient.connect({
-      cwd: workspace.cwd,
-      env: { OPENAI_API_KEY: apiKey },
-    });
+    client = await auth.connect(workspace.cwd);
 
     // Initialize and authenticate
-    await client.request("initialize", {
-      clientInfo: { name: "Stagent", version: "0.1.1" },
-      capabilities: null,
-    });
-    await client.request("account/login/start", {
-      type: "apiKey",
-      apiKey,
-    });
+    await ensureOpenAICodexClientAuthenticated(client, auth);
 
     // Validate model availability against what the user's account supports
     let validatedModel: string | undefined;

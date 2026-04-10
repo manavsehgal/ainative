@@ -24,7 +24,7 @@ interface JsonRpcNotification {
 type JsonRpcMessage = JsonRpcRequest | JsonRpcResponse | JsonRpcNotification;
 
 export interface CodexAppServerClientOptions {
-  env?: Record<string, string>;
+  env?: Record<string, string | undefined>;
   cwd?: string;
 }
 
@@ -59,15 +59,21 @@ export class CodexAppServerClient {
   ): Promise<CodexAppServerClient> {
     const port = await reservePort();
     const listenUrl = `ws://127.0.0.1:${port}`;
+    const env: NodeJS.ProcessEnv = { ...process.env };
+    for (const [key, value] of Object.entries(options.env ?? {})) {
+      if (value === undefined) {
+        delete env[key];
+      } else {
+        env[key] = value;
+      }
+    }
+
     const child = spawn(
       "codex",
       ["app-server", "--listen", listenUrl],
       {
         cwd: options.cwd,
-        env: {
-          ...process.env,
-          ...(options.env ?? {}),
-        },
+        env,
         stdio: ["ignore", "pipe", "pipe"],
       }
     );

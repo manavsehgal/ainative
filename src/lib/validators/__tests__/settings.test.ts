@@ -83,7 +83,16 @@ describe("updateAuthSettingsSchema", () => {
 describe("updateOpenAISettingsSchema", () => {
   it("accepts valid OpenAI API keys", () => {
     const result = updateOpenAISettingsSchema.safeParse({
+      method: "api_key",
       apiKey: "sk-test-openai",
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts oauth mode without an API key", () => {
+    const result = updateOpenAISettingsSchema.safeParse({
+      method: "oauth",
     });
 
     expect(result.success).toBe(true);
@@ -91,6 +100,7 @@ describe("updateOpenAISettingsSchema", () => {
 
   it("rejects keys without the sk- prefix", () => {
     const result = updateOpenAISettingsSchema.safeParse({
+      method: "api_key",
       apiKey: "invalid",
     });
 

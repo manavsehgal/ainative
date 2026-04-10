@@ -17,8 +17,11 @@ import { AuthMethodSelector } from "./auth-method-selector";
 import { ApiKeyForm } from "./api-key-form";
 import { AuthStatusBadge } from "./auth-status-badge";
 import { ConnectionTestControl } from "./connection-test-control";
+import { OpenAIChatGPTAuthControl } from "./openai-chatgpt-auth-control";
 import type { AuthMethod, ApiKeySource, RoutingPreference } from "@/lib/constants/settings";
 import type { RuntimeSetupState } from "@/lib/settings/runtime-setup";
+import type { OpenAIAccountInfo, OpenAIRateLimitInfo } from "@/lib/settings/openai-auth";
+import type { OpenAILoginState } from "@/lib/settings/openai-login-manager";
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -27,6 +30,10 @@ interface ProviderState {
   authMethod?: AuthMethod;
   hasKey: boolean;
   apiKeySource: ApiKeySource;
+  oauthConnected?: boolean;
+  account?: OpenAIAccountInfo | null;
+  rateLimits?: OpenAIRateLimitInfo | null;
+  login?: OpenAILoginState;
   dualBilling: boolean;
   runtimes: RuntimeSetupState[];
 }
@@ -99,6 +106,7 @@ const BILLING_LABELS: Record<string, string> = {
 
 function ProviderRow({
   name,
+  oauthLabel,
   provider,
   defaultOpen,
   open: controlledOpen,
@@ -106,6 +114,7 @@ function ProviderRow({
   children,
 }: {
   name: string;
+  oauthLabel?: string;
   provider: ProviderState;
   defaultOpen: boolean;
   open?: boolean;
@@ -125,10 +134,19 @@ function ProviderRow({
   const activeRuntimes = provider.runtimes.filter((r) => r.configured);
   const activeCount = activeRuntimes.length;
   const activeLabels = activeRuntimes.map((r) => r.label).join(", ");
+  const openAIOAuthPending = provider.authMethod === "oauth" && provider.oauthConnected === false;
+  const openAILoginPending = provider.login?.phase === "pending";
 
   let statusLine: string;
   if (!provider.configured) {
-    statusLine = "Add an API key to enable runtimes";
+    statusLine =
+      provider.authMethod === "oauth"
+        ? "Sign in with ChatGPT to enable Codex App Server"
+        : "Add an API key to enable runtimes";
+  } else if (openAIOAuthPending && activeCount > 0) {
+    statusLine = openAILoginPending
+      ? `Waiting for ${oauthLabel ?? "OAuth"} sign-in. ${activeLabels} remains active.`
+      : `Codex App Server needs ${oauthLabel ?? "OAuth"} sign-in. ${activeLabels} remains active.`;
   } else if (activeCount === 2) {
     statusLine = `2 runtimes active: ${activeLabels}`;
   } else if (activeCount === 1) {
@@ -157,6 +175,9 @@ function ProviderRow({
             <AuthStatusBadge
               connected={provider.configured}
               apiKeySource={provider.apiKeySource}
+              authMethod={provider.authMethod}
+              oauthLabel={oauthLabel}
+              oauthConnected={provider.oauthConnected}
             />
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">{statusLine}</p>
@@ -178,8 +199,10 @@ function ProviderRow({
             <div className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2">
               <p className="text-xs text-muted-foreground">
                 <span className="font-medium text-foreground">Two billing modes active.</span>{" "}
-                Claude Code uses your Max/Pro subscription. Anthropic Direct API uses
-                pay-as-you-go API billing. Budget guardrails track each separately.
+                {name === "Anthropic"
+                  ? "Claude Code uses your Max/Pro subscription. Anthropic Direct API uses pay-as-you-go API billing."
+                  : "Codex App Server uses your ChatGPT plan. OpenAI Direct uses pay-as-you-go API billing."}{" "}
+                Budget guardrails track each separately.
               </p>
             </div>
           )}
@@ -192,6 +215,14 @@ function ProviderRow({
             <div className="grid gap-2 sm:grid-cols-2">
               {provider.runtimes.map((runtime) => {
                 const isActive = runtime.configured;
+                const inactiveDescription = runtime.runtimeId.includes("direct")
+                  ? "Requires API key"
+                  : runtime.runtimeId === "openai-codex-app-server" &&
+                      provider.authMethod === "oauth"
+                    ? provider.login?.phase === "pending"
+                      ? "Waiting for ChatGPT sign-in"
+                      : "Sign in with ChatGPT"
+                    : "Requires CLI or API key";
                 return (
                   <div
                     key={runtime.runtimeId}
@@ -212,9 +243,7 @@ function ProviderRow({
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {isActive
                         ? (RUNTIME_DESCRIPTIONS[runtime.runtimeId] ?? "Active")
-                        : runtime.runtimeId.includes("direct")
-                          ? "Requires API key"
-                          : "Requires CLI or API key"}
+                        : inactiveDescription}
                     </p>
                   </div>
                 );
@@ -233,6 +262,7 @@ export function ProvidersAndRuntimesSection() {
   const [data, setData] = useState<ProvidersPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [anthropicOpen, setAnthropicOpen] = useState(false);
+  const [openAILoginState, setOpenAILoginState] = useState<OpenAILoginState | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -256,6 +286,7 @@ export function ProvidersAndRuntimesSection() {
       if (none || !data.providers.anthropic.configured) {
         setAnthropicOpen(true);
       }
+      setOpenAILoginState(data.providers.openai.login ?? null);
     }
   }, [data?.configuredProviderCount, data?.providers.anthropic.configured]);
 
@@ -292,7 +323,16 @@ export function ProvidersAndRuntimesSection() {
     const res = await fetch("/api/settings/openai", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ apiKey }),
+      body: JSON.stringify({ method: "api_key", apiKey }),
+    });
+    if (res.ok) fetchData();
+  }
+
+  async function handleOpenAIMethodChange(method: AuthMethod) {
+    const res = await fetch("/api/settings/openai", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ method }),
     });
     if (res.ok) fetchData();
   }
@@ -302,6 +342,17 @@ export function ProvidersAndRuntimesSection() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ runtime: "openai-codex-app-server" }),
+    });
+    const result = await res.json();
+    fetchData();
+    return result;
+  }
+
+  async function handleOpenAIDirectTest() {
+    const res = await fetch("/api/settings/test", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ runtime: "openai-direct" }),
     });
     const result = await res.json();
     fetchData();
@@ -349,6 +400,10 @@ export function ProvidersAndRuntimesSection() {
   }
 
   const { providers, routingPreference, configuredProviderCount } = data;
+  const openAIProvider: ProviderState = {
+    ...providers.openai,
+    login: openAILoginState ?? providers.openai.login,
+  };
   const noneConfigured = configuredProviderCount === 0;
   const recommendedAuth = recommendedAuthForRouting(routingPreference);
 
@@ -430,7 +485,7 @@ export function ProvidersAndRuntimesSection() {
             <p className="text-xs text-primary/70">
               {recommendedAuth === "api_key"
                 ? "This preference works best with an API key configured below."
-                : "This preference works well with OAuth (Claude Max/Pro) configured below."}
+                : "This preference works well with subscription-backed auth configured below."}
             </p>
           )}
         </div>
@@ -440,6 +495,7 @@ export function ProvidersAndRuntimesSection() {
         {/* Anthropic provider — controlled open state */}
         <ProviderRow
           name="Anthropic"
+          oauthLabel="Claude Max/Pro"
           provider={providers.anthropic}
           defaultOpen={false}
           open={anthropicOpen}
@@ -479,19 +535,82 @@ export function ProvidersAndRuntimesSection() {
         {/* OpenAI provider — uncontrolled */}
         <ProviderRow
           name="OpenAI"
-          provider={providers.openai}
-          defaultOpen={noneConfigured || !providers.openai.configured}
+          oauthLabel="ChatGPT"
+          provider={openAIProvider}
+          defaultOpen={
+            noneConfigured ||
+            !openAIProvider.configured ||
+            ((openAIProvider.authMethod ?? "api_key") === "oauth" &&
+              !(openAIProvider.oauthConnected ?? false))
+          }
         >
-          <ApiKeyForm
-            hasKey={providers.openai.hasKey}
-            onSave={handleOpenAISaveKey}
-            onTest={handleOpenAITest}
-            keyPrefix="sk-"
-            placeholder="sk-..."
-            maskedPrefix="sk-••••••"
-            envVarName="OPENAI_API_KEY"
-            testButtonLabel="Test OpenAI Connection"
+          <AuthMethodSelector
+            value={openAIProvider.authMethod ?? "api_key"}
+            onChange={handleOpenAIMethodChange}
+            recommendedMethod={recommendedAuth}
+            label="Codex App Server Authentication"
+            options={[
+              {
+                id: "api_key",
+                icon: Zap,
+                title: "API Key",
+                description: "Use an OpenAI API key for Codex App Server",
+              },
+              {
+                id: "oauth",
+                icon: Crown,
+                title: "ChatGPT",
+                description: "Use your ChatGPT plan with browser sign-in",
+              },
+            ]}
           />
+
+          {(openAIProvider.authMethod ?? "api_key") === "oauth" ? (
+            <OpenAIChatGPTAuthControl
+              connected={openAIProvider.oauthConnected ?? false}
+              account={openAIProvider.account ?? null}
+              rateLimits={openAIProvider.rateLimits ?? null}
+              initialLoginState={
+                openAIProvider.login ?? {
+                  phase: "idle",
+                  loginId: null,
+                  authUrl: null,
+                  account: null,
+                  rateLimits: null,
+                  error: null,
+                  startedAt: null,
+                  updatedAt: new Date().toISOString(),
+                }
+              }
+              onChanged={fetchData}
+              onLoginStateChange={setOpenAILoginState}
+            />
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              API key mode authenticates Codex App Server directly and also powers OpenAI Direct.
+            </p>
+          )}
+
+          <Separator />
+
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm font-medium">OpenAI Direct API Key</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Used by the OpenAI Direct runtime. If Codex App Server is in API key mode, it shares this key.
+              </p>
+            </div>
+            <ApiKeyForm
+              hasKey={providers.openai.hasKey}
+              onSave={handleOpenAISaveKey}
+              onTest={handleOpenAIDirectTest}
+              keyPrefix="sk-"
+              placeholder="sk-..."
+              maskedPrefix="sk-••••••"
+              envVarName="OPENAI_API_KEY"
+              testButtonLabel="Test OpenAI Direct"
+            />
+          </div>
         </ProviderRow>
       </CardContent>
     </Card>

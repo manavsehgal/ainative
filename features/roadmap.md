@@ -105,6 +105,8 @@ Features that enhance the product but aren't essential for first use — homepag
 | [tool-permission-persistence](tool-permission-persistence.md) | P2 | completed | agent-integration, inbox-notifications |
 | [provider-runtime-abstraction](provider-runtime-abstraction.md) | P1 | completed | agent-integration, inbox-notifications, monitoring-dashboard, session-management, tool-permission-persistence |
 | [openai-codex-app-server](openai-codex-app-server.md) | P1 | completed | provider-runtime-abstraction |
+| [codex-chatgpt-authentication](codex-chatgpt-authentication.md) | P1 | completed | openai-codex-app-server, provider-runtime-abstraction |
+| [codex-auth-session-isolation](codex-auth-session-isolation.md) | P1 | completed | codex-chatgpt-authentication |
 | [npm-publish-readiness](npm-publish-readiness.md) | P3 | deferred | cli-bootstrap, database-schema, app-shell |
 | [cross-provider-profile-compatibility](cross-provider-profile-compatibility.md) | P2 | completed | provider-runtime-abstraction, openai-codex-app-server, agent-profile-catalog |
 | [parallel-research-fork-join](parallel-research-fork-join.md) | P2 | completed | workflow-engine, multi-agent-routing |
@@ -148,6 +150,7 @@ Features that enhance the product but aren't essential for first use — homepag
 |---------|----------|--------|--------------|
 | [usage-metering-ledger](usage-metering-ledger.md) | P1 | completed | provider-runtime-abstraction, openai-codex-app-server, monitoring-dashboard |
 | [spend-budget-guardrails](spend-budget-guardrails.md) | P1 | completed | usage-metering-ledger, inbox-notifications, provider-runtime-abstraction |
+| [codex-subscription-governance](codex-subscription-governance.md) | P2 | completed | codex-chatgpt-authentication, spend-budget-guardrails |
 | [cost-and-usage-dashboard](cost-and-usage-dashboard.md) | P2 | completed | usage-metering-ledger, spend-budget-guardrails, micro-visualizations |
 | [workflow-budget-governance](workflow-budget-governance.md) | P1 | completed | spend-budget-guardrails, workflow-engine |
 | [workflow-runtime-configuration](workflow-runtime-configuration.md) | P1 | completed | provider-runtime-abstraction, workflow-engine, smart-runtime-router |
