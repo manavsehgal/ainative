@@ -18,6 +18,8 @@ import {
   parseNotificationToolInput,
   type PermissionToolInput,
 } from "@/lib/notifications/permissions";
+import { ContextProposalReview } from "@/components/profiles/context-proposal-review";
+import { BatchProposalReview } from "./batch-proposal-review";
 
 interface Notification {
   id: string;
@@ -103,6 +105,20 @@ function formatToolInput(
 }
 
 const navigableTypes = new Set(["task_completed", "task_failed", "permission_required", "agent_message"]);
+
+function parseBatchToolInput(toolInput: PermissionToolInput | null): {
+  proposalIds: string[];
+  profileIds: string[];
+} {
+  return {
+    proposalIds: Array.isArray(toolInput?.proposalIds)
+      ? toolInput.proposalIds.filter((id): id is string => typeof id === "string")
+      : [],
+    profileIds: Array.isArray(toolInput?.profileIds)
+      ? toolInput.profileIds.filter((id): id is string => typeof id === "string")
+      : [],
+  };
+}
 
 export function NotificationItem({ notification, onUpdated }: NotificationItemProps) {
   const router = useRouter();
@@ -212,7 +228,9 @@ export function NotificationItem({ notification, onUpdated }: NotificationItemPr
           {/* Body for non-tool notifications */}
           {notification.body &&
             notification.type !== "permission_required" &&
-            notification.type !== "agent_message" && (
+            notification.type !== "agent_message" &&
+            notification.type !== "context_proposal" &&
+            notification.type !== "context_proposal_batch" && (
               <div className="mt-1" onClick={(e) => e.stopPropagation()}>
                 <div
                   className={`${PROSE_NOTIFICATION} ${
@@ -268,6 +286,36 @@ export function NotificationItem({ notification, onUpdated }: NotificationItemPr
 
           {notification.type === "task_failed" && notification.taskId && (
             <FailureAction taskId={notification.taskId} onRetried={onUpdated} />
+          )}
+
+          {notification.type === "context_proposal" && (
+            <div className="mt-3" onClick={(e) => e.stopPropagation()}>
+              <ContextProposalReview
+                notificationId={notification.id}
+                profileId={
+                  typeof parsedToolInput?.profileId === "string"
+                    ? parsedToolInput.profileId
+                    : (notification.toolName ?? "")
+                }
+                proposedAdditions={
+                  typeof parsedToolInput?.additions === "string"
+                    ? parsedToolInput.additions
+                    : (notification.body ?? "")
+                }
+                onResponded={onUpdated}
+              />
+            </div>
+          )}
+
+          {notification.type === "context_proposal_batch" && (
+            <div className="mt-3" onClick={(e) => e.stopPropagation()}>
+              <BatchProposalReview
+                proposalIds={parseBatchToolInput(parsedToolInput).proposalIds}
+                profileIds={parseBatchToolInput(parsedToolInput).profileIds}
+                body={notification.body ?? ""}
+                onResponded={onUpdated}
+              />
+            </div>
           )}
 
           <p className="text-xs text-muted-foreground mt-2">

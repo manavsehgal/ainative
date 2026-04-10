@@ -531,10 +531,11 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
       usageState
     );
 
-    // Fire-and-forget pattern extraction for self-improvement
-    analyzeForLearnedPatterns(taskId, agentProfileId).catch((err) => {
+    try {
+      await analyzeForLearnedPatterns(taskId, agentProfileId);
+    } catch (err) {
       console.error("[self-improvement] pattern extraction failed:", err);
-    });
+    }
   } catch (error: unknown) {
     await handleExecutionError(
       taskId,
@@ -650,10 +651,11 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
       usageState
     );
 
-    // Fire-and-forget pattern extraction for self-improvement
-    analyzeForLearnedPatterns(taskId, profileId).catch((err) => {
+    try {
+      await analyzeForLearnedPatterns(taskId, profileId);
+    } catch (err) {
       console.error("[self-improvement] pattern extraction failed:", err);
-    });
+    }
   } catch (error: unknown) {
     const errorMessage =
       error instanceof Error ? error.message : String(error);

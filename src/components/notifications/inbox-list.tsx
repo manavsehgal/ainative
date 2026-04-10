@@ -7,6 +7,7 @@ import { Eye, Inbox, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { NotificationItem } from "./notification-item";
 import { EmptyState } from "@/components/shared/empty-state";
+import { filterDefaultVisibleNotifications } from "@/lib/notifications/visibility";
 
 interface Notification {
   id: string;
@@ -28,12 +29,15 @@ export function InboxList({
   initialNotifications: Notification[];
 }) {
   const [notifications, setNotifications] =
-    useState<Notification[]>(initialNotifications);
+    useState<Notification[]>(() => filterDefaultVisibleNotifications(initialNotifications));
   const [tab, setTab] = useState("all");
 
   const refresh = useCallback(async () => {
     const res = await fetch("/api/notifications");
-    if (res.ok) setNotifications(await res.json());
+    if (res.ok) {
+      const next = (await res.json()) as Notification[];
+      setNotifications(filterDefaultVisibleNotifications(next));
+    }
   }, []);
 
   // Poll every 10 seconds (consolidated from 3s inbox + 5s badge)

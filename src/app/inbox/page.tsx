@@ -4,6 +4,10 @@ import { desc, eq, and, gte } from "drizzle-orm";
 import { InboxList } from "@/components/notifications/inbox-list";
 import { GovernanceStats } from "@/components/notifications/governance-stats";
 import { PageShell } from "@/components/shared/page-shell";
+import {
+  buildDefaultNotificationVisibilityCondition,
+  filterDefaultVisibleNotifications,
+} from "@/lib/notifications/visibility";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +20,7 @@ export default async function InboxPage() {
       db
         .select()
         .from(notifications)
+        .where(buildDefaultNotificationVisibilityCondition())
         .orderBy(desc(notifications.createdAt))
         .limit(100),
       db
@@ -53,11 +58,13 @@ export default async function InboxPage() {
     ]);
 
   // Serialize Date objects for client component consumption
-  const initialNotifications = rows.map((n) => ({
-    ...n,
-    createdAt: n.createdAt.toISOString(),
-    respondedAt: n.respondedAt?.toISOString() ?? null,
-  }));
+  const initialNotifications = filterDefaultVisibleNotifications(
+    rows.map((n) => ({
+      ...n,
+      createdAt: n.createdAt.toISOString(),
+      respondedAt: n.respondedAt?.toISOString() ?? null,
+    }))
+  );
 
   return (
     <PageShell

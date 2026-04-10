@@ -73,10 +73,16 @@ const {
   mockRunMetaCompletion,
   mockGetActiveLearnedContext,
   mockProposeContextAddition,
+  mockGetTaskWorkflowId,
+  mockHasLearningSession,
+  mockBufferProposal,
 } = vi.hoisted(() => ({
   mockRunMetaCompletion: vi.fn(),
   mockGetActiveLearnedContext: vi.fn().mockReturnValue(null),
   mockProposeContextAddition: vi.fn().mockResolvedValue("notif-123"),
+  mockGetTaskWorkflowId: vi.fn().mockReturnValue(null),
+  mockHasLearningSession: vi.fn().mockReturnValue(false),
+  mockBufferProposal: vi.fn(),
 }));
 
 vi.mock("../runtime/claude", () => ({
@@ -86,6 +92,11 @@ vi.mock("../runtime/claude", () => ({
 vi.mock("../learned-context", () => ({
   getActiveLearnedContext: mockGetActiveLearnedContext,
   proposeContextAddition: mockProposeContextAddition,
+}));
+vi.mock("../learning-session", () => ({
+  getTaskWorkflowId: mockGetTaskWorkflowId,
+  hasLearningSession: mockHasLearningSession,
+  bufferProposal: mockBufferProposal,
 }));
 
 import { analyzeForLearnedPatterns } from "../pattern-extractor";
@@ -103,6 +114,9 @@ beforeEach(() => {
   mockValues.mockResolvedValue(undefined);
   mockGetActiveLearnedContext.mockReturnValue(null);
   mockProposeContextAddition.mockResolvedValue("notif-123");
+  mockGetTaskWorkflowId.mockReturnValue(null);
+  mockHasLearningSession.mockReturnValue(false);
+  mockBufferProposal.mockReset();
 });
 
 // ═════════════════════════════════════════════════════════════════════
@@ -239,5 +253,39 @@ describe("analyzeForLearnedPatterns", () => {
     expect(additions).toContain("### Pattern B [shortcut]");
     expect(additions).toContain("Description A");
     expect(additions).toContain("Description B");
+  });
+
+  it("buffers workflow proposals into the active learning session", async () => {
+    mockWhere.mockResolvedValueOnce([
+      { title: "Task", description: "Desc", result: "Done" },
+    ]);
+    mockLimit.mockResolvedValueOnce([]);
+    mockRunMetaCompletion.mockResolvedValue({
+      text: JSON.stringify([
+        {
+          title: "Pattern A",
+          description: "Description A",
+          category: "best_practice",
+        },
+      ]),
+      usage: {},
+    });
+    mockGetTaskWorkflowId.mockReturnValue("workflow-1");
+    mockHasLearningSession.mockReturnValue(true);
+    mockProposeContextAddition.mockResolvedValue("proposal-row-1");
+
+    const result = await analyzeForLearnedPatterns("task-1", "general");
+
+    expect(result).toBe("proposal-row-1");
+    expect(mockProposeContextAddition).toHaveBeenCalledWith(
+      "general",
+      "task-1",
+      expect.stringContaining("Pattern A"),
+      { silent: true }
+    );
+    expect(mockBufferProposal).toHaveBeenCalledWith(
+      "workflow-1",
+      "proposal-row-1"
+    );
   });
 });

@@ -337,6 +337,51 @@ describe("executeClaudeTask", () => {
     expect(callOptions.maxTurns).toBeDefined();
     expect(callOptions.maxBudgetUsd).toBeDefined();
   });
+
+  it("A8: waits for learned-pattern extraction before final cleanup", async () => {
+    let resolveAnalysis: (() => void) | null = null;
+    mockWhere.mockResolvedValueOnce([makeTask()]);
+    mockQuery.mockReturnValue(
+      createMockStream([{ type: "result", result: "done" }]) as unknown as ReturnType<typeof query>
+    );
+    mockAnalyzeForLearnedPatterns.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveAnalysis = () => resolve(null);
+      })
+    );
+
+    const runPromise = executeClaudeTask("task-1");
+    await vi.waitFor(() => {
+      expect(mockAnalyzeForLearnedPatterns).toHaveBeenCalledWith("task-1", "general");
+    });
+
+    expect(mockRemoveExecution).not.toHaveBeenCalled();
+
+    resolveAnalysis?.();
+    await runPromise;
+
+    expect(mockRemoveExecution).toHaveBeenCalledWith("task-1");
+  });
+
+  it("A9: logs learned-pattern extraction failures without failing the task", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockWhere.mockResolvedValueOnce([makeTask()]);
+    mockQuery.mockReturnValue(
+      createMockStream([{ type: "result", result: "done" }]) as unknown as ReturnType<typeof query>
+    );
+    mockAnalyzeForLearnedPatterns.mockRejectedValueOnce(new Error("extract failed"));
+
+    await executeClaudeTask("task-1");
+
+    expect(mockSet).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "completed", result: "done" })
+    );
+    expect(errorSpy).toHaveBeenCalledWith(
+      "[self-improvement] pattern extraction failed:",
+      expect.any(Error)
+    );
+    errorSpy.mockRestore();
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -526,6 +571,33 @@ describe("resumeClaudeTask", () => {
     expect(mockValues).toHaveBeenCalledWith(
       expect.objectContaining({ event: "error" })
     );
+  });
+
+  it("C5: waits for learned-pattern extraction before final cleanup on resume", async () => {
+    let resolveAnalysis: (() => void) | null = null;
+    mockWhere.mockResolvedValueOnce([
+      makeTask({ sessionId: "sess-123", resumeCount: 0 }),
+    ]);
+    mockQuery.mockReturnValue(
+      createMockStream([{ type: "result", result: "resumed ok" }]) as unknown as ReturnType<typeof query>
+    );
+    mockAnalyzeForLearnedPatterns.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveAnalysis = () => resolve(null);
+      })
+    );
+
+    const runPromise = resumeClaudeTask("task-1");
+    await vi.waitFor(() => {
+      expect(mockAnalyzeForLearnedPatterns).toHaveBeenCalledWith("task-1", "general");
+    });
+
+    expect(mockRemoveExecution).not.toHaveBeenCalled();
+
+    resolveAnalysis?.();
+    await runPromise;
+
+    expect(mockRemoveExecution).toHaveBeenCalledWith("task-1");
   });
 });
 

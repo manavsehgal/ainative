@@ -31,6 +31,14 @@ Codex App Server inside Stagent no longer requires an API key. OpenAI provider s
 - `npx vitest run src/lib/settings/__tests__/openai-auth.test.ts src/lib/settings/__tests__/runtime-setup.test.ts src/lib/validators/__tests__/settings.test.ts` → 20 passing tests
 - `npx vitest run src/components/settings/__tests__/auth-config-section.test.tsx src/lib/settings/__tests__/budget-guardrails.test.ts` → 7 passing tests
 
+### Groomed — workflow-learning-approval-reliability
+
+Converted `handoff/table-enrich-context-approval-noise.md` into a bounded shared follow-up feature instead of reopening completed table-enrichment or Inbox specs.
+
+- **`workflow-learning-approval-reliability`** — plans a shared runtime and Inbox reliability slice so workflow child-task learned-context extraction stays inside the learning-session lifecycle, row-heavy enrichment runs collapse to one workflow-level learning batch instead of many standalone approvals, and responded `context_proposal` / `context_proposal_batch` notifications disappear from the active Inbox queue without deleting historical rows.
+
+This was filed as a base-product follow-up because the regression lives in shared workflow-learning and notification behavior. The newly shipped table enrichment planner surfaces it clearly, but it is not the ownership boundary for the fix.
+
 ## 2026-04-09
 
 ### Completed — chat-stream-resilience-telemetry

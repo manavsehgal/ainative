@@ -60,6 +60,7 @@ Features that enhance the product but aren't essential for first use — homepag
 | [ai-assist-workflow-creation](ai-assist-workflow-creation.md) | P1 | completed | task-definition-ai, workflow-engine, agent-profile-catalog |
 | [agent-self-improvement](agent-self-improvement.md) | P3 | completed | workflow-engine, multi-agent-routing, autonomous-loop-execution |
 | [workflow-context-batching](workflow-context-batching.md) | P2 | completed | agent-self-improvement, workflow-engine |
+| [workflow-learning-approval-reliability](workflow-learning-approval-reliability.md) | P1 | planned | workflow-context-batching, inbox-notifications, learned-context-ux-completion |
 
 ### Agent Profiles
 
