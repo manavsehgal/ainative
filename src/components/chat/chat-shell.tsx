@@ -1,20 +1,17 @@
 "use client";
 
 import { useState, useCallback, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
-import type { ConversationRow, ChatMessageRow } from "@/lib/db/schema";
+import type { ConversationRow } from "@/lib/db/schema";
 import type { PromptCategory } from "@/lib/chat/types";
-import { DEFAULT_CHAT_MODEL, CHAT_MODELS, getRuntimeForModel, type ChatModelOption } from "@/lib/chat/types";
-import { usePersistedState } from "@/hooks/use-persisted-state";
+import { useChatSession } from "./chat-session-provider";
 import { ConversationList } from "./conversation-list";
 import { ChatMessageList } from "./chat-message-list";
 import { ChatInput } from "./chat-input";
-import type { MentionReference } from "@/hooks/use-chat-autocomplete";
 import { ChatEmptyState } from "./chat-empty-state";
 import { ChatActivityIndicator } from "./chat-activity-indicator";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { MessageCircle, PanelRightOpen } from "lucide-react";
+import { PanelRightOpen } from "lucide-react";
 
 interface ChatShellProps {
   initialConversations: ConversationRow[];
@@ -22,60 +19,60 @@ interface ChatShellProps {
   initialActiveId?: string | null;
 }
 
+/**
+ * Thin view component for the /chat route. All chat-domain state lives in
+ * `ChatSessionProvider` (rendered from `src/app/layout.tsx`), so unmounting
+ * this component — e.g., when the user navigates to another sidebar view —
+ * does not touch the in-flight SSE reader loop or clear any messages. On
+ * remount, we read the provider's current state and render it directly.
+ *
+ * See `features/chat-session-persistence-provider.md`.
+ */
 export function ChatShell({
   initialConversations,
   promptCategories,
   initialActiveId,
 }: ChatShellProps) {
-  const router = useRouter();
-  const [conversations, setConversations] =
-    useState<ConversationRow[]>(initialConversations);
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<ChatMessageRow[]>([]);
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [abortController, setAbortController] =
-    useState<AbortController | null>(null);
+  const session = useChatSession();
+  const {
+    conversations,
+    activeId,
+    messages,
+    isStreaming,
+    modelId,
+    availableModels,
+    hydrated,
+    hydrate,
+    setActiveConversation,
+    sendMessage,
+    stopStreaming,
+    createConversation,
+    deleteConversation,
+    renameConversation,
+    setMessageStatus,
+    setModelId,
+  } = session;
+
+  // View-local state only
   const [mobileListOpen, setMobileListOpen] = useState(false);
   const [hoverPreview, setHoverPreview] = useState<string | null>(null);
-  const [modelId, setModelId] = useState(DEFAULT_CHAT_MODEL);
-  const [availableModels, setAvailableModels] = useState<ChatModelOption[]>(CHAT_MODELS);
 
-  // Persistence via localStorage fallback
-  const [persistedActiveId, setPersistedActiveId] = usePersistedState<string>("stagent-active-chat", "");
-
-  const activeConversation = conversations.find((c) => c.id === activeId);
-
-  // Restore active conversation on mount
-  // Read localStorage synchronously to avoid race with usePersistedState's async useEffect
+  // Hydrate provider once with the server-rendered conversation list.
+  // Subsequent remounts are no-ops — the provider preserves its state.
   useEffect(() => {
-    let restoredId = initialActiveId || null;
-    if (!restoredId) {
-      try {
-        restoredId = localStorage.getItem("stagent-active-chat") || null;
-      } catch { /* localStorage unavailable */ }
-    }
-    if (restoredId && conversations.some((c) => c.id === restoredId)) {
-      setActiveId(restoredId);
-      setPersistedActiveId(restoredId);
-      // Fetch messages for restored conversation
-      fetch(`/api/chat/conversations/${restoredId}/messages`)
-        .then((r) => r.ok ? r.json() : [])
-        .then((msgs) => setMessages(msgs))
-        .catch(() => setMessages([]));
-    }
+    hydrate({
+      conversations: initialConversations,
+      initialActiveId: initialActiveId ?? null,
+    });
+    // Intentionally run only on mount: initialConversations is the
+    // server-rendered snapshot for this specific page visit.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Sync activeId to URL and localStorage
-  const updateActiveId = useCallback((id: string | null) => {
-    setActiveId(id);
-    setPersistedActiveId(id ?? "");
-    if (id) {
-      router.replace(`/chat?c=${id}`, { scroll: false });
-    } else {
-      router.replace("/chat", { scroll: false });
-    }
-  }, [router, setPersistedActiveId]);
+  const activeConversation = useMemo(
+    () => conversations.find((c) => c.id === activeId),
+    [conversations, activeId]
+  );
 
   // Extract spawned task IDs from messages (execute_task tool results)
   const spawnedTaskIds = useMemo(() => {
@@ -83,9 +80,14 @@ export function ChatShell({
     for (const msg of messages) {
       if (msg.metadata) {
         try {
-          const meta = typeof msg.metadata === "string" ? JSON.parse(msg.metadata) : msg.metadata;
-          // Check for execute_task tool result in metadata
-          if (meta.type === "permission_request" && meta.toolName === "mcp__stagent__execute_task") {
+          const meta =
+            typeof msg.metadata === "string"
+              ? JSON.parse(msg.metadata)
+              : msg.metadata;
+          if (
+            meta.type === "permission_request" &&
+            meta.toolName === "mcp__stagent__execute_task"
+          ) {
             const input = meta.toolInput;
             if (input?.taskId) taskIds.push(input.taskId);
           }
@@ -93,408 +95,63 @@ export function ChatShell({
           // Ignore parse errors
         }
       }
-      // Also scan assistant message content for task execution confirmations
       if (msg.role === "assistant" && msg.content) {
-        const taskIdMatch = msg.content.match(/Execution started.*?taskId["\s:]+([a-f0-9-]{36})/i);
+        const taskIdMatch = msg.content.match(
+          /Execution started.*?taskId["\s:]+([a-f0-9-]{36})/i
+        );
         if (taskIdMatch) taskIds.push(taskIdMatch[1]);
       }
     }
     return [...new Set(taskIds)];
   }, [messages]);
 
-  // Fetch default model and available models on mount
-  useEffect(() => {
-    fetch("/api/settings/chat")
-      .then((r) => r.ok ? r.json() : null)
-      .then((data) => {
-        if (data?.defaultModel) setModelId(data.defaultModel);
-      })
-      .catch(() => {});
-
-    fetch("/api/chat/models")
-      .then((r) => r.ok ? r.json() : null)
-      .then((models) => {
-        if (models?.length) setAvailableModels(models);
-      })
-      .catch(() => {});
-  }, []);
-
-  // ── Conversation Management ──────────────────────────────────────────
-
+  // ── Action wrappers ──────────────────────────────────────────────────
   const handleNewChat = useCallback(async () => {
-    try {
-      const res = await fetch("/api/chat/conversations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ runtimeId: getRuntimeForModel(modelId), modelId }),
-      });
-      if (!res.ok) return;
-      const conversation = await res.json();
-      setConversations((prev) => [conversation, ...prev]);
-      updateActiveId(conversation.id);
-      setMessages([]);
-      setMobileListOpen(false);
-    } catch {
-      // Handle error silently
-    }
-  }, [modelId, updateActiveId]);
-
-  const handleSelectConversation = useCallback(async (id: string) => {
-    updateActiveId(id);
+    await createConversation();
     setMobileListOpen(false);
-    try {
-      const [msgRes, convRes] = await Promise.all([
-        fetch(`/api/chat/conversations/${id}/messages`),
-        fetch(`/api/chat/conversations/${id}`),
-      ]);
-      if (msgRes.ok) {
-        const msgs = await msgRes.json();
-        // Clean up stale "streaming" messages from interrupted sessions
-        setMessages(
-          msgs.map((m: ChatMessageRow) =>
-            m.status === "streaming" ? { ...m, status: "complete" as const } : m
-          )
-        );
-      }
-      if (convRes.ok) {
-        const conv = await convRes.json();
-        if (conv.modelId) setModelId(conv.modelId);
-      }
-    } catch {
-      setMessages([]);
-    }
-  }, [updateActiveId]);
+  }, [createConversation]);
+
+  const handleSelectConversation = useCallback(
+    (id: string) => {
+      setActiveConversation(id);
+      setMobileListOpen(false);
+    },
+    [setActiveConversation]
+  );
 
   const handleDeleteConversation = useCallback(
-    async (id: string) => {
-      try {
-        await fetch(`/api/chat/conversations/${id}`, {
-          method: "DELETE",
-        });
-        setConversations((prev) => prev.filter((c) => c.id !== id));
-        if (activeId === id) {
-          updateActiveId(null);
-          setMessages([]);
-        }
-      } catch {
-        // Handle error silently
-      }
-    },
-    [activeId, updateActiveId]
+    (id: string) => deleteConversation(id),
+    [deleteConversation]
   );
 
   const handleRenameConversation = useCallback(
-    async (id: string, title: string) => {
-      try {
-        const res = await fetch(`/api/chat/conversations/${id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title }),
-        });
-        if (res.ok) {
-          const updated = await res.json();
-          setConversations((prev) =>
-            prev.map((c) => (c.id === id ? updated : c))
-          );
-        }
-      } catch {
-        // Handle error silently
-      }
-    },
-    []
+    (id: string, title: string) => renameConversation(id, title),
+    [renameConversation]
   );
-
-  // ── Message Sending ──────────────────────────────────────────────────
-
-  const handleSend = useCallback(
-    async (content: string, mentions?: MentionReference[]) => {
-      let conversationId = activeId;
-
-      // Create conversation on first message if none active
-      if (!conversationId) {
-        try {
-          const res = await fetch("/api/chat/conversations", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ runtimeId: getRuntimeForModel(modelId), modelId }),
-          });
-          if (!res.ok) return;
-          const conversation = await res.json();
-          setConversations((prev) => [conversation, ...prev]);
-          updateActiveId(conversation.id);
-          conversationId = conversation.id;
-        } catch {
-          return;
-        }
-      }
-
-      // Add optimistic user message
-      const userMsg: ChatMessageRow = {
-        id: crypto.randomUUID(),
-        conversationId: conversationId!,
-        role: "user",
-        content,
-        metadata: null,
-        status: "complete",
-        createdAt: new Date(),
-      };
-      setMessages((prev) => [...prev, userMsg]);
-
-      // Add placeholder assistant message
-      const assistantMsgId = crypto.randomUUID();
-      const assistantMsg: ChatMessageRow = {
-        id: assistantMsgId,
-        conversationId: conversationId!,
-        role: "assistant",
-        content: "",
-        metadata: null,
-        status: "streaming",
-        createdAt: new Date(),
-      };
-      setMessages((prev) => [...prev, assistantMsg]);
-
-      setIsStreaming(true);
-      const controller = new AbortController();
-      setAbortController(controller);
-      // Client-side stream telemetry — logged via console.info with a
-      // stable `[chat-stream]` prefix so maintainers can filter DevTools
-      // and see how their reader loop actually terminated. Complements
-      // the five server-side reason codes recorded in
-      // src/lib/chat/stream-telemetry.ts. Three client codes:
-      //   client.stream.done        — reader.read() returned done: true
-      //   client.stream.user-abort  — AbortController fired (Stop button)
-      //   client.stream.reader-error — read() or decode threw
-      const streamStartedAt = Date.now();
-
-      try {
-        const res = await fetch(
-          `/api/chat/conversations/${conversationId}/messages`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ content, mentions }),
-            signal: controller.signal,
-          }
-        );
-
-        if (!res.ok || !res.body) {
-          throw new Error("Failed to send message");
-        }
-
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) {
-            console.info("[chat-stream] client.stream.done", {
-              conversationId,
-              messageId: assistantMsgId,
-              durationMs: Date.now() - streamStartedAt,
-            });
-            break;
-          }
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop() ?? "";
-
-          for (const line of lines) {
-            if (!line.startsWith("data: ")) continue;
-            const json = line.slice(6);
-            try {
-              const event = JSON.parse(json);
-              if (event.type === "status") {
-                setMessages((prev) =>
-                  prev.map((m) =>
-                    m.id === assistantMsgId
-                      ? { ...m, metadata: JSON.stringify({ statusPhase: event.phase, statusMessage: event.message }) }
-                      : m
-                  )
-                );
-              } else if (event.type === "delta") {
-                setMessages((prev) =>
-                  prev.map((m) =>
-                    m.id === assistantMsgId
-                      ? { ...m, content: m.content + event.content }
-                      : m
-                  )
-                );
-              } else if (event.type === "done") {
-                setMessages((prev) =>
-                  prev.map((m) =>
-                    m.id === assistantMsgId
-                      ? {
-                          ...m,
-                          id: event.messageId,
-                          status: "complete",
-                          metadata: (() => {
-                            const existing = m.metadata
-                              ? (() => { try { return JSON.parse(m.metadata!); } catch { return {}; } })()
-                              : {};
-                            if (event.quickAccess?.length) {
-                              existing.quickAccess = event.quickAccess;
-                            }
-                            return JSON.stringify(existing);
-                          })(),
-                        }
-                      : m
-                  )
-                );
-                // Refresh conversation from API to get auto-generated title
-                fetch(`/api/chat/conversations/${conversationId}`)
-                  .then((r) => r.ok ? r.json() : null)
-                  .then((conv) => {
-                    if (conv) {
-                      setConversations((prev) =>
-                        prev.map((c) =>
-                          c.id === conversationId
-                            ? { ...c, title: conv.title, updatedAt: new Date() }
-                            : c
-                        )
-                      );
-                    }
-                  })
-                  .catch(() => {});
-              } else if (event.type === "permission_request" || event.type === "question") {
-                // Insert system message for inline permission/question UI
-                const systemMsg = {
-                  id: event.messageId,
-                  conversationId: conversationId!,
-                  role: "system" as const,
-                  content: event.type === "permission_request"
-                    ? `Permission required: ${event.toolName}`
-                    : "Agent has a question",
-                  metadata: JSON.stringify(event.type === "permission_request"
-                    ? { type: "permission_request", requestId: event.requestId, toolName: event.toolName, toolInput: event.toolInput }
-                    : { type: "question", requestId: event.requestId, questions: event.questions }
-                  ),
-                  status: "pending" as const,
-                  createdAt: new Date(),
-                };
-                setMessages((prev) => [...prev, systemMsg]);
-              } else if (event.type === "screenshot") {
-                // Append screenshot attachment to assistant message metadata
-                setMessages((prev) =>
-                  prev.map((m) => {
-                    if (m.id !== assistantMsgId) return m;
-                    const meta = m.metadata ? (() => { try { return JSON.parse(m.metadata!); } catch { return {}; } })() : {};
-                    const attachments = Array.isArray(meta.attachments) ? meta.attachments : [];
-                    attachments.push({
-                      documentId: event.documentId,
-                      thumbnailUrl: event.thumbnailUrl,
-                      originalUrl: event.originalUrl,
-                      width: event.width,
-                      height: event.height,
-                    });
-                    return { ...m, metadata: JSON.stringify({ ...meta, attachments }) };
-                  })
-                );
-              } else if (event.type === "error") {
-                setMessages((prev) =>
-                  prev.map((m) =>
-                    m.id === assistantMsgId
-                      ? {
-                          ...m,
-                          content: m.content || event.message,
-                          status: "error",
-                        }
-                      : m
-                  )
-                );
-              }
-            } catch {
-              // Ignore malformed SSE data
-            }
-          }
-        }
-      } catch (error) {
-        const isAbort = (error as Error).name === "AbortError";
-        if (isAbort) {
-          console.info("[chat-stream] client.stream.user-abort", {
-            conversationId,
-            messageId: assistantMsgId,
-            durationMs: Date.now() - streamStartedAt,
-          });
-        } else {
-          console.info("[chat-stream] client.stream.reader-error", {
-            conversationId,
-            messageId: assistantMsgId,
-            durationMs: Date.now() - streamStartedAt,
-            error: (error as Error).message,
-          });
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantMsgId
-                ? {
-                    ...m,
-                    content:
-                      m.content || "Failed to get response. Please try again.",
-                    status: "error",
-                  }
-                : m
-            )
-          );
-        }
-      } finally {
-        setIsStreaming(false);
-        setAbortController(null);
-      }
-    },
-    [activeId, modelId, updateActiveId]
-  );
-
-  const handleStop = useCallback(() => {
-    abortController?.abort();
-  }, [abortController]);
 
   const handleSuggestionClick = useCallback(
     (prompt: string) => {
-      handleSend(prompt);
+      void sendMessage(prompt);
     },
-    [handleSend]
+    [sendMessage]
   );
 
   const handleMessageStatusChange = useCallback(
     (messageId: string, status: string) => {
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === messageId
-            ? { ...m, status: status as "pending" | "streaming" | "complete" | "error" }
-            : m
-        )
+      setMessageStatus(
+        messageId,
+        status as "pending" | "streaming" | "complete" | "error"
       );
     },
-    []
+    [setMessageStatus]
   );
 
-  const handleModelChange = useCallback(
-    async (newModelId: string) => {
-      setModelId(newModelId);
-      // If there's an active conversation, update both modelId and runtimeId
-      if (activeId) {
-        const newRuntimeId = getRuntimeForModel(newModelId);
-        await fetch(`/api/chat/conversations/${activeId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ modelId: newModelId, runtimeId: newRuntimeId }),
-        }).catch(() => {});
-        // Update local state so conversation list reflects the change
-        setConversations((prev) =>
-          prev.map((c) =>
-            c.id === activeId
-              ? { ...c, modelId: newModelId, runtimeId: newRuntimeId }
-              : c
-          )
-        );
-      }
-    },
-    [activeId]
-  );
+  // Suppress unused warnings from props we still accept but no longer own.
+  // `hydrated` tells us whether the provider has data — we can use it to
+  // skip the empty-state flash on a remount that finds existing state.
+  void hydrated;
 
   // ── Render ───────────────────────────────────────────────────────────
-
   const conversationListContent = (
     <ConversationList
       conversations={conversations}
@@ -536,13 +193,13 @@ export function ChatShell({
               onHoverPreview={setHoverPreview}
             >
               <ChatInput
-                onSend={handleSend}
-                onStop={handleStop}
+                onSend={sendMessage}
+                onStop={stopStreaming}
                 isStreaming={isStreaming}
                 isHeroMode
                 previewText={hoverPreview}
                 modelId={modelId}
-                onModelChange={handleModelChange}
+                onModelChange={setModelId}
                 availableModels={availableModels}
                 projectId={activeConversation?.projectId}
               />
@@ -552,7 +209,12 @@ export function ChatShell({
           <>
             {/* Messages */}
             <div className="flex-1 overflow-hidden">
-              <ChatMessageList messages={messages} isStreaming={isStreaming} conversationId={activeId ?? undefined} onMessageStatusChange={handleMessageStatusChange} />
+              <ChatMessageList
+                messages={messages}
+                isStreaming={isStreaming}
+                conversationId={activeId ?? undefined}
+                onMessageStatusChange={handleMessageStatusChange}
+              />
             </div>
 
             {/* Background activity indicator */}
@@ -562,12 +224,12 @@ export function ChatShell({
 
             {/* Docked input */}
             <ChatInput
-              onSend={handleSend}
-              onStop={handleStop}
+              onSend={sendMessage}
+              onStop={stopStreaming}
               isStreaming={isStreaming}
               isHeroMode={false}
               modelId={modelId}
-              onModelChange={handleModelChange}
+              onModelChange={setModelId}
               availableModels={availableModels}
               projectId={activeConversation?.projectId}
             />

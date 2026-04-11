@@ -29,6 +29,14 @@
  *   - client.stream.user-abort  — user clicked Stop / AbortController fired
  *   - client.stream.reader-error — reader.read() or decode threw
  *
+ * As of the `chat-session-persistence-provider` feature, the SSE reader
+ * loop runs inside `ChatSessionProvider` (rendered from the root layout),
+ * not inside the route-scoped `ChatShell`. Sidebar navigation no longer
+ * tears down the reader loop, so "client.stream.user-abort" should only
+ * fire when the user explicitly clicks Stop. If it starts firing on plain
+ * view switches again, something has regressed the provider hoisting.
+ * HMR in dev can still reset the provider module — that is expected.
+ *
  * Read via the dev-only `GET /api/diagnostics/chat-streams` endpoint.
  * The buffer is process-local — a server restart clears it, which is fine
  * for dev diagnostics and avoids adding a persistence layer that would

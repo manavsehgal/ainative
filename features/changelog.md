@@ -2,6 +2,17 @@
 
 ## 2026-04-10
 
+### Groomed — platform hardening batch from 2026-04-09/10 release audit
+
+Audited the 2026-04-09 and 2026-04-10 releases through a product-manager, code-review, architect, and frontend-designer lens and groomed four follow-up features into `features/` + Platform Hardening roadmap. The primary driver was a user-reported regression where switching sidebar views mid-stream causes chat conversations to lose turn history and errors to replace prior responses — reproducible across both Claude and GPT runtimes.
+
+- **`chat-session-persistence-provider`** (P0) — root-cause fix for the chat session regression. Hoists chat state from `ChatShell` into a layout-level `ChatSessionProvider` so streaming survives sidebar navigation, and removes the two `setMessages([])` catch-all branches that wipe visible turn history on any fetch hiccup. Source: `handoff/bug-chat-session-view-switch-regression.md`. Follow-up to the `chat-stream-resilience-telemetry` escalation trigger — the telemetry commits (89316c4, a131402) measured this scenario and the user's report is now the evidence for the follow-up.
+- **`marketplace-install-hardening`** (P1) — guards the unguarded `JSON.parse` in `hydrateInstance`, adds a UNIQUE index on `app_instances(app_id)` to close a check-then-insert race, and introduces an end-to-end install→provision→uninstall fixture test so the new marketplace foundation shipped in commit 56e2839 is no longer scaffolding-with-code-islands.
+- **`enrichment-planner-test-hardening`** (P2) — reorders validation-before-cast in `buildEnrichmentPlan`, adds route tests for `POST /api/tables/[id]/enrich/plan`, and raises the `enrichment-planner.ts` test-to-code ratio from ~27% to 50%+ by covering `buildReasoning`, `selectStrategy` edge cases, all six normalized data types, and null-input paths.
+- **`chat-dedup-variant-tolerance`** (P3) — adds regression tests for legitimate-variant workflow creation (e.g., "Enrich contacts" vs "Enrich accounts") and, if the tests expose false positives at the current 0.7 Jaccard threshold, introduces a weighted similarity scheme that downweights shared verbs in workflow names.
+
+All four are filed under `features/` and linked from roadmap.md → Platform Hardening. Audit observations not turned into specs (theme.ts unit test gap, Sheet padding audit on new marketplace + enrichment sheets, polling escape hatch in use-workflow-status) are captured inline in the corresponding spec's References section rather than shipped as separate specs.
+
 ### Completed — table enrichment planner v2
 
 Shipped the planner-backed follow-on to `bulk-row-enrichment` as three completed features:

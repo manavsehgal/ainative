@@ -8,6 +8,7 @@ import { CommandPalette } from "@/components/shared/command-palette";
 import { PendingApprovalHost } from "@/components/notifications/pending-approval-host";
 import { GlobalShortcuts } from "@/components/shared/global-shortcuts";
 import { Toaster } from "@/components/ui/sonner";
+import { ChatSessionProvider } from "@/components/chat/chat-session-provider";
 import {
   DEFAULT_THEME,
   THEME_COOKIE,
@@ -97,18 +98,20 @@ export default async function RootLayout({
           Skip to main content
         </a>
         <TooltipProvider>
-          <SidebarProvider>
-            <AppSidebar />
-            <SidebarInset className="min-w-0">
-              <main id="main-content">
-                {children}
-              </main>
-            </SidebarInset>
-          </SidebarProvider>
-          <PendingApprovalHost />
-          <CommandPalette />
-          <GlobalShortcuts />
-          <Toaster />
+          <ChatSessionProvider>
+            <SidebarProvider>
+              <AppSidebar />
+              <SidebarInset className="min-w-0">
+                <main id="main-content">
+                  {children}
+                </main>
+              </SidebarInset>
+            </SidebarProvider>
+            <PendingApprovalHost />
+            <CommandPalette />
+            <GlobalShortcuts />
+            <Toaster />
+          </ChatSessionProvider>
         </TooltipProvider>
       </body>
     </html>

@@ -320,6 +320,10 @@ Durable fixes that replace symptom-level hotfixes with architectural contracts. 
 | [workflow-status-view-pattern-router](workflow-status-view-pattern-router.md) | P2 | completed | workflow-engine, autonomous-loop-execution, bulk-row-enrichment |
 | [workflow-create-dedup](workflow-create-dedup.md) | P1 | completed | chat-engine, workflow-engine |
 | [chat-stream-resilience-telemetry](chat-stream-resilience-telemetry.md) | P2 | completed | chat-engine, chat-api-routes |
+| [chat-session-persistence-provider](chat-session-persistence-provider.md) | P0 | planned | chat-engine, chat-ui-shell, chat-stream-resilience-telemetry |
+| [marketplace-install-hardening](marketplace-install-hardening.md) | P1 | planned | instance-bootstrap |
+| [enrichment-planner-test-hardening](enrichment-planner-test-hardening.md) | P2 | planned | tables-enrichment-runtime-v2, tables-enrichment-planner-api |
+| [chat-dedup-variant-tolerance](chat-dedup-variant-tolerance.md) | P3 | planned | workflow-create-dedup |
 
 ## Dependency Graph
 
