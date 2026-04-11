@@ -21,6 +21,7 @@ import { getLaunchCwd, getWorkspaceContext } from "@/lib/environment/workspace-c
 import { analyzeForLearnedPatterns } from "./pattern-extractor";
 import { processSweepResult } from "./sweep";
 import { getBrowserMcpServers, getExternalMcpServers } from "./browser-mcp";
+import { createStagentMcpServer } from "@/lib/chat/stagent-tools";
 import { persistScreenshot, SCREENSHOT_TOOL_NAMES } from "@/lib/screenshots/persist";
 import {
   extractUsageSnapshot,
@@ -489,8 +490,18 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
       getBrowserMcpServers(),
       getExternalMcpServers(),
     ]);
+    // Inject the in-process stagent MCP server so scheduled and manual tasks
+    // have access to mcp__stagent__* tools (table CRUD, notifications, etc.).
+    // Spread profile/browser/external first, then stagent — ensures no profile
+    // can accidentally shadow our server under the `stagent` key.
+    const stagentServer = createStagentMcpServer(task.projectId);
     const profileMcpServers = ctx.payload?.mcpServers ?? {};
-    const mergedMcpServers = { ...profileMcpServers, ...browserServers, ...externalServers };
+    const mergedMcpServers = {
+      ...profileMcpServers,
+      ...browserServers,
+      ...externalServers,
+      stagent: stagentServer,
+    };
 
     const authEnv = await getAuthEnv();
     const response = query({
@@ -508,7 +519,15 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
         maxTurns: effectiveMaxTurns,
         // F4: Per-execution budget cap — use task-specific override if set
         maxBudgetUsd: task.maxBudgetUsd ?? DEFAULT_MAX_BUDGET_USD,
-        ...(ctx.payload?.allowedTools && { allowedTools: ctx.payload.allowedTools }),
+        // When the profile set an explicit allowedTools, prepend mcp__stagent__*
+        // so the stagent tool registration is not filtered out. When the profile
+        // has no allowedTools, fall through to the preset defaults (stagent tools
+        // are still reachable because they're registered via mcpServers.stagent).
+        ...(ctx.payload?.allowedTools && {
+          allowedTools: Array.from(
+            new Set(["mcp__stagent__*", ...ctx.payload.allowedTools])
+          ),
+        }),
         ...(Object.keys(mergedMcpServers).length > 0 && {
           mcpServers: mergedMcpServers,
         }),

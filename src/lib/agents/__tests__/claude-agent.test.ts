@@ -141,6 +141,11 @@ vi.mock("@/lib/agents/browser-mcp", () => ({
   isExaTool: vi.fn().mockReturnValue(false),
   isExaReadOnly: vi.fn().mockReturnValue(false),
 }));
+vi.mock("@/lib/chat/stagent-tools", () => ({
+  createStagentMcpServer: vi.fn((_projectId?: string | null) => ({
+    __mockStagentServer: true,
+  })),
+}));
 
 // Static imports (works because vi.mock is hoisted)
 import { query } from "@anthropic-ai/claude-agent-sdk";
@@ -236,6 +241,71 @@ describe("executeClaudeTask", () => {
     expect(mockDb.insert).toHaveBeenCalled();
     // removeExecution called in finally
     expect(mockRemoveExecution).toHaveBeenCalledWith("task-1");
+  });
+
+  it("A-stagent-1: injects stagent MCP server into query mcpServers", async () => {
+    mockWhere.mockResolvedValueOnce([makeTask({ projectId: "proj-7" })]);
+    mockQuery.mockReturnValue(
+      createMockStream([
+        { type: "result", result: "done" },
+      ]) as unknown as ReturnType<typeof query>
+    );
+
+    await executeClaudeTask("task-1");
+
+    const queryCall = mockQuery.mock.calls[0][0] as {
+      options: { mcpServers?: Record<string, unknown> };
+    };
+    expect(queryCall.options.mcpServers).toBeDefined();
+    expect(queryCall.options.mcpServers!.stagent).toEqual({ __mockStagentServer: true });
+  });
+
+  it("A-stagent-2: prepends mcp__stagent__* when profile has allowedTools", async () => {
+    mockWhere.mockResolvedValueOnce([makeTask({ projectId: "proj-7" })]);
+    mockGetProfile.mockReturnValueOnce({
+      id: "restricted",
+      name: "Restricted",
+      systemPrompt: "",
+      allowedTools: ["Read", "Grep"],
+    });
+    mockQuery.mockReturnValue(
+      createMockStream([
+        { type: "result", result: "done" },
+      ]) as unknown as ReturnType<typeof query>
+    );
+
+    await executeClaudeTask("task-1");
+
+    const queryCall = mockQuery.mock.calls[0][0] as {
+      options: { allowedTools?: string[] };
+    };
+    expect(queryCall.options.allowedTools).toBeDefined();
+    expect(queryCall.options.allowedTools).toContain("mcp__stagent__*");
+    expect(queryCall.options.allowedTools).toContain("Read");
+    expect(queryCall.options.allowedTools).toContain("Grep");
+    // Duplicates not added when profile didn't already include the pattern
+    const stagentCount = queryCall.options.allowedTools!.filter(
+      (t) => t === "mcp__stagent__*"
+    ).length;
+    expect(stagentCount).toBe(1);
+  });
+
+  it("A-stagent-3: omits allowedTools when profile has none (preset defaults preserved)", async () => {
+    mockWhere.mockResolvedValueOnce([makeTask({ projectId: "proj-7" })]);
+    // Default mockGetProfile returns allowedTools: undefined, so ctx.payload.allowedTools
+    // will also be undefined — the query() call should NOT include an allowedTools option.
+    mockQuery.mockReturnValue(
+      createMockStream([
+        { type: "result", result: "done" },
+      ]) as unknown as ReturnType<typeof query>
+    );
+
+    await executeClaudeTask("task-1");
+
+    const queryCall = mockQuery.mock.calls[0][0] as {
+      options: { allowedTools?: string[] };
+    };
+    expect(queryCall.options.allowedTools).toBeUndefined();
   });
 
   it("A3: captures sessionId from init message and re-calls setExecution", async () => {
