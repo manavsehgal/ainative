@@ -21,7 +21,6 @@ import { getLaunchCwd, getWorkspaceContext } from "@/lib/environment/workspace-c
 import { analyzeForLearnedPatterns } from "./pattern-extractor";
 import { processSweepResult } from "./sweep";
 import { getBrowserMcpServers, getExternalMcpServers } from "./browser-mcp";
-import { createToolServer } from "@/lib/chat/stagent-tools";
 import { persistScreenshot, SCREENSHOT_TOOL_NAMES } from "@/lib/screenshots/persist";
 import {
   extractUsageSnapshot,
@@ -47,13 +46,24 @@ import {
  * Merge the in-process stagent MCP server into a profile/browser/external
  * MCP server map. Stagent is spread LAST so no upstream source can shadow
  * the `stagent` key with its own server.
+ *
+ * `@/lib/chat/stagent-tools` is loaded via dynamic `import()` to avoid a
+ * circular-dependency crash: that module transitively pulls in the chat
+ * tools registry, which imports the runtime registry (`runtime/catalog`,
+ * `runtime/index`), which statically references `claudeRuntimeAdapter` —
+ * the very module this file is defined in. A static import here would
+ * crash with "Cannot access 'claudeRuntimeAdapter' before initialization"
+ * at module-load time. The dynamic import defers the stagent-tools module
+ * until `executeClaudeTask` / `resumeClaudeTask` actually run, by which
+ * time every module in the graph has finished initializing.
  */
-function withStagentMcpServer(
+async function withStagentMcpServer(
   profileServers: Record<string, unknown>,
   browserServers: Record<string, unknown>,
   externalServers: Record<string, unknown>,
   projectId?: string | null,
-): Record<string, unknown> {
+): Promise<Record<string, unknown>> {
+  const { createToolServer } = await import("@/lib/chat/stagent-tools");
   const stagentServer = createToolServer(projectId).asMcpServer();
   return {
     ...profileServers,
@@ -528,11 +538,13 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
 
     // Merge browser + external MCP servers, then inject the in-process
     // stagent server via the shared helper (see withStagentMcpServer above).
+    // The helper is async because it dynamically imports @/lib/chat/stagent-tools
+    // to break a module-load cycle with the runtime registry.
     const [browserServers, externalServers] = await Promise.all([
       getBrowserMcpServers(),
       getExternalMcpServers(),
     ]);
-    const mergedMcpServers = withStagentMcpServer(
+    const mergedMcpServers = await withStagentMcpServer(
       ctx.payload?.mcpServers ?? {},
       browserServers,
       externalServers,
@@ -657,11 +669,12 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
 
     // Merge browser + external MCP servers, then inject the in-process
     // stagent server via the shared helper (see withStagentMcpServer).
+    // Async for the same cycle-breaking reason as executeClaudeTask above.
     const [browserServers, externalServers] = await Promise.all([
       getBrowserMcpServers(),
       getExternalMcpServers(),
     ]);
-    const mergedMcpServers = withStagentMcpServer(
+    const mergedMcpServers = await withStagentMcpServer(
       ctx.payload?.mcpServers ?? {},
       browserServers,
       externalServers,

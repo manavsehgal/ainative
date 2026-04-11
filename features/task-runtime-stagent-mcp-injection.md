@@ -81,3 +81,20 @@ As a Stagent operator running a scheduled agent that reads or writes tables (New
 - `src/lib/agents/runtime/openai-direct.ts:19`, `src/lib/agents/runtime/anthropic-direct.ts:18` — parity runtimes that already do this
 - Related features: `chat-engine.md`, `agent-integration.md`, `scheduled-prompt-loops.md`
 - **TDR follow-up:** once this ships, propose a new `agent-system` TDR — "All runtime entry points must inject the in-process stagent MCP server and `mcp__stagent__*` allowlist consistently" — to codify the pattern and prevent regression in future runtime additions.
+
+## Verification run — 2026-04-11
+
+**Unit coverage:** 34/34 tests in `src/lib/agents/__tests__/claude-agent.test.ts` pass (32 pre-existing + A-stagent-1/2/3 + R-stagent-1/2). `npx tsc --noEmit` exit 0.
+
+**End-to-end smoke** (against main repo dev server on `:3010`, clean `~/.stagent/stagent.db`):
+- Prompt in chat: *"Create a task titled stagent-mcp-smoke-v2 using the general profile with prompt: Invoke mcp__stagent__list_tables once… Execute the task and report…"*
+- Chat assistant created task `1d2bdb99-682d-65cc-bb9a-cbc99bdefe8` and executed it via `mcp__stagent__execute_task`.
+- Task executed on the `claude-code` runtime (this feature's code path).
+- The agent successfully located `mcp__stagent__list_tables` in its available tools and invoked it — the per-profile permission gate created an approval notification (`mcp__stagent__list_tables`, visible in Inbox).
+- **No "No stagent table MCP tools are available" error occurred** — the acceptance criterion is met.
+- The task reported a soft-failure ("MCP tool call timed out") because the permission approval wasn't granted during the agent's poll window, not because the tool was missing. The SDK saw and exposed the stagent server correctly.
+- After approval (Allow Once), the pending permission notification resolved cleanly. Inbox returned to zero.
+
+**Circular-dependency fix (caught by smoke, not by unit tests):** The initial helper implementation used a static `import { createToolServer } from "@/lib/chat/stagent-tools"` at the top of `src/lib/agents/claude-agent.ts`. At module-load time this triggered a `ReferenceError: Cannot access 'claudeRuntimeAdapter' before initialization` because `stagent-tools` transitively imports the chat tools registry, which imports `@/lib/agents/runtime/catalog` → `runtime/index.ts:31` which statically references `claudeRuntimeAdapter` — a module still mid-evaluation. The fix: the `withStagentMcpServer` helper now uses a dynamic `await import("@/lib/chat/stagent-tools")` inside the function body, deferring the stagent-tools load until `executeClaudeTask` / `resumeClaudeTask` actually run (by which time the runtime registry has finished initializing). Unit tests were unaffected because `vi.mock("@/lib/chat/stagent-tools", ...)` intercepts both static and dynamic imports equivalently.
+
+**Lesson recorded:** Feature specs for changes that touch runtime-registry adjacent modules should budget a smoke test — unit tests that mock the transitively-imported module cannot catch module-load cycles. Added to the implementation plan's "Error & Rescue Registry" as a failure mode to watch for in future similar features.
