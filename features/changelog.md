@@ -1,5 +1,18 @@
 # Feature Changelog
 
+## 2026-04-11
+
+### Groomed — handoff batch from wealth-mgr branch
+
+Groomed four handoff docs from `handoff/` into feature specs under the Platform Hardening milestone. Two are bug fixes on the scheduled/task execution path, two are observability and control features uncovered while operating those schedules. Code paths were verified against the live codebase via an Explore pass before specs were written; one handoff's root-cause theory ("task was deleted") was corrected — the codebase has no task deletion code anywhere, so the groomed spec frames the work as "add validation + investigate scoping mismatch" rather than "stop deleting tasks."
+
+- **`task-runtime-stagent-mcp-injection`** (P0) — wires `createStagentMcpServer` into `executeClaudeTask` and `resumeClaudeTask` in `src/lib/agents/claude-agent.ts` and adds `mcp__stagent__*` to the `claude-code` runtime's `allowedTools`, matching the chat engine, `openai-direct`, and `anthropic-direct` runtimes. This is the root cause of schedule-fired agents silently reporting "No stagent table MCP tools are available in this session" in News Sentinel, Price Monitor, and Daily Briefing. A follow-up TDR under `agent-system` will codify "All runtime entry points must inject the in-process stagent MCP server consistently" so the gap cannot recur when a new runtime adapter is added.
+- **`task-create-profile-validation`** (P1) — rejects invalid `agentProfile` values at `create_task` (today, `anthropic-direct` — a runtime, not a profile — is accepted as if it were a profile). Also carries a time-boxed investigation spike for the reported "task disappears after creation" symptom; the codebase audit found no DELETE on tasks anywhere and traced the likely cause to data-dir (`STAGENT_DATA_DIR`) or `projectId` scoping mismatch between the creating and querying contexts.
+- **`schedule-maxturns-api-control`** (P2) — exposes the existing `schedules.maxTurns` column on `create_schedule` / `update_schedule` MCP input schemas in `src/lib/chat/tools/schedule-tools.ts`. The column, the scheduler plumbing, and the handoff from schedule to task firing already exist; only the Zod schemas are missing.
+- **`task-turn-observability`** (P2) — adds `turnCount` / `tokenCount` columns to the `tasks` table, surfaces them on `get_task` / `list_tasks`, and commits to a written definition of what the turn-count metric measures. Observed schedule turn counts of 700–2,900 far exceed any plausible "reasoning round" interpretation and currently mislead both users and AI assistants into wrong diagnoses. The spec requires the metric definition to be written down before any columns are added so the codebase doesn't persist a misnamed field.
+
+Source handoff docs remain in `handoff/` as source-of-record; each spec references its source via frontmatter `source:`.
+
 ## 2026-04-10
 
 ### Groomed — platform hardening batch from 2026-04-09/10 release audit
