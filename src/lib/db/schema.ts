@@ -806,6 +806,41 @@ export const projectDocumentDefaults = sqliteTable(
 
 export type ProjectDocumentDefaultRow = InferSelectModel<typeof projectDocumentDefaults>;
 
+export const appInstances = sqliteTable(
+  "app_instances",
+  {
+    id: text("id").primaryKey(),
+    appId: text("app_id").notNull(),
+    name: text("name").notNull(),
+    version: text("version").notNull(),
+    projectId: text("project_id").references(() => projects.id),
+    manifestJson: text("manifest_json").notNull(),
+    uiSchemaJson: text("ui_schema_json").notNull(),
+    resourceMapJson: text("resource_map_json").notNull().default("{}"),
+    status: text("status", {
+      enum: ["installing", "bootstrapping", "ready", "failed", "disabled"],
+    })
+      .default("installing")
+      .notNull(),
+    sourceType: text("source_type", {
+      enum: ["builtin", "marketplace", "file"],
+    })
+      .default("builtin")
+      .notNull(),
+    bootstrapError: text("bootstrap_error"),
+    installedAt: integer("installed_at", { mode: "timestamp" }).notNull(),
+    bootstrappedAt: integer("bootstrapped_at", { mode: "timestamp" }),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("idx_app_instances_app_id").on(table.appId),
+    index("idx_app_instances_project_id").on(table.projectId),
+    index("idx_app_instances_status").on(table.status),
+  ]
+);
+
+export type AppInstanceRow = InferSelectModel<typeof appInstances>;
+
 // ── User-Defined Tables (structured data) ───────────────────────────────
 
 export const userTables = sqliteTable(
@@ -1157,6 +1192,7 @@ export type ReadingProgressRow = InferSelectModel<typeof readingProgress>;
 export type BookmarkRow = InferSelectModel<typeof bookmarks>;
 export type RepoImportRow = InferSelectModel<typeof repoImports>;
 export type AgentMessageRow = InferSelectModel<typeof agentMessages>;
+export type AppInstanceDbRow = InferSelectModel<typeof appInstances>;
 export type UserTableRow = InferSelectModel<typeof userTables>;
 export type UserTableColumnRow = InferSelectModel<typeof userTableColumns>;
 export type UserTableRowRow = InferSelectModel<typeof userTableRows>;

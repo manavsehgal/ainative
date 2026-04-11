@@ -29,6 +29,7 @@ import {
   scheduleTableInputs,
   userTableTriggers,
   userTableRowHistory,
+  appInstances,
 } from "@/lib/db/schema";
 import { eq, inArray } from "drizzle-orm";
 import { updateProjectSchema } from "@/lib/validators/project";
@@ -203,6 +204,7 @@ export async function DELETE(
 
     // 6. Project document defaults (junction table)
     db.delete(projectDocumentDefaults).where(eq(projectDocumentDefaults.projectId, id)).run();
+    db.delete(appInstances).where(eq(appInstances.projectId, id)).run();
 
     // 6b. User-defined tables — cascade-delete children before parent
     const tableIds = db

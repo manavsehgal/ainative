@@ -5,7 +5,9 @@ import { Store } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/shared/empty-state";
+import { AppMarketplaceBrowser } from "@/components/apps/app-marketplace-browser";
 import { BlueprintCard } from "./blueprint-card";
 import type { MarketplaceBlueprint } from "@/lib/marketplace/marketplace-client";
 
@@ -16,7 +18,7 @@ interface MarketplaceBrowserProps {
 
 const CATEGORIES = ["all", "general", "research", "content", "data", "automation"];
 
-export function MarketplaceBrowser({ canImport }: MarketplaceBrowserProps) {
+function BlueprintMarketplacePanel({ canImport }: { canImport: boolean }) {
   const [blueprints, setBlueprints] = useState<MarketplaceBlueprint[]>([]);
   const [category, setCategory] = useState("all");
   const [loading, setLoading] = useState(true);
@@ -127,5 +129,22 @@ export function MarketplaceBrowser({ canImport }: MarketplaceBrowserProps) {
         </div>
       )}
     </div>
+  );
+}
+
+export function MarketplaceBrowser({ canImport }: MarketplaceBrowserProps) {
+  return (
+    <Tabs defaultValue="apps" className="space-y-4">
+      <TabsList>
+        <TabsTrigger value="apps">Apps</TabsTrigger>
+        <TabsTrigger value="blueprints">Blueprints</TabsTrigger>
+      </TabsList>
+      <TabsContent value="apps">
+        <AppMarketplaceBrowser canInstall={canImport} />
+      </TabsContent>
+      <TabsContent value="blueprints">
+        <BlueprintMarketplacePanel canImport={canImport} />
+      </TabsContent>
+    </Tabs>
   );
 }

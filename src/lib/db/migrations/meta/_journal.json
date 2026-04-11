@@ -64,6 +64,13 @@
       "when": 1773705600000,
       "tag": "0008_add_document_version",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1775779200000,
+      "tag": "0009_add_app_instances",
+      "breakpoints": true
     }
   ]
 }

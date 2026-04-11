@@ -23,6 +23,7 @@ describe("project DELETE cascade coverage", () => {
     "workflows",
     "documents",
     "schedules",
+    "appInstances",
     "usageLedger",
     "environmentScans",
     "environmentCheckpoints",
@@ -109,6 +110,7 @@ describe("project DELETE cascade coverage", () => {
       { child: "tasks", parent: "projects" },
       { child: "workflows", parent: "projects" },
       { child: "schedules", parent: "projects" },
+      { child: "appInstances", parent: "projects" },
     ];
 
     const violations = orderPairs.filter(({ child, parent }) => {

@@ -12,7 +12,10 @@ export default function MarketplacePage() {
   const canPublish = canAccessFeature(tier, "marketplace-publish");
 
   return (
-    <PageShell title="Marketplace" description="Browse and import workflow blueprints">
+    <PageShell
+      title="Marketplace"
+      description="Browse verified runtime apps and import workflow blueprints"
+    >
       <MarketplaceBrowser canImport={canImport} canPublish={canPublish} />
     </PageShell>
   );

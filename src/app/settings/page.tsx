@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { SubscriptionSection } from "@/components/settings/subscription-section";
 import { CloudAccountSection } from "@/components/settings/cloud-account-section";
 import { CloudSyncSection } from "@/components/settings/cloud-sync-section";
@@ -16,12 +17,21 @@ import { OllamaSection } from "@/components/settings/ollama-section";
 import { ChannelsSection } from "@/components/settings/channels-section";
 import { InstanceSection } from "@/components/instance/instance-section";
 import { PageShell } from "@/components/shared/page-shell";
+import { Button } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
 
 export default function SettingsPage() {
   return (
-    <PageShell title="Settings" description="Manage your Stagent configuration">
+    <PageShell
+      title="Settings"
+      description="Manage your Stagent configuration"
+      actions={
+        <Button asChild size="sm" variant="outline">
+          <Link href="/settings/apps">Installed Apps</Link>
+        </Button>
+      }
+    >
       <div className="space-y-6">
         <InstanceSection />
         <SubscriptionSection />

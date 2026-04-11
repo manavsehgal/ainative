@@ -50,7 +50,7 @@ describe("database bootstrap recovery", () => {
     const migrationCount = migratedDb
       .prepare("SELECT COUNT(*) AS count FROM __drizzle_migrations")
       .get() as { count: number };
-    expect(migrationCount.count).toBe(9);
+    expect(migrationCount.count).toBe(10);
     migratedDb.close();
   });
 });
