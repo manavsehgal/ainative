@@ -1,6 +1,6 @@
 ---
 title: Schedule maxTurns API Control
-status: planned
+status: completed
 priority: P2
 milestone: post-mvp
 source: handoff/feature-schedule-maxturns-control.md

@@ -2,6 +2,22 @@
 
 ## 2026-04-11
 
+### Completed — schedule-maxturns-api-control (P2)
+
+Exposed the existing `schedules.maxTurns` column on `create_schedule` and `update_schedule` MCP input schemas in `src/lib/chat/tools/schedule-tools.ts`. Operators can now tune per-schedule turn budgets via chat (10–500, with explicit `null` on update to clear an override back to inherit-default) instead of editing SQLite by hand. `get_schedule` already echoed the column because it returns the full row — no read-path change needed. The scheduler handoff at `scheduler.ts:535` was untouched.
+
+A fix-up commit (`649db6d`) added `maxTurnsSetAt` writes alongside every `maxTurns` edit. Code review surfaced that the scheduler's first-breach grace window at `scheduler.ts:211, 298-319` reads `maxTurnsSetAt` to forgive the first post-edit breach, but until this feature **no production code wrote that column** — the grace window had been latent dead code since `scheduled-prompt-loops` shipped. Our new chat-tool edit path is the first real writer, so the fix extends the block-`if` in `update_schedule` to also set `maxTurnsSetAt` (number → fresh `Date`, `null` → `null`, `undefined` → field absent). `turnBudgetBreachStreak` deliberately untouched — `scheduler.ts:224` already resets it on any non-breach firing.
+
+**Commits:**
+- `ed783bb` — `feat(chat): expose schedules.maxTurns on create/update MCP schemas`
+- `649db6d` — `fix(chat): bump maxTurnsSetAt when maxTurns is edited via chat tools`
+
+**Verification:**
+- `npx vitest run src/lib/chat/tools/__tests__/schedule-tools.test.ts` → 20/20 passing (6 create validation + 4 update validation + 4 create persistence + 6 update persistence, including three-state contract for `maxTurnsSetAt`)
+- Adjacent `src/lib/chat/tools/__tests__/` suite → 31/31 green
+- `npx tsc --noEmit` → exit 0
+- No smoke test required — `schedule-tools.ts` has no runtime-registry adjacency (pure Zod schema + drizzle insert/update, no `@/lib/chat/stagent-tools` or `claude-agent.ts` imports). Per TDR-032 smoke-test budget policy, unit tests are sufficient.
+
 ### Completed — task-runtime-stagent-mcp-injection (P0)
 
 Wired the in-process stagent MCP server into `executeClaudeTask` and `resumeClaudeTask` in `src/lib/agents/claude-agent.ts` via two shared private helpers (`withStagentMcpServer`, `withStagentAllowedTools`) so future runtime entry points cannot drift apart. `mcp__stagent__*` is conditionally prepended to `allowedTools` only when the profile has an explicit allowlist, preserving `claude_code` preset defaults otherwise. The per-profile `canUseToolPolicy` + `handleToolPermission` model is untouched — it was already the correct design for task execution.
