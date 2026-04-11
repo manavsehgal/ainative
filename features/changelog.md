@@ -2,6 +2,22 @@
 
 ## 2026-04-11
 
+### Completed — task-runtime-stagent-mcp-injection (P0)
+
+Wired the in-process stagent MCP server into `executeClaudeTask` and `resumeClaudeTask` in `src/lib/agents/claude-agent.ts` via two shared private helpers (`withStagentMcpServer`, `withStagentAllowedTools`) so future runtime entry points cannot drift apart. `mcp__stagent__*` is conditionally prepended to `allowedTools` only when the profile has an explicit allowlist, preserving `claude_code` preset defaults otherwise. The per-profile `canUseToolPolicy` + `handleToolPermission` model is untouched — it was already the correct design for task execution.
+
+A code-quality follow-up (commit `ddd58fd`) switched from the deprecated `createStagentMcpServer` wrapper to `createToolServer(projectId).asMcpServer()` directly. A second follow-up (commit `2b5ae42`) broke a module-load cycle that the initial static import introduced — `claude-agent.ts` → `stagent-tools.ts` → `chat/tools/*` → `@/lib/agents/runtime/catalog` → `claudeRuntimeAdapter` (mid-evaluation). The fix uses a lazy `await import()` inside the helper body, deferring the stagent-tools load to call time. Caught only by end-to-end smoke — unit tests mock `@/lib/chat/stagent-tools` so the real cycle never evaluates. Lesson captured in the spec's References section.
+
+**Verification run:**
+- `npx vitest run src/lib/agents/__tests__/claude-agent.test.ts` → 34/34 passing (5 new A-stagent-1/2/3 + R-stagent-1/2 tests)
+- `npx tsc --noEmit` → exit 0
+- End-to-end smoke against dev server on `:3010` (clean stagent.db) — task `1d2bdb99-…` created, executed on `claude-code` runtime, agent successfully located and invoked `mcp__stagent__list_tables`, permission gate fired expected approval notification, no "missing stagent tools" error
+
+**Follow-ups queued** (separate plan):
+- TDR-NNN: Runtime entry points must consistently inject the in-process stagent MCP server (via `/architect`)
+- Dedupe the duplicate `withStagentAllowedTools(…)` call at both conditional-spread sites
+- Add a smoke-test budget policy for plans that touch runtime-registry-adjacent modules, since unit tests that mock those modules structurally cannot catch module-load cycles
+
 ### Groomed — handoff batch from wealth-mgr branch
 
 Groomed four handoff docs from `handoff/` into feature specs under the Platform Hardening milestone. Two are bug fixes on the scheduled/task execution path, two are observability and control features uncovered while operating those schedules. Code paths were verified against the live codebase via an Explore pass before specs were written; one handoff's root-cause theory ("task was deleted") was corrected — the codebase has no task deletion code anywhere, so the groomed spec frames the work as "add validation + investigate scoping mismatch" rather than "stop deleting tasks."

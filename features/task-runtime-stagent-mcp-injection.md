@@ -1,6 +1,6 @@
 ---
 title: Task Runtime Stagent MCP Injection
-status: planned
+status: completed
 priority: P0
 milestone: post-mvp
 source: handoff/bug-task-execution-missing-stagent-mcp.md
