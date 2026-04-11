@@ -155,6 +155,7 @@ export function scheduleTools(ctx: ToolContext) {
             status: "active",
             maxFirings: args.maxFirings ?? null,
             maxTurns: args.maxTurns ?? null,
+            maxTurnsSetAt: args.maxTurns !== undefined ? now : null,
             firingCount: 0,
             expiresAt,
             nextFireAt,
@@ -249,7 +250,10 @@ export function scheduleTools(ctx: ToolContext) {
           if (args.status !== undefined) updates.status = args.status;
           if (args.assignedAgent !== undefined) updates.assignedAgent = args.assignedAgent;
           if (args.agentProfile !== undefined) updates.agentProfile = args.agentProfile;
-          if (args.maxTurns !== undefined) updates.maxTurns = args.maxTurns;
+          if (args.maxTurns !== undefined) {
+            updates.maxTurns = args.maxTurns;
+            updates.maxTurnsSetAt = args.maxTurns === null ? null : new Date();
+          }
 
           if (args.interval) {
             const { parseInterval, computeNextFireTime } = await import(

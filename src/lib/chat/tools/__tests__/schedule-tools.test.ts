@@ -186,6 +186,27 @@ describe("create_schedule maxTurns persistence", () => {
     });
     expect(mockState.lastInsertValues?.maxTurns).toBe(null);
   });
+
+  it("sets maxTurnsSetAt to a Date when maxTurns is provided", async () => {
+    const tool = getTool("create_schedule");
+    await tool.handler({
+      name: "test",
+      prompt: "hello",
+      interval: "every 30 minutes",
+      maxTurns: 75,
+    });
+    expect(mockState.lastInsertValues?.maxTurnsSetAt).toBeInstanceOf(Date);
+  });
+
+  it("sets maxTurnsSetAt to null when maxTurns is omitted", async () => {
+    const tool = getTool("create_schedule");
+    await tool.handler({
+      name: "test",
+      prompt: "hello",
+      interval: "every 30 minutes",
+    });
+    expect(mockState.lastInsertValues?.maxTurnsSetAt).toBe(null);
+  });
 });
 
 describe("update_schedule maxTurns persistence", () => {
@@ -216,5 +237,24 @@ describe("update_schedule maxTurns persistence", () => {
     const tool = getTool("update_schedule");
     await tool.handler({ scheduleId: "sched-1", name: "renamed" });
     expect("maxTurns" in (mockState.lastUpdateValues ?? {})).toBe(false);
+  });
+
+  it("sets maxTurnsSetAt to a Date when maxTurns is set to a number", async () => {
+    const tool = getTool("update_schedule");
+    await tool.handler({ scheduleId: "sched-1", maxTurns: 120 });
+    expect(mockState.lastUpdateValues?.maxTurnsSetAt).toBeInstanceOf(Date);
+  });
+
+  it("sets maxTurnsSetAt to null when maxTurns is cleared", async () => {
+    const tool = getTool("update_schedule");
+    await tool.handler({ scheduleId: "sched-1", maxTurns: null });
+    expect("maxTurnsSetAt" in (mockState.lastUpdateValues ?? {})).toBe(true);
+    expect(mockState.lastUpdateValues?.maxTurnsSetAt).toBe(null);
+  });
+
+  it("does not touch maxTurnsSetAt when maxTurns is omitted", async () => {
+    const tool = getTool("update_schedule");
+    await tool.handler({ scheduleId: "sched-1", name: "renamed" });
+    expect("maxTurnsSetAt" in (mockState.lastUpdateValues ?? {})).toBe(false);
   });
 });
