@@ -211,11 +211,11 @@ export function InstanceSection() {
             onClick={reinit}
             disabled={busy !== null}
           >
-            {busy === "init" ? "Running…" : "Re-run instance setup"}
+            {busy === "init" ? "Running…" : "Run setup"}
           </Button>
         </div>
         <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs">
-          Instance setup incomplete — click Re-run setup to initialize.
+          Instance setup incomplete. Run setup to initialize this workspace.
         </div>
         {message && (
           <div className="text-xs text-muted-foreground">{message}</div>
@@ -246,14 +246,18 @@ export function InstanceSection() {
   const startUpgradeTitle = upgradeAvailable
     ? `Merge ${upgradeCount} upstream commit${upgradeCount === 1 ? "" : "s"} into ${config!.branchName}`
     : "No upgrades available — click 'Check for upgrades' to refresh";
+  const statusMessage = pollFailing && upgrade?.lastPollError
+    ? upgrade.lastPollError
+    : message;
+  const statusToneClass = pollFailing
+    ? "text-amber-700 dark:text-amber-400"
+    : "text-muted-foreground";
 
   return (
-    <div className="space-y-4">
-      {/* Primary Instance card — metadata + upgrade action */}
-      <section className="rounded-xl border bg-card">
-        {/* Header row — title, status badges */}
-        <header className="flex items-center justify-between gap-4 px-5 py-3 border-b flex-wrap">
-          <div className="flex items-center gap-3 min-w-0">
+    <section className="rounded-xl border bg-card">
+      <header className="flex items-start justify-between gap-4 px-5 py-3 border-b flex-wrap">
+        <div className="min-w-0 space-y-2">
+          <div className="flex items-center gap-3 min-w-0 flex-wrap">
             <h2 className="text-base font-semibold">Instance</h2>
             {upgradeAvailable && (
               <Badge
@@ -269,119 +273,79 @@ export function InstanceSection() {
               </Badge>
             )}
           </div>
-        </header>
-
-        {/* Metadata row — 4-column grid fills horizontal width */}
-        <dl className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-2 px-5 py-3 text-sm">
-          <Field label="Branch" mono>
-            {config!.branchName}
-          </Field>
-          <Field
-            label="Instance ID"
-            mono
-            title={config!.instanceId}
-          >
-            {shortId}
-          </Field>
-          <Field label="Private">{config!.isPrivateInstance ? "yes" : "no"}</Field>
-          <Field label="Consent">{consentLabel}</Field>
-          <Field label="Pre-push hook">{hookLabel}</Field>
-          <Field label="Blocked branches" truncate>
-            {blockedLabel}
-          </Field>
-          <Field label="Last check">{lastCheck}</Field>
-          <Field label="Last upgrade">{lastUpgrade}</Field>
-        </dl>
-
-        {(message || pollFailing) && (
-          <div className="px-5 pb-3 text-xs text-muted-foreground">
-            {pollFailing && upgrade?.lastPollError && (
-              <div className="text-amber-700 dark:text-amber-400">
-                {upgrade.lastPollError}
-              </div>
-            )}
-            {message && <div>{message}</div>}
-          </div>
-        )}
-      </section>
-
-      {/* Upgrade card — dedicated surface for merging upstream commits */}
-      <section className="rounded-xl border bg-card px-5 py-4 space-y-3">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div className="min-w-0 space-y-1">
-            <h3 className="text-base font-semibold">Upgrade instance</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">
-              Merge the latest upstream commits from{" "}
-              <code className="font-mono text-[11px] px-1 py-0.5 rounded bg-muted">
-                main
-              </code>{" "}
-              into your instance branch{" "}
-              <code className="font-mono text-[11px] px-1 py-0.5 rounded bg-muted">
-                {config!.branchName}
-              </code>
-              . Stagent will stash any local changes, fast-forward{" "}
-              <code className="font-mono text-[11px]">main</code>, merge into your
-              branch, install any new dependencies, and pause to ask you to
-              resolve conflicts if they appear. Safe to run — nothing is pushed.
-            </p>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={checkNow}
-              disabled={busy !== null}
-            >
-              {busy === "check" ? "Checking…" : "Check for upgrades"}
-            </Button>
-            <Button
-              variant="default"
-              size="sm"
-              onClick={startUpgrade}
-              disabled={startUpgradeDisabled}
-              title={startUpgradeTitle}
-            >
-              {busy === "upgrade"
-                ? "Starting…"
-                : upgradeAvailable
-                  ? `Start upgrade (${upgradeCount})`
-                  : "Start upgrade"}
-            </Button>
-          </div>
-        </div>
-        {!upgradeAvailable && (
-          <p className="text-[11px] text-muted-foreground">
-            No upgrades available. Last checked: {lastCheck}.
+          <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">
+            Pull latest changes from{" "}
+            <code className="font-mono text-[11px] px-1 py-0.5 rounded bg-muted">
+              main
+            </code>{" "}
+            into{" "}
+            <code className="font-mono text-[11px] px-1 py-0.5 rounded bg-muted">
+              {config!.branchName}
+            </code>
+            . Nothing is pushed automatically.
           </p>
-        )}
-      </section>
-
-      {/* Advanced card — re-run setup, de-emphasized and clearly separate */}
-      <section className="rounded-xl border bg-card px-5 py-4 space-y-3">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div className="min-w-0 space-y-1">
-            <h3 className="text-base font-semibold">Advanced: re-run instance setup</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">
-              Reinstalls the pre-push guardrail hook and recreates instance
-              configuration. Only needed if your instance was created before
-              guardrails existed, if the git hook was deleted, or if initial
-              setup never finished. <strong className="font-medium text-foreground/80">Does not touch your data, your
-              branch, or any commits</strong> — this is not an upgrade.
-            </p>
-          </div>
-          <div className="shrink-0">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={reinit}
-              disabled={busy !== null}
-            >
-              {busy === "init" ? "Running…" : "Re-run setup"}
-            </Button>
-          </div>
         </div>
-      </section>
-    </div>
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={checkNow}
+            disabled={busy !== null}
+          >
+            {busy === "check" ? "Checking…" : "Check"}
+          </Button>
+          <Button
+            variant="default"
+            size="sm"
+            onClick={startUpgrade}
+            disabled={startUpgradeDisabled}
+            title={startUpgradeTitle}
+          >
+            {busy === "upgrade"
+              ? "Starting…"
+              : upgradeAvailable
+                ? `Upgrade (${upgradeCount})`
+                : "Upgrade"}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={reinit}
+            disabled={busy !== null}
+          >
+            {busy === "init" ? "Running…" : "Repair setup"}
+          </Button>
+        </div>
+      </header>
+
+      <dl className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-2 px-5 py-3 text-sm">
+        <Field label="Branch" mono>
+          {config!.branchName}
+        </Field>
+        <Field
+          label="Instance ID"
+          mono
+          title={config!.instanceId}
+        >
+          {shortId}
+        </Field>
+        <Field label="Last check">{lastCheck}</Field>
+        <Field label="Last upgrade">{lastUpgrade}</Field>
+      </dl>
+
+      <div className="flex items-start justify-between gap-3 border-t px-5 py-2.5 text-[11px]">
+        <p className={`leading-relaxed ${statusToneClass}`}>
+          {statusMessage ?? (
+            upgradeAvailable
+              ? `Ready to merge ${upgradeCount} upstream update${upgradeCount === 1 ? "" : "s"}.`
+              : `Up to date. Last checked: ${lastCheck}.`
+          )}
+        </p>
+        <p className="shrink-0 text-muted-foreground">
+          Repairs local setup without changing data or commits.
+        </p>
+      </div>
+    </section>
   );
 }
 
