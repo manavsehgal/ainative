@@ -36,6 +36,47 @@ import {
   clearPermissionCache,
 } from "./tool-permissions";
 
+// ─── Stagent MCP injection helpers ──────────────────────────────────────
+//
+// Shared by executeClaudeTask and resumeClaudeTask so the two runtime entry
+// points cannot drift apart. The drift between chat engine injection and
+// claude-code runtime injection is what produced the P0 bug this feature
+// fixes — do not duplicate these patterns inline.
+
+/**
+ * Merge the in-process stagent MCP server into a profile/browser/external
+ * MCP server map. Stagent is spread LAST so no upstream source can shadow
+ * the `stagent` key with its own server.
+ */
+function withStagentMcpServer(
+  profileServers: Record<string, unknown>,
+  browserServers: Record<string, unknown>,
+  externalServers: Record<string, unknown>,
+  projectId?: string | null,
+): Record<string, unknown> {
+  const stagentServer = createToolServer(projectId).asMcpServer();
+  return {
+    ...profileServers,
+    ...browserServers,
+    ...externalServers,
+    stagent: stagentServer,
+  };
+}
+
+/**
+ * Prepend `mcp__stagent__*` to a profile's explicit allowedTools so the
+ * stagent tool registration survives the SDK preset filter. Returns
+ * `undefined` when the profile has no allowedTools — callers should spread
+ * the result conditionally so the SDK falls through to preset defaults in
+ * that case.
+ */
+function withStagentAllowedTools(
+  profileAllowedTools: string[] | undefined,
+): string[] | undefined {
+  if (!profileAllowedTools) return undefined;
+  return Array.from(new Set(["mcp__stagent__*", ...profileAllowedTools]));
+}
+
 /**
  * Classify an error into a machine-readable failure reason string.
  * Used by writeTerminalFailureReason and handleExecutionError.
@@ -485,23 +526,18 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
     // profile default. This is the runtime-enforced budget cap.
     const effectiveMaxTurns = task.maxTurns ?? ctx.maxTurns;
 
-    // Merge browser + external MCP servers when enabled globally
+    // Merge browser + external MCP servers, then inject the in-process
+    // stagent server via the shared helper (see withStagentMcpServer above).
     const [browserServers, externalServers] = await Promise.all([
       getBrowserMcpServers(),
       getExternalMcpServers(),
     ]);
-    // Inject the in-process stagent MCP server so scheduled and manual tasks
-    // have access to mcp__stagent__* tools (table CRUD, notifications, etc.).
-    // Spread profile/browser/external first, then stagent — ensures no profile
-    // can accidentally shadow our server under the `stagent` key.
-    const stagentServer = createToolServer(task.projectId).asMcpServer();
-    const profileMcpServers = ctx.payload?.mcpServers ?? {};
-    const mergedMcpServers = {
-      ...profileMcpServers,
-      ...browserServers,
-      ...externalServers,
-      stagent: stagentServer,
-    };
+    const mergedMcpServers = withStagentMcpServer(
+      ctx.payload?.mcpServers ?? {},
+      browserServers,
+      externalServers,
+      task.projectId,
+    );
 
     const authEnv = await getAuthEnv();
     const response = query({
@@ -519,14 +555,11 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
         maxTurns: effectiveMaxTurns,
         // F4: Per-execution budget cap — use task-specific override if set
         maxBudgetUsd: task.maxBudgetUsd ?? DEFAULT_MAX_BUDGET_USD,
-        // When the profile set an explicit allowedTools, prepend mcp__stagent__*
-        // so the stagent tool registration is not filtered out. When the profile
-        // has no allowedTools, fall through to the preset defaults (stagent tools
-        // are still reachable because they're registered via mcpServers.stagent).
-        ...(ctx.payload?.allowedTools && {
-          allowedTools: Array.from(
-            new Set(["mcp__stagent__*", ...ctx.payload.allowedTools])
-          ),
+        // allowedTools prepended via shared helper (see withStagentAllowedTools).
+        // Returns undefined when the profile has no allowlist so the SDK falls
+        // through to claude_code preset defaults.
+        ...(withStagentAllowedTools(ctx.payload?.allowedTools) && {
+          allowedTools: withStagentAllowedTools(ctx.payload?.allowedTools)!,
         }),
         ...(Object.keys(mergedMcpServers).length > 0 && {
           mcpServers: mergedMcpServers,
@@ -622,13 +655,18 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
     // profile default. This is the runtime-enforced budget cap.
     const effectiveMaxTurns = task.maxTurns ?? ctx.maxTurns;
 
-    // Merge browser + external MCP servers when enabled globally
+    // Merge browser + external MCP servers, then inject the in-process
+    // stagent server via the shared helper (see withStagentMcpServer).
     const [browserServers, externalServers] = await Promise.all([
       getBrowserMcpServers(),
       getExternalMcpServers(),
     ]);
-    const profileMcpServers = ctx.payload?.mcpServers ?? {};
-    const mergedMcpServers = { ...profileMcpServers, ...browserServers, ...externalServers };
+    const mergedMcpServers = withStagentMcpServer(
+      ctx.payload?.mcpServers ?? {},
+      browserServers,
+      externalServers,
+      task.projectId,
+    );
 
     const authEnv = await getAuthEnv();
     const response = query({
@@ -647,7 +685,10 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
         maxTurns: effectiveMaxTurns,
         // F4: Per-execution budget cap — use task-specific override if set
         maxBudgetUsd: task.maxBudgetUsd ?? DEFAULT_MAX_BUDGET_USD,
-        ...(ctx.payload?.allowedTools && { allowedTools: ctx.payload.allowedTools }),
+        // allowedTools prepended via shared helper (see withStagentAllowedTools).
+        ...(withStagentAllowedTools(ctx.payload?.allowedTools) && {
+          allowedTools: withStagentAllowedTools(ctx.payload?.allowedTools)!,
+        }),
         ...(Object.keys(mergedMcpServers).length > 0 && {
           mcpServers: mergedMcpServers,
         }),

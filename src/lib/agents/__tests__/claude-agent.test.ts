@@ -150,6 +150,7 @@ vi.mock("@/lib/chat/stagent-tools", () => ({
 // Static imports (works because vi.mock is hoisted)
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import { executeClaudeTask, resumeClaudeTask } from "../claude-agent";
+import { createToolServer } from "@/lib/chat/stagent-tools";
 
 const mockQuery = vi.mocked(query);
 
@@ -258,6 +259,7 @@ describe("executeClaudeTask", () => {
     };
     expect(queryCall.options.mcpServers).toBeDefined();
     expect(queryCall.options.mcpServers!.stagent).toEqual({ __mockStagentServer: true });
+    expect(vi.mocked(createToolServer)).toHaveBeenCalledWith("proj-7");
   });
 
   it("A-stagent-2: prepends mcp__stagent__* when profile has allowedTools", async () => {
@@ -668,6 +670,61 @@ describe("resumeClaudeTask", () => {
     await runPromise;
 
     expect(mockRemoveExecution).toHaveBeenCalledWith("task-1");
+  });
+
+  it("R-stagent-1: injects stagent MCP server into query mcpServers on resume", async () => {
+    mockWhere.mockResolvedValueOnce([
+      makeTask({
+        projectId: "proj-7",
+        sessionId: "session-abc",
+        resumeCount: 1,
+      }),
+    ]);
+    mockQuery.mockReturnValue(
+      createMockStream([
+        { type: "result", result: "resumed and done" },
+      ]) as unknown as ReturnType<typeof query>
+    );
+
+    await resumeClaudeTask("task-1");
+
+    const queryCall = mockQuery.mock.calls[0][0] as {
+      options: { mcpServers?: Record<string, unknown>; resume?: string };
+    };
+    expect(queryCall.options.resume).toBe("session-abc");
+    expect(queryCall.options.mcpServers).toBeDefined();
+    expect(queryCall.options.mcpServers!.stagent).toEqual({ __mockStagentServer: true });
+    expect(vi.mocked(createToolServer)).toHaveBeenCalledWith("proj-7");
+  });
+
+  it("R-stagent-2: prepends mcp__stagent__* on resume when profile has allowedTools", async () => {
+    mockWhere.mockResolvedValueOnce([
+      makeTask({
+        projectId: "proj-7",
+        sessionId: "session-abc",
+        resumeCount: 1,
+      }),
+    ]);
+    mockGetProfile.mockReturnValueOnce({
+      id: "restricted",
+      name: "Restricted",
+      systemPrompt: "",
+      allowedTools: ["Read", "Grep"],
+    });
+    mockQuery.mockReturnValue(
+      createMockStream([
+        { type: "result", result: "resumed and done" },
+      ]) as unknown as ReturnType<typeof query>
+    );
+
+    await resumeClaudeTask("task-1");
+
+    const queryCall = mockQuery.mock.calls[0][0] as {
+      options: { allowedTools?: string[] };
+    };
+    expect(queryCall.options.allowedTools).toContain("mcp__stagent__*");
+    expect(queryCall.options.allowedTools).toContain("Read");
+    expect(queryCall.options.allowedTools![0]).toBe("mcp__stagent__*");
   });
 });
 
