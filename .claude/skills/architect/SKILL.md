@@ -445,6 +445,7 @@ These are the primary checks to run. They are grounded in the project's actual p
 - Provider-specific types must not leak into shared orchestration code
 - New runtime capabilities must be declared in `catalog.ts`
 - Runtime adapters must implement the full `AgentRuntimeAdapter` interface
+- **Stagent MCP injection consistency (TDR-032):** Every function in `src/lib/agents/` or `src/lib/agents/runtime/` that calls a provider SDK's `query()` / `createMessage()` / equivalent dispatch must construct a stagent tool server via `createToolServer(projectId)` (direct use) or `withStagentMcpServer(...)` (shared helper). Grep for one of those two symbols in each dispatcher; absence means the adapter is a candidate for injection and should be flagged. Also flag any **static** `import ... from "@/lib/chat/stagent-tools"` in files under `src/lib/agents/` — the correct pattern is a dynamic `await import()` inside the function body, because a static import triggers a module-load cycle (`ReferenceError: Cannot access 'claudeRuntimeAdapter' before initialization`) via `runtime/catalog → runtime/index → claudeRuntimeAdapter`. Unit tests mocking `@/lib/chat/stagent-tools` cannot catch this cycle structurally.
 
 **Workflow Checks:**
 - Notification-based coordination must use the notifications table, not ad-hoc polling
