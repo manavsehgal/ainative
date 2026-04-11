@@ -166,6 +166,16 @@ export const CHAPTERS: BookChapter[] = [
     relatedDocs: ["workflows", "profiles", "schedules"],
     sections: [],
   },
+  {
+    id: "ch-14",
+    number: 14,
+    title: "The Meta-Program",
+    subtitle: "When the System You Are Using Is Also the System You Are Building",
+    part: PARTS[3],
+    readingTime: 16,
+    relatedDocs: ["workflows", "profiles", "schedules", "blueprints"],
+    sections: [],
+  },
 ];
 
 /**
