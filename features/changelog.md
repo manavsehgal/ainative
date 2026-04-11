@@ -2,6 +2,30 @@
 
 ## 2026-04-11
 
+### Completed — task-create-profile-validation (P1)
+
+Closed the profile validation gap at `create_task` and `update_task` — both previously accepted any string as `agentProfile`, including runtime ids like `"anthropic-direct"` that are guaranteed to fail at execution time with no feedback at creation time. Both tools now run a Zod `.refine()` against the profile registry via the new shared `isValidAgentProfile` helper, and the handler body returns a richer enumerated error via `agentProfileErrorMessage` so operators can self-correct without cross-referencing docs. Three-tier defense (Zod → handler → execute-time) with each tier triggered by a distinct caller path.
+
+`execute_task` now runs a synchronous stale-profile check on the stored `task.agentProfile` before queuing, surfacing the error in the immediate chat-tool response instead of letting it fail later at runtime. This catches tasks created before this fix with invalid profiles. `list_tasks` now returns a sibling `note` field on empty-result-with-active-filter responses (happy path unchanged — still returns a raw array), addressing the most probable UX-level root cause of the original "task disappears after creation" symptom that a spike investigation traced to silent `ctx.projectId` scoping.
+
+**Spike conclusion:** The original handoff's "task was deleted" framing was false — no `db.delete(tasks)` exists anywhere in `src/`, and every failure path in `claude-agent.ts` (`:130, :418-420, :745-748, :809-811`) preserves the row with `status: "failed"` and a `failureReason`. Real root causes are (1) `list_tasks` silent project-scoping by `ctx.projectId` (fixed in this feature via the empty-result note) and (2) `STAGENT_DATA_DIR` per-process domain-clone isolation (intentional per `MEMORY.md → shared-stagent-data-dir.md`, remediation deferred — a follow-up feature could add operator-facing data-dir discoverability via a startup log or health-check tool).
+
+**Commits:**
+- `542d02f` — `docs(plan): add implementation plan for task-create-profile-validation`
+- `e591f1c` — `docs(features): add spike addendum for task disappearance symptom`
+- `fc37f81` — `feat(chat): validate agentProfile against profile registry`
+
+**Verification:**
+- `npx vitest run src/lib/chat/tools/__tests__/task-tools.test.ts` → 20/20 passing (5 create Zod + 3 create handler + 2 update Zod + 2 update handler + 3 execute stale + 3 list_tasks note + 2 get_task AC#4)
+- Adjacent `src/lib/chat/tools/__tests__/` suite → 51/51 green (task-tools 20, schedule-tools 20, workflow-tools-dedup 7, enrich-table-tool 4)
+- `npx tsc --noEmit` → exit 0
+- No smoke test required — `task-tools.ts` is a leaf consumer of `profiles/registry.ts`; registry's import tree does not transitively reach `runtime/catalog` or `claude-agent.ts`, so no TDR-032 cycle risk.
+
+**Follow-up candidates (non-blocking nits from code review):**
+- `execute_task:311` uses `.split(". ").slice(1).join(". ")` to strip the first sentence of `agentProfileErrorMessage` — couples the caller to the helper's internal sentence structure. Split the helper into two (`agentProfileValidList()` returning just the "Valid profiles: …" suffix) for cleaner composition.
+- Add a targeted unit test for `agentProfileErrorMessage` with a stub registry of 10+ entries so the truncation-with-`and N more` branch is covered (current test mock has only 3 profile ids, below the 8-id threshold).
+- Extend the same validation pattern to `schedule-tools.ts:agentProfile` which has the same `z.string().optional()` gap (explicitly excluded from this feature per scope).
+
 ### Completed — schedule-maxturns-api-control (P2)
 
 Exposed the existing `schedules.maxTurns` column on `create_schedule` and `update_schedule` MCP input schemas in `src/lib/chat/tools/schedule-tools.ts`. Operators can now tune per-schedule turn budgets via chat (10–500, with explicit `null` on update to clear an override back to inherit-default) instead of editing SQLite by hand. `get_schedule` already echoed the column because it returns the full row — no read-path change needed. The scheduler handoff at `scheduler.ts:535` was untouched.

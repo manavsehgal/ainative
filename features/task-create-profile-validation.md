@@ -1,6 +1,6 @@
 ---
 title: Task Create Profile Validation + Disappearance Investigation
-status: planned
+status: completed
 priority: P1
 milestone: post-mvp
 source: handoff/bug-task-silently-disappears-after-creation.md

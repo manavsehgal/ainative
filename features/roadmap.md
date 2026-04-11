@@ -325,7 +325,7 @@ Durable fixes that replace symptom-level hotfixes with architectural contracts. 
 | [enrichment-planner-test-hardening](enrichment-planner-test-hardening.md) | P2 | planned | tables-enrichment-runtime-v2, tables-enrichment-planner-api |
 | [chat-dedup-variant-tolerance](chat-dedup-variant-tolerance.md) | P3 | planned | workflow-create-dedup |
 | [task-runtime-stagent-mcp-injection](task-runtime-stagent-mcp-injection.md) | P0 | completed | agent-integration, chat-engine |
-| [task-create-profile-validation](task-create-profile-validation.md) | P1 | planned | agent-integration, agent-profile-catalog |
+| [task-create-profile-validation](task-create-profile-validation.md) | P1 | completed | agent-integration, agent-profile-catalog |
 | [schedule-maxturns-api-control](schedule-maxturns-api-control.md) | P2 | completed | scheduled-prompt-loops |
 | [task-turn-observability](task-turn-observability.md) | P2 | planned | agent-integration, scheduled-prompt-loops |
 
