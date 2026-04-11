@@ -69,6 +69,13 @@ export function scheduleTools(ctx: ToolContext) {
           .number()
           .optional()
           .describe("Auto-expire after this many hours"),
+        maxTurns: z
+          .number()
+          .int()
+          .min(10)
+          .max(500)
+          .optional()
+          .describe("Hard cap on turns per firing (10-500). Omit to inherit the system default."),
       },
       async (args) => {
         try {
@@ -147,6 +154,7 @@ export function scheduleTools(ctx: ToolContext) {
             recurs: true,
             status: "active",
             maxFirings: args.maxFirings ?? null,
+            maxTurns: args.maxTurns ?? null,
             firingCount: 0,
             expiresAt,
             nextFireAt,
@@ -216,6 +224,14 @@ export function scheduleTools(ctx: ToolContext) {
           .describe("New status (use 'paused' to pause, 'active' to resume)"),
         assignedAgent: z.string().optional().describe("New runtime ID"),
         agentProfile: z.string().optional().describe("New agent profile"),
+        maxTurns: z
+          .number()
+          .int()
+          .min(10)
+          .max(500)
+          .optional()
+          .nullable()
+          .describe("Hard cap on turns per firing (10-500). Pass null to clear an override back to the system default."),
       },
       async (args) => {
         try {
@@ -233,6 +249,7 @@ export function scheduleTools(ctx: ToolContext) {
           if (args.status !== undefined) updates.status = args.status;
           if (args.assignedAgent !== undefined) updates.assignedAgent = args.assignedAgent;
           if (args.agentProfile !== undefined) updates.agentProfile = args.agentProfile;
+          if (args.maxTurns !== undefined) updates.maxTurns = args.maxTurns;
 
           if (args.interval) {
             const { parseInterval, computeNextFireTime } = await import(
