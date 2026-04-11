@@ -550,6 +550,11 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
       externalServers,
       task.projectId,
     );
+    // allowedTools prepended via shared helper (see withStagentAllowedTools).
+    // Computed once so the conditional spread below does not invoke the
+    // helper twice. Returns undefined when the profile has no allowlist so
+    // the SDK falls through to claude_code preset defaults.
+    const mergedAllowedTools = withStagentAllowedTools(ctx.payload?.allowedTools);
 
     const authEnv = await getAuthEnv();
     const response = query({
@@ -567,12 +572,7 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
         maxTurns: effectiveMaxTurns,
         // F4: Per-execution budget cap — use task-specific override if set
         maxBudgetUsd: task.maxBudgetUsd ?? DEFAULT_MAX_BUDGET_USD,
-        // allowedTools prepended via shared helper (see withStagentAllowedTools).
-        // Returns undefined when the profile has no allowlist so the SDK falls
-        // through to claude_code preset defaults.
-        ...(withStagentAllowedTools(ctx.payload?.allowedTools) && {
-          allowedTools: withStagentAllowedTools(ctx.payload?.allowedTools)!,
-        }),
+        ...(mergedAllowedTools && { allowedTools: mergedAllowedTools }),
         ...(Object.keys(mergedMcpServers).length > 0 && {
           mcpServers: mergedMcpServers,
         }),
@@ -680,6 +680,10 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
       externalServers,
       task.projectId,
     );
+    // allowedTools prepended via shared helper (see withStagentAllowedTools).
+    // Computed once so the conditional spread below does not invoke the
+    // helper twice.
+    const mergedAllowedTools = withStagentAllowedTools(ctx.payload?.allowedTools);
 
     const authEnv = await getAuthEnv();
     const response = query({
@@ -698,10 +702,7 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
         maxTurns: effectiveMaxTurns,
         // F4: Per-execution budget cap — use task-specific override if set
         maxBudgetUsd: task.maxBudgetUsd ?? DEFAULT_MAX_BUDGET_USD,
-        // allowedTools prepended via shared helper (see withStagentAllowedTools).
-        ...(withStagentAllowedTools(ctx.payload?.allowedTools) && {
-          allowedTools: withStagentAllowedTools(ctx.payload?.allowedTools)!,
-        }),
+        ...(mergedAllowedTools && { allowedTools: mergedAllowedTools }),
         ...(Object.keys(mergedMcpServers).length > 0 && {
           mcpServers: mergedMcpServers,
         }),
