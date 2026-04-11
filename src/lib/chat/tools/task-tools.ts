@@ -9,6 +9,7 @@ import {
   isAgentRuntimeId,
   SUPPORTED_AGENT_RUNTIMES,
 } from "@/lib/agents/runtime/catalog";
+import { getProfile, listProfiles } from "@/lib/agents/profiles/registry";
 
 const VALID_TASK_STATUSES = [
   "planned",
@@ -18,6 +19,25 @@ const VALID_TASK_STATUSES = [
   "failed",
   "cancelled",
 ] as const;
+
+/**
+ * Zod refinement shared by create_task and update_task for the agentProfile
+ * field. Returns true for valid registered profile IDs. The error message
+ * lists a truncated sample of valid IDs from the registry so operators can
+ * self-correct without cross-referencing docs.
+ */
+function isValidAgentProfile(id: string): boolean {
+  return getProfile(id) !== undefined;
+}
+
+function agentProfileErrorMessage(invalid: string): string {
+  const valid = listProfiles()
+    .map((p) => p.id)
+    .sort();
+  const sample = valid.slice(0, 8).join(", ");
+  const more = valid.length > 8 ? `, and ${valid.length - 8} more` : "";
+  return `Invalid agentProfile "${invalid}". Valid profiles: ${sample}${more}. Run list_profiles (or inspect ~/.claude/skills/) to see the full set.`;
+}
 
 export function taskTools(ctx: ToolContext) {
   return [
@@ -51,6 +71,14 @@ export function taskTools(ctx: ToolContext) {
             .orderBy(tasks.priority, desc(tasks.createdAt))
             .limit(50);
 
+          if (result.length === 0 && effectiveProjectId) {
+            return ok({
+              tasks: [],
+              note: `No tasks found in project ${effectiveProjectId}. ` +
+                `Use projectId: null to list tasks from any project, ` +
+                `or get_task <id> to look up a specific task directly.`,
+            });
+          }
           return ok(result);
         } catch (e) {
           return err(e instanceof Error ? e.message : "Failed to list tasks");
@@ -90,13 +118,19 @@ export function taskTools(ctx: ToolContext) {
           ),
         agentProfile: z
           .string()
+          .refine(isValidAgentProfile, {
+            message: "Invalid agentProfile (not in profile registry). See list_profiles.",
+          })
           .optional()
           .describe(
-            "Agent profile ID (e.g. general, code-reviewer, researcher, reddit-researcher)"
+            "Agent profile ID (e.g. general, code-reviewer, researcher). Validated against the profile registry."
           ),
       },
       async (args) => {
         try {
+          if (args.agentProfile !== undefined && !isValidAgentProfile(args.agentProfile)) {
+            return err(agentProfileErrorMessage(args.agentProfile));
+          }
           if (args.assignedAgent && !isAgentRuntimeId(args.assignedAgent)) {
             return err(
               `Invalid runtime "${args.assignedAgent}". Valid: ${SUPPORTED_AGENT_RUNTIMES.join(", ")}`
@@ -162,13 +196,19 @@ export function taskTools(ctx: ToolContext) {
           ),
         agentProfile: z
           .string()
+          .refine(isValidAgentProfile, {
+            message: "Invalid agentProfile (not in profile registry). See list_profiles.",
+          })
           .optional()
           .describe(
-            "Agent profile ID (e.g. general, code-reviewer, researcher, reddit-researcher)"
+            "Agent profile ID (e.g. general, code-reviewer, researcher). Validated against the profile registry."
           ),
       },
       async (args) => {
         try {
+          if (args.agentProfile !== undefined && !isValidAgentProfile(args.agentProfile)) {
+            return err(agentProfileErrorMessage(args.agentProfile));
+          }
           if (args.assignedAgent && !isAgentRuntimeId(args.assignedAgent)) {
             return err(
               `Invalid runtime "${args.assignedAgent}". Valid: ${SUPPORTED_AGENT_RUNTIMES.join(", ")}`
@@ -263,6 +303,14 @@ export function taskTools(ctx: ToolContext) {
 
           if (!task) return err(`Task not found: ${args.taskId}`);
           if (task.status === "running") return err("Task is already running");
+
+          if (task.agentProfile && !isValidAgentProfile(task.agentProfile)) {
+            return err(
+              `Task ${args.taskId} has an invalid agentProfile "${task.agentProfile}" (not in profile registry). ` +
+              `Fix with update_task { taskId, agentProfile: "<valid-id>" } before retrying. ` +
+              agentProfileErrorMessage(task.agentProfile).split(". ").slice(1).join(". ")
+            );
+          }
 
           const runtimeId = args.assignedAgent ?? task.assignedAgent ?? DEFAULT_AGENT_RUNTIME;
 
