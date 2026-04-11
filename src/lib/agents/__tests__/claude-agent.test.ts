@@ -142,8 +142,8 @@ vi.mock("@/lib/agents/browser-mcp", () => ({
   isExaReadOnly: vi.fn().mockReturnValue(false),
 }));
 vi.mock("@/lib/chat/stagent-tools", () => ({
-  createStagentMcpServer: vi.fn((_projectId?: string | null) => ({
-    __mockStagentServer: true,
+  createToolServer: vi.fn((_projectId?: string | null) => ({
+    asMcpServer: () => ({ __mockStagentServer: true }),
   })),
 }));
 

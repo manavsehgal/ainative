@@ -21,7 +21,7 @@ import { getLaunchCwd, getWorkspaceContext } from "@/lib/environment/workspace-c
 import { analyzeForLearnedPatterns } from "./pattern-extractor";
 import { processSweepResult } from "./sweep";
 import { getBrowserMcpServers, getExternalMcpServers } from "./browser-mcp";
-import { createStagentMcpServer } from "@/lib/chat/stagent-tools";
+import { createToolServer } from "@/lib/chat/stagent-tools";
 import { persistScreenshot, SCREENSHOT_TOOL_NAMES } from "@/lib/screenshots/persist";
 import {
   extractUsageSnapshot,
@@ -494,7 +494,7 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
     // have access to mcp__stagent__* tools (table CRUD, notifications, etc.).
     // Spread profile/browser/external first, then stagent — ensures no profile
     // can accidentally shadow our server under the `stagent` key.
-    const stagentServer = createStagentMcpServer(task.projectId);
+    const stagentServer = createToolServer(task.projectId).asMcpServer();
     const profileMcpServers = ctx.payload?.mcpServers ?? {};
     const mergedMcpServers = {
       ...profileMcpServers,

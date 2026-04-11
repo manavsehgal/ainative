@@ -17,7 +17,7 @@
 
 | Asset | Path | Why we reuse it |
 |---|---|---|
-| `createStagentMcpServer(projectId, onToolResult?)` factory | `src/lib/chat/stagent-tools.ts:128-133` | Wraps `createToolServer().asMcpServer()`. Already used by chat engine at `src/lib/chat/engine.ts:280-283`. Second arg is optional — task path doesn't need tool-result capture. |
+| `createToolServer(projectId, onToolResult?)` factory | `src/lib/chat/stagent-tools.ts:70-113` | Returns `{ asMcpServer, forProvider, definitions }`. Call `.asMcpServer()` to get the SDK-compatible server object for the `claude-code` runtime path. **Note:** `createStagentMcpServer` is a deprecated wrapper for chat-engine back-compat — new code should call `createToolServer().asMcpServer()` directly (see the `@deprecated` JSDoc at line 125). |
 | `mergedMcpServers` merge pattern | `src/lib/agents/claude-agent.ts:487-493` (execute) and `:606-612` (resume) | Already merges profile + browser + external MCP servers. We prepend `stagent:` as the first key. |
 | Conditional `allowedTools` pattern | `src/lib/agents/claude-agent.ts:511` and `:631` | Already omits `allowedTools` when the profile has none, preserving preset defaults. We extend this pattern: when present, prepend `"mcp__stagent__*"`; when absent, still omit. |
 | `handleToolPermission` + `ctx.canUseToolPolicy` | `src/lib/agents/claude-agent.ts:516-521` and `:635-641`; `src/lib/agents/tool-permissions.ts:115` | Per-profile `autoApprove`/`autoDeny` + saved user patterns + notification-based approval. Already correctly gates stagent tools by default — any stagent tool not explicitly auto-approved by a profile creates an approval notification. **Do not change.** |
@@ -71,13 +71,13 @@ Open `src/lib/agents/__tests__/claude-agent.test.ts`. Locate the block of `vi.mo
 
 ```ts
 vi.mock("@/lib/chat/stagent-tools", () => ({
-  createStagentMcpServer: vi.fn((_projectId?: string | null) => ({
-    __mockStagentServer: true,
+  createToolServer: vi.fn((_projectId?: string | null) => ({
+    asMcpServer: () => ({ __mockStagentServer: true }),
   })),
 }));
 ```
 
-This returns a sentinel object whose identity we can assert on in later steps.
+This returns a sentinel object whose identity we can assert on in later steps. Mocking `createToolServer` (not the deprecated `createStagentMcpServer` wrapper) matches the production import.
 
 - [ ] **Step 2: Write the failing test — `executeClaudeTask` injects stagent into `mcpServers`**
 
@@ -122,8 +122,10 @@ import { getBrowserMcpServers, getExternalMcpServers } from "./browser-mcp";
 Immediately after this line, add:
 
 ```ts
-import { createStagentMcpServer } from "@/lib/chat/stagent-tools";
+import { createToolServer } from "@/lib/chat/stagent-tools";
 ```
+
+(`createStagentMcpServer` is a `@deprecated` wrapper — new code uses `createToolServer(...).asMcpServer()`.)
 
 - [ ] **Step 5: Inject stagent into `executeClaudeTask`'s MCP merge**
 
@@ -151,7 +153,7 @@ Replace it with:
     // have access to mcp__stagent__* tools (table CRUD, notifications, etc.).
     // Spread profile/browser/external first, then stagent — ensures no profile
     // can accidentally shadow our server under the `stagent` key.
-    const stagentServer = createStagentMcpServer(task.projectId);
+    const stagentServer = createToolServer(task.projectId).asMcpServer();
     const profileMcpServers = ctx.payload?.mcpServers ?? {};
     const mergedMcpServers = {
       ...profileMcpServers,
@@ -430,7 +432,7 @@ Replace it with the same pattern as Task 1, Step 5:
     // Inject the in-process stagent MCP server on resume too — session
     // resumption and workflow step execution both pass through this path.
     // Stagent wins the merge so no profile can shadow our server key.
-    const stagentServer = createStagentMcpServer(task.projectId);
+    const stagentServer = createToolServer(task.projectId).asMcpServer();
     const profileMcpServers = ctx.payload?.mcpServers ?? {};
     const mergedMcpServers = {
       ...profileMcpServers,
