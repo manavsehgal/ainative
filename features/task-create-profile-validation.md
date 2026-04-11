@@ -82,4 +82,31 @@ When `execute_task` is called with a task that has a validation error knowable s
 - `src/lib/agents/claude-agent.ts:300-309, 363-371, 731-740` — existing failed-state persistence paths
 - `MEMORY.md` → `shared-stagent-data-dir.md` — domain-clone isolation model, likely root cause of the disappearance symptom
 - **Correction note:** The handoff's claim "the task record was deleted rather than being preserved with a `failed` status" is not supported by the codebase. No DELETE on tasks exists anywhere in `src/`. The groomed spec frames the fix as "add validation + investigate scoping mismatch" instead of "stop deleting tasks."
-- **Spike addendum (to be filled in by spike subtask):** _actual root cause + file:line evidence_
+- **Spike addendum — 2026-04-11**
+
+  A codebase walk performed in the controller session before any code changes ruled out the handoff's original "task was deleted" framing and identified two actual root-cause candidates for the reported disappearance symptom.
+
+  **Ruled out: task deletion.**
+  - No `db.delete(tasks)` anywhere in `src/` (grep confirmed; prior Explore pass had already established this).
+  - Every failure path in `src/lib/agents/claude-agent.ts` preserves the row with `status: "failed"` and a `failureReason`:
+    - `:130` — partial-update path annotating a mid-stream error
+    - `:418-420` — stream-exhaustion safety net
+    - `:745-748` — OAuth/auth failure (`failureReason: "auth_failed"`)
+    - `:809-811` — generic handler via `classifyError`
+  - `create_task` at `src/lib/chat/tools/task-tools.ts:110-126` is a single `db.insert()` with no transaction wrapper. The subsequent read-back at `:123-126` confirms the insert before returning, so a silently-failed insert would surface as an empty result at creation time, not post-creation.
+
+  **Root cause 1 (probable primary — UX-level):** `list_tasks` silently filters by `ctx.projectId`.
+  - `src/lib/chat/tools/task-tools.ts:41` computes `effectiveProjectId = args.projectId ?? ctx.projectId ?? undefined`. If truthy, `:43-44` applies `eq(tasks.projectId, effectiveProjectId)` as a WHERE clause.
+  - `get_task` at `:223-227` has no projectId filter — tasks are findable by ID regardless of active project scope.
+  - Most likely user path: `create_task` under project A → `list_tasks` in a new session with `ctx.projectId = B` (or a different chat context) → empty result → perceived disappearance. The task is still in the DB and still findable by ID; the operator just does not know the filter is active.
+  - **Remediation in this feature:** `list_tasks` returns a sibling `note` field in its response envelope when `effectiveProjectId` is set and zero rows are returned, naming the active scope and suggesting `projectId: null` or `get_task <id>` as alternatives. No behavior change, only messaging.
+
+  **Root cause 2 (probable secondary — infrastructure-level):** `STAGENT_DATA_DIR` per-process isolation.
+  - `src/lib/utils/stagent-paths.ts:4-6`: `getStagentDataDir()` reads `process.env.STAGENT_DATA_DIR || ~/.stagent`.
+  - `src/lib/db/index.ts:9-13`: the DB is opened from `join(dataDir, "stagent.db")` **once at module load**. The var is baked in per-process.
+  - Per `MEMORY.md → shared-stagent-data-dir.md`, the user runs domain clones (`stagent-wealth`, `stagent-growth`, `stagent-venture`) which set this var to different paths. A task created in one process is physically in a different SQLite file than a task queried from another process. This is architecturally intentional — the three domain clones isolate state so wealth/growth/venture do not leak into each other.
+  - **Remediation in this feature: none.** Per the Excluded list, domain-clone isolation changes are out of scope. A follow-up feature (outside this batch) could add an operator-facing startup log echoing the active data dir, or a `get_stagent_info` health-check tool. Not in this commit.
+
+  **Ruled out: transaction rollback.** Not a transaction; single insert. If the insert fails, the error surfaces immediately at `create_task` return time.
+
+  **Conclusion:** The profile validation gap (the primary spec ask) is unchanged in scope. The disappearance symptom is best addressed by the `list_tasks` empty-result note (added in this feature) plus operator-facing infrastructure discoverability (deferred). Failed-state preservation (AC #3) is verification-only — the code already does it correctly on every failure path identified.
