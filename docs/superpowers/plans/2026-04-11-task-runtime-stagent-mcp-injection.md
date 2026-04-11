@@ -318,25 +318,19 @@ EOF
 
 ---
 
-## Task 2: Mirror the injection in `resumeClaudeTask`
+## Task 2: Extract shared helpers and mirror into `resumeClaudeTask`
+
+**Why this task extracts helpers first:** The code review of Task 1 pointed out that the two execution paths (`executeClaudeTask` and `resumeClaudeTask`) have already drifted once — that drift is literally the bug this feature fixes. Duplicating the stagent injection inline at two call sites recreates the drift vector. Extracting two tiny private helpers at the top of the file and calling them from both sites makes future drift structurally impossible. This was a judgment call deferred by Task 1 (YAGNI, two call sites) that Task 2 reverses now that we can see both call sites in context.
 
 **Files:**
-- Modify: `src/lib/agents/claude-agent.ts` (`resumeClaudeTask` MCP merge at lines 606-634)
-- Test: `src/lib/agents/__tests__/claude-agent.test.ts` (add 2 new tests in the `resumeClaudeTask` describe block)
+- Modify: `src/lib/agents/claude-agent.ts` — add two private helpers near the top of the file (below imports), refactor `executeClaudeTask` (lines 488-530) and `resumeClaudeTask` (lines 606-634) to call them.
+- Test: `src/lib/agents/__tests__/claude-agent.test.ts` — add 2 new tests for `resumeClaudeTask`, and add one line to A-stagent-1 and R-stagent-1 asserting `createToolServer` was called with the task's `projectId`.
 
 ---
 
-- [ ] **Step 1: Find the `resumeClaudeTask` describe block in the test file**
+- [ ] **Step 1: Write the failing resume tests**
 
-Open `src/lib/agents/__tests__/claude-agent.test.ts` and search for `describe("resumeClaudeTask"`. If the block does not exist yet, create it at the end of the file (after Group D). If it exists, add the new tests inside.
-
-```bash
-grep -n 'describe("resumeClaudeTask' src/lib/agents/__tests__/claude-agent.test.ts
-```
-
-- [ ] **Step 2: Write the failing test — `resumeClaudeTask` injects stagent into `mcpServers`**
-
-Add this test inside the `resumeClaudeTask` describe block (create the describe block if needed):
+Open `src/lib/agents/__tests__/claude-agent.test.ts` and locate the `describe("resumeClaudeTask", ...)` block. If it does not exist, create it at the end of the file after Group D. Add these two tests:
 
 ```ts
 it("R-stagent-1: injects stagent MCP server into query mcpServers on resume", async () => {
@@ -361,14 +355,11 @@ it("R-stagent-1: injects stagent MCP server into query mcpServers on resume", as
   expect(queryCall.options.resume).toBe("session-abc");
   expect(queryCall.options.mcpServers).toBeDefined();
   expect(queryCall.options.mcpServers!.stagent).toEqual({ __mockStagentServer: true });
+  // Review note: assert the factory saw the task's projectId so a future
+  // regression that passes undefined or the wrong id is caught.
+  expect(vi.mocked(createToolServer)).toHaveBeenCalledWith("proj-7");
 });
-```
 
-- [ ] **Step 3: Write the failing test — `resumeClaudeTask` prepends `mcp__stagent__*` when profile has allowlist**
-
-Add this test right after R-stagent-1:
-
-```ts
 it("R-stagent-2: prepends mcp__stagent__* on resume when profile has allowedTools", async () => {
   mockWhere.mockResolvedValueOnce([
     makeTask({
@@ -396,20 +387,165 @@ it("R-stagent-2: prepends mcp__stagent__* on resume when profile has allowedTool
   };
   expect(queryCall.options.allowedTools).toContain("mcp__stagent__*");
   expect(queryCall.options.allowedTools).toContain("Read");
+  // Assert ordering: stagent prepended, not appended. The comment in the
+  // helper claims "prepend" — this test pins that contract.
+  expect(queryCall.options.allowedTools![0]).toBe("mcp__stagent__*");
 });
 ```
 
-- [ ] **Step 4: Run both failing tests**
+For the `createToolServer` assertion to work, the mocked factory must be importable in the test. Near the top-level static imports (after `import { query } from "@anthropic-ai/claude-agent-sdk"`), add:
+
+```ts
+import { createToolServer } from "@/lib/chat/stagent-tools";
+```
+
+This works because `vi.mock` is hoisted — the import picks up the mocked factory, not the real one.
+
+- [ ] **Step 2: Add the same `toHaveBeenCalledWith` assertion to A-stagent-1**
+
+While editing the test file, also add one line to the existing A-stagent-1 test (from Task 1) right before its closing brace:
+
+```ts
+  expect(vi.mocked(createToolServer)).toHaveBeenCalledWith("proj-7");
+```
+
+This hardens Task 1's test against the same regression class.
+
+- [ ] **Step 3: Run the new/updated tests to verify they fail**
 
 ```bash
 npx vitest run src/lib/agents/__tests__/claude-agent.test.ts -t "R-stagent"
+npx vitest run src/lib/agents/__tests__/claude-agent.test.ts -t "A-stagent-1"
 ```
 
-Expected: both FAIL. `resumeClaudeTask` does not yet inject stagent.
+Expected: R-stagent-1 and R-stagent-2 FAIL (resume path has no stagent injection yet). A-stagent-1 may PASS or FAIL depending on the mock reset behavior — if `vi.mocked(createToolServer).mock.calls` includes the Task 1 call, it passes; if the mock is reset between tests, it still passes because this test just awaited `executeClaudeTask` which triggers the call. Either way, it should be green after Step 3. If it's red, the `vi.mocked(createToolServer)` access is broken — diagnose before proceeding.
 
-- [ ] **Step 5: Inject stagent into `resumeClaudeTask`'s MCP merge**
+- [ ] **Step 4: Add the two helpers to `claude-agent.ts`**
 
-In `src/lib/agents/claude-agent.ts`, find this block around lines 606-612 (inside `resumeClaudeTask`):
+Open `src/lib/agents/claude-agent.ts`. Below the import block (after line ~45, before the first function definition), add:
+
+```ts
+// ─── Stagent MCP injection helpers ──────────────────────────────────────
+//
+// Shared by executeClaudeTask and resumeClaudeTask so the two runtime entry
+// points cannot drift apart. The drift between chat engine injection and
+// claude-code runtime injection is what produced the P0 bug this feature
+// fixes — do not duplicate these patterns inline.
+
+/**
+ * Merge the in-process stagent MCP server into a profile/browser/external
+ * MCP server map. Stagent is spread LAST so no upstream source can shadow
+ * the `stagent` key with its own server.
+ */
+function withStagentMcpServer(
+  profileServers: Record<string, unknown>,
+  browserServers: Record<string, unknown>,
+  externalServers: Record<string, unknown>,
+  projectId?: string | null,
+): Record<string, unknown> {
+  const stagentServer = createToolServer(projectId).asMcpServer();
+  return {
+    ...profileServers,
+    ...browserServers,
+    ...externalServers,
+    stagent: stagentServer,
+  };
+}
+
+/**
+ * Prepend `mcp__stagent__*` to a profile's explicit allowedTools so the
+ * stagent tool registration survives the SDK preset filter. Returns
+ * `undefined` when the profile has no allowedTools — callers should spread
+ * the result conditionally so the SDK falls through to preset defaults in
+ * that case.
+ */
+function withStagentAllowedTools(
+  profileAllowedTools: string[] | undefined,
+): string[] | undefined {
+  if (!profileAllowedTools) return undefined;
+  return Array.from(new Set(["mcp__stagent__*", ...profileAllowedTools]));
+}
+```
+
+- [ ] **Step 5: Refactor `executeClaudeTask` to call the helpers**
+
+Still in `src/lib/agents/claude-agent.ts`, find the MCP merge block in `executeClaudeTask` (lines ~488-504) that currently reads:
+
+```ts
+    // Merge browser + external MCP servers when enabled globally
+    const [browserServers, externalServers] = await Promise.all([
+      getBrowserMcpServers(),
+      getExternalMcpServers(),
+    ]);
+    // Inject the in-process stagent MCP server so scheduled and manual tasks
+    // have access to mcp__stagent__* tools (table CRUD, notifications, etc.).
+    // Spread profile/browser/external first, then stagent — ensures no profile
+    // can accidentally shadow our server under the `stagent` key.
+    const stagentServer = createToolServer(task.projectId).asMcpServer();
+    const profileMcpServers = ctx.payload?.mcpServers ?? {};
+    const mergedMcpServers = {
+      ...profileMcpServers,
+      ...browserServers,
+      ...externalServers,
+      stagent: stagentServer,
+    };
+```
+
+Replace it with:
+
+```ts
+    // Merge browser + external MCP servers, then inject the in-process
+    // stagent server via the shared helper (see withStagentMcpServer above).
+    const [browserServers, externalServers] = await Promise.all([
+      getBrowserMcpServers(),
+      getExternalMcpServers(),
+    ]);
+    const mergedMcpServers = withStagentMcpServer(
+      ctx.payload?.mcpServers ?? {},
+      browserServers,
+      externalServers,
+      task.projectId,
+    );
+```
+
+Then find the `allowedTools` spread in the same function's `query({ options: { ... } })` call (currently around lines 522-530):
+
+```ts
+        // When the profile set an explicit allowedTools, prepend mcp__stagent__*
+        // so the stagent tool registration is not filtered out. When the profile
+        // has no allowedTools, fall through to the preset defaults (stagent tools
+        // are still reachable because they're registered via mcpServers.stagent).
+        ...(ctx.payload?.allowedTools && {
+          allowedTools: Array.from(
+            new Set(["mcp__stagent__*", ...ctx.payload.allowedTools])
+          ),
+        }),
+```
+
+Replace it with:
+
+```ts
+        // allowedTools prepended via shared helper (see withStagentAllowedTools).
+        // Returns undefined when the profile has no allowlist so the SDK falls
+        // through to claude_code preset defaults.
+        ...(withStagentAllowedTools(ctx.payload?.allowedTools) && {
+          allowedTools: withStagentAllowedTools(ctx.payload?.allowedTools)!,
+        }),
+```
+
+**Note on the spread pattern:** calling the helper twice is a micro-cost we accept to preserve the existing conditional-spread idiom used throughout this file. If you prefer, extract a local `const allowed = withStagentAllowedTools(ctx.payload?.allowedTools);` one line above the `query({ ... })` call and reference it twice — whichever reads more cleanly at the call site. Functionally identical.
+
+- [ ] **Step 6: Run all Task 1 tests to confirm no regression from the refactor**
+
+```bash
+npx vitest run src/lib/agents/__tests__/claude-agent.test.ts -t "A-stagent"
+```
+
+Expected: all three A-stagent tests PASS. The refactor is behavior-preserving.
+
+- [ ] **Step 7: Apply the helpers in `resumeClaudeTask`**
+
+In `resumeClaudeTask` (around lines 606-634), find the same two blocks as `executeClaudeTask` had:
 
 ```ts
     // Merge browser + external MCP servers when enabled globally
@@ -421,85 +557,85 @@ In `src/lib/agents/claude-agent.ts`, find this block around lines 606-612 (insid
     const mergedMcpServers = { ...profileMcpServers, ...browserServers, ...externalServers };
 ```
 
-Replace it with the same pattern as Task 1, Step 5:
+Replace with:
 
 ```ts
-    // Merge browser + external MCP servers when enabled globally
+    // Merge browser + external MCP servers, then inject the in-process
+    // stagent server via the shared helper (see withStagentMcpServer).
     const [browserServers, externalServers] = await Promise.all([
       getBrowserMcpServers(),
       getExternalMcpServers(),
     ]);
-    // Inject the in-process stagent MCP server on resume too — session
-    // resumption and workflow step execution both pass through this path.
-    // Stagent wins the merge so no profile can shadow our server key.
-    const stagentServer = createToolServer(task.projectId).asMcpServer();
-    const profileMcpServers = ctx.payload?.mcpServers ?? {};
-    const mergedMcpServers = {
-      ...profileMcpServers,
-      ...browserServers,
-      ...externalServers,
-      stagent: stagentServer,
-    };
+    const mergedMcpServers = withStagentMcpServer(
+      ctx.payload?.mcpServers ?? {},
+      browserServers,
+      externalServers,
+      task.projectId,
+    );
 ```
 
-- [ ] **Step 6: Mirror the `allowedTools` merge in `resumeClaudeTask`**
-
-In the same function, find this line around 631 (inside the `query({ ... options: { ... } })` call of `resumeClaudeTask`):
+Then find the `allowedTools` spread:
 
 ```ts
         ...(ctx.payload?.allowedTools && { allowedTools: ctx.payload.allowedTools }),
 ```
 
-Replace it with the same block as Task 1, Step 10:
+Replace with the same pattern used in Step 5:
 
 ```ts
-        // When the profile set an explicit allowedTools, prepend mcp__stagent__*
-        // so the stagent tool registration is not filtered out. When the profile
-        // has no allowedTools, fall through to the preset defaults.
-        ...(ctx.payload?.allowedTools && {
-          allowedTools: Array.from(
-            new Set(["mcp__stagent__*", ...ctx.payload.allowedTools])
-          ),
+        // allowedTools prepended via shared helper (see withStagentAllowedTools).
+        ...(withStagentAllowedTools(ctx.payload?.allowedTools) && {
+          allowedTools: withStagentAllowedTools(ctx.payload?.allowedTools)!,
         }),
 ```
 
-- [ ] **Step 7: Run the resume tests to verify they pass**
+- [ ] **Step 8: Run the resume tests to verify they pass**
 
 ```bash
 npx vitest run src/lib/agents/__tests__/claude-agent.test.ts -t "R-stagent"
 ```
 
-Expected: both R-stagent tests PASS.
+Expected: both R-stagent-1 and R-stagent-2 PASS.
 
-- [ ] **Step 8: Run the full `claude-agent.test.ts` file**
+- [ ] **Step 9: Run the full `claude-agent.test.ts` file**
 
 ```bash
 npx vitest run src/lib/agents/__tests__/claude-agent.test.ts
 ```
 
-Expected: all tests PASS. Both A-stagent and R-stagent groups plus all existing tests.
+Expected: all tests PASS — 3 A-stagent tests, 2 R-stagent tests, and all pre-existing tests (total should be 34).
 
-- [ ] **Step 9: Run the TypeScript check**
+- [ ] **Step 10: Run the TypeScript check**
 
 ```bash
 npx tsc --noEmit
 ```
 
-Expected: exit 0. If there are type errors unrelated to this change, flag them to the user but do not fix them in this plan.
+Expected: exit 0, or the same pre-existing errors noted at the end of Task 1 (`callOptions possibly undefined`, `never has no call signatures`, `@/lib/db/schema` not found). These predate this feature and are not regressions. If NEW errors appear that are not on that list, diagnose before committing.
 
-- [ ] **Step 10: Commit**
+- [ ] **Step 11: Commit**
 
 ```bash
 git add src/lib/agents/claude-agent.ts src/lib/agents/__tests__/claude-agent.test.ts
 git commit -m "$(cat <<'EOF'
-fix(agents): inject stagent MCP into resumeClaudeTask
+fix(agents): extract stagent helpers + inject into resumeClaudeTask
 
-Mirrors the same stagent MCP server injection into resumeClaudeTask
-so workflow step execution and session resumption also have reliable
-access to mcp__stagent__* tools.
+Introduces two private helpers in claude-agent.ts — withStagentMcpServer
+and withStagentAllowedTools — that both executeClaudeTask and resumeClaudeTask
+now call. Previously the stagent injection was inline in executeClaudeTask
+(092f925); this commit refactors that call site to use the shared helpers
+and applies the same helpers to resumeClaudeTask.
 
-Tests R-stagent-1/2 cover mcpServers injection and allowedTools merge
-on the resume path.
+Extracting before mirroring was recommended by the Task 1 code review:
+the two runtime entry points have already drifted once — that drift is
+literally the bug this feature fixes. Shared helpers make the same class
+of drift structurally impossible going forward.
+
+New tests R-stagent-1/2 cover the resume path. Existing A-stagent-1 and
+new R-stagent-1 now also assert createToolServer was called with the
+task's projectId. R-stagent-2 asserts mcp__stagent__* is prepended
+(not merely present) so future reorderings can't silently break the
+preset filter behavior.
 
 With this commit, features/task-runtime-stagent-mcp-injection.md is
 fully implemented on both claude-code runtime entry points.
