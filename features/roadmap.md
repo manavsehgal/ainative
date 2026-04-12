@@ -386,6 +386,7 @@ Marketplace listing, publishing, trust, and community ecosystem features.
 | [marketplace-reviews](marketplace-reviews.md) | P3 | planned | marketplace-app-publishing, telemetry-foundation |
 | [marketplace-local-first-discovery](marketplace-local-first-discovery.md) | P3 | planned | marketplace-app-listing |
 | [app-embeddable-install-widget](app-embeddable-install-widget.md) | P3 | planned | marketplace-app-listing |
+| [my-apps-lifecycle](my-apps-lifecycle.md) | P1 | planned | app-runtime-bundle-foundation |
 
 ## Dependency Graph
 

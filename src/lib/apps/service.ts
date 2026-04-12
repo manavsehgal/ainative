@@ -5,10 +5,20 @@ import {
   schedules,
   appInstances,
   userTables,
+  userTableColumns,
+  userTableRows,
+  userTableRowHistory,
+  userTableRelationships,
+  userTableImports,
   userTableTriggers,
   userTableViews,
   notifications,
+  tableDocumentInputs,
+  taskTableInputs,
+  workflowTableInputs,
+  scheduleTableInputs,
 } from "@/lib/db/schema";
+import { deleteProjectCascade } from "@/lib/data/delete-project";
 import type { AppInstanceDbRow } from "@/lib/db/schema";
 import { addRows, createTable, deleteRows, getTable, listRows } from "@/lib/data/tables";
 import { join } from "path";
@@ -577,17 +587,75 @@ export async function clearAppSampleData(appId: string): Promise<{ deletedRows: 
   return { deletedRows };
 }
 
-export function uninstallApp(appId: string): void {
+export function uninstallApp(
+  appId: string,
+  options?: { deleteProject?: boolean },
+): void {
   const instance = getAppInstance(appId);
   if (!instance) {
     throw new AppRuntimeError(`App "${appId}" is not installed`);
   }
 
-  const scheduleIds = Object.values(instance.resourceMap.schedules);
+  const shouldDeleteProject =
+    options?.deleteProject === true && !!instance.projectId;
+
+  if (shouldDeleteProject) {
+    // deleteProjectCascade handles tables, schedules, app_instances (by projectId),
+    // and all other project children in FK-safe order.
+    deleteProjectCascade(instance.projectId!);
+    // The cascade deletes appInstances by projectId — ensure our row is gone
+    // (idempotent if cascade already removed it).
+    db.delete(appInstances).where(eq(appInstances.appId, appId)).run();
+    return;
+  }
+
+  // App-only cleanup: remove bootstrapped resources but preserve the project.
+  const rm = instance.resourceMap;
+
+  // 1. Triggers
+  const triggerIds = Object.values(rm.triggers ?? {});
+  if (triggerIds.length > 0) {
+    db.delete(userTableTriggers).where(inArray(userTableTriggers.id, triggerIds)).run();
+  }
+
+  // 2. Notifications
+  const notificationIds = Object.values(rm.notifications ?? {});
+  if (notificationIds.length > 0) {
+    db.delete(notifications).where(inArray(notifications.id, notificationIds)).run();
+  }
+
+  // 3. Saved views
+  const viewIds = Object.values(rm.savedViews ?? {});
+  if (viewIds.length > 0) {
+    db.delete(userTableViews).where(inArray(userTableViews.id, viewIds)).run();
+  }
+
+  // 4. Schedules
+  const scheduleIds = Object.values(rm.schedules);
   if (scheduleIds.length > 0) {
     db.delete(schedules).where(inArray(schedules.id, scheduleIds)).run();
   }
 
+  // 5. Tables + children (FK-safe order from deleteProjectCascade pattern)
+  const tableIds = Object.values(rm.tables);
+  if (tableIds.length > 0) {
+    // Junction tables first
+    db.delete(tableDocumentInputs).where(inArray(tableDocumentInputs.tableId, tableIds)).run();
+    db.delete(taskTableInputs).where(inArray(taskTableInputs.tableId, tableIds)).run();
+    db.delete(workflowTableInputs).where(inArray(workflowTableInputs.tableId, tableIds)).run();
+    db.delete(scheduleTableInputs).where(inArray(scheduleTableInputs.tableId, tableIds)).run();
+    // Children
+    db.delete(userTableRowHistory).where(inArray(userTableRowHistory.tableId, tableIds)).run();
+    db.delete(userTableTriggers).where(inArray(userTableTriggers.tableId, tableIds)).run();
+    db.delete(userTableImports).where(inArray(userTableImports.tableId, tableIds)).run();
+    db.delete(userTableViews).where(inArray(userTableViews.tableId, tableIds)).run();
+    db.delete(userTableRelationships).where(inArray(userTableRelationships.fromTableId, tableIds)).run();
+    db.delete(userTableRows).where(inArray(userTableRows.tableId, tableIds)).run();
+    db.delete(userTableColumns).where(inArray(userTableColumns.tableId, tableIds)).run();
+    db.delete(userTables).where(inArray(userTables.id, tableIds)).run();
+  }
+
+  // 6. App instance row
   db.delete(appInstances).where(eq(appInstances.appId, appId)).run();
 }
 

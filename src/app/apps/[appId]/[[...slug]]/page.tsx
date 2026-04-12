@@ -13,6 +13,7 @@ import { getAppInstance } from "@/lib/apps/service";
 import { resolveAppIcon } from "@/lib/apps/icons";
 import { getTable, listRows } from "@/lib/data/tables";
 import { AppActionButtons } from "@/components/apps/app-action-buttons";
+import { AppUninstallButton } from "@/components/apps/app-uninstall-button";
 
 export const dynamic = "force-dynamic";
 
@@ -121,11 +122,20 @@ export default async function AppRuntimePage({ params }: Props) {
       backHref="/marketplace"
       backLabel="Marketplace"
       actions={
-        instance.projectId ? (
-          <Button asChild size="sm" variant="outline">
-            <Link href={`/projects/${instance.projectId}`}>Open project</Link>
-          </Button>
-        ) : undefined
+        <div className="flex items-center gap-2">
+          {instance.projectId && (
+            <Button asChild size="sm" variant="outline">
+              <Link href={`/projects/${instance.projectId}`}>Open project</Link>
+            </Button>
+          )}
+          <AppUninstallButton
+            appId={instance.appId}
+            appName={instance.name}
+            variant="ghost"
+            size="sm"
+            redirectTo="/marketplace"
+          />
+        </div>
       }
     >
       <div className="mb-6 flex flex-wrap gap-2">

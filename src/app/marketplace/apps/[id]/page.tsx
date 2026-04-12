@@ -6,6 +6,7 @@ import { getAppCatalogEntry } from "@/lib/apps/service";
 import { getAppBundle } from "@/lib/apps/registry";
 import { resolveAppIcon } from "@/lib/apps/icons";
 import { AppDetailInstallButton } from "@/components/marketplace/app-detail-install-button";
+import { AppUninstallButton } from "@/components/apps/app-uninstall-button";
 import type { AppDifficulty, AppTrustLevel } from "@/lib/apps/types";
 
 export const dynamic = "force-dynamic";
@@ -77,15 +78,22 @@ export default async function AppDetailPage({ params }: Props) {
           </div>
         </div>
 
-        {/* Install / Open button */}
+        {/* Install / Open + Uninstall buttons */}
         <div className="shrink-0">
           {entry.installed ? (
-            <Link
-              href={`/apps/${entry.appId}`}
-              className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-            >
-              Open App
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/apps/${entry.appId}`}
+                className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              >
+                Open App
+              </Link>
+              <AppUninstallButton
+                appId={entry.appId}
+                appName={entry.name}
+                redirectTo="/marketplace"
+              />
+            </div>
           ) : (
             <AppDetailInstallButton appId={entry.appId} appName={entry.name} />
           )}

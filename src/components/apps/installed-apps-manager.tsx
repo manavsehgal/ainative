@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { resolveAppIcon } from "@/lib/apps/icons";
+import { UninstallConfirmationDialog } from "./uninstall-confirmation-dialog";
 
 interface InstalledAppSummary {
   appId: string;
@@ -32,8 +33,13 @@ export function InstalledAppsManager({ initialApps }: InstalledAppsManagerProps)
   const [apps, setApps] = useState(initialApps);
   const [pendingAppId, setPendingAppId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [uninstallTarget, setUninstallTarget] = useState<{
+    appId: string;
+    appName: string;
+  } | null>(null);
+  const [uninstalling, setUninstalling] = useState(false);
 
-  async function mutate(appId: string, action: "disable" | "enable" | "uninstall") {
+  async function mutate(appId: string, action: "disable" | "enable") {
     setPendingAppId(appId);
     try {
       const res = await fetch(`/api/apps/${appId}/${action}`, { method: "POST" });
@@ -42,27 +48,52 @@ export function InstalledAppsManager({ initialApps }: InstalledAppsManagerProps)
         throw new Error(data.error ?? `Failed to ${action} app`);
       }
 
-      if (action === "uninstall") {
-        setApps((current) => current.filter((app) => app.appId !== appId));
-      } else {
-        setApps((current) =>
-          current.map((app) =>
-            app.appId === appId
-              ? { ...app, status: action === "disable" ? "disabled" : "ready" }
-              : app
-          )
-        );
-      }
-
-      toast.success(
-        action === "uninstall"
-          ? "App uninstalled. Project data was preserved."
-          : `App ${action}d.`
+      setApps((current) =>
+        current.map((app) =>
+          app.appId === appId
+            ? { ...app, status: action === "disable" ? "disabled" : "ready" }
+            : app
+        )
       );
+
+      toast.success(`App ${action}d.`);
       startTransition(() => router.refresh());
     } catch (error) {
       toast.error(error instanceof Error ? error.message : `Failed to ${action} app`);
     } finally {
+      setPendingAppId(null);
+    }
+  }
+
+  async function handleUninstallConfirm(deleteProject: boolean) {
+    if (!uninstallTarget) return;
+    setUninstalling(true);
+    setPendingAppId(uninstallTarget.appId);
+    try {
+      const res = await fetch(`/api/apps/${uninstallTarget.appId}/uninstall`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ deleteProject }),
+      });
+      const data = (await res.json()) as { error?: string };
+      if (!res.ok) {
+        throw new Error(data.error ?? "Failed to uninstall app");
+      }
+
+      setApps((current) =>
+        current.filter((app) => app.appId !== uninstallTarget.appId)
+      );
+      toast.success(
+        deleteProject
+          ? `${uninstallTarget.appName} uninstalled and project deleted.`
+          : `${uninstallTarget.appName} uninstalled. Project data was preserved.`
+      );
+      setUninstallTarget(null);
+      startTransition(() => router.refresh());
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to uninstall app");
+    } finally {
+      setUninstalling(false);
       setPendingAppId(null);
     }
   }
@@ -145,7 +176,9 @@ export function InstalledAppsManager({ initialApps }: InstalledAppsManagerProps)
                   size="sm"
                   variant="destructive"
                   disabled={busy}
-                  onClick={() => mutate(app.appId, "uninstall")}
+                  onClick={() =>
+                    setUninstallTarget({ appId: app.appId, appName: app.name })
+                  }
                 >
                   {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                   Uninstall
@@ -155,6 +188,19 @@ export function InstalledAppsManager({ initialApps }: InstalledAppsManagerProps)
           </div>
         );
       })}
+
+      {uninstallTarget && (
+        <UninstallConfirmationDialog
+          appId={uninstallTarget.appId}
+          appName={uninstallTarget.appName}
+          open={!!uninstallTarget}
+          onOpenChange={(open) => {
+            if (!open) setUninstallTarget(null);
+          }}
+          onConfirm={handleUninstallConfirm}
+          uninstalling={uninstalling}
+        />
+      )}
     </div>
   );
 }

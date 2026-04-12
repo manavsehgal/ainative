@@ -2,6 +2,15 @@
 
 ## 2026-04-12
 
+### Groomed — My Apps Tab & User-Built App Lifecycle
+
+New feature: `my-apps-lifecycle` (P1). Consulted `/product-manager`, `/architect`, `/frontend-designer`.
+- "My Apps" marketplace tab for user-built apps (installed, archived, failed states)
+- Re-install from archived SAP directories, permanent delete from disk
+- Registry source tracking (`bundleSourceMap`), `deregisterBundle()` for cleanup
+- Delete confirmation dialog distinct from uninstall (permanent vs. archive)
+- Error & Rescue Registry covers 8 failure modes (corrupt manifests, race conditions, permission errors)
+
 ### Groomed — Sidebar Bug Fixes (3 features)
 
 Groomed 3 bugs from `handoff/` into feature specs:
