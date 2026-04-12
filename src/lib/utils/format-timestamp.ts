@@ -44,3 +44,27 @@ export function formatTime(date: string | Date): string {
     second: "2-digit",
   });
 }
+
+/**
+ * Compact date-time for space-constrained surfaces (kanban cards, bento cells).
+ * Today: "14:23" | This week: "Mon 14:23" | This year: "Apr 12, 14:23" | Older: "Apr 12, 2025"
+ */
+export function formatCompactDateTime(date: string | Date): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  const now = new Date();
+  const diff = now.getTime() - d.getTime();
+  const time = d.toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit" });
+
+  if (d.toDateString() === now.toDateString()) return time;
+
+  if (diff > 0 && diff < 7 * DAY) {
+    const weekday = d.toLocaleDateString("en-US", { weekday: "short" });
+    return `${weekday} ${time}`;
+  }
+
+  const monthDay = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
+  if (d.getFullYear() === now.getFullYear()) return `${monthDay}, ${time}`;
+
+  return `${monthDay}, ${d.getFullYear()}`;
+}

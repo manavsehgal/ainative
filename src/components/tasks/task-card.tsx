@@ -5,7 +5,8 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, Bot, ArrowUp, ArrowDown, Minus, Trash2, Check, X, Loader2, Square, CheckSquare, Pencil, FileText } from "lucide-react";
+import { AlertCircle, Bot, ArrowUp, ArrowDown, Minus, Trash2, Check, X, Loader2, Square, CheckSquare, Pencil, FileText, Clock } from "lucide-react";
+import { formatCompactDateTime } from "@/lib/utils/format-timestamp";
 import type { TaskStatus } from "@/lib/constants/task-status";
 
 export interface TaskItem {
@@ -121,6 +122,14 @@ export function TaskCard({
 
   const showDeleteButton = onDelete && !isRunning;
   const isEditable = (task.status === "planned" || task.status === "queued") && !!onEdit;
+
+  // Status-contextual date: planned→createdAt, running→startedAt, completed/failed→finishedAt
+  const relevantDate =
+    task.status === "planned" || task.status === "queued"
+      ? task.createdAt
+      : task.status === "running"
+        ? task.usage?.startedAt ?? task.updatedAt
+        : task.usage?.finishedAt ?? task.updatedAt;
 
   return (
     <Card
@@ -244,7 +253,13 @@ export function TaskCard({
                   <Pencil className="h-3.5 w-3.5" />
                 </button>
               )}
-              <div className="flex-1" />
+              <span
+                className="flex items-center gap-1 text-xs text-muted-foreground tabular-nums truncate min-w-0 flex-1"
+                title={new Date(relevantDate).toLocaleString()}
+              >
+                <Clock className="h-3 w-3 shrink-0" />
+                {formatCompactDateTime(relevantDate)}
+              </span>
               {showDeleteButton && (
                 <button
                   type="button"
@@ -257,7 +272,15 @@ export function TaskCard({
               )}
             </>
           )
-        ) : null}
+        ) : (
+          <span
+            className="flex items-center gap-1 text-xs text-muted-foreground tabular-nums truncate min-w-0 flex-1"
+            title={new Date(relevantDate).toLocaleString()}
+          >
+            <Clock className="h-3 w-3 shrink-0" />
+            {formatCompactDateTime(relevantDate)}
+          </span>
+        )}
       </div>
     </Card>
   );

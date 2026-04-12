@@ -10,8 +10,11 @@ import {
   Timer,
   Cpu,
   Paperclip,
+  CalendarClock,
+  CalendarCheck,
 } from "lucide-react";
 import { taskStatusVariant } from "@/lib/constants/status-colors";
+import { formatCompactDateTime } from "@/lib/utils/format-timestamp";
 import { TaskBentoCell } from "./task-bento-cell";
 import type { TaskItem } from "./task-card";
 import type { DocumentRow } from "@/lib/db/schema";
@@ -124,6 +127,22 @@ export function TaskBentoGrid({ task, docs }: TaskBentoGridProps) {
           icon={DollarSign}
           label="Est. Cost"
           value={formatCost(usage.costMicros)}
+        />
+      )}
+
+      {usage?.startedAt && (
+        <TaskBentoCell
+          icon={CalendarClock}
+          label="Started At"
+          value={formatCompactDateTime(usage.startedAt)}
+        />
+      )}
+
+      {usage?.finishedAt && (
+        <TaskBentoCell
+          icon={CalendarCheck}
+          label="Finished At"
+          value={formatCompactDateTime(usage.finishedAt)}
         />
       )}
 

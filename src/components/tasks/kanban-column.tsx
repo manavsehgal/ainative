@@ -9,6 +9,47 @@ import { Inbox, Plus, CheckSquare, Square, ArrowRight, Play, Trash2 } from "luci
 import { TaskCard, type TaskItem } from "./task-card";
 import { WorkflowKanbanCard, type WorkflowKanbanItem } from "@/components/workflows/workflow-kanban-card";
 import type { TaskStatus } from "@/lib/constants/task-status";
+import type { SortOrder } from "./kanban-board";
+
+type KanbanItem =
+  | { kind: "task"; data: TaskItem }
+  | { kind: "workflow"; data: WorkflowKanbanItem };
+
+function itemName(item: KanbanItem): string {
+  return item.kind === "task" ? item.data.title : item.data.name;
+}
+
+function mergedItems(
+  tasks: TaskItem[],
+  workflows: WorkflowKanbanItem[],
+  sortOrder: SortOrder
+): KanbanItem[] {
+  const items: KanbanItem[] = [
+    ...workflows.map((w) => ({ kind: "workflow" as const, data: w })),
+    ...tasks.map((t) => ({ kind: "task" as const, data: t })),
+  ];
+
+  switch (sortOrder) {
+    case "created-desc":
+      return items.sort(
+        (a, b) => new Date(b.data.createdAt).getTime() - new Date(a.data.createdAt).getTime()
+      );
+    case "created-asc":
+      return items.sort(
+        (a, b) => new Date(a.data.createdAt).getTime() - new Date(b.data.createdAt).getTime()
+      );
+    case "title-asc":
+      return items.sort((a, b) => itemName(a).localeCompare(itemName(b)));
+    case "priority":
+      // Workflows lack priority — keep them at top, then sort tasks by priority
+      return items.sort((a, b) => {
+        if (a.kind === "workflow" && b.kind === "workflow") return 0;
+        if (a.kind === "workflow") return -1;
+        if (b.kind === "workflow") return 1;
+        return a.data.priority - b.data.priority;
+      });
+  }
+}
 
 const columnLabels: Record<string, string> = {
   planned: "Planned",
@@ -22,6 +63,7 @@ export function KanbanColumn({
   status,
   tasks,
   workflows = [],
+  sortOrder = "priority",
   exitingIds,
   onTaskClick,
   onAddTask,
@@ -34,6 +76,7 @@ export function KanbanColumn({
   status: TaskStatus;
   tasks: TaskItem[];
   workflows?: WorkflowKanbanItem[];
+  sortOrder?: SortOrder;
   exitingIds?: Set<string>;
   onTaskClick: (task: TaskItem) => void;
   onAddTask?: () => void;
@@ -195,30 +238,26 @@ export function KanbanColumn({
               </div>
             ) : (
               <>
-                {/* Workflow cards first (not draggable) */}
-                {workflows.map((workflow) => (
-                  <WorkflowKanbanCard key={workflow.id} workflow={workflow} />
-                ))}
-                {/* Task cards (draggable) */}
-                {tasks.map((task) => {
-                  const isExiting = exitingIds?.has(task.id);
-                  return (
+                {mergedItems(tasks, workflows, sortOrder).map((item) =>
+                  item.kind === "workflow" ? (
+                    <WorkflowKanbanCard key={item.data.id} workflow={item.data} />
+                  ) : (
                     <div
-                      key={task.id}
-                      className={isExiting ? "animate-card-exit pointer-events-none" : ""}
+                      key={item.data.id}
+                      className={exitingIds?.has(item.data.id) ? "animate-card-exit pointer-events-none" : ""}
                     >
                       <TaskCard
-                        task={task}
+                        task={item.data}
                         onClick={onTaskClick}
                         selectionMode={selectMode}
-                        selected={selectedIds.has(task.id)}
+                        selected={selectedIds.has(item.data.id)}
                         onSelect={handleSelect}
                         onDelete={onDeleteTask}
                         onEdit={onEditTask}
                       />
                     </div>
-                  );
-                })}
+                  )
+                )}
               </>
             )}
           </div>

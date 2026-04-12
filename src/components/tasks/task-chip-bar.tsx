@@ -19,6 +19,8 @@ import {
   ArrowUp,
   ArrowDown,
   Minus,
+  CalendarClock,
+  CalendarCheck,
 } from "lucide-react";
 import { taskStatusVariant } from "@/lib/constants/status-colors";
 import { MAX_RESUME_COUNT } from "@/lib/constants/task-status";
@@ -172,6 +174,28 @@ export function TaskChipBar({
         >
           Updated {formatTimestamp(task.updatedAt)}
         </Badge>
+
+        {task.usage?.startedAt && (
+          <Badge
+            variant="outline"
+            className="text-xs font-normal gap-1"
+            title={new Date(task.usage.startedAt).toLocaleString()}
+          >
+            <CalendarClock className="h-3 w-3" />
+            Started {formatTimestamp(task.usage.startedAt)}
+          </Badge>
+        )}
+
+        {task.usage?.finishedAt && (
+          <Badge
+            variant="outline"
+            className="text-xs font-normal gap-1"
+            title={new Date(task.usage.finishedAt).toLocaleString()}
+          >
+            <CalendarCheck className="h-3 w-3" />
+            Finished {formatTimestamp(task.usage.finishedAt)}
+          </Badge>
+        )}
       </div>
 
       {/* Row 3: Relationship Links (only if any FK exists) */}

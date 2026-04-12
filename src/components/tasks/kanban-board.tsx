@@ -427,6 +427,7 @@ export function KanbanBoard({
                 status={status}
                 tasks={groupedTasks[status]}
                 workflows={groupedWorkflows[status]}
+                sortOrder={sortOrder}
                 exitingIds={exitingIds}
                 onTaskClick={handleTaskClick}
                 onAddTask={status === "planned" ? () => router.push("/tasks/new") : undefined}
