@@ -297,7 +297,7 @@ Automates the PRIVATE-INSTANCES runbook — turns the manual `git merge main` + 
 
 | Feature | Priority | Status | Dependencies |
 |---------|----------|--------|--------------|
-| [instance-bootstrap](instance-bootstrap.md) | P1 | planned | — |
+| [instance-bootstrap](instance-bootstrap.md) | P1 | completed | — |
 | [upgrade-detection](upgrade-detection.md) | P1 | planned | instance-bootstrap, scheduled-prompt-loops |
 | [upgrade-session](upgrade-session.md) | P1 | planned | instance-bootstrap, upgrade-detection, agent-integration, agent-profile-catalog |
 | [instance-license-metering](instance-license-metering.md) | P2 | planned | instance-bootstrap, local-license-manager, license-activation-flow |
@@ -648,14 +648,13 @@ Phase 4 — Runtime Expansion
 
 App Marketplace chain (26 features, 8 sprints):
 
-44. **Sprint 44 — Clear WIP + Unblock Critical Paths**: Finish runtime-validation-hardening, database-snapshot-backup, dynamic-slash-commands, profile-environment-sync. Start instance-bootstrap (P1), local-license-manager (P0), supabase-cloud-backend (P0) — zero-dep blockers that unblock Chains A (17 features) and B (12 features)
-45. **Sprint 45 — Gate Layer**: marketplace-install-hardening (P1) + marketplace-access-gate (P1) — the two intermediate blockers that gate all marketplace features
-46. **Sprint 46 — Core App Platform**: app-package-format (P1) + app-extended-primitives-tier1 (P1) + marketplace-app-listing (P1) — all 3 parallelize, everything else builds on these
-47. **Sprint 47 — Authoring + Seed Data**: app-seed-data-generation (P1) + chat-app-builder (P1) + promote-conversation-to-app (P1, stagger) — enables app creation workflows
-48. **Sprint 48 — Publishing Pipeline (P1 Complete)**: app-cli-tools (P1) + marketplace-app-publishing (P1) + marketplace-trust-ladder (P1) — all 9 P1 marketplace features done, end-to-end flow operational
-49. **Sprint 49 — P2 Wave 1**: app-extended-primitives-tier2 + conversational-app-editing + app-remix + app-single-file-format + app-conflict-resolution
-50. **Sprint 50 — P2 Wave 2**: visual-app-studio + app-distribution-channels + app-forking-remix + creator-portal (needs telemetry-foundation) + app-updates-dependencies
-51. **Sprint 51 — P3 Polish**: app-mcp-server-wiring + app-budget-policies + marketplace-reviews (needs telemetry) + marketplace-local-first-discovery + curated-collections + app-embeddable-install-widget
+44. **Sprint 44 — Clear WIP + Gate Layer**: Finish runtime-validation-hardening, database-snapshot-backup, dynamic-slash-commands, profile-environment-sync. Build marketplace-install-hardening (P1) — the sole remaining gate (instance-bootstrap, local-license-manager, supabase-cloud-backend, marketplace-access-gate all verified complete)
+45. **Sprint 45 — Core App Platform**: app-package-format (P1) + app-extended-primitives-tier1 (P1) + marketplace-app-listing (P1) — all 3 parallelize, everything else builds on these
+46. **Sprint 46 — Authoring + Seed Data**: app-seed-data-generation (P1) + chat-app-builder (P1) + promote-conversation-to-app (P1, stagger) — enables app creation workflows
+47. **Sprint 47 — Publishing Pipeline (P1 Complete)**: app-cli-tools (P1) + marketplace-app-publishing (P1) + marketplace-trust-ladder (P1) — all 9 P1 marketplace features done, end-to-end flow operational
+48. **Sprint 48 — P2 Wave 1**: app-extended-primitives-tier2 + conversational-app-editing + app-remix + app-single-file-format + app-conflict-resolution
+49. **Sprint 49 — P2 Wave 2**: visual-app-studio + app-distribution-channels + app-forking-remix + creator-portal + app-updates-dependencies
+50. **Sprint 50 — P3 Polish**: app-mcp-server-wiring + app-budget-policies + marketplace-reviews + marketplace-local-first-discovery + curated-collections + app-embeddable-install-widget
 
 Browser automation chain:
 

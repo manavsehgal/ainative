@@ -20,6 +20,23 @@ Key decisions locked during brainstorm:
 Source: handoff/stagent-app-marketplace-spec.md + brainstorm session with /architect, /product-manager, /frontend-designer
 Plan: .claude/plans/flickering-petting-hammock.md
 
+### Frontmatter Sync — 5 stale spec statuses corrected
+
+Discovered that 5 feature specs had `status: planned` in frontmatter while the roadmap correctly showed `completed`. All verified against implementation and tests, then flipped:
+- `instance-bootstrap` — 59/59 tests pass, 27/27 ACs verified, all 7 source files + 6 test files confirmed
+- `local-license-manager` — 37/37 tests pass, 12/12 ACs verified, manager + tier-limits + features + cloud-validation + notifications modules confirmed
+- `supabase-cloud-backend` — cloud client modules exist in src/lib/cloud/, roadmap confirmed completed
+- `marketplace-access-gate` — roadmap confirmed completed, downstream features already depend on it
+- `telemetry-foundation` — src/lib/telemetry/queue.ts + UI components confirmed, roadmap confirmed completed
+
+**Impact on Sprint 44 plan:** Chain A partially unblocked (instance-bootstrap done), Chain B fully unblocked (license-manager + supabase + access-gate all done). Only `marketplace-install-hardening` remains as the true gate for marketplace features. Sprint 44 scope reduces significantly — only need to finish 4 WIP features + build marketplace-install-hardening.
+
+### Completed — instance-bootstrap (P1, Ship Verified)
+
+Ship verification of existing implementation: 27/27 acceptance criteria pass, 59/59 unit tests pass across 6 test files. Feature was fully implemented in a prior session but never status-flipped. All 7 source files in `src/lib/instance/` confirmed: types, settings, detect, fingerprint, git-ops, bootstrap, upgrade-poller. Integration in `src/instrumentation-node.ts` wired and tested. Dev-mode gates verified (STAGENT_DEV_MODE, sentinel file, INSTANCE_MODE override). Consent flow tri-state (enabled/not_yet/declined_permanently) confirmed. Pre-push hook template with STAGENT_HOOK_VERSION marker and ALLOW_PRIVATE_PUSH escape hatch verified.
+
+This unblocks Chain A: marketplace-install-hardening -> app-package-format -> 15 downstream features.
+
 ### Reviewed — App Marketplace Execution Plan (Sprints 44-51)
 
 Product-manager review of the 26 groomed marketplace specs. Key findings:

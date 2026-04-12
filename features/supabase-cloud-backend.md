@@ -1,6 +1,6 @@
 ---
 title: Supabase Cloud Backend
-status: planned
+status: completed
 priority: P0
 milestone: post-mvp
 source: plans/lucky-fluttering-flute.md

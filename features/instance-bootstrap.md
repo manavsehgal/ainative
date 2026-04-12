@@ -1,6 +1,6 @@
 ---
 title: Instance Bootstrap & Branch Guardrails
-status: planned
+status: completed
 priority: P1
 milestone: post-mvp
 source: features/architect-report.md

@@ -1,6 +1,6 @@
 ---
 title: Marketplace Access Gate
-status: planned
+status: completed
 priority: P1
 milestone: plg-core
 source: plans/lucky-fluttering-flute.md

@@ -1,6 +1,6 @@
 ---
 title: Telemetry Foundation
-status: planned
+status: completed
 priority: P2
 milestone: plg-growth
 source: features/roadmap.md
