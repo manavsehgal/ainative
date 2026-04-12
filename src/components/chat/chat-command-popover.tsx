@@ -183,9 +183,11 @@ function ToolCatalogItems({
                     label: entry.name,
                     text: entry.behavior === "execute_immediately"
                       ? entry.name
-                      : entry.group === "Skills"
-                        ? `Use the ${entry.name} profile: `
-                        : `Use ${entry.name} to `,
+                      : entry.name === "build_app"
+                        ? "Build a new app: "
+                        : entry.group === "Skills"
+                          ? `Use the ${entry.name} profile: `
+                          : `Use ${entry.name} to `,
                   })
                 }
               >

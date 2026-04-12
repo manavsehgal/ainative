@@ -110,6 +110,7 @@ export async function* sendCodexMessage(
     projectId: conversation.projectId,
     projectName,
     workspace,
+    userMessage: userContent,
   });
 
   // Persist user message

@@ -182,6 +182,7 @@ const STAGENT_TOOLS: ToolCatalogEntry[] = [
   { name: "search_messages", description: "Search across all conversations", group: "Chat", paramHint: "query" },
 
   // ── Apps ──
+  { name: "build_app", description: "Build a new app through a guided 6-step conversation", group: "Apps", paramHint: "describe your app idea" },
   { name: "introspect_project", description: "Examine a project's tables, schedules, profiles, and documents", group: "Apps", paramHint: "projectId" },
   { name: "create_app_bundle", description: "Create and install a new app from a structured specification", group: "Apps", paramHint: "name, description, category, tables, schedules" },
   { name: "list_app_templates", description: "List available built-in app bundles as templates", group: "Apps" },
