@@ -95,7 +95,7 @@ export function validateFileReferences(
 
 // ── SAP → Bundle conversion ──
 
-export async function sapToBundle(dir: string): Promise<AppBundle> {
+export function sapToBundleSync(dir: string): AppBundle {
   const manifestPath = join(dir, "manifest.yaml");
   if (!existsSync(manifestPath)) {
     throw new Error(`Missing manifest.yaml in ${dir}`);
@@ -205,6 +205,10 @@ export async function sapToBundle(dir: string): Promise<AppBundle> {
     schedules,
     ui,
   };
+}
+
+export async function sapToBundle(dir: string): Promise<AppBundle> {
+  return sapToBundleSync(dir);
 }
 
 // ── Bundle → SAP conversion ──

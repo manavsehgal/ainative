@@ -2,6 +2,7 @@ import { readdirSync, existsSync } from "fs";
 import { join } from "path";
 import { homedir } from "os";
 import { BUILTIN_APP_BUNDLES } from "./builtins";
+import { sapToBundleSync } from "./sap-converter";
 import { appBundleSchema } from "./validation";
 import type { AppBundle } from "./types";
 
@@ -44,7 +45,43 @@ export function listAppBundles(): AppBundle[] {
 }
 
 export function getAppBundle(appId: string): AppBundle | undefined {
-  return ensureBundlesLoaded().get(appId);
+  const cache = ensureBundlesLoaded();
+  let bundle = cache.get(appId);
+  if (!bundle && !failedSapLoads.has(appId)) {
+    bundle = tryLoadSapBundleSync(appId) ?? undefined;
+    if (bundle) {
+      cache.set(appId, bundle);
+      bundleSourceMap.set(appId, "sap");
+    }
+  }
+  return bundle;
+}
+
+/** JIT fallback: attempt to load a single SAP bundle from disk on cache miss. */
+function tryLoadSapBundleSync(appId: string): AppBundle | null {
+  try {
+    const dataDir =
+      process.env.STAGENT_DATA_DIR || join(homedir(), ".stagent");
+    const dir = join(dataDir, "apps", appId);
+    const manifestPath = join(dir, "manifest.yaml");
+    if (!existsSync(manifestPath)) return null;
+
+    const bundle = sapToBundleSync(dir);
+    const parsed = appBundleSchema.safeParse(bundle);
+    if (!parsed.success) {
+      failedSapLoads.set(
+        appId,
+        parsed.error.issues.map((i) => i.message).join(", "),
+      );
+      return null;
+    }
+    return parsed.data;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn(`[apps] JIT SAP load failed for ${appId}:`, msg);
+    failedSapLoads.set(appId, msg);
+    return null;
+  }
 }
 
 /**

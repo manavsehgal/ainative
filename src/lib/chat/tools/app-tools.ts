@@ -205,6 +205,7 @@ export function appTools(ctx: ToolContext) {
           const { installApp, saveSapDirectory } = await import(
             "@/lib/apps/service"
           );
+          const { registerBundle } = await import("@/lib/apps/registry");
 
           // Synthesize (validates against appBundleSchema internally)
           const bundle = synthesizeBundle({
@@ -223,10 +224,11 @@ export function appTools(ctx: ToolContext) {
             pages: args.pages,
           });
 
-          // Install (creates project, tables, schedules)
-          const instance = await installApp(bundle.manifest.id, undefined, bundle);
+          // Register in memory first so bundle is discoverable immediately
+          registerBundle(bundle);
 
-          // Persist as .sap directory (non-critical — catch and warn)
+          // Persist to disk BEFORE install — if install fails, SAP files
+          // allow recovery via JIT loading on next getAppBundle() call
           try {
             await saveSapDirectory(bundle.manifest.id, bundle);
           } catch (sapErr) {
@@ -235,6 +237,9 @@ export function appTools(ctx: ToolContext) {
               sapErr,
             );
           }
+
+          // Install (creates project, tables, schedules — may fail during bootstrap)
+          const instance = await installApp(bundle.manifest.id, undefined, bundle);
 
           ctx.onToolResult?.("create_app_bundle", {
             appId: instance.appId,

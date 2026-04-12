@@ -4,6 +4,7 @@ import { join } from "path";
 import { tmpdir } from "os";
 import {
   sapToBundle,
+  sapToBundleSync,
   bundleToSap,
   applyNamespace,
   stripNamespace,
@@ -151,6 +152,25 @@ describe("sapToBundle", () => {
     };
     writeFileSync(join(dir, "manifest.yaml"), yaml.dump(manifest));
     await expect(sapToBundle(dir)).rejects.toThrow("Missing files");
+  });
+});
+
+describe("sapToBundleSync", () => {
+  it("produces identical output to sapToBundle", async () => {
+    const asyncResult = await sapToBundle(FIXTURE_DIR);
+    const syncResult = sapToBundleSync(FIXTURE_DIR);
+
+    expect(syncResult.manifest).toEqual(asyncResult.manifest);
+    expect(syncResult.tables).toEqual(asyncResult.tables);
+    expect(syncResult.schedules).toEqual(asyncResult.schedules);
+    expect(syncResult.profiles).toEqual(asyncResult.profiles);
+    expect(syncResult.blueprints).toEqual(asyncResult.blueprints);
+    expect(syncResult.ui).toEqual(asyncResult.ui);
+  });
+
+  it("throws on missing manifest.yaml (sync)", () => {
+    const dir = makeTempDir("no-manifest-sync");
+    expect(() => sapToBundleSync(dir)).toThrow("Missing manifest.yaml");
   });
 });
 
