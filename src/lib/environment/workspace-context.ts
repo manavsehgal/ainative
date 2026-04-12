@@ -3,6 +3,8 @@ import { homedir } from "os";
 import { execFileSync } from "child_process";
 import { statSync } from "fs";
 import { join } from "path";
+import { getStagentDataDir } from "@/lib/utils/stagent-paths";
+import { isDevMode, isPrivateInstance } from "@/lib/instance/detect";
 
 /** The directory the user launched stagent from (falls back to process.cwd()). */
 export function getLaunchCwd(): string {
@@ -15,6 +17,8 @@ export interface WorkspaceContext {
   parentPath: string;
   gitBranch: string | null;
   isWorktree: boolean;
+  dataDir: string;
+  dataDirMismatch: boolean;
 }
 
 export function getWorkspaceContext(): WorkspaceContext {
@@ -47,5 +51,13 @@ export function getWorkspaceContext(): WorkspaceContext {
     // no .git at all
   }
 
-  return { cwd, folderName, parentPath, gitBranch, isWorktree };
+  const rawDataDir = getStagentDataDir();
+  const dataDir = rawDataDir.startsWith(home)
+    ? "~" + rawDataDir.slice(home.length)
+    : rawDataDir;
+
+  // Red flag: non-main repo using the default shared DB instead of its own
+  const dataDirMismatch = !isDevMode(cwd) && !isPrivateInstance();
+
+  return { cwd, folderName, parentPath, gitBranch, isWorktree, dataDir, dataDirMismatch };
 }
