@@ -252,11 +252,3 @@ Not yet: a marketplace UI, an upgrade assistant that guides upstream merges into
 The machine that builds machines is now a machine that enables anyone to build machines. The factory is open. The assembly line is documented. The primitives are stable. The governance is inherited.
 
 Your domain is the only variable. And your `program.md` — whether it is a prompt in chat, a specification in a markdown file, or a conversation with an AI agent that understands the primitives — is all it takes to start.
-
----
-
-Chapter 14 of 14
-
-### Explore Related Features
-
-[workflows](https://stagent.io/docs/workflows) · [profiles](https://stagent.io/docs/profiles) · [schedules](https://stagent.io/docs/schedules) · [blueprints](https://stagent.io/docs/blueprints) · [instance-bootstrap](https://stagent.io/docs/instance-bootstrap)
