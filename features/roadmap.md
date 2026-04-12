@@ -350,7 +350,7 @@ Growing the composition grammar from 7 primitives to ~18, enabling richer app ca
 
 | Feature | Priority | Status | Dependencies |
 |---------|----------|--------|--------------|
-| [app-extended-primitives-tier1](app-extended-primitives-tier1.md) | P1 | planned | marketplace-install-hardening |
+| [app-extended-primitives-tier1](app-extended-primitives-tier1.md) | P1 | completed | marketplace-install-hardening |
 | [app-extended-primitives-tier2](app-extended-primitives-tier2.md) | P2 | planned | app-extended-primitives-tier1 |
 | [app-mcp-server-wiring](app-mcp-server-wiring.md) | P2 | planned | app-extended-primitives-tier2, marketplace-trust-ladder |
 | [app-budget-policies](app-budget-policies.md) | P3 | planned | app-extended-primitives-tier2 |

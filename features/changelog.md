@@ -20,6 +20,19 @@ Key decisions locked during brainstorm:
 Source: handoff/stagent-app-marketplace-spec.md + brainstorm session with /architect, /product-manager, /frontend-designer
 Plan: .claude/plans/flickering-petting-hammock.md
 
+### Completed — app-extended-primitives-tier1 (P1)
+
+Extended AppBundle from 7 to 12 primitives by wiring 5 new template types into the install/bootstrap pipeline:
+- **Triggers** — `AppTriggerTemplate` with row_added/updated/deleted events, bootstraps into `user_table_triggers` table
+- **Documents** — `AppDocumentTemplate` with glob patterns and size limits, tracked as declarations in resource map
+- **Notifications** — `AppNotificationTemplate` with lifecycle modes, bootstraps into `notifications` table
+- **Saved Views** — `AppSavedViewTemplate` with filters/sort/columns, bootstraps into `user_table_views` table
+- **Environment Variables** — `AppEnvVarDeclaration` with required/sensitive flags, tracked as declarations
+
+All 5 new fields are optional on AppBundle (backward compatible). Both builtin apps (wealth-manager, growth-module) include examples of all 5 primitives. 5 new Zod schemas, 5 new permissions, extended AppResourceMap. 9 unit tests covering all bootstrap handlers, idempotency, and validation.
+
+845 tests pass, `tsc --noEmit` clean. Unblocks 4 downstream features: app-extended-primitives-tier2, chat-app-builder, marketplace-trust-ladder, marketplace-app-publishing.
+
 ### Completed — app-package-format (P1)
 
 Implemented the `.sap` (Stagent App Package) YAML-based directory format — the portable, distributable representation of an AppBundle. Key deliverables:

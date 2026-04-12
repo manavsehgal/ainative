@@ -38,6 +38,11 @@ export const APP_PERMISSIONS = [
   "schedules:create",
   "profiles:link",
   "blueprints:link",
+  "triggers:create",
+  "documents:create",
+  "notifications:create",
+  "views:create",
+  "env:declare",
 ] as const;
 
 export type AppPermission = (typeof APP_PERMISSIONS)[number];
@@ -84,6 +89,56 @@ export interface AppScheduleTemplate {
   prompt: string;
   cronExpression: string;
   agentProfile?: string;
+}
+
+// ── Tier 1 extended primitives ──
+
+export interface AppTriggerTemplate {
+  key: string;
+  name: string;
+  description?: string;
+  tableKey: string;
+  event: "row_added" | "row_updated" | "row_deleted";
+  action: "notify" | "schedule_run" | "webhook";
+  actionConfig: Record<string, unknown>;
+}
+
+export interface AppDocumentTemplate {
+  key: string;
+  name: string;
+  description?: string;
+  globPatterns?: string[];
+  maxSizeMb?: number;
+}
+
+export interface AppNotificationTemplate {
+  key: string;
+  title: string;
+  body: string;
+  type: "info" | "warning" | "success" | "error";
+  lifecycle?: "transient" | "persistent" | "actionable";
+  triggerKey?: string;
+}
+
+export interface AppSavedViewTemplate {
+  key: string;
+  name: string;
+  description?: string;
+  tableKey: string;
+  filters: Record<string, unknown>;
+  sortColumn?: string;
+  sortDirection?: "asc" | "desc";
+  visibleColumns?: string[];
+}
+
+export interface AppEnvVarDeclaration {
+  key: string;
+  name: string;
+  description: string;
+  required: boolean;
+  sensitive: boolean;
+  defaultValue?: string;
+  validationPattern?: string;
 }
 
 export interface AppActionBinding {
@@ -171,6 +226,11 @@ export interface AppBundle {
   tables: AppTableTemplate[];
   schedules: AppScheduleTemplate[];
   ui: AppUiSchema;
+  triggers?: AppTriggerTemplate[];
+  documents?: AppDocumentTemplate[];
+  notifications?: AppNotificationTemplate[];
+  savedViews?: AppSavedViewTemplate[];
+  envVars?: AppEnvVarDeclaration[];
 }
 
 // ── SAP (Stagent App Package) manifest types ──
@@ -245,6 +305,11 @@ export interface SapManifest {
 export interface AppResourceMap {
   tables: Record<string, string>;
   schedules: Record<string, string>;
+  triggers?: Record<string, string>;
+  documents?: Record<string, string>;
+  notifications?: Record<string, string>;
+  savedViews?: Record<string, string>;
+  envVars?: Record<string, string>;
 }
 
 export interface AppInstanceRecord {

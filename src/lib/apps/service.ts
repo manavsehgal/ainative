@@ -1,6 +1,13 @@
 import { eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { projects, schedules, appInstances } from "@/lib/db/schema";
+import {
+  projects,
+  schedules,
+  appInstances,
+  userTableTriggers,
+  userTableViews,
+  notifications,
+} from "@/lib/db/schema";
 import type { AppInstanceDbRow } from "@/lib/db/schema";
 import { addRows, createTable, deleteRows, getTable, listRows } from "@/lib/data/tables";
 import { getAppBundle, listAppBundles } from "./registry";
@@ -308,6 +315,111 @@ export async function bootstrapApp(appId: string): Promise<AppInstanceRecord> {
         });
 
         resourceMap.schedules[scheduleTemplate.key] = scheduleId;
+      }
+    }
+
+    // ── Tier 1 primitives ──
+
+    // Triggers
+    if (bundle.triggers) {
+      if (!resourceMap.triggers) resourceMap.triggers = {};
+      for (const trigger of bundle.triggers) {
+        if (!resourceMap.triggers[trigger.key]) {
+          const tableId = resourceMap.tables[trigger.tableKey];
+          if (!tableId) continue; // skip if referenced table wasn't provisioned
+          const triggerId = crypto.randomUUID();
+          const now = new Date();
+          await db.insert(userTableTriggers).values({
+            id: triggerId,
+            tableId,
+            name: trigger.name,
+            triggerEvent: trigger.event,
+            condition: null,
+            actionType: trigger.action === "notify" ? "create_task" : "run_workflow",
+            actionConfig: JSON.stringify(trigger.actionConfig),
+            status: "paused",
+            fireCount: 0,
+            lastFiredAt: null,
+            createdAt: now,
+            updatedAt: now,
+          });
+          resourceMap.triggers[trigger.key] = triggerId;
+        }
+      }
+    }
+
+    // Notifications (template-based — inserted as initial notifications)
+    if (bundle.notifications) {
+      if (!resourceMap.notifications) resourceMap.notifications = {};
+      for (const notif of bundle.notifications) {
+        if (!resourceMap.notifications[notif.key]) {
+          const notifId = crypto.randomUUID();
+          await db.insert(notifications).values({
+            id: notifId,
+            taskId: null,
+            type: "agent_message",
+            title: notif.title,
+            body: notif.body,
+            read: false,
+            toolName: null,
+            toolInput: null,
+            response: null,
+            respondedAt: null,
+            createdAt: new Date(),
+          });
+          resourceMap.notifications[notif.key] = notifId;
+        }
+      }
+    }
+
+    // Saved views
+    if (bundle.savedViews) {
+      if (!resourceMap.savedViews) resourceMap.savedViews = {};
+      for (const view of bundle.savedViews) {
+        if (!resourceMap.savedViews[view.key]) {
+          const tableId = resourceMap.tables[view.tableKey];
+          if (!tableId) continue;
+          const viewId = crypto.randomUUID();
+          const now = new Date();
+          const config = JSON.stringify({
+            filters: view.filters,
+            sortColumn: view.sortColumn,
+            sortDirection: view.sortDirection,
+            visibleColumns: view.visibleColumns,
+          });
+          await db.insert(userTableViews).values({
+            id: viewId,
+            tableId,
+            name: view.name,
+            type: "grid",
+            config,
+            isDefault: false,
+            createdAt: now,
+            updatedAt: now,
+          });
+          resourceMap.savedViews[view.key] = viewId;
+        }
+      }
+    }
+
+    // Documents and envVars are tracked in the resource map but
+    // don't create DB rows — they're metadata declarations used by
+    // the install wizard and runtime, not provisioned resources.
+    if (bundle.documents) {
+      if (!resourceMap.documents) resourceMap.documents = {};
+      for (const doc of bundle.documents) {
+        if (!resourceMap.documents[doc.key]) {
+          resourceMap.documents[doc.key] = `declared:${doc.key}`;
+        }
+      }
+    }
+
+    if (bundle.envVars) {
+      if (!resourceMap.envVars) resourceMap.envVars = {};
+      for (const envVar of bundle.envVars) {
+        if (!resourceMap.envVars[envVar.key]) {
+          resourceMap.envVars[envVar.key] = `declared:${envVar.key}`;
+        }
       }
     }
 

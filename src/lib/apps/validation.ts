@@ -154,6 +154,56 @@ export const appUiSchemaSchema = z.object({
   pages: z.array(pageSchema).min(1),
 });
 
+// ── Tier 1 extended primitive schemas ──
+
+export const triggerTemplateSchema = z.object({
+  key: z.string().regex(/^[a-z0-9-]+$/),
+  name: z.string().min(1).max(120),
+  description: z.string().max(240).optional(),
+  tableKey: z.string().regex(/^[a-z0-9-]+$/),
+  event: z.enum(["row_added", "row_updated", "row_deleted"]),
+  action: z.enum(["notify", "schedule_run", "webhook"]),
+  actionConfig: z.record(z.string(), z.unknown()),
+});
+
+export const documentTemplateSchema = z.object({
+  key: z.string().regex(/^[a-z0-9-]+$/),
+  name: z.string().min(1).max(120),
+  description: z.string().max(240).optional(),
+  globPatterns: z.array(z.string().max(128)).max(10).optional(),
+  maxSizeMb: z.number().int().min(1).max(500).optional(),
+});
+
+export const notificationTemplateSchema = z.object({
+  key: z.string().regex(/^[a-z0-9-]+$/),
+  title: z.string().min(1).max(200),
+  body: z.string().min(1).max(1000),
+  type: z.enum(["info", "warning", "success", "error"]),
+  lifecycle: z.enum(["transient", "persistent", "actionable"]).optional(),
+  triggerKey: z.string().regex(/^[a-z0-9-]+$/).optional(),
+});
+
+export const savedViewTemplateSchema = z.object({
+  key: z.string().regex(/^[a-z0-9-]+$/),
+  name: z.string().min(1).max(120),
+  description: z.string().max(240).optional(),
+  tableKey: z.string().regex(/^[a-z0-9-]+$/),
+  filters: z.record(z.string(), z.unknown()),
+  sortColumn: z.string().max(64).optional(),
+  sortDirection: z.enum(["asc", "desc"]).optional(),
+  visibleColumns: z.array(z.string().max(64)).max(30).optional(),
+});
+
+export const envVarDeclarationSchema = z.object({
+  key: z.string().regex(/^[A-Z0-9_]+$/),
+  name: z.string().min(1).max(120),
+  description: z.string().min(1).max(500),
+  required: z.boolean(),
+  sensitive: z.boolean(),
+  defaultValue: z.string().max(1000).optional(),
+  validationPattern: z.string().max(200).optional(),
+});
+
 export const appBundleSchema = z.object({
   manifest: manifestSchema,
   setupChecklist: z.array(z.string().min(1).max(240)).min(1),
@@ -162,11 +212,21 @@ export const appBundleSchema = z.object({
   tables: z.array(tableTemplateSchema),
   schedules: z.array(scheduleTemplateSchema),
   ui: appUiSchemaSchema,
+  triggers: z.array(triggerTemplateSchema).optional(),
+  documents: z.array(documentTemplateSchema).optional(),
+  notifications: z.array(notificationTemplateSchema).optional(),
+  savedViews: z.array(savedViewTemplateSchema).optional(),
+  envVars: z.array(envVarDeclarationSchema).optional(),
 });
 
 export const appResourceMapSchema = z.object({
   tables: z.record(z.string(), z.string()).default({}),
   schedules: z.record(z.string(), z.string()).default({}),
+  triggers: z.record(z.string(), z.string()).default({}).optional(),
+  documents: z.record(z.string(), z.string()).default({}).optional(),
+  notifications: z.record(z.string(), z.string()).default({}).optional(),
+  savedViews: z.record(z.string(), z.string()).default({}).optional(),
+  envVars: z.record(z.string(), z.string()).default({}).optional(),
 });
 
 export const appInstanceStatusSchema = z.enum(APP_INSTANCE_STATUSES);

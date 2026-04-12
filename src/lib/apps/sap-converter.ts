@@ -239,14 +239,22 @@ export async function bundleToSap(bundle: AppBundle, outDir: string): Promise<vo
       blueprints: bundle.blueprints.map((b) => stripNamespace(appId, b.id)),
       tables: bundle.tables.map((t) => stripNamespace(appId, t.key)),
       schedules: bundle.schedules.map((s) => stripNamespace(appId, s.key)),
-      triggers: [],
+      triggers: (bundle.triggers ?? []).map((t) => stripNamespace(appId, t.key)),
       pages: bundle.ui.pages.map((p) => p.key),
     },
     ui: bundle.ui,
   };
 
-  // Write manifest.yaml
-  writeFileSync(join(outDir, "manifest.yaml"), yaml.dump(sapManifest, { lineWidth: 120 }));
+  // Attach tier1 primitives as extra YAML keys (outside SapManifest type, but valid YAML)
+  const manifestWithTier1: Record<string, unknown> = { ...sapManifest };
+  if (bundle.triggers?.length) manifestWithTier1.triggers = bundle.triggers.map((t) => ({ ...t, key: stripNamespace(appId, t.key), tableKey: stripNamespace(appId, t.tableKey) }));
+  if (bundle.documents?.length) manifestWithTier1.documents = bundle.documents.map((d) => ({ ...d, key: stripNamespace(appId, d.key) }));
+  if (bundle.notifications?.length) manifestWithTier1.notifications = bundle.notifications;
+  if (bundle.savedViews?.length) manifestWithTier1.savedViews = bundle.savedViews.map((v) => ({ ...v, key: stripNamespace(appId, v.key), tableKey: stripNamespace(appId, v.tableKey) }));
+  if (bundle.envVars?.length) manifestWithTier1.envVars = bundle.envVars;
+
+  // Write manifest.yaml (includes tier1 primitive data when present)
+  writeFileSync(join(outDir, "manifest.yaml"), yaml.dump(manifestWithTier1, { lineWidth: 120 }));
 
   // Write table templates
   if (bundle.tables.length > 0) {
