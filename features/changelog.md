@@ -2,6 +2,36 @@
 
 ## 2026-04-11
 
+### Groomed — App Marketplace Expansion (26 features)
+
+Brainstormed and decomposed the full App Marketplace feature surface across 7 areas:
+- **Packaging & Format** (4 features): app-package-format, app-seed-data-generation, app-cli-tools, app-single-file-format
+- **Runtime & Installation** (3 features): app-runtime-bundle-foundation (retroactive, completed), app-conflict-resolution, app-updates-dependencies
+- **Extended Primitives** (4 features): tier1 (triggers/documents/notifications/savedViews/envVars), tier2 (channels/memory/chatTools/workflows), MCP server wiring, budget policies
+- **Chat-Native Authoring** (5 features): chat-app-builder, promote-conversation-to-app, app-remix, conversational-app-editing, visual-app-studio
+- **Distribution & Community** (10 features): marketplace-app-listing, marketplace-app-publishing, marketplace-trust-ladder, app-distribution-channels, app-forking-remix, creator-portal, curated-collections, marketplace-reviews, marketplace-local-first-discovery, app-embeddable-install-widget
+
+Key decisions locked during brainstorm:
+- All three authoring tiers (developer TS, power user YAML/MD, end user chat) — one grammar, plural serializations
+- Apps contain MCP servers (Stagent-native, cross-platform tool exposure)
+- Trust ceiling: declarative + MCP protocol (no sandboxed JS execution)
+- Trust → execution tier mapping: community=Tier A (declarative), verified=Tier A+B (MCP/channels/tools), official=full access
+
+Source: handoff/stagent-app-marketplace-spec.md + brainstorm session with /architect, /product-manager, /frontend-designer
+Plan: .claude/plans/flickering-petting-hammock.md
+
+### Reviewed — App Marketplace Execution Plan (Sprints 44-51)
+
+Product-manager review of the 26 groomed marketplace specs. Key findings:
+
+- **Dependency analysis:** Two critical blocker chains identified — Chain A (instance-bootstrap -> install-hardening, gates 17 features) and Chain B (license-manager + supabase -> access-gate, gates 12 features). Zero of 26 features can start until these resolve.
+- **Spec fix:** Removed stale `marketplace-access-gate` dependency from `app-runtime-bundle-foundation` (already completed, dependency was soft)
+- **Confirmed:** `telemetry-foundation` is `planned`, correctly blocking `creator-portal` and `marketplace-reviews`
+- **Sprint plan:** 8 sprints (44-51) added to roadmap. Sprint 44 clears 4 WIP features + starts 3 zero-dep blockers. All P1s complete by Sprint 48. Full initiative done by Sprint 51.
+- **Critical path:** instance-bootstrap -> install-hardening -> app-package-format -> chat-app-builder (4 sprints minimum to first user-facing marketplace feature)
+
+Plan: .claude/plans/witty-jingling-castle.md
+
 ### Completed — task-create-profile-validation (P1)
 
 Closed the profile validation gap at `create_task` and `update_task` — both previously accepted any string as `agentProfile`, including runtime ids like `"anthropic-direct"` that are guaranteed to fail at execution time with no feedback at creation time. Both tools now run a Zod `.refine()` against the profile registry via the new shared `isValidAgentProfile` helper, and the handler body returns a richer enumerated error via `agentProfileErrorMessage` so operators can self-correct without cross-referencing docs. Three-tier defense (Zod → handler → execute-time) with each tier triggered by a distinct caller path.

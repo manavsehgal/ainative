@@ -329,6 +329,61 @@ Durable fixes that replace symptom-level hotfixes with architectural contracts. 
 | [schedule-maxturns-api-control](schedule-maxturns-api-control.md) | P2 | completed | scheduled-prompt-loops |
 | [task-turn-observability](task-turn-observability.md) | P2 | planned | agent-integration, scheduled-prompt-loops |
 
+### App Marketplace — Foundation Layer
+
+Runtime bundle system, packaging format, and install hardening. The keystone for all marketplace features.
+
+| Feature | Priority | Status | Dependencies |
+|---------|----------|--------|--------------|
+| [app-runtime-bundle-foundation](app-runtime-bundle-foundation.md) | P0 | completed | database-schema |
+| [marketplace-install-hardening](marketplace-install-hardening.md) | P1 | planned | instance-bootstrap |
+| [app-package-format](app-package-format.md) | P1 | planned | marketplace-install-hardening |
+| [app-seed-data-generation](app-seed-data-generation.md) | P1 | planned | app-package-format |
+| [app-cli-tools](app-cli-tools.md) | P1 | planned | app-package-format, app-seed-data-generation |
+| [app-conflict-resolution](app-conflict-resolution.md) | P2 | planned | app-package-format, marketplace-install-hardening |
+| [app-updates-dependencies](app-updates-dependencies.md) | P2 | planned | app-conflict-resolution, app-cli-tools |
+| [app-single-file-format](app-single-file-format.md) | P2 | planned | app-package-format |
+
+### App Marketplace — Extended Primitives
+
+Growing the composition grammar from 7 primitives to ~18, enabling richer app capabilities.
+
+| Feature | Priority | Status | Dependencies |
+|---------|----------|--------|--------------|
+| [app-extended-primitives-tier1](app-extended-primitives-tier1.md) | P1 | planned | marketplace-install-hardening |
+| [app-extended-primitives-tier2](app-extended-primitives-tier2.md) | P2 | planned | app-extended-primitives-tier1 |
+| [app-mcp-server-wiring](app-mcp-server-wiring.md) | P2 | planned | app-extended-primitives-tier2, marketplace-trust-ladder |
+| [app-budget-policies](app-budget-policies.md) | P3 | planned | app-extended-primitives-tier2 |
+
+### App Marketplace — Chat-Native Authoring
+
+Build, remix, and edit apps through conversation — Stagent's unique differentiator.
+
+| Feature | Priority | Status | Dependencies |
+|---------|----------|--------|--------------|
+| [chat-app-builder](chat-app-builder.md) | P1 | planned | app-package-format, app-extended-primitives-tier1 |
+| [promote-conversation-to-app](promote-conversation-to-app.md) | P1 | planned | chat-app-builder, app-seed-data-generation |
+| [app-remix](app-remix.md) | P2 | planned | chat-app-builder |
+| [conversational-app-editing](conversational-app-editing.md) | P2 | planned | chat-app-builder |
+| [visual-app-studio](visual-app-studio.md) | P2 | planned | app-extended-primitives-tier2, app-package-format |
+
+### App Marketplace — Distribution & Community
+
+Marketplace listing, publishing, trust, and community ecosystem features.
+
+| Feature | Priority | Status | Dependencies |
+|---------|----------|--------|--------------|
+| [marketplace-app-listing](marketplace-app-listing.md) | P1 | planned | marketplace-access-gate, app-runtime-bundle-foundation |
+| [marketplace-app-publishing](marketplace-app-publishing.md) | P1 | planned | app-package-format, app-cli-tools, marketplace-access-gate |
+| [marketplace-trust-ladder](marketplace-trust-ladder.md) | P1 | planned | marketplace-app-publishing, app-extended-primitives-tier1 |
+| [app-distribution-channels](app-distribution-channels.md) | P2 | planned | app-cli-tools, marketplace-app-publishing |
+| [app-forking-remix](app-forking-remix.md) | P2 | planned | marketplace-app-publishing, app-remix |
+| [creator-portal](creator-portal.md) | P2 | planned | marketplace-app-publishing, telemetry-foundation |
+| [curated-collections](curated-collections.md) | P3 | planned | marketplace-trust-ladder |
+| [marketplace-reviews](marketplace-reviews.md) | P3 | planned | marketplace-app-publishing, telemetry-foundation |
+| [marketplace-local-first-discovery](marketplace-local-first-discovery.md) | P3 | planned | marketplace-app-listing |
+| [app-embeddable-install-widget](app-embeddable-install-widget.md) | P3 | planned | marketplace-app-listing |
+
 ## Dependency Graph
 
 Critical path through the MVP:
@@ -591,6 +646,17 @@ Phase 4 — Runtime Expansion
 
 > Structured Data (Tables) initiative (14 features) fully shipped 2026-04-03. Sprints 38-43 completed. 52 new files, 13 new DB tables, 12 agent tools, 12 built-in templates.
 
+App Marketplace chain (26 features, 8 sprints):
+
+44. **Sprint 44 — Clear WIP + Unblock Critical Paths**: Finish runtime-validation-hardening, database-snapshot-backup, dynamic-slash-commands, profile-environment-sync. Start instance-bootstrap (P1), local-license-manager (P0), supabase-cloud-backend (P0) — zero-dep blockers that unblock Chains A (17 features) and B (12 features)
+45. **Sprint 45 — Gate Layer**: marketplace-install-hardening (P1) + marketplace-access-gate (P1) — the two intermediate blockers that gate all marketplace features
+46. **Sprint 46 — Core App Platform**: app-package-format (P1) + app-extended-primitives-tier1 (P1) + marketplace-app-listing (P1) — all 3 parallelize, everything else builds on these
+47. **Sprint 47 — Authoring + Seed Data**: app-seed-data-generation (P1) + chat-app-builder (P1) + promote-conversation-to-app (P1, stagger) — enables app creation workflows
+48. **Sprint 48 — Publishing Pipeline (P1 Complete)**: app-cli-tools (P1) + marketplace-app-publishing (P1) + marketplace-trust-ladder (P1) — all 9 P1 marketplace features done, end-to-end flow operational
+49. **Sprint 49 — P2 Wave 1**: app-extended-primitives-tier2 + conversational-app-editing + app-remix + app-single-file-format + app-conflict-resolution
+50. **Sprint 50 — P2 Wave 2**: visual-app-studio + app-distribution-channels + app-forking-remix + creator-portal (needs telemetry-foundation) + app-updates-dependencies
+51. **Sprint 51 — P3 Polish**: app-mcp-server-wiring + app-budget-policies + marketplace-reviews (needs telemetry) + marketplace-local-first-discovery + curated-collections + app-embeddable-install-widget
+
 Browser automation chain:
 
 ```
@@ -625,7 +691,7 @@ Items from `ideas/vision/` that are explicitly deferred — documented for futur
 - **Cloud sync** (Supabase/Turso) — architecture change from local-first to hybrid, defer until users need it
 - **Multi-user RBAC** — requires auth system, defer until team use cases validated
 - **Portfolio view** (PE operating partner use case) — depends on multi-user + cloud sync
-- **Agent marketplace / blueprint registry** (community) — defer until internal library is rich
+- ~~**Agent marketplace / blueprint registry** (community)~~ → Promoted to App Marketplace initiative (26 features, 7 sprints planned)
 - **API-first/headless deployment** — enterprise play
 - **Voice/phone agent integration** — niche, high-effort
 - **Business KPI dashboard** — depends on MCP integrations that don't exist yet
