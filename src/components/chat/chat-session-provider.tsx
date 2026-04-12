@@ -70,7 +70,7 @@ interface ChatSessionValue {
     conversations: ConversationRow[];
     initialActiveId: string | null;
   }) => void;
-  setActiveConversation: (id: string | null) => void;
+  setActiveConversation: (id: string | null, opts?: { skipLoad?: boolean }) => void;
   sendMessage: (content: string, mentions?: MentionReference[]) => Promise<void>;
   stopStreaming: () => void;
   createConversation: () => Promise<string | null>;
@@ -227,7 +227,7 @@ export function ChatSessionProvider({ children }: { children: ReactNode }) {
 
   // ── Conversation selection ───────────────────────────────────────────
   const setActiveConversation = useCallback(
-    (id: string | null) => {
+    (id: string | null, opts?: { skipLoad?: boolean }) => {
       setActiveId(id);
       try {
         if (id) localStorage.setItem("stagent-active-chat", id);
@@ -241,7 +241,7 @@ export function ChatSessionProvider({ children }: { children: ReactNode }) {
       if (typeof window !== "undefined" && window.location.pathname === "/chat") {
         router.replace(id ? `/chat?c=${id}` : "/chat", { scroll: false });
       }
-      if (id && !messagesByConversation[id]) {
+      if (id && !opts?.skipLoad && !messagesByConversation[id]) {
         void loadMessagesForConversation(id);
       }
       // Also refresh conversation metadata (title, model, etc.) in the
@@ -272,11 +272,15 @@ export function ChatSessionProvider({ children }: { children: ReactNode }) {
       if (!res.ok) return null;
       const conversation = (await res.json()) as ConversationRow;
       setConversations((prev) => [conversation, ...prev]);
-      setActiveConversation(conversation.id);
+      // Set empty messages BEFORE activating so the conversation has an
+      // entry in messagesByConversation. Use skipLoad to prevent
+      // setActiveConversation from firing an async loadMessagesForConversation
+      // that would race with the optimistic messages added by sendMessage().
       setMessagesByConversation((prev) => ({
         ...prev,
         [conversation.id]: [],
       }));
+      setActiveConversation(conversation.id, { skipLoad: true });
       return conversation.id;
     } catch {
       return null;
