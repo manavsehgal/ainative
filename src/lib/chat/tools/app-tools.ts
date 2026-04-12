@@ -317,7 +317,7 @@ export function appTools(ctx: ToolContext) {
           const { exportProjectToBundle } = await import(
             "@/lib/apps/exporter"
           );
-          const { saveSapDirectory, installApp } = await import("@/lib/apps/service");
+          const { saveSapDirectory, registerExportedApp } = await import("@/lib/apps/service");
 
           const effectiveProjectId =
             args.projectId ?? ctx.projectId ?? undefined;
@@ -350,17 +350,16 @@ export function appTools(ctx: ToolContext) {
             );
           }
 
-          // Register in DB so the app appears in the sidebar
+          // Register in DB linked to source project (no new project created)
           try {
-            await installApp(
-              result.bundle.manifest.id,
-              result.bundle.manifest.name,
+            await registerExportedApp(
               result.bundle,
+              effectiveProjectId,
             );
-          } catch (installErr) {
+          } catch (regErr) {
             console.warn(
               `[apps] DB registration failed for ${result.bundle.manifest.id}:`,
-              installErr,
+              regErr,
             );
           }
 

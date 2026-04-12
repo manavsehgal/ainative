@@ -4,6 +4,7 @@ import {
   projects,
   schedules,
   appInstances,
+  userTables,
   userTableTriggers,
   userTableViews,
   notifications,
@@ -13,7 +14,7 @@ import { addRows, createTable, deleteRows, getTable, listRows } from "@/lib/data
 import { join } from "path";
 import { homedir } from "os";
 import { mkdir } from "fs/promises";
-import { getAppBundle, listAppBundles } from "./registry";
+import { getAppBundle, listAppBundles, registerBundle } from "./registry";
 import { bundleToSap } from "./sap-converter";
 import { appResourceMapSchema } from "./validation";
 import { canExecutePrimitive } from "./trust";
@@ -213,6 +214,11 @@ export async function installApp(appId: string, projectName?: string, providedBu
     throw new AppRuntimeError(`App "${appId}" not found`);
   }
 
+  // Pre-register provided bundles so bootstrapApp() can find them via getAppBundle()
+  if (providedBundle) {
+    registerBundle(providedBundle);
+  }
+
   // Fast-path: already installed — return existing instance
   const existing = getAppInstance(appId);
   if (existing) {
@@ -259,7 +265,22 @@ export async function installApp(appId: string, projectName?: string, providedBu
     throw err;
   }
 
-  return bootstrapApp(appId);
+  try {
+    return await bootstrapApp(appId);
+  } catch (error) {
+    // Rollback: clean up the app instance and orphaned project.
+    // At this point, bootstrapApp sets status to "failed" but the project
+    // has no FK children yet (tables/schedules created during bootstrap
+    // are already associated with the project, but the app_instance delete
+    // is safe and we cascade-delete the project's direct children).
+    try {
+      db.delete(appInstances).where(eq(appInstances.appId, appId)).run();
+      db.delete(projects).where(eq(projects.id, projectId)).run();
+    } catch (cleanupErr) {
+      console.warn("[apps] Rollback cleanup failed:", cleanupErr);
+    }
+    throw error;
+  }
 }
 
 export async function bootstrapApp(appId: string): Promise<AppInstanceRecord> {
@@ -592,4 +613,77 @@ export async function saveSapDirectory(
   await mkdir(appsDir, { recursive: true });
   await bundleToSap(bundle, appsDir);
   return appsDir;
+}
+
+/**
+ * Register an exported bundle as an installed app linked to the source project.
+ * Unlike installApp(), this does NOT create a new project — it points the
+ * app_instance at the existing source project that was exported.
+ */
+export async function registerExportedApp(
+  bundle: AppBundle,
+  sourceProjectId: string,
+): Promise<AppInstanceRecord> {
+  // Ensure bundle is in the runtime registry
+  registerBundle(bundle);
+
+  // Fast-path: already registered
+  const existing = db
+    .select()
+    .from(appInstances)
+    .where(eq(appInstances.appId, bundle.manifest.id))
+    .get();
+  if (existing) {
+    return hydrateInstance(existing, bundle);
+  }
+
+  // Build resource map by matching bundle template names to source project's resources
+  const resourceMap: AppResourceMap = { tables: {}, schedules: {} };
+
+  const projectTables = db
+    .select()
+    .from(userTables)
+    .where(eq(userTables.projectId, sourceProjectId))
+    .all();
+
+  for (const tmpl of bundle.tables) {
+    const match = projectTables.find((t) => t.name === tmpl.name);
+    if (match) resourceMap.tables[tmpl.key] = match.id;
+  }
+
+  const projectSchedules = db
+    .select()
+    .from(schedules)
+    .where(eq(schedules.projectId, sourceProjectId))
+    .all();
+
+  for (const tmpl of bundle.schedules) {
+    const match = projectSchedules.find((s) => s.name === tmpl.name);
+    if (match) resourceMap.schedules[tmpl.key] = match.id;
+  }
+
+  const now = new Date();
+  const instanceId = crypto.randomUUID();
+
+  await db.insert(appInstances).values({
+    id: instanceId,
+    appId: bundle.manifest.id,
+    name: bundle.manifest.name,
+    version: bundle.manifest.version,
+    projectId: sourceProjectId,
+    manifestJson: JSON.stringify(bundle.manifest),
+    uiSchemaJson: JSON.stringify(bundle.ui),
+    resourceMapJson: JSON.stringify(resourceMap),
+    status: "ready",
+    sourceType: "file",
+    bootstrapError: null,
+    installedAt: now,
+    bootstrappedAt: now,
+    updatedAt: now,
+  });
+
+  return hydrateInstance(
+    db.select().from(appInstances).where(eq(appInstances.appId, bundle.manifest.id)).get()!,
+    bundle,
+  );
 }

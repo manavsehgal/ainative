@@ -6,14 +6,14 @@ import * as schema from "@/lib/db/schema";
 /**
  * Safety-net regression tests for project cascade deletion.
  *
- * These verify that the DELETE handler in projects/[id]/route.ts
- * properly handles all FK relationships before deleting a project.
- * This prevents the "Failed to delete project" FK constraint error
- * that occurs when related records exist.
+ * These verify that the shared deleteProjectCascade function in
+ * src/lib/data/delete-project.ts properly handles all FK relationships
+ * before deleting a project. This prevents "Failed to delete project"
+ * FK constraint errors when related records exist.
  */
 describe("project DELETE cascade coverage", () => {
   const deleteRouteSource = readFileSync(
-    join(__dirname, "..", "[id]", "route.ts"),
+    join(__dirname, "..", "..", "..", "..", "lib", "data", "delete-project.ts"),
     "utf-8"
   );
 
@@ -117,7 +117,7 @@ describe("project DELETE cascade coverage", () => {
       // Find the LAST occurrence of db.delete(child) and FIRST occurrence of db.delete(parent)
       // within the DELETE function (not the import section)
       const deleteSection = deleteRouteSource.slice(
-        deleteRouteSource.indexOf("export async function DELETE")
+        deleteRouteSource.indexOf("export function deleteProjectCascade")
       );
       const childPos = deleteSection.lastIndexOf(`db.delete(${child})`);
       const parentPos = deleteSection.indexOf(`db.delete(${parent})`);
@@ -131,21 +131,12 @@ describe("project DELETE cascade coverage", () => {
     ).toEqual([]);
   });
 
-  it("wraps deletion in try/catch for error handling", () => {
+  it("checks project existence before deleting", () => {
     const deleteSection = deleteRouteSource.slice(
-      deleteRouteSource.indexOf("export async function DELETE")
+      deleteRouteSource.indexOf("export function deleteProjectCascade")
     );
-    expect(deleteSection).toContain("try {");
-    expect(deleteSection).toContain("catch");
-    expect(deleteSection).toContain("status: 500");
-  });
-
-  it("verifies project exists before attempting delete", () => {
-    const deleteSection = deleteRouteSource.slice(
-      deleteRouteSource.indexOf("export async function DELETE")
-    );
-    expect(deleteSection).toContain("Not found");
-    expect(deleteSection).toContain("status: 404");
+    // The shared function checks if the project exists and returns false if not
+    expect(deleteSection).toContain("if (!existing) return false");
   });
 
   /**

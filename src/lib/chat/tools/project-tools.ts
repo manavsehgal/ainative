@@ -85,5 +85,38 @@ export function projectTools(ctx: ToolContext) {
         }
       }
     ),
+
+    defineTool(
+      "delete_project",
+      "Permanently delete a project and all its resources (tasks, tables, schedules, " +
+        "documents, app instances). This is irreversible. Use to clean up orphaned or " +
+        "unwanted projects. Always confirm with the user before calling.",
+      {
+        projectId: z
+          .string()
+          .describe("The ID of the project to delete"),
+      },
+      async (args) => {
+        try {
+          const { deleteProjectCascade } = await import(
+            "@/lib/data/delete-project"
+          );
+
+          const deleted = deleteProjectCascade(args.projectId);
+          if (!deleted) {
+            return err(`Project "${args.projectId}" not found`);
+          }
+
+          return ok({
+            projectId: args.projectId,
+            message: `Project "${args.projectId}" and all its resources have been deleted.`,
+          });
+        } catch (e) {
+          return err(
+            e instanceof Error ? e.message : "Failed to delete project",
+          );
+        }
+      }
+    ),
   ];
 }

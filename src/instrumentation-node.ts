@@ -35,6 +35,10 @@ export async function registerNodeInstrumentation() {
     const { startAutoBackup } = await import("@/lib/snapshots/auto-backup");
     startAutoBackup();
 
+    // Load exported .sap bundles from ~/.stagent/apps/ into the runtime registry
+    const { loadSapBundles } = await import("@/lib/apps/registry");
+    await loadSapBundles();
+
     // History retention cleanup — prunes old agent_logs and usage_ledger
     // based on tier retention limit (Community: 30 days)
     startHistoryCleanup(licenseManager);
