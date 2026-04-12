@@ -16,6 +16,7 @@ import { mkdir } from "fs/promises";
 import { getAppBundle, listAppBundles } from "./registry";
 import { bundleToSap } from "./sap-converter";
 import { appResourceMapSchema } from "./validation";
+import { canExecutePrimitive } from "./trust";
 import type {
   AppBundle,
   AppBundleManifest,
@@ -284,8 +285,20 @@ export async function bootstrapApp(appId: string): Promise<AppInstanceRecord> {
     .run();
 
   const resourceMap = current.resourceMap;
+  const trustLevel = bundle.manifest.trustLevel;
+  const skippedPrimitives: string[] = [];
+
+  function checkTrust(primitive: string): boolean {
+    if (canExecutePrimitive(trustLevel, primitive)) return true;
+    console.warn(
+      `[apps] Skipping ${primitive} for ${appId}: requires higher trust level (current: ${trustLevel})`,
+    );
+    skippedPrimitives.push(primitive);
+    return false;
+  }
 
   try {
+    if (checkTrust("tables"))
     for (const tableTemplate of bundle.tables) {
       if (!resourceMap.tables[tableTemplate.key]) {
         const table = await createTable({
@@ -310,6 +323,7 @@ export async function bootstrapApp(appId: string): Promise<AppInstanceRecord> {
       }
     }
 
+    if (checkTrust("schedules"))
     for (const scheduleTemplate of bundle.schedules) {
       if (!resourceMap.schedules[scheduleTemplate.key]) {
         const scheduleId = crypto.randomUUID();
@@ -359,7 +373,7 @@ export async function bootstrapApp(appId: string): Promise<AppInstanceRecord> {
     // ── Tier 1 primitives ──
 
     // Triggers
-    if (bundle.triggers) {
+    if (bundle.triggers && checkTrust("triggers")) {
       if (!resourceMap.triggers) resourceMap.triggers = {};
       for (const trigger of bundle.triggers) {
         if (!resourceMap.triggers[trigger.key]) {
@@ -387,7 +401,7 @@ export async function bootstrapApp(appId: string): Promise<AppInstanceRecord> {
     }
 
     // Notifications (template-based — inserted as initial notifications)
-    if (bundle.notifications) {
+    if (bundle.notifications && checkTrust("notifications")) {
       if (!resourceMap.notifications) resourceMap.notifications = {};
       for (const notif of bundle.notifications) {
         if (!resourceMap.notifications[notif.key]) {
@@ -411,7 +425,7 @@ export async function bootstrapApp(appId: string): Promise<AppInstanceRecord> {
     }
 
     // Saved views
-    if (bundle.savedViews) {
+    if (bundle.savedViews && checkTrust("savedViews")) {
       if (!resourceMap.savedViews) resourceMap.savedViews = {};
       for (const view of bundle.savedViews) {
         if (!resourceMap.savedViews[view.key]) {
@@ -443,7 +457,7 @@ export async function bootstrapApp(appId: string): Promise<AppInstanceRecord> {
     // Documents and envVars are tracked in the resource map but
     // don't create DB rows — they're metadata declarations used by
     // the install wizard and runtime, not provisioned resources.
-    if (bundle.documents) {
+    if (bundle.documents && checkTrust("documents")) {
       if (!resourceMap.documents) resourceMap.documents = {};
       for (const doc of bundle.documents) {
         if (!resourceMap.documents[doc.key]) {
@@ -452,7 +466,7 @@ export async function bootstrapApp(appId: string): Promise<AppInstanceRecord> {
       }
     }
 
-    if (bundle.envVars) {
+    if (bundle.envVars && checkTrust("envVars")) {
       if (!resourceMap.envVars) resourceMap.envVars = {};
       for (const envVar of bundle.envVars) {
         if (!resourceMap.envVars[envVar.key]) {
