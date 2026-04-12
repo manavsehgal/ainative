@@ -20,6 +20,15 @@ Key decisions locked during brainstorm:
 Source: handoff/stagent-app-marketplace-spec.md + brainstorm session with /architect, /product-manager, /frontend-designer
 Plan: .claude/plans/flickering-petting-hammock.md
 
+### Completed — marketplace-install-hardening (P1, Ship Verified)
+
+Closed the 3 correctness gaps from the runtime-bundle code review:
+1. **JSON.parse guard** — `hydrateInstance` now wraps both manifest and UI schema parsing in try-catch via `safeParseJson()`, returning a corrupt-status fallback instead of crashing. UI renders "manifest corrupt" badge with uninstall action.
+2. **UNIQUE conflict handling** — `installApp` now returns existing instance on duplicate instead of throwing. UNIQUE index on `app_instances(app_id)` was already in place from prior work.
+3. **E2E install test** — 5 new tests covering install→bootstrap→ready roundtrip, uninstall cleanup, duplicate install idempotency, and corrupt manifest/UI schema handling.
+
+8/8 app tests pass, 812/812 unit tests pass, `tsc --noEmit` clean. This unblocks Sprint 45: app-package-format, app-extended-primitives-tier1, marketplace-app-listing.
+
 ### Frontmatter Sync — 5 stale spec statuses corrected
 
 Discovered that 5 feature specs had `status: planned` in frontmatter while the roadmap correctly showed `completed`. All verified against implementation and tests, then flipped:

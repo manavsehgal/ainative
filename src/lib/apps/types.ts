@@ -6,6 +6,7 @@ export const APP_INSTANCE_STATUSES = [
   "ready",
   "failed",
   "disabled",
+  "corrupt",
 ] as const;
 
 export type AppInstanceStatus = (typeof APP_INSTANCE_STATUSES)[number];

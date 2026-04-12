@@ -97,8 +97,8 @@ export function InstalledAppsManager({ initialApps }: InstalledAppsManagerProps)
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="text-sm font-semibold">{app.name}</h2>
-                    <Badge variant={app.status === "ready" ? "success" : "outline"}>
-                      {app.status}
+                    <Badge variant={app.status === "ready" ? "success" : app.status === "corrupt" ? "destructive" : "outline"}>
+                      {app.status === "corrupt" ? "manifest corrupt" : app.status}
                     </Badge>
                     <span className="text-xs text-muted-foreground">v{app.version}</span>
                   </div>

@@ -7,10 +7,12 @@ import { getAppBundle, listAppBundles } from "./registry";
 import { appResourceMapSchema } from "./validation";
 import type {
   AppBundle,
+  AppBundleManifest,
   AppCatalogEntry,
   AppInstanceRecord,
   AppResourceMap,
   AppSidebarGroup,
+  AppUiSchema,
 } from "./types";
 
 class AppRuntimeError extends Error {
@@ -35,21 +37,52 @@ function parseResourceMap(raw: string | null | undefined): AppResourceMap {
   return parsed.success ? parsed.data : { tables: {}, schedules: {} };
 }
 
+function safeParseJson<T>(raw: string, fallback: T, label: string): { value: T; ok: boolean } {
+  try {
+    return { value: JSON.parse(raw) as T, ok: true };
+  } catch (err) {
+    console.error(`[apps] corrupt ${label} JSON:`, err);
+    return { value: fallback, ok: false };
+  }
+}
+
+const CORRUPT_MANIFEST: AppBundleManifest = {
+  id: "unknown",
+  name: "Unknown App",
+  version: "0.0.0",
+  description: "Manifest data is corrupt",
+  category: "unknown",
+  tags: [],
+  difficulty: "beginner",
+  estimatedSetupMinutes: 0,
+  icon: "AlertTriangle",
+  trustLevel: "community",
+  permissions: [],
+};
+
+const CORRUPT_UI: AppUiSchema = { pages: [] };
+
 function hydrateInstance(row: AppInstanceDbRow, bundle: AppBundle): AppInstanceRecord {
+  const manifest = safeParseJson<AppBundleManifest>(row.manifestJson, CORRUPT_MANIFEST, `manifest for ${row.appId}`);
+  const ui = safeParseJson<AppUiSchema>(row.uiSchemaJson, CORRUPT_UI, `ui schema for ${row.appId}`);
+  const isCorrupt = !manifest.ok || !ui.ok;
+
   return {
     id: row.id,
     appId: row.appId,
     name: row.name,
     version: row.version,
     projectId: row.projectId ?? null,
-    status: row.status,
+    status: isCorrupt ? "corrupt" : row.status,
     sourceType: row.sourceType,
-    bootstrapError: row.bootstrapError ?? null,
+    bootstrapError: isCorrupt
+      ? `Manifest or UI schema JSON is corrupt — uninstall and reinstall to fix`
+      : (row.bootstrapError ?? null),
     installedAt: row.installedAt,
     bootstrappedAt: row.bootstrappedAt ?? null,
     updatedAt: row.updatedAt,
-    manifest: JSON.parse(row.manifestJson),
-    ui: JSON.parse(row.uiSchemaJson),
+    manifest: manifest.value,
+    ui: ui.value,
     resourceMap: parseResourceMap(row.resourceMapJson),
     bundle,
   };
@@ -134,9 +167,10 @@ export async function installApp(appId: string, projectName?: string): Promise<A
     throw new AppRuntimeError(`App "${appId}" not found`);
   }
 
+  // Fast-path: already installed — return existing instance
   const existing = getAppInstance(appId);
   if (existing) {
-    throw new AppRuntimeError(`App "${bundle.manifest.name}" is already installed`);
+    return existing;
   }
 
   const now = new Date();
@@ -153,22 +187,31 @@ export async function installApp(appId: string, projectName?: string): Promise<A
     updatedAt: now,
   });
 
-  await db.insert(appInstances).values({
-    id: instanceId,
-    appId: bundle.manifest.id,
-    name: bundle.manifest.name,
-    version: bundle.manifest.version,
-    projectId,
-    manifestJson: JSON.stringify(bundle.manifest),
-    uiSchemaJson: JSON.stringify(bundle.ui),
-    resourceMapJson: JSON.stringify({ tables: {}, schedules: {} }),
-    status: "installing",
-    sourceType: "builtin",
-    bootstrapError: null,
-    installedAt: now,
-    bootstrappedAt: null,
-    updatedAt: now,
-  });
+  try {
+    await db.insert(appInstances).values({
+      id: instanceId,
+      appId: bundle.manifest.id,
+      name: bundle.manifest.name,
+      version: bundle.manifest.version,
+      projectId,
+      manifestJson: JSON.stringify(bundle.manifest),
+      uiSchemaJson: JSON.stringify(bundle.ui),
+      resourceMapJson: JSON.stringify({ tables: {}, schedules: {} }),
+      status: "installing",
+      sourceType: "builtin",
+      bootstrapError: null,
+      installedAt: now,
+      bootstrappedAt: null,
+      updatedAt: now,
+    });
+  } catch (err) {
+    // UNIQUE constraint race: another request inserted first — return that instance
+    if (err instanceof Error && err.message.includes("UNIQUE constraint failed")) {
+      const raceWinner = getAppInstance(appId);
+      if (raceWinner) return raceWinner;
+    }
+    throw err;
+  }
 
   return bootstrapApp(appId);
 }

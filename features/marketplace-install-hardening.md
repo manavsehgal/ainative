@@ -1,6 +1,6 @@
 ---
 title: Marketplace Install Hardening
-status: planned
+status: completed
 priority: P1
 milestone: post-mvp
 source: code-review of commit 56e2839 (runtime bundle marketplace foundation)
