@@ -85,6 +85,7 @@ export async function POST() {
       lastUpgradeTaskId: id,
       commitsBehind: 0,
       upgradeAvailable: false,
+      lastSuccessfulUpgradeAt: Math.floor(Date.now() / 1000),
     });
 
     return NextResponse.json({ taskId: id }, { status: 202 });
