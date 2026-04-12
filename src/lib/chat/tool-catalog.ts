@@ -13,6 +13,7 @@ import {
   Sun,
   Sparkles,
   Table2,
+  Store,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -27,6 +28,7 @@ export type ToolGroup =
   | "Tables"
   | "Notifications"
   | "Profiles"
+  | "Apps"
   | "Skills"
   | "Usage"
   | "Settings"
@@ -58,6 +60,7 @@ export const TOOL_GROUP_ICONS: Record<ToolGroup, LucideIcon> = {
   Tables: Table2,
   Notifications: Bell,
   Profiles: Bot,
+  Apps: Store,
   Skills: Sparkles,
   Usage: Wallet,
   Settings: Settings,
@@ -75,6 +78,7 @@ export const TOOL_GROUP_ORDER: ToolGroup[] = [
   "Tables",
   "Schedules",
   "Profiles",
+  "Apps",
   "Skills",
   "Browser",
   "Notifications",
@@ -176,6 +180,11 @@ const STAGENT_TOOLS: ToolCatalogEntry[] = [
   { name: "list_conversations", description: "List recent chat conversations", group: "Chat", paramHint: "search, limit" },
   { name: "get_conversation_messages", description: "Get messages from a past conversation", group: "Chat", paramHint: "conversationId, limit" },
   { name: "search_messages", description: "Search across all conversations", group: "Chat", paramHint: "query" },
+
+  // ── Apps ──
+  { name: "introspect_project", description: "Examine a project's tables, schedules, profiles, and documents", group: "Apps", paramHint: "projectId" },
+  { name: "create_app_bundle", description: "Create and install a new app from a structured specification", group: "Apps", paramHint: "name, description, category, tables, schedules" },
+  { name: "list_app_templates", description: "List available built-in app bundles as templates", group: "Apps" },
 ];
 
 const BROWSER_TOOLS: ToolCatalogEntry[] = [

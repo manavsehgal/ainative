@@ -10,7 +10,11 @@ import {
 } from "@/lib/db/schema";
 import type { AppInstanceDbRow } from "@/lib/db/schema";
 import { addRows, createTable, deleteRows, getTable, listRows } from "@/lib/data/tables";
+import { join } from "path";
+import { homedir } from "os";
+import { mkdir } from "fs/promises";
 import { getAppBundle, listAppBundles } from "./registry";
+import { bundleToSap } from "./sap-converter";
 import { appResourceMapSchema } from "./validation";
 import type {
   AppBundle,
@@ -118,36 +122,70 @@ export function listInstalledAppInstances(): AppInstanceRecord[] {
     });
 }
 
-export function listAppCatalog(): AppCatalogEntry[] {
+export interface AppCatalogFilter {
+  category?: string;
+  q?: string;
+}
+
+function bundleToCatalogEntry(
+  bundle: AppBundle,
+  instance: AppInstanceRecord | null
+): AppCatalogEntry {
+  return {
+    appId: bundle.manifest.id,
+    name: bundle.manifest.name,
+    version: bundle.manifest.version,
+    description: bundle.manifest.description,
+    category: bundle.manifest.category,
+    tags: bundle.manifest.tags,
+    difficulty: bundle.manifest.difficulty,
+    estimatedSetupMinutes: bundle.manifest.estimatedSetupMinutes,
+    icon: bundle.manifest.icon,
+    trustLevel: bundle.manifest.trustLevel,
+    permissions: bundle.manifest.permissions,
+    tableCount: bundle.tables.length,
+    scheduleCount: bundle.schedules.length,
+    profileCount: bundle.profiles.length,
+    blueprintCount: bundle.blueprints.length,
+    setupChecklistCount: bundle.setupChecklist.length,
+    installed: Boolean(instance),
+    installedStatus: instance?.status ?? null,
+    projectId: instance?.projectId ?? null,
+  };
+}
+
+export function listAppCatalog(filter?: AppCatalogFilter): AppCatalogEntry[] {
   const installed = new Map(
     listInstalledAppInstances().map((instance) => [instance.appId, instance])
   );
 
-  return listAppBundles().map((bundle) => {
+  let entries = listAppBundles().map((bundle) => {
     const instance = installed.get(bundle.manifest.id) ?? null;
-
-    return {
-      appId: bundle.manifest.id,
-      name: bundle.manifest.name,
-      version: bundle.manifest.version,
-      description: bundle.manifest.description,
-      category: bundle.manifest.category,
-      tags: bundle.manifest.tags,
-      difficulty: bundle.manifest.difficulty,
-      estimatedSetupMinutes: bundle.manifest.estimatedSetupMinutes,
-      icon: bundle.manifest.icon,
-      trustLevel: bundle.manifest.trustLevel,
-      permissions: bundle.manifest.permissions,
-      tableCount: bundle.tables.length,
-      scheduleCount: bundle.schedules.length,
-      profileCount: bundle.profiles.length,
-      blueprintCount: bundle.blueprints.length,
-      setupChecklistCount: bundle.setupChecklist.length,
-      installed: Boolean(instance),
-      installedStatus: instance?.status ?? null,
-      projectId: instance?.projectId ?? null,
-    };
+    return bundleToCatalogEntry(bundle, instance);
   });
+
+  if (filter?.category) {
+    const cat = filter.category.toLowerCase();
+    entries = entries.filter((e) => e.category.toLowerCase() === cat);
+  }
+
+  if (filter?.q) {
+    const terms = filter.q.toLowerCase().split(/\s+/).filter(Boolean);
+    entries = entries.filter((e) => {
+      const haystack = `${e.name} ${e.description} ${e.tags.join(" ")} ${e.category}`.toLowerCase();
+      return terms.every((term) => haystack.includes(term));
+    });
+  }
+
+  return entries;
+}
+
+export function getAppCatalogEntry(appId: string): AppCatalogEntry | null {
+  const bundle = getAppBundle(appId);
+  if (!bundle) return null;
+
+  const instance = getAppInstance(appId);
+  return bundleToCatalogEntry(bundle, instance);
 }
 
 export function getAppSidebarGroups(): AppSidebarGroup[] {
@@ -168,8 +206,8 @@ export function getAppSidebarGroups(): AppSidebarGroup[] {
     }));
 }
 
-export async function installApp(appId: string, projectName?: string): Promise<AppInstanceRecord> {
-  const bundle = getAppBundle(appId);
+export async function installApp(appId: string, projectName?: string, providedBundle?: AppBundle): Promise<AppInstanceRecord> {
+  const bundle = providedBundle ?? getAppBundle(appId);
   if (!bundle) {
     throw new AppRuntimeError(`App "${appId}" not found`);
   }
@@ -524,4 +562,20 @@ export async function getResolvedAppTable(appId: string, tableKey: string) {
 
   if (!tableId) return null;
   return getTable(tableId);
+}
+
+/**
+ * Persist an app bundle as a `.sap` directory under `~/.stagent/apps/{appId}/`.
+ * Non-critical — callers should catch errors and warn rather than fail.
+ */
+export async function saveSapDirectory(
+  appId: string,
+  bundle: AppBundle,
+): Promise<string> {
+  const dataDir =
+    process.env.STAGENT_DATA_DIR || join(homedir(), ".stagent");
+  const appsDir = join(dataDir, "apps", appId);
+  await mkdir(appsDir, { recursive: true });
+  await bundleToSap(bundle, appsDir);
+  return appsDir;
 }

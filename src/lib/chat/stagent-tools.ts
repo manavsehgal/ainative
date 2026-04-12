@@ -21,6 +21,7 @@ import { chatHistoryTools } from "./tools/chat-history-tools";
 import { handoffTools } from "./tools/handoff-tools";
 import { tableTools } from "./tools/table-tools";
 import { runtimeTools } from "./tools/runtime-tools";
+import { appTools } from "./tools/app-tools";
 
 // ── Tool server types ────────────────────────────────────────────────
 
@@ -56,6 +57,7 @@ function collectAllTools(ctx: ToolContext): ToolDefinition[] {
     ...handoffTools(ctx),
     ...tableTools(ctx),
     ...runtimeTools(ctx),
+    ...appTools(ctx),
   ];
 }
 
