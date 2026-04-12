@@ -132,7 +132,7 @@ function BlueprintMarketplacePanel({ canImport }: { canImport: boolean }) {
   );
 }
 
-export function MarketplaceBrowser({ canImport }: MarketplaceBrowserProps) {
+export function MarketplaceBrowser({ canImport, canPublish }: MarketplaceBrowserProps) {
   return (
     <Tabs defaultValue="apps" className="space-y-4">
       <TabsList>
@@ -142,7 +142,7 @@ export function MarketplaceBrowser({ canImport }: MarketplaceBrowserProps) {
         <TabsTrigger value="templates">Templates</TabsTrigger>
       </TabsList>
       <TabsContent value="apps">
-        <AppMarketplaceBrowser canInstall={canImport} />
+        <AppMarketplaceBrowser canInstall={canImport} canPublish={canPublish} />
       </TabsContent>
       <TabsContent value="blueprints">
         <BlueprintMarketplacePanel canImport={canImport} />

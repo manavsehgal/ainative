@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   ShieldAlert,
   Store,
+  Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -19,9 +20,11 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { FilterBar } from "@/components/shared/filter-bar";
 import type { AppCatalogEntry, AppDifficulty, AppTrustLevel } from "@/lib/apps/types";
 import { resolveAppIcon } from "@/lib/apps/icons";
+import { PublishAppSheet } from "@/components/marketplace/publish-app-sheet";
 
 interface AppMarketplaceBrowserProps {
   canInstall: boolean;
+  canPublish?: boolean;
 }
 
 const APP_CATEGORIES = [
@@ -79,11 +82,13 @@ function AppCard({
   canInstall,
   installing,
   onInstall,
+  onPublish,
 }: {
   app: AppCatalogEntry;
   canInstall: boolean;
   installing: boolean;
   onInstall: (appId: string) => void;
+  onPublish?: (app: AppCatalogEntry) => void;
 }) {
   const Icon = resolveAppIcon(app.icon);
 
@@ -137,9 +142,21 @@ function AppCard({
         </div>
         <div className="flex items-center gap-2">
           {app.installed ? (
-            <Button asChild size="sm" variant="outline">
-              <Link href={`/apps/${app.appId}`}>Open</Link>
-            </Button>
+            <div className="flex items-center gap-1.5">
+              {onPublish && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={(e) => { e.preventDefault(); onPublish(app); }}
+                  title="Publish to marketplace"
+                >
+                  <Upload className="h-3.5 w-3.5" />
+                </Button>
+              )}
+              <Button asChild size="sm" variant="outline">
+                <Link href={`/apps/${app.appId}`}>Open</Link>
+              </Button>
+            </div>
           ) : canInstall ? (
             <Button
               size="sm"
@@ -167,12 +184,13 @@ function AppCard({
   );
 }
 
-export function AppMarketplaceBrowser({ canInstall }: AppMarketplaceBrowserProps) {
+export function AppMarketplaceBrowser({ canInstall, canPublish }: AppMarketplaceBrowserProps) {
   const [apps, setApps] = useState<AppCatalogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [installing, setInstalling] = useState<string | null>(null);
   const [category, setCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [publishApp, setPublishApp] = useState<AppCatalogEntry | null>(null);
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
@@ -286,10 +304,19 @@ export function AppMarketplaceBrowser({ canInstall }: AppMarketplaceBrowserProps
               canInstall={canInstall}
               installing={installing === app.appId}
               onInstall={handleInstall}
+              onPublish={canPublish ? (a) => setPublishApp(a) : undefined}
             />
           ))}
         </div>
       )}
+
+      {/* Publish sheet */}
+      <PublishAppSheet
+        open={publishApp !== null}
+        onOpenChange={(open) => { if (!open) setPublishApp(null); }}
+        app={publishApp}
+        onPublished={loadApps}
+      />
     </div>
   );
 }
