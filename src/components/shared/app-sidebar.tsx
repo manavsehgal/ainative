@@ -200,41 +200,97 @@ function NavGroup({
   );
 }
 
+function buildAppSubtext(items: InstalledAppSidebarGroup["items"]): string {
+  const maxShow = 3;
+  const shown = items.slice(0, maxShow).map((i) => i.title).join(", ");
+  const overflow = items.length - maxShow;
+  return overflow > 0 ? `${shown}, +${overflow}` : shown;
+}
+
 function InstalledAppGroup({
   group,
   pathname,
+  isExpanded,
+  onToggle,
 }: {
   group: InstalledAppSidebarGroup;
   pathname: string;
+  isExpanded: boolean;
+  onToggle: () => void;
 }) {
   const GroupIcon = resolveAppIcon(group.icon);
+  const subtext = useMemo(() => buildAppSubtext(group.items), [group.items]);
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel className="flex items-center gap-2">
+      {/* Accordion header — matches NavGroup pattern */}
+      <button
+        onClick={onToggle}
+        className="flex w-full items-center justify-between px-2 py-1.5
+                   rounded-md hover:bg-sidebar-accent/50 transition-colors cursor-pointer
+                   group-data-[collapsible=icon]:hidden"
+        aria-expanded={isExpanded}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <GroupIcon className="h-3.5 w-3.5 shrink-0 text-sidebar-foreground/70" />
+          <div className="flex flex-col items-start gap-0.5 min-w-0">
+            <span className="text-xs font-medium text-sidebar-foreground/70">
+              {group.label}
+            </span>
+            <span
+              className={cn(
+                "text-[11px] text-sidebar-foreground/40 leading-tight truncate max-w-full transition-opacity duration-150",
+                isExpanded ? "opacity-0 h-0" : "opacity-100"
+              )}
+            >
+              {subtext}
+            </span>
+          </div>
+        </div>
+        <ChevronDown
+          className={cn(
+            "h-3.5 w-3.5 shrink-0 text-sidebar-foreground/40 transition-transform duration-200",
+            isExpanded && "rotate-180"
+          )}
+        />
+      </button>
+
+      {/* Icon-mode label — visible only when sidebar is collapsed to icons */}
+      <SidebarGroupLabel className="hidden group-data-[collapsible=icon]:flex items-center gap-2">
         <GroupIcon className="h-3.5 w-3.5" />
         <span>{group.label}</span>
       </SidebarGroupLabel>
-      <SidebarGroupContent>
-        <SidebarMenu>
-          {group.items.map((item) => {
-            const Icon = resolveAppIcon(item.icon);
-            const active =
-              pathname === item.href || pathname.startsWith(item.href + "/");
 
-            return (
-              <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton asChild tooltip={item.title} isActive={active}>
-                  <Link href={item.href}>
-                    <Icon className="h-4 w-4" aria-hidden="true" />
-                    <span>{item.title}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            );
-          })}
-        </SidebarMenu>
-      </SidebarGroupContent>
+      {/* Collapsible content — grid-rows animation */}
+      <div
+        className={cn(
+          "grid transition-[grid-template-rows] duration-200 ease-in-out group-data-[collapsible=icon]:!grid-rows-[1fr]",
+          isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+        )}
+      >
+        <div className="overflow-hidden">
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {group.items.map((item) => {
+                const Icon = resolveAppIcon(item.icon);
+                const active =
+                  pathname === item.href || pathname.startsWith(item.href + "/");
+
+                return (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton asChild tooltip={item.title} isActive={active}>
+                      <Link href={item.href}>
+                        <Icon className="h-4 w-4" aria-hidden="true" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </div>
+      </div>
     </SidebarGroup>
   );
 }
@@ -243,17 +299,26 @@ export function AppSidebar() {
   const pathname = usePathname();
   const [appGroups, setAppGroups] = useState<InstalledAppSidebarGroup[]>([]);
 
-  // Determine which group owns the current route
-  const activeGroup = useMemo(() => {
+  // Determine which group (native or app) owns the current route
+  const activeGroup = useMemo((): string => {
+    // Check native groups first
     for (const group of groupMap) {
       for (const item of group.items) {
         if (isItemActive(item, pathname)) return group.id;
       }
     }
-    return "work" as GroupId; // default to Work if no match
-  }, [pathname]);
+    // Check installed app groups
+    for (const group of appGroups) {
+      for (const item of group.items) {
+        if (pathname === item.href || pathname.startsWith(item.href + "/")) {
+          return group.appId;
+        }
+      }
+    }
+    return "work"; // default to Work if no match
+  }, [pathname, appGroups]);
 
-  const [expandedGroup, setExpandedGroup] = useState<GroupId | null>(activeGroup);
+  const [expandedGroup, setExpandedGroup] = useState<string | null>(activeGroup);
 
   // Auto-expand the group containing the active route on navigation
   useEffect(() => {
@@ -279,9 +344,9 @@ export function AppSidebar() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [pathname]);
 
-  const toggleGroup = useCallback((id: GroupId) => {
+  const toggleGroup = useCallback((id: string) => {
     setExpandedGroup((prev) => (prev === id ? null : id));
   }, []);
 
@@ -312,7 +377,13 @@ export function AppSidebar() {
         ))}
         {appGroups.length > 0 ? <SidebarSeparator className="my-2" /> : null}
         {appGroups.map((group) => (
-          <InstalledAppGroup key={group.appId} group={group} pathname={pathname} />
+          <InstalledAppGroup
+            key={group.appId}
+            group={group}
+            pathname={pathname}
+            isExpanded={expandedGroup === group.appId}
+            onToggle={() => toggleGroup(group.appId)}
+          />
         ))}
       </SidebarContent>
       <SidebarFooter className="px-4 py-3">

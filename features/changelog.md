@@ -1,5 +1,19 @@
 # Feature Changelog
 
+## 2026-04-12
+
+### Groomed — Sidebar Bug Fixes (3 features)
+
+Groomed 3 bugs from `handoff/` into feature specs:
+- `fix-exported-bundle-registration` (P1) — exported bundles via export_app_bundle MCP tool don't get DB records, so they never appear in sidebar
+- `fix-sidebar-reactive-update` (P1) — sidebar doesn't re-fetch app data after install, requires full page refresh
+- `fix-sidebar-accordion-behavior` (P2) — app sidebar menus always expanded, missing accordion pattern from native groups
+
+Consulted `/architect` (impact analysis) and `/frontend-designer` (UX review). Key decisions:
+- Use `installApp(id, name, bundle)` with providedBundle param to bypass registry lookup
+- Add `pathname` to sidebar useEffect dependencies for reactive re-fetch
+- Unified accordion state across native and app groups with visual parity
+
 ## 2026-04-11
 
 ### Groomed — App Marketplace Expansion (26 features)

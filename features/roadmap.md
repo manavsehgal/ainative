@@ -343,6 +343,9 @@ Runtime bundle system, packaging format, and install hardening. The keystone for
 | [app-conflict-resolution](app-conflict-resolution.md) | P2 | planned | app-package-format, marketplace-install-hardening |
 | [app-updates-dependencies](app-updates-dependencies.md) | P2 | planned | app-conflict-resolution, app-cli-tools |
 | [app-single-file-format](app-single-file-format.md) | P2 | planned | app-package-format |
+| [fix-exported-bundle-registration](fix-exported-bundle-registration.md) | P1 | in-progress | app-runtime-bundle-foundation |
+| [fix-sidebar-reactive-update](fix-sidebar-reactive-update.md) | P1 | in-progress | app-runtime-bundle-foundation |
+| [fix-sidebar-accordion-behavior](fix-sidebar-accordion-behavior.md) | P2 | in-progress | app-runtime-bundle-foundation |
 
 ### App Marketplace — Extended Primitives
 

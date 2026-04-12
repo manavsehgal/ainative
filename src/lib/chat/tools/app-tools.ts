@@ -317,7 +317,7 @@ export function appTools(ctx: ToolContext) {
           const { exportProjectToBundle } = await import(
             "@/lib/apps/exporter"
           );
-          const { saveSapDirectory } = await import("@/lib/apps/service");
+          const { saveSapDirectory, installApp } = await import("@/lib/apps/service");
 
           const effectiveProjectId =
             args.projectId ?? ctx.projectId ?? undefined;
@@ -347,6 +347,20 @@ export function appTools(ctx: ToolContext) {
             console.warn(
               `[apps] SAP write failed for ${result.bundle.manifest.id}:`,
               sapErr,
+            );
+          }
+
+          // Register in DB so the app appears in the sidebar
+          try {
+            await installApp(
+              result.bundle.manifest.id,
+              result.bundle.manifest.name,
+              result.bundle,
+            );
+          } catch (installErr) {
+            console.warn(
+              `[apps] DB registration failed for ${result.bundle.manifest.id}:`,
+              installErr,
             );
           }
 
