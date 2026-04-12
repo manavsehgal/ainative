@@ -352,6 +352,26 @@ export interface AppCatalogEntry {
   projectId: string | null;
 }
 
+export type MyAppState = "installed" | "archived" | "failed" | "corrupt";
+
+export interface MyAppEntry {
+  appId: string;
+  name: string;
+  version: string;
+  description: string;
+  icon: string;
+  category: string;
+  tags: string[];
+  trustLevel: AppTrustLevel;
+  state: MyAppState;
+  status: AppInstanceStatus | null;
+  projectId: string | null;
+  bootstrapError: string | null;
+  tableCount: number;
+  scheduleCount: number;
+  installedAt: string | null;
+}
+
 export interface AppSidebarItem {
   title: string;
   href: string;

@@ -23,8 +23,16 @@ import type { AppInstanceDbRow } from "@/lib/db/schema";
 import { addRows, createTable, deleteRows, getTable, listRows } from "@/lib/data/tables";
 import { join } from "path";
 import { homedir } from "os";
-import { mkdir } from "fs/promises";
-import { getAppBundle, listAppBundles, registerBundle } from "./registry";
+import { existsSync } from "fs";
+import { mkdir, rm as fsRm } from "fs/promises";
+import {
+  getAppBundle,
+  listAppBundles,
+  registerBundle,
+  listSapBundleIds,
+  getFailedSapLoads,
+  deregisterBundle,
+} from "./registry";
 import { bundleToSap } from "./sap-converter";
 import { appResourceMapSchema } from "./validation";
 import { canExecutePrimitive } from "./trust";
@@ -35,7 +43,9 @@ import type {
   AppInstanceRecord,
   AppResourceMap,
   AppSidebarGroup,
+  AppSourceType,
   AppUiSchema,
+  MyAppEntry,
 } from "./types";
 
 class AppRuntimeError extends Error {
@@ -171,10 +181,12 @@ export function listAppCatalog(filter?: AppCatalogFilter): AppCatalogEntry[] {
     listInstalledAppInstances().map((instance) => [instance.appId, instance])
   );
 
-  let entries = listAppBundles().map((bundle) => {
-    const instance = installed.get(bundle.manifest.id) ?? null;
-    return bundleToCatalogEntry(bundle, instance);
-  });
+  let entries = listAppBundles()
+    .filter((bundle) => bundle.manifest.trustLevel !== "private")
+    .map((bundle) => {
+      const instance = installed.get(bundle.manifest.id) ?? null;
+      return bundleToCatalogEntry(bundle, instance);
+    });
 
   if (filter?.category) {
     const cat = filter.category.toLowerCase();
@@ -218,7 +230,12 @@ export function getAppSidebarGroups(): AppSidebarGroup[] {
     }));
 }
 
-export async function installApp(appId: string, projectName?: string, providedBundle?: AppBundle): Promise<AppInstanceRecord> {
+export async function installApp(
+  appId: string,
+  projectName?: string,
+  providedBundle?: AppBundle,
+  sourceType?: AppSourceType,
+): Promise<AppInstanceRecord> {
   const bundle = providedBundle ?? getAppBundle(appId);
   if (!bundle) {
     throw new AppRuntimeError(`App "${appId}" not found`);
@@ -260,7 +277,7 @@ export async function installApp(appId: string, projectName?: string, providedBu
       uiSchemaJson: JSON.stringify(bundle.ui),
       resourceMapJson: JSON.stringify({ tables: {}, schedules: {} }),
       status: "installing",
-      sourceType: "builtin",
+      sourceType: sourceType ?? "builtin",
       bootstrapError: null,
       installedAt: now,
       bootstrappedAt: null,
@@ -589,7 +606,7 @@ export async function clearAppSampleData(appId: string): Promise<{ deletedRows: 
 
 export function uninstallApp(
   appId: string,
-  options?: { deleteProject?: boolean },
+  options?: { deleteProject?: boolean; deleteSap?: boolean },
 ): void {
   const instance = getAppInstance(appId);
   if (!instance) {
@@ -657,6 +674,19 @@ export function uninstallApp(
 
   // 6. App instance row
   db.delete(appInstances).where(eq(appInstances.appId, appId)).run();
+
+  // 7. Optionally delete SAP directory (for user-built apps)
+  if (options?.deleteSap && instance.sourceType === "file") {
+    const dataDir =
+      process.env.STAGENT_DATA_DIR || join(homedir(), ".stagent");
+    const sapDir = join(dataDir, "apps", appId);
+    if (existsSync(sapDir)) {
+      fsRm(sapDir, { recursive: true, force: true }).catch((err: unknown) => {
+        console.warn(`[apps] Failed to delete SAP dir ${sapDir}:`, err);
+      });
+    }
+    deregisterBundle(appId);
+  }
 }
 
 export async function getResolvedAppTable(appId: string, tableKey: string) {
@@ -754,4 +784,137 @@ export async function registerExportedApp(
     db.select().from(appInstances).where(eq(appInstances.appId, bundle.manifest.id)).get()!,
     bundle,
   );
+}
+
+// ---------------------------------------------------------------------------
+// My Apps lifecycle
+// ---------------------------------------------------------------------------
+
+/**
+ * List all user-built apps by cross-referencing SAP bundles in the registry
+ * with app_instances rows. Returns entries in three states:
+ * installed (DB row exists, ready/disabled), failed (DB row, failed status),
+ * archived (SAP dir exists, no DB row), corrupt (SAP failed to load).
+ */
+export function listMyApps(): MyAppEntry[] {
+  const sapIds = listSapBundleIds();
+
+  // Installed file-sourced instances (may include IDs not in sapIds if SAP was deleted)
+  const fileInstances = new Map(
+    listInstalledAppInstances()
+      .filter((i) => i.sourceType === "file")
+      .map((i) => [i.appId, i]),
+  );
+
+  const entries: MyAppEntry[] = [];
+
+  // SAP-loaded bundles (installed or archived)
+  for (const appId of sapIds) {
+    const bundle = getAppBundle(appId);
+    if (!bundle) continue;
+
+    const instance = fileInstances.get(appId);
+    fileInstances.delete(appId); // consumed
+
+    const state = instance
+      ? instance.status === "failed"
+        ? "failed"
+        : "installed"
+      : "archived";
+
+    entries.push({
+      appId,
+      name: bundle.manifest.name,
+      version: bundle.manifest.version,
+      description: bundle.manifest.description,
+      icon: bundle.manifest.icon,
+      category: bundle.manifest.category,
+      tags: bundle.manifest.tags,
+      trustLevel: bundle.manifest.trustLevel,
+      state: state as MyAppEntry["state"],
+      status: instance?.status ?? null,
+      projectId: instance?.projectId ?? null,
+      bootstrapError: instance?.bootstrapError ?? null,
+      tableCount: bundle.tables.length,
+      scheduleCount: bundle.schedules.length,
+      installedAt: instance ? instance.installedAt.toISOString() : null,
+    });
+  }
+
+  // Corrupt SAP directories (failed to load)
+  for (const [dirName, error] of getFailedSapLoads()) {
+    entries.push({
+      appId: dirName,
+      name: dirName,
+      version: "0.0.0",
+      description: `Failed to load: ${error}`,
+      icon: "AlertTriangle",
+      category: "unknown",
+      tags: [],
+      trustLevel: "private",
+      state: "corrupt",
+      status: null,
+      projectId: null,
+      bootstrapError: error,
+      tableCount: 0,
+      scheduleCount: 0,
+      installedAt: null,
+    });
+  }
+
+  // Sort: installed first, then failed, then archived, then corrupt
+  const stateOrder: Record<string, number> = {
+    installed: 0,
+    failed: 1,
+    archived: 2,
+    corrupt: 3,
+  };
+  entries.sort((a, b) => (stateOrder[a.state] ?? 9) - (stateOrder[b.state] ?? 9));
+
+  return entries;
+}
+
+/**
+ * Re-install an archived user-built app from its SAP bundle.
+ * Creates a new project and bootstraps resources.
+ */
+export async function reinstallArchivedApp(
+  appId: string,
+  projectName?: string,
+): Promise<AppInstanceRecord> {
+  const bundle = getAppBundle(appId);
+  if (!bundle) {
+    throw new AppRuntimeError(
+      `App "${appId}" not found in registry. The SAP package may have been deleted.`,
+    );
+  }
+
+  return installApp(appId, projectName, bundle, "file");
+}
+
+/**
+ * Permanently delete a SAP directory from disk and deregister the bundle.
+ * If the app is currently installed, uninstalls it first.
+ */
+export async function deleteSapApp(
+  appId: string,
+  options?: { deleteProject?: boolean },
+): Promise<void> {
+  // If installed, uninstall first
+  const instance = getAppInstance(appId);
+  if (instance) {
+    uninstallApp(appId, { deleteProject: options?.deleteProject });
+  }
+
+  // Remove SAP directory from disk
+  const dataDir =
+    process.env.STAGENT_DATA_DIR || join(homedir(), ".stagent");
+  const sapDir = join(dataDir, "apps", appId);
+
+  if (existsSync(sapDir)) {
+    await fsRm(sapDir, { recursive: true, force: true });
+  }
+
+  // Evict from registry
+  deregisterBundle(appId);
 }

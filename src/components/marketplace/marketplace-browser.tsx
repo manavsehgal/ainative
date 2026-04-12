@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/shared/empty-state";
 import { AppMarketplaceBrowser } from "@/components/apps/app-marketplace-browser";
+import { MyAppsPanel } from "./my-apps-panel";
 import { BlueprintCard } from "./blueprint-card";
 import type { MarketplaceBlueprint } from "@/lib/marketplace/marketplace-client";
 
@@ -137,12 +138,16 @@ export function MarketplaceBrowser({ canImport, canPublish }: MarketplaceBrowser
     <Tabs defaultValue="apps" className="space-y-4">
       <TabsList>
         <TabsTrigger value="apps">Apps</TabsTrigger>
+        <TabsTrigger value="myapps">My Apps</TabsTrigger>
         <TabsTrigger value="blueprints">Blueprints</TabsTrigger>
         <TabsTrigger value="profiles">Profiles</TabsTrigger>
         <TabsTrigger value="templates">Templates</TabsTrigger>
       </TabsList>
       <TabsContent value="apps">
         <AppMarketplaceBrowser canInstall={canImport} canPublish={canPublish} />
+      </TabsContent>
+      <TabsContent value="myapps">
+        <MyAppsPanel />
       </TabsContent>
       <TabsContent value="blueprints">
         <BlueprintMarketplacePanel canImport={canImport} />

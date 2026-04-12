@@ -6,6 +6,8 @@ import { appBundleSchema } from "./validation";
 import type { AppBundle } from "./types";
 
 const bundleCache = new Map<string, AppBundle>();
+const bundleSourceMap = new Map<string, "builtin" | "sap">();
+const failedSapLoads = new Map<string, string>();
 
 function loadBundles(): Map<string, AppBundle> {
   const bundles = new Map<string, AppBundle>();
@@ -30,6 +32,7 @@ function ensureBundlesLoaded(): Map<string, AppBundle> {
   if (bundleCache.size === 0) {
     for (const [id, bundle] of loadBundles()) {
       bundleCache.set(id, bundle);
+      bundleSourceMap.set(id, "builtin");
     }
   }
 
@@ -87,12 +90,12 @@ export async function loadSapBundles(): Promise<number> {
     try {
       const bundle = await sapToBundle(dir);
       registerBundle(bundle);
+      bundleSourceMap.set(bundle.manifest.id, "sap");
       loaded++;
     } catch (err) {
-      console.warn(
-        `[apps] Failed to load .sap bundle from ${dir}:`,
-        err instanceof Error ? err.message : err,
-      );
+      const errMsg = err instanceof Error ? err.message : String(err);
+      console.warn(`[apps] Failed to load .sap bundle from ${dir}:`, errMsg);
+      failedSapLoads.set(entry.name, errMsg);
     }
   }
 
@@ -101,4 +104,31 @@ export async function loadSapBundles(): Promise<number> {
   }
 
   return loaded;
+}
+
+/** Return IDs of all SAP-loaded bundles (user-built apps). */
+export function listSapBundleIds(): string[] {
+  ensureBundlesLoaded();
+  return Array.from(bundleSourceMap.entries())
+    .filter(([, source]) => source === "sap")
+    .map(([id]) => id);
+}
+
+/** Return how a bundle was loaded, or undefined if not in cache. */
+export function getBundleSource(
+  appId: string,
+): "builtin" | "sap" | undefined {
+  return bundleSourceMap.get(appId);
+}
+
+/** Remove a bundle from the runtime cache (used after SAP dir deletion). */
+export function deregisterBundle(appId: string): boolean {
+  bundleSourceMap.delete(appId);
+  failedSapLoads.delete(appId);
+  return bundleCache.delete(appId);
+}
+
+/** Return map of SAP directories that failed to load (appId → error message). */
+export function getFailedSapLoads(): ReadonlyMap<string, string> {
+  return failedSapLoads;
 }
