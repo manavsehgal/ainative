@@ -1,0 +1,58 @@
+key: transactions
+name: Transactions
+description: Historical buys, sells, and dividend events.
+columns:
+  - name: date
+    displayName: Date
+    dataType: date
+    position: 0
+    required: true
+  - name: symbol
+    displayName: Symbol
+    dataType: text
+    position: 1
+    required: true
+  - name: action
+    displayName: Action
+    dataType: select
+    position: 2
+    config:
+      options: [BUY, SELL, DIVIDEND]
+  - name: shares
+    displayName: Shares
+    dataType: number
+    position: 3
+  - name: amount
+    displayName: Amount
+    dataType: number
+    position: 4
+  - name: notes
+    displayName: Notes
+    dataType: text
+    position: 5
+  - name: _sample
+    displayName: Sample
+    dataType: boolean
+    position: 6
+sampleRows:
+  - date: "2026-03-14"
+    symbol: AAPL
+    action: BUY
+    shares: 10
+    amount: 1742
+    notes: Added on pullback
+    _sample: true
+  - date: "2026-03-28"
+    symbol: MSFT
+    action: BUY
+    shares: 8
+    amount: 3240
+    notes: Trimmed cash allocation
+    _sample: true
+  - date: "2026-04-04"
+    symbol: VTI
+    action: DIVIDEND
+    shares: 0
+    amount: 138
+    notes: Quarterly dividend
+    _sample: true

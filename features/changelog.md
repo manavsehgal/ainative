@@ -20,6 +20,20 @@ Key decisions locked during brainstorm:
 Source: handoff/stagent-app-marketplace-spec.md + brainstorm session with /architect, /product-manager, /frontend-designer
 Plan: .claude/plans/flickering-petting-hammock.md
 
+### Completed — app-package-format (P1)
+
+Implemented the `.sap` (Stagent App Package) YAML-based directory format — the portable, distributable representation of an AppBundle. Key deliverables:
+- `SapManifest` type with YAML-specific fields (author, license, platform compat, marketplace metadata, sidebar, provides, dependencies)
+- `sapManifestSchema` Zod validation with clear error messages
+- `sapToBundle()` — parses a `.sap` directory into a typed AppBundle with namespace-prefixed artifact IDs
+- `bundleToSap()` — serializes an AppBundle to a `.sap` directory with namespace-stripped portable keys
+- Platform version compatibility via `semver` (new dependency)
+- File reference validation (provides entries must have corresponding files)
+- 24 unit tests covering both conversion directions, namespace isolation, platform compat, validation errors, missing file refs, and full round-trip
+- Reference fixture: `wealth-manager.sap/` with manifest + 3 tables + 1 schedule + 2 profiles + 2 blueprints
+
+This unblocks 7 downstream features: app-seed-data-generation, app-cli-tools, app-single-file-format, app-conflict-resolution, chat-app-builder, visual-app-studio, marketplace-app-publishing.
+
 ### Completed — marketplace-install-hardening (P1, Ship Verified)
 
 Closed the 3 correctness gaps from the runtime-bundle code review:

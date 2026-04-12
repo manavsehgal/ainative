@@ -1,0 +1,44 @@
+key: watchlist
+name: Watchlist
+description: Potential positions and triggers for review.
+columns:
+  - name: symbol
+    displayName: Symbol
+    dataType: text
+    position: 0
+    required: true
+  - name: theme
+    displayName: Theme
+    dataType: text
+    position: 1
+  - name: targetPrice
+    displayName: Target Price
+    dataType: number
+    position: 2
+  - name: conviction
+    displayName: Conviction
+    dataType: select
+    position: 3
+    config:
+      options: [High, Medium, Low]
+  - name: nextReview
+    displayName: Next Review
+    dataType: date
+    position: 4
+  - name: _sample
+    displayName: Sample
+    dataType: boolean
+    position: 5
+sampleRows:
+  - symbol: NVDA
+    theme: AI infrastructure
+    targetPrice: 920
+    conviction: High
+    nextReview: "2026-04-18"
+    _sample: true
+  - symbol: COST
+    theme: Defensive compounder
+    targetPrice: 745
+    conviction: Medium
+    nextReview: "2026-04-21"
+    _sample: true

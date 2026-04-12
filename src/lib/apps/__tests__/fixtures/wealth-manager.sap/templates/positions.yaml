@@ -1,0 +1,55 @@
+key: positions
+name: Positions
+description: Core holdings and target allocation data.
+columns:
+  - name: symbol
+    displayName: Symbol
+    dataType: text
+    position: 0
+    required: true
+  - name: name
+    displayName: Name
+    dataType: text
+    position: 1
+  - name: sector
+    displayName: Sector
+    dataType: text
+    position: 2
+  - name: shares
+    displayName: Shares
+    dataType: number
+    position: 3
+  - name: costBasis
+    displayName: Cost Basis
+    dataType: number
+    position: 4
+  - name: targetAllocation
+    displayName: Target Allocation
+    dataType: number
+    position: 5
+  - name: _sample
+    displayName: Sample
+    dataType: boolean
+    position: 6
+sampleRows:
+  - symbol: AAPL
+    name: Apple Inc.
+    sector: Large-Cap Tech
+    shares: 40
+    costBasis: 173.4
+    targetAllocation: 8
+    _sample: true
+  - symbol: MSFT
+    name: Microsoft Corp.
+    sector: Large-Cap Tech
+    shares: 28
+    costBasis: 401.2
+    targetAllocation: 7
+    _sample: true
+  - symbol: VTI
+    name: Vanguard Total Stock Market
+    sector: Index ETF
+    shares: 120
+    costBasis: 224.8
+    targetAllocation: 18
+    _sample: true

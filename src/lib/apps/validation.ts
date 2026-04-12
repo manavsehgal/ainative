@@ -6,6 +6,8 @@ import {
   APP_PERMISSIONS,
   APP_SOURCE_TYPES,
   APP_TRUST_LEVELS,
+  SAP_CATEGORIES,
+  SAP_PRICING,
 } from "./types";
 
 const columnConfigSchema = z
@@ -54,7 +56,7 @@ const linkedAssetSchema = z.object({
   description: z.string().max(240).optional(),
 });
 
-const tableTemplateSchema = z.object({
+export const tableTemplateSchema = z.object({
   key: z.string().regex(/^[a-z0-9-]+$/),
   name: z.string().min(1).max(120),
   description: z.string().max(240).optional(),
@@ -62,7 +64,7 @@ const tableTemplateSchema = z.object({
   sampleRows: z.array(z.record(z.string(), z.unknown())).max(200),
 });
 
-const scheduleTemplateSchema = z.object({
+export const scheduleTemplateSchema = z.object({
   key: z.string().regex(/^[a-z0-9-]+$/),
   name: z.string().min(1).max(120),
   description: z.string().max(240).optional(),
@@ -169,3 +171,61 @@ export const appResourceMapSchema = z.object({
 
 export const appInstanceStatusSchema = z.enum(APP_INSTANCE_STATUSES);
 export const appSourceTypeSchema = z.enum(APP_SOURCE_TYPES);
+
+// ── SAP (Stagent App Package) manifest schema ──
+
+const sapAuthorSchema = z.object({
+  name: z.string().min(1).max(100),
+  email: z.string().email().optional(),
+  url: z.string().url().optional(),
+});
+
+const sapPlatformSchema = z.object({
+  minVersion: z.string().regex(/^\d+\.\d+\.\d+$/, "must be semver (e.g. 0.9.0)"),
+  maxVersion: z
+    .string()
+    .regex(/^\d+\.\d+\.\d+$/, "must be semver (e.g. 2.0.0)")
+    .optional(),
+});
+
+const sapMarketplaceSchema = z.object({
+  category: z.enum(SAP_CATEGORIES),
+  tags: z.array(z.string().min(1).max(32)).max(10),
+  difficulty: z.enum(APP_DIFFICULTY_LEVELS),
+  pricing: z.enum(SAP_PRICING).default("free"),
+});
+
+const sapSidebarSchema = z.object({
+  label: z.string().min(1).max(80),
+  icon: z.string().min(1).max(48),
+  route: z.string().startsWith("/app/", "sidebar route must start with /app/"),
+});
+
+const sapProvidesSchema = z.object({
+  profiles: z.array(z.string()).default([]),
+  blueprints: z.array(z.string()).default([]),
+  tables: z.array(z.string()).default([]),
+  schedules: z.array(z.string()).default([]),
+  triggers: z.array(z.string()).default([]),
+  pages: z.array(z.string()).default([]),
+});
+
+const sapDependenciesSchema = z.object({
+  apps: z.array(z.string()).default([]),
+  platform: z.array(z.string()).default([]),
+});
+
+export const sapManifestSchema = z.object({
+  id: z.string().regex(/^[a-z0-9-]+$/, "lowercase alphanumeric with hyphens"),
+  name: z.string().min(1).max(100),
+  version: z.string().regex(/^\d+\.\d+\.\d+$/, "must be semver"),
+  description: z.string().min(10).max(500),
+  author: sapAuthorSchema,
+  license: z.string().max(32).optional(),
+  platform: sapPlatformSchema,
+  marketplace: sapMarketplaceSchema,
+  sidebar: sapSidebarSchema,
+  provides: sapProvidesSchema,
+  dependencies: sapDependenciesSchema.optional(),
+  ui: appUiSchemaSchema.optional(),
+});

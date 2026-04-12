@@ -337,7 +337,7 @@ Runtime bundle system, packaging format, and install hardening. The keystone for
 |---------|----------|--------|--------------|
 | [app-runtime-bundle-foundation](app-runtime-bundle-foundation.md) | P0 | completed | database-schema |
 | [marketplace-install-hardening](marketplace-install-hardening.md) | P1 | completed | instance-bootstrap |
-| [app-package-format](app-package-format.md) | P1 | planned | marketplace-install-hardening |
+| [app-package-format](app-package-format.md) | P1 | completed | marketplace-install-hardening |
 | [app-seed-data-generation](app-seed-data-generation.md) | P1 | planned | app-package-format |
 | [app-cli-tools](app-cli-tools.md) | P1 | planned | app-package-format, app-seed-data-generation |
 | [app-conflict-resolution](app-conflict-resolution.md) | P2 | planned | app-package-format, marketplace-install-hardening |

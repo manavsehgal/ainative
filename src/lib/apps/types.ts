@@ -173,6 +173,75 @@ export interface AppBundle {
   ui: AppUiSchema;
 }
 
+// ── SAP (Stagent App Package) manifest types ──
+
+export const SAP_CATEGORIES = [
+  "finance",
+  "sales",
+  "content",
+  "dev",
+  "automation",
+  "general",
+] as const;
+
+export type SapCategory = (typeof SAP_CATEGORIES)[number];
+
+export const SAP_PRICING = ["free", "paid"] as const;
+export type SapPricing = (typeof SAP_PRICING)[number];
+
+export interface SapAuthor {
+  name: string;
+  email?: string;
+  url?: string;
+}
+
+export interface SapPlatformRequirement {
+  minVersion: string;
+  maxVersion?: string;
+}
+
+export interface SapMarketplaceMeta {
+  category: SapCategory;
+  tags: string[];
+  difficulty: AppDifficulty;
+  pricing: SapPricing;
+}
+
+export interface SapSidebar {
+  label: string;
+  icon: string;
+  route: string;
+}
+
+export interface SapProvides {
+  profiles: string[];
+  blueprints: string[];
+  tables: string[];
+  schedules: string[];
+  triggers: string[];
+  pages: string[];
+}
+
+export interface SapDependencies {
+  apps: string[];
+  platform: string[];
+}
+
+export interface SapManifest {
+  id: string;
+  name: string;
+  version: string;
+  description: string;
+  author: SapAuthor;
+  license?: string;
+  platform: SapPlatformRequirement;
+  marketplace: SapMarketplaceMeta;
+  sidebar: SapSidebar;
+  provides: SapProvides;
+  dependencies?: SapDependencies;
+  ui?: AppUiSchema;
+}
+
 export interface AppResourceMap {
   tables: Record<string, string>;
   schedules: Record<string, string>;
