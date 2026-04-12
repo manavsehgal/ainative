@@ -126,9 +126,7 @@ export function getAppInstance(appId: string): AppInstanceRecord | null {
   if (!row) return null;
 
   const bundle = getAppBundle(appId);
-  if (!bundle) {
-    throw new AppRuntimeError(`Bundle "${appId}" is no longer available`);
-  }
+  if (!bundle) return null;
 
   return hydrateInstance(row, bundle);
 }

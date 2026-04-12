@@ -48,7 +48,7 @@ Execute these steps in order. Report progress as you go so the live log view sho
 
 8. **Reinstall dependencies if package-lock.json changed.** Check `git diff HEAD~1 HEAD -- package-lock.json`. If there are changes, run `npm install`.
 
-9. **Pop the stash.** If you stashed in step 2, run `git stash pop`. If that conflicts (rare), surface the conflict to the user with the same three-choice flow.
+9. **Pop the stash.** If you stashed in step 2, run `git stash pop`. Then immediately run `git status` to check for conflicts. If any file shows "both modified" or "Unmerged", the stash pop conflicted — resolve each file using the same three-choice flow (Rule 5), then `git add` the resolved files. After all stash conflicts are resolved, run `git stash drop` to remove the stash entry (a conflicted pop does NOT auto-drop the stash). Finally, run `grep -rn "<<<<<<< \|>>>>>>>" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.json" .` to verify no conflict markers remain in the working tree.
 
 10. **Report completion.** Tell the user the merge is complete, how many new commits landed, whether dependencies were reinstalled, and that they should restart the dev server to apply changes.
 
@@ -56,8 +56,8 @@ Execute these steps in order. Report progress as you go so the live log view sho
 
 If the user clicks "Abort" during the session, or if any step fails irrecoverably, run:
 - `git merge --abort` (safe to run even if no merge is in progress — it'll just exit 0)
-- `git stash pop` (only if you stashed in step 2; otherwise skip)
 - `git checkout {{INSTANCE_BRANCH}}` (return the user to where they started)
+- If you stashed in step 2: run `git stash pop`. Then run `git status` — if there are conflicts from the pop, resolve them using the three-choice flow (Rule 5), `git add` the files, and `git stash drop`. Run `grep -rn "<<<<<<< \|>>>>>>>" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.json" .` to verify no markers remain
 
 Then report the abort and what state the repo is in.
 
