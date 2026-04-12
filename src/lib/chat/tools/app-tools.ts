@@ -259,5 +259,115 @@ export function appTools(ctx: ToolContext) {
         }
       },
     ),
+
+    // ── Export operation (requires approval) ───────────────────────
+
+    defineTool(
+      "export_app_bundle",
+      "Export an existing project's tables, schedules, and profiles as a reusable " +
+        "AppBundle with sanitized seed data. Real data is automatically stripped of " +
+        "PII using rule-based strategies (faker names, shifted dates, redacted emails). " +
+        "The exported bundle is saved as a .sap directory. " +
+        "IMPORTANT: This tool reads real data to generate seed rows. Always present " +
+        "a summary to the user before calling.",
+      {
+        projectId: z
+          .string()
+          .describe(
+            "The project ID to export. Omit to use the active project.",
+          ),
+        appName: z
+          .string()
+          .min(1)
+          .max(120)
+          .describe("Display name for the exported app"),
+        appDescription: z
+          .string()
+          .min(1)
+          .max(500)
+          .describe("Description of what the exported app does"),
+        category: z
+          .string()
+          .optional()
+          .describe("App category (default: general)"),
+        includeTables: z
+          .array(z.string())
+          .optional()
+          .describe(
+            "Table IDs or names to include. Omit to include all tables.",
+          ),
+        includeSchedules: z
+          .array(z.string())
+          .optional()
+          .describe(
+            "Schedule IDs or names to include. Omit to include all schedules.",
+          ),
+        seedDataRows: z
+          .number()
+          .int()
+          .min(0)
+          .max(100)
+          .optional()
+          .describe(
+            "Number of sanitized seed rows per table (default: 25, 0 for none)",
+          ),
+      },
+      async (args) => {
+        try {
+          const { exportProjectToBundle } = await import(
+            "@/lib/apps/exporter"
+          );
+          const { saveSapDirectory } = await import("@/lib/apps/service");
+
+          const effectiveProjectId =
+            args.projectId ?? ctx.projectId ?? undefined;
+          if (!effectiveProjectId) {
+            return err(
+              "No project specified. Provide a projectId or set an active project.",
+            );
+          }
+
+          const result = await exportProjectToBundle(effectiveProjectId, {
+            appName: args.appName,
+            appDescription: args.appDescription,
+            category: args.category,
+            includeTables: args.includeTables,
+            includeSchedules: args.includeSchedules,
+            seedDataRows: args.seedDataRows,
+          });
+
+          // Persist as .sap directory
+          let sapPath: string | null = null;
+          try {
+            sapPath = await saveSapDirectory(
+              result.bundle.manifest.id,
+              result.bundle,
+            );
+          } catch (sapErr) {
+            console.warn(
+              `[apps] SAP write failed for ${result.bundle.manifest.id}:`,
+              sapErr,
+            );
+          }
+
+          ctx.onToolResult?.("export_app_bundle", {
+            appId: result.bundle.manifest.id,
+            name: result.bundle.manifest.name,
+          });
+
+          return ok({
+            appId: result.bundle.manifest.id,
+            name: result.bundle.manifest.name,
+            savedTo: sapPath ?? `~/.stagent/apps/${result.bundle.manifest.id}/`,
+            stats: result.stats,
+            message: `Exported "${result.bundle.manifest.name}" with ${result.stats.tablesExported} tables and ${result.stats.totalSeedRows} sanitized seed rows.${result.stats.piiClean ? "" : " Warning: PII scan found potential issues in seed data."}`,
+          });
+        } catch (e) {
+          return err(
+            e instanceof Error ? e.message : "Failed to export app bundle",
+          );
+        }
+      },
+    ),
   ];
 }
