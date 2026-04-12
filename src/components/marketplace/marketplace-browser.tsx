@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Store } from "lucide-react";
+import { Store, UserCircle, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -138,12 +138,28 @@ export function MarketplaceBrowser({ canImport }: MarketplaceBrowserProps) {
       <TabsList>
         <TabsTrigger value="apps">Apps</TabsTrigger>
         <TabsTrigger value="blueprints">Blueprints</TabsTrigger>
+        <TabsTrigger value="profiles">Profiles</TabsTrigger>
+        <TabsTrigger value="templates">Templates</TabsTrigger>
       </TabsList>
       <TabsContent value="apps">
         <AppMarketplaceBrowser canInstall={canImport} />
       </TabsContent>
       <TabsContent value="blueprints">
         <BlueprintMarketplacePanel canImport={canImport} />
+      </TabsContent>
+      <TabsContent value="profiles">
+        <EmptyState
+          icon={UserCircle}
+          heading="Agent profiles coming soon"
+          description="Shareable agent profile templates will be available in a future update."
+        />
+      </TabsContent>
+      <TabsContent value="templates">
+        <EmptyState
+          icon={FileText}
+          heading="Templates coming soon"
+          description="Project and workflow templates will be available in a future update."
+        />
       </TabsContent>
     </Tabs>
   );
