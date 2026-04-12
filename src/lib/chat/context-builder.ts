@@ -109,7 +109,7 @@ async function buildTier2(projectId?: string | null): Promise<string> {
   if (recentTasks.length > 0) {
     parts.push("\n### Recent Tasks");
     for (const t of recentTasks) {
-      parts.push(`- [${t.status}] ${t.title} (id: ${t.id.slice(0, 8)})`);
+      parts.push(`- [${t.status}] ${t.title} (id: ${t.id})`);
     }
   }
 
@@ -124,7 +124,7 @@ async function buildTier2(projectId?: string | null): Promise<string> {
   if (activeWorkflows.length > 0) {
     parts.push("\n### Workflows");
     for (const w of activeWorkflows) {
-      parts.push(`- [${w.status}] ${w.name} (id: ${w.id.slice(0, 8)})`);
+      parts.push(`- [${w.status}] ${w.name} (id: ${w.id})`);
     }
   }
 
@@ -138,7 +138,7 @@ async function buildTier2(projectId?: string | null): Promise<string> {
   if (docs.length > 0) {
     parts.push(`\n### Documents (${docs.length})`);
     for (const d of docs) {
-      parts.push(`- ${d.filename} (id: ${d.id.slice(0, 8)})`);
+      parts.push(`- ${d.filename} (id: ${d.id})`);
     }
   }
 

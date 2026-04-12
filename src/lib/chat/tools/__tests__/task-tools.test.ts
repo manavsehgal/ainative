@@ -77,6 +77,7 @@ vi.mock("drizzle-orm", () => ({
   eq: () => ({}),
   and: () => ({}),
   desc: () => ({}),
+  like: () => ({}),
 }));
 
 // Mock the profile registry: accept "general" and "code-reviewer"

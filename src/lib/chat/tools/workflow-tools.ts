@@ -10,7 +10,7 @@ import {
   workflowDocumentInputs,
 } from "@/lib/db/schema";
 import { eq, and, desc, inArray, like } from "drizzle-orm";
-import { ok, err, type ToolContext } from "./helpers";
+import { ok, err, resolveEntityId, type ToolContext } from "./helpers";
 import { extractKeywords, jaccard } from "@/lib/util/similarity";
 
 const VALID_WORKFLOW_STATUSES = [
@@ -345,13 +345,17 @@ export function workflowTools(ctx: ToolContext) {
       },
       async (args) => {
         try {
+          const resolved = await resolveEntityId(workflows, workflows.id, args.workflowId);
+          if ("error" in resolved) return err(resolved.error);
+          const workflowId = resolved.id;
+
           const workflow = db
             .select()
             .from(workflows)
-            .where(eq(workflows.id, args.workflowId))
+            .where(eq(workflows.id, workflowId))
             .get();
 
-          if (!workflow) return err(`Workflow not found: ${args.workflowId}`);
+          if (!workflow) return err(`Workflow not found: ${workflowId}`);
 
           const { parseWorkflowState } = await import("@/lib/workflows/engine");
           const { definition, state } = parseWorkflowState(workflow.definition);
@@ -400,13 +404,17 @@ export function workflowTools(ctx: ToolContext) {
       },
       async (args) => {
         try {
+          const resolved = await resolveEntityId(workflows, workflows.id, args.workflowId);
+          if ("error" in resolved) return err(resolved.error);
+          const workflowId = resolved.id;
+
           const existing = db
             .select()
             .from(workflows)
-            .where(eq(workflows.id, args.workflowId))
+            .where(eq(workflows.id, workflowId))
             .get();
 
-          if (!existing) return err(`Workflow not found: ${args.workflowId}`);
+          if (!existing) return err(`Workflow not found: ${workflowId}`);
           if (existing.status !== "draft")
             return err(`Cannot edit a workflow in '${existing.status}' status. Only draft workflows can be edited.`);
 
@@ -427,12 +435,12 @@ export function workflowTools(ctx: ToolContext) {
           await db
             .update(workflows)
             .set(updates)
-            .where(eq(workflows.id, args.workflowId));
+            .where(eq(workflows.id, workflowId));
 
           const [workflow] = await db
             .select()
             .from(workflows)
-            .where(eq(workflows.id, args.workflowId));
+            .where(eq(workflows.id, workflowId));
 
           ctx.onToolResult?.("update_workflow", workflow);
           return ok({
@@ -455,13 +463,17 @@ export function workflowTools(ctx: ToolContext) {
       },
       async (args) => {
         try {
+          const resolved = await resolveEntityId(workflows, workflows.id, args.workflowId);
+          if ("error" in resolved) return err(resolved.error);
+          const workflowId = resolved.id;
+
           const existing = db
             .select()
             .from(workflows)
-            .where(eq(workflows.id, args.workflowId))
+            .where(eq(workflows.id, workflowId))
             .get();
 
-          if (!existing) return err(`Workflow not found: ${args.workflowId}`);
+          if (!existing) return err(`Workflow not found: ${workflowId}`);
           if (existing.status === "active")
             return err("Cannot delete an active workflow. Pause or stop it first.");
 
@@ -469,7 +481,7 @@ export function workflowTools(ctx: ToolContext) {
           const childTasks = await db
             .select({ id: tasks.id })
             .from(tasks)
-            .where(eq(tasks.workflowId, args.workflowId));
+            .where(eq(tasks.workflowId, workflowId));
 
           const taskIds = childTasks.map((t) => t.id);
           for (const taskId of taskIds) {
@@ -477,10 +489,10 @@ export function workflowTools(ctx: ToolContext) {
             await db.delete(agentLogs).where(eq(agentLogs.taskId, taskId));
             await db.delete(documents).where(eq(documents.taskId, taskId));
           }
-          await db.delete(tasks).where(eq(tasks.workflowId, args.workflowId));
-          await db.delete(workflows).where(eq(workflows.id, args.workflowId));
+          await db.delete(tasks).where(eq(tasks.workflowId, workflowId));
+          await db.delete(workflows).where(eq(workflows.id, workflowId));
 
-          return ok({ message: "Workflow deleted", workflowId: args.workflowId, name: existing.name });
+          return ok({ message: "Workflow deleted", workflowId, name: existing.name });
         } catch (e) {
           return err(e instanceof Error ? e.message : "Failed to delete workflow");
         }
@@ -495,13 +507,17 @@ export function workflowTools(ctx: ToolContext) {
       },
       async (args) => {
         try {
+          const resolved = await resolveEntityId(workflows, workflows.id, args.workflowId);
+          if ("error" in resolved) return err(resolved.error);
+          const workflowId = resolved.id;
+
           const workflow = db
             .select()
             .from(workflows)
-            .where(eq(workflows.id, args.workflowId))
+            .where(eq(workflows.id, workflowId))
             .get();
 
-          if (!workflow) return err(`Workflow not found: ${args.workflowId}`);
+          if (!workflow) return err(`Workflow not found: ${workflowId}`);
 
           // Allow re-execution from crashed "active" if no live tasks
           if (workflow.status === "active") {
@@ -510,7 +526,7 @@ export function workflowTools(ctx: ToolContext) {
               .from(tasks)
               .where(
                 and(
-                  eq(tasks.workflowId, args.workflowId),
+                  eq(tasks.workflowId, workflowId),
                   inArray(tasks.status, ["running", "queued"])
                 )
               );
@@ -538,7 +554,7 @@ export function workflowTools(ctx: ToolContext) {
               .set({ status: "cancelled", updatedAt: new Date() })
               .where(
                 and(
-                  eq(tasks.workflowId, args.workflowId),
+                  eq(tasks.workflowId, workflowId),
                   inArray(tasks.status, ["running", "queued"])
                 )
               );
@@ -553,21 +569,21 @@ export function workflowTools(ctx: ToolContext) {
                 status: "draft",
                 updatedAt: new Date(),
               })
-              .where(eq(workflows.id, args.workflowId));
+              .where(eq(workflows.id, workflowId));
           }
 
           // Atomic claim: set to active
           await db
             .update(workflows)
             .set({ status: "active", updatedAt: new Date() })
-            .where(eq(workflows.id, args.workflowId));
+            .where(eq(workflows.id, workflowId));
 
           // Fire-and-forget
           const { executeWorkflow } = await import("@/lib/workflows/engine");
-          executeWorkflow(args.workflowId).catch(() => {});
+          executeWorkflow(workflowId).catch(() => {});
 
-          ctx.onToolResult?.("execute_workflow", { id: args.workflowId, name: workflow.name });
-          return ok({ message: "Workflow execution started", workflowId: args.workflowId, name: workflow.name });
+          ctx.onToolResult?.("execute_workflow", { id: workflowId, name: workflow.name });
+          return ok({ message: "Workflow execution started", workflowId, name: workflow.name });
         } catch (e) {
           return err(e instanceof Error ? e.message : "Failed to execute workflow");
         }
@@ -582,13 +598,17 @@ export function workflowTools(ctx: ToolContext) {
       },
       async (args) => {
         try {
+          const resolved = await resolveEntityId(workflows, workflows.id, args.workflowId);
+          if ("error" in resolved) return err(resolved.error);
+          const workflowId = resolved.id;
+
           const workflow = db
             .select()
             .from(workflows)
-            .where(eq(workflows.id, args.workflowId))
+            .where(eq(workflows.id, workflowId))
             .get();
 
-          if (!workflow) return err(`Workflow not found: ${args.workflowId}`);
+          if (!workflow) return err(`Workflow not found: ${workflowId}`);
 
           if (workflow.status !== "paused") {
             return err(
@@ -598,14 +618,14 @@ export function workflowTools(ctx: ToolContext) {
 
           const { resumeWorkflow } = await import("@/lib/workflows/engine");
           // Fire-and-forget: resumeWorkflow performs atomic status transition internally.
-          resumeWorkflow(args.workflowId).catch((error) => {
-            console.error(`Workflow ${args.workflowId} resume failed:`, error);
+          resumeWorkflow(workflowId).catch((error) => {
+            console.error(`Workflow ${workflowId} resume failed:`, error);
           });
 
-          ctx.onToolResult?.("resume_workflow", { id: args.workflowId, name: workflow.name });
+          ctx.onToolResult?.("resume_workflow", { id: workflowId, name: workflow.name });
           return ok({
             message: "Workflow resume dispatched",
-            workflowId: args.workflowId,
+            workflowId,
             name: workflow.name,
           });
         } catch (e) {
@@ -622,13 +642,17 @@ export function workflowTools(ctx: ToolContext) {
       },
       async (args) => {
         try {
+          const resolved = await resolveEntityId(workflows, workflows.id, args.workflowId);
+          if ("error" in resolved) return err(resolved.error);
+          const workflowId = resolved.id;
+
           const workflow = db
             .select()
             .from(workflows)
-            .where(eq(workflows.id, args.workflowId))
+            .where(eq(workflows.id, workflowId))
             .get();
 
-          if (!workflow) return err(`Workflow not found: ${args.workflowId}`);
+          if (!workflow) return err(`Workflow not found: ${workflowId}`);
 
           const { parseWorkflowState } = await import("@/lib/workflows/engine");
           const { definition, state } = parseWorkflowState(workflow.definition);
@@ -705,11 +729,15 @@ export function workflowTools(ctx: ToolContext) {
           }
 
           if (args.sourceWorkflowId) {
+            const resolvedSrc = await resolveEntityId(workflows, workflows.id, args.sourceWorkflowId);
+            if ("error" in resolvedSrc) return err(resolvedSrc.error);
+            const srcWorkflowId = resolvedSrc.id;
+
             // Find task IDs belonging to the source workflow
             const workflowTasks = await db
               .select({ id: tasks.id })
               .from(tasks)
-              .where(eq(tasks.workflowId, args.sourceWorkflowId));
+              .where(eq(tasks.workflowId, srcWorkflowId));
 
             const taskIds = workflowTasks.map((t) => t.id);
             if (taskIds.length > 0) {

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { schedules } from "@/lib/db/schema";
 import { eq, and, desc } from "drizzle-orm";
-import { ok, err, type ToolContext } from "./helpers";
+import { ok, err, resolveEntityId, type ToolContext } from "./helpers";
 import { analyzePromptEfficiency } from "@/lib/schedules/prompt-analyzer";
 
 const VALID_SCHEDULE_STATUSES = [
@@ -193,13 +193,17 @@ export function scheduleTools(ctx: ToolContext) {
       },
       async (args) => {
         try {
+          const resolved = await resolveEntityId(schedules, schedules.id, args.scheduleId);
+          if ("error" in resolved) return err(resolved.error);
+          const scheduleId = resolved.id;
+
           const schedule = await db
             .select()
             .from(schedules)
-            .where(eq(schedules.id, args.scheduleId))
+            .where(eq(schedules.id, scheduleId))
             .get();
 
-          if (!schedule) return err(`Schedule not found: ${args.scheduleId}`);
+          if (!schedule) return err(`Schedule not found: ${scheduleId}`);
           ctx.onToolResult?.("get_schedule", schedule);
           return ok(schedule);
         } catch (e) {
@@ -236,13 +240,17 @@ export function scheduleTools(ctx: ToolContext) {
       },
       async (args) => {
         try {
+          const resolved = await resolveEntityId(schedules, schedules.id, args.scheduleId);
+          if ("error" in resolved) return err(resolved.error);
+          const scheduleId = resolved.id;
+
           const existing = await db
             .select()
             .from(schedules)
-            .where(eq(schedules.id, args.scheduleId))
+            .where(eq(schedules.id, scheduleId))
             .get();
 
-          if (!existing) return err(`Schedule not found: ${args.scheduleId}`);
+          if (!existing) return err(`Schedule not found: ${scheduleId}`);
 
           const updates: Record<string, unknown> = { updatedAt: new Date() };
           if (args.name !== undefined) updates.name = args.name;
@@ -288,12 +296,12 @@ export function scheduleTools(ctx: ToolContext) {
           await db
             .update(schedules)
             .set(updates)
-            .where(eq(schedules.id, args.scheduleId));
+            .where(eq(schedules.id, scheduleId));
 
           const [schedule] = await db
             .select()
             .from(schedules)
-            .where(eq(schedules.id, args.scheduleId));
+            .where(eq(schedules.id, scheduleId));
 
           ctx.onToolResult?.("update_schedule", schedule);
           return ok(schedule);
@@ -311,16 +319,20 @@ export function scheduleTools(ctx: ToolContext) {
       },
       async (args) => {
         try {
+          const resolved = await resolveEntityId(schedules, schedules.id, args.scheduleId);
+          if ("error" in resolved) return err(resolved.error);
+          const scheduleId = resolved.id;
+
           const existing = await db
             .select()
             .from(schedules)
-            .where(eq(schedules.id, args.scheduleId))
+            .where(eq(schedules.id, scheduleId))
             .get();
 
-          if (!existing) return err(`Schedule not found: ${args.scheduleId}`);
+          if (!existing) return err(`Schedule not found: ${scheduleId}`);
 
-          await db.delete(schedules).where(eq(schedules.id, args.scheduleId));
-          return ok({ message: "Schedule deleted", scheduleId: args.scheduleId, name: existing.name });
+          await db.delete(schedules).where(eq(schedules.id, scheduleId));
+          return ok({ message: "Schedule deleted", scheduleId, name: existing.name });
         } catch (e) {
           return err(e instanceof Error ? e.message : "Failed to delete schedule");
         }

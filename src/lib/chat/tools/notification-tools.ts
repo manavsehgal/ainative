@@ -3,7 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { notifications } from "@/lib/db/schema";
 import { eq, isNull, desc } from "drizzle-orm";
-import { ok, err, type ToolContext } from "./helpers";
+import { ok, err, resolveEntityId, type ToolContext } from "./helpers";
 
 export function notificationTools(_ctx: ToolContext) {
   return [
@@ -73,13 +73,17 @@ export function notificationTools(_ctx: ToolContext) {
       },
       async (args) => {
         try {
+          const resolved = await resolveEntityId(notifications, notifications.id, args.notificationId);
+          if ("error" in resolved) return err(resolved.error);
+          const notificationId = resolved.id;
+
           const notification = await db
             .select()
             .from(notifications)
-            .where(eq(notifications.id, args.notificationId))
+            .where(eq(notifications.id, notificationId))
             .get();
 
-          if (!notification) return err(`Notification not found: ${args.notificationId}`);
+          if (!notification) return err(`Notification not found: ${notificationId}`);
           if (notification.response) return err("Already responded to this notification");
 
           const responseData = {
@@ -98,7 +102,7 @@ export function notificationTools(_ctx: ToolContext) {
               respondedAt: new Date(),
               read: true,
             })
-            .where(eq(notifications.id, args.notificationId));
+            .where(eq(notifications.id, notificationId));
 
           // Save permanent permission if requested
           if (args.behavior === "allow" && args.alwaysAllow && notification.toolName && notification.toolInput) {
@@ -115,7 +119,7 @@ export function notificationTools(_ctx: ToolContext) {
 
           return ok({
             message: `Notification ${args.behavior === "allow" ? "approved" : "denied"}`,
-            notificationId: args.notificationId,
+            notificationId,
             alwaysAllow: args.alwaysAllow ?? false,
           });
         } catch (e) {

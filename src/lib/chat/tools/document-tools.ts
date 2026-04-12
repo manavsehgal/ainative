@@ -3,7 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { documents } from "@/lib/db/schema";
 import { eq, and, desc } from "drizzle-orm";
-import { ok, err, type ToolContext } from "./helpers";
+import { ok, err, resolveEntityId, type ToolContext } from "./helpers";
 import { access, stat, copyFile, mkdir } from "fs/promises";
 import { basename, extname, join } from "path";
 import crypto from "crypto";
@@ -105,6 +105,10 @@ export function documentTools(ctx: ToolContext) {
       },
       async (args) => {
         try {
+          const resolved = await resolveEntityId(documents, documents.id, args.documentId);
+          if ("error" in resolved) return err(resolved.error);
+          const documentId = resolved.id;
+
           const doc = await db
             .select({
               id: documents.id,
@@ -122,10 +126,10 @@ export function documentTools(ctx: ToolContext) {
               updatedAt: documents.updatedAt,
             })
             .from(documents)
-            .where(eq(documents.id, args.documentId))
+            .where(eq(documents.id, documentId))
             .get();
 
-          if (!doc) return err(`Document not found: ${args.documentId}`);
+          if (!doc) return err(`Document not found: ${documentId}`);
           ctx.onToolResult?.("get_document", doc);
           return ok(doc);
         } catch (e) {
@@ -204,13 +208,17 @@ export function documentTools(ctx: ToolContext) {
       },
       async (args) => {
         try {
+          const resolved = await resolveEntityId(documents, documents.id, args.documentId);
+          if ("error" in resolved) return err(resolved.error);
+          const documentId = resolved.id;
+
           const doc = await db
             .select()
             .from(documents)
-            .where(eq(documents.id, args.documentId))
+            .where(eq(documents.id, documentId))
             .get();
 
-          if (!doc) return err(`Document not found: ${args.documentId}`);
+          if (!doc) return err(`Document not found: ${documentId}`);
 
           const updates: Record<string, unknown> = { updatedAt: new Date() };
 
@@ -232,10 +240,10 @@ export function documentTools(ctx: ToolContext) {
           await db
             .update(documents)
             .set(updates)
-            .where(eq(documents.id, args.documentId));
+            .where(eq(documents.id, documentId));
 
           if (args.reprocess) {
-            processDocument(args.documentId).catch(() => {});
+            processDocument(documentId).catch(() => {});
           }
 
           const updatedFields = [];
@@ -243,7 +251,7 @@ export function documentTools(ctx: ToolContext) {
           if (args.reprocess) updatedFields.push("processingStatus");
 
           const result = {
-            documentId: args.documentId,
+            documentId,
             updatedFields,
             processingStatus: args.reprocess ? "queued" : doc.status,
           };
@@ -264,13 +272,17 @@ export function documentTools(ctx: ToolContext) {
       },
       async (args) => {
         try {
+          const resolved = await resolveEntityId(documents, documents.id, args.documentId);
+          if ("error" in resolved) return err(resolved.error);
+          const documentId = resolved.id;
+
           const doc = await db
             .select()
             .from(documents)
-            .where(eq(documents.id, args.documentId))
+            .where(eq(documents.id, documentId))
             .get();
 
-          if (!doc) return err(`Document not found: ${args.documentId}`);
+          if (!doc) return err(`Document not found: ${documentId}`);
 
           // Check task linkage
           if (doc.taskId && !args.cascadeDelete) {
@@ -285,7 +297,7 @@ export function documentTools(ctx: ToolContext) {
             // File may already be deleted
           }
 
-          await db.delete(documents).where(eq(documents.id, args.documentId));
+          await db.delete(documents).where(eq(documents.id, documentId));
 
           const result = {
             success: true,
@@ -308,6 +320,10 @@ export function documentTools(ctx: ToolContext) {
       },
       async (args) => {
         try {
+          const resolved = await resolveEntityId(documents, documents.id, args.documentId);
+          if ("error" in resolved) return err(resolved.error);
+          const documentId = resolved.id;
+
           const doc = await db
             .select({
               id: documents.id,
@@ -316,10 +332,10 @@ export function documentTools(ctx: ToolContext) {
               extractedText: documents.extractedText,
             })
             .from(documents)
-            .where(eq(documents.id, args.documentId))
+            .where(eq(documents.id, documentId))
             .get();
 
-          if (!doc) return err(`Document not found: ${args.documentId}`);
+          if (!doc) return err(`Document not found: ${documentId}`);
           if (doc.status !== "ready")
             return err(`Document not ready (status: ${doc.status}). Wait for preprocessing to complete.`);
           if (!doc.extractedText)

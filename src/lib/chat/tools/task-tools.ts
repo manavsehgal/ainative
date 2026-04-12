@@ -3,7 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { tasks } from "@/lib/db/schema";
 import { eq, and, desc } from "drizzle-orm";
-import { ok, err, type ToolContext } from "./helpers";
+import { ok, err, resolveEntityId, type ToolContext } from "./helpers";
 import {
   DEFAULT_AGENT_RUNTIME,
   isAgentRuntimeId,
@@ -206,6 +206,10 @@ export function taskTools(ctx: ToolContext) {
       },
       async (args) => {
         try {
+          const resolved = await resolveEntityId(tasks, tasks.id, args.taskId);
+          if ("error" in resolved) return err(resolved.error);
+          const taskId = resolved.id;
+
           if (args.agentProfile !== undefined && !isValidAgentProfile(args.agentProfile)) {
             return err(agentProfileErrorMessage(args.agentProfile));
           }
@@ -218,10 +222,10 @@ export function taskTools(ctx: ToolContext) {
           const existing = await db
             .select()
             .from(tasks)
-            .where(eq(tasks.id, args.taskId))
+            .where(eq(tasks.id, taskId))
             .get();
 
-          if (!existing) return err(`Task not found: ${args.taskId}`);
+          if (!existing) return err(`Task not found: ${taskId}`);
 
           const updates: Record<string, unknown> = { updatedAt: new Date() };
           if (args.title !== undefined) updates.title = args.title;
@@ -237,12 +241,12 @@ export function taskTools(ctx: ToolContext) {
           await db
             .update(tasks)
             .set(updates)
-            .where(eq(tasks.id, args.taskId));
+            .where(eq(tasks.id, taskId));
 
           const [task] = await db
             .select()
             .from(tasks)
-            .where(eq(tasks.id, args.taskId));
+            .where(eq(tasks.id, taskId));
 
           ctx.onToolResult?.("update_task", task);
           return ok(task);
@@ -260,13 +264,17 @@ export function taskTools(ctx: ToolContext) {
       },
       async (args) => {
         try {
+          const resolved = await resolveEntityId(tasks, tasks.id, args.taskId);
+          if ("error" in resolved) return err(resolved.error);
+          const taskId = resolved.id;
+
           const task = await db
             .select()
             .from(tasks)
-            .where(eq(tasks.id, args.taskId))
+            .where(eq(tasks.id, taskId))
             .get();
 
-          if (!task) return err(`Task not found: ${args.taskId}`);
+          if (!task) return err(`Task not found: ${taskId}`);
           ctx.onToolResult?.("get_task", task);
           return ok(task);
         } catch (e) {
@@ -289,6 +297,10 @@ export function taskTools(ctx: ToolContext) {
       },
       async (args) => {
         try {
+          const resolved = await resolveEntityId(tasks, tasks.id, args.taskId);
+          if ("error" in resolved) return err(resolved.error);
+          const taskId = resolved.id;
+
           if (args.assignedAgent && !isAgentRuntimeId(args.assignedAgent)) {
             return err(
               `Invalid runtime "${args.assignedAgent}". Valid: ${SUPPORTED_AGENT_RUNTIMES.join(", ")}`
@@ -298,15 +310,15 @@ export function taskTools(ctx: ToolContext) {
           const task = await db
             .select()
             .from(tasks)
-            .where(eq(tasks.id, args.taskId))
+            .where(eq(tasks.id, taskId))
             .get();
 
-          if (!task) return err(`Task not found: ${args.taskId}`);
+          if (!task) return err(`Task not found: ${taskId}`);
           if (task.status === "running") return err("Task is already running");
 
           if (task.agentProfile && !isValidAgentProfile(task.agentProfile)) {
             return err(
-              `Task ${args.taskId} has an invalid agentProfile "${task.agentProfile}" (not in profile registry). ` +
+              `Task ${taskId} has an invalid agentProfile "${task.agentProfile}" (not in profile registry). ` +
               `Fix with update_task { taskId, agentProfile: "<valid-id>" } before retrying. ` +
               agentProfileErrorMessage(task.agentProfile).split(". ").slice(1).join(". ")
             );
@@ -318,14 +330,14 @@ export function taskTools(ctx: ToolContext) {
           await db
             .update(tasks)
             .set({ status: "queued", assignedAgent: runtimeId, updatedAt: new Date() })
-            .where(eq(tasks.id, args.taskId));
+            .where(eq(tasks.id, taskId));
 
           // Fire-and-forget execution
           const { executeTaskWithAgent } = await import("@/lib/agents/router");
-          executeTaskWithAgent(args.taskId, runtimeId).catch(() => {});
+          executeTaskWithAgent(taskId, runtimeId).catch(() => {});
 
-          ctx.onToolResult?.("execute_task", { id: args.taskId, title: task.title });
-          return ok({ message: "Execution started", taskId: args.taskId, runtime: runtimeId });
+          ctx.onToolResult?.("execute_task", { id: taskId, title: task.title });
+          return ok({ message: "Execution started", taskId, runtime: runtimeId });
         } catch (e) {
           return err(e instanceof Error ? e.message : "Failed to execute task");
         }
@@ -340,17 +352,21 @@ export function taskTools(ctx: ToolContext) {
       },
       async (args) => {
         try {
+          const resolved = await resolveEntityId(tasks, tasks.id, args.taskId);
+          if ("error" in resolved) return err(resolved.error);
+          const taskId = resolved.id;
+
           const task = await db
             .select()
             .from(tasks)
-            .where(eq(tasks.id, args.taskId))
+            .where(eq(tasks.id, taskId))
             .get();
 
-          if (!task) return err(`Task not found: ${args.taskId}`);
+          if (!task) return err(`Task not found: ${taskId}`);
           if (task.status !== "running") return err(`Task is not running (status: ${task.status})`);
 
           const { getExecution } = await import("@/lib/agents/execution-manager");
-          const execution = getExecution(args.taskId);
+          const execution = getExecution(taskId);
           if (execution?.abortController) {
             execution.abortController.abort();
           }
@@ -358,9 +374,9 @@ export function taskTools(ctx: ToolContext) {
           await db
             .update(tasks)
             .set({ status: "cancelled", updatedAt: new Date() })
-            .where(eq(tasks.id, args.taskId));
+            .where(eq(tasks.id, taskId));
 
-          return ok({ message: "Task cancelled", taskId: args.taskId });
+          return ok({ message: "Task cancelled", taskId });
         } catch (e) {
           return err(e instanceof Error ? e.message : "Failed to cancel task");
         }

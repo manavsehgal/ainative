@@ -62,6 +62,7 @@ vi.mock("drizzle-orm", () => ({
   eq: () => ({}),
   and: () => ({}),
   desc: () => ({}),
+  like: () => ({}),
 }));
 
 vi.mock("@/lib/schedules/interval-parser", () => ({
