@@ -115,7 +115,7 @@ export function InstallConfirmationDialog({
                   if (!Array.isArray(items) || items.length === 0) return null;
                   return (
                     <div key={key}>
-                      <div className="text-xs font-medium mb-1">{items.length} {label}</div>
+                      <div className="text-xs font-medium mb-1">{items.length} {items.length === 1 ? label.replace(/s$/, "") : label}</div>
                       <ul className="space-y-0.5">
                         {items.map((item) => (
                           <li key={item} className="text-sm flex items-center gap-2">

@@ -116,8 +116,8 @@ function AppCard({
       {/* Metadata row */}
       <div className="mt-4 flex items-center gap-3 text-xs text-muted-foreground">
         <DifficultyDots difficulty={app.difficulty} />
-        <span>{app.tableCount} tables</span>
-        <span>{app.scheduleCount} schedules</span>
+        <span>{app.tableCount} {app.tableCount === 1 ? "table" : "tables"}</span>
+        <span>{app.scheduleCount} {app.scheduleCount === 1 ? "schedule" : "schedules"}</span>
         <span>~{app.estimatedSetupMinutes}m</span>
       </div>
 
