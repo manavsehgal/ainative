@@ -13,6 +13,7 @@ interface AppUninstallButtonProps {
   variant?: "destructive" | "outline" | "ghost";
   size?: "sm" | "default";
   redirectTo?: string;
+  onUninstalled?: () => void;
 }
 
 export function AppUninstallButton({
@@ -21,6 +22,7 @@ export function AppUninstallButton({
   variant = "outline",
   size = "sm",
   redirectTo = "/marketplace",
+  onUninstalled,
 }: AppUninstallButtonProps) {
   const router = useRouter();
   const [showConfirm, setShowConfirm] = useState(false);
@@ -46,7 +48,11 @@ export function AppUninstallButton({
           : `${appName} uninstalled. Project data was preserved.`,
       );
       setShowConfirm(false);
-      router.push(redirectTo);
+      if (onUninstalled) {
+        onUninstalled();
+      } else {
+        router.push(redirectTo);
+      }
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to uninstall app",

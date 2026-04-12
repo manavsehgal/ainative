@@ -91,13 +91,13 @@
   <rect x="64" y="200" width="4" height="60" rx="2" fill="#0D7D8C"/>
   <text x="80" y="222" fill="#2D3250" font-size="12" font-weight="600">Drizzle ORM</text>
   <text x="80" y="240" fill="#7B8099" font-size="10">SQLite · WAL mode</text>
-  <text x="80" y="252" fill="#7B8099" font-size="10">45 tables · Self-healing bootstrap</text>
+  <text x="80" y="252" fill="#7B8099" font-size="10">46 tables · Self-healing bootstrap</text>
 
   <!-- Runtime Registry -->
   <rect x="280" y="200" width="220" height="60" rx="8" fill="#FCFCFD" stroke="#D4D6DE" stroke-width="1"/>
   <rect x="280" y="200" width="4" height="60" rx="2" fill="#2563EB"/>
   <text x="296" y="222" fill="#2D3250" font-size="12" font-weight="600">Runtime Registry</text>
-  <text x="296" y="240" fill="#7B8099" font-size="10">5-provider abstraction layer</text>
+  <text x="296" y="240" fill="#7B8099" font-size="10">6-provider abstraction layer</text>
   <text x="296" y="252" fill="#7B8099" font-size="10">Claude · OpenAI · Ollama · Direct</text>
 
   <!-- SSE Stream -->
@@ -111,7 +111,7 @@
   <rect x="692" y="200" width="152" height="60" rx="8" fill="#FCFCFD" stroke="#D4D6DE" stroke-width="1"/>
   <rect x="692" y="200" width="4" height="60" rx="2" fill="#A66D0A"/>
   <text x="708" y="222" fill="#2D3250" font-size="12" font-weight="600">Profile Engine</text>
-  <text x="708" y="240" fill="#7B8099" font-size="10">52 agent profiles</text>
+  <text x="708" y="240" fill="#7B8099" font-size="10">56 agent profiles</text>
   <text x="708" y="252" fill="#7B8099" font-size="10">MCP · Tools · Tuning</text>
 
   <!-- Row 2: Engines -->

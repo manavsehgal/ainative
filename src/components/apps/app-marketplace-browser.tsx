@@ -21,6 +21,7 @@ import { FilterBar } from "@/components/shared/filter-bar";
 import type { AppCatalogEntry, AppDifficulty, AppTrustLevel } from "@/lib/apps/types";
 import { resolveAppIcon } from "@/lib/apps/icons";
 import { PublishAppSheet } from "@/components/marketplace/publish-app-sheet";
+import { AppUninstallButton } from "@/components/apps/app-uninstall-button";
 
 interface AppMarketplaceBrowserProps {
   canInstall: boolean;
@@ -83,12 +84,14 @@ function AppCard({
   installing,
   onInstall,
   onPublish,
+  onUninstall,
 }: {
   app: AppCatalogEntry;
   canInstall: boolean;
   installing: boolean;
   onInstall: (appId: string) => void;
   onPublish?: (app: AppCatalogEntry) => void;
+  onUninstall?: () => void;
 }) {
   const Icon = resolveAppIcon(app.icon);
 
@@ -153,6 +156,13 @@ function AppCard({
                   <Upload className="h-3.5 w-3.5" />
                 </Button>
               )}
+              <AppUninstallButton
+                appId={app.appId}
+                appName={app.name}
+                variant="ghost"
+                size="sm"
+                onUninstalled={onUninstall}
+              />
               <Button asChild size="sm" variant="outline">
                 <Link href={`/apps/${app.appId}`}>Open</Link>
               </Button>
@@ -305,6 +315,7 @@ export function AppMarketplaceBrowser({ canInstall, canPublish }: AppMarketplace
               installing={installing === app.appId}
               onInstall={handleInstall}
               onPublish={canPublish ? (a) => setPublishApp(a) : undefined}
+              onUninstall={loadApps}
             />
           ))}
         </div>
