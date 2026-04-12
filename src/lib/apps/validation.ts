@@ -232,6 +232,21 @@ export const appResourceMapSchema = z.object({
 export const appInstanceStatusSchema = z.enum(APP_INSTANCE_STATUSES);
 export const appSourceTypeSchema = z.enum(APP_SOURCE_TYPES);
 
+// ── Seed data sanitization schema ──
+
+const sanitizationRuleSchema = z.object({
+  strategy: z.enum(["keep", "randomize", "shift", "faker", "derive", "redact", "hash"]),
+  params: z.record(z.string(), z.unknown()).optional(),
+});
+
+const tableSanitizationConfigSchema = z.object({
+  sanitize: z.record(z.string(), sanitizationRuleSchema),
+});
+
+export const seedDataConfigSchema = z.object({
+  tables: z.record(z.string(), tableSanitizationConfigSchema),
+});
+
 // ── SAP (Stagent App Package) manifest schema ──
 
 const sapAuthorSchema = z.object({

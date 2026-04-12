@@ -1,6 +1,6 @@
 ---
 title: App Seed Data Generation
-status: planned
+status: completed
 priority: P1
 milestone: post-mvp
 source: handoff/stagent-app-marketplace-spec.md

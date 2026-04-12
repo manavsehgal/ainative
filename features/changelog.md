@@ -20,6 +20,18 @@ Key decisions locked during brainstorm:
 Source: handoff/stagent-app-marketplace-spec.md + brainstorm session with /architect, /product-manager, /frontend-designer
 Plan: .claude/plans/flickering-petting-hammock.md
 
+### Completed — app-seed-data-generation (P1)
+
+Built the data sanitization pipeline for generating safe, synthetic seed data from live tables:
+- **7 sanitizer modules** in `src/lib/apps/sanitizers/`: keep, randomize, shift, faker (lightweight built-in pools), derive (formula evaluator), redact, hash
+- **PII scanner** (`pii-scanner.ts`): detects SSN, credit card (Luhn), real email domains, phone, public IP, street address patterns with error/warning severity levels
+- **Seed generator** (`seed-generator.ts`): orchestrates sanitization pipeline, runs PII scan, outputs CSV files with proper escaping
+- **Zod validation** for `seedData` manifest section
+- 28 tests: all 7 sanitizers, PII detection (10 patterns), full pipeline, CSV round-trip with escaping
+- CLI command (`stagent app seed`) deferred to `app-cli-tools`
+
+873 tests pass, `tsc --noEmit` clean. Unblocks app-cli-tools and promote-conversation-to-app.
+
 ### Completed — app-extended-primitives-tier1 (P1)
 
 Extended AppBundle from 7 to 12 primitives by wiring 5 new template types into the install/bootstrap pipeline:
