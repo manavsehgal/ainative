@@ -57,7 +57,20 @@ export function getWorkspaceContext(): WorkspaceContext {
     : rawDataDir;
 
   // Red flag: non-main repo using the default shared DB instead of its own
-  const dataDirMismatch = !isDevMode(cwd) && !isPrivateInstance();
+  const devMode = isDevMode(cwd);
+  const privateInstance = isPrivateInstance();
+  const dataDirMismatch = !devMode && !privateInstance;
+
+  console.log("[workspace-context]", {
+    cwd,
+    rawDataDir,
+    dataDir,
+    STAGENT_DATA_DIR: process.env.STAGENT_DATA_DIR ?? "(unset)",
+    STAGENT_DEV_MODE: process.env.STAGENT_DEV_MODE ?? "(unset)",
+    devMode,
+    privateInstance,
+    dataDirMismatch,
+  });
 
   return { cwd, folderName, parentPath, gitBranch, isWorktree, dataDir, dataDirMismatch };
 }
