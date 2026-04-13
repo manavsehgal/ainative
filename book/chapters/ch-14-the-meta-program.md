@@ -20,7 +20,7 @@ This chapter is about the meta-programming pattern that makes this possible, why
 
 ## What Meta-Programming Means Here
 
-The term "meta-programming" traditionally refers to programs that write programs — macros, code generators, template engines. In Stagent's context, the term means something more specific and more powerful: **using a running system's own primitives to program new applications within that system, then distributing those applications as portable configurations rather than independent codebases.**
+The term "meta-programming" traditionally refers to programs that write programs — macros, code generators, template engines. In Stagent's context, the term means something more specific and more powerful: **using a running system's own primitives — combined with AI-driven code generation — to program new applications within that system as compositions of configuration and domain code, rather than independent codebases.**
 
 The distinction is important. A traditional platform extension — a Shopify app, a Salesforce package, a WordPress plugin — ships code that runs alongside the platform. It has its own dependencies, its own database tables, its own API surface. Installation is a deployment event. Updates require version management. Conflicts with other extensions are possible and common.
 
@@ -167,27 +167,29 @@ A Stagent domain application is configuration. It has table template references,
 
 The economics are radically different. Chapter 13 quantified it for the Wealth Manager: 7,435 lines of domain code over one day, compared to an estimated 30,000 to 50,000 lines of infrastructure code if built from scratch. The Growth module shows a similar ratio. Its domain-specific logic — pipeline detection, enrichment strategy, sequence generation, account monitoring — fits in nine modules under `src/lib/growth/`, because the infrastructure it depends on is inherited. The deeper insight is about deployment, not development. When a domain application is code, deploying it to a new user means provisioning infrastructure: a database, a server, DNS, SSL, monitoring. When a domain application is configuration, deploying it to a new user means importing definitions into their existing Stagent instance. The marginal cost of deployment approaches zero.
 
-This is what makes a marketplace viable, and it is not a new idea. It is an idea that is finally cheap enough to take seriously.
+This is what makes building the *next* domain application almost free. The first application — the Wealth Manager — required discovering which primitives existed and how they composed. The second — the Growth module — required only describing the domain. The infrastructure was already paid for.
 
 > [!case-study]
-> **Claude Code's Plugin Marketplace** — Anthropic launched Claude Code's plugin system into public beta in early 2026. By February it had crossed nine thousand plugins. None of those plugins are compiled binaries. They are declarative packages of slash commands, skills, subagents, and MCP server configurations that layer onto an existing runtime. The pace of growth is only possible because the unit of distribution is configuration — readable, inspectable, trivially installable — and because the substrate that executes them is the same substrate every user already has. A binary app store cannot grow that fast because every binary is a new execution environment. A configuration marketplace can, because every configuration is a new shape imposed on a shared one.
+> **Claude Code's Plugin Ecosystem** — Anthropic launched Claude Code's plugin system into public beta in early 2026. By February it had crossed nine thousand plugins. None of those plugins are compiled binaries. They are declarative packages of slash commands, skills, subagents, and MCP server configurations that layer onto an existing runtime. The pace of growth is only possible because the unit of composition is configuration — readable, inspectable, trivially extensible — and because the substrate that executes them is the same substrate every user already has. Stagent's domain applications follow the same pattern: configuration layers over a shared runtime, not independent programs.
 
-## The Marketplace Model
+## Chat-Driven Composition
 
-A marketplace for Stagent domain applications works differently from an app store because the unit of distribution is different. An app store distributes binaries. A Stagent marketplace distributes configurations — table templates, profile definitions, blueprint YAML, trigger rows, schedule entries, and UI route bundles that layer onto the customer's existing Stagent deployment.
+The most striking thing about how domain applications get built on Stagent is that nobody writes a project plan. Nobody opens a blank IDE and starts scaffolding. The builder opens a chat — Stagent's built-in chat surface, or Claude Code, or Codex CLI — and describes what they want.
 
-The installation flow:
+"Create a Contacts table with name, email, company reference, stage, last contacted, and score." The agent creates it. "Write a profile for a sales researcher that can search the web and read documents but cannot execute code." The agent writes it. "Set up a trigger so that when a new contact is added, a research task fires automatically." The agent inserts the trigger row. Each instruction targets a specific primitive. Each primitive already has an API the agent knows how to call. The builder never leaves the conversation.
 
-1. **Browse.** The marketplace lists domain applications with descriptions, screenshots, and a declared primitive budget — "requires 3 tables, 4 profiles, 2 blueprints, 2 triggers."
-2. **Preview.** Before installing, the user sees exactly what will be created. No hidden code. No opaque binaries. The configuration is readable.
-3. **Install.** Importing the configuration creates the tables, loads the profiles, registers the blueprints, and wires the triggers in the user's Stagent instance. The UI routes are added to the sidebar. The entire process is a series of calls to endpoints the user already has access to.
-4. **Customize.** Because the application is configuration, customization is native. Add a column to Contacts. Modify the Sales Researcher profile's instructions. Adjust the stale-deal threshold. Every modification uses the same UI and API that the original builder used.
-5. **Update.** When the publisher releases an update, the user merges the new configuration into their existing one. Conflict resolution is straightforward because the units are declarative.
+This is not hypothetical. Chapter 13 described how the Wealth Manager was built in a single day — tables, profiles, triggers, blueprints, UI routes, and a data layer — through a sustained conversation with an AI agent that understood Stagent's primitives. The Growth module followed the same pattern: a builder described a B2B sales intelligence domain, and the agent generated bootstrap code, four specialist profiles, two row triggers, and six UI routes, all composing the same engine.
 
-The live proof of this mechanic inside Stagent today is not a formal marketplace UI — that is future work — but the already-shipped `skills-repo-import` feature (`features/skills-repo-import.md`). It batch-imports skills from entire GitHub repositories, scans them via the GitHub API, adapts non-Stagent formats into Stagent's profile shape, and deduplicates against existing profiles while tracking source attribution. The distribution mechanism for domain-app primitives is already half-built. What remains is the manifest format and the install-flow UI.
+The workflow has three phases:
+
+1. **Describe.** The builder states a domain need in natural language. "I need a deal pipeline with stages, a contact database that auto-researches new entries, and weekly reports on stale opportunities." The agent decomposes this into primitives: three tables, one trigger, one schedule, one workflow blueprint.
+2. **Generate.** The agent produces configuration (YAML profiles, trigger rows, schedule entries) AND code (TypeScript bootstrap, data layer modules, Next.js routes). It uses the same patterns it finds in the existing codebase — `cloneFromTemplate` for tables, the profile registry shape for profiles, `userTableTriggers` for triggers. The output is not a prototype. It is production code that runs on the existing engine.
+3. **Iterate.** The builder tests, adjusts, extends. "Add a scoring column to Contacts." "Change the researcher profile to also allow the Bash tool." "Create a conviction brief workflow that pulls from three tables." Each iteration is another conversation turn. The agent modifies the configuration in place. There is no redeploy, no migration, no build step — because the configuration is the application, and the application is already running.
+
+The `ai-assist-workflow-creation` feature already converts natural-language descriptions of multi-step work into workflow blueprints with per-step profile suggestions. Chat-driven composition extends the same pattern across all six primitives: tables, profiles, blueprints, triggers, schedules, and views. The builder describes a domain; the agent composes a multi-layer application; the substrate executes it immediately.
 
 > [!case-study]
-> **Salesforce AppExchange at Twenty** — Salesforce launched AppExchange in 2006 as the first enterprise app store. Twenty years later it is the template every SaaS company wants to copy: thousands of apps, a partner ecosystem, and a revenue-share economics model where Salesforce captures a fraction of every app sold on top of its CRM. But AppExchange apps still run custom Apex code on Salesforce infrastructure. They inherit multi-tenancy and identity. They do not inherit behavior. A Stagent domain application inherits behavior — governance policies, permission cascades, cost budgets, approval gates, profile-based tool limits. An installed app cannot bypass the substrate's approval rules because it has no execution path of its own. It is a shape, not a runtime. This is a structural safety advantage that took two decades to want and a new architecture to deliver.
+> **The `program.md` Pattern** — Karpathy's autoresearch idea does not ship a new ML framework for each experiment. It ships a specification — a markdown file — that an existing framework interprets. Stagent's domain applications work the same way. The Wealth Manager's specification lives in the conversation history and the feature docs that guided its creation. The Growth module's specification lives in `features/growth-module.md`. In both cases the specification is the program. The AI agent is the compiler. The Stagent primitives are the instruction set. The resulting application is not an artifact the builder maintains separately. It is a configuration layer that the substrate already knows how to run.
 
 ## The Self-Programming Loop
 
@@ -207,7 +209,7 @@ Each arrow in that tree is the same operation: use Stagent's primitives to defin
 
 The `ai-assist-workflow-creation` feature that shipped earlier in 2026 is the near-term bridge. It already accepts natural-language descriptions of multi-step work, proposes workflow blueprints with per-step profile suggestions, and wires them through the workflow engine on confirmation. The next hop is not a research problem. It is an expansion of scope — the same pipeline, but composing tables, profiles, blueprints, and triggers together into a full domain application from a single `program.md`. The academic precedent for "natural language as the build artifact" exists in projects like MetaGPT, which framed itself as a step toward natural language programming. The production precedent is the domain clones that already exist.
 
-This is what "the machine that builds machines" looks like when it goes to market. It is not a factory that produces one kind of output. It is a factory that produces other factories, each specialized for a different domain, each sharing the same assembly line.
+This is what "the machine that builds machines" looks like in practice. It is not a factory that produces one kind of output. It is a factory that produces other factories, each specialized for a different domain, each sharing the same assembly line.
 
 ## Why This Is Not Low-Code
 
@@ -225,11 +227,11 @@ Notion's positioning as "an operating system for your professional life" points 
 
 Chapter 9 described Stagent's governance layer: permission cascades, tool policies, approval gates, cost budgets. Every domain application inherits this layer without modification, and that inheritance is the critical safety property of configuration over code.
 
-When a marketplace user installs the Wealth Manager, the rebalance workflow still pauses at checkpoints for human review. The `wealth-manager` profile still auto-denies the Edit tool. The cost metering still tracks spend per workflow. The user's existing governance policies — their Always Allow patterns, their budget caps, their permission presets — apply to the domain application's agents exactly as they apply to every other agent in their workspace.
+When the Wealth Manager runs on a fresh Stagent clone, the rebalance workflow still pauses at checkpoints for human review. The `wealth-manager` profile still auto-denies the Edit tool. The cost metering still tracks spend per workflow. The builder's governance policies — their Always Allow patterns, their budget caps, their permission presets — apply to the domain application's agents exactly as they apply to every other agent in their workspace.
 
 Compare this to installing a traditional third-party application. Does the application respect your security policies? You cannot know without auditing the code. Does it stay within your cost budget? You cannot know without monitoring the bills. Does it pause for human approval on sensitive actions? You cannot know without reading the documentation and hoping it is accurate.
 
-In the Stagent model, governance is not a feature of the domain application. It is a property of the substrate. The domain application cannot bypass it because the domain application does not control the execution layer. It configures agents. The governance layer governs agents. The two are structurally decoupled. This is what makes "deploy this safely on other users' instances" a real guarantee rather than a marketing claim. The safety is not in the configuration. It is in the engine that executes the configuration. And the engine is the same engine that the user already trusts with their own workspace.
+In the Stagent model, governance is not a feature of the domain application. It is a property of the substrate. The domain application cannot bypass it because the domain application does not control the execution layer. It configures agents. The governance layer governs agents. The two are structurally decoupled. This is what makes "build this and trust it to run safely" a structural guarantee rather than a hope. The safety is not in the configuration. It is in the engine that executes the configuration. And the engine is the same engine that the user already trusts with their own workspace.
 
 ## Stagent Today
 
@@ -239,15 +241,15 @@ Shipped: twenty-one built-in agent profiles plus custom profile creation; thirte
 
 In flight: `instance-bootstrap` (`features/instance-bootstrap.md`). The specification is complete, the implementation plan is written, and the upstream repository already ships with `STAGENT_DEV_MODE=true` and a `.git/stagent-dev-mode` sentinel to keep contributors safe from premature bootstrap. What remains is the idempotent first-boot logic that will automate branch creation and pre-push hook installation for every private clone.
 
-Not yet: a marketplace UI, an upgrade assistant that guides upstream merges into a long-lived domain branch, and a formal `.stagent-app.yaml` manifest for publishing domain applications. The primitives exist. The distribution layer is next.
+Not yet: an upgrade assistant that guides upstream merges into a long-lived domain branch, a formal `.stagent-app.yaml` manifest for portable domain-application definitions, and community template sharing so builders can learn from each other's configurations. The primitives exist. The composition workflow is proven. The tooling around it is next.
 
 ## Roadmap Vision
 
 - **Instance bootstrap ships behind a consent gate.** Every private clone gets a local branch, a pre-push hook that blocks accidental origin pushes, and a stable `instanceId` automatically.
-- **Domain-app manifests become first-class citizens.** A `.stagent-app.yaml` declares tables, profiles, blueprints, triggers, schedules, and routes. The importer already near-handles the shape through `skills-repo-import`.
-- **AI Assist composes full domain applications, not just single workflows.** The builder describes a domain; the agent proposes a multi-layer configuration; the user confirms and runs it.
+- **Chat-driven composition becomes a first-class workflow.** The builder describes a full domain in a single conversation; the agent generates tables, profiles, blueprints, triggers, and routes as a coordinated configuration. What took a day for the Wealth Manager should take an hour as the tooling matures.
+- **Domain-app manifests formalize the pattern.** A `.stagent-app.yaml` declares tables, profiles, blueprints, triggers, schedules, and routes — making domain applications portable and reproducible across clones.
 - **Cross-domain pattern reuse.** The Wealth Manager's Conviction Brief pattern — synthesizing multiple signal sources into one actionable summary — becomes a reusable template the Growth module's pipeline review can adopt without rewriting.
-- **Marketplace distribution with inherited governance.** A user installs a domain app and keeps their own cost budgets, permission presets, and Always Allow rules. The domain app cannot bypass them because it has no execution path of its own.
+- **Community template sharing.** Builders share domain-application configurations — table templates, profile definitions, blueprint YAML — so others can learn from and adapt proven patterns. The governance layer guarantees that any imported configuration inherits the recipient's own permission policies and cost budgets.
 
 The machine that builds machines is now a machine that enables anyone to build machines. The factory is open. The assembly line is documented. The primitives are stable. The governance is inherited.
 
