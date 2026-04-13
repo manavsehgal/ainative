@@ -7,16 +7,29 @@ import {
   tableTemplateSchema,
   scheduleTemplateSchema,
 } from "./validation";
-import type {
-  AppBundle,
-  AppBundleManifest,
-  AppProfileLink,
-  AppBlueprintLink,
-  AppTableTemplate,
-  AppScheduleTemplate,
-  AppUiSchema,
-  SapManifest,
+import {
+  SAP_CATEGORIES,
+  type AppBundle,
+  type AppBundleManifest,
+  type AppProfileLink,
+  type AppBlueprintLink,
+  type AppTableTemplate,
+  type AppScheduleTemplate,
+  type AppUiSchema,
+  type SapManifest,
+  type SapCategory,
 } from "./types";
+
+// ── Category normalization ──
+
+/** Map free-form AppBundle categories to the fixed SAP_CATEGORIES enum. */
+function toSapCategory(raw: string): SapCategory {
+  const lower = raw.toLowerCase();
+  for (const cat of SAP_CATEGORIES) {
+    if (lower === cat || lower.includes(cat)) return cat;
+  }
+  return "general";
+}
 
 // ── Namespace helpers ──
 
@@ -229,7 +242,7 @@ export async function bundleToSap(bundle: AppBundle, outDir: string): Promise<vo
     license: "MIT",
     platform: { minVersion: getPlatformVersion() },
     marketplace: {
-      category: (bundle.manifest.category as SapManifest["marketplace"]["category"]) ?? "general",
+      category: toSapCategory(bundle.manifest.category),
       tags: bundle.manifest.tags,
       difficulty: bundle.manifest.difficulty,
       pricing: "free",
