@@ -109,6 +109,11 @@ const STAGENT_TOOLS: ToolCatalogEntry[] = [
   { name: "execute_workflow", description: "Start executing a workflow", group: "Workflows", paramHint: "workflowId" },
   { name: "delete_workflow", description: "Delete a workflow", group: "Workflows", paramHint: "workflowId" },
   { name: "get_workflow_status", description: "Get workflow execution progress", group: "Workflows", paramHint: "workflowId" },
+  { name: "list_blueprints", description: "List available workflow blueprints", group: "Workflows", paramHint: "domain, search" },
+  { name: "get_blueprint", description: "Get blueprint details and variables", group: "Workflows", paramHint: "blueprintId" },
+  { name: "instantiate_blueprint", description: "Create a workflow from a blueprint", group: "Workflows", paramHint: "blueprintId, variables" },
+  { name: "create_blueprint", description: "Create a custom workflow blueprint", group: "Workflows", paramHint: "yaml" },
+  { name: "delete_blueprint", description: "Delete a custom blueprint", group: "Workflows", paramHint: "blueprintId" },
 
   // ── Schedules ──
   { name: "list_schedules", description: "List scheduled prompt loops", group: "Schedules", paramHint: "status" },
@@ -133,6 +138,9 @@ const STAGENT_TOOLS: ToolCatalogEntry[] = [
   // ── Profiles ──
   { name: "list_profiles", description: "List available agent profiles", group: "Profiles" },
   { name: "get_profile", description: "Get agent profile configuration", group: "Profiles", paramHint: "profileId" },
+  { name: "create_profile", description: "Create a new agent profile", group: "Profiles", paramHint: "config, skillMd" },
+  { name: "update_profile", description: "Update a custom agent profile", group: "Profiles", paramHint: "profileId, config, skillMd" },
+  { name: "delete_profile", description: "Delete a custom agent profile", group: "Profiles", paramHint: "profileId" },
 
   // ── Usage ──
   { name: "get_usage_summary", description: "Get spending and token usage stats", group: "Usage", paramHint: "days" },
