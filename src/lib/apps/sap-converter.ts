@@ -32,8 +32,9 @@ export function stripNamespace(appId: string, prefixedKey: string): string {
 // ── Platform compatibility ──
 
 export function getPlatformVersion(): string {
-  // Walk up from module location to find package.json (safe for npx)
-  let dir = import.meta.dirname;
+  // Walk up from module location to find package.json (safe for npx).
+  // import.meta.dirname may be undefined in bundled environments (Turbopack).
+  let dir: string = import.meta.dirname ?? process.cwd();
   for (let i = 0; i < 10; i++) {
     const pkgPath = join(dir, "package.json");
     if (existsSync(pkgPath)) {

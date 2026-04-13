@@ -232,9 +232,9 @@ export function appTools(ctx: ToolContext) {
           try {
             await saveSapDirectory(bundle.manifest.id, bundle);
           } catch (sapErr) {
-            console.warn(
+            console.error(
               `[apps] SAP directory write failed for ${bundle.manifest.id}:`,
-              sapErr,
+              sapErr instanceof Error ? sapErr.stack : sapErr,
             );
           }
 
