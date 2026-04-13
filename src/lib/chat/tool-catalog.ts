@@ -47,6 +47,10 @@ export interface ToolCatalogEntry {
   paramHint?: string;
   /** Client-side action that bypasses MCP */
   behavior?: "execute_immediately";
+  /** Template text inserted into the chat input when this entry is selected.
+   *  Used by guided-flow entries like build_app that trigger system prompt
+   *  injection via pattern matching in context-builder.ts. */
+  template?: string;
 }
 
 // ── Group → Icon mapping ─────────────────────────────────────────────────
@@ -182,7 +186,10 @@ const STAGENT_TOOLS: ToolCatalogEntry[] = [
   { name: "search_messages", description: "Search across all conversations", group: "Chat", paramHint: "query" },
 
   // ── Apps ──
-  { name: "build_app", description: "Build a new app through a guided 6-step conversation", group: "Apps", paramHint: "describe your app idea" },
+  /** Virtual entry — not an MCP tool. Selecting this inserts the template text,
+   *  which triggers BUILD_APP_SYSTEM_PROMPT injection via pattern matching in
+   *  context-builder.ts. The actual tools are create_app_bundle, introspect_project, etc. */
+  { name: "build_app", description: "Build a new app through a guided 6-step conversation", group: "Apps", paramHint: "describe your app idea", template: "Build a new app: " },
   { name: "introspect_project", description: "Examine a project's tables, schedules, profiles, and documents", group: "Apps", paramHint: "projectId" },
   { name: "create_app_bundle", description: "Create and install a new app from a structured specification", group: "Apps", paramHint: "name, description, category, tables, schedules" },
   { name: "list_app_templates", description: "List available built-in app bundles as templates", group: "Apps" },

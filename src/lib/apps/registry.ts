@@ -69,10 +69,13 @@ function tryLoadSapBundleSync(appId: string): AppBundle | null {
     const bundle = sapToBundleSync(dir);
     const parsed = appBundleSchema.safeParse(bundle);
     if (!parsed.success) {
-      failedSapLoads.set(
-        appId,
-        parsed.error.issues.map((i) => i.message).join(", "),
+      const issues = parsed.error.issues
+        .map((i) => `${i.path.join(".")}: ${i.message}`)
+        .join("; ");
+      console.warn(
+        `[apps] JIT SAP validation failed for "${appId}": ${issues}`,
       );
+      failedSapLoads.set(appId, issues);
       return null;
     }
     return parsed.data;
@@ -87,8 +90,12 @@ function tryLoadSapBundleSync(appId: string): AppBundle | null {
 /**
  * Register a dynamically created or loaded bundle in the runtime cache.
  * Validates against appBundleSchema before inserting.
+ * @param source — origin tracking for listSapBundleIds() / getBundleSource()
  */
-export function registerBundle(bundle: AppBundle): void {
+export function registerBundle(
+  bundle: AppBundle,
+  source?: "builtin" | "sap",
+): void {
   ensureBundlesLoaded();
   const parsed = appBundleSchema.safeParse(bundle);
   if (!parsed.success) {
@@ -99,6 +106,9 @@ export function registerBundle(bundle: AppBundle): void {
     );
   }
   bundleCache.set(parsed.data.manifest.id, parsed.data);
+  if (source) {
+    bundleSourceMap.set(parsed.data.manifest.id, source);
+  }
 }
 
 /**
@@ -163,6 +173,11 @@ export function deregisterBundle(appId: string): boolean {
   bundleSourceMap.delete(appId);
   failedSapLoads.delete(appId);
   return bundleCache.delete(appId);
+}
+
+/** Clear a failed-load entry so the next getAppBundle() call retries JIT loading. */
+export function clearFailedLoad(appId: string): void {
+  failedSapLoads.delete(appId);
 }
 
 /** Return map of SAP directories that failed to load (appId → error message). */

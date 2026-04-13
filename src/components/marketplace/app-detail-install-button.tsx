@@ -33,6 +33,7 @@ export function AppDetailInstallButton({ appId, appName }: AppDetailInstallButto
 
       toast.success(`${appName} installed successfully!`);
       setShowConfirm(false);
+      window.dispatchEvent(new Event("stagent:apps-changed"));
       router.push(`/apps/${appId}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to install app");

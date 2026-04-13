@@ -325,26 +325,26 @@ export function AppSidebar() {
     setExpandedGroup(activeGroup);
   }, [activeGroup]);
 
-  useEffect(() => {
-    let cancelled = false;
-
+  // Shared fetch logic used by pathname changes and the apps-changed event
+  const fetchAppGroups = useCallback(() => {
     fetch("/api/apps/sidebar")
       .then((res) => (res.ok ? res.json() : { groups: [] }))
-      .then((data) => {
-        if (!cancelled) {
-          setAppGroups(data.groups ?? []);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setAppGroups([]);
-        }
-      });
+      .then((data) => setAppGroups(data.groups ?? []))
+      .catch(() => setAppGroups([]));
+  }, []);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [pathname]);
+  // Re-fetch on pathname change
+  useEffect(() => {
+    fetchAppGroups();
+  }, [pathname, fetchAppGroups]);
+
+  // Re-fetch when apps are installed/uninstalled (event dispatched from chat
+  // stream consumer and marketplace install/uninstall handlers)
+  useEffect(() => {
+    const handler = () => fetchAppGroups();
+    window.addEventListener("stagent:apps-changed", handler);
+    return () => window.removeEventListener("stagent:apps-changed", handler);
+  }, [fetchAppGroups]);
 
   const toggleGroup = useCallback((id: string) => {
     setExpandedGroup((prev) => (prev === id ? null : id));

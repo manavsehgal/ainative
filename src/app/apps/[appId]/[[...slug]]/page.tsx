@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { PageShell } from "@/components/shared/page-shell";
@@ -8,8 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { db } from "@/lib/db";
-import { schedules } from "@/lib/db/schema";
+import { appInstances, schedules } from "@/lib/db/schema";
 import { getAppInstance } from "@/lib/apps/service";
+import { getFailedSapLoads } from "@/lib/apps/registry";
 import { resolveAppIcon } from "@/lib/apps/icons";
 import { getTable, listRows } from "@/lib/data/tables";
 import { AppActionButtons } from "@/components/apps/app-action-buttons";
@@ -41,6 +42,49 @@ export default async function AppRuntimePage({ params }: Props) {
   const instance = getAppInstance(appId);
 
   if (!instance) {
+    // Check if app is installed but bundle failed to load (don't show raw 404)
+    const row = db
+      .select({ name: appInstances.name, status: appInstances.status })
+      .from(appInstances)
+      .where(eq(appInstances.appId, appId))
+      .get();
+
+    if (row) {
+      const failedLoads = getFailedSapLoads();
+      const loadError = failedLoads.get(appId);
+      return (
+        <PageShell
+          title={row.name}
+          description="This app is installed but its bundle could not be loaded."
+          backHref="/marketplace"
+          backLabel="Marketplace"
+        >
+          <Card>
+            <CardHeader>
+              <CardTitle>Bundle load failed</CardTitle>
+              <CardDescription>
+                {loadError
+                  ? `Validation error: ${loadError}`
+                  : "The app bundle could not be read from disk. It may have been deleted or corrupted."}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex gap-2">
+              <AppUninstallButton
+                appId={appId}
+                appName={row.name}
+                variant="destructive"
+                size="sm"
+                redirectTo="/marketplace"
+              />
+              <Button asChild size="sm" variant="outline">
+                <Link href="/marketplace">Back to Marketplace</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </PageShell>
+      );
+    }
+
     notFound();
   }
 

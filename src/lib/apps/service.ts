@@ -132,14 +132,22 @@ export function getAppInstance(appId: string): AppInstanceRecord | null {
 }
 
 export function listInstalledAppInstances(): AppInstanceRecord[] {
-  return db
-    .select()
-    .from(appInstances)
-    .all()
-    .flatMap((row) => {
-      const bundle = getAppBundle(row.appId);
-      return bundle ? [hydrateInstance(row, bundle)] : [];
-    });
+  const rows = db.select().from(appInstances).all();
+  const results: AppInstanceRecord[] = [];
+
+  for (const row of rows) {
+    const bundle = getAppBundle(row.appId);
+    if (bundle) {
+      results.push(hydrateInstance(row, bundle));
+    } else {
+      console.warn(
+        `[apps] Installed app "${row.appId}" (status=${row.status}) has no loadable bundle — ` +
+          `skipped from listing. Check ~/.stagent/apps/${row.appId}/ or re-register the bundle.`,
+      );
+    }
+  }
+
+  return results;
 }
 
 export interface AppCatalogFilter {
@@ -241,7 +249,8 @@ export async function installApp(
 
   // Pre-register provided bundles so bootstrapApp() can find them via getAppBundle()
   if (providedBundle) {
-    registerBundle(providedBundle);
+    const inferredSource = sourceType === "builtin" ? "builtin" : "sap";
+    registerBundle(providedBundle, inferredSource as "builtin" | "sap");
   }
 
   // Fast-path: already installed — return existing instance
@@ -720,8 +729,8 @@ export async function registerExportedApp(
   bundle: AppBundle,
   sourceProjectId: string,
 ): Promise<AppInstanceRecord> {
-  // Ensure bundle is in the runtime registry
-  registerBundle(bundle);
+  // Ensure bundle is in the runtime registry (mark as user-built SAP)
+  registerBundle(bundle, "sap");
 
   // Fast-path: already registered
   const existing = db

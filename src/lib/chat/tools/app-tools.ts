@@ -225,7 +225,7 @@ export function appTools(ctx: ToolContext) {
           });
 
           // Register in memory first so bundle is discoverable immediately
-          registerBundle(bundle);
+          registerBundle(bundle, "sap");
 
           // Persist to disk BEFORE install — if install fails, SAP files
           // allow recovery via JIT loading on next getAppBundle() call
@@ -239,7 +239,7 @@ export function appTools(ctx: ToolContext) {
           }
 
           // Install (creates project, tables, schedules — may fail during bootstrap)
-          const instance = await installApp(bundle.manifest.id, undefined, bundle);
+          const instance = await installApp(bundle.manifest.id, undefined, bundle, "file");
 
           ctx.onToolResult?.("create_app_bundle", {
             appId: instance.appId,

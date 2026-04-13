@@ -250,6 +250,7 @@ export function AppMarketplaceBrowser({ canInstall, canPublish }: AppMarketplace
       }
 
       toast.success("App installed and bootstrapped.");
+      window.dispatchEvent(new Event("stagent:apps-changed"));
       await loadApps();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to install app");

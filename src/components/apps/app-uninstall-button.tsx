@@ -48,6 +48,7 @@ export function AppUninstallButton({
           : `${appName} uninstalled. Project data was preserved.`,
       );
       setShowConfirm(false);
+      window.dispatchEvent(new Event("stagent:apps-changed"));
       if (onUninstalled) {
         onUninstalled();
       } else {
