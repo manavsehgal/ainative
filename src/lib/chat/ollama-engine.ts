@@ -67,7 +67,6 @@ export async function* sendOllamaMessage(
     projectId: conversation.projectId,
     projectName,
     workspace,
-    userMessage: userContent,
   });
 
   // Persist user message

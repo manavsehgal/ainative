@@ -1,6 +1,6 @@
 ---
 title: App Extended Primitives — Tier 1
-status: completed
+status: deferred
 priority: P1
 milestone: post-mvp
 source: brainstorm session 2026-04-11

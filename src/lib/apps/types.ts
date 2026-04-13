@@ -6,7 +6,6 @@ export const APP_INSTANCE_STATUSES = [
   "ready",
   "failed",
   "disabled",
-  "corrupt",
 ] as const;
 
 export type AppInstanceStatus = (typeof APP_INSTANCE_STATUSES)[number];
@@ -38,11 +37,6 @@ export const APP_PERMISSIONS = [
   "schedules:create",
   "profiles:link",
   "blueprints:link",
-  "triggers:create",
-  "documents:create",
-  "notifications:create",
-  "views:create",
-  "env:declare",
 ] as const;
 
 export type AppPermission = (typeof APP_PERMISSIONS)[number];
@@ -89,56 +83,6 @@ export interface AppScheduleTemplate {
   prompt: string;
   cronExpression: string;
   agentProfile?: string;
-}
-
-// ── Tier 1 extended primitives ──
-
-export interface AppTriggerTemplate {
-  key: string;
-  name: string;
-  description?: string;
-  tableKey: string;
-  event: "row_added" | "row_updated" | "row_deleted";
-  action: "notify" | "schedule_run" | "webhook";
-  actionConfig: Record<string, unknown>;
-}
-
-export interface AppDocumentTemplate {
-  key: string;
-  name: string;
-  description?: string;
-  globPatterns?: string[];
-  maxSizeMb?: number;
-}
-
-export interface AppNotificationTemplate {
-  key: string;
-  title: string;
-  body: string;
-  type: "info" | "warning" | "success" | "error";
-  lifecycle?: "transient" | "persistent" | "actionable";
-  triggerKey?: string;
-}
-
-export interface AppSavedViewTemplate {
-  key: string;
-  name: string;
-  description?: string;
-  tableKey: string;
-  filters: Record<string, unknown>;
-  sortColumn?: string;
-  sortDirection?: "asc" | "desc";
-  visibleColumns?: string[];
-}
-
-export interface AppEnvVarDeclaration {
-  key: string;
-  name: string;
-  description: string;
-  required: boolean;
-  sensitive: boolean;
-  defaultValue?: string;
-  validationPattern?: string;
 }
 
 export interface AppActionBinding {
@@ -226,90 +170,11 @@ export interface AppBundle {
   tables: AppTableTemplate[];
   schedules: AppScheduleTemplate[];
   ui: AppUiSchema;
-  triggers?: AppTriggerTemplate[];
-  documents?: AppDocumentTemplate[];
-  notifications?: AppNotificationTemplate[];
-  savedViews?: AppSavedViewTemplate[];
-  envVars?: AppEnvVarDeclaration[];
-}
-
-// ── SAP (Stagent App Package) manifest types ──
-
-export const SAP_CATEGORIES = [
-  "finance",
-  "sales",
-  "content",
-  "dev",
-  "automation",
-  "general",
-] as const;
-
-export type SapCategory = (typeof SAP_CATEGORIES)[number];
-
-export const SAP_PRICING = ["free", "paid"] as const;
-export type SapPricing = (typeof SAP_PRICING)[number];
-
-export interface SapAuthor {
-  name: string;
-  email?: string;
-  url?: string;
-}
-
-export interface SapPlatformRequirement {
-  minVersion: string;
-  maxVersion?: string;
-}
-
-export interface SapMarketplaceMeta {
-  category: SapCategory;
-  tags: string[];
-  difficulty: AppDifficulty;
-  pricing: SapPricing;
-}
-
-export interface SapSidebar {
-  label: string;
-  icon: string;
-  route: string;
-}
-
-export interface SapProvides {
-  profiles: string[];
-  blueprints: string[];
-  tables: string[];
-  schedules: string[];
-  triggers: string[];
-  pages: string[];
-}
-
-export interface SapDependencies {
-  apps: string[];
-  platform: string[];
-}
-
-export interface SapManifest {
-  id: string;
-  name: string;
-  version: string;
-  description: string;
-  author: SapAuthor;
-  license?: string;
-  platform: SapPlatformRequirement;
-  marketplace: SapMarketplaceMeta;
-  sidebar: SapSidebar;
-  provides: SapProvides;
-  dependencies?: SapDependencies;
-  ui?: AppUiSchema;
 }
 
 export interface AppResourceMap {
   tables: Record<string, string>;
   schedules: Record<string, string>;
-  triggers?: Record<string, string>;
-  documents?: Record<string, string>;
-  notifications?: Record<string, string>;
-  savedViews?: Record<string, string>;
-  envVars?: Record<string, string>;
 }
 
 export interface AppInstanceRecord {
@@ -350,26 +215,6 @@ export interface AppCatalogEntry {
   installed: boolean;
   installedStatus: AppInstanceStatus | null;
   projectId: string | null;
-}
-
-export type MyAppState = "installed" | "archived" | "failed" | "corrupt";
-
-export interface MyAppEntry {
-  appId: string;
-  name: string;
-  version: string;
-  description: string;
-  icon: string;
-  category: string;
-  tags: string[];
-  trustLevel: AppTrustLevel;
-  state: MyAppState;
-  status: AppInstanceStatus | null;
-  projectId: string | null;
-  bootstrapError: string | null;
-  tableCount: number;
-  scheduleCount: number;
-  installedAt: string | null;
 }
 
 export interface AppSidebarItem {

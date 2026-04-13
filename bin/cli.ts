@@ -64,24 +64,7 @@ program
   .option("--reset", "delete the local database before starting")
   .option("--no-open", "don't auto-open browser");
 
-// Check if `app` subcommand is being invoked — handle separately
-const isAppCommand = process.argv[2] === "app";
-
-if (isAppCommand) {
-  // Dynamic import to avoid loading app modules for normal server startup
-  import("../src/lib/apps/cli/index").then(({ registerAppCommands }) => {
-    registerAppCommands(program);
-    program.parse();
-  });
-} else {
-  program.parse();
-}
-
-// `app` subcommand handles its own lifecycle — skip server startup
-if (isAppCommand) {
-  // The import/parse above will handle everything; stop here.
-  // Commander exits the process after the subcommand action completes.
-} else {
+program.parse();
 
 const opts = program.opts();
 
@@ -246,5 +229,3 @@ main().catch((err) => {
   console.error("Failed to start Stagent:", err);
   process.exit(1);
 });
-
-} // end of else (non-app-command server startup)

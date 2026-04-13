@@ -1,6 +1,6 @@
 ---
 title: "Fix: Sidebar App Menus Accordion Behavior"
-status: in-progress
+status: deferred
 priority: P2
 milestone: post-mvp
 source: handoff/bug-sidebar-app-menus-always-expanded.md

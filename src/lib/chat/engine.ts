@@ -212,7 +212,6 @@ export async function* sendMessage(
     projectName,
     workspace,
     mentions,
-    userMessage: userContent,
   });
 
   // Persist user message (after context is built so it won't appear in history)

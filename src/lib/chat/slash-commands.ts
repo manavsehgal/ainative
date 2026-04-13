@@ -10,7 +10,6 @@ import {
   Sun,
   CheckCheck,
   Plus,
-  Package,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { navigationItems, createItems } from "./command-data";
@@ -130,16 +129,6 @@ const actionCommands: SlashCommand[] = [
     keywords: ["run", "workflow", "execute"],
     behavior: "insert_template",
     template: "Execute the workflow ",
-  },
-  {
-    id: "build_app",
-    label: "Build App",
-    description: "Build a new app through guided conversation",
-    icon: Package,
-    group: "Actions",
-    keywords: ["build", "app", "create", "sap", "package"],
-    behavior: "insert_template",
-    template: "Build a new app: ",
   },
 ];
 

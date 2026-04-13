@@ -238,55 +238,6 @@ export const BUILTIN_APP_BUNDLES: AppBundle[] = [
         },
       ],
     },
-    triggers: [
-      {
-        key: "position-price-alert",
-        name: "Position Price Alert",
-        description: "Notify when a position row is updated (e.g., price change).",
-        tableKey: "positions",
-        event: "row_updated",
-        action: "notify",
-        actionConfig: { message: "A position was updated — review for drift." },
-      },
-    ],
-    documents: [
-      {
-        key: "portfolio-reports",
-        name: "Portfolio Reports",
-        description: "Upload portfolio PDFs and CSV exports for AI analysis.",
-        globPatterns: ["*.pdf", "*.csv"],
-        maxSizeMb: 50,
-      },
-    ],
-    notifications: [
-      {
-        key: "daily-review-reminder",
-        title: "Daily Review Ready",
-        body: "Your daily portfolio review schedule is paused. Activate it when ready.",
-        type: "info" as const,
-        lifecycle: "persistent" as const,
-      },
-    ],
-    savedViews: [
-      {
-        key: "high-conviction-watchlist",
-        name: "High Conviction",
-        description: "Watchlist items with High conviction rating.",
-        tableKey: "watchlist",
-        filters: { conviction: "High" },
-        sortColumn: "targetPrice",
-        sortDirection: "desc" as const,
-      },
-    ],
-    envVars: [
-      {
-        key: "MARKET_DATA_API_KEY",
-        name: "Market Data API Key",
-        description: "API key for real-time market data (optional — sample data works without it).",
-        required: false,
-        sensitive: true,
-      },
-    ],
   },
   {
     manifest: {
@@ -532,54 +483,5 @@ export const BUILTIN_APP_BUNDLES: AppBundle[] = [
         },
       ],
     },
-    triggers: [
-      {
-        key: "new-contact-alert",
-        name: "New Contact Alert",
-        description: "Fire when a new contact row is added.",
-        tableKey: "contacts",
-        event: "row_added",
-        action: "notify",
-        actionConfig: { message: "New contact added — review for qualification." },
-      },
-    ],
-    documents: [
-      {
-        key: "research-reports",
-        name: "Research Reports",
-        description: "Upload lead research and market analysis documents.",
-        globPatterns: ["*.pdf", "*.docx"],
-        maxSizeMb: 25,
-      },
-    ],
-    notifications: [
-      {
-        key: "pipeline-review-reminder",
-        title: "Pipeline Review",
-        body: "Weekly pipeline review is paused. Activate when your sales data is ready.",
-        type: "info" as const,
-        lifecycle: "persistent" as const,
-      },
-    ],
-    savedViews: [
-      {
-        key: "hot-opportunities",
-        name: "Hot Opportunities",
-        description: "Opportunities with stage Negotiation or higher.",
-        tableKey: "opportunities",
-        filters: { stage: "Negotiation" },
-        sortColumn: "amount",
-        sortDirection: "desc" as const,
-      },
-    ],
-    envVars: [
-      {
-        key: "CRM_API_KEY",
-        name: "CRM API Key",
-        description: "API key for CRM data sync (optional — works with manual data entry).",
-        required: false,
-        sensitive: true,
-      },
-    ],
   },
 ];

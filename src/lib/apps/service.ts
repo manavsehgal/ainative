@@ -1,51 +1,16 @@
 import { eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
-import {
-  projects,
-  schedules,
-  appInstances,
-  userTables,
-  userTableColumns,
-  userTableRows,
-  userTableRowHistory,
-  userTableRelationships,
-  userTableImports,
-  userTableTriggers,
-  userTableViews,
-  notifications,
-  tableDocumentInputs,
-  taskTableInputs,
-  workflowTableInputs,
-  scheduleTableInputs,
-} from "@/lib/db/schema";
-import { deleteProjectCascade } from "@/lib/data/delete-project";
+import { projects, schedules, appInstances } from "@/lib/db/schema";
 import type { AppInstanceDbRow } from "@/lib/db/schema";
 import { addRows, createTable, deleteRows, getTable, listRows } from "@/lib/data/tables";
-import { join } from "path";
-import { homedir } from "os";
-import { existsSync } from "fs";
-import { mkdir, rm as fsRm } from "fs/promises";
-import {
-  getAppBundle,
-  listAppBundles,
-  registerBundle,
-  listSapBundleIds,
-  getFailedSapLoads,
-  deregisterBundle,
-} from "./registry";
-import { bundleToSap } from "./sap-converter";
+import { getAppBundle, listAppBundles } from "./registry";
 import { appResourceMapSchema } from "./validation";
-import { canExecutePrimitive } from "./trust";
 import type {
   AppBundle,
-  AppBundleManifest,
   AppCatalogEntry,
   AppInstanceRecord,
   AppResourceMap,
   AppSidebarGroup,
-  AppSourceType,
-  AppUiSchema,
-  MyAppEntry,
 } from "./types";
 
 class AppRuntimeError extends Error {
@@ -70,52 +35,21 @@ function parseResourceMap(raw: string | null | undefined): AppResourceMap {
   return parsed.success ? parsed.data : { tables: {}, schedules: {} };
 }
 
-function safeParseJson<T>(raw: string, fallback: T, label: string): { value: T; ok: boolean } {
-  try {
-    return { value: JSON.parse(raw) as T, ok: true };
-  } catch (err) {
-    console.error(`[apps] corrupt ${label} JSON:`, err);
-    return { value: fallback, ok: false };
-  }
-}
-
-const CORRUPT_MANIFEST: AppBundleManifest = {
-  id: "unknown",
-  name: "Unknown App",
-  version: "0.0.0",
-  description: "Manifest data is corrupt",
-  category: "unknown",
-  tags: [],
-  difficulty: "beginner",
-  estimatedSetupMinutes: 0,
-  icon: "AlertTriangle",
-  trustLevel: "community",
-  permissions: [],
-};
-
-const CORRUPT_UI: AppUiSchema = { pages: [] };
-
 function hydrateInstance(row: AppInstanceDbRow, bundle: AppBundle): AppInstanceRecord {
-  const manifest = safeParseJson<AppBundleManifest>(row.manifestJson, CORRUPT_MANIFEST, `manifest for ${row.appId}`);
-  const ui = safeParseJson<AppUiSchema>(row.uiSchemaJson, CORRUPT_UI, `ui schema for ${row.appId}`);
-  const isCorrupt = !manifest.ok || !ui.ok;
-
   return {
     id: row.id,
     appId: row.appId,
     name: row.name,
     version: row.version,
     projectId: row.projectId ?? null,
-    status: isCorrupt ? "corrupt" : row.status,
+    status: row.status,
     sourceType: row.sourceType,
-    bootstrapError: isCorrupt
-      ? `Manifest or UI schema JSON is corrupt — uninstall and reinstall to fix`
-      : (row.bootstrapError ?? null),
+    bootstrapError: row.bootstrapError ?? null,
     installedAt: row.installedAt,
     bootstrappedAt: row.bootstrappedAt ?? null,
     updatedAt: row.updatedAt,
-    manifest: manifest.value,
-    ui: ui.value,
+    manifest: JSON.parse(row.manifestJson),
+    ui: JSON.parse(row.uiSchemaJson),
     resourceMap: parseResourceMap(row.resourceMapJson),
     bundle,
   };
@@ -126,96 +60,54 @@ export function getAppInstance(appId: string): AppInstanceRecord | null {
   if (!row) return null;
 
   const bundle = getAppBundle(appId);
-  if (!bundle) return null;
+  if (!bundle) {
+    throw new AppRuntimeError(`Bundle "${appId}" is no longer available`);
+  }
 
   return hydrateInstance(row, bundle);
 }
 
 export function listInstalledAppInstances(): AppInstanceRecord[] {
-  const rows = db.select().from(appInstances).all();
-  const results: AppInstanceRecord[] = [];
-
-  for (const row of rows) {
-    const bundle = getAppBundle(row.appId);
-    if (bundle) {
-      results.push(hydrateInstance(row, bundle));
-    } else {
-      console.warn(
-        `[apps] Installed app "${row.appId}" (status=${row.status}) has no loadable bundle — ` +
-          `skipped from listing. Check ~/.stagent/apps/${row.appId}/ or re-register the bundle.`,
-      );
-    }
-  }
-
-  return results;
+  return db
+    .select()
+    .from(appInstances)
+    .all()
+    .flatMap((row) => {
+      const bundle = getAppBundle(row.appId);
+      return bundle ? [hydrateInstance(row, bundle)] : [];
+    });
 }
 
-export interface AppCatalogFilter {
-  category?: string;
-  q?: string;
-}
-
-function bundleToCatalogEntry(
-  bundle: AppBundle,
-  instance: AppInstanceRecord | null
-): AppCatalogEntry {
-  return {
-    appId: bundle.manifest.id,
-    name: bundle.manifest.name,
-    version: bundle.manifest.version,
-    description: bundle.manifest.description,
-    category: bundle.manifest.category,
-    tags: bundle.manifest.tags,
-    difficulty: bundle.manifest.difficulty,
-    estimatedSetupMinutes: bundle.manifest.estimatedSetupMinutes,
-    icon: bundle.manifest.icon,
-    trustLevel: bundle.manifest.trustLevel,
-    permissions: bundle.manifest.permissions,
-    tableCount: bundle.tables.length,
-    scheduleCount: bundle.schedules.length,
-    profileCount: bundle.profiles.length,
-    blueprintCount: bundle.blueprints.length,
-    setupChecklistCount: bundle.setupChecklist.length,
-    installed: Boolean(instance),
-    installedStatus: instance?.status ?? null,
-    projectId: instance?.projectId ?? null,
-  };
-}
-
-export function listAppCatalog(filter?: AppCatalogFilter): AppCatalogEntry[] {
+export function listAppCatalog(): AppCatalogEntry[] {
   const installed = new Map(
     listInstalledAppInstances().map((instance) => [instance.appId, instance])
   );
 
-  let entries = listAppBundles()
-    .filter((bundle) => bundle.manifest.trustLevel !== "private")
-    .map((bundle) => {
-      const instance = installed.get(bundle.manifest.id) ?? null;
-      return bundleToCatalogEntry(bundle, instance);
-    });
+  return listAppBundles().map((bundle) => {
+    const instance = installed.get(bundle.manifest.id) ?? null;
 
-  if (filter?.category) {
-    const cat = filter.category.toLowerCase();
-    entries = entries.filter((e) => e.category.toLowerCase() === cat);
-  }
-
-  if (filter?.q) {
-    const terms = filter.q.toLowerCase().split(/\s+/).filter(Boolean);
-    entries = entries.filter((e) => {
-      const haystack = `${e.name} ${e.description} ${e.tags.join(" ")} ${e.category}`.toLowerCase();
-      return terms.every((term) => haystack.includes(term));
-    });
-  }
-
-  return entries;
-}
-
-export function getAppCatalogEntry(appId: string): AppCatalogEntry | null {
-  const bundle = getAppBundle(appId);
-  if (!bundle) return null;
-
-  const instance = getAppInstance(appId);
-  return bundleToCatalogEntry(bundle, instance);
+    return {
+      appId: bundle.manifest.id,
+      name: bundle.manifest.name,
+      version: bundle.manifest.version,
+      description: bundle.manifest.description,
+      category: bundle.manifest.category,
+      tags: bundle.manifest.tags,
+      difficulty: bundle.manifest.difficulty,
+      estimatedSetupMinutes: bundle.manifest.estimatedSetupMinutes,
+      icon: bundle.manifest.icon,
+      trustLevel: bundle.manifest.trustLevel,
+      permissions: bundle.manifest.permissions,
+      tableCount: bundle.tables.length,
+      scheduleCount: bundle.schedules.length,
+      profileCount: bundle.profiles.length,
+      blueprintCount: bundle.blueprints.length,
+      setupChecklistCount: bundle.setupChecklist.length,
+      installed: Boolean(instance),
+      installedStatus: instance?.status ?? null,
+      projectId: instance?.projectId ?? null,
+    };
+  });
 }
 
 export function getAppSidebarGroups(): AppSidebarGroup[] {
@@ -236,27 +128,15 @@ export function getAppSidebarGroups(): AppSidebarGroup[] {
     }));
 }
 
-export async function installApp(
-  appId: string,
-  projectName?: string,
-  providedBundle?: AppBundle,
-  sourceType?: AppSourceType,
-): Promise<AppInstanceRecord> {
-  const bundle = providedBundle ?? getAppBundle(appId);
+export async function installApp(appId: string, projectName?: string): Promise<AppInstanceRecord> {
+  const bundle = getAppBundle(appId);
   if (!bundle) {
     throw new AppRuntimeError(`App "${appId}" not found`);
   }
 
-  // Pre-register provided bundles so bootstrapApp() can find them via getAppBundle()
-  if (providedBundle) {
-    const inferredSource = sourceType === "builtin" ? "builtin" : "sap";
-    registerBundle(providedBundle, inferredSource as "builtin" | "sap");
-  }
-
-  // Fast-path: already installed — return existing instance
   const existing = getAppInstance(appId);
   if (existing) {
-    return existing;
+    throw new AppRuntimeError(`App "${bundle.manifest.name}" is already installed`);
   }
 
   const now = new Date();
@@ -273,48 +153,24 @@ export async function installApp(
     updatedAt: now,
   });
 
-  try {
-    await db.insert(appInstances).values({
-      id: instanceId,
-      appId: bundle.manifest.id,
-      name: bundle.manifest.name,
-      version: bundle.manifest.version,
-      projectId,
-      manifestJson: JSON.stringify(bundle.manifest),
-      uiSchemaJson: JSON.stringify(bundle.ui),
-      resourceMapJson: JSON.stringify({ tables: {}, schedules: {} }),
-      status: "installing",
-      sourceType: sourceType ?? "builtin",
-      bootstrapError: null,
-      installedAt: now,
-      bootstrappedAt: null,
-      updatedAt: now,
-    });
-  } catch (err) {
-    // UNIQUE constraint race: another request inserted first — return that instance
-    if (err instanceof Error && err.message.includes("UNIQUE constraint failed")) {
-      const raceWinner = getAppInstance(appId);
-      if (raceWinner) return raceWinner;
-    }
-    throw err;
-  }
+  await db.insert(appInstances).values({
+    id: instanceId,
+    appId: bundle.manifest.id,
+    name: bundle.manifest.name,
+    version: bundle.manifest.version,
+    projectId,
+    manifestJson: JSON.stringify(bundle.manifest),
+    uiSchemaJson: JSON.stringify(bundle.ui),
+    resourceMapJson: JSON.stringify({ tables: {}, schedules: {} }),
+    status: "installing",
+    sourceType: "builtin",
+    bootstrapError: null,
+    installedAt: now,
+    bootstrappedAt: null,
+    updatedAt: now,
+  });
 
-  try {
-    return await bootstrapApp(appId);
-  } catch (error) {
-    // Rollback: clean up the app instance and orphaned project.
-    // At this point, bootstrapApp sets status to "failed" but the project
-    // has no FK children yet (tables/schedules created during bootstrap
-    // are already associated with the project, but the app_instance delete
-    // is safe and we cascade-delete the project's direct children).
-    try {
-      db.delete(appInstances).where(eq(appInstances.appId, appId)).run();
-      db.delete(projects).where(eq(projects.id, projectId)).run();
-    } catch (cleanupErr) {
-      console.warn("[apps] Rollback cleanup failed:", cleanupErr);
-    }
-    throw error;
-  }
+  return bootstrapApp(appId);
 }
 
 export async function bootstrapApp(appId: string): Promise<AppInstanceRecord> {
@@ -340,20 +196,8 @@ export async function bootstrapApp(appId: string): Promise<AppInstanceRecord> {
     .run();
 
   const resourceMap = current.resourceMap;
-  const trustLevel = bundle.manifest.trustLevel;
-  const skippedPrimitives: string[] = [];
-
-  function checkTrust(primitive: string): boolean {
-    if (canExecutePrimitive(trustLevel, primitive)) return true;
-    console.warn(
-      `[apps] Skipping ${primitive} for ${appId}: requires higher trust level (current: ${trustLevel})`,
-    );
-    skippedPrimitives.push(primitive);
-    return false;
-  }
 
   try {
-    if (checkTrust("tables"))
     for (const tableTemplate of bundle.tables) {
       if (!resourceMap.tables[tableTemplate.key]) {
         const table = await createTable({
@@ -378,7 +222,6 @@ export async function bootstrapApp(appId: string): Promise<AppInstanceRecord> {
       }
     }
 
-    if (checkTrust("schedules"))
     for (const scheduleTemplate of bundle.schedules) {
       if (!resourceMap.schedules[scheduleTemplate.key]) {
         const scheduleId = crypto.randomUUID();
@@ -422,111 +265,6 @@ export async function bootstrapApp(appId: string): Promise<AppInstanceRecord> {
         });
 
         resourceMap.schedules[scheduleTemplate.key] = scheduleId;
-      }
-    }
-
-    // ── Tier 1 primitives ──
-
-    // Triggers
-    if (bundle.triggers && checkTrust("triggers")) {
-      if (!resourceMap.triggers) resourceMap.triggers = {};
-      for (const trigger of bundle.triggers) {
-        if (!resourceMap.triggers[trigger.key]) {
-          const tableId = resourceMap.tables[trigger.tableKey];
-          if (!tableId) continue; // skip if referenced table wasn't provisioned
-          const triggerId = crypto.randomUUID();
-          const now = new Date();
-          await db.insert(userTableTriggers).values({
-            id: triggerId,
-            tableId,
-            name: trigger.name,
-            triggerEvent: trigger.event,
-            condition: null,
-            actionType: trigger.action === "notify" ? "create_task" : "run_workflow",
-            actionConfig: JSON.stringify(trigger.actionConfig),
-            status: "paused",
-            fireCount: 0,
-            lastFiredAt: null,
-            createdAt: now,
-            updatedAt: now,
-          });
-          resourceMap.triggers[trigger.key] = triggerId;
-        }
-      }
-    }
-
-    // Notifications (template-based — inserted as initial notifications)
-    if (bundle.notifications && checkTrust("notifications")) {
-      if (!resourceMap.notifications) resourceMap.notifications = {};
-      for (const notif of bundle.notifications) {
-        if (!resourceMap.notifications[notif.key]) {
-          const notifId = crypto.randomUUID();
-          await db.insert(notifications).values({
-            id: notifId,
-            taskId: null,
-            type: "agent_message",
-            title: notif.title,
-            body: notif.body,
-            read: false,
-            toolName: null,
-            toolInput: null,
-            response: null,
-            respondedAt: null,
-            createdAt: new Date(),
-          });
-          resourceMap.notifications[notif.key] = notifId;
-        }
-      }
-    }
-
-    // Saved views
-    if (bundle.savedViews && checkTrust("savedViews")) {
-      if (!resourceMap.savedViews) resourceMap.savedViews = {};
-      for (const view of bundle.savedViews) {
-        if (!resourceMap.savedViews[view.key]) {
-          const tableId = resourceMap.tables[view.tableKey];
-          if (!tableId) continue;
-          const viewId = crypto.randomUUID();
-          const now = new Date();
-          const config = JSON.stringify({
-            filters: view.filters,
-            sortColumn: view.sortColumn,
-            sortDirection: view.sortDirection,
-            visibleColumns: view.visibleColumns,
-          });
-          await db.insert(userTableViews).values({
-            id: viewId,
-            tableId,
-            name: view.name,
-            type: "grid",
-            config,
-            isDefault: false,
-            createdAt: now,
-            updatedAt: now,
-          });
-          resourceMap.savedViews[view.key] = viewId;
-        }
-      }
-    }
-
-    // Documents and envVars are tracked in the resource map but
-    // don't create DB rows — they're metadata declarations used by
-    // the install wizard and runtime, not provisioned resources.
-    if (bundle.documents && checkTrust("documents")) {
-      if (!resourceMap.documents) resourceMap.documents = {};
-      for (const doc of bundle.documents) {
-        if (!resourceMap.documents[doc.key]) {
-          resourceMap.documents[doc.key] = `declared:${doc.key}`;
-        }
-      }
-    }
-
-    if (bundle.envVars && checkTrust("envVars")) {
-      if (!resourceMap.envVars) resourceMap.envVars = {};
-      for (const envVar of bundle.envVars) {
-        if (!resourceMap.envVars[envVar.key]) {
-          resourceMap.envVars[envVar.key] = `declared:${envVar.key}`;
-        }
       }
     }
 
@@ -611,89 +349,18 @@ export async function clearAppSampleData(appId: string): Promise<{ deletedRows: 
   return { deletedRows };
 }
 
-export function uninstallApp(
-  appId: string,
-  options?: { deleteProject?: boolean; deleteSap?: boolean },
-): void {
+export function uninstallApp(appId: string): void {
   const instance = getAppInstance(appId);
   if (!instance) {
     throw new AppRuntimeError(`App "${appId}" is not installed`);
   }
 
-  const shouldDeleteProject =
-    options?.deleteProject === true && !!instance.projectId;
-
-  if (shouldDeleteProject) {
-    // deleteProjectCascade handles tables, schedules, app_instances (by projectId),
-    // and all other project children in FK-safe order.
-    deleteProjectCascade(instance.projectId!);
-    // The cascade deletes appInstances by projectId — ensure our row is gone
-    // (idempotent if cascade already removed it).
-    db.delete(appInstances).where(eq(appInstances.appId, appId)).run();
-    return;
-  }
-
-  // App-only cleanup: remove bootstrapped resources but preserve the project.
-  const rm = instance.resourceMap;
-
-  // 1. Triggers
-  const triggerIds = Object.values(rm.triggers ?? {});
-  if (triggerIds.length > 0) {
-    db.delete(userTableTriggers).where(inArray(userTableTriggers.id, triggerIds)).run();
-  }
-
-  // 2. Notifications
-  const notificationIds = Object.values(rm.notifications ?? {});
-  if (notificationIds.length > 0) {
-    db.delete(notifications).where(inArray(notifications.id, notificationIds)).run();
-  }
-
-  // 3. Saved views
-  const viewIds = Object.values(rm.savedViews ?? {});
-  if (viewIds.length > 0) {
-    db.delete(userTableViews).where(inArray(userTableViews.id, viewIds)).run();
-  }
-
-  // 4. Schedules
-  const scheduleIds = Object.values(rm.schedules);
+  const scheduleIds = Object.values(instance.resourceMap.schedules);
   if (scheduleIds.length > 0) {
     db.delete(schedules).where(inArray(schedules.id, scheduleIds)).run();
   }
 
-  // 5. Tables + children (FK-safe order from deleteProjectCascade pattern)
-  const tableIds = Object.values(rm.tables);
-  if (tableIds.length > 0) {
-    // Junction tables first
-    db.delete(tableDocumentInputs).where(inArray(tableDocumentInputs.tableId, tableIds)).run();
-    db.delete(taskTableInputs).where(inArray(taskTableInputs.tableId, tableIds)).run();
-    db.delete(workflowTableInputs).where(inArray(workflowTableInputs.tableId, tableIds)).run();
-    db.delete(scheduleTableInputs).where(inArray(scheduleTableInputs.tableId, tableIds)).run();
-    // Children
-    db.delete(userTableRowHistory).where(inArray(userTableRowHistory.tableId, tableIds)).run();
-    db.delete(userTableTriggers).where(inArray(userTableTriggers.tableId, tableIds)).run();
-    db.delete(userTableImports).where(inArray(userTableImports.tableId, tableIds)).run();
-    db.delete(userTableViews).where(inArray(userTableViews.tableId, tableIds)).run();
-    db.delete(userTableRelationships).where(inArray(userTableRelationships.fromTableId, tableIds)).run();
-    db.delete(userTableRows).where(inArray(userTableRows.tableId, tableIds)).run();
-    db.delete(userTableColumns).where(inArray(userTableColumns.tableId, tableIds)).run();
-    db.delete(userTables).where(inArray(userTables.id, tableIds)).run();
-  }
-
-  // 6. App instance row
   db.delete(appInstances).where(eq(appInstances.appId, appId)).run();
-
-  // 7. Optionally delete SAP directory (for user-built apps)
-  if (options?.deleteSap && instance.sourceType === "file") {
-    const dataDir =
-      process.env.STAGENT_DATA_DIR || join(homedir(), ".stagent");
-    const sapDir = join(dataDir, "apps", appId);
-    if (existsSync(sapDir)) {
-      fsRm(sapDir, { recursive: true, force: true }).catch((err: unknown) => {
-        console.warn(`[apps] Failed to delete SAP dir ${sapDir}:`, err);
-      });
-    }
-    deregisterBundle(appId);
-  }
 }
 
 export async function getResolvedAppTable(appId: string, tableKey: string) {
@@ -702,226 +369,4 @@ export async function getResolvedAppTable(appId: string, tableKey: string) {
 
   if (!tableId) return null;
   return getTable(tableId);
-}
-
-/**
- * Persist an app bundle as a `.sap` directory under `~/.stagent/apps/{appId}/`.
- * Non-critical — callers should catch errors and warn rather than fail.
- */
-export async function saveSapDirectory(
-  appId: string,
-  bundle: AppBundle,
-): Promise<string> {
-  const dataDir =
-    process.env.STAGENT_DATA_DIR || join(homedir(), ".stagent");
-  const appsDir = join(dataDir, "apps", appId);
-  await mkdir(appsDir, { recursive: true });
-  await bundleToSap(bundle, appsDir);
-  return appsDir;
-}
-
-/**
- * Register an exported bundle as an installed app linked to the source project.
- * Unlike installApp(), this does NOT create a new project — it points the
- * app_instance at the existing source project that was exported.
- */
-export async function registerExportedApp(
-  bundle: AppBundle,
-  sourceProjectId: string,
-): Promise<AppInstanceRecord> {
-  // Ensure bundle is in the runtime registry (mark as user-built SAP)
-  registerBundle(bundle, "sap");
-
-  // Fast-path: already registered
-  const existing = db
-    .select()
-    .from(appInstances)
-    .where(eq(appInstances.appId, bundle.manifest.id))
-    .get();
-  if (existing) {
-    return hydrateInstance(existing, bundle);
-  }
-
-  // Build resource map by matching bundle template names to source project's resources
-  const resourceMap: AppResourceMap = { tables: {}, schedules: {} };
-
-  const projectTables = db
-    .select()
-    .from(userTables)
-    .where(eq(userTables.projectId, sourceProjectId))
-    .all();
-
-  for (const tmpl of bundle.tables) {
-    const match = projectTables.find((t) => t.name === tmpl.name);
-    if (match) resourceMap.tables[tmpl.key] = match.id;
-  }
-
-  const projectSchedules = db
-    .select()
-    .from(schedules)
-    .where(eq(schedules.projectId, sourceProjectId))
-    .all();
-
-  for (const tmpl of bundle.schedules) {
-    const match = projectSchedules.find((s) => s.name === tmpl.name);
-    if (match) resourceMap.schedules[tmpl.key] = match.id;
-  }
-
-  const now = new Date();
-  const instanceId = crypto.randomUUID();
-
-  await db.insert(appInstances).values({
-    id: instanceId,
-    appId: bundle.manifest.id,
-    name: bundle.manifest.name,
-    version: bundle.manifest.version,
-    projectId: sourceProjectId,
-    manifestJson: JSON.stringify(bundle.manifest),
-    uiSchemaJson: JSON.stringify(bundle.ui),
-    resourceMapJson: JSON.stringify(resourceMap),
-    status: "ready",
-    sourceType: "file",
-    bootstrapError: null,
-    installedAt: now,
-    bootstrappedAt: now,
-    updatedAt: now,
-  });
-
-  return hydrateInstance(
-    db.select().from(appInstances).where(eq(appInstances.appId, bundle.manifest.id)).get()!,
-    bundle,
-  );
-}
-
-// ---------------------------------------------------------------------------
-// My Apps lifecycle
-// ---------------------------------------------------------------------------
-
-/**
- * List all user-built apps by cross-referencing SAP bundles in the registry
- * with app_instances rows. Returns entries in three states:
- * installed (DB row exists, ready/disabled), failed (DB row, failed status),
- * archived (SAP dir exists, no DB row), corrupt (SAP failed to load).
- */
-export function listMyApps(): MyAppEntry[] {
-  const sapIds = listSapBundleIds();
-
-  // Installed file-sourced instances (may include IDs not in sapIds if SAP was deleted)
-  const fileInstances = new Map(
-    listInstalledAppInstances()
-      .filter((i) => i.sourceType === "file")
-      .map((i) => [i.appId, i]),
-  );
-
-  const entries: MyAppEntry[] = [];
-
-  // SAP-loaded bundles (installed or archived)
-  for (const appId of sapIds) {
-    const bundle = getAppBundle(appId);
-    if (!bundle) continue;
-
-    const instance = fileInstances.get(appId);
-    fileInstances.delete(appId); // consumed
-
-    const state = instance
-      ? instance.status === "failed"
-        ? "failed"
-        : "installed"
-      : "archived";
-
-    entries.push({
-      appId,
-      name: bundle.manifest.name,
-      version: bundle.manifest.version,
-      description: bundle.manifest.description,
-      icon: bundle.manifest.icon,
-      category: bundle.manifest.category,
-      tags: bundle.manifest.tags,
-      trustLevel: bundle.manifest.trustLevel,
-      state: state as MyAppEntry["state"],
-      status: instance?.status ?? null,
-      projectId: instance?.projectId ?? null,
-      bootstrapError: instance?.bootstrapError ?? null,
-      tableCount: bundle.tables.length,
-      scheduleCount: bundle.schedules.length,
-      installedAt: instance ? instance.installedAt.toISOString() : null,
-    });
-  }
-
-  // Corrupt SAP directories (failed to load)
-  for (const [dirName, error] of getFailedSapLoads()) {
-    entries.push({
-      appId: dirName,
-      name: dirName,
-      version: "0.0.0",
-      description: `Failed to load: ${error}`,
-      icon: "AlertTriangle",
-      category: "unknown",
-      tags: [],
-      trustLevel: "private",
-      state: "corrupt",
-      status: null,
-      projectId: null,
-      bootstrapError: error,
-      tableCount: 0,
-      scheduleCount: 0,
-      installedAt: null,
-    });
-  }
-
-  // Sort: installed first, then failed, then archived, then corrupt
-  const stateOrder: Record<string, number> = {
-    installed: 0,
-    failed: 1,
-    archived: 2,
-    corrupt: 3,
-  };
-  entries.sort((a, b) => (stateOrder[a.state] ?? 9) - (stateOrder[b.state] ?? 9));
-
-  return entries;
-}
-
-/**
- * Re-install an archived user-built app from its SAP bundle.
- * Creates a new project and bootstraps resources.
- */
-export async function reinstallArchivedApp(
-  appId: string,
-  projectName?: string,
-): Promise<AppInstanceRecord> {
-  const bundle = getAppBundle(appId);
-  if (!bundle) {
-    throw new AppRuntimeError(
-      `App "${appId}" not found in registry. The SAP package may have been deleted.`,
-    );
-  }
-
-  return installApp(appId, projectName, bundle, "file");
-}
-
-/**
- * Permanently delete a SAP directory from disk and deregister the bundle.
- * If the app is currently installed, uninstalls it first.
- */
-export async function deleteSapApp(
-  appId: string,
-  options?: { deleteProject?: boolean },
-): Promise<void> {
-  // If installed, uninstall first
-  const instance = getAppInstance(appId);
-  if (instance) {
-    uninstallApp(appId, { deleteProject: options?.deleteProject });
-  }
-
-  // Remove SAP directory from disk
-  const dataDir =
-    process.env.STAGENT_DATA_DIR || join(homedir(), ".stagent");
-  const sapDir = join(dataDir, "apps", appId);
-
-  if (existsSync(sapDir)) {
-    await fsRm(sapDir, { recursive: true, force: true });
-  }
-
-  // Evict from registry
-  deregisterBundle(appId);
 }

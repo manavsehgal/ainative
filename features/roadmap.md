@@ -321,7 +321,7 @@ Durable fixes that replace symptom-level hotfixes with architectural contracts. 
 | [workflow-create-dedup](workflow-create-dedup.md) | P1 | completed | chat-engine, workflow-engine |
 | [chat-stream-resilience-telemetry](chat-stream-resilience-telemetry.md) | P2 | completed | chat-engine, chat-api-routes |
 | [chat-session-persistence-provider](chat-session-persistence-provider.md) | P0 | planned | chat-engine, chat-ui-shell, chat-stream-resilience-telemetry |
-| [marketplace-install-hardening](marketplace-install-hardening.md) | P1 | completed | instance-bootstrap |
+| [marketplace-install-hardening](marketplace-install-hardening.md) | P1 | deferred | instance-bootstrap |
 | [enrichment-planner-test-hardening](enrichment-planner-test-hardening.md) | P2 | planned | tables-enrichment-runtime-v2, tables-enrichment-planner-api |
 | [chat-dedup-variant-tolerance](chat-dedup-variant-tolerance.md) | P3 | planned | workflow-create-dedup |
 | [task-runtime-stagent-mcp-injection](task-runtime-stagent-mcp-injection.md) | P0 | completed | agent-integration, chat-engine |
@@ -336,16 +336,16 @@ Runtime bundle system, packaging format, and install hardening. The keystone for
 | Feature | Priority | Status | Dependencies |
 |---------|----------|--------|--------------|
 | [app-runtime-bundle-foundation](app-runtime-bundle-foundation.md) | P0 | completed | database-schema |
-| [marketplace-install-hardening](marketplace-install-hardening.md) | P1 | completed | instance-bootstrap |
-| [app-package-format](app-package-format.md) | P1 | completed | marketplace-install-hardening |
-| [app-seed-data-generation](app-seed-data-generation.md) | P1 | completed | app-package-format |
+| [marketplace-install-hardening](marketplace-install-hardening.md) | P1 | deferred | instance-bootstrap |
+| [app-package-format](app-package-format.md) | P1 | deferred | marketplace-install-hardening |
+| [app-seed-data-generation](app-seed-data-generation.md) | P1 | deferred | app-package-format |
 | [app-cli-tools](app-cli-tools.md) | P1 | planned | app-package-format, app-seed-data-generation |
 | [app-conflict-resolution](app-conflict-resolution.md) | P2 | planned | app-package-format, marketplace-install-hardening |
 | [app-updates-dependencies](app-updates-dependencies.md) | P2 | planned | app-conflict-resolution, app-cli-tools |
 | [app-single-file-format](app-single-file-format.md) | P2 | planned | app-package-format |
-| [fix-exported-bundle-registration](fix-exported-bundle-registration.md) | P1 | in-progress | app-runtime-bundle-foundation |
-| [fix-sidebar-reactive-update](fix-sidebar-reactive-update.md) | P1 | in-progress | app-runtime-bundle-foundation |
-| [fix-sidebar-accordion-behavior](fix-sidebar-accordion-behavior.md) | P2 | in-progress | app-runtime-bundle-foundation |
+| [fix-exported-bundle-registration](fix-exported-bundle-registration.md) | P1 | deferred | app-runtime-bundle-foundation |
+| [fix-sidebar-reactive-update](fix-sidebar-reactive-update.md) | P1 | deferred | app-runtime-bundle-foundation |
+| [fix-sidebar-accordion-behavior](fix-sidebar-accordion-behavior.md) | P2 | deferred | app-runtime-bundle-foundation |
 
 ### App Marketplace — Extended Primitives
 
@@ -353,7 +353,7 @@ Growing the composition grammar from 7 primitives to ~18, enabling richer app ca
 
 | Feature | Priority | Status | Dependencies |
 |---------|----------|--------|--------------|
-| [app-extended-primitives-tier1](app-extended-primitives-tier1.md) | P1 | completed | marketplace-install-hardening |
+| [app-extended-primitives-tier1](app-extended-primitives-tier1.md) | P1 | deferred | marketplace-install-hardening |
 | [app-extended-primitives-tier2](app-extended-primitives-tier2.md) | P2 | planned | app-extended-primitives-tier1 |
 | [app-mcp-server-wiring](app-mcp-server-wiring.md) | P2 | planned | app-extended-primitives-tier2, marketplace-trust-ladder |
 | [app-budget-policies](app-budget-policies.md) | P3 | planned | app-extended-primitives-tier2 |

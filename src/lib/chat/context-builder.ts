@@ -4,7 +4,6 @@ import { eq, desc, and } from "drizzle-orm";
 import { getMessages } from "@/lib/data/chat";
 import { getProfile } from "@/lib/agents/profiles/registry";
 import { STAGENT_SYSTEM_PROMPT } from "./system-prompt";
-import { BUILD_APP_SYSTEM_PROMPT } from "./prompts/build-app-prompt";
 import type { WorkspaceContext } from "@/lib/environment/workspace-context";
 
 // ── Token budget constants ─────────────────────────────────────────────
@@ -286,32 +285,6 @@ async function buildTier3(mentions: MentionReference[]): Promise<string> {
   return truncateToTokenBudget(text, TIER_3_BUDGET);
 }
 
-// ── Guided flow detection ─────────────────────────────────────────────
-
-const BUILD_APP_PATTERN = /\bbuild[_ ]\s*a?\s*(?:new\s+)?app\b|\bcreate\s+a?\s*(?:new\s+)?app\b/i;
-
-/**
- * Check whether the user message (or conversation history) indicates the
- * build-app guided flow should be active.
- */
-function shouldInjectBuildAppPrompt(
-  userMessage: string | undefined,
-  history: HistoryMessage[]
-): boolean {
-  // Direct trigger: user typed "/build_app" prefix or the template text
-  if (userMessage && BUILD_APP_PATTERN.test(userMessage)) return true;
-
-  // Continuation: check if a prior user message already triggered the flow
-  // (so the guided prompt stays active across follow-up turns)
-  for (let i = history.length - 1; i >= 0; i--) {
-    const msg = history[i];
-    if (msg.role === "user" && BUILD_APP_PATTERN.test(msg.content)) return true;
-    // Stop searching if we hit a message older than 10 turns back
-    if (history.length - i > 10) break;
-  }
-
-  return false;
-}
 
 // ── Public API ─────────────────────────────────────────────────────────
 
@@ -330,7 +303,6 @@ export async function buildChatContext(opts: {
   projectName?: string | null;
   workspace?: WorkspaceContext | null;
   mentions?: MentionReference[];
-  userMessage?: string;
 }): Promise<ChatContext> {
   const [history, tier2, tier3] = await Promise.all([
     buildTier1(opts.conversationId),
@@ -341,11 +313,6 @@ export async function buildChatContext(opts: {
   const tier0 = buildTier0(opts.projectName, opts.workspace);
 
   const systemParts = [tier0];
-
-  // Inject guided build-app prompt when the flow is active
-  if (shouldInjectBuildAppPrompt(opts.userMessage, history)) {
-    systemParts.push(BUILD_APP_SYSTEM_PROMPT);
-  }
 
   if (tier3) systemParts.push(tier3);
   if (tier2) systemParts.push(tier2);

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { eq, inArray } from "drizzle-orm";
+import { inArray } from "drizzle-orm";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { PageShell } from "@/components/shared/page-shell";
@@ -8,13 +8,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { db } from "@/lib/db";
-import { appInstances, schedules } from "@/lib/db/schema";
+import { schedules } from "@/lib/db/schema";
 import { getAppInstance } from "@/lib/apps/service";
-import { getFailedSapLoads } from "@/lib/apps/registry";
 import { resolveAppIcon } from "@/lib/apps/icons";
 import { getTable, listRows } from "@/lib/data/tables";
 import { AppActionButtons } from "@/components/apps/app-action-buttons";
-import { AppUninstallButton } from "@/components/apps/app-uninstall-button";
 
 export const dynamic = "force-dynamic";
 
@@ -42,49 +40,6 @@ export default async function AppRuntimePage({ params }: Props) {
   const instance = getAppInstance(appId);
 
   if (!instance) {
-    // Check if app is installed but bundle failed to load (don't show raw 404)
-    const row = db
-      .select({ name: appInstances.name, status: appInstances.status })
-      .from(appInstances)
-      .where(eq(appInstances.appId, appId))
-      .get();
-
-    if (row) {
-      const failedLoads = getFailedSapLoads();
-      const loadError = failedLoads.get(appId);
-      return (
-        <PageShell
-          title={row.name}
-          description="This app is installed but its bundle could not be loaded."
-          backHref="/marketplace"
-          backLabel="Marketplace"
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle>Bundle load failed</CardTitle>
-              <CardDescription>
-                {loadError
-                  ? `Validation error: ${loadError}`
-                  : "The app bundle could not be read from disk. It may have been deleted or corrupted."}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex gap-2">
-              <AppUninstallButton
-                appId={appId}
-                appName={row.name}
-                variant="destructive"
-                size="sm"
-                redirectTo="/marketplace"
-              />
-              <Button asChild size="sm" variant="outline">
-                <Link href="/marketplace">Back to Marketplace</Link>
-              </Button>
-            </CardContent>
-          </Card>
-        </PageShell>
-      );
-    }
-
     notFound();
   }
 
@@ -166,20 +121,11 @@ export default async function AppRuntimePage({ params }: Props) {
       backHref="/marketplace"
       backLabel="Marketplace"
       actions={
-        <div className="flex items-center gap-2">
-          {instance.projectId && (
-            <Button asChild size="sm" variant="outline">
-              <Link href={`/projects/${instance.projectId}`}>Open project</Link>
-            </Button>
-          )}
-          <AppUninstallButton
-            appId={instance.appId}
-            appName={instance.name}
-            variant="ghost"
-            size="sm"
-            redirectTo="/marketplace"
-          />
-        </div>
+        instance.projectId ? (
+          <Button asChild size="sm" variant="outline">
+            <Link href={`/projects/${instance.projectId}`}>Open project</Link>
+          </Button>
+        ) : undefined
       }
     >
       <div className="mb-6 flex flex-wrap gap-2">
@@ -358,7 +304,7 @@ export default async function AppRuntimePage({ params }: Props) {
             const rows = tableRowsByKey.get(widget.tableKey) ?? [];
             const meta = tableMetaByKey.get(widget.tableKey);
             const previewColumns =
-              widget.columns ?? instance.bundle.tables.find((table) => table.key === widget.tableKey)?.columns.map((column) => column.displayName) ?? [];
+              widget.columns ?? instance.bundle.tables.find((table) => table.key === widget.tableKey)?.columns.map((column) => column.name) ?? [];
 
             return (
               <Card key={`${widget.type}-${index}`} className="lg:col-span-2">

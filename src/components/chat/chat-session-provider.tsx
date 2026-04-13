@@ -536,9 +536,6 @@ export function ChatSessionProvider({ children }: { children: ReactNode }) {
                   })
                   .catch(() => {});
 
-                // Notify sidebar to refresh installed app groups (handles
-                // app install/uninstall via chat tools like create_app_bundle)
-                window.dispatchEvent(new Event("stagent:apps-changed"));
               } else if (
                 event.type === "permission_request" ||
                 event.type === "question"

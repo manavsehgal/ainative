@@ -2,6 +2,21 @@
 
 ## 2026-04-12
 
+### Rolled Back — App Marketplace Sprints 45-47
+
+Surgically reverted 21 of 29 commits from 2026-04-11 to 2026-04-12 that implemented custom app creation and marketplace distribution features. Preserved 8 general improvement commits (workspace context, chat race condition fix, short entity ID resolution, kanban timestamps, upgrade timestamp).
+
+Features reverted from completed to deferred:
+- `app-package-format`, `app-seed-data-generation`, `app-extended-primitives-tier1`, `marketplace-install-hardening`
+
+Features reverted from in-progress to deferred:
+- `fix-exported-bundle-registration`, `fix-sidebar-reactive-update`, `fix-sidebar-accordion-behavior`
+
+Features with code removed but roadmap status unchanged (already planned):
+- `chat-app-builder`, `promote-conversation-to-app`, `marketplace-app-listing`, `marketplace-app-publishing`, `marketplace-trust-ladder`, `my-apps-lifecycle`, `app-cli-tools`
+
+Sprint plan Sprints 45-50 suspended. No non-app features blocked. Prior implementation exists in git history for future reference.
+
 ### Groomed — My Apps Tab & User-Built App Lifecycle
 
 New feature: `my-apps-lifecycle` (P1). Consulted `/product-manager`, `/architect`, `/frontend-designer`.

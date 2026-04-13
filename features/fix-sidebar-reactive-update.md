@@ -1,6 +1,6 @@
 ---
 title: "Fix: Sidebar Reactive Update After App Install"
-status: in-progress
+status: deferred
 priority: P1
 milestone: post-mvp
 source: handoff/bug-marketplace-app-sidebar-requires-refresh.md

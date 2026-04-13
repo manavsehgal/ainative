@@ -1,14 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Store, UserCircle, FileText } from "lucide-react";
+import { Store } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/shared/empty-state";
 import { AppMarketplaceBrowser } from "@/components/apps/app-marketplace-browser";
-import { MyAppsPanel } from "./my-apps-panel";
 import { BlueprintCard } from "./blueprint-card";
 import type { MarketplaceBlueprint } from "@/lib/marketplace/marketplace-client";
 
@@ -133,38 +132,18 @@ function BlueprintMarketplacePanel({ canImport }: { canImport: boolean }) {
   );
 }
 
-export function MarketplaceBrowser({ canImport, canPublish }: MarketplaceBrowserProps) {
+export function MarketplaceBrowser({ canImport }: MarketplaceBrowserProps) {
   return (
     <Tabs defaultValue="apps" className="space-y-4">
       <TabsList>
         <TabsTrigger value="apps">Apps</TabsTrigger>
-        <TabsTrigger value="myapps">My Apps</TabsTrigger>
         <TabsTrigger value="blueprints">Blueprints</TabsTrigger>
-        <TabsTrigger value="profiles">Profiles</TabsTrigger>
-        <TabsTrigger value="templates">Templates</TabsTrigger>
       </TabsList>
       <TabsContent value="apps">
-        <AppMarketplaceBrowser canInstall={canImport} canPublish={canPublish} />
-      </TabsContent>
-      <TabsContent value="myapps">
-        <MyAppsPanel />
+        <AppMarketplaceBrowser canInstall={canImport} />
       </TabsContent>
       <TabsContent value="blueprints">
         <BlueprintMarketplacePanel canImport={canImport} />
-      </TabsContent>
-      <TabsContent value="profiles">
-        <EmptyState
-          icon={UserCircle}
-          heading="Agent profiles coming soon"
-          description="Shareable agent profile templates will be available in a future update."
-        />
-      </TabsContent>
-      <TabsContent value="templates">
-        <EmptyState
-          icon={FileText}
-          heading="Templates coming soon"
-          description="Project and workflow templates will be available in a future update."
-        />
       </TabsContent>
     </Tabs>
   );

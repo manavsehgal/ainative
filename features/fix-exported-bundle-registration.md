@@ -1,6 +1,6 @@
 ---
 title: "Fix: Exported Bundle Not Registered in Sidebar"
-status: in-progress
+status: deferred
 priority: P1
 milestone: post-mvp
 source: handoff/bug-app-bundle-not-registered-in-sidebar.md
