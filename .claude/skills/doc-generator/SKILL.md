@@ -562,6 +562,7 @@ Condensed view of features/roadmap.md.
 - Re-generate on each doc-generator run to keep README current with every release
 - Use emoji icons sparingly in the Features section for visual scanning
 - Quick Start should be copy-paste-ready (minimal steps to get running)
+- **No subscription/pricing content** — Stagent is 100% Community Edition (Apache 2.0) with all features free and unlimited. Do NOT generate subscription tiers, pricing tables, soft limits, "Premium" sections, or upgrade CTAs. If feature specs still reference tiers, ignore those references in README output
 
 ### Steps
 

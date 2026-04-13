@@ -1,8 +1,9 @@
 ---
 id: TDR-030
 title: Hybrid instance licensing — local unlimited, cloud metered per seat
-status: accepted
+status: superseded
 date: 2026-04-07
+superseded_by: "Community Edition simplification (commit 0436803) — all subscription tiering removed, stagent is 100% free"
 category: infrastructure
 ---
 

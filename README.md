@@ -39,47 +39,6 @@ The AI agent stack is broken for business operators. You can spin up an agent in
 
 ---
 
-## Community & Premium Editions
-
-Stagent is **free and fully functional** as a local-first tool. The Community Edition (Apache 2.0) includes everything you need to run AI agents, workflows, and schedules on your machine. Premium tiers add cloud sync, expanded limits, marketplace access, and analytics for power users and teams.
-
-### Feature Comparison
-
-| Capability | Community (Free) | Premium |
-|---|---|---|
-| Local tasks & workflows | Unlimited | Unlimited |
-| Agent profiles | All built-in | All built-in |
-| Human-in-the-loop approval | Full | Full |
-| Agent memories per profile | 50 | 200 - Unlimited |
-| Learned context versions | 10 | 50 - Unlimited |
-| Active schedules | 5 | 20 - Unlimited |
-| History retention | 30 days | 180 days - Unlimited |
-| Cloud sync & backup | — | Solo and above |
-| Marketplace blueprints | Browse only | Import & Publish |
-| Outcome analytics | — | Operator and above |
-
-### Soft Limits
-
-| Resource | Community Limit | At Limit |
-|---|---|---|
-| Agent memories | 50 per profile | New writes blocked, existing preserved |
-| Context versions | 10 per profile | New proposals blocked |
-| Active schedules | 5 | New schedule creation returns 402 |
-| Task history | 30 days | Older entries pruned daily |
-
-### Pricing
-
-| Tier | Price | Best For |
-|---|---|---|
-| Community | Free forever | Individual developers, evaluation |
-| Solo | $19/mo | Power users, expanded limits |
-| Operator | $49/mo | Professionals, analytics, cloud sync |
-| Scale | $99/mo | Teams, marketplace publishing, unlimited |
-
-[Get Premium →](https://stagent.io/pricing)
-
----
-
 ## Runtime Bridge
 
 Run the same business process on different AI providers without changing a line of configuration. Stagent's shared runtime registry routes tasks, schedules, and workflow steps through **Claude Code** (Anthropic Claude Agent SDK) and **OpenAI Codex App Server**, landing everything in the same inbox, monitoring, and cost surfaces. Switching providers is a settings change, not a rewrite.
