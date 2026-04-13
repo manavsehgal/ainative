@@ -7,6 +7,8 @@ import { getLaunchCwd } from "@/lib/environment/workspace-context";
 import { isDevMode, isPrivateInstance } from "@/lib/instance/detect";
 import { bootstrapStagentDatabase } from "@/lib/db/bootstrap";
 
+export const dynamic = "force-dynamic";
+
 /**
  * POST /api/workspace/fix-data-dir
  *
