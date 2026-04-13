@@ -33,7 +33,6 @@ import {
   scheduleTableInputs,
   userTableTriggers,
   userTableRowHistory,
-  appInstances,
 } from "@/lib/db/schema";
 import { eq, inArray } from "drizzle-orm";
 
@@ -129,9 +128,8 @@ export function deleteProjectCascade(projectId: string): boolean {
       .run();
   }
 
-  // 6. Junction tables and app instances
+  // 6. Junction tables
   db.delete(projectDocumentDefaults).where(eq(projectDocumentDefaults.projectId, projectId)).run();
-  db.delete(appInstances).where(eq(appInstances.projectId, projectId)).run();
 
   // 6b. User-defined tables — cascade-delete children before parent
   const tableIds = db

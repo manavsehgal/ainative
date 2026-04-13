@@ -28,7 +28,6 @@ import {
   workflowDocumentInputs,
   scheduleDocumentInputs,
   projectDocumentDefaults,
-  appInstances,
   userTables,
   userTableColumns,
   userTableRows,
@@ -76,8 +75,6 @@ export function clearAllData() {
   const workflowDocInputsDeleted = db.delete(workflowDocumentInputs).run().changes;
   const scheduleDocInputsDeleted = db.delete(scheduleDocumentInputs).run().changes;
   const projectDocDefaultsDeleted = db.delete(projectDocumentDefaults).run().changes;
-  const appInstancesDeleted = db.delete(appInstances).run().changes;
-
   // Documents reference conversations (documents.conversation_id) — must delete
   // before conversations to avoid FK violation when chat-attached documents exist.
   const documentsDeleted = db.delete(documents).run().changes;
@@ -189,7 +186,6 @@ export function clearAllData() {
     workflowDocumentInputs: workflowDocInputsDeleted,
     scheduleDocumentInputs: scheduleDocInputsDeleted,
     projectDocumentDefaults: projectDocDefaultsDeleted,
-    appInstances: appInstancesDeleted,
     userTables: userTablesDeleted,
     userTableColumns: userTableColumnsDeleted,
     userTableRows: userTableRowsDeleted,

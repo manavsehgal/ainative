@@ -10,8 +10,6 @@ import {
   enforceTaskBudgetGuardrails,
 } from "@/lib/settings/budget-guardrails";
 import { ensureFreshScan } from "@/lib/environment/auto-scan";
-import { getAllExecutions } from "@/lib/agents/execution-manager";
-import { licenseManager } from "@/lib/license/manager";
 
 export async function POST(
   _req: NextRequest,
@@ -93,25 +91,6 @@ export async function POST(
       .where(eq(tasks.id, id))
       .run();
     return NextResponse.json({ error: compatibilityError }, { status: 400 });
-  }
-
-  // Pre-check parallel workflow limit before fire-and-forget
-  const parallelLimit = licenseManager.getLimit("parallelWorkflows");
-  if (Number.isFinite(parallelLimit) && getAllExecutions().size >= parallelLimit) {
-    // Revert task to queued since we can't execute it
-    db.update(tasks)
-      .set({ status: "queued", updatedAt: new Date() })
-      .where(eq(tasks.id, id))
-      .run();
-    return NextResponse.json(
-      {
-        error: `Parallel workflow limit reached (${getAllExecutions().size}/${parallelLimit}). Wait for a running task to finish or upgrade.`,
-        limitType: "parallelWorkflows",
-        current: getAllExecutions().size,
-        max: parallelLimit,
-      },
-      { status: 429 }
-    );
   }
 
   // Fire-and-forget — task already marked as running

@@ -23,12 +23,8 @@ export const SETTINGS_KEYS = {
   ROUTING_PREFERENCE: "routing.preference",
   OLLAMA_BASE_URL: "ollama.baseUrl",
   OLLAMA_DEFAULT_MODEL: "ollama.defaultModel",
-  // License / PLG
-  LICENSE_TIER: "license.tier",
-  LICENSE_EMAIL: "license.email",
-  LICENSE_ACTIVATED_AT: "license.activatedAt",
-  LICENSE_EXPIRES_AT: "license.expiresAt",
-  LICENSE_GRACE_UNTIL: "license.graceUntil",
+  // Cloud account
+  CLOUD_EMAIL: "cloud.email",
   // Supabase cloud
   SUPABASE_URL: "cloud.supabaseUrl",
   SUPABASE_ANON_KEY: "cloud.supabaseAnonKey",

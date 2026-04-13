@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { licenseManager } from "@/lib/license/manager";
 import { exportAndUpload } from "@/lib/sync/cloud-sync";
 import { getSettingSync } from "@/lib/settings/helpers";
 import { SETTINGS_KEYS } from "@/lib/constants/settings";
@@ -11,14 +10,9 @@ import { SETTINGS_KEYS } from "@/lib/constants/settings";
  * Body: { accessToken: string } — the user's Supabase JWT
  */
 export async function POST(req: NextRequest) {
-  if (!licenseManager.isFeatureAllowed("cloud-sync")) {
-    return NextResponse.json(
-      { error: "Cloud sync requires Operator tier or above" },
-      { status: 402 }
-    );
-  }
-
-  const email = licenseManager.getStatus().email;
+  const { getSettingSync } = await import("@/lib/settings/helpers");
+  const { SETTINGS_KEYS } = await import("@/lib/constants/settings");
+  const email = getSettingSync(SETTINGS_KEYS.CLOUD_EMAIL);
   if (!email) {
     return NextResponse.json(
       { error: "Sign in with your email first (Settings → Cloud Account)" },

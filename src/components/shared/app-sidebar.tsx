@@ -21,7 +21,6 @@ import {
   MessageCircle,
   Table2,
   BarChart3,
-  Store,
   ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -47,8 +46,6 @@ import { UpgradeBadge } from "@/components/instance/upgrade-badge";
 import { AuthStatusDot } from "@/components/settings/auth-status-dot";
 import { StagentLogo } from "@/components/shared/stagent-logo";
 import { WorkspaceIndicator } from "@/components/shared/workspace-indicator";
-import { resolveAppIcon } from "@/lib/apps/icons";
-import type { AppSidebarGroup as InstalledAppSidebarGroup } from "@/lib/apps/types";
 
 interface NavItem {
   title: string;
@@ -68,7 +65,6 @@ const workItems: NavItem[] = [
   { title: "Workflows", href: "/workflows", icon: Workflow },
   { title: "Documents", href: "/documents", icon: FileText },
   { title: "Tables", href: "/tables", icon: Table2, alsoMatches: ["/tables/"] },
-  { title: "Marketplace", href: "/marketplace", icon: Store },
 ];
 
 const manageItems: NavItem[] = [
@@ -200,49 +196,8 @@ function NavGroup({
   );
 }
 
-function InstalledAppGroup({
-  group,
-  pathname,
-}: {
-  group: InstalledAppSidebarGroup;
-  pathname: string;
-}) {
-  const GroupIcon = resolveAppIcon(group.icon);
-
-  return (
-    <SidebarGroup>
-      <SidebarGroupLabel className="flex items-center gap-2">
-        <GroupIcon className="h-3.5 w-3.5" />
-        <span>{group.label}</span>
-      </SidebarGroupLabel>
-      <SidebarGroupContent>
-        <SidebarMenu>
-          {group.items.map((item) => {
-            const Icon = resolveAppIcon(item.icon);
-            const active =
-              pathname === item.href || pathname.startsWith(item.href + "/");
-
-            return (
-              <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton asChild tooltip={item.title} isActive={active}>
-                  <Link href={item.href}>
-                    <Icon className="h-4 w-4" aria-hidden="true" />
-                    <span>{item.title}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            );
-          })}
-        </SidebarMenu>
-      </SidebarGroupContent>
-    </SidebarGroup>
-  );
-}
-
 export function AppSidebar() {
   const pathname = usePathname();
-  const [appGroups, setAppGroups] = useState<InstalledAppSidebarGroup[]>([]);
-
   // Determine which group owns the current route
   const activeGroup = useMemo(() => {
     for (const group of groupMap) {
@@ -259,27 +214,6 @@ export function AppSidebar() {
   useEffect(() => {
     setExpandedGroup(activeGroup);
   }, [activeGroup]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    fetch("/api/apps/sidebar")
-      .then((res) => (res.ok ? res.json() : { groups: [] }))
-      .then((data) => {
-        if (!cancelled) {
-          setAppGroups(data.groups ?? []);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setAppGroups([]);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const toggleGroup = useCallback((id: GroupId) => {
     setExpandedGroup((prev) => (prev === id ? null : id));
@@ -309,10 +243,6 @@ export function AppSidebar() {
             isExpanded={expandedGroup === group.id}
             onToggle={() => toggleGroup(group.id)}
           />
-        ))}
-        {appGroups.length > 0 ? <SidebarSeparator className="my-2" /> : null}
-        {appGroups.map((group) => (
-          <InstalledAppGroup key={group.appId} group={group} pathname={pathname} />
         ))}
       </SidebarContent>
       <SidebarFooter className="px-4 py-3">

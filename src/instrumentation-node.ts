@@ -16,11 +16,6 @@ export async function registerNodeInstrumentation() {
       }
     }
 
-    // License manager — initialize from DB (creates default row if needed)
-    const { licenseManager } = await import("@/lib/license/manager");
-    licenseManager.initialize();
-    licenseManager.startValidationTimer();
-
     // Instance upgrade poller — hourly `git fetch` to detect upstream commits.
     // Skipped in dev mode; lightweight; uses advisory lock to prevent overlap.
     const { startUpgradePoller } = await import("@/lib/instance/upgrade-poller");
@@ -36,8 +31,7 @@ export async function registerNodeInstrumentation() {
     startAutoBackup();
 
     // History retention cleanup — prunes old agent_logs and usage_ledger
-    // based on tier retention limit (Community: 30 days)
-    startHistoryCleanup(licenseManager);
+    startHistoryCleanup();
 
     // Telemetry batch flush (opt-in, every 5 minutes)
     const { startTelemetryFlush } = await import("@/lib/telemetry/queue");
@@ -47,20 +41,16 @@ export async function registerNodeInstrumentation() {
   }
 }
 
-async function startHistoryCleanup(licenseManager: {
-  getLimit: (resource: "historyRetentionDays") => number;
-}) {
+async function startHistoryCleanup() {
   const CLEANUP_INTERVAL = 24 * 60 * 60 * 1000;
+  const RETENTION_DAYS = 365;
 
   async function cleanup() {
-    const retentionDays = licenseManager.getLimit("historyRetentionDays");
-    if (!Number.isFinite(retentionDays)) return;
-
     const { db } = await import("@/lib/db");
     const { agentLogs, usageLedger } = await import("@/lib/db/schema");
     const { lt } = await import("drizzle-orm");
 
-    const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
+    const cutoff = new Date(Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000);
     db.delete(agentLogs).where(lt(agentLogs.timestamp, cutoff)).run();
     db.delete(usageLedger).where(lt(usageLedger.startedAt, cutoff)).run();
   }

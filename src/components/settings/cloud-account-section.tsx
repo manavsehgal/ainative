@@ -90,8 +90,8 @@ export function CloudAccountSection() {
         </CardTitle>
         <CardDescription>
           {isSignedIn
-            ? "Connected to Stagent cloud for sync, marketplace, and billing"
-            : "Sign in to enable cloud sync, marketplace access, and license activation"}
+            ? "Connected to Stagent cloud for sync and billing"
+            : "Sign in to enable cloud sync and license activation"}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -124,7 +124,7 @@ export function CloudAccountSection() {
           <form onSubmit={handleSignIn} className="space-y-3">
             <p className="text-xs text-muted-foreground">
               We&apos;ll send a magic link to your email — no password needed.
-              Use the same email you used to purchase your subscription.
+              Use your email to enable cloud sync.
             </p>
             <div className="flex gap-2 max-w-md">
               <Input

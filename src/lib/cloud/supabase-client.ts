@@ -2,7 +2,7 @@
  * Supabase client singleton for cloud features.
  *
  * Connects to the Stagent cloud backend for license validation,
- * marketplace, telemetry, and cloud sync. The anon key is safe to
+ * telemetry, and cloud sync. The anon key is safe to
  * embed — Row Level Security policies protect all data.
  *
  * Env vars override the defaults (for self-hosted or development).

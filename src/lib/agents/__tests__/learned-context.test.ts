@@ -88,17 +88,6 @@ vi.mock("@/lib/constants/settings", () => ({
   },
 }));
 
-vi.mock("@/lib/license/limit-check", () => ({
-  checkLimit: vi.fn().mockReturnValue({ allowed: true, current: 0, limit: 10, tier: "community", requiredTier: "community" }),
-}));
-
-vi.mock("@/lib/license/limit-queries", () => ({
-  getContextVersionCount: vi.fn().mockReturnValue(0),
-}));
-
-vi.mock("@/lib/license/notifications", () => ({
-  createTierLimitNotification: vi.fn().mockResolvedValue(undefined),
-}));
 
 // ─── Import under test ────────────────────────────────────────────────
 

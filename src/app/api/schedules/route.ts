@@ -6,9 +6,6 @@ import { parseInterval, computeNextFireTime } from "@/lib/schedules/interval-par
 import { parseNaturalLanguage } from "@/lib/schedules/nlp-parser";
 import { resolveAgentRuntime } from "@/lib/agents/runtime/catalog";
 import { validateRuntimeProfileAssignment } from "@/lib/agents/profiles/assignment-validation";
-import { checkLimit, buildLimitErrorBody } from "@/lib/license/limit-check";
-import { getActiveScheduleCount } from "@/lib/license/limit-queries";
-import { createTierLimitNotification } from "@/lib/license/notifications";
 import { checkCollision } from "@/lib/schedules/collision-check";
 
 export async function GET() {
@@ -129,14 +126,6 @@ export async function POST(req: NextRequest) {
   });
   if (compatibilityError) {
     return NextResponse.json({ error: compatibilityError }, { status: 400 });
-  }
-
-  // Tier limit check — active schedule cap
-  const activeCount = getActiveScheduleCount();
-  const limitResult = checkLimit("activeSchedules", activeCount);
-  if (!limitResult.allowed) {
-    createTierLimitNotification("activeSchedules", activeCount, limitResult.limit).catch(() => {});
-    return NextResponse.json(buildLimitErrorBody("activeSchedules", limitResult), { status: 402 });
   }
 
   const id = crypto.randomUUID();

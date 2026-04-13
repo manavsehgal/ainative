@@ -806,41 +806,6 @@ export const projectDocumentDefaults = sqliteTable(
 
 export type ProjectDocumentDefaultRow = InferSelectModel<typeof projectDocumentDefaults>;
 
-export const appInstances = sqliteTable(
-  "app_instances",
-  {
-    id: text("id").primaryKey(),
-    appId: text("app_id").notNull(),
-    name: text("name").notNull(),
-    version: text("version").notNull(),
-    projectId: text("project_id").references(() => projects.id),
-    manifestJson: text("manifest_json").notNull(),
-    uiSchemaJson: text("ui_schema_json").notNull(),
-    resourceMapJson: text("resource_map_json").notNull().default("{}"),
-    status: text("status", {
-      enum: ["installing", "bootstrapping", "ready", "failed", "disabled"],
-    })
-      .default("installing")
-      .notNull(),
-    sourceType: text("source_type", {
-      enum: ["builtin", "marketplace", "file"],
-    })
-      .default("builtin")
-      .notNull(),
-    bootstrapError: text("bootstrap_error"),
-    installedAt: integer("installed_at", { mode: "timestamp" }).notNull(),
-    bootstrappedAt: integer("bootstrapped_at", { mode: "timestamp" }),
-    updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
-  },
-  (table) => [
-    uniqueIndex("idx_app_instances_app_id").on(table.appId),
-    index("idx_app_instances_project_id").on(table.projectId),
-    index("idx_app_instances_status").on(table.status),
-  ]
-);
-
-export type AppInstanceRow = InferSelectModel<typeof appInstances>;
-
 // ── User-Defined Tables (structured data) ───────────────────────────────
 
 export const userTables = sqliteTable(
@@ -1192,7 +1157,6 @@ export type ReadingProgressRow = InferSelectModel<typeof readingProgress>;
 export type BookmarkRow = InferSelectModel<typeof bookmarks>;
 export type RepoImportRow = InferSelectModel<typeof repoImports>;
 export type AgentMessageRow = InferSelectModel<typeof agentMessages>;
-export type AppInstanceDbRow = InferSelectModel<typeof appInstances>;
 export type UserTableRow = InferSelectModel<typeof userTables>;
 export type UserTableColumnRow = InferSelectModel<typeof userTableColumns>;
 export type UserTableRowRow = InferSelectModel<typeof userTableRows>;
@@ -1235,29 +1199,6 @@ export const snapshots = sqliteTable(
 );
 
 export type SnapshotRow = InferSelectModel<typeof snapshots>;
-
-// ── License ──────────────────────────────────────────────────────────
-
-export const license = sqliteTable("license", {
-  id: text("id").primaryKey(),
-  supabaseUserId: text("supabase_user_id"),
-  tier: text("tier", { enum: ["community", "solo", "operator", "scale"] })
-    .default("community")
-    .notNull(),
-  status: text("status", { enum: ["active", "inactive", "grace"] })
-    .default("inactive")
-    .notNull(),
-  email: text("email"),
-  activatedAt: integer("activated_at", { mode: "timestamp" }),
-  expiresAt: integer("expires_at", { mode: "timestamp" }),
-  lastValidatedAt: integer("last_validated_at", { mode: "timestamp" }),
-  gracePeriodExpiresAt: integer("grace_period_expires_at", { mode: "timestamp" }),
-  encryptedToken: text("encrypted_token"),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
-});
-
-export type LicenseRow = InferSelectModel<typeof license>;
 
 // ── Workflow Execution Stats ─────────────────────────────────────────
 

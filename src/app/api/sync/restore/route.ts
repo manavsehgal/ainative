@@ -1,24 +1,18 @@
 import { NextResponse } from "next/server";
-import { licenseManager } from "@/lib/license/manager";
 import { downloadAndRestore } from "@/lib/sync/cloud-sync";
+import { getSettingSync } from "@/lib/settings/helpers";
+import { SETTINGS_KEYS } from "@/lib/constants/settings";
 
 /**
  * POST /api/sync/restore
  * Download the latest snapshot, decrypt, and restore.
- * Requires Operator+ tier. Creates a safety backup first.
+ * Creates a safety backup first.
  */
 export async function POST() {
-  if (!licenseManager.isFeatureAllowed("cloud-sync")) {
-    return NextResponse.json(
-      { error: "Cloud sync requires Operator tier or above" },
-      { status: 402 }
-    );
-  }
-
-  const email = licenseManager.getStatus().email;
+  const email = getSettingSync(SETTINGS_KEYS.CLOUD_EMAIL);
   if (!email) {
     return NextResponse.json(
-      { error: "No license email — activate your license first" },
+      { error: "Sign in with your email first (Settings → Cloud Account)" },
       { status: 400 }
     );
   }

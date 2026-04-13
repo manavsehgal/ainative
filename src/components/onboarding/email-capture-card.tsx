@@ -83,7 +83,7 @@ export function EmailCaptureCard() {
             <div className="space-y-2 flex-1">
               <p className="text-sm font-medium">Connect your email for cloud features</p>
               <p className="text-xs text-muted-foreground">
-                Enable cloud sync, billing, and marketplace access. No account required to use Stagent.
+                Enable cloud sync, billing, and license activation. No account required to use Stagent.
               </p>
               <form onSubmit={handleSubmit} className="flex gap-2 max-w-sm">
                 <Input

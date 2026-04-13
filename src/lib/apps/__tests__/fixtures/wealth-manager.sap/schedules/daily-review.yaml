@@ -1,6 +1,0 @@
-key: daily-review
-name: Daily Portfolio Review
-description: Paused by default until you are ready for AI-generated review notes.
-prompt: Review the portfolio tables, summarize allocation drift, and highlight any positions or watchlist items that need attention.
-cronExpression: "0 16 * * 1-5"
-agentProfile: wealth-manager

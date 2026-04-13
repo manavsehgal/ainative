@@ -5,9 +5,6 @@ import type { LearnedContextRow } from "@/lib/db/schema";
 import { runMetaCompletion } from "./runtime/claude";
 import { getSettingSync } from "@/lib/settings/helpers";
 import { SETTINGS_KEYS } from "@/lib/constants/settings";
-import { checkLimit } from "@/lib/license/limit-check";
-import { getContextVersionCount } from "@/lib/license/limit-queries";
-import { createTierLimitNotification } from "@/lib/license/notifications";
 
 const DEFAULT_CONTEXT_CHAR_LIMIT = 8_000;
 const SUMMARIZATION_RATIO = 0.75;
@@ -95,15 +92,6 @@ export async function proposeContextAddition(
   additions: string,
   options?: { silent?: boolean }
 ): Promise<string> {
-  // Tier limit check — context version cap per profile
-  const versionCount = getContextVersionCount(profileId);
-  const limitResult = checkLimit("contextVersions", versionCount);
-  if (!limitResult.allowed) {
-    createTierLimitNotification("contextVersions", versionCount, limitResult.limit, taskId).catch(() => {});
-    throw new Error(
-      `Context version limit reached (${versionCount}/${limitResult.limit}). Upgrade to unlock more capacity.`
-    );
-  }
 
   const version = getNextVersion(profileId);
   const notificationId = options?.silent ? null : crypto.randomUUID();
