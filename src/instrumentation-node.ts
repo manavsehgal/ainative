@@ -16,6 +16,11 @@ export async function registerNodeInstrumentation() {
       }
     }
 
+    // Run pending Drizzle migrations (DROP TABLE, CREATE INDEX, etc.)
+    // that can't be handled by bootstrap's IF NOT EXISTS pattern.
+    // Runs here (not in db/index.ts) to avoid SQLITE_BUSY during next build.
+    await runPendingMigrations();
+
     // Instance upgrade poller — hourly `git fetch` to detect upstream commits.
     // Skipped in dev mode; lightweight; uses advisory lock to prevent overlap.
     const { startUpgradePoller } = await import("@/lib/instance/upgrade-poller");
@@ -57,4 +62,36 @@ async function startHistoryCleanup() {
 
   cleanup().catch(() => {});
   setInterval(() => cleanup().catch(() => {}), CLEANUP_INTERVAL);
+}
+
+async function runPendingMigrations() {
+  const { join } = await import("path");
+  const { existsSync } = await import("fs");
+  const { getAppRoot } = await import("@/lib/utils/app-root");
+
+  const appRoot = getAppRoot(import.meta.dirname, 1);
+  const migrationsDir = join(appRoot, "src", "lib", "db", "migrations");
+  if (!existsSync(migrationsDir)) return; // npx distribution — no migration files
+
+  const { sqlite } = await import("@/lib/db");
+  const { drizzle } = await import("drizzle-orm/better-sqlite3");
+  const { migrate } = await import("drizzle-orm/better-sqlite3/migrator");
+  const {
+    hasLegacyStagentTables,
+    hasMigrationHistory,
+    markAllMigrationsApplied,
+    bootstrapStagentDatabase,
+  } = await import("@/lib/db/bootstrap");
+
+  const needsLegacyRecovery =
+    hasLegacyStagentTables(sqlite) && !hasMigrationHistory(sqlite);
+
+  if (needsLegacyRecovery) {
+    bootstrapStagentDatabase(sqlite);
+    markAllMigrationsApplied(sqlite, migrationsDir);
+    console.log("[db] Recovered legacy database — all migrations stamped.");
+  } else {
+    const db = drizzle(sqlite);
+    migrate(db, { migrationsFolder: migrationsDir });
+  }
 }

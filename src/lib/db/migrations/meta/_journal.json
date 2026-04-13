@@ -71,6 +71,20 @@
       "when": 1775779200000,
       "tag": "0009_add_app_instances",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1776470400000,
+      "tag": "0025_drop_app_instances",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1776556800000,
+      "tag": "0026_drop_license",
+      "breakpoints": true
     }
   ]
 }

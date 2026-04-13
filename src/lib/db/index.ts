@@ -13,6 +13,11 @@ const dbPath = join(dataDir, "stagent.db");
 const sqlite = new Database(dbPath);
 sqlite.pragma("journal_mode = WAL");
 sqlite.pragma("foreign_keys = ON");
+
+// Bootstrap creates tables with IF NOT EXISTS + adds columns.
+// Drizzle migrations (DROP TABLE, CREATE INDEX, etc.) run separately
+// at server startup in instrumentation-node.ts to avoid SQLITE_BUSY
+// conflicts during next build.
 bootstrapStagentDatabase(sqlite);
 
 export const db = drizzle(sqlite, { schema });

@@ -17,7 +17,9 @@ CREATE TABLE IF NOT EXISTS app_instances (
   updated_at INTEGER NOT NULL,
   FOREIGN KEY (project_id) REFERENCES projects(id) ON UPDATE NO ACTION ON DELETE NO ACTION
 );
-
+--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS idx_app_instances_app_id ON app_instances(app_id);
+--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS idx_app_instances_project_id ON app_instances(project_id);
+--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS idx_app_instances_status ON app_instances(status);
