@@ -358,7 +358,7 @@ export default async function AppRuntimePage({ params }: Props) {
             const rows = tableRowsByKey.get(widget.tableKey) ?? [];
             const meta = tableMetaByKey.get(widget.tableKey);
             const previewColumns =
-              widget.columns ?? instance.bundle.tables.find((table) => table.key === widget.tableKey)?.columns.map((column) => column.name) ?? [];
+              widget.columns ?? instance.bundle.tables.find((table) => table.key === widget.tableKey)?.columns.map((column) => column.displayName) ?? [];
 
             return (
               <Card key={`${widget.type}-${index}`} className="lg:col-span-2">
