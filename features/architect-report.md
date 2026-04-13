@@ -5,62 +5,35 @@ mode: impact
 
 # Architect Report
 
-## Change Impact Analysis — Remove Supabase Dependencies
+## Change Impact Analysis — Remove Anonymous Telemetry
 
 ### Proposed Change
-Remove all Supabase integration from stagent: cloud client libraries, cloud sync, magic link auth, telemetry cloud flush, conversion tracking, email edge function, and the `@supabase/supabase-js` npm package. Keep `waitlist-signup` edge function (website feature).
+Remove the vestigial anonymous telemetry UI toggle and settings API. The cloud flush was already removed. What remains is dormant code that creates a false impression of data sharing.
+
+### Overlap Analysis
+
+| System | Data Source | Purpose | Affected? |
+|--------|-----------|---------|-----------|
+| Anonymous Telemetry | settings table (toggle only) | Was: anonymized usage to cloud | YES — remove |
+| Analytics Dashboard | tasks + usage_ledger tables | Agent performance, ROI insights | NO — independent |
+| Usage Ledger | usage_ledger table | Local cost tracking, budget guardrails | NO — independent |
+| Chat Stream Telemetry | in-memory ring buffer | SSE stream health diagnostics | NO — independent |
+
+**Conclusion:** Zero overlap between telemetry and analytics. Nothing from telemetry is reusable for analytics — they query entirely different data sources.
 
 ### Blast Radius
 
 | Layer | Files Affected | Impact |
 |-------|---------------|--------|
-| Libraries | 5 files (cloud/, sync/, telemetry/) | Delete cloud clients, sync logic, telemetry flush |
-| API | 5 route files (sync/*, auth/callback, onboarding/email) | Delete entirely |
-| Frontend | 3 components + 1 page edit | Delete cloud-account, cloud-sync, email-capture; edit settings + homepage |
-| Infrastructure | 3 edge functions, migrations, npm dep | Delete send-email, telemetry-ingest, supabase migrations |
-| Hooks | 1 file | Delete use-supabase-auth |
-| Instrumentation | 1 edit | Remove telemetry flush call |
+| Frontend | 1 component + 1 page edit | Delete TelemetrySection; edit settings page |
+| API | 1 route | Delete /api/settings/telemetry |
+| Constants | 1 edit | Remove 2 settings keys |
 
-**Classification:** High — 4 layers, ~20 files
-
-### Dependency Trace
-
-```
-@supabase/supabase-js (npm package)
-  ├── src/lib/cloud/supabase-client.ts (server singleton)
-  │   ├── src/lib/sync/cloud-sync.ts (backup/restore)
-  │   │   ├── src/app/api/sync/export/route.ts
-  │   │   ├── src/app/api/sync/restore/route.ts
-  │   │   └── src/app/api/sync/sessions/route.ts
-  │   ├── src/lib/telemetry/queue.ts (cloud flush)
-  │   ├── src/lib/telemetry/conversion-events.ts
-  │   └── src/app/api/onboarding/email/route.ts
-  ├── src/lib/cloud/supabase-browser.ts (browser singleton)
-  │   ├── src/hooks/use-supabase-auth.ts
-  │   │   └── src/components/settings/cloud-account-section.tsx
-  │   └── src/components/settings/cloud-sync-section.tsx
-  └── src/app/auth/callback/route.ts (magic link)
-
-Leaf consumers (need edits, not deletion):
-  ├── src/app/settings/page.tsx (imports CloudAccountSection, CloudSyncSection)
-  ├── src/app/page.tsx (imports EmailCaptureCard)
-  ├── src/lib/usage/ledger.ts (calls queueTelemetryEvent)
-  └── src/instrumentation-node.ts (calls startTelemetryFlush)
-```
-
-### What Is NOT Affected
-- Usage ledger (`src/lib/usage/ledger.ts`) — local SQLite recording stays
-- TelemetrySection UI — local toggle, no Supabase imports
-- DatabaseSnapshotsSection — local backup feature
-- `supabase/functions/waitlist-signup/` — website feature, kept
+**Classification:** Low — 1 layer, 4 files
 
 ### Risk Assessment
-- **Low risk**: All Supabase code is cloud-facing. Removing it only removes cloud features — no local functionality depends on Supabase.
-- **Telemetry**: The `queueTelemetryEvent()` call in ledger.ts is fire-and-forget with a try/catch — even if we just delete the telemetry module, ledger.ts will safely catch the import error. But cleaner to remove the call.
-- **No data loss**: Local SQLite DB is unaffected. Cloud data in Supabase (telemetry, sync sessions) becomes orphaned but is the user's Supabase project to manage.
-
-### Recommended Approach
-Single-pass: delete libraries and edge functions first, then surgical edits to consuming files. No phased rollout needed — all cloud features are purely additive.
+- **Zero risk to Analytics**: Analytics queries `tasks` and `usage_ledger` tables directly. No telemetry dependency.
+- **Zero risk to Budget Guardrails**: Budget system uses `usage_ledger` which is always active regardless of telemetry toggle.
 
 ---
 

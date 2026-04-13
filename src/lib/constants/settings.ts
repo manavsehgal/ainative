@@ -23,9 +23,6 @@ export const SETTINGS_KEYS = {
   ROUTING_PREFERENCE: "routing.preference",
   OLLAMA_BASE_URL: "ollama.baseUrl",
   OLLAMA_DEFAULT_MODEL: "ollama.defaultModel",
-  // Telemetry (opt-in, local)
-  TELEMETRY_ENABLED: "telemetry.enabled",
-  TELEMETRY_RUNTIME_ID: "telemetry.runtimeId",
   // Schedule orchestration
   SCHEDULE_MAX_CONCURRENT: "schedule.maxConcurrent",
   SCHEDULE_MAX_RUN_DURATION_SEC: "schedule.maxRunDurationSec",

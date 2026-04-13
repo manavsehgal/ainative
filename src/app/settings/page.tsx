@@ -1,4 +1,3 @@
-import { TelemetrySection } from "@/components/settings/telemetry-section";
 import { ProvidersAndRuntimesSection } from "@/components/settings/providers-runtimes-section";
 import { PermissionsSections } from "@/components/settings/permissions-sections";
 import { DataManagementSection } from "@/components/settings/data-management-section";
@@ -35,7 +34,6 @@ export default function SettingsPage() {
         <BudgetGuardrailsSection />
         <PermissionsSections />
         <DatabaseSnapshotsSection />
-        <TelemetrySection />
         <DataManagementSection />
       </div>
     </PageShell>
