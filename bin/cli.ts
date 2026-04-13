@@ -31,6 +31,27 @@ import {
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const appDir = join(__dirname, "..");
 const launchCwd = process.cwd();
+
+// Load .env.local from launch directory so fix-data-dir settings are picked up.
+// Mirrors Next.js precedence: .env.local never overrides existing env vars.
+const _envLocalPath = join(launchCwd, ".env.local");
+if (existsSync(_envLocalPath)) {
+  for (const line of readFileSync(_envLocalPath, "utf-8").split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eqIdx = trimmed.indexOf("=");
+    if (eqIdx === -1) continue;
+    const key = trimmed.slice(0, eqIdx).trim();
+    const val = trimmed
+      .slice(eqIdx + 1)
+      .trim()
+      .replace(/^(['"])(.*)\1$/, "$2");
+    if (key && !(key in process.env)) {
+      process.env[key] = val;
+    }
+  }
+}
+
 const pkg = JSON.parse(readFileSync(join(appDir, "package.json"), "utf-8"));
 
 function getHelpText() {
