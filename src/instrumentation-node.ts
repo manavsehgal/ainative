@@ -38,9 +38,6 @@ export async function registerNodeInstrumentation() {
     // History retention cleanup — prunes old agent_logs and usage_ledger
     startHistoryCleanup();
 
-    // Telemetry batch flush (opt-in, every 5 minutes)
-    const { startTelemetryFlush } = await import("@/lib/telemetry/queue");
-    startTelemetryFlush();
   } catch (err) {
     console.error("Instrumentation startup failed:", err);
   }

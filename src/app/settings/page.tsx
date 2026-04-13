@@ -1,5 +1,3 @@
-import { CloudAccountSection } from "@/components/settings/cloud-account-section";
-import { CloudSyncSection } from "@/components/settings/cloud-sync-section";
 import { TelemetrySection } from "@/components/settings/telemetry-section";
 import { ProvidersAndRuntimesSection } from "@/components/settings/providers-runtimes-section";
 import { PermissionsSections } from "@/components/settings/permissions-sections";
@@ -26,8 +24,6 @@ export default function SettingsPage() {
     >
       <div className="space-y-6">
         <InstanceSection />
-        <CloudAccountSection />
-        <CloudSyncSection />
         <ProvidersAndRuntimesSection />
         <OllamaSection />
         <ChatSettingsSection />

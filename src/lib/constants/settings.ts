@@ -23,20 +23,9 @@ export const SETTINGS_KEYS = {
   ROUTING_PREFERENCE: "routing.preference",
   OLLAMA_BASE_URL: "ollama.baseUrl",
   OLLAMA_DEFAULT_MODEL: "ollama.defaultModel",
-  // Cloud account
-  CLOUD_EMAIL: "cloud.email",
-  // Supabase cloud
-  SUPABASE_URL: "cloud.supabaseUrl",
-  SUPABASE_ANON_KEY: "cloud.supabaseAnonKey",
-  // Telemetry (opt-in)
+  // Telemetry (opt-in, local)
   TELEMETRY_ENABLED: "telemetry.enabled",
   TELEMETRY_RUNTIME_ID: "telemetry.runtimeId",
-  TELEMETRY_BATCH: "telemetry.batch",
-  // Cloud sync
-  DEVICE_ID: "sync.deviceId",
-  LAST_SYNC_AT: "sync.lastSyncAt",
-  // Stripe
-  STRIPE_CUSTOMER_ID: "billing.stripeCustomerId",
   // Schedule orchestration
   SCHEDULE_MAX_CONCURRENT: "schedule.maxConcurrent",
   SCHEDULE_MAX_RUN_DURATION_SEC: "schedule.maxRunDurationSec",

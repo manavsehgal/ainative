@@ -12,7 +12,6 @@ import { QuickActions } from "@/components/dashboard/quick-actions";
 import { RecentProjects } from "@/components/dashboard/recent-projects";
 import type { RecentProject } from "@/components/dashboard/recent-projects";
 import { WelcomeLanding } from "@/components/dashboard/welcome-landing";
-import { EmailCaptureCard } from "@/components/onboarding/email-capture-card";
 import { ActivationChecklist } from "@/components/onboarding/activation-checklist";
 import {
   getCompletionsByDay,
@@ -107,7 +106,6 @@ export default async function HomePage() {
     return (
       <div className="bg-background min-h-screen p-4 sm:p-6">
         <div className="surface-page-shell min-h-[calc(100dvh-2rem)] rounded-xl p-5 sm:p-6 lg:p-7 space-y-6">
-          <EmailCaptureCard />
           <WelcomeLanding />
         </div>
       </div>

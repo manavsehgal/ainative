@@ -5,66 +5,62 @@ mode: impact
 
 # Architect Report
 
-## Change Impact Analysis — Community Edition Simplification
+## Change Impact Analysis — Remove Supabase Dependencies
 
 ### Proposed Change
-Remove all subscription tiering (4 tiers), licensing, Stripe billing, feature gating, and resource limits from stagent. Simplify to a single free edition with all features unlocked.
+Remove all Supabase integration from stagent: cloud client libraries, cloud sync, magic link auth, telemetry cloud flush, conversion tracking, email edge function, and the `@supabase/supabase-js` npm package. Keep `waitlist-signup` edge function (website feature).
 
 ### Blast Radius
 
 | Layer | Files Affected | Impact |
 |-------|---------------|--------|
-| Data | schema.ts, bootstrap.ts, clear.test.ts, migration | Remove `license` table |
-| API | 10 route files | Delete 4 license routes; edit 6 routes to remove tier checks |
-| Libraries | 11 files across license/, billing/, validators/ | Delete entirely |
-| Frontend | 6 components, 2 pages | Delete 6 gate/billing components; edit 2 pages |
-| Infrastructure | instrumentation-node.ts, 5 Supabase edge functions | Remove license init; delete 5 edge functions |
-| Agents | execution-manager.ts, learned-context.ts | Remove limit checks |
+| Libraries | 5 files (cloud/, sync/, telemetry/) | Delete cloud clients, sync logic, telemetry flush |
+| API | 5 route files (sync/*, auth/callback, onboarding/email) | Delete entirely |
+| Frontend | 3 components + 1 page edit | Delete cloud-account, cloud-sync, email-capture; edit settings + homepage |
+| Infrastructure | 3 edge functions, migrations, npm dep | Delete send-email, telemetry-ingest, supabase migrations |
+| Hooks | 1 file | Delete use-supabase-auth |
+| Instrumentation | 1 edit | Remove telemetry flush call |
 
-**Classification:** High — 4+ layers, ~45 files
+**Classification:** High — 4 layers, ~20 files
 
 ### Dependency Trace
 
 ```
-src/lib/license/ (8 files — manager, tiers, features, limits, queries, notifications, cloud, keys)
-  ├── src/app/api/license/* (4 API routes — CRUD + checkout + portal + usage)
-  ├── src/app/api/memory/route.ts (limit check)
-  ├── src/app/api/schedules/route.ts (limit check)
-  ├── src/app/api/sync/* (3 routes — feature gate)
-  ├── src/app/api/tasks/[id]/execute/route.ts (parallel limit)
-  ├── src/lib/agents/execution-manager.ts (parallel limit)
-  ├── src/lib/agents/learned-context.ts (context version limit)
-  ├── src/app/auth/callback/route.ts (license activation)
-  ├── src/instrumentation-node.ts (init + validation timer + history cleanup)
-  └── 6 UI components (subscription, activation, gates, banners)
+@supabase/supabase-js (npm package)
+  ├── src/lib/cloud/supabase-client.ts (server singleton)
+  │   ├── src/lib/sync/cloud-sync.ts (backup/restore)
+  │   │   ├── src/app/api/sync/export/route.ts
+  │   │   ├── src/app/api/sync/restore/route.ts
+  │   │   └── src/app/api/sync/sessions/route.ts
+  │   ├── src/lib/telemetry/queue.ts (cloud flush)
+  │   ├── src/lib/telemetry/conversion-events.ts
+  │   └── src/app/api/onboarding/email/route.ts
+  ├── src/lib/cloud/supabase-browser.ts (browser singleton)
+  │   ├── src/hooks/use-supabase-auth.ts
+  │   │   └── src/components/settings/cloud-account-section.tsx
+  │   └── src/components/settings/cloud-sync-section.tsx
+  └── src/app/auth/callback/route.ts (magic link)
 
-src/lib/billing/ (3 files — products, stripe, email)
-  ├── src/app/api/license/checkout/route.ts
-  ├── src/app/api/license/portal/route.ts
-  ├── src/app/auth/callback/route.ts (upgrade confirmation email)
-  └── src/lib/license/limit-check.ts (memory warning email)
+Leaf consumers (need edits, not deletion):
+  ├── src/app/settings/page.tsx (imports CloudAccountSection, CloudSyncSection)
+  ├── src/app/page.tsx (imports EmailCaptureCard)
+  ├── src/lib/usage/ledger.ts (calls queueTelemetryEvent)
+  └── src/instrumentation-node.ts (calls startTelemetryFlush)
 ```
 
-### Migration Requirements
-- [x] Database migration needed — DROP TABLE IF EXISTS license
-- [x] Bootstrap.ts update needed — remove CREATE TABLE
-- [x] Schema.ts sync needed — remove table definition
-- [ ] API versioning needed — no (complete removal)
-- [ ] Feature flag recommended — no (clean cut)
-
-### TDR Implications
-- TDR-030 (hybrid instance licensing): should be deprecated
-- New TDR needed: yes — "TDR-NNN: Community Edition — No Tiering" documenting the decision
+### What Is NOT Affected
+- Usage ledger (`src/lib/usage/ledger.ts`) — local SQLite recording stays
+- TelemetrySection UI — local toggle, no Supabase imports
+- DatabaseSnapshotsSection — local backup feature
+- `supabase/functions/waitlist-signup/` — website feature, kept
 
 ### Risk Assessment
-- **Low risk on functionality**: All tier checks are gating mechanisms — removing them only unlocks features
-- **Medium risk on execution**: High file count requires careful sequencing (delete libs before editing dependents would fail; must edit dependents first or delete simultaneously)
-- **Auth callback**: Must preserve email capture while removing license activation
-- **History cleanup**: Must replace tier-based retention with fixed value (365 days recommended)
-- **Cloud sync**: Becomes available to all users with cloud accounts — no behavior change, just gate removal
+- **Low risk**: All Supabase code is cloud-facing. Removing it only removes cloud features — no local functionality depends on Supabase.
+- **Telemetry**: The `queueTelemetryEvent()` call in ledger.ts is fire-and-forget with a try/catch — even if we just delete the telemetry module, ledger.ts will safely catch the import error. But cleaner to remove the call.
+- **No data loss**: Local SQLite DB is unaffected. Cloud data in Supabase (telemetry, sync sessions) becomes orphaned but is the user's Supabase project to manage.
 
 ### Recommended Approach
-Phases 1-4 (bulk deletions) can run simultaneously since all surgical edits in phases 5-7 remove imports FROM the deleted directories. Execute deletions first, then surgical edits, then DB cleanup. Verification at end.
+Single-pass: delete libraries and edge functions first, then surgical edits to consuming files. No phased rollout needed — all cloud features are purely additive.
 
 ---
 

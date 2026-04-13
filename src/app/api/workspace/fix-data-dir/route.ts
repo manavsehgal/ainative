@@ -61,11 +61,6 @@ export async function POST() {
     envContent = envContent.trimEnd() + `\nSTAGENT_DATA_DIR=${dataDir}\n`;
   }
 
-  // Ensure STAGENT_CLOUD_DISABLED=true is present
-  if (!/^STAGENT_CLOUD_DISABLED=true/m.test(envContent)) {
-    envContent = envContent.trimEnd() + `\nSTAGENT_CLOUD_DISABLED=true\n`;
-  }
-
   writeFileSync(envLocalPath, envContent, "utf-8");
 
   // --- 2. Create data dir + bootstrap DB ---

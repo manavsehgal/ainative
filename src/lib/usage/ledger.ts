@@ -250,23 +250,6 @@ export async function recordUsageLedgerEntry(input: UsageLedgerWriteInput) {
 
   await db.insert(usageLedger).values(row);
 
-  // Queue telemetry event (opt-in, fire-and-forget)
-  try {
-    const { queueTelemetryEvent } = await import("@/lib/telemetry/queue");
-    queueTelemetryEvent({
-      runtimeId: input.runtimeId,
-      providerId: input.providerId,
-      modelId: input.modelId ?? "unknown",
-      activityType: input.activityType,
-      outcomeStatus: status,
-      tokenCount: normalizedTotalTokens ?? undefined,
-      costMicros: resolvedCostMicros ?? undefined,
-      durationMs: input.finishedAt.getTime() - input.startedAt.getTime(),
-    });
-  } catch {
-    // Telemetry is non-critical
-  }
-
   return row;
 }
 
