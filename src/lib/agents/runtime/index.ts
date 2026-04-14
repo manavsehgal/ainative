@@ -2,6 +2,7 @@ import {
   DEFAULT_AGENT_RUNTIME,
   getRuntimeCapabilities,
   getRuntimeCatalogEntry,
+  getRuntimeFeatures,
   listRuntimeCatalog,
   resolveAgentRuntime,
   type AgentRuntimeId,
@@ -187,3 +188,6 @@ export async function testRuntimeConnection(
   }
   return adapter.testConnection();
 }
+
+export { getRuntimeFeatures };
+export type { RuntimeFeatures } from "./catalog";
