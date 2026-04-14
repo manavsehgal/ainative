@@ -2,30 +2,42 @@ import { defineTool } from "../tool-registry";
 import { z } from "zod";
 import { ok, err, type ToolContext } from "./helpers";
 
+/**
+ * Factory for the list_profiles tool, parameterized by projectDir so it can
+ * surface project filesystem skills alongside registry profiles via
+ * listFusedProfiles. See features/chat-claude-sdk-skills.md.
+ */
+export function getListProfilesTool(projectDir: string | null) {
+  return defineTool(
+    "list_profiles",
+    "List all available agent profiles and filesystem skills with their capabilities and compatible runtimes.",
+    {},
+    async () => {
+      try {
+        const { listFusedProfiles } = await import(
+          "@/lib/agents/profiles/list-fused-profiles"
+        );
+        const profiles = await listFusedProfiles(projectDir);
+        return ok(
+          profiles.map((p) => ({
+            id: p.id,
+            name: p.name,
+            description: p.description,
+            domain: p.domain,
+            tags: p.tags,
+            origin: (p as { origin?: string }).origin ?? "registry",
+          }))
+        );
+      } catch (e) {
+        return err(e instanceof Error ? e.message : "Failed to list profiles");
+      }
+    }
+  );
+}
+
 export function profileTools(ctx: ToolContext) {
   return [
-    defineTool(
-      "list_profiles",
-      "List all available agent profiles with their capabilities and compatible runtimes.",
-      {},
-      async () => {
-        try {
-          const { listProfiles } = await import("@/lib/agents/profiles/registry");
-          const profiles = listProfiles();
-          return ok(
-            profiles.map((p) => ({
-              id: p.id,
-              name: p.name,
-              description: p.description,
-              domain: p.domain,
-              tags: p.tags,
-            }))
-          );
-        } catch (e) {
-          return err(e instanceof Error ? e.message : "Failed to list profiles");
-        }
-      }
-    ),
+    getListProfilesTool(ctx.projectDir ?? null),
 
     defineTool(
       "get_profile",

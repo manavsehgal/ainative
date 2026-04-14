@@ -10,6 +10,8 @@ import type { SQLiteColumn } from "drizzle-orm/sqlite-core";
 /** Context passed to each tool factory — provides project scoping and entity callbacks. */
 export interface ToolContext {
   projectId?: string | null;
+  /** Absolute path to the active project's working directory. Used by profile tools to surface filesystem skills. */
+  projectDir?: string | null;
   onToolResult?: (toolName: string, result: unknown) => void;
 }
 

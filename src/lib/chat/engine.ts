@@ -327,7 +327,8 @@ export async function* sendMessage(
     const toolResults: ToolResultCapture[] = [];
     const stagentServer = createStagentMcpServer(
       conversation.projectId,
-      (toolName, result) => { toolResults.push({ toolName, result }); }
+      (toolName, result) => { toolResults.push({ toolName, result }); },
+      projectCwd,
     );
 
     yield { type: "status", phase: "connecting", message: "Connecting to model..." };

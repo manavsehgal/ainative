@@ -73,8 +73,9 @@ function collectAllTools(ctx: ToolContext): ToolDefinition[] {
 export function createToolServer(
   projectId?: string | null,
   onToolResult?: (toolName: string, result: unknown) => void,
+  projectDir?: string | null,
 ): ToolServer {
-  const ctx: ToolContext = { projectId, onToolResult };
+  const ctx: ToolContext = { projectId, projectDir, onToolResult };
   const allTools = collectAllTools(ctx);
 
   // Handler lookup map (built once, shared across modes)
@@ -131,6 +132,7 @@ export function createToolServer(
 export function createStagentMcpServer(
   projectId?: string | null,
   onToolResult?: (toolName: string, result: unknown) => void,
+  projectDir?: string | null,
 ) {
-  return createToolServer(projectId, onToolResult).asMcpServer();
+  return createToolServer(projectId, onToolResult, projectDir).asMcpServer();
 }
