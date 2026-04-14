@@ -43,4 +43,10 @@ export interface WorkflowBlueprint {
   estimatedDuration?: string;
   difficulty?: "beginner" | "intermediate" | "advanced";
   isBuiltin?: boolean;
+  /**
+   * Optional chat-composer seed prompt. When present, `chat-conversation-templates`
+   * renders this (with variable substitution) into the first user message of a
+   * new conversation. When absent, consumers fall back to `steps[0].promptTemplate`.
+   */
+  chatPrompt?: string;
 }

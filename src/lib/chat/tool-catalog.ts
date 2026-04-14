@@ -215,6 +215,7 @@ const SESSION_ENTRIES: ToolCatalogEntry[] = [
   { name: "new-task", description: "Create a new task", group: "Session", paramHint: "title" },
   { name: "new-workflow", description: "Create a new workflow", group: "Session", paramHint: "name" },
   { name: "new-schedule", description: "Create a new schedule", group: "Session", paramHint: "name, interval" },
+  { name: "new-from-template", description: "Start a conversation from a workflow blueprint", group: "Session", behavior: "execute_immediately" },
 ];
 
 const UTILITY_ENTRIES: ToolCatalogEntry[] = [

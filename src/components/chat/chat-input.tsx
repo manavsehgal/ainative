@@ -25,6 +25,13 @@ interface ChatInputProps {
   onModelChange?: (modelId: string) => void;
   availableModels?: ChatModelOption[];
   projectId?: string | null;
+  /**
+   * Conversation id. When set, the input hydrates an initial draft from
+   * `sessionStorage["chat:prefill:<id>"]` on mount (one-shot, removed after
+   * read). Used by the conversation-template-picker to seed the composer
+   * without a schema change.
+   */
+  conversationId?: string | null;
 }
 
 export function ChatInput({
@@ -37,8 +44,37 @@ export function ChatInput({
   onModelChange,
   availableModels,
   projectId,
+  conversationId,
 }: ChatInputProps) {
   const [value, setValue] = useState("");
+
+  // One-shot hydration from sessionStorage when this input mounts for a
+  // conversation that was just created from a template. Two keys:
+  //  1. `chat:prefill:<id>` — per-id slot (survives across hero→docked mount)
+  //  2. `chat:prefill:pending` — id-less slot written by the template picker
+  //     BEFORE it awaits createConversation (race-order safe: by the time
+  //     createConversation resolves, this effect has already fired).
+  // Key is removed after read so page reload doesn't re-inject.
+  useEffect(() => {
+    if (!conversationId) return;
+    try {
+      const idKey = `chat:prefill:${conversationId}`;
+      const byId = window.sessionStorage.getItem(idKey);
+      const pending = window.sessionStorage.getItem("chat:prefill:pending");
+      const seed = byId ?? pending;
+      if (seed && seed.length > 0) {
+        setValue(seed);
+      }
+      // Always clear both slots after consumption so reload / nav doesn't
+      // re-inject. Clearing even when seed is null is safe — the keys either
+      // don't exist (noop) or belong to a stale prior flow.
+      window.sessionStorage.removeItem(idKey);
+      window.sessionStorage.removeItem("chat:prefill:pending");
+    } catch {
+      // sessionStorage access can throw in some browser modes — silently
+      // fall back to an empty composer.
+    }
+  }, [conversationId]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const autocomplete = useChatAutocomplete({ projectId });
   const { skills: projectSkills } = useProjectSkills(projectId);
@@ -89,6 +125,9 @@ export function ChatInput({
         return;
       case "settings":
         window.location.href = "/settings";
+        return;
+      case "new-from-template":
+        window.dispatchEvent(new CustomEvent("stagent.chat.openTemplatePicker"));
         return;
     }
   }, []);

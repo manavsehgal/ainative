@@ -9,9 +9,10 @@ import { ChatMessageList } from "./chat-message-list";
 import { ChatInput } from "./chat-input";
 import { ChatEmptyState } from "./chat-empty-state";
 import { ChatActivityIndicator } from "./chat-activity-indicator";
+import { ConversationTemplatePicker } from "./conversation-template-picker";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { PanelRightOpen } from "lucide-react";
+import { PanelRightOpen, Sparkles } from "lucide-react";
 
 interface ChatShellProps {
   initialConversations: ConversationRow[];
@@ -56,6 +57,18 @@ export function ChatShell({
   // View-local state only
   const [mobileListOpen, setMobileListOpen] = useState(false);
   const [hoverPreview, setHoverPreview] = useState<string | null>(null);
+  const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
+
+  // Open the template picker from any source (empty-state button, slash
+  // command, palette). Central handler keeps the open state authoritative.
+  useEffect(() => {
+    function onOpen() {
+      setTemplatePickerOpen(true);
+    }
+    window.addEventListener("stagent.chat.openTemplatePicker", onOpen);
+    return () =>
+      window.removeEventListener("stagent.chat.openTemplatePicker", onOpen);
+  }, []);
 
   // Track streaming state + activeId in refs so the unmount cleanup sees the
   // values at unmount time, not at effect-setup time (closure-capture bug).
@@ -230,7 +243,19 @@ export function ChatShell({
                 onModelChange={setModelId}
                 availableModels={availableModels}
                 projectId={activeConversation?.projectId}
+                conversationId={activeId}
               />
+              <div className="mt-3 flex justify-center">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs gap-1.5"
+                  onClick={() => setTemplatePickerOpen(true)}
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Start from template
+                </Button>
+              </div>
             </ChatEmptyState>
           </div>
         ) : (
@@ -260,10 +285,16 @@ export function ChatShell({
               onModelChange={setModelId}
               availableModels={availableModels}
               projectId={activeConversation?.projectId}
+              conversationId={activeId}
             />
           </>
         )}
       </div>
+
+      <ConversationTemplatePicker
+        open={templatePickerOpen}
+        onOpenChange={setTemplatePickerOpen}
+      />
 
       {/* Desktop conversation list — right side */}
       <div className="hidden lg:flex lg:w-[280px] lg:flex-col lg:border-l border-border">

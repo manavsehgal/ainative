@@ -2,6 +2,42 @@
 
 ## 2026-04-14
 
+### Completed — chat-conversation-templates (P2)
+
+Three entry points — empty-state "Start from template" button, `/new-from-template` slash command (`Session` group, `execute_immediately`), and a `Templates` group in the `⌘K` palette — open a sliding sheet picker that lists all 13 built-in blueprints from `GET /api/blueprints`. Selecting a blueprint with required variables renders a dynamic parameter form (text / textarea / select / number / boolean); the "Start conversation" button is disabled until all required params are filled. Zero-parameter blueprints start instantly. A new `renderBlueprintPrompt()` utility reuses `resolveTemplate` (shared with the workflow engine) and supports both the new optional `chatPrompt` blueprint field and a fallback to `steps[0].promptTemplate` — so all 13 built-ins work without edits.
+
+**Non-obvious: race-order matters.** The provider's `createConversation()` POSTs, then synchronously calls `setActiveConversation(id, { skipLoad: true })` — which means the docked `ChatInput` mounts with the new `conversationId` before `createConversation()` resolves. If the picker wrote the prefill to sessionStorage *after* the await, the composer's `useEffect([conversationId])` would fire first and find an empty slot. Fix: write to an id-less `chat:prefill:pending` slot *before* awaiting, and have the composer read both `chat:prefill:<id>` and `chat:prefill:pending` on mount. The pending slot is cleared unconditionally after the read so a reload won't re-inject. Route-then-dispatch handoff from the palette uses a 50ms timeout to let `chat-shell` mount its event listener after `router.push("/chat")`.
+
+Implementation spans `src/lib/workflows/blueprints/render-prompt.ts` (+9 unit tests covering chatPrompt precedence, step-1 fallback, conditional blocks, strict mode, empty-vs-undefined distinction), `types.ts` (optional `chatPrompt` field), `src/components/chat/conversation-template-picker.tsx` (sheet + list view + parameter form + sessionStorage handoff), `chat-input.tsx` (`conversationId` prop + hydration effect), `chat-shell.tsx` (picker render + event listener + empty-state button), `chat-session-provider.tsx` (`createConversation` extended to accept optional `{ title }`), `tool-catalog.ts` (session command), `command-palette.tsx` (Templates group).
+
+Browser-smoke verified: filled Documentation Generation blueprint with `src/lib/workflows/blueprints/` + default API Documentation → composer rendered 239 chars of the resolved prompt in the new conversation → sessionStorage slots cleared → conversation appeared in list with blueprint name as title.
+
+First of the 5 sub-features split from `chat-advanced-ux` now complete. Remaining: [chat-filter-namespace](chat-filter-namespace.md) (P2), [chat-pinned-saved-searches](chat-pinned-saved-searches.md) (P3), [chat-skill-composition](chat-skill-composition.md) (P3), [chat-conversation-branches](chat-conversation-branches.md) (P3).
+
+### Groomed — chat-advanced-ux split into 5 sub-specs (P3 umbrella → 2×P2 + 3×P3)
+
+The `chat-advanced-ux` umbrella covered 5 structurally independent capabilities with divergent complexity, blast radius, and standalone value. Bundling them into a single feature would force a big-bang implementation over a weak shared surface — the spec itself prescribed grooming if any capability grew past ~200 lines of design, and all 5 did.
+
+Split into:
+
+- **[chat-conversation-templates](chat-conversation-templates.md) (P2)** — picked as first to ship. Smallest diff, no schema change, reuses workflow-blueprints instantiation pipeline. Three entry points (empty-state card, `/new-from-template` slash command, `⌘K` palette) open a sliding sheet picker; selecting a blueprint pre-fills the composer with a rendered `chatPrompt`. Optional new `chatPrompt` field on the blueprint schema with step-1 fallback keeps all 13 existing blueprints compatible without edits.
+- **[chat-filter-namespace](chat-filter-namespace.md) (P2)** — `#key:value` parser as shared infrastructure (chat popovers + list pages), not just chat sugar. Promotes to P2 because the reuse surface (tasks/projects/workflows list pages, `⌘K`) extends the value beyond chat.
+- **[chat-pinned-saved-searches](chat-pinned-saved-searches.md) (P3)** — depends on filter-namespace; pure `settings.chat` JSON storage, no new tables. Per-surface keying keeps pins scoped.
+- **[chat-skill-composition](chat-skill-composition.md) (P3)** — relaxes single-active-skill on capable runtimes (Claude/Codex), blocks on Ollama. Touches the runtime capability matrix and context-builder injection path — high cross-runtime regression surface, requires MEMORY.md smoke-test-budget per runtime-registry-adjacent rule.
+- **[chat-conversation-branches](chat-conversation-branches.md) (P3)** — largest design surface. Schema additions (`parentConversationId`, `branchedFromMessageId`, `rewoundAt`), context-builder ancestor walk, tree view, `⌘Z`/`⌘⇧Z` rewind. Feature-flagged off by default until dogfooding validates. Deferred deliberately — want evidence before committing to the schema shape.
+
+The umbrella spec (`chat-advanced-ux.md`) is preserved as a historical pointer with `status: split` and a successor-spec table. No implementation should reference it directly going forward.
+
+Next up: [chat-conversation-templates](chat-conversation-templates.md).
+
+### Completed — dynamic-slash-commands (P2)
+
+Project skills discovered via `auto-environment-scan` + exposed through `/api/profiles?scope=project` now appear as a dynamic **Skills** group in the chat `/` popover alongside Stagent's built-in tool groups. `tool-catalog.ts` gained a `Skills` entry in the `ToolGroup` union (Sparkles icon, ordered after `Profiles`) and a new `getToolCatalogWithSkills(opts)` builder that concatenates project-scoped entries onto the static catalog only when `projectProfiles` is non-empty — the base catalog path is byte-identical when no project is active, so the static-cache semantics of `getToolCatalog()` are preserved.
+
+Client wiring is a single new hook (`src/hooks/use-project-skills.ts`) that fetches on `projectId` change with AbortController cleanup, threaded through `chat-input.tsx:265` → `chat-command-popover.tsx:233`. Selection inserts template text `Use the {skill-name} profile: ` into the input, relying on the chat engine's existing profile-routing path — zero schema changes, no new conversation-level `profileId` column. cmdk filtering over name + description works automatically; the group is elided from the popover when the active project has no skills.
+
+Feature was already code-complete per the MEMORY.md "spec frontmatter `status: in-progress` is unreliable" rule — this close-out flipped status and cross-referenced shipped surfaces. `npx tsc --noEmit` clean across the 4 touched modules.
+
 ### Completed — chat-environment-integration (P2)
 
 The chat Skills tab now surfaces per-skill environment metadata: health (derived from `modifiedAt` age — `healthy` <180d / `stale` 180-365d / `aging` ≥365d / `unknown`), cross-tool sync status (`synced` / `claude-only` / `codex-only` / `shared` based on file presence), profile linkage (from `environment_artifacts.linked_profile_id` populated by the existing profile-linker), and scope (`user` | `project`). A passive "Recommended" star appears on healthy skills whose name + preview keywords match the conversation's recent user messages (≥2 distinct hits, stopword-filtered); per-conversation dismissal persists 7 days. Fire-and-forget `POST /api/environment/rescan-if-stale` is called on every conversation activation — reuses the existing `shouldRescan` + `ensureFreshScan` helpers from `auto-scan.ts`, so no new stampede/lock code was needed.

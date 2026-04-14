@@ -74,7 +74,7 @@ interface ChatSessionValue {
   setActiveConversation: (id: string | null, opts?: { skipLoad?: boolean }) => void;
   sendMessage: (content: string, mentions?: MentionReference[]) => Promise<void>;
   stopStreaming: () => void;
-  createConversation: () => Promise<string | null>;
+  createConversation: (opts?: { title?: string }) => Promise<string | null>;
   deleteConversation: (id: string) => Promise<void>;
   renameConversation: (id: string, title: string) => Promise<void>;
   setMessageStatus: (
@@ -264,7 +264,8 @@ export function ChatSessionProvider({ children }: { children: ReactNode }) {
   );
 
   // ── Conversation CRUD ────────────────────────────────────────────────
-  const createConversation = useCallback(async (): Promise<string | null> => {
+  const createConversation = useCallback(
+    async (opts?: { title?: string }): Promise<string | null> => {
     try {
       const res = await fetch("/api/chat/conversations", {
         method: "POST",
@@ -272,6 +273,7 @@ export function ChatSessionProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({
           runtimeId: getRuntimeForModel(modelIdRef.current),
           modelId: modelIdRef.current,
+          ...(opts?.title ? { title: opts.title } : {}),
         }),
       });
       if (!res.ok) return null;
@@ -290,7 +292,9 @@ export function ChatSessionProvider({ children }: { children: ReactNode }) {
     } catch {
       return null;
     }
-  }, [setActiveConversation]);
+  },
+    [setActiveConversation]
+  );
 
   // ── Environment rescan on conversation activation ────────────────────
   // Fire-and-forget; endpoint self-guards with shouldRescan() (5min TTL).

@@ -124,7 +124,7 @@ Features that enhance the product but aren't essential for first use — homepag
 | [workspace-context-awareness](workspace-context-awareness.md) | P1 | completed | chat-engine, environment-scanner |
 | [auto-environment-scan](auto-environment-scan.md) | P1 | completed | environment-scanner, environment-cache |
 | [project-scoped-profiles](project-scoped-profiles.md) | P1 | completed | agent-profile-catalog, environment-scanner, auto-environment-scan |
-| [dynamic-slash-commands](dynamic-slash-commands.md) | P2 | in-progress | chat-command-mentions, chat-input-composer, project-scoped-profiles |
+| [dynamic-slash-commands](dynamic-slash-commands.md) | P2 | completed | chat-command-mentions, chat-input-composer, project-scoped-profiles |
 
 ### Direct API Runtime Expansion
 
@@ -204,7 +204,12 @@ Runtime-native skills, filesystem context, file mentions, and a command-namespac
 | [chat-file-mentions](chat-file-mentions.md) | P1 | planned | chat-command-mentions, chat-claude-sdk-skills, workspace-context-awareness |
 | [chat-command-namespace-refactor](chat-command-namespace-refactor.md) | P1 | completed | chat-claude-sdk-skills, chat-file-mentions, runtime-capability-matrix, command-palette-enhancement |
 | [chat-environment-integration](chat-environment-integration.md) | P2 | completed | chat-command-namespace-refactor, environment-dashboard, environment-cache, profile-environment-sync, environment-health-scoring |
-| [chat-advanced-ux](chat-advanced-ux.md) | P3 | planned | chat-command-namespace-refactor, chat-environment-integration, chat-ollama-native-skills, workflow-blueprints, chat-conversation-persistence |
+| [chat-advanced-ux](chat-advanced-ux.md) | P3 | split | ← retired umbrella, split 2026-04-14 into 5 sub-specs ↓ |
+| [chat-conversation-templates](chat-conversation-templates.md) | P2 | completed | workflow-blueprints, chat-conversation-persistence, chat-command-namespace-refactor |
+| [chat-filter-namespace](chat-filter-namespace.md) | P2 | planned | chat-command-namespace-refactor, chat-environment-integration |
+| [chat-pinned-saved-searches](chat-pinned-saved-searches.md) | P3 | planned | chat-filter-namespace, chat-command-namespace-refactor |
+| [chat-skill-composition](chat-skill-composition.md) | P3 | planned | chat-claude-sdk-skills, chat-codex-app-server-skills, chat-ollama-native-skills, chat-environment-integration |
+| [chat-conversation-branches](chat-conversation-branches.md) | P3 | planned | chat-conversation-persistence, chat-data-layer |
 | [onboarding-runtime-provider-choice](onboarding-runtime-provider-choice.md) | P2 | planned | app-shell, provider-runtime-abstraction, runtime-capability-matrix |
 
 ### Living Book

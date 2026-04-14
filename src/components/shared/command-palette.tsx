@@ -298,6 +298,30 @@ export function CommandPalette() {
 
         <CommandSeparator />
 
+        {/* Templates */}
+        <CommandGroup heading="Templates">
+          <CommandItem
+            value="start-from-template"
+            keywords={["template", "blueprint", "new", "conversation", "chat"]}
+            onSelect={() => {
+              setOpen(false);
+              // Ensure chat-shell is mounted so its event listener is live.
+              // When already on /chat, next-tick dispatch is a no-op nav.
+              router.push("/chat");
+              window.setTimeout(() => {
+                window.dispatchEvent(
+                  new CustomEvent("stagent.chat.openTemplatePicker")
+                );
+              }, 50);
+            }}
+          >
+            <Sparkles className="h-4 w-4" />
+            Start conversation from template…
+          </CommandItem>
+        </CommandGroup>
+
+        <CommandSeparator />
+
         {/* Skills */}
         {skills.length > 0 && (
           <>
