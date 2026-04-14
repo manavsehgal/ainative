@@ -54,6 +54,54 @@ import {
   isExaReadOnly,
 } from "@/lib/agents/browser-mcp";
 
+// ── Claude SDK chat runtime options (Phase 1a) ───────────────────────
+
+/**
+ * Claude Agent SDK options for chat on the `claude-code` runtime (Phase 1a).
+ * Exported for testability. See features/chat-claude-sdk-skills.md.
+ */
+export const CLAUDE_SDK_SETTING_SOURCES = ["user", "project"] as const;
+
+export const CLAUDE_SDK_ALLOWED_TOOLS = [
+  "Skill",
+  "Read",
+  "Grep",
+  "Glob",
+  "Edit",
+  "Write",
+  "Bash",
+  "TodoWrite",
+] as const;
+
+/**
+ * Filesystem tools that are safe to auto-allow without a permission prompt.
+ * Mirrors the existing browser/exa read-only auto-allow pattern.
+ */
+export const CLAUDE_SDK_READ_ONLY_FS_TOOLS = new Set<string>([
+  "Read",
+  "Grep",
+  "Glob",
+]);
+
+/**
+ * Pure auto-allow policy for SDK filesystem + Skill tools. Exposed for tests.
+ * Returns `{ behavior: "allow" }` for auto-allowed tools, or
+ * `{ behavior: "pending" }` to signal "route through permission flow".
+ * The real canUseTool in query() options uses the full side-channel bridge.
+ */
+export async function canUseToolForTest(
+  toolName: string,
+  _input: Record<string, unknown>
+): Promise<ToolPermissionResponse | { behavior: "pending" }> {
+  if (CLAUDE_SDK_READ_ONLY_FS_TOOLS.has(toolName)) {
+    return { behavior: "allow" };
+  }
+  if (toolName === "Skill") {
+    return { behavior: "allow" };
+  }
+  return { behavior: "pending" };
+}
+
 // ── Streaming input wrapper (required for MCP tools) ─────────────────
 
 async function* generatePrompt(text: string) {
@@ -312,7 +360,14 @@ export async function* sendMessage(
           if (stderrChunks.length > 50) stderrChunks.shift();
         },
         mcpServers: { stagent: stagentServer, ...browserServers, ...externalServers },
-        allowedTools: ["mcp__stagent__*", ...browserToolPatterns, ...externalToolPatterns],
+        allowedTools: [
+          "mcp__stagent__*",
+          ...browserToolPatterns,
+          ...externalToolPatterns,
+          ...CLAUDE_SDK_ALLOWED_TOOLS,
+        ],
+        // @ts-expect-error SDK types lag behind runtime features — settingSources is supported in ^0.2.71
+        settingSources: [...CLAUDE_SDK_SETTING_SOURCES],
         // @ts-expect-error Agent SDK canUseTool types are incomplete — our async handler is compatible at runtime
         canUseTool: async (
           toolName: string,
@@ -367,6 +422,27 @@ export async function* sendMessage(
               return { behavior: "allow", updatedInput: input };
             }
             // Mutation browser tools fall through to permission check below
+          }
+
+          // SDK filesystem read-only tools: auto-allow (mirror browser/exa pattern)
+          if (CLAUDE_SDK_READ_ONLY_FS_TOOLS.has(toolName)) {
+            emitSideChannelEvent(conversationId, {
+              type: "status",
+              phase: "tool_use",
+              message: `Filesystem: ${toolName.toLowerCase()}...`,
+            });
+            return { behavior: "allow", updatedInput: input };
+          }
+
+          // Skill tool: auto-allow (invocation itself is safe; the tools it
+          // triggers go through their own canUseTool checks)
+          if (toolName === "Skill") {
+            emitSideChannelEvent(conversationId, {
+              type: "status",
+              phase: "tool_use",
+              message: `Skill: ${(input as { skill?: string }).skill ?? "unknown"}...`,
+            });
+            return { behavior: "allow", updatedInput: input };
           }
 
           const isQuestion = toolName === "AskUserQuestion";
