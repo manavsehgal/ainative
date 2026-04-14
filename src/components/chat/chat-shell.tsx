@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import type { ConversationRow } from "@/lib/db/schema";
 import type { PromptCategory } from "@/lib/chat/types";
 import { useChatSession } from "./chat-session-provider";
@@ -56,6 +56,34 @@ export function ChatShell({
   // View-local state only
   const [mobileListOpen, setMobileListOpen] = useState(false);
   const [hoverPreview, setHoverPreview] = useState<string | null>(null);
+
+  // Track streaming state + activeId in refs so the unmount cleanup sees the
+  // values at unmount time, not at effect-setup time (closure-capture bug).
+  // If ChatShell unmounts while a stream is in flight (user navigated away),
+  // log a telemetry breadcrumb. The stream itself continues inside
+  // ChatSessionProvider — this log only exists so diagnostics can confirm
+  // the provider-hoisting fix is holding. See `src/lib/chat/stream-telemetry.ts`
+  // for the full reason code list.
+  const isStreamingRef = useRef(isStreaming);
+  const activeIdRef = useRef(activeId);
+  useEffect(() => {
+    isStreamingRef.current = isStreaming;
+  }, [isStreaming]);
+  useEffect(() => {
+    activeIdRef.current = activeId;
+  }, [activeId]);
+  useEffect(() => {
+    return () => {
+      if (isStreamingRef.current) {
+        // eslint-disable-next-line no-console
+        console.info("[chat-stream] client.stream.view-remount", {
+          conversationId: activeIdRef.current,
+        });
+      }
+    };
+    // Empty deps: exactly-once cleanup on unmount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Hydrate provider once with the server-rendered conversation list.
   // Subsequent remounts are no-ops — the provider preserves its state.
