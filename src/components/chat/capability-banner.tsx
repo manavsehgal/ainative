@@ -59,7 +59,7 @@ export function CapabilityBanner({ runtimeId, className }: CapabilityBannerProps
         type="button"
         aria-label="Dismiss capability notice"
         onClick={handleDismiss}
-        className="shrink-0 rounded p-0.5 hover:bg-muted"
+        className="shrink-0 rounded p-0.5 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <X className="h-3 w-3" />
       </button>

@@ -123,7 +123,7 @@ export function ChatCommandPopover({
       ref={containerRef}
       style={style}
       data-chat-autocomplete=""
-      className="rounded-lg border bg-popover text-popover-foreground shadow-lg animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2"
+      className="rounded-lg border bg-popover text-popover-foreground shadow-lg animate-in fade-in-0"
     >
       <Command shouldFilter loop>
         {/* Hidden input for cmdk filtering — synced to query */}

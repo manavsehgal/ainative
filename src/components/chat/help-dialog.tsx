@@ -13,7 +13,7 @@ export function HelpDialog({ open, onOpenChange }: HelpDialogProps) {
         <DialogHeader>
           <DialogTitle>Chat shortcuts</DialogTitle>
         </DialogHeader>
-        <div className="px-6 pb-6 space-y-2 text-sm">
+        <div className="space-y-2 text-sm">
           <Row k="/" v="Open actions / skills / tools menu" />
           <Row k="@" v="Reference a project, task, document, or file" />
           <Row k="⌘K" v="Open global command palette" />
