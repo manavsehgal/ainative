@@ -115,3 +115,29 @@ Unit tests alone do not count.
 - Reference docs: `.claude/reference/platform-claude-com-agent-sdk/skills.md`, `claude-code-features.md`, `modifying-system-prompts.md`
 - Existing code: `src/lib/chat/engine.ts:300-315`, `src/lib/chat/context-builder.ts`, `src/lib/chat/tool-catalog.ts`, `src/lib/agents/permission-bridge.ts`, `src/lib/agents/claude-agent.ts` (cwd resolver)
 - TDR: TDR-032 (Stagent MCP injection consistency — smoke-test requirement)
+
+## Tier 0 vs CLAUDE.md partition audit (DD-CE-002)
+
+Audit performed 2026-04-13 during implementation of this feature.
+
+**Rubric:**
+- KEEP in Tier 0 (`src/lib/chat/system-prompt.ts`): Stagent identity, tool catalog, tool routing, Stagent domain semantics, LLM interaction style.
+- MOVE to CLAUDE.md: project conventions, repo-specific rules, testing/git workflow guidance.
+
+**Result for the stagent repo:** zero content migration. Tier 0 blocks all pass the KEEP rubric:
+
+| Block (lines in `system-prompt.ts`) | Decision |
+|---|---|
+| Identity (6) | Keep |
+| Tool catalog (8-79) | Keep |
+| When to Use Which Tools (81-90) | Keep |
+| Approach (92-98) | Keep |
+| Guidelines (101-109) | Keep |
+| Worktree note (110) | Keep (borderline) |
+| Document Pool Awareness (112-117) | Keep |
+
+The current `CLAUDE.md` at the repo root is a 34-line pointer file referencing `AGENTS.md`. The SDK cannot follow that pointer (AGENTS.md is a Codex convention, not a Claude setting source), so users who expect rich project-convention content to reach the LLM should either:
+1. Inline the relevant content into `CLAUDE.md` directly, or
+2. Track this in a follow-up editorial pass, separate from this feature.
+
+**Regression guard:** the rubric is documented as a doc comment on `STAGENT_SYSTEM_PROMPT`. Any future contributor adding project-specific rules to `system-prompt.ts` should be caught in code review against this rubric.

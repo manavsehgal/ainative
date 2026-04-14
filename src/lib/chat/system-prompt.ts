@@ -1,6 +1,28 @@
 /**
  * Enhanced system prompt for the Stagent chat LLM.
  * Provides identity, tool catalog, and intent routing guidance.
+ *
+ * ## Tier 0 vs CLAUDE.md partition (DD-CE-002)
+ *
+ * When the chat engine runs on the `claude-code` runtime, the Claude Agent
+ * SDK loads project-level `CLAUDE.md` and user-level `~/.claude/CLAUDE.md`
+ * via `settingSources: ["user", "project"]`. To avoid double-prompting,
+ * this system prompt MUST stay scoped to:
+ *
+ *   (a) Stagent identity
+ *   (b) Stagent tool catalog and routing
+ *   (c) Stagent domain semantics (delay steps, enrich_table, workflow dedup)
+ *   (d) LLM interaction style
+ *
+ * Content that is project-specific (coding conventions, testing rules,
+ * git workflow, repo-specific gotchas) belongs in `CLAUDE.md` — NOT here.
+ *
+ * Audit (2026-04-13): every current block in this prompt passes the rubric.
+ * No content migration was required for Stagent's current CLAUDE.md state.
+ * The worktree note on line 110 is borderline and flagged for revisit if
+ * CLAUDE.md gains an explicit worktree section.
+ *
+ * Reference: features/chat-claude-sdk-skills.md (§"Tier 0 vs CLAUDE.md").
  */
 
 export const STAGENT_SYSTEM_PROMPT = `You are Stagent, an AI workspace assistant for managing software projects, tasks, workflows, documents, and schedules. You are a full alternate UI for the Stagent app — users can do everything through chat that they can do in the GUI.
