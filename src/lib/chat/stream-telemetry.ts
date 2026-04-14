@@ -23,11 +23,16 @@
  *   - stream.reconciled.stale — reconcileStreamingMessages swept an orphan
  *                               at chat page load (10-min cutoff)
  *
- * Three client-side reason codes (logged via console.info with a stable
+ * Four client-side reason codes (logged via console.info with a stable
  * prefix so tests and grep can find them):
- *   - client.stream.done        — reader.read() returned done: true
- *   - client.stream.user-abort  — user clicked Stop / AbortController fired
- *   - client.stream.reader-error — reader.read() or decode threw
+ *   - client.stream.done          — reader.read() returned done: true
+ *   - client.stream.user-abort    — user clicked Stop / AbortController fired
+ *   - client.stream.reader-error  — reader.read() or decode threw
+ *   - client.stream.view-remount  — a chat-consuming component unmounted
+ *                                    while a stream was in flight. The stream
+ *                                    itself continues in the provider; this
+ *                                    code exists so diagnostics can confirm
+ *                                    the provider-hoisting fix is holding.
  *
  * As of the `chat-session-persistence-provider` feature, the SSE reader
  * loop runs inside `ChatSessionProvider` (rendered from the root layout),
