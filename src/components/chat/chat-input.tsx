@@ -6,11 +6,14 @@ import { Square } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ChatModelSelector } from "./chat-model-selector";
 import { ChatCommandPopover } from "./chat-command-popover";
+import { CapabilityBanner } from "./capability-banner";
 import { useChatAutocomplete, type MentionReference } from "@/hooks/use-chat-autocomplete";
 import { getToolCatalog } from "@/lib/chat/tool-catalog";
 import { useProjectSkills } from "@/hooks/use-project-skills";
 import { toggleTheme } from "@/lib/theme";
 import type { ChatModelOption } from "@/lib/chat/types";
+import { getRuntimeForModel } from "@/lib/chat/types";
+import { resolveAgentRuntime } from "@/lib/agents/runtime/catalog";
 
 interface ChatInputProps {
   onSend: (content: string, mentions?: MentionReference[]) => void;
@@ -40,6 +43,10 @@ export function ChatInput({
   const autocomplete = useChatAutocomplete({ projectId });
   const { skills: projectSkills } = useProjectSkills(projectId);
 
+  const effectiveRuntime = resolveAgentRuntime(
+    modelId ? getRuntimeForModel(modelId) : null
+  );
+
   // Sync textarea ref with autocomplete hook
   useEffect(() => {
     autocomplete.setTextareaRef(textareaRef.current);
@@ -60,10 +67,54 @@ export function ChatInput({
     }
   }, [value, isStreaming, onSend, autocomplete.mentions]);
 
+  const executeSessionCommand = useCallback((name: string) => {
+    switch (name) {
+      case "toggle_theme":
+        toggleTheme();
+        return;
+      case "mark_all_read":
+        fetch("/api/notifications/mark-all-read", { method: "PATCH" });
+        return;
+      case "clear":
+        window.dispatchEvent(new CustomEvent("stagent.chat.clear"));
+        return;
+      case "compact":
+        window.dispatchEvent(new CustomEvent("stagent.chat.compact"));
+        return;
+      case "export":
+        window.dispatchEvent(new CustomEvent("stagent.chat.export"));
+        return;
+      case "help":
+        window.dispatchEvent(new CustomEvent("stagent.chat.help"));
+        return;
+      case "settings":
+        window.location.href = "/settings";
+        return;
+    }
+  }, []);
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       // Let autocomplete handle keys first when popover is open
       if (autocomplete.handleKeyDown(e)) {
+        return;
+      }
+
+      const cmd = e.metaKey || e.ctrlKey;
+      if (cmd && (e.key === "l" || e.key === "L")) {
+        e.preventDefault();
+        if (!isStreaming) executeSessionCommand("clear");
+        return;
+      }
+      if (cmd && e.key === "/") {
+        e.preventDefault();
+        textareaRef.current?.focus();
+        setValue((v) => (v.startsWith("/") ? v : "/" + v));
+        requestAnimationFrame(() => {
+          if (textareaRef.current) {
+            autocomplete.handleChange(textareaRef.current.value, textareaRef.current);
+          }
+        });
         return;
       }
 
@@ -75,7 +126,7 @@ export function ChatInput({
         textareaRef.current?.blur();
       }
     },
-    [handleSend, autocomplete.handleKeyDown]
+    [handleSend, autocomplete.handleKeyDown, autocomplete.handleChange, executeSessionCommand, isStreaming]
   );
 
   // Auto-resize textarea
@@ -112,12 +163,8 @@ export function ChatInput({
         const entry = getToolCatalog({ includeBrowser: true }).find((t) => t.name === item.id);
         if (entry?.behavior === "execute_immediately") {
           autocomplete.close();
-          if (entry.name === "toggle_theme") {
-            toggleTheme();
-          } else if (entry.name === "mark_all_read") {
-            fetch("/api/notifications/mark-all-read", { method: "PATCH" });
-          }
           setValue("");
+          executeSessionCommand(entry.name);
           return;
         }
       }
@@ -133,7 +180,7 @@ export function ChatInput({
         });
       }
     },
-    [autocomplete, handleInput]
+    [autocomplete, handleInput, executeSessionCommand]
   );
 
   // Show preview text in placeholder when hovering a suggestion
@@ -200,6 +247,12 @@ export function ChatInput({
           </div>
         </div>
       </div>
+
+      {!isStreaming && (
+        <div className="mx-auto max-w-3xl">
+          <CapabilityBanner runtimeId={effectiveRuntime} />
+        </div>
+      )}
 
       {/* Autocomplete popover — rendered via portal */}
       <ChatCommandPopover
