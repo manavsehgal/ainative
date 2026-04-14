@@ -3,7 +3,7 @@
  * Skills live in .claude/skills/<name>/ or ~/.codex/skills/<name>/.
  */
 
-import { readdirSync, readFileSync, statSync } from "fs";
+import { readdirSync, readFileSync } from "fs";
 import { join, basename } from "path";
 import type { EnvironmentArtifact, ToolPersona, ArtifactScope } from "../types";
 import { computeHash, safePreview, safeStat } from "./utils";
@@ -45,7 +45,14 @@ export function parseSkillDir(
       const colonIdx = line.indexOf(":");
       if (colonIdx > 0) {
         const key = line.slice(0, colonIdx).trim();
-        const value = line.slice(colonIdx + 1).trim();
+        let value = line.slice(colonIdx + 1).trim();
+        // Strip surrounding YAML quotes so the UI doesn't leak them.
+        if (
+          (value.startsWith('"') && value.endsWith('"')) ||
+          (value.startsWith("'") && value.endsWith("'"))
+        ) {
+          value = value.slice(1, -1);
+        }
         metadata[key] = value;
       }
     }
