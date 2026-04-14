@@ -1,4 +1,5 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
 import { scanEnvironment } from "./scanner";
 import { getLaunchCwd } from "./workspace-context";
 import type { EnvironmentArtifact } from "./types";
@@ -49,7 +50,12 @@ export function listSkills(
 
 /**
  * Locate a single skill by its opaque ID (the relative path) and return
- * its full SKILL.md content. Returns `null` if the skill is not found.
+ * its full SKILL.md content. Returns `null` if the skill is not found
+ * or its content can't be read.
+ *
+ * NB: the artifact's `absPath` is the skill **directory**, not the
+ * SKILL.md file. We probe the conventional names (SKILL.md / skill.md)
+ * and fall back to the first .md file in the directory.
  */
 export function getSkill(
   id: string,
@@ -58,12 +64,51 @@ export function getSkill(
   const all = listSkills(options);
   const hit = all.find((s) => s.id === id);
   if (!hit) return null;
+
+  const filePath = resolveSkillFile(hit.absPath);
+  if (!filePath) return null;
+
   try {
-    const content = readFileSync(hit.absPath, "utf8");
+    const content = readFileSync(filePath, "utf8");
     return { ...hit, content };
   } catch {
     return null;
   }
+}
+
+/**
+ * Find the SKILL.md (or equivalent) inside a skill directory.
+ * Falls back to the first `*.md` if a canonical name is missing —
+ * matches the lenient discovery already used by `parsers/skill.ts`.
+ */
+function resolveSkillFile(dirPath: string): string | null {
+  try {
+    const stat = statSync(dirPath);
+    if (!stat.isDirectory()) {
+      // Already a file path — return as-is.
+      return dirPath;
+    }
+  } catch {
+    return null;
+  }
+
+  for (const name of ["SKILL.md", "skill.md"]) {
+    const candidate = join(dirPath, name);
+    try {
+      if (statSync(candidate).isFile()) return candidate;
+    } catch {
+      // missing — try next
+    }
+  }
+
+  try {
+    const fallback = readdirSync(dirPath).find((f) => f.toLowerCase().endsWith(".md"));
+    if (fallback) return join(dirPath, fallback);
+  } catch {
+    // unreadable
+  }
+
+  return null;
 }
 
 function artifactToSummary(a: EnvironmentArtifact): SkillSummary {
