@@ -2,6 +2,20 @@
 
 ## 2026-04-14
 
+### Completed — chat-file-mentions (P1)
+
+Users can now type `@src/lib/db/schema.ts` in chat and have the file either inlined (if <8 KB) or referenced (so Claude agents can fetch it via the `Read` tool). CLI muscle memory reaches the web UI. Extends the existing `@` mention pipeline with a new `entityType: "file"` — no new plumbing.
+
+Changes:
+- `src/lib/chat/files/search.ts` + `GET /api/chat/files/search` — file search API backed by `git ls-files --cached --others --exclude-standard` (no new npm dep, native `.gitignore` respect). Substring match with filename-first ranking, secondary sort by mtime. Server-resolves cwd from the active project's `workingDirectory` or `getLaunchCwd()` — never from client input. 7 unit tests.
+- `src/hooks/use-chat-autocomplete.ts` — parallel `fileResults` state feeds the popover. Debounced 150 ms, aborts in-flight requests on each keystroke. File mentions insert `@<path>` (not `@file:<path>`) to match CLI-origin muscle memory.
+- `src/components/chat/chat-command-popover.tsx` — `file` entity type registered with `FileCode` icon, "Files" heading, `font-mono text-xs` path rendering.
+- `src/lib/chat/files/expand-mention.ts` + `context-builder.ts` — `buildTier3` `case "file":` delegates to a new `expandFileMention(relPath, cwd)` helper. <8 KB files are inlined in a fenced code block with a `### File: <path>` header; ≥8 KB files emit a one-line reference with size hint. Security belt-and-suspenders: `realpathSync(cwd) + startsWith` rejects escape paths without opening the file. 7 unit tests.
+
+Browser-verified end-to-end via Claude in Chrome: small-file inlining produced an exact-heading quote from the model; large-file reference produced an acknowledgment of the 48 KB size and offer to use the `Read` tool; gitignore respect confirmed via an API probe for `node_modules` returning `[]`. Full details in `features/chat-file-mentions.md` → Verification run.
+
+Deferred: fuzzy match, file-list caching, Ollama hover hint (belongs in `chat-environment-integration`). Multi-file globs explicitly out of spec.
+
 ### Completed — chat-dedup-variant-tolerance (P3)
 
 Fixed false positives in the workflow dedup guardrail flagged by the code review of commit `b5ed09b`. Pooled Jaccard over name+step text at threshold 0.7 was blocking legitimate target-entity variants like "Enrich contacts" vs "Enrich accounts" and "Daily standup digest" vs "Weekly standup digest" — forcing users to pass `force: true` for every such pair and eroding trust in the guardrail.

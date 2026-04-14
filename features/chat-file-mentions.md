@@ -1,6 +1,6 @@
 ---
 title: Chat — File @-Mentions
-status: planned
+status: completed
 priority: P1
 milestone: post-mvp
 source: ideas/chat-context-experience.md §5.3, §8 Phase 2, Q6
@@ -92,4 +92,32 @@ On Ollama (no `Read` tool), large-file references are effectively inert. Show a 
 
 - Source: `ideas/chat-context-experience.md` §5.3 (references namespace), §8 Phase 2, Q4 (cwd resolution), Q6 (tiered expansion)
 - Depends on: `chat-command-mentions` (existing `@` infrastructure), `chat-claude-sdk-skills` (gives agents the `Read` tool for large-file references), `workspace-context-awareness` (cwd resolution)
-- Existing code: `src/components/chat/chat-command-popover.tsx`, `src/hooks/use-chat-autocomplete.ts`, `src/lib/chat/context-builder.ts`
+- Files shipped:
+  - `src/lib/chat/files/search.ts` — pure helper over `git ls-files --cached --others --exclude-standard` + substring filtering, filename-first ranking, secondary sort by mtime. 7 unit tests.
+  - `src/app/api/chat/files/search/route.ts` — `GET /api/chat/files/search?q=&projectId=&limit=20`. Server-resolves cwd (project workingDirectory or `getLaunchCwd()`), never from client input.
+  - `src/hooks/use-chat-autocomplete.ts` — parallel `fileResults` state fed from API, debounced 150ms, aborts in-flight requests on each keystroke. Merges into `entityResults` for unified popover rendering.
+  - `src/components/chat/chat-command-popover.tsx` — registers `file` entity type (FileCode icon, "Files" heading), renders paths in `font-mono text-xs`.
+  - `src/hooks/use-chat-autocomplete.ts` — special-cases file mentions to insert `@<path>` (not `@file:<path>`), matching CLI-origin muscle memory.
+  - `src/lib/chat/files/expand-mention.ts` — `expandFileMention(relPath, cwd)` helper, extracted into its own module so tests can `vi.mock("node:fs")` without pulling the DB bootstrap chain. 7 unit tests.
+  - `src/lib/chat/context-builder.ts` — adds the `case "file":` branch in `buildTier3`, delegating to `expandFileMention`.
+
+### Deferred to follow-ups (per scope reduction)
+
+- **Fuzzy match** — shipped with substring + filename-first. Upgrade if signal shows users fuzzy-guessing.
+- **Client-side file-list caching with focus invalidation** — shipped with fetch-on-keystroke + debounce.
+- **Ollama large-file hover hint** — belongs in `chat-environment-integration`, not here.
+
+## Verification run — 2026-04-14
+
+End-to-end browser smoke driven via Claude in Chrome against the developer's running dev server on `:3000`:
+
+| Scenario | Evidence | Outcome |
+|---|---|---|
+| Files group appears in `@` popover | Typed `@schema`; popover rendered a "Files" heading with 6 matches including `features/database-schema.md` (4.4 KB), `src/lib/db/schema.ts` (48.4 KB), plus several `.claude/skills/...` paths — monospace rendering with size hints | ✓ |
+| Small (<8 KB) file inlines content | Typed `@schema`, selected `features/database-schema.md` (4.4 KB), asked the assistant to "quote the first heading verbatim" — assistant returned `"# Database Schema & Data Layer"` which exactly matches the file's actual first `#` heading (line 10) | ✓ |
+| Large (≥8 KB) file emits reference only | Typed `@schema`, selected `src/lib/db/schema.ts` (48.4 KB), asked for an estimated line count — assistant responded: *"Based on the metadata shown in the referenced entity, the file is 48 KB … I'd estimate it's approximately 1,200–1,400 lines. Want me to read it to give you the exact count?"* Actual count is 1,259 lines. Proves content was NOT inlined (assistant would have returned an exact number) and the Read-tool hint reached the model. | ✓ |
+| `.gitignore` respected | `curl /api/chat/files/search?q=node_modules&limit=5` → `{"results":[]}` — `git ls-files --exclude-standard` excludes all gitignored paths by construction | ✓ |
+| Insert format is `@<path>` not `@file:<path>` | Screenshot shows textarea containing `@features/database-schema.md` after selection — the hook's special-case for `entityType === "file"` matches spec §5.3 | ✓ |
+| Path-traversal guardrail | Tier 3 unit test `rejects paths that resolve outside cwd (security guardrail)` passes — `realpathSync(cwd) + startsWith(abs, cwdReal)` rejects escape paths and emits `"(invalid path — escapes working directory)"` without reading the file | ✓ |
+
+No regressions in existing `@` mention types (Tasks/Projects/etc. continued to render alongside Files). 160/160 chat-related unit tests green across the whole test run; zero TypeScript errors on touched files.
