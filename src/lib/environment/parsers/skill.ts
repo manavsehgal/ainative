@@ -36,9 +36,10 @@ export function parseSkillDir(
     return null;
   }
 
-  // Extract description from YAML frontmatter if present
+  // Extract description from YAML frontmatter if present.
   const metadata: Record<string, unknown> = {};
-  const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
+  let bodyAfterFrontmatter = content;
+  const fmMatch = content.match(/^---\n([\s\S]*?)\n---\n*/);
   if (fmMatch) {
     for (const line of fmMatch[1].split("\n")) {
       const colonIdx = line.indexOf(":");
@@ -48,7 +49,16 @@ export function parseSkillDir(
         metadata[key] = value;
       }
     }
+    bodyAfterFrontmatter = content.slice(fmMatch[0].length);
   }
+
+  // Prefer the frontmatter description as the human-facing preview so the
+  // UI does not leak raw YAML. Falls back to post-frontmatter body text.
+  const description =
+    typeof metadata.description === "string" && metadata.description.length > 0
+      ? metadata.description
+      : null;
+  const preview = description ?? safePreview(bodyAfterFrontmatter);
 
   return {
     tool,
@@ -58,7 +68,7 @@ export function parseSkillDir(
     relPath: dirPath.replace(baseDir, "").replace(/^\//, ""),
     absPath: dirPath,
     contentHash: computeHash(content),
-    preview: safePreview(content),
+    preview,
     metadata,
     sizeBytes: Buffer.byteLength(content, "utf-8"),
     modifiedAt: stat.mtimeMs,

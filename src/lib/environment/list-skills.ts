@@ -36,6 +36,9 @@ export function listSkills(
   const skills: SkillSummary[] = [];
   for (const a of scan.artifacts) {
     if (a.category !== "skill") continue;
+    // Skip dot-prefixed system dirs (e.g. ~/.codex/skills/.system) —
+    // internal artifacts, not user-facing skills.
+    if (a.name.startsWith(".")) continue;
     skills.push(artifactToSummary(a));
   }
   // Stable sort: tool, then scope, then name — deterministic listing is
@@ -150,6 +153,8 @@ export function listSkillsEnriched(
   const linkedProfilesByPath: Record<string, string | null> = {};
 
   for (const row of rows) {
+    // Skip dot-prefixed system dirs (e.g. .system) — internal, not user-facing.
+    if (row.name.startsWith(".")) continue;
     skills.push({
       id: row.relPath,
       name: row.name,
