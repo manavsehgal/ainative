@@ -1,5 +1,40 @@
 # Feature Changelog
 
+## 2026-04-13
+
+### Groomed — Chat Context Experience (10 features)
+
+Extracted 10 new features from `ideas/chat-context-experience.md` (brainstorm with contributions from `/architect`, `/product-manager`, `/frontend-designer`). Consulted `/product-manager` for template authoring, with architect/frontend-designer guidance sourced from §11 of the ideas doc (inline contributions).
+
+Goal: bring Stagent chat to CLI parity for skills, CLAUDE.md/AGENTS.md auto-loading, filesystem tools, and command UX — uniformly across three runtimes (Claude Agent SDK, Codex App Server, Ollama HTTP) — while preserving Stagent's differentiation layer (permission bridge, persistent conversations, Stagent primitives, rich tool result UI).
+
+**Phase 1 — Runtime-native skill integration (sequential rollout per Q1):**
+- `chat-claude-sdk-skills` (P0) — `settingSources` + `Skill` tool + filesystem tools on `claude-code` runtime. Includes DD-CE-002 (Tier 0 / CLAUDE.md partition). Critical path.
+- `chat-codex-app-server-skills` (P1) — `turn/start` skill parameters on `openai-codex-app-server` runtime. Depends on 1a's UX contract.
+- `chat-ollama-native-skills` (P2) — Stagent-native `activate_skill` MCP tools + context injection for Ollama (no SDK support). Depends on 1a.
+
+**Cross-cutting infrastructure:**
+- `runtime-capability-matrix` (P1) — first-class capability flags on `src/lib/agents/runtime/catalog.ts`; hard prerequisite for skill/tool/hint filtering across runtimes (architect drift concern, §11).
+- `task-runtime-skill-parity` (P1) — mirror Phase 1a into `claude-agent.ts` so task execution and chat see the same skills (architect drift concern, §11).
+- `onboarding-runtime-provider-choice` (P2) — first-launch model/provider preference modal (Q10).
+
+**Phase 2-5:**
+- `chat-file-mentions` (P1) — `@file:path` typeahead with tiered expansion (Q6).
+- `chat-command-namespace-refactor` (P1) — `/` = verbs, `@` = nouns, tabbed popover, ⌘K palette, capability hint banner (Q9a). **Breaking UX change** accepted per Q7 (alpha product). Flagged for `/frontend-designer` sign-off before implementation.
+- `chat-environment-integration` (P2) — SDK-native skills augmented with environment metadata (health, profile linkage, cross-tool sync) per DD-CE-004.
+- `chat-advanced-ux` (P3) — `#` filter namespace, saved searches, conversation templates from workflow blueprints, skill composition with conflict warning, branches with undo/redo.
+
+Key design decisions locked during grooming:
+- **Uniform UX, per-runtime implementation** — same `/skill-name` syntax across runtimes, implementation differs per SDK capability.
+- **Option B partition** — Stagent Tier 0 covers identity/tools; SDK-loaded CLAUDE.md covers project conventions.
+- **Filesystem hooks excluded** (Q2) from scope.
+- **Bash included** with Stagent permission bridge (Q3).
+- **Q8a filter** — hide skills whose required tools are unavailable on the active runtime (not badge, not rewrite).
+- **Q9a** — capability-hint banner below input for reduced-capability runtimes (e.g., Ollama).
+
+Source: `ideas/chat-context-experience.md`
+Plan: `.claude/plans/mutable-waddling-reef.md`
+
 ## 2026-04-12
 
 ### Rolled Back — App Marketplace Sprints 45-47

@@ -190,6 +190,23 @@ Features that enhance the product but aren't essential for first use — homepag
 | [chat-command-mentions](chat-command-mentions.md) | P1 | completed | chat-input-composer, chat-engine, command-palette-enhancement |
 | [codex-chat-engine](codex-chat-engine.md) | P1 | completed | chat-engine, openai-codex-app-server, provider-runtime-abstraction |
 
+### Chat Context Experience
+
+Runtime-native skills, filesystem context, file mentions, and a command-namespace redesign that brings CLI parity to Stagent chat while preserving the differentiation layer. Source: `ideas/chat-context-experience.md` (2026-04-13).
+
+| Feature | Priority | Status | Dependencies |
+|---------|----------|--------|--------------|
+| [runtime-capability-matrix](runtime-capability-matrix.md) | P1 | planned | provider-runtime-abstraction |
+| [chat-claude-sdk-skills](chat-claude-sdk-skills.md) | P0 | planned | chat-engine, runtime-capability-matrix, skill-portfolio, environment-scanner |
+| [task-runtime-skill-parity](task-runtime-skill-parity.md) | P1 | planned | chat-claude-sdk-skills, agent-integration, task-runtime-stagent-mcp-injection |
+| [chat-codex-app-server-skills](chat-codex-app-server-skills.md) | P1 | planned | chat-claude-sdk-skills, codex-chat-engine, openai-codex-app-server, environment-scanner, runtime-capability-matrix |
+| [chat-ollama-native-skills](chat-ollama-native-skills.md) | P2 | planned | chat-claude-sdk-skills, ollama-runtime-provider, environment-scanner, runtime-capability-matrix, chat-data-layer |
+| [chat-file-mentions](chat-file-mentions.md) | P1 | planned | chat-command-mentions, chat-claude-sdk-skills, workspace-context-awareness |
+| [chat-command-namespace-refactor](chat-command-namespace-refactor.md) | P1 | planned | chat-claude-sdk-skills, chat-file-mentions, runtime-capability-matrix, command-palette-enhancement |
+| [chat-environment-integration](chat-environment-integration.md) | P2 | planned | chat-command-namespace-refactor, environment-dashboard, environment-cache, profile-environment-sync, environment-health-scoring |
+| [chat-advanced-ux](chat-advanced-ux.md) | P3 | planned | chat-command-namespace-refactor, chat-environment-integration, chat-ollama-native-skills, workflow-blueprints, chat-conversation-persistence |
+| [onboarding-runtime-provider-choice](onboarding-runtime-provider-choice.md) | P2 | planned | app-shell, provider-runtime-abstraction, runtime-capability-matrix |
+
 ### Living Book
 
 | Feature | Priority | Status | Dependencies |
