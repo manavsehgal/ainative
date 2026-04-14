@@ -25,7 +25,7 @@ export function getListProfilesTool(projectDir: string | null) {
             description: p.description,
             domain: p.domain,
             tags: p.tags,
-            origin: (p as { origin?: string }).origin ?? "registry",
+            origin: p.origin ?? "registry",
           }))
         );
       } catch (e) {

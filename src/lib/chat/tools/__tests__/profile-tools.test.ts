@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/agents/profiles/list-fused-profiles", () => ({
   listFusedProfiles: vi.fn(async (projectDir: string | null) =>
@@ -25,6 +25,10 @@ vi.mock("@/lib/agents/profiles/list-fused-profiles", () => ({
 }));
 
 describe("list_profiles chat tool", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it("returns fused profiles when called with a projectDir", async () => {
     const { getListProfilesTool } = await import("@/lib/chat/tools/profile-tools");
     const tool = getListProfilesTool("/fake/project");
