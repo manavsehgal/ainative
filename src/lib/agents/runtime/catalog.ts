@@ -21,6 +21,39 @@ export interface RuntimeCapabilities {
   authHealthCheck: boolean;
 }
 
+/**
+ * LLM-surface features that affect what the model sees and which tools/skills
+ * Stagent exposes to it. Distinct from RuntimeCapabilities above, which is
+ * adapter-plumbing concerns (can the adapter resume/cancel/etc.).
+ *
+ * Values reflect post-Phase-1 capability (what the runtime SDK *can* do),
+ * not current engagement (what `engine.ts` currently activates). Downstream
+ * features read this bag to decide rendering, filtering, and dispatch.
+ */
+export interface RuntimeFeatures {
+  /** SDK provides a native skill-invocation tool (e.g. Claude SDK `Skill` tool). */
+  hasNativeSkills: boolean;
+  /** SDK loads skill metadata first, full SKILL.md on demand. */
+  hasProgressiveDisclosure: boolean;
+  /** Read/Grep/Glob/Edit/Write available as LLM tools. */
+  hasFilesystemTools: boolean;
+  /** Bash tool available (Stagent gates via permission bridge). */
+  hasBash: boolean;
+  /** TodoWrite tool available. */
+  hasTodoWrite: boolean;
+  /** Runtime supports delegating to sub-agents (e.g. Task tool). */
+  hasSubagentDelegation: boolean;
+  /** Runtime loads filesystem hooks (pre/post tool-use shell scripts). */
+  hasHooks: boolean;
+  /** Which project-level instructions file the runtime auto-loads, if any. */
+  autoLoadsInstructions: "CLAUDE.md" | "AGENTS.md" | null;
+  /**
+   * Runtime has no native skill support — Stagent must inject SKILL.md content
+   * into the system prompt to expose skills to the LLM.
+   */
+  stagentInjectsSkills: boolean;
+}
+
 export interface RuntimeModelConfig {
   /** Default model ID for this runtime */
   default: string;
@@ -34,6 +67,7 @@ export interface RuntimeCatalogEntry {
   description: string;
   providerId: "anthropic" | "openai" | "ollama";
   capabilities: RuntimeCapabilities;
+  features: RuntimeFeatures;
   /** Model catalog — default and supported model IDs for this runtime */
   models: RuntimeModelConfig;
 }
@@ -53,6 +87,17 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
       taskAssist: true,
       profileAssist: true,
       authHealthCheck: true,
+    },
+    features: {
+      hasNativeSkills: true,
+      hasProgressiveDisclosure: true,
+      hasFilesystemTools: true,
+      hasBash: true,
+      hasTodoWrite: true,
+      hasSubagentDelegation: false, // Stagent task primitives replace SDK Task tool
+      hasHooks: false, // excluded per Q2
+      autoLoadsInstructions: "CLAUDE.md",
+      stagentInjectsSkills: false,
     },
     models: {
       default: "sonnet",
@@ -74,6 +119,17 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
       profileAssist: false,
       authHealthCheck: true,
     },
+    features: {
+      hasNativeSkills: true,
+      hasProgressiveDisclosure: true,
+      hasFilesystemTools: true,
+      hasBash: true,
+      hasTodoWrite: true,
+      hasSubagentDelegation: false,
+      hasHooks: false,
+      autoLoadsInstructions: "AGENTS.md",
+      stagentInjectsSkills: false,
+    },
     models: {
       default: "gpt-5.4",
       supported: ["gpt-5.4", "gpt-5.4-mini", "gpt-5.3-codex"],
@@ -93,6 +149,19 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
       taskAssist: true,
       profileAssist: true,
       authHealthCheck: true,
+    },
+    features: {
+      // Direct Messages API — no SDK-native skill machinery.
+      // Revisit when chat-claude-sdk-skills designs direct-API skill injection.
+      hasNativeSkills: false,
+      hasProgressiveDisclosure: false,
+      hasFilesystemTools: false,
+      hasBash: false,
+      hasTodoWrite: false,
+      hasSubagentDelegation: false,
+      hasHooks: false,
+      autoLoadsInstructions: null,
+      stagentInjectsSkills: false,
     },
     models: {
       default: "claude-sonnet-4-20250514",
@@ -114,6 +183,19 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
       profileAssist: false,
       authHealthCheck: true,
     },
+    features: {
+      // Direct Responses API — no SDK-native skill machinery.
+      // Revisit when chat-claude-sdk-skills designs direct-API skill injection.
+      hasNativeSkills: false,
+      hasProgressiveDisclosure: false,
+      hasFilesystemTools: false,
+      hasBash: false,
+      hasTodoWrite: false,
+      hasSubagentDelegation: false,
+      hasHooks: false,
+      autoLoadsInstructions: null,
+      stagentInjectsSkills: false,
+    },
     models: {
       default: "gpt-4.1",
       supported: ["gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano"],
@@ -133,6 +215,17 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
       taskAssist: true,
       profileAssist: false,
       authHealthCheck: true,
+    },
+    features: {
+      hasNativeSkills: false,
+      hasProgressiveDisclosure: false,
+      hasFilesystemTools: false,
+      hasBash: false,
+      hasTodoWrite: false, // Stagent MCP exposes todo tools separately
+      hasSubagentDelegation: false,
+      hasHooks: false,
+      autoLoadsInstructions: null,
+      stagentInjectsSkills: true,
     },
     models: {
       default: "llama3",
@@ -155,6 +248,12 @@ export function getRuntimeCapabilities(
   runtimeId: AgentRuntimeId = DEFAULT_AGENT_RUNTIME
 ): RuntimeCapabilities {
   return getRuntimeCatalogEntry(runtimeId).capabilities;
+}
+
+export function getRuntimeFeatures(
+  runtimeId: AgentRuntimeId = DEFAULT_AGENT_RUNTIME
+): RuntimeFeatures {
+  return getRuntimeCatalogEntry(runtimeId).features;
 }
 
 export function resolveAgentRuntime(runtimeId?: string | null): AgentRuntimeId {

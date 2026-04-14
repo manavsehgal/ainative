@@ -3,6 +3,7 @@ import {
   DEFAULT_AGENT_RUNTIME,
   getRuntimeCapabilities,
   getRuntimeCatalogEntry,
+  getRuntimeFeatures,
   listRuntimeCatalog,
   resolveAgentRuntime,
 } from "@/lib/agents/runtime/catalog";
@@ -45,5 +46,24 @@ describe("runtime catalog", () => {
     const result = resolveAgentRuntime("claude");
     expect(result).toBe("claude-code");
     warnSpy.mockRestore();
+  });
+
+  it("exposes LLM-surface features via getRuntimeFeatures", () => {
+    const features = getRuntimeFeatures("claude-code");
+    expect(features.hasNativeSkills).toBe(true);
+    expect(features.hasProgressiveDisclosure).toBe(true);
+    expect(features.autoLoadsInstructions).toBe("CLAUDE.md");
+    expect(features.stagentInjectsSkills).toBe(false);
+  });
+
+  it("marks Ollama as requiring Stagent-injected skills", () => {
+    const features = getRuntimeFeatures("ollama");
+    expect(features.hasNativeSkills).toBe(false);
+    expect(features.stagentInjectsSkills).toBe(true);
+    expect(features.autoLoadsInstructions).toBeNull();
+  });
+
+  it("declares Codex auto-loads AGENTS.md", () => {
+    expect(getRuntimeFeatures("openai-codex-app-server").autoLoadsInstructions).toBe("AGENTS.md");
   });
 });
