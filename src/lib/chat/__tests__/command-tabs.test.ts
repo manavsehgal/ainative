@@ -26,13 +26,17 @@ describe("command-tabs", () => {
 
   it("maps every ToolGroup to exactly one tab", () => {
     const groups: ToolGroup[] = [
-      "Tasks", "Projects", "Workflows", "Schedules", "Documents", "Tables",
+      "Session", "Tasks", "Projects", "Workflows", "Schedules", "Documents", "Tables",
       "Notifications", "Profiles", "Skills", "Usage", "Settings", "Chat",
       "Browser", "Utility",
     ];
     for (const g of groups) {
       expect(GROUP_TO_TAB[g]).toBeDefined();
     }
+  });
+
+  it("routes Session group to the Actions tab", () => {
+    expect(GROUP_TO_TAB.Session).toBe("actions");
   });
 
   it("routes Skills group to the Skills tab", () => {

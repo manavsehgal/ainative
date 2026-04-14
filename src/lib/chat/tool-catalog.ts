@@ -13,6 +13,7 @@ import {
   Sun,
   Sparkles,
   Table2,
+  Zap,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -32,7 +33,8 @@ export type ToolGroup =
   | "Settings"
   | "Chat"
   | "Browser"
-  | "Utility";
+  | "Utility"
+  | "Session";
 
 export interface ToolCatalogEntry {
   /** MCP tool name, e.g. "list_tasks" */
@@ -50,6 +52,7 @@ export interface ToolCatalogEntry {
 // ── Group → Icon mapping ─────────────────────────────────────────────────
 
 export const TOOL_GROUP_ICONS: Record<ToolGroup, LucideIcon> = {
+  Session: Zap,
   Tasks: ListTodo,
   Projects: FolderKanban,
   Workflows: GitBranch,
@@ -68,6 +71,7 @@ export const TOOL_GROUP_ICONS: Record<ToolGroup, LucideIcon> = {
 
 /** Display order for groups in the popover */
 export const TOOL_GROUP_ORDER: ToolGroup[] = [
+  "Session",
   "Tasks",
   "Projects",
   "Workflows",
@@ -202,6 +206,17 @@ const BROWSER_TOOLS: ToolCatalogEntry[] = [
   { name: "take_snapshot", description: "Take an accessibility snapshot", group: "Browser" },
 ];
 
+const SESSION_ENTRIES: ToolCatalogEntry[] = [
+  { name: "clear", description: "Start a new conversation", group: "Session", behavior: "execute_immediately" },
+  { name: "compact", description: "Summarize and compact conversation history", group: "Session", behavior: "execute_immediately" },
+  { name: "export", description: "Save current conversation as a document", group: "Session", behavior: "execute_immediately" },
+  { name: "help", description: "Show chat shortcuts and commands", group: "Session", behavior: "execute_immediately" },
+  { name: "settings", description: "Open Stagent settings", group: "Session", behavior: "execute_immediately" },
+  { name: "new-task", description: "Create a new task", group: "Session", paramHint: "title" },
+  { name: "new-workflow", description: "Create a new workflow", group: "Session", paramHint: "name" },
+  { name: "new-schedule", description: "Create a new schedule", group: "Session", paramHint: "name, interval" },
+];
+
 const UTILITY_ENTRIES: ToolCatalogEntry[] = [
   { name: "toggle_theme", description: "Switch dark/light mode", group: "Utility", behavior: "execute_immediately" },
   { name: "mark_all_read", description: "Mark all notifications as read", group: "Utility", behavior: "execute_immediately" },
@@ -217,13 +232,13 @@ export function getToolCatalog(opts?: { includeBrowser?: boolean }): ToolCatalog
 
   if (withBrowser) {
     if (!cachedWithBrowser) {
-      cachedWithBrowser = [...STAGENT_TOOLS, ...BROWSER_TOOLS, ...UTILITY_ENTRIES];
+      cachedWithBrowser = [...SESSION_ENTRIES, ...STAGENT_TOOLS, ...BROWSER_TOOLS, ...UTILITY_ENTRIES];
     }
     return cachedWithBrowser;
   }
 
   if (!cachedCatalog) {
-    cachedCatalog = [...STAGENT_TOOLS, ...UTILITY_ENTRIES];
+    cachedCatalog = [...SESSION_ENTRIES, ...STAGENT_TOOLS, ...UTILITY_ENTRIES];
   }
   return cachedCatalog;
 }

@@ -20,6 +20,7 @@ export const DEFAULT_COMMAND_TAB: CommandTabId = "actions";
 
 export const GROUP_TO_TAB = {
   // Stagent actions / session primitives
+  Session: "actions",
   Tasks: "actions",
   Projects: "actions",
   Workflows: "actions",
