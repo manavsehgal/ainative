@@ -5,6 +5,7 @@ import { getMessages } from "@/lib/data/chat";
 import { getProfile } from "@/lib/agents/profiles/registry";
 import { STAGENT_SYSTEM_PROMPT } from "./system-prompt";
 import type { WorkspaceContext } from "@/lib/environment/workspace-context";
+import { expandFileMention } from "./files/expand-mention";
 
 // ── Token budget constants ─────────────────────────────────────────────
 
@@ -276,6 +277,23 @@ async function buildTier3(mentions: MentionReference[]): Promise<string> {
           parts.push(`\n### Profile: ${mention.label}`);
           parts.push(`Profile ID: ${mention.entityId} (not found in registry)`);
         }
+        break;
+      }
+      case "file": {
+        // `entityId` is a relative path scoped to the active project's
+        // workingDirectory (preferred) or the stagent launch cwd (fallback).
+        // Security is enforced inside expandFileMention — the caller cannot
+        // influence cwd.
+        const { getLaunchCwd } = await import("@/lib/environment/workspace-context");
+        let cwd = getLaunchCwd();
+        // If the mention has a known project context in scope, prefer the
+        // project's workingDirectory. We don't have it at this scope today,
+        // so launch cwd is the safe default — matches the API route.
+        // (Future: plumb projectId into buildTier3 so file expansion honors
+        // per-project cwds exactly the same way as the search API.)
+        void cwd;
+        cwd = getLaunchCwd();
+        parts.push(...expandFileMention(mention.entityId, cwd));
         break;
       }
     }
