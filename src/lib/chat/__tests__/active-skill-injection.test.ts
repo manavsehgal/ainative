@@ -5,6 +5,7 @@ const { mockState } = vi.hoisted(() => ({
     activeSkillId: null as string | null,
     skillContent: "" as string,
     skillName: "capture",
+    runtimeId: "ollama" as string, // default: Ollama (stagentInjectsSkills: true)
   },
 }));
 
@@ -20,7 +21,10 @@ vi.mock("@/lib/db", () => ({
         return this;
       },
       get() {
-        return Promise.resolve({ activeSkillId: mockState.activeSkillId });
+        return Promise.resolve({
+          activeSkillId: mockState.activeSkillId,
+          runtimeId: mockState.runtimeId,
+        });
       },
     }),
   },
@@ -71,6 +75,7 @@ beforeEach(() => {
   mockState.activeSkillId = null;
   mockState.skillContent = "";
   mockState.skillName = "capture";
+  mockState.runtimeId = "ollama";
 });
 
 describe("active skill Tier 0 injection", () => {
@@ -123,5 +128,42 @@ describe("active skill Tier 0 injection", () => {
     expect(ctx.systemPrompt).toContain("...(truncated)");
     // Full 100K chars must NOT be inline
     expect(ctx.systemPrompt.length).toBeLessThan(50_000);
+  });
+
+  describe("runtime capability flag (stagentInjectsSkills)", () => {
+    it("does NOT inject on claude-code (native skill support — would duplicate)", async () => {
+      mockState.runtimeId = "claude-code";
+      mockState.activeSkillId = ".claude/skills/capture";
+      mockState.skillContent = "# capture\n\nBody.";
+      const ctx = await buildChatContext({ conversationId: "conv-1" });
+      expect(ctx.systemPrompt).not.toContain("## Active Skill:");
+      expect(ctx.systemPrompt).not.toContain("Body.");
+    });
+
+    it("does NOT inject on openai-codex-app-server (native skill support — would duplicate)", async () => {
+      mockState.runtimeId = "openai-codex-app-server";
+      mockState.activeSkillId = ".agents/skills/capture";
+      mockState.skillContent = "# capture\n\nBody.";
+      const ctx = await buildChatContext({ conversationId: "conv-1" });
+      expect(ctx.systemPrompt).not.toContain("## Active Skill:");
+    });
+
+    it("DOES inject on ollama (no native support — Stagent must inject)", async () => {
+      mockState.runtimeId = "ollama";
+      mockState.activeSkillId = ".claude/skills/capture";
+      mockState.skillContent = "# capture\n\nOllama needs this.";
+      const ctx = await buildChatContext({ conversationId: "conv-1" });
+      expect(ctx.systemPrompt).toContain("## Active Skill: capture");
+      expect(ctx.systemPrompt).toContain("Ollama needs this.");
+    });
+
+    it("falls through and injects when runtimeId is unknown (safer default than dropping)", async () => {
+      mockState.runtimeId = "some-future-runtime-not-in-catalog";
+      mockState.activeSkillId = ".claude/skills/capture";
+      mockState.skillContent = "# capture\n\nBody.";
+      const ctx = await buildChatContext({ conversationId: "conv-1" });
+      // Unknown runtime → catalog throws → catch → fall through to injection.
+      expect(ctx.systemPrompt).toContain("## Active Skill: capture");
+    });
   });
 });

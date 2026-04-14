@@ -77,12 +77,37 @@ const ACTIVE_SKILL_BUDGET = 4_000;
  */
 async function buildActiveSkill(conversationId: string): Promise<string> {
   const row = await db
-    .select({ activeSkillId: conversations.activeSkillId })
+    .select({
+      activeSkillId: conversations.activeSkillId,
+      runtimeId: conversations.runtimeId,
+    })
     .from(conversations)
     .where(eq(conversations.id, conversationId))
     .get();
   const id = row?.activeSkillId;
   if (!id) return "";
+
+  // Respect the runtime capability matrix: only inject SKILL.md when the
+  // active runtime declares `stagentInjectsSkills: true`. Runtimes that
+  // discover skills natively (Claude SDK, Codex App Server) already load
+  // the same SKILL.md from .claude/skills or .agents/skills via their
+  // own machinery — injecting on top would duplicate context. Today only
+  // Ollama opts in to Stagent-driven injection.
+  if (row?.runtimeId) {
+    try {
+      const { getRuntimeFeatures } = await import("@/lib/agents/runtime/catalog");
+      // Cast — runtimeId is a free-form string in the DB but the catalog
+      // accepts only known IDs. Catalog throws on unknown; the catch
+      // below handles that as "fall through and inject".
+      const features = getRuntimeFeatures(
+        row.runtimeId as Parameters<typeof getRuntimeFeatures>[0]
+      );
+      if (!features.stagentInjectsSkills) return "";
+    } catch {
+      // Unknown runtime — fall through and inject (safer default than
+      // silently dropping the skill on an unrecognized runtime id).
+    }
+  }
 
   // Dynamic import keeps the scanner + fs dependency off the hot path for
   // conversations that don't have an active skill (the common case).
