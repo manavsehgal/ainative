@@ -721,11 +721,19 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
       externalServers,
       task.projectId,
     );
-    // allowedTools prepended via shared helper (see withStagentAllowedTools).
-    // Computed once so the conditional spread below does not invoke the
-    // helper twice. Pass false for includeSdkTools — Task 4 will add the
-    // capability gate and native-skill fallback to resumeClaudeTask.
-    const mergedAllowedTools = withStagentAllowedTools(ctx.payload?.allowedTools, false);
+    // Capability gate: same logic as executeClaudeTask. Resumed tasks must
+    // get the same SDK options as their original run so skills that were
+    // visible on first execution remain visible after a resume. `task.model`
+    // does not exist on the tasks schema — pass "" which resolves to the
+    // claude-code default (hasNativeSkills: true) for every current task
+    // flow. See features/task-runtime-skill-parity.md Task 4.
+    const runtimeFeatures = getFeaturesForModel("");
+    const includeSdkNativeTools = runtimeFeatures.hasNativeSkills;
+
+    const mergedAllowedTools = withStagentAllowedTools(
+      ctx.payload?.allowedTools,
+      includeSdkNativeTools,
+    );
 
     const authEnv = await getAuthEnv();
     const response = query({
@@ -745,6 +753,10 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
         // F4: Per-execution budget cap — use task-specific override if set
         maxBudgetUsd: task.maxBudgetUsd ?? DEFAULT_MAX_BUDGET_USD,
         ...(mergedAllowedTools && { allowedTools: mergedAllowedTools }),
+        // Phase 1a parity: match executeClaudeTask — see Task 3 rationale.
+        ...(includeSdkNativeTools && {
+          settingSources: [...CLAUDE_SDK_SETTING_SOURCES],
+        }),
         ...(Object.keys(mergedMcpServers).length > 0 && {
           mcpServers: mergedMcpServers,
         }),
