@@ -38,6 +38,7 @@ import {
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { ConversationRow, ChatMessageRow } from "@/lib/db/schema";
+import { HelpDialog } from "./help-dialog";
 import {
   DEFAULT_CHAT_MODEL,
   CHAT_MODELS,
@@ -111,11 +112,15 @@ export function ChatSessionProvider({ children }: { children: ReactNode }) {
     useState<ChatModelOption[]>(CHAT_MODELS);
   const [hydrated, setHydrated] = useState(false);
 
+  const [helpDialogOpen, setHelpDialogOpen] = useState(false);
+
   // Refs for values read from async callbacks that mustn't see stale state.
   const activeIdRef = useRef<string | null>(null);
   activeIdRef.current = activeId;
   const modelIdRef = useRef<string>(modelId);
   modelIdRef.current = modelId;
+  const messagesByConversationRef = useRef<Record<string, ChatMessageRow[]>>({});
+  messagesByConversationRef.current = messagesByConversation;
 
   // ── One-time model + available-models fetch ──────────────────────────
   // Runs once per page load (provider lives in root layout, not /chat page).
@@ -286,6 +291,59 @@ export function ChatSessionProvider({ children }: { children: ReactNode }) {
       return null;
     }
   }, [setActiveConversation]);
+
+  // ── Chat command event listeners ─────────────────────────────────────
+  // Handles CustomEvents dispatched by chat-input.tsx (⌘L, slash commands).
+  useEffect(() => {
+    const handleClear = () => {
+      void createConversation();
+    };
+    const handleCompact = () => {
+      toast.info("Compact is not wired yet — coming soon.");
+    };
+    const handleExport = async () => {
+      const activeConversationId = activeIdRef.current;
+      const msgs = activeConversationId
+        ? messagesByConversationRef.current[activeConversationId]
+        : undefined;
+      if (!msgs || msgs.length === 0) {
+        toast.error("Nothing to export — this conversation is empty.");
+        return;
+      }
+      const title = `Chat — ${new Date().toISOString().slice(0, 10)}`;
+      const markdown = msgs
+        .map((m) => `### ${m.role === "user" ? "You" : "Assistant"}\n\n${m.content}`)
+        .join("\n\n---\n\n");
+      try {
+        const res = await fetch("/api/chat/export", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title,
+            markdown,
+            conversationId: activeConversationId,
+          }),
+        });
+        if (!res.ok) throw new Error(`Export failed: ${res.status}`);
+        toast.success("Conversation exported to documents.");
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Export failed");
+      }
+    };
+    const handleHelp = () => setHelpDialogOpen(true);
+
+    window.addEventListener("stagent.chat.clear", handleClear);
+    window.addEventListener("stagent.chat.compact", handleCompact);
+    window.addEventListener("stagent.chat.export", handleExport);
+    window.addEventListener("stagent.chat.help", handleHelp);
+
+    return () => {
+      window.removeEventListener("stagent.chat.clear", handleClear);
+      window.removeEventListener("stagent.chat.compact", handleCompact);
+      window.removeEventListener("stagent.chat.export", handleExport);
+      window.removeEventListener("stagent.chat.help", handleHelp);
+    };
+  }, [createConversation]);
 
   const deleteConversation = useCallback(
     async (id: string) => {
@@ -700,6 +758,7 @@ export function ChatSessionProvider({ children }: { children: ReactNode }) {
   return (
     <ChatSessionContext.Provider value={value}>
       {children}
+      <HelpDialog open={helpDialogOpen} onOpenChange={setHelpDialogOpen} />
     </ChatSessionContext.Provider>
   );
 }
