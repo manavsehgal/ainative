@@ -2,6 +2,20 @@
 
 ## 2026-04-13
 
+### Completed — chat-claude-sdk-skills (P0)
+
+Flipped Stagent chat on the `claude-code` runtime from "isolation mode" to "SDK-native." Two small changes to `src/lib/chat/engine.ts` do the heavy lifting: `settingSources: ["user", "project"]` activates the SDK's CLAUDE.md + `.claude/skills/` + `~/.claude/skills/` auto-loading, and adding Skill, Read, Grep, Glob, Edit, Write, Bash, TodoWrite to `allowedTools` exposes the full filesystem tool suite. A read-only auto-allow branch in the existing `canUseTool` closure silences permission prompts for Read/Grep/Glob (mirroring the browser/exa pattern). Edit/Write/Bash/TodoWrite route through the pre-existing side-channel permission bridge automatically — no new plumbing. `Task` subagent tool intentionally excluded; Stagent task primitives replace it.
+
+Tier 0 / CLAUDE.md partition audit (DD-CE-002): documented as a doc comment on `STAGENT_SYSTEM_PROMPT`. Finding: zero content migration needed — Tier 0 is already Stagent-identity scoped for this codebase. Regression guard: future contributors adding project-specific rules to `system-prompt.ts` should be caught in code review against the rubric.
+
+`list_profiles` chat tool now fuses registry profiles with SDK-discovered filesystem skills via new `listFusedProfiles(projectDir)` helper (at `src/lib/agents/profiles/list-fused-profiles.ts`). Dedupes by id — registry wins on collision. Malformed SKILL.md frontmatter logs-then-skips. `getListProfilesTool(projectDir)` factory threads project working directory through the chat tool-assembly stack (helpers.ts `ToolContext`, stagent-tools.ts factory signatures, engine.ts call site).
+
+Regression guards: hooks-excluded test greps engine.ts source for a `hooks:` key. Auto-allow policy exercised by 11 unit tests covering Read/Grep/Glob auto-allow, Edit/Bash non-auto-allow, Skill auto-allow, and Task absence. TDR-032 smoke test on live dev server (claude-in-chrome MCP, Opus model): skill invocation reached LLM, CLAUDE.md content auto-loaded, Grep ran without permission prompt, no ReferenceError.
+
+Unblocks: `chat-codex-app-server-skills` (P1), `chat-ollama-native-skills` (P2), `task-runtime-skill-parity` (P1), `chat-file-mentions` (P1), `chat-command-namespace-refactor` (P1).
+
+Commits: `78bdbaa` → `cd73c2e` (10 commits). Plan: `.claude/plans/claude-sdk-skills-ignition.md`.
+
 ### Completed — runtime-capability-matrix (P1)
 
 Shipped the first-class runtime-feature declaration in `src/lib/agents/runtime/catalog.ts`. Added `RuntimeFeatures` interface as a **sibling** of the pre-existing operational `RuntimeCapabilities` bag (not a rename — that would have broken ~7 consumer files). Populated the 9-field feature bag on all 5 runtimes (`claude-code`, `openai-codex-app-server`, `anthropic-direct`, `openai-direct`, `ollama`). Added `getRuntimeFeatures` helper + `getFeaturesForModel` chat-layer convenience. Drift-guarded by exhaustiveness + inline-snapshot + length-against-interface-growth tests (14 tests total, all green). TDR-032 smoke test: `GET /api/chat/models` cold-compiled 200, no module-load cycle.
