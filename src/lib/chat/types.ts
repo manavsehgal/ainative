@@ -1,3 +1,10 @@
+import {
+  getRuntimeFeatures,
+  resolveAgentRuntime,
+  type AgentRuntimeId,
+  type RuntimeFeatures,
+} from "@/lib/agents/runtime/catalog";
+
 /** Screenshot attachment metadata stored in message metadata.attachments */
 export interface ScreenshotAttachment {
   documentId: string;
@@ -105,6 +112,15 @@ export function getRuntimeForModel(modelId: string): string {
   if (modelId.startsWith("ollama:")) return "ollama";
   // Fallback: OpenAI models start with "gpt" or "o"
   return /^(gpt|o\d)/.test(modelId) ? "openai-codex-app-server" : "claude-code";
+}
+
+/**
+ * Model → LLM-surface features. Thin wrapper around getRuntimeForModel +
+ * getRuntimeFeatures so chat callers don't need to know runtime IDs.
+ */
+export function getFeaturesForModel(modelId: string): RuntimeFeatures {
+  const runtimeId = resolveAgentRuntime(getRuntimeForModel(modelId));
+  return getRuntimeFeatures(runtimeId as AgentRuntimeId);
 }
 
 /** Suggested prompt category with expandable sub-prompts */
