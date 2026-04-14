@@ -122,3 +122,50 @@ function artifactToSummary(a: EnvironmentArtifact): SkillSummary {
     absPath: a.absPath,
   };
 }
+
+import { getLatestScan, getArtifacts } from "./data";
+import { enrichSkills, type EnrichedSkill } from "./skill-enrichment";
+
+export type { EnrichedSkill } from "./skill-enrichment";
+
+/**
+ * Like `listSkills` but reads the latest scan directly from the DB so the
+ * result carries `linkedProfileId` (which isn't on the in-memory
+ * EnvironmentArtifact type), and folds in health + sync status via
+ * `enrichSkills`.
+ *
+ * Cache-only path — no filesystem I/O. Returns empty array if no scan has
+ * been persisted yet.
+ */
+export function listSkillsEnriched(
+  options: { nowMs?: number } = {}
+): EnrichedSkill[] {
+  const latest = getLatestScan();
+  if (!latest) return [];
+
+  const rows = getArtifacts({ scanId: latest.id, category: "skill" });
+
+  const skills: SkillSummary[] = [];
+  const modifiedAtMsByPath: Record<string, number | null> = {};
+  const linkedProfilesByPath: Record<string, string | null> = {};
+
+  for (const row of rows) {
+    skills.push({
+      id: row.relPath,
+      name: row.name,
+      tool: row.tool,
+      scope: row.scope,
+      preview: row.preview ?? "",
+      sizeBytes: row.sizeBytes,
+      absPath: row.absPath,
+    });
+    modifiedAtMsByPath[row.absPath] = row.modifiedAt ?? null;
+    linkedProfilesByPath[row.absPath] = row.linkedProfileId ?? null;
+  }
+
+  return enrichSkills(skills, {
+    modifiedAtMsByPath,
+    linkedProfilesByPath,
+    nowMs: options.nowMs,
+  });
+}
