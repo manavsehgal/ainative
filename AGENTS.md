@@ -105,5 +105,5 @@ See `features/instance-bootstrap.md` for the full gate logic and `PRIVATE-INSTAN
 ## Cross-Tool Compatibility
 
 - `MEMORY.md` is the shared evolving context file for this project.
-- `CLAUDE.md` should remain a thin compatibility pointer, not a second source of truth.
+- `CLAUDE.md` is the Claude Agent SDK's `project` setting source — the SDK loads it directly rather than following pointers. It mirrors selected authoritative sections from this file (marked `<!-- synced from AGENTS.md#... -->`). Edit `AGENTS.md` first, then sync the corresponding section into `CLAUDE.md`.
 - Project-specific Codex skills live under `~/.codex/skills`; repo-local `.claude/skills/` remains useful as source material and for Claude compatibility.
