@@ -292,10 +292,12 @@ describe("executeClaudeTask", () => {
     expect(stagentCount).toBe(1);
   });
 
-  it("A-stagent-3: omits allowedTools when profile has none (preset defaults preserved)", async () => {
+  it("A-stagent-3: falls back to CLAUDE_SDK_ALLOWED_TOOLS when profile has none and runtime has native skills", async () => {
     mockWhere.mockResolvedValueOnce([makeTask({ projectId: "proj-7" })]);
-    // Default mockGetProfile returns allowedTools: undefined, so ctx.payload.allowedTools
-    // will also be undefined — the query() call should NOT include an allowedTools option.
+    // Default mockGetProfile returns allowedTools: undefined. Task-runtime-skill-parity
+    // (Task 3) changed withStagentAllowedTools so the Phase 1a tool set (Skill,
+    // Read/Grep/Glob, Edit/Write/Bash, TodoWrite) is passed alongside mcp__stagent__*
+    // when the runtime has hasNativeSkills=true — which is the claude-code default.
     mockQuery.mockReturnValue(
       createMockStream([
         { type: "result", result: "done" },
@@ -307,7 +309,18 @@ describe("executeClaudeTask", () => {
     const queryCall = mockQuery.mock.calls[0][0] as {
       options: { allowedTools?: string[] };
     };
-    expect(queryCall.options.allowedTools).toBeUndefined();
+    expect(queryCall.options.allowedTools).toBeDefined();
+    expect(queryCall.options.allowedTools).toEqual([
+      "mcp__stagent__*",
+      "Skill",
+      "Read",
+      "Grep",
+      "Glob",
+      "Edit",
+      "Write",
+      "Bash",
+      "TodoWrite",
+    ]);
   });
 
   it("A3: captures sessionId from init message and re-calls setExecution", async () => {
