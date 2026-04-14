@@ -135,7 +135,9 @@ export function ChatCommandPopover({
           <>
             <CommandTabBar activeTab={activeTab} onChange={onTabChange} />
             <CommandList className="max-h-[320px]">
-              <CommandEmpty>No matching tools</CommandEmpty>
+              {activeTab !== "entities" && (
+                <CommandEmpty>No matching tools</CommandEmpty>
+              )}
               <div
                 role="tabpanel"
                 id={`command-tabpanel-${activeTab}`}
