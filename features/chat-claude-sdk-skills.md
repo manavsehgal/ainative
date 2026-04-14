@@ -141,3 +141,14 @@ The current `CLAUDE.md` at the repo root is a 34-line pointer file referencing `
 2. Track this in a follow-up editorial pass, separate from this feature.
 
 **Regression guard:** the rubric is documented as a doc comment on `STAGENT_SYSTEM_PROMPT`. Any future contributor adding project-specific rules to `system-prompt.ts` should be caught in code review against this rubric.
+
+## Smoke test outcomes (2026-04-13)
+
+Per TDR-032, the following live-environment checks all passed against the running dev server on `:3000` (browser-driven via claude-in-chrome MCP on Opus model / `claude-code` runtime):
+
+- **Skill invocation reaches the LLM.** Created ephemeral `.claude/skills/smoke-test-skill/SKILL.md` with marker phrase `SMOKE_TEST_SKILL_REACHED_LLM`. Asked chat to "Invoke the smoke-test-skill skill and report exactly what it tells you to say." Response: exactly `SMOKE_TEST_SKILL_REACHED_LLM`. Confirms `settingSources: ["user", "project"]` loaded the skill and `"Skill"` in `allowedTools` wired.
+- **CLAUDE.md auto-loaded via `settingSources`.** Asked "Read the repository's CLAUDE.md and summarize what it says about cross-tool sync." Response cited specific content: `~/.codex/config.toml`, 23 Codex skills, shared `.claude/skills/` + `~/.codex/skills/` directories, `.claude/reference/developers-openai-com-codex-sdk/`, and `src/lib/agents/runtime/codex-app-server-client.ts`. Response began with "Based on the CLAUDE.md I already have loaded in context" — direct evidence the SDK auto-loaded the file without requiring an explicit `Read` call.
+- **Grep without permission prompt.** Asked "Grep the codebase for 'getRuntimeFeatures' and tell me which files contain it." Response returned 7 accurate file matches (including `catalog.ts`, `runtime/index.ts`, `chat/types.ts`, tests, changelog, plan docs). No permission-approval UI surfaced during the call — the read-only auto-allow branch for `Read`/`Grep`/`Glob` is wired correctly.
+- **No module-load cycle.** All three turns returned normal streaming responses. No 500s, no `ReferenceError`, no missing-tools errors observed during the session.
+
+Test skill removed after verification.
