@@ -15,6 +15,7 @@ import {
   ListTodo,
   GitBranch,
   FileText,
+  FileCode,
   Bot,
   Clock,
   Loader2,
@@ -55,6 +56,7 @@ const ENTITY_ICONS: Record<string, LucideIcon> = {
   document: FileText,
   profile: Bot,
   schedule: Clock,
+  file: FileCode,
 };
 
 const ENTITY_LABELS: Record<string, string> = {
@@ -64,6 +66,7 @@ const ENTITY_LABELS: Record<string, string> = {
   document: "Documents",
   profile: "Profiles",
   schedule: "Schedules",
+  file: "Files",
 };
 
 function groupByType(results: EntitySearchResult[]): Record<string, EntitySearchResult[]> {
@@ -240,6 +243,7 @@ function MentionItems({
       {entityTypes.map((type) => {
         const Icon = ENTITY_ICONS[type] ?? FileText;
         const groupLabel = ENTITY_LABELS[type] ?? type;
+        const isFile = type === "file";
         return (
           <CommandGroup key={type} heading={groupLabel}>
             {grouped[type].map((entity) => (
@@ -258,7 +262,15 @@ function MentionItems({
               >
                 <Icon className="h-4 w-4 shrink-0" />
                 <div className="flex flex-col min-w-0">
-                  <span className="flex-1 truncate">{entity.label}</span>
+                  <span
+                    className={
+                      isFile
+                        ? "flex-1 truncate font-mono text-xs"
+                        : "flex-1 truncate"
+                    }
+                  >
+                    {entity.label}
+                  </span>
                   {entity.description && (
                     <span className="truncate text-xs text-muted-foreground">
                       {entity.description}

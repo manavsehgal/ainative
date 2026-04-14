@@ -309,10 +309,15 @@ export function useChatAutocomplete(
       if (item.type === "slash") {
         replacement = item.text ?? item.label;
       } else {
-        // "@" mention — insert @type:Name
+        // "@" mention — format depends on entity type:
+        //   file:  @<path>           (CLI-style, matches what users type)
+        //   other: @<type>:<label>   (disambiguates entity types)
         const eType = item.entityType ?? item.id;
         const eId = item.entityId ?? item.id;
-        replacement = `@${eType}:${item.label} `;
+        replacement =
+          eType === "file"
+            ? `@${item.label} `
+            : `@${eType}:${item.label} `;
         // Track the mention
         setMentions((prev) => {
           if (prev.some((m) => m.entityId === eId)) return prev;
