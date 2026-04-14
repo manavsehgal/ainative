@@ -1,6 +1,42 @@
 # Feature Changelog
 
+## 2026-04-14
+
+### Completed — chat-session-persistence-provider (P0)
+
+Closed out the provider-hoisting fix that makes chat streams survive sidebar navigation. The provider + layout wiring + `ChatShell` refactor + four unit tests shipped in an earlier (unrecorded) commit; this pass adds the remaining `client.stream.view-remount` telemetry reason code from AC §5 and verifies the fix end-to-end. No server-side changes.
+
+Changes:
+- `src/lib/chat/stream-telemetry.ts` — documented the 4th client reason code (`client.stream.view-remount`) alongside the existing three.
+- `src/components/chat/chat-shell.tsx` — added `useEffect` cleanup that emits the breadcrumb when the shell unmounts while a stream is in flight. Uses `isStreamingRef` + `activeIdRef` so the cleanup closure sees values at unmount time, not at effect-setup time (a stale-closure bug caught by the contract tests on first run).
+- `src/components/chat/__tests__/chat-session-provider.test.tsx` — two new contract tests: positive case (emits with correct `conversationId`) and guard case (no emit when not streaming). Test count rises from 4 → 6, all green in ~50ms.
+
+Verification: developer ran the plan's manual smoke sequence on both Claude (`sonnet`) and GPT (Codex) runtimes, 1 + 5 nav cycles per runtime. Zero turn loss, zero `stream.abandoned` events, view-remount log lines appeared as expected. Full record in `features/chat-session-persistence-provider.md` → "Verification run — 2026-04-14".
+
+### Reconciled — frontmatter drift sweep (PLG Monetization + apps/marketplace)
+
+Closed two directions of status drift left behind by the 2026-04-13 Community Edition pivot.
+
+**PLG Monetization — flipped 13 specs `planned` → `completed` with supersession banner.** These features shipped earlier in the project but their individual spec frontmatter was never updated, while the roadmap rows correctly showed `completed`. All 13 were subsequently reverted by `community-edition-simplification` on 2026-04-13. Each spec now carries a blockquote banner at the top: "Superseded by `community-edition-simplification` (2026-04-13). This feature shipped but was later fully reverted when Stagent pivoted to a 100% free Community Edition…". Files: `stripe-billing-integration`, `community-edition-soft-limits`, `subscription-management-ui`, `upgrade-cta-banners`, `outcome-analytics-dashboard`, `parallel-workflow-limit`, `cloud-sync`, `license-activation-flow`, `edition-readme-update`, `first-run-onboarding`, `marketing-site-pricing-page`, `transactional-email-flows`, `upgrade-conversion-instrumentation`.
+
+**Marketplace / apps-distribution vision — flipped 17 specs `planned` → `deferred` with banner.** The entire apps/marketplace product vision has no active plan after the CE pivot; specs are preserved as backlog. Each spec now carries: "Deferred 2026-04-14. Part of the marketplace / apps-distribution vision, which has no active plan after the pivot to 100% free Community Edition…". Files: `creator-portal`, `curated-collections`, `visual-app-studio`, `conversational-app-editing`, `app-forking-remix`, `app-remix`, `app-mcp-server-wiring`, `app-single-file-format`, `app-budget-policies`, `app-distribution-channels`, `app-conflict-resolution`, `app-updates-dependencies`, `app-embeddable-install-widget`, `app-extended-primitives-tier2`, `marketplace-local-first-discovery`, `marketplace-reviews`, `my-apps-lifecycle`. Roadmap rows updated to match.
+
+No code changes. Spec-hygiene only. Open-feature count drops from 66 → 49 (49 active + 30 deferred + 1 proposed).
+
 ## 2026-04-13
+
+### Completed — community-edition-simplification (P0), remove-supabase-dependencies (P0), remove-anonymous-telemetry (P0)
+
+Stagent collapses to a single free Community Edition. The full PLG Monetization stack (license manager, 4-tier system, Stripe billing, feature gating, resource limits, cloud license validation) is removed along with all Supabase cloud dependencies and the vestigial anonymous telemetry toggle. Analytics is ungated for all users; memories/schedules/parallel workflows have no artificial limits; history retention is a fixed 365 days; the app runs fully offline with no external service required.
+
+Shipped in three sequential commits on the same day:
+- `0436803` — `community-edition-simplification`: removed license manager, 8 license lib files, 4 license API routes, 6 gate UI components, 5 Supabase billing edge functions (validate-license, create-checkout-session, create-portal-session, stripe-webhook, conversion-ingest), license DB table, and all tier-check call sites across API routes and core modules. Also removed App Catalog and Blueprint Marketplace in the same pass. 97 files changed, ~6,800 lines deleted.
+- `3a0dc42` — `remove-supabase-dependencies`: deleted `src/lib/cloud/`, `src/lib/sync/`, `src/app/api/sync/`, auth callback, cloud account + cloud sync settings sections, onboarding email capture, `@supabase/supabase-js` dependency, and the `telemetry-ingest` / `send-email` edge functions. `waitlist-signup` preserved (marketing-site feature). TelemetrySection UI preserved (local-only toggle).
+- `d25b3ae` — `remove-anonymous-telemetry`: deleted the TelemetrySection component, `/api/settings/telemetry` route, and `TELEMETRY_*` settings keys — closing the data-privacy loop now that the cloud flush is gone. Analytics dashboard and local usage ledger unaffected.
+
+Preserved (not subscription-related, despite similar naming): `TrustTierBadge` (permission levels) and `UpgradeBadge` (git version upgrades).
+
+Supersedes: every row in roadmap sections "PLG Monetization — Foundation / Core / Growth Layer". TDR-030 (hybrid instance licensing) deprecated. MEMORY.md pivot recorded: "100% Community Edition — All subscription tiers, Stripe billing, license manager, and marketplace removed."
 
 ### Completed — task-runtime-skill-parity (P1)
 

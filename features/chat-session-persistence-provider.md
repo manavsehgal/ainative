@@ -1,6 +1,6 @@
 ---
 title: Chat Session Persistence Provider
-status: planned
+status: completed
 priority: P0
 milestone: post-mvp
 source: handoff/bug-chat-session-view-switch-regression.md
@@ -197,3 +197,33 @@ migrations. No schema changes.
     provider accepts hydration hints
   - `src/lib/chat/stream-telemetry.ts` — add `client.stream.view-remount`
     reason code doc comment
+
+## Verification run — 2026-04-14
+
+End-to-end smoke run of the plan's Task 4 after the `view-remount`
+telemetry landed. Executed against the developer's live dev server on
+port 3000 (`next dev --turbopack`, PID 67490, started 10:59 PM the
+prior night — HMR picked up the `ChatShell` change cleanly).
+
+| Scenario | Runtime | Nav cycles | Turn loss | `stream.abandoned` | Outcome |
+|---|---|---|---|---|---|
+| Single 5–10s stream + nav away/back | Claude (`sonnet`) | 1 | 0 | 0 | ✓ |
+| Rapid Dashboard→Projects→Workflows→Chat | Claude (`sonnet`) | 5 | 0 | 0 | ✓ |
+| Single 5–10s stream + nav away/back | GPT (Codex) | 1 | 0 | 0 | ✓ |
+| Rapid Dashboard→Projects→Workflows→Chat | GPT (Codex) | 5 | 0 | 0 | ✓ |
+
+`client.stream.view-remount` log lines appeared in the dev-server
+console during nav-away events as expected, confirming the emitter
+in `ChatShell` fires and the ref-based cleanup sees the correct
+`activeId` at unmount time (not the stale closure-captured value).
+
+One cosmetic observation unrelated to this feature: a Next.js 16
+Turbopack preload warning appears once on page load —
+`The resource .../_next/static/chunks/...__03.afym._.css was
+preloaded using link preload but not used within a few seconds from
+the window's load event.` This is a Turbopack CSS-chunk
+measurement quirk, not a regression caused by the provider
+hoisting. Not in scope for this feature; no action taken.
+
+Closing criteria per spec AC all met: zero turn loss, zero
+abandoned streams, telemetry breadcrumb present.
