@@ -2,6 +2,11 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useCaretPosition } from "./use-caret-position";
+import {
+  isCommandTabId,
+  DEFAULT_COMMAND_TAB,
+  type CommandTabId,
+} from "@/lib/chat/command-tabs";
 
 export type AutocompleteMode = "slash" | "mention" | null;
 
@@ -32,11 +37,26 @@ export interface ChatAutocompleteReturn {
   entityResults: EntitySearchResult[];
   entityLoading: boolean;
   mentions: MentionReference[];
+  activeTab: CommandTabId;
+  setActiveTab: (tab: CommandTabId) => void;
   handleChange: (value: string, textarea: HTMLTextAreaElement | null) => void;
   handleKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => boolean;
   handleSelect: (item: { type: "slash" | "mention"; id: string; label: string; text?: string }) => string;
   close: () => void;
   setTextareaRef: (el: HTMLTextAreaElement | null) => void;
+}
+
+const TAB_STORAGE_KEY = "stagent.command-tab";
+
+function readInitialTab(): CommandTabId {
+  if (typeof window === "undefined") return DEFAULT_COMMAND_TAB;
+  try {
+    const raw = window.localStorage.getItem(TAB_STORAGE_KEY);
+    if (raw && isCommandTabId(raw)) return raw;
+  } catch {
+    // localStorage unavailable — fall through
+  }
+  return DEFAULT_COMMAND_TAB;
 }
 
 const CLOSED_STATE: AutocompleteState = {
@@ -68,6 +88,16 @@ export function useChatAutocomplete(
   const [fileResults, setFileResults] = useState<EntitySearchResult[]>([]);
   const [entityLoading, setEntityLoading] = useState(false);
   const [mentions, setMentions] = useState<MentionReference[]>([]);
+  const [activeTab, setActiveTabState] = useState<CommandTabId>(readInitialTab);
+
+  const setActiveTab = useCallback((tab: CommandTabId) => {
+    setActiveTabState(tab);
+    try {
+      window.localStorage.setItem(TAB_STORAGE_KEY, tab);
+    } catch {
+      // quota / disabled — silent, in-memory only
+    }
+  }, []);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const fileAbortRef = useRef<AbortController | null>(null);
@@ -353,6 +383,8 @@ export function useChatAutocomplete(
     entityResults: [...entityResults, ...fileResults],
     entityLoading,
     mentions,
+    activeTab,
+    setActiveTab,
     handleChange,
     handleKeyDown,
     handleSelect,
