@@ -16,6 +16,7 @@ import { handleToolPermission, clearPermissionCache } from "@/lib/agents/tool-pe
 describe("handleToolPermission — SDK filesystem and Skill auto-allow", () => {
   beforeEach(() => {
     clearPermissionCache("test-task");
+    clearPermissionCache("test-task-edit");
   });
 
   it("auto-allows Read without creating a notification", async () => {

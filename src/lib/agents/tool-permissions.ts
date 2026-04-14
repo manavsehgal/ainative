@@ -121,7 +121,10 @@ export async function handleToolPermission(
 ): Promise<ToolPermissionResponse> {
   const isQuestion = toolName === "AskUserQuestion";
 
-  // Layer 1: Profile-level canUseToolPolicy — fastest check, no I/O
+  // Layer 1: Profile-level canUseToolPolicy — fastest check, no I/O.
+  // Runs BEFORE Layer 1.75's SDK filesystem auto-allow so `autoDeny: ["Read"]`
+  // still denies; `autoApprove` for Read/Grep/Glob is redundant (Layer 1.75
+  // would also allow) but harmless.
   if (!isQuestion && canUseToolPolicy) {
     if (canUseToolPolicy.autoApprove?.includes(toolName)) {
       return buildAllowedToolPermissionResponse(input);
