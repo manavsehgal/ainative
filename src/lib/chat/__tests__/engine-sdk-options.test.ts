@@ -55,6 +55,16 @@ describe("canUseTool auto-allow policy for SDK filesystem tools", () => {
     expect(result.behavior).toBe("allow");
   });
 
+  it("auto-allows Glob without a permission request", async () => {
+    const result = await canUseToolForTest("Glob", { pattern: "**/*.ts" });
+    expect(result.behavior).toBe("allow");
+  });
+
+  it("auto-allows Skill tool invocation", async () => {
+    const result = await canUseToolForTest("Skill", { skill: "code-reviewer" });
+    expect(result.behavior).toBe("allow");
+  });
+
   it("does NOT auto-allow Edit (must go through permission flow)", async () => {
     const result = await canUseToolForTest("Edit", { file_path: "/tmp/x", content: "y" });
     expect(result.behavior).not.toBe("allow");

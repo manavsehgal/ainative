@@ -433,8 +433,13 @@ export async function* sendMessage(
             return { behavior: "allow", updatedInput: input };
           }
 
-          // Skill tool: auto-allow (invocation itself is safe; the tools it
-          // triggers go through their own canUseTool checks)
+          // Skill tool: auto-allow. Rationale: the Skill tool loads skills from
+          // ~/.claude/skills/ and .claude/skills/ — the same sources the Claude Code
+          // CLI trusts unconditionally. Any tool the skill subsequently invokes
+          // (Bash, Edit, etc.) goes through this same canUseTool check. The trust
+          // assumption here is identical to using `claude` directly; no new attack
+          // surface is introduced. See: features/chat-claude-sdk-skills.md, Error
+          // & Rescue Registry row "settingSources loads hostile skill".
           if (toolName === "Skill") {
             emitSideChannelEvent(conversationId, {
               type: "status",
