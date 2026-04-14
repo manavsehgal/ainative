@@ -66,4 +66,98 @@ describe("runtime catalog", () => {
   it("declares Codex auto-loads AGENTS.md", () => {
     expect(getRuntimeFeatures("openai-codex-app-server").autoLoadsInstructions).toBe("AGENTS.md");
   });
+
+  it("every runtime declares every feature key (exhaustiveness guard)", () => {
+    const runtimes = listRuntimeCatalog();
+    const expectedKeys: Array<keyof ReturnType<typeof getRuntimeFeatures>> = [
+      "hasNativeSkills",
+      "hasProgressiveDisclosure",
+      "hasFilesystemTools",
+      "hasBash",
+      "hasTodoWrite",
+      "hasSubagentDelegation",
+      "hasHooks",
+      "autoLoadsInstructions",
+      "stagentInjectsSkills",
+    ];
+
+    for (const runtime of runtimes) {
+      for (const key of expectedKeys) {
+        expect(
+          runtime.features,
+          `${runtime.id} missing feature "${key}"`
+        ).toHaveProperty(key);
+      }
+    }
+  });
+
+  it("feature matrix snapshot matches declared values", () => {
+    // Guard against silent regressions: the declared feature matrix must match
+    // this snapshot exactly. Update intentionally when flipping a capability flag
+    // (and reference the spec change in the commit message).
+    const snapshot = listRuntimeCatalog().reduce<Record<string, unknown>>((acc, r) => {
+      acc[r.id] = r.features;
+      return acc;
+    }, {});
+
+    expect(snapshot).toMatchInlineSnapshot(`
+      {
+        "anthropic-direct": {
+          "autoLoadsInstructions": null,
+          "hasBash": false,
+          "hasFilesystemTools": false,
+          "hasHooks": false,
+          "hasNativeSkills": false,
+          "hasProgressiveDisclosure": false,
+          "hasSubagentDelegation": false,
+          "hasTodoWrite": false,
+          "stagentInjectsSkills": false,
+        },
+        "claude-code": {
+          "autoLoadsInstructions": "CLAUDE.md",
+          "hasBash": true,
+          "hasFilesystemTools": true,
+          "hasHooks": false,
+          "hasNativeSkills": true,
+          "hasProgressiveDisclosure": true,
+          "hasSubagentDelegation": false,
+          "hasTodoWrite": true,
+          "stagentInjectsSkills": false,
+        },
+        "ollama": {
+          "autoLoadsInstructions": null,
+          "hasBash": false,
+          "hasFilesystemTools": false,
+          "hasHooks": false,
+          "hasNativeSkills": false,
+          "hasProgressiveDisclosure": false,
+          "hasSubagentDelegation": false,
+          "hasTodoWrite": false,
+          "stagentInjectsSkills": true,
+        },
+        "openai-codex-app-server": {
+          "autoLoadsInstructions": "AGENTS.md",
+          "hasBash": true,
+          "hasFilesystemTools": true,
+          "hasHooks": false,
+          "hasNativeSkills": true,
+          "hasProgressiveDisclosure": true,
+          "hasSubagentDelegation": false,
+          "hasTodoWrite": true,
+          "stagentInjectsSkills": false,
+        },
+        "openai-direct": {
+          "autoLoadsInstructions": null,
+          "hasBash": false,
+          "hasFilesystemTools": false,
+          "hasHooks": false,
+          "hasNativeSkills": false,
+          "hasProgressiveDisclosure": false,
+          "hasSubagentDelegation": false,
+          "hasTodoWrite": false,
+          "stagentInjectsSkills": false,
+        },
+      }
+    `);
+  });
 });
