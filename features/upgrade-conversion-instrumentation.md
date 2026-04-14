@@ -1,6 +1,6 @@
 ---
 title: Upgrade Conversion Instrumentation
-status: planned
+status: completed
 priority: P3
 milestone: plg-growth
 source: features/roadmap.md
@@ -8,6 +8,8 @@ dependencies: [supabase-cloud-backend, upgrade-cta-banners, community-edition-so
 ---
 
 # Upgrade Conversion Instrumentation
+
+> **Superseded by `community-edition-simplification` (2026-04-13).** This feature shipped but was later fully reverted when Stagent pivoted to a 100% free Community Edition with no tiers, billing, or cloud dependency. Kept as historical record.
 
 ## Description
 

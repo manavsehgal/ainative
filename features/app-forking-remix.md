@@ -1,6 +1,6 @@
 ---
 title: App Forking & Remix
-status: planned
+status: deferred
 priority: P2
 milestone: post-mvp
 source: brainstorm session 2026-04-11
@@ -8,6 +8,8 @@ dependencies: [marketplace-app-publishing, app-remix]
 ---
 
 # App Forking & Remix
+
+> **Deferred 2026-04-14.** Part of the marketplace / apps-distribution vision, which has no active plan after the pivot to 100% free Community Edition. Kept in the backlog pending future product direction.
 
 ## Description
 

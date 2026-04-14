@@ -1,6 +1,6 @@
 ---
 title: Marketplace Local-First Discovery
-status: planned
+status: deferred
 priority: P3
 milestone: post-mvp
 source: brainstorm session 2026-04-11
@@ -8,6 +8,8 @@ dependencies: [marketplace-app-listing]
 ---
 
 # Marketplace Local-First Discovery
+
+> **Deferred 2026-04-14.** Part of the marketplace / apps-distribution vision, which has no active plan after the pivot to 100% free Community Edition. Kept in the backlog pending future product direction.
 
 ## Description
 

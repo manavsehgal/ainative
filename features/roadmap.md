@@ -272,6 +272,8 @@ Runtime-native skills, filesystem context, file mentions, and a command-namespac
 
 ### PLG Monetization — Foundation Layer
 
+> **Fully superseded by `community-edition-simplification` (2026-04-13).** Every row in the three PLG Monetization sections below shipped and was later fully reverted when Stagent pivoted to a 100% free Community Edition. Kept as historical record.
+
 | Feature | Priority | Status | Dependencies |
 |---------|----------|--------|--------------|
 | [local-license-manager](local-license-manager.md) | P0 | completed | — |
@@ -301,6 +303,16 @@ Runtime-native skills, filesystem context, file mentions, and a command-namespac
 | [transactional-email-flows](transactional-email-flows.md) | P2 | completed | supabase-cloud-backend, stripe-billing-integration, community-edition-soft-limits |
 | [telemetry-foundation](telemetry-foundation.md) | P2 | completed | supabase-cloud-backend, local-license-manager |
 | [upgrade-conversion-instrumentation](upgrade-conversion-instrumentation.md) | P3 | completed | supabase-cloud-backend, upgrade-cta-banners, community-edition-soft-limits |
+
+### Community Edition Simplification
+
+Reversal of the PLG Monetization stack. Stagent becomes a single free Community Edition with all features unlocked — no tiers, no billing, no cloud dependency, no telemetry. Supersedes every row in the three PLG Monetization sections above.
+
+| Feature | Priority | Status | Dependencies |
+|---------|----------|--------|--------------|
+| [community-edition-simplification](community-edition-simplification.md) | P0 | completed | — |
+| [remove-supabase-dependencies](remove-supabase-dependencies.md) | P0 | completed | community-edition-simplification |
+| [remove-anonymous-telemetry](remove-anonymous-telemetry.md) | P0 | completed | remove-supabase-dependencies |
 
 ### Vision Alignment — Runtime Expansion
 
@@ -357,9 +369,9 @@ Runtime bundle system, packaging format, and install hardening. The keystone for
 | [app-package-format](app-package-format.md) | P1 | deferred | marketplace-install-hardening |
 | [app-seed-data-generation](app-seed-data-generation.md) | P1 | deferred | app-package-format |
 | [app-cli-tools](app-cli-tools.md) | P1 | planned | app-package-format, app-seed-data-generation |
-| [app-conflict-resolution](app-conflict-resolution.md) | P2 | planned | app-package-format, marketplace-install-hardening |
-| [app-updates-dependencies](app-updates-dependencies.md) | P2 | planned | app-conflict-resolution, app-cli-tools |
-| [app-single-file-format](app-single-file-format.md) | P2 | planned | app-package-format |
+| [app-conflict-resolution](app-conflict-resolution.md) | P2 | deferred | app-package-format, marketplace-install-hardening |
+| [app-updates-dependencies](app-updates-dependencies.md) | P2 | deferred | app-conflict-resolution, app-cli-tools |
+| [app-single-file-format](app-single-file-format.md) | P2 | deferred | app-package-format |
 | [fix-exported-bundle-registration](fix-exported-bundle-registration.md) | P1 | deferred | app-runtime-bundle-foundation |
 | [fix-sidebar-reactive-update](fix-sidebar-reactive-update.md) | P1 | deferred | app-runtime-bundle-foundation |
 | [fix-sidebar-accordion-behavior](fix-sidebar-accordion-behavior.md) | P2 | deferred | app-runtime-bundle-foundation |
@@ -371,9 +383,9 @@ Growing the composition grammar from 7 primitives to ~18, enabling richer app ca
 | Feature | Priority | Status | Dependencies |
 |---------|----------|--------|--------------|
 | [app-extended-primitives-tier1](app-extended-primitives-tier1.md) | P1 | deferred | marketplace-install-hardening |
-| [app-extended-primitives-tier2](app-extended-primitives-tier2.md) | P2 | planned | app-extended-primitives-tier1 |
-| [app-mcp-server-wiring](app-mcp-server-wiring.md) | P2 | planned | app-extended-primitives-tier2, marketplace-trust-ladder |
-| [app-budget-policies](app-budget-policies.md) | P3 | planned | app-extended-primitives-tier2 |
+| [app-extended-primitives-tier2](app-extended-primitives-tier2.md) | P2 | deferred | app-extended-primitives-tier1 |
+| [app-mcp-server-wiring](app-mcp-server-wiring.md) | P2 | deferred | app-extended-primitives-tier2, marketplace-trust-ladder |
+| [app-budget-policies](app-budget-policies.md) | P3 | deferred | app-extended-primitives-tier2 |
 
 ### App Marketplace — Chat-Native Authoring
 
@@ -383,9 +395,9 @@ Build, remix, and edit apps through conversation — Stagent's unique differenti
 |---------|----------|--------|--------------|
 | [chat-app-builder](chat-app-builder.md) | P1 | planned | app-package-format, app-extended-primitives-tier1 |
 | [promote-conversation-to-app](promote-conversation-to-app.md) | P1 | planned | chat-app-builder, app-seed-data-generation |
-| [app-remix](app-remix.md) | P2 | planned | chat-app-builder |
-| [conversational-app-editing](conversational-app-editing.md) | P2 | planned | chat-app-builder |
-| [visual-app-studio](visual-app-studio.md) | P2 | planned | app-extended-primitives-tier2, app-package-format |
+| [app-remix](app-remix.md) | P2 | deferred | chat-app-builder |
+| [conversational-app-editing](conversational-app-editing.md) | P2 | deferred | chat-app-builder |
+| [visual-app-studio](visual-app-studio.md) | P2 | deferred | app-extended-primitives-tier2, app-package-format |
 
 ### App Marketplace — Distribution & Community
 
@@ -396,14 +408,14 @@ Marketplace listing, publishing, trust, and community ecosystem features.
 | [marketplace-app-listing](marketplace-app-listing.md) | P1 | planned | marketplace-access-gate, app-runtime-bundle-foundation |
 | [marketplace-app-publishing](marketplace-app-publishing.md) | P1 | planned | app-package-format, app-cli-tools, marketplace-access-gate |
 | [marketplace-trust-ladder](marketplace-trust-ladder.md) | P1 | planned | marketplace-app-publishing, app-extended-primitives-tier1 |
-| [app-distribution-channels](app-distribution-channels.md) | P2 | planned | app-cli-tools, marketplace-app-publishing |
-| [app-forking-remix](app-forking-remix.md) | P2 | planned | marketplace-app-publishing, app-remix |
-| [creator-portal](creator-portal.md) | P2 | planned | marketplace-app-publishing, telemetry-foundation |
-| [curated-collections](curated-collections.md) | P3 | planned | marketplace-trust-ladder |
-| [marketplace-reviews](marketplace-reviews.md) | P3 | planned | marketplace-app-publishing, telemetry-foundation |
-| [marketplace-local-first-discovery](marketplace-local-first-discovery.md) | P3 | planned | marketplace-app-listing |
-| [app-embeddable-install-widget](app-embeddable-install-widget.md) | P3 | planned | marketplace-app-listing |
-| [my-apps-lifecycle](my-apps-lifecycle.md) | P1 | planned | app-runtime-bundle-foundation |
+| [app-distribution-channels](app-distribution-channels.md) | P2 | deferred | app-cli-tools, marketplace-app-publishing |
+| [app-forking-remix](app-forking-remix.md) | P2 | deferred | marketplace-app-publishing, app-remix |
+| [creator-portal](creator-portal.md) | P2 | deferred | marketplace-app-publishing, telemetry-foundation |
+| [curated-collections](curated-collections.md) | P3 | deferred | marketplace-trust-ladder |
+| [marketplace-reviews](marketplace-reviews.md) | P3 | deferred | marketplace-app-publishing, telemetry-foundation |
+| [marketplace-local-first-discovery](marketplace-local-first-discovery.md) | P3 | deferred | marketplace-app-listing |
+| [app-embeddable-install-widget](app-embeddable-install-widget.md) | P3 | deferred | marketplace-app-listing |
+| [my-apps-lifecycle](my-apps-lifecycle.md) | P1 | deferred | app-runtime-bundle-foundation |
 
 ## Dependency Graph
 

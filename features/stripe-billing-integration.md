@@ -1,6 +1,6 @@
 ---
 title: Stripe Billing Integration
-status: planned
+status: completed
 priority: P0
 milestone: post-mvp
 source: plans/lucky-fluttering-flute.md
@@ -8,6 +8,8 @@ dependencies: [supabase-cloud-backend]
 ---
 
 # Stripe Billing Integration
+
+> **Superseded by `community-edition-simplification` (2026-04-13).** This feature shipped but was later fully reverted when Stagent pivoted to a 100% free Community Edition with no tiers, billing, or cloud dependency. Kept as historical record.
 
 ## Description
 

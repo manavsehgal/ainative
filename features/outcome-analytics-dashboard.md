@@ -1,6 +1,6 @@
 ---
 title: Outcome Analytics Dashboard
-status: planned
+status: completed
 priority: P1
 layer: PLG Core
 dependencies:
@@ -8,6 +8,8 @@ dependencies:
 ---
 
 # Outcome Analytics Dashboard
+
+> **Superseded by `community-edition-simplification` (2026-04-13).** This feature shipped but was later fully reverted when Stagent pivoted to a 100% free Community Edition with no tiers, billing, or cloud dependency. Kept as historical record.
 
 ## Description
 

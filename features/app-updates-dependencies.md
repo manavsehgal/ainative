@@ -1,6 +1,6 @@
 ---
 title: App Updates & Dependencies
-status: planned
+status: deferred
 priority: P2
 milestone: post-mvp
 source: handoff/stagent-app-marketplace-spec.md
@@ -8,6 +8,8 @@ dependencies: [app-conflict-resolution, app-cli-tools]
 ---
 
 # App Updates & Dependencies
+
+> **Deferred 2026-04-14.** Part of the marketplace / apps-distribution vision, which has no active plan after the pivot to 100% free Community Edition. Kept in the backlog pending future product direction.
 
 ## Description
 

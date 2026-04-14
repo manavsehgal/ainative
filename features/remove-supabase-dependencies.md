@@ -1,6 +1,6 @@
 ---
 title: Remove Supabase Dependencies
-status: planned
+status: completed
 priority: P0
 milestone: mvp
 source: conversation

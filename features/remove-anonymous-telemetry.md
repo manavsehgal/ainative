@@ -1,6 +1,6 @@
 ---
 title: Remove Anonymous Telemetry
-status: planned
+status: completed
 priority: P0
 milestone: mvp
 source: conversation

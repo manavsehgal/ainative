@@ -1,6 +1,6 @@
 ---
 title: Community Edition Simplification
-status: planned
+status: completed
 priority: P0
 milestone: mvp
 source: conversation

@@ -1,6 +1,6 @@
 ---
 title: My Apps Tab & User-Built App Lifecycle
-status: planned
+status: deferred
 priority: P1
 milestone: post-mvp
 source: (conversation — 2026-04-12)
@@ -8,6 +8,8 @@ dependencies: [app-runtime-bundle-foundation, app-uninstall]
 ---
 
 # My Apps Tab & User-Built App Lifecycle
+
+> **Deferred 2026-04-14.** Part of the marketplace / apps-distribution vision, which has no active plan after the pivot to 100% free Community Edition. Kept in the backlog pending future product direction.
 
 ## Description
 
