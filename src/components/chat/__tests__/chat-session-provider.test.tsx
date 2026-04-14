@@ -1,6 +1,6 @@
 import { act, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { ChatMessageRow } from "@/lib/db/schema";
 import {
@@ -404,5 +404,170 @@ describe("ChatSessionProvider", () => {
     await waitFor(() => {
       expect(screen.getByTestId("c-isStreaming").textContent).toBe("false");
     });
+  });
+
+  it("view-remount telemetry pattern logs on unmount when streaming", async () => {
+    // Contract test for the `client.stream.view-remount` telemetry code.
+    // Mirrors the pattern ChatShell implements: track isStreaming in a ref,
+    // then log on unmount iff the ref was true. The ref is necessary because
+    // a stale closure would see isStreaming at effect-setup time, not at
+    // unmount time.
+    const consoleInfoSpy = vi
+      .spyOn(console, "info")
+      .mockImplementation(() => {});
+
+    function ViewRemountConsumer() {
+      const { isStreaming, activeId, sendMessage } = useChatSession();
+      const isStreamingRef = useRef(isStreaming);
+      const activeIdRef = useRef(activeId);
+      useEffect(() => {
+        isStreamingRef.current = isStreaming;
+      }, [isStreaming]);
+      useEffect(() => {
+        activeIdRef.current = activeId;
+      }, [activeId]);
+      useEffect(() => {
+        return () => {
+          if (isStreamingRef.current) {
+            // eslint-disable-next-line no-console
+            console.info("[chat-stream] client.stream.view-remount", {
+              conversationId: activeIdRef.current,
+            });
+          }
+        };
+        // Empty deps: run-once cleanup on unmount.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+      }, []);
+      return (
+        <div>
+          <div data-testid="vr-isStreaming">{String(isStreaming)}</div>
+          <button
+            data-testid="vr-send"
+            onClick={() => void sendMessage("hello")}
+          >
+            send
+          </button>
+        </div>
+      );
+    }
+
+    function ViewRemountWrapper() {
+      const [mounted, setMounted] = useState(true);
+      return (
+        <ChatSessionProvider>
+          <button data-testid="vr-unmount" onClick={() => setMounted(false)}>
+            unmount
+          </button>
+          {mounted && <ViewRemountConsumer />}
+        </ChatSessionProvider>
+      );
+    }
+
+    const fetchMock = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+      const u = url.toString();
+      if (u.startsWith("/api/settings/chat")) return new Response(null, { status: 204 });
+      if (u.startsWith("/api/chat/models")) return new Response(null, { status: 204 });
+      if (u === "/api/chat/conversations" || u.endsWith("/api/chat/conversations")) {
+        return new Response(
+          JSON.stringify({
+            id: "conv-vr",
+            projectId: null,
+            title: "T",
+            status: "active",
+            runtimeId: "claude-code",
+            modelId: "haiku",
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          }),
+          { status: 200 }
+        );
+      }
+      if (u.match(/\/api\/chat\/conversations\/conv-vr\/messages$/)) {
+        const signal = init?.signal as AbortSignal;
+        return new Response(makeHangingStream(signal), { status: 200 });
+      }
+      return new Response(null, { status: 404 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<ViewRemountWrapper />);
+
+    await act(async () => {
+      screen.getByTestId("vr-send").click();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("vr-isStreaming").textContent).toBe("true");
+    });
+
+    // Unmount the consumer while streaming is in flight.
+    await act(async () => {
+      screen.getByTestId("vr-unmount").click();
+    });
+
+    expect(consoleInfoSpy).toHaveBeenCalledWith(
+      "[chat-stream] client.stream.view-remount",
+      expect.objectContaining({ conversationId: "conv-vr" })
+    );
+
+    consoleInfoSpy.mockRestore();
+  });
+
+  it("view-remount telemetry pattern does NOT log when not streaming", async () => {
+    // Guard case: unmounting without an active stream must not emit.
+    const consoleInfoSpy = vi
+      .spyOn(console, "info")
+      .mockImplementation(() => {});
+
+    function ViewRemountConsumer() {
+      const { isStreaming } = useChatSession();
+      const isStreamingRef = useRef(isStreaming);
+      useEffect(() => {
+        isStreamingRef.current = isStreaming;
+      }, [isStreaming]);
+      useEffect(() => {
+        return () => {
+          if (isStreamingRef.current) {
+            // eslint-disable-next-line no-console
+            console.info("[chat-stream] client.stream.view-remount", {
+              conversationId: null,
+            });
+          }
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+      }, []);
+      return <div />;
+    }
+
+    function Wrapper() {
+      const [mounted, setMounted] = useState(true);
+      return (
+        <ChatSessionProvider>
+          <button data-testid="toggle" onClick={() => setMounted(false)}>
+            toggle
+          </button>
+          {mounted && <ViewRemountConsumer />}
+        </ChatSessionProvider>
+      );
+    }
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(null, { status: 204 }))
+    );
+
+    render(<Wrapper />);
+
+    await act(async () => {
+      screen.getByTestId("toggle").click();
+    });
+
+    const viewRemountCalls = consoleInfoSpy.mock.calls.filter(
+      ([msg]) =>
+        typeof msg === "string" && msg.includes("client.stream.view-remount")
+    );
+    expect(viewRemountCalls).toHaveLength(0);
+
+    consoleInfoSpy.mockRestore();
   });
 });
