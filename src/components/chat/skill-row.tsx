@@ -1,5 +1,5 @@
 "use client";
-import { Sparkles, Star } from "lucide-react";
+import { Sparkles, Star, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { CommandItem } from "@/components/ui/command";
 import type { EnrichedSkill } from "@/lib/environment/skill-enrichment";
@@ -8,6 +8,7 @@ interface SkillRowProps {
   skill: EnrichedSkill;
   recommended?: boolean;
   onSelect: () => void;
+  onDismissRecommendation?: () => void;
 }
 
 function healthVariant(
@@ -32,7 +33,12 @@ function syncLabel(s: EnrichedSkill["syncStatus"]): string {
   }
 }
 
-export function SkillRow({ skill, recommended, onSelect }: SkillRowProps) {
+export function SkillRow({
+  skill,
+  recommended,
+  onSelect,
+  onDismissRecommendation,
+}: SkillRowProps) {
   const syncHref =
     skill.syncStatus !== "synced"
       ? `/environment?skill=${encodeURIComponent(skill.name)}`
@@ -53,6 +59,19 @@ export function SkillRow({ skill, recommended, onSelect }: SkillRowProps) {
               className="h-3 w-3 shrink-0 fill-amber-500 text-amber-500"
               aria-label="Recommended for this conversation"
             />
+          )}
+          {recommended && onDismissRecommendation && (
+            <button
+              type="button"
+              aria-label="Dismiss recommendation"
+              className="rounded p-0.5 text-muted-foreground hover:text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDismissRecommendation();
+              }}
+            >
+              <X className="h-3 w-3" />
+            </button>
           )}
         </div>
         <span className="truncate text-xs text-muted-foreground">

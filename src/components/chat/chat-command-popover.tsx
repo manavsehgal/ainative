@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   Command,
@@ -33,7 +33,7 @@ import { useEnrichedSkills } from "@/hooks/use-enriched-skills";
 import { useRecentUserMessages } from "@/hooks/use-recent-user-messages";
 import { SkillRow } from "./skill-row";
 import { computeRecommendation } from "@/lib/environment/skill-recommendations";
-import { browserLocalStore, activeDismissedIds } from "@/lib/chat/dismissals";
+import { browserLocalStore, activeDismissedIds, saveDismissal } from "@/lib/chat/dismissals";
 import { useChatSession } from "@/components/chat/chat-session-provider";
 import type { EnrichedSkill } from "@/lib/environment/skill-enrichment";
 
@@ -125,12 +125,15 @@ export function ChatCommandPopover({
     () => browserLocalStore("stagent.chat.dismissed-suggestions"),
     []
   );
+
+  const [dismissTick, setDismissTick] = useState(0);
+
   const dismissedIds = useMemo(
     () =>
       activeId
         ? activeDismissedIds(dismissStore, activeId)
         : new Set<string>(),
-    [dismissStore, activeId]
+    [dismissStore, activeId, dismissTick]
   );
 
   const recommended = useMemo(
@@ -183,6 +186,14 @@ export function ChatCommandPopover({
                   activeTab={activeTab}
                   enrichedSkills={enrichedSkills}
                   recommendedId={recommended?.id ?? null}
+                  onDismissRecommendation={
+                    activeId
+                      ? (skillId) => {
+                          saveDismissal(dismissStore, activeId, skillId);
+                          setDismissTick((t) => t + 1);
+                        }
+                      : undefined
+                  }
                 />
               </div>
             </CommandList>
@@ -210,12 +221,14 @@ function ToolCatalogItems({
   activeTab,
   enrichedSkills,
   recommendedId,
+  onDismissRecommendation,
 }: {
   onSelect: ChatCommandPopoverProps["onSelect"];
   projectProfiles?: ChatCommandPopoverProps["projectProfiles"];
   activeTab: CommandTabId;
   enrichedSkills: EnrichedSkill[];
   recommendedId?: string | null;
+  onDismissRecommendation?: (skillId: string) => void;
 }) {
   const catalog = getToolCatalogWithSkills({
     includeBrowser: true,
@@ -241,6 +254,11 @@ function ToolCatalogItems({
             key={skill.id}
             skill={skill}
             recommended={recommendedId === skill.id}
+            onDismissRecommendation={
+              recommendedId === skill.id
+                ? () => onDismissRecommendation?.(skill.id)
+                : undefined
+            }
             onSelect={() =>
               onSelect({
                 type: "slash",

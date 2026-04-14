@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { Command, CommandList } from "@/components/ui/command";
 import { SkillRow } from "../skill-row";
 import type { EnrichedSkill } from "@/lib/environment/skill-enrichment";
@@ -54,5 +54,38 @@ describe("SkillRow", () => {
   it("shows a recommended indicator when recommended=true", () => {
     renderRow(base, true);
     expect(screen.getByLabelText(/recommended/i)).toBeInTheDocument();
+  });
+
+  it("calls onDismissRecommendation when X is clicked", () => {
+    const onDismiss = vi.fn();
+    render(
+      <Command>
+        <CommandList>
+          <SkillRow
+            skill={base}
+            recommended
+            onSelect={() => {}}
+            onDismissRecommendation={onDismiss}
+          />
+        </CommandList>
+      </Command>
+    );
+    fireEvent.click(screen.getByLabelText("Dismiss recommendation"));
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not render dismiss button when not recommended", () => {
+    render(
+      <Command>
+        <CommandList>
+          <SkillRow
+            skill={base}
+            onSelect={() => {}}
+            onDismissRecommendation={() => {}}
+          />
+        </CommandList>
+      </Command>
+    );
+    expect(screen.queryByLabelText("Dismiss recommendation")).toBeNull();
   });
 });
