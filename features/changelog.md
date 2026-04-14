@@ -2,6 +2,14 @@
 
 ## 2026-04-13
 
+### Completed — runtime-capability-matrix (P1)
+
+Shipped the first-class runtime-feature declaration in `src/lib/agents/runtime/catalog.ts`. Added `RuntimeFeatures` interface as a **sibling** of the pre-existing operational `RuntimeCapabilities` bag (not a rename — that would have broken ~7 consumer files). Populated the 9-field feature bag on all 5 runtimes (`claude-code`, `openai-codex-app-server`, `anthropic-direct`, `openai-direct`, `ollama`). Added `getRuntimeFeatures` helper + `getFeaturesForModel` chat-layer convenience. Drift-guarded by exhaustiveness + inline-snapshot + length-against-interface-growth tests (14 tests total, all green). TDR-032 smoke test: `GET /api/chat/models` cold-compiled 200, no module-load cycle.
+
+Commits: `98681bf` → `dee6b3b` (6 commits). Plan: `.claude/plans/steady-capable-matrix.md`. Consumer wiring (popover filter, capability hint banner, settings-onboarding, `RuntimeSummary.features`) intentionally deferred to downstream specs per the plan's NOT-in-scope list.
+
+Unblocks: `chat-claude-sdk-skills` (P0 critical path), `chat-codex-app-server-skills`, `chat-ollama-native-skills`, `chat-command-namespace-refactor`, `task-runtime-skill-parity`, `onboarding-runtime-provider-choice`.
+
 ### Groomed — Chat Context Experience (10 features)
 
 Extracted 10 new features from `ideas/chat-context-experience.md` (brainstorm with contributions from `/architect`, `/product-manager`, `/frontend-designer`). Consulted `/product-manager` for template authoring, with architect/frontend-designer guidance sourced from §11 of the ideas doc (inline contributions).

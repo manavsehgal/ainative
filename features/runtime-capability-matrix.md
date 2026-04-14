@@ -1,6 +1,6 @@
 ---
 title: Runtime Capability Matrix
-status: planned
+status: complete
 priority: P1
 milestone: post-mvp
 source: ideas/chat-context-experience.md §2.7, §11 (architect)
@@ -83,9 +83,9 @@ Capability values reflect post-Phase-1 state. During the transition, Phase 1a/1b
 
 ## Acceptance Criteria
 
-- [ ] `RuntimeCapabilities` type exists in `src/lib/agents/runtime/catalog.ts` with the nine fields above
-- [ ] All three runtimes declare a complete capability bag
-- [ ] `getCapabilitiesForModel(modelId)` helper returns the correct bag, with a typed default for unknown models
+- [x] `RuntimeFeatures` type exists in `src/lib/agents/runtime/catalog.ts` with the nine fields above — shipped as a sibling of the pre-existing operational `RuntimeCapabilities` bag to avoid a breaking rename
+- [x] All five runtimes declare a complete feature bag (`anthropic-direct` and `openai-direct` use conservative all-false defaults pending direct-API skill-injection design)
+- [x] `getFeaturesForModel(modelId)` helper returns the correct bag, with a typed default for unknown models
 - [ ] Exhaustiveness test fails when a new capability key is added and any runtime forgets to declare it
 - [ ] `chat-command-namespace-refactor` popover and hint banner consume the matrix (no hard-coded runtime conditionals remain in those components)
 - [ ] No circular import between `catalog.ts` and higher-level chat modules
@@ -94,7 +94,7 @@ Capability values reflect post-Phase-1 state. During the transition, Phase 1a/1b
 
 **Included:**
 - Capability type + per-runtime declarations
-- `getCapabilitiesForModel` helper
+- `getFeaturesForModel` helper
 - Exhaustiveness test harness
 
 **Excluded:**

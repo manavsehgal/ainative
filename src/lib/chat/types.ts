@@ -1,7 +1,6 @@
 import {
   getRuntimeFeatures,
   resolveAgentRuntime,
-  type AgentRuntimeId,
   type RuntimeFeatures,
 } from "@/lib/agents/runtime/catalog";
 
@@ -120,7 +119,7 @@ export function getRuntimeForModel(modelId: string): string {
  */
 export function getFeaturesForModel(modelId: string): RuntimeFeatures {
   const runtimeId = resolveAgentRuntime(getRuntimeForModel(modelId));
-  return getRuntimeFeatures(runtimeId as AgentRuntimeId);
+  return getRuntimeFeatures(runtimeId);
 }
 
 /** Suggested prompt category with expandable sub-prompts */

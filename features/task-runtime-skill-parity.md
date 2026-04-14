@@ -63,7 +63,7 @@ Same rationale as Phase 1a (Q2): don't load filesystem hooks on task execution e
 
 ### 6. Capability flag check
 
-Read `RuntimeCapabilities` via `getCapabilitiesForModel(modelId)` before enabling the new options. This keeps the logic honest when future runtimes get their own task execution paths.
+Read `RuntimeFeatures` via `getFeaturesForModel(modelId)` before enabling the new options. This keeps the logic honest when future runtimes get their own task execution paths.
 
 ### 7. Verification
 
