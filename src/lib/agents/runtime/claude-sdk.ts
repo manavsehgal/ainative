@@ -1,3 +1,35 @@
+// ─── Claude Agent SDK options shared by chat and task runtimes ──────
+//
+// Chat (src/lib/chat/engine.ts) and task (src/lib/agents/claude-agent.ts)
+// both construct query() options for the `claude-code` runtime. These
+// constants are the single source of truth so the two code paths cannot
+// drift — a drift that would manifest as "skills work in chat but vanish
+// in tasks on the same project." See features/task-runtime-skill-parity.md
+// and features/chat-claude-sdk-skills.md.
+
+export const CLAUDE_SDK_SETTING_SOURCES = ["user", "project"] as const;
+
+export const CLAUDE_SDK_ALLOWED_TOOLS = [
+  "Skill",
+  "Read",
+  "Grep",
+  "Glob",
+  "Edit",
+  "Write",
+  "Bash",
+  "TodoWrite",
+] as const;
+
+/**
+ * Filesystem tools safe to auto-allow without a permission prompt.
+ * Mirrors the existing browser/exa read-only auto-allow pattern.
+ */
+export const CLAUDE_SDK_READ_ONLY_FS_TOOLS = new Set<string>([
+  "Read",
+  "Grep",
+  "Glob",
+]);
+
 /**
  * Build the environment for the Claude Agent SDK subprocess.
  *

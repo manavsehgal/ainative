@@ -3,7 +3,12 @@ import { db } from "@/lib/db";
 import { projects, chatMessages } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { getAuthEnv } from "@/lib/settings/auth";
-import { buildClaudeSdkEnv } from "@/lib/agents/runtime/claude-sdk";
+import {
+  buildClaudeSdkEnv,
+  CLAUDE_SDK_SETTING_SOURCES,
+  CLAUDE_SDK_ALLOWED_TOOLS,
+  CLAUDE_SDK_READ_ONLY_FS_TOOLS,
+} from "@/lib/agents/runtime/claude-sdk";
 import {
   extractUsageSnapshot,
   mergeUsageSnapshot,
@@ -54,34 +59,15 @@ import {
   isExaReadOnly,
 } from "@/lib/agents/browser-mcp";
 
-// ── Claude SDK chat runtime options (Phase 1a) ───────────────────────
-
-/**
- * Claude Agent SDK options for chat on the `claude-code` runtime (Phase 1a).
- * Exported for testability. See features/chat-claude-sdk-skills.md.
- */
-export const CLAUDE_SDK_SETTING_SOURCES = ["user", "project"] as const;
-
-export const CLAUDE_SDK_ALLOWED_TOOLS = [
-  "Skill",
-  "Read",
-  "Grep",
-  "Glob",
-  "Edit",
-  "Write",
-  "Bash",
-  "TodoWrite",
-] as const;
-
-/**
- * Filesystem tools that are safe to auto-allow without a permission prompt.
- * Mirrors the existing browser/exa read-only auto-allow pattern.
- */
-export const CLAUDE_SDK_READ_ONLY_FS_TOOLS = new Set<string>([
-  "Read",
-  "Grep",
-  "Glob",
-]);
+// Re-exported from runtime/claude-sdk.ts so chat/engine.ts remains a stable
+// import surface for the Phase 1a test suite. The canonical definitions
+// live in the runtime module since task execution needs them too — see
+// features/task-runtime-skill-parity.md Task 1.
+export {
+  CLAUDE_SDK_SETTING_SOURCES,
+  CLAUDE_SDK_ALLOWED_TOOLS,
+  CLAUDE_SDK_READ_ONLY_FS_TOOLS,
+} from "@/lib/agents/runtime/claude-sdk";
 
 /**
  * Pure auto-allow policy for SDK filesystem + Skill tools. Exposed for tests.

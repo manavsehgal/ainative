@@ -89,3 +89,22 @@ describe("hooks excluded per Q2", () => {
     expect(optionsBlock).not.toMatch(/\bhooks\s*:/);
   });
 });
+
+describe("CLAUDE_SDK_* constants source-of-truth", () => {
+  it("exports CLAUDE_SDK_ALLOWED_TOOLS from runtime/claude-sdk", async () => {
+    const mod = await import("@/lib/agents/runtime/claude-sdk");
+    expect(mod.CLAUDE_SDK_ALLOWED_TOOLS).toEqual(
+      expect.arrayContaining(["Skill", "Read", "Grep", "Glob", "Edit", "Write", "Bash", "TodoWrite"])
+    );
+  });
+
+  it("exports CLAUDE_SDK_SETTING_SOURCES from runtime/claude-sdk", async () => {
+    const mod = await import("@/lib/agents/runtime/claude-sdk");
+    expect(mod.CLAUDE_SDK_SETTING_SOURCES).toEqual(["user", "project"]);
+  });
+
+  it("exports CLAUDE_SDK_READ_ONLY_FS_TOOLS from runtime/claude-sdk", async () => {
+    const mod = await import("@/lib/agents/runtime/claude-sdk");
+    expect(mod.CLAUDE_SDK_READ_ONLY_FS_TOOLS).toEqual(new Set(["Read", "Grep", "Glob"]));
+  });
+});
