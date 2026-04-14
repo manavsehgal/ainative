@@ -1,6 +1,6 @@
 ---
 title: Chat Workflow Dedup Variant Tolerance
-status: planned
+status: completed
 priority: P3
 milestone: post-mvp
 source: code-review of commit b5ed09b (dedup workflow creation tool)
@@ -153,8 +153,38 @@ when `force: true` is and isn't required.
 
 - Source: code review of commit `b5ed09b`
 - Related: `workflow-create-dedup`, `chat-engine`, `workflow-engine`
-- Files to modify:
-  - `src/lib/util/similarity.ts` — weighted signals + threshold comment
-  - `src/lib/chat/__tests__/tools/workflow-tools-dedup.test.ts` — new test
-    block
-  - `src/lib/chat/system-prompt.ts` — minor guardrail wording update
+- Files modified in the closeout pass:
+  - `src/lib/chat/tools/workflow-tools.ts` — replaced single pooled
+    `workflowComparableText` with a `workflowSignals` helper returning
+    `{nameText, stepsText}`. `findSimilarWorkflows` now computes
+    separate name and step Jaccards and combines with 0.5/0.5
+    weights (constants `WORKFLOW_NAME_WEIGHT` / `WORKFLOW_STEPS_WEIGHT`)
+    against the existing 0.7 threshold. Extensive block comment above
+    `WORKFLOW_DEDUP_THRESHOLD` documents the rationale and tuning.
+    Kept logic local rather than generalizing into
+    `src/lib/util/similarity.ts` — the other caller (profile dedup)
+    does not need weighted math and should not pay the complexity.
+  - `src/lib/chat/tools/__tests__/workflow-tools-dedup.test.ts` —
+    added four tests under `describe("legitimate variant tolerance")`:
+    two positive-variant cases (Enrich contacts/accounts, Daily/Weekly
+    standup digest) and two guard cases (exact case-insensitive name
+    match; near-identical steps with renamed workflow). All 11 tests
+    in the file green; 88/88 chat-tool tests green.
+  - `create_workflow` tool's `force` param description — added guidance
+    that the guardrail already tolerates target-entity variants so the
+    LLM does not default to `force: true`. No dedicated system-prompt
+    file change was needed; the guidance lives where the LLM reads it.
+
+## Verification run — 2026-04-14
+
+**Empirical tuning table** (combined similarity with 0.5 name / 0.5 steps):
+
+| Pair | Name Jaccard | Step Jaccard | Combined | Outcome |
+|---|---:|---:|---:|---|
+| Enrich contacts ↔ Enrich accounts | 0.33 | 0.86 | **0.60** | ≤0.7 → allowed ✓ |
+| Daily standup digest ↔ Weekly standup digest | 0.50 | 0.87 | **0.68** | ≤0.7 → allowed ✓ |
+| Customer Discovery Pipeline ↔ …Workflow v2 (redesign w/ identical steps) | 0.50 | 1.00 | **0.75** | ≥0.7 → flagged ✓ |
+| Classify customer segments v1 ↔ v2 (guard) | 1.00 | 1.00 | **1.00** | ≥0.7 → flagged ✓ |
+| Deploy frontend ↔ Customer interview (unrelated) | 0.00 | 0.00 | **0.00** | ≤0.7 → allowed ✓ |
+
+The 0.7 threshold cleanly separates variants from duplicates in this corpus with ~0.07–0.10 of headroom on each side. If a future false-positive case surfaces, add a regression test in `workflow-tools-dedup.test.ts → "legitimate variant tolerance"` before re-tuning.

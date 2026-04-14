@@ -2,6 +2,18 @@
 
 ## 2026-04-14
 
+### Completed — chat-dedup-variant-tolerance (P3)
+
+Fixed false positives in the workflow dedup guardrail flagged by the code review of commit `b5ed09b`. Pooled Jaccard over name+step text at threshold 0.7 was blocking legitimate target-entity variants like "Enrich contacts" vs "Enrich accounts" and "Daily standup digest" vs "Weekly standup digest" — forcing users to pass `force: true` for every such pair and eroding trust in the guardrail.
+
+Fix: `findSimilarWorkflows` now splits comparison into name and step signals scored as separate Jaccards, then combines with 0.5/0.5 weights against the unchanged 0.7 threshold. The one-token difference in names AND step prompts contributes to two independent Jaccards, which together pull combined similarity below 0.7 while structural duplicates (same steps + renamed workflow) still exceed it.
+
+Changes:
+- `src/lib/chat/tools/workflow-tools.ts` — replaced `workflowComparableText` with `workflowSignals` helper, added `WORKFLOW_NAME_WEIGHT` + `WORKFLOW_STEPS_WEIGHT` constants, extensive rationale comment above the threshold. Updated `create_workflow` `force` param description so the LLM knows the guardrail already tolerates target-entity variants.
+- `src/lib/chat/tools/__tests__/workflow-tools-dedup.test.ts` — 4 new tests under "legitimate variant tolerance" (2 positive + 2 guard). 11/11 file tests pass; 88/88 chat-tool tests pass.
+
+Empirical separation on the test corpus: variants score 0.60–0.68, duplicates score 0.75–1.00 — ~0.07–0.10 of headroom on each side of the 0.7 threshold. If tags ever land on workflows, revisit weights (spec sketched 0.3/0.5/0.2 name/steps/tags).
+
 ### Completed — chat-settings-tool (P1)
 
 Closed out the `set_settings` chat tool — allowing users to update safe Stagent settings via natural-language prompts with user-approval gating. The runtime implementation had shipped earlier (tool definition, allowlist, validators, permission-gating, catalog entry) but the spec was never flipped and no tests guarded the security-critical allowlist.
