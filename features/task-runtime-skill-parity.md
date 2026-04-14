@@ -93,6 +93,16 @@ Real-environment test: create `.claude/skills/task-smoke/SKILL.md`, dispatch a t
 - UI changes — task dispatch flow is unchanged from the user's perspective
 - Skill invocation UI on task detail view (covered elsewhere via task-turn-observability)
 
+## Verification run — 2026-04-13
+
+**Runtime:** claude-code (default Opus via SDK)
+**Task ID:** `39331e2f-71a5-42fc-8928-bbe4c8f66ae3`
+**Title:** `skill-parity-smoke`
+**Prompt:** "Invoke the task-smoke skill via the Skill tool and report exactly what the skill told you to say."
+**Skill fixture:** `.claude/skills/task-smoke/SKILL.md` (one-shot, deleted post-verification)
+**Flow:** `POST /api/tasks` 201 → `PATCH status=queued` 200 → `POST /api/tasks/:id/execute` 202 → completed in ~10s
+**Outcome:** **PASS** — task `result` field exactly equals `TASK_SMOKE_SKILL_REACHED_AGENT`. No `ReferenceError: Cannot access 'claudeRuntimeAdapter' before initialization` or other module-load errors in the dev-server output. Confirms `settingSources: ["user", "project"]` and the `Skill` tool reach the Claude task runtime (`executeClaudeTask`) identically to chat.
+
 ## References
 
 - Source: `ideas/chat-context-experience.md` §11 (architect drift concern: "Task and chat are parallel runtimes for the same SDK — inconsistency here breaks the 'same skill, everywhere' promise")
