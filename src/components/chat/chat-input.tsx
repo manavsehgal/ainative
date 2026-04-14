@@ -210,6 +210,8 @@ export function ChatInput({
         entityResults={autocomplete.entityResults}
         entityLoading={autocomplete.entityLoading}
         projectProfiles={projectSkills.length > 0 ? projectSkills : undefined}
+        activeTab={autocomplete.activeTab}
+        onTabChange={autocomplete.setActiveTab}
         onSelect={handlePopoverSelect}
         onClose={autocomplete.close}
       />

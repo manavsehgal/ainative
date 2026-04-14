@@ -25,10 +25,11 @@ import {
   getToolCatalogWithSkills,
   groupToolCatalog,
   TOOL_GROUP_ICONS,
-  TOOL_GROUP_ORDER,
   type ToolCatalogEntry,
 } from "@/lib/chat/tool-catalog";
 import type { AutocompleteMode, EntitySearchResult } from "@/hooks/use-chat-autocomplete";
+import { CommandTabBar } from "./command-tab-bar";
+import { partitionCatalogByTab, type CommandTabId } from "@/lib/chat/command-tabs";
 
 interface ChatCommandPopoverProps {
   open: boolean;
@@ -38,6 +39,8 @@ interface ChatCommandPopoverProps {
   entityResults: EntitySearchResult[];
   entityLoading: boolean;
   projectProfiles?: Array<{ id: string; name: string; description: string }>;
+  activeTab: CommandTabId;
+  onTabChange: (tab: CommandTabId) => void;
   onSelect: (item: {
     type: "slash" | "mention";
     id: string;
@@ -86,6 +89,8 @@ export function ChatCommandPopover({
   entityResults,
   entityLoading,
   projectProfiles,
+  activeTab,
+  onTabChange,
   onSelect,
   onClose,
 }: ChatCommandPopoverProps) {
@@ -127,26 +132,34 @@ export function ChatCommandPopover({
           <CommandInput value={query} />
         </div>
 
-        <CommandList className="max-h-[320px]">
-          <CommandEmpty>
-            {mode === "slash" ? "No matching tools" : "No matching entities"}
-          </CommandEmpty>
-
-          {mode === "slash" && (
-            <ToolCatalogItems
-              onSelect={onSelect}
-              projectProfiles={projectProfiles}
-            />
-          )}
-
-          {mode === "mention" && (
+        {mode === "slash" ? (
+          <>
+            <CommandTabBar activeTab={activeTab} onChange={onTabChange} />
+            <CommandList className="max-h-[320px]">
+              <CommandEmpty>No matching tools</CommandEmpty>
+              <div
+                role="tabpanel"
+                id={`command-tabpanel-${activeTab}`}
+                aria-labelledby={`command-tab-${activeTab}`}
+              >
+                <ToolCatalogItems
+                  onSelect={onSelect}
+                  projectProfiles={projectProfiles}
+                  activeTab={activeTab}
+                />
+              </div>
+            </CommandList>
+          </>
+        ) : (
+          <CommandList className="max-h-[320px]">
+            <CommandEmpty>No matching entities</CommandEmpty>
             <MentionItems
               results={entityResults}
               loading={entityLoading}
               onSelect={onSelect}
             />
-          )}
-        </CommandList>
+          </CommandList>
+        )}
       </Command>
     </div>
   );
@@ -157,22 +170,44 @@ export function ChatCommandPopover({
 function ToolCatalogItems({
   onSelect,
   projectProfiles,
+  activeTab,
 }: {
   onSelect: ChatCommandPopoverProps["onSelect"];
   projectProfiles?: ChatCommandPopoverProps["projectProfiles"];
+  activeTab: CommandTabId;
 }) {
   const catalog = getToolCatalogWithSkills({
     includeBrowser: true,
     projectProfiles,
   });
-  const groups = groupToolCatalog(catalog);
+  const parts = partitionCatalogByTab(catalog);
+  const entries = parts[activeTab];
+
+  if (activeTab === "entities") {
+    return (
+      <div className="px-4 py-6 text-sm text-muted-foreground text-center">
+        Type <span className="font-mono text-foreground">@</span> to reference projects, tasks, documents, or files.
+      </div>
+    );
+  }
+
+  if (entries.length === 0) {
+    return (
+      <div className="px-4 py-6 text-sm text-muted-foreground text-center">
+        {activeTab === "skills" ? "No skills available yet." : "Nothing here."}
+      </div>
+    );
+  }
+
+  const groups = groupToolCatalog(entries);
+  const groupNames = Object.keys(groups);
 
   return (
     <>
-      {TOOL_GROUP_ORDER.map((groupName) => {
+      {groupNames.map((groupName) => {
         const items = groups[groupName];
         if (!items?.length) return null;
-        const GroupIcon = TOOL_GROUP_ICONS[groupName];
+        const GroupIcon = TOOL_GROUP_ICONS[groupName as keyof typeof TOOL_GROUP_ICONS] ?? FileText;
         return (
           <CommandGroup key={groupName} heading={groupName}>
             {items.map((entry) => (
