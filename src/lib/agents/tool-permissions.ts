@@ -12,6 +12,7 @@ import { notifications } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import type { CanUseToolPolicy } from "./profiles/types";
 import { isExaTool, isExaReadOnly } from "./browser-mcp";
+import { CLAUDE_SDK_READ_ONLY_FS_TOOLS } from "./runtime/claude-sdk";
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -132,6 +133,17 @@ export async function handleToolPermission(
 
   // Layer 1.5: External MCP read-only tools — auto-approve without I/O
   if (!isQuestion && isExaTool(toolName) && isExaReadOnly(toolName)) {
+    return buildAllowedToolPermissionResponse(input);
+  }
+
+  // Layer 1.75: SDK filesystem read-only tools and Skill invocations —
+  // auto-approve without I/O. Mirrors the chat-side Phase 1a policy
+  // (src/lib/chat/engine.ts canUseTool). Read/Grep/Glob are non-destructive;
+  // Skill load is equivalent to using `claude` CLI directly — any tool the
+  // loaded skill subsequently invokes (Bash, Edit, etc.) goes through this
+  // same canUseTool check. See features/chat-claude-sdk-skills.md Error
+  // & Rescue Registry row "settingSources loads hostile skill."
+  if (!isQuestion && (CLAUDE_SDK_READ_ONLY_FS_TOOLS.has(toolName) || toolName === "Skill")) {
     return buildAllowedToolPermissionResponse(input);
   }
 
