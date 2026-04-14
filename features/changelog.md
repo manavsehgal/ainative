@@ -2,6 +2,23 @@
 
 ## 2026-04-14
 
+### Completed — chat-codex-app-server-skills (P1)
+
+Closed out as a **scope-adjusted** feature. The original spec called for wiring `turn/start` skill parameters into `sendCodexMessage()`, but a closer read of the App Server reference (`.claude/reference/developers-openai-com-codex-sdk/app-server.md` + `skills.md`) confirmed that the protocol has no such parameters — what the spec described is Codex's *natural* behavior when the App Server's `cwd` is set correctly. `cwd` plumbing already worked (`codex-engine.ts:104-105` overrides `workspace.cwd` with the project's `workingDirectory` before any App Server call).
+
+The actual gap was on the *Stagent* side: `chat-ollama-native-skills` injected SKILL.md into Tier 0 unconditionally, duplicating context on Codex (and Claude) where the runtime's native skill discovery already loads the same content from `.agents/skills/` or `.claude/skills/`.
+
+Changes:
+- `src/lib/chat/context-builder.ts` — `buildActiveSkill` now reads the conversation's `runtimeId`, looks up `getRuntimeFeatures(runtimeId).stagentInjectsSkills`, and **suppresses** Tier 0 injection when the flag is `false`. Behavior:
+  - `ollama` → injects (no native path; Stagent must inject)
+  - `claude-code`, `openai-codex-app-server`, `*-direct` → suppressed (native discovery handles it)
+  - Unknown runtime → falls through and injects (safer default than silently dropping)
+- `src/lib/chat/__tests__/active-skill-injection.test.ts` — extended with 4 runtime-flag tests. 8/8 file tests pass; 173/173 chat tests overall.
+
+Browser-verified end-to-end via Claude in Chrome as an **A/B comparison across the code change**: the same conversation with `.claude/skills/technical-writer` activated. Before the fix, the model quoted `## Active Skill: technical-writer` from its system prompt verbatim. After the fix, on the very next turn (same conv, same activation), the model responded `ABSENT` and noted *"The injection that was visible in my previous response is gone — likely due to a code change you made"*. Highest-confidence smoke result possible: same model as oracle, observing the diff between two turns.
+
+Deferred: Q8a runtime-compatibility `requiredTools` filter on `list_skills` (skills don't declare requiredTools today — YAGNI); App Server skill-event chip rendering (events flow through generic tool path today, sufficient for v1); Stagent-side `turn/start` skill wiring (protocol doesn't support it — reframed as "trust native Codex discovery").
+
 ### Completed — chat-ollama-native-skills (P2)
 
 Stagent-managed conversation-scoped skill activation, runtime-agnostic by design but motivated by Ollama (which has no SDK-native skill support). When a skill is bound to a conversation via the new `activate_skill` MCP tool, its SKILL.md is injected into Tier 0 of the system prompt on every subsequent turn until `deactivate_skill` clears it. Same machinery works on Claude / Codex as a programmatic skill-activation path alongside their native handling.

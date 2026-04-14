@@ -1,6 +1,6 @@
 ---
 title: Chat — Codex App Server Skill Integration
-status: planned
+status: completed
 priority: P1
 milestone: post-mvp
 source: ideas/chat-context-experience.md §2.3, §4.1, §4.2, §8 Phase 1b
@@ -100,3 +100,40 @@ Real-environment smoke test: same `.claude/skills/test-skill/SKILL.md` used in P
 - Reference docs: `.claude/reference/developers-openai-com-codex-sdk/app-server.md`, `skills.md`, `concepts-customization.md`
 - Depends on: `chat-claude-sdk-skills` (establishes `list_profiles` contract + popover UX), `runtime-capability-matrix` (compatibility flags), `environment-scanner`, `environment-sync-engine`, `codex-chat-engine`
 - Existing code: `src/lib/chat/codex-engine.ts`, `src/lib/chat/engine.ts:152-166` (dispatcher), `src/lib/environment/scanner.ts`, `src/lib/agents/runtime/codex-app-server-client.ts`
+
+## Scope adjustment after reading the App Server reference
+
+The original spec called for wiring `turn/start` skill parameters into `sendCodexMessage()` to give the App Server explicit skill metadata. **Re-reading `.claude/reference/developers-openai-com-codex-sdk/app-server.md` and `skills.md`** revealed that:
+
+1. **The Codex App Server's `turn/start` does NOT accept `skills` / `invokeSkill` parameters in the actual protocol.** What the spec described is Codex's *natural* behavior: when the App Server's `cwd` is set to the project's working directory, Codex auto-discovers `.agents/skills/` (and walks up to the repo root). It also reads `~/.agents/skills/` for user scope. No explicit metadata wiring is required.
+2. **`AGENTS.md` auto-load is already declared** in the runtime capability matrix (`catalog.ts:130 → autoLoadsInstructions: "AGENTS.md"`) and happens automatically based on `cwd`.
+3. **`cwd` plumbing was already correct** — `codex-engine.ts:104-105` overrides `workspace.cwd` with the project's `workingDirectory`; that value flows into `auth.connect(workspace.cwd)` (line 176) and every subsequent App Server call (lines 304, 311, 340).
+
+The actual gap was on the *Stagent* side: my `chat-ollama-native-skills` feature unconditionally injected SKILL.md into Tier 0 of the system prompt regardless of runtime, duplicating context on Codex (and Claude) where the runtime's native skill discovery already loads the same content.
+
+### Files shipped (this feature)
+
+- `src/lib/chat/context-builder.ts` — `buildActiveSkill` now reads the conversation's `runtimeId`, looks up `getRuntimeFeatures(runtimeId).stagentInjectsSkills`, and **suppresses** Tier 0 injection when the flag is `false`. The runtime capability matrix already encoded this decision; we just needed to consult it. Behavior:
+  - `ollama` → injects (no native path; Stagent must inject)
+  - `claude-code`, `openai-codex-app-server`, `*-direct` → suppressed (runtime handles native discovery from `.claude/skills/` or `.agents/skills/`)
+  - Unknown runtime → falls through and injects (safer default than silently dropping)
+- `src/lib/chat/__tests__/active-skill-injection.test.ts` — extended with 4 new tests covering each runtime branch (Claude suppressed, Codex suppressed, Ollama injected, unknown→inject). 8/8 file tests pass; 173/173 chat tests overall.
+
+### Deferred (per scope adjustment)
+
+- **Q8a runtime-compatibility filter on `list_skills`** — skills don't currently declare `requiredTools`. Adding a parameter that does nothing on every existing skill is YAGNI; revisit when `requiredTools` lands in the skill metadata schema.
+- **App Server skill event translation into chat events** — the App Server already emits skill-related events as part of its standard tool stream; today those render as generic tool chips, which is sufficient. Specialized skill-chip rendering would be UX polish; defer to `chat-environment-integration` or a dedicated UX feature.
+- **Stagent-driven `turn/start` skill parameter wiring** — the protocol doesn't support it. Reframed as "trust Codex's native discovery + suppress Stagent's duplicate injection".
+
+## Verification run — 2026-04-14
+
+End-to-end browser smoke driven via Claude in Chrome. Used the same conversation that had `.claude/skills/technical-writer` activated from the previous feature's verification — making this an A/B test across the code change with the model itself as oracle:
+
+| Turn | Model | Code state | Question | Response |
+|---|---|---|---|---|
+| Earlier (chat-ollama-native-skills verification) | Claude Opus 4.6 | Tier 0 injects unconditionally | "Search system prompt for `## Active Skill:`. Quote line if present." | *"The line is present. Quoting it verbatim: `## Active Skill: technical-writer`"* + reproduced SKILL.md content |
+| Now (this feature) | Claude Opus 4.6 (same conv, same activation) | Tier 0 honors `stagentInjectsSkills` flag | Same question | *"ABSENT. The `## Active Skill:` line is no longer present in my system prompt on this turn. The injection that was visible in my previous response is gone — likely due to a code change you made"* |
+
+The model literally noticed the diff between turns. Same model, same conversation state, same skill bound — only the Tier 0 injection logic changed. Claude's native skill discovery still works (Claude SDK loads `.claude/skills/technical-writer` natively); we just stopped duplicating it.
+
+By construction, the same suppression behavior applies to `openai-codex-app-server` (also `stagentInjectsSkills: false`). Codex's native discovery from `.agents/skills/` continues to function via the `cwd` plumbing already in `codex-engine.ts`. A direct Codex-runtime smoke wasn't run in this session (no Codex authentication configured), but the unit test `does NOT inject on openai-codex-app-server` covers the suppression deterministically.
