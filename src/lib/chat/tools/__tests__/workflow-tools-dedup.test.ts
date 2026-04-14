@@ -214,4 +214,138 @@ describe("findSimilarWorkflows", () => {
     expect(result).toHaveLength(1);
     expect(result[0].similarity).toBe(1); // exact name match
   });
+
+  // ── Legitimate variant tolerance ────────────────────────────────────
+  //
+  // Regression tests for the concern flagged in the code review of
+  // commit b5ed09b: that WORKFLOW_DEDUP_THRESHOLD = 0.7 on a pooled
+  // Jaccard over keywords would flag legitimate target-entity variants
+  // (e.g. "Enrich contacts" vs "Enrich accounts") as duplicates,
+  // eroding trust in the guardrail. Each pair here shares a dominant
+  // verb and most of the step structure — the only difference is the
+  // target entity noun.
+  //
+  // Success criterion per spec:
+  //   - the two "positive-variant" cases must return [] (no match)
+  //   - the two "guard" cases must still flag duplicates (similarity >=
+  //     WORKFLOW_DEDUP_THRESHOLD, or exact-name match)
+  describe("legitimate variant tolerance", () => {
+    it("allows Enrich contacts and Enrich accounts as distinct workflows", async () => {
+      setRows([
+        {
+          id: "wf1",
+          name: "Enrich contacts",
+          definition: JSON.stringify({
+            pattern: "sequence",
+            steps: [
+              { id: "s1", name: "Load rows from contacts table", prompt: "Select rows from the contacts table" },
+              { id: "s2", name: "Call enrichment agent", prompt: "Invoke enrichment agent on each row" },
+              { id: "s3", name: "Write back to table", prompt: "Write enriched data back to the contacts table" },
+            ],
+          }),
+          projectId: "proj_a",
+        },
+      ]);
+
+      const result = await findSimilarWorkflows(
+        "proj_a",
+        "Enrich accounts",
+        JSON.stringify({
+          pattern: "sequence",
+          steps: [
+            { id: "s1", name: "Load rows from accounts table", prompt: "Select rows from the accounts table" },
+            { id: "s2", name: "Call enrichment agent", prompt: "Invoke enrichment agent on each row" },
+            { id: "s3", name: "Write back to table", prompt: "Write enriched data back to the accounts table" },
+          ],
+        })
+      );
+
+      expect(result).toEqual([]);
+    });
+
+    it("allows Daily standup digest and Weekly standup digest as distinct workflows", async () => {
+      setRows([
+        {
+          id: "wf1",
+          name: "Daily standup digest",
+          definition: JSON.stringify({
+            pattern: "sequence",
+            steps: [
+              { id: "s1", name: "Fetch standup messages", prompt: "Pull daily standup messages from the team channel" },
+              { id: "s2", name: "Summarize daily topics", prompt: "Write a daily digest of key topics and blockers" },
+              { id: "s3", name: "Post digest to channel", prompt: "Post the daily summary digest to the #ops channel" },
+            ],
+          }),
+          projectId: "proj_a",
+        },
+      ]);
+
+      const result = await findSimilarWorkflows(
+        "proj_a",
+        "Weekly standup digest",
+        JSON.stringify({
+          pattern: "sequence",
+          steps: [
+            { id: "s1", name: "Fetch standup messages", prompt: "Pull weekly standup messages from the team channel" },
+            { id: "s2", name: "Summarize weekly topics", prompt: "Write a weekly digest of key topics and blockers" },
+            { id: "s3", name: "Post digest to channel", prompt: "Post the weekly summary digest to the #ops channel" },
+          ],
+        })
+      );
+
+      expect(result).toEqual([]);
+    });
+
+    it("still blocks exact case-insensitive name matches (guard)", async () => {
+      setRows([
+        {
+          id: "wf1",
+          name: "Enrich contacts",
+          definition: JSON.stringify({
+            pattern: "sequence",
+            steps: [
+              { id: "s1", name: "Load rows from contacts table", prompt: "Select rows from the contacts table" },
+            ],
+          }),
+          projectId: "proj_a",
+        },
+      ]);
+
+      const result = await findSimilarWorkflows(
+        "proj_a",
+        "ENRICH CONTACTS", // same name, different case
+        JSON.stringify({ pattern: "sequence", steps: [] })
+      );
+
+      expect(result).toHaveLength(1);
+      expect(result[0].similarity).toBe(1);
+      expect(result[0].reason).toContain("Same name");
+    });
+
+    it("still blocks near-identical step content with near-identical name (guard)", async () => {
+      const sharedSteps = [
+        { id: "s1", name: "Fetch customer segments list", prompt: "Load the customer segments list from BigQuery warehouse" },
+        { id: "s2", name: "Classify each segment bucket", prompt: "Classify each customer segment bucket using ML model" },
+        { id: "s3", name: "Write segments back warehouse", prompt: "Write segment classifications back into BigQuery warehouse" },
+      ];
+      setRows([
+        {
+          id: "wf1",
+          name: "Classify customer segments v1",
+          definition: JSON.stringify({ pattern: "sequence", steps: sharedSteps }),
+          projectId: "proj_a",
+        },
+      ]);
+
+      const result = await findSimilarWorkflows(
+        "proj_a",
+        "Classify customer segments v2",
+        JSON.stringify({ pattern: "sequence", steps: sharedSteps })
+      );
+
+      expect(result.length).toBeGreaterThanOrEqual(1);
+      expect(result[0].id).toBe("wf1");
+      expect(result[0].similarity).toBeGreaterThanOrEqual(0.7);
+    });
+  });
 });

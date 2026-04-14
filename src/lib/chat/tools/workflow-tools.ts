@@ -21,30 +21,68 @@ const VALID_WORKFLOW_STATUSES = [
   "failed",
 ] as const;
 
-/** Minimum Jaccard score for two workflows to count as "near duplicates". */
+/**
+ * Minimum weighted-Jaccard score for two workflows to count as "near
+ * duplicates". Combined score = NAME_WEIGHT * nameJaccard +
+ * STEPS_WEIGHT * stepsJaccard.
+ *
+ * Why weighted-and-split rather than a single pooled Jaccard? A pooled
+ * Jaccard over name+step text at threshold 0.7 was flagging legitimate
+ * target-entity variants (e.g. "Enrich contacts" vs "Enrich accounts",
+ * "Daily standup digest" vs "Weekly standup digest") as duplicates,
+ * forcing users to pass `force: true` for every such pair and eroding
+ * trust in the guardrail. Splitting the signal lets the one-token
+ * difference in names AND prompts contribute to two independent
+ * Jaccards, which together pull combined similarity below 0.7 while
+ * structural duplicates (identical steps + near-identical name) still
+ * exceed the threshold.
+ *
+ * Tuning rationale:
+ * - 0.7 threshold preserved from the original implementation.
+ * - 0.5/0.5 weights (no tags). The feature spec sketched a 0.3/0.5/0.2
+ *   split over name/steps/tags, but workflows do not persist tags in
+ *   their definition JSON today. Without a tags signal, 0.5/0.5
+ *   empirically separates legitimate variants (Enrich contacts vs
+ *   accounts: 0.60; Daily vs Weekly standup: 0.68) from structural
+ *   duplicates (identical steps with renamed workflow: 0.75+) with
+ *   headroom on both sides. Revisit weights if tag data lands.
+ *
+ * If a future false-positive case surfaces, add a regression test in
+ * `workflow-tools-dedup.test.ts` → "legitimate variant tolerance" and
+ * re-tune rather than bumping `force: true` everywhere.
+ *
+ * See `features/chat-dedup-variant-tolerance.md`.
+ */
 const WORKFLOW_DEDUP_THRESHOLD = 0.7;
+const WORKFLOW_NAME_WEIGHT = 0.5;
+const WORKFLOW_STEPS_WEIGHT = 0.5;
 
 /**
- * Pull the comparable text out of a workflow definition JSON string:
- * name + each step's name + each step's prompt. Invalid JSON returns "".
+ * Split a workflow into its two comparable text signals: the name alone,
+ * and a concatenation of every step's name + prompt. Callers pass each
+ * signal through `extractKeywords` separately so name-level tokens don't
+ * get drowned out by the much larger step-text bag, and vice versa.
  *
- * Shared by findSimilarWorkflows for the candidate and each existing row.
+ * Malformed definition JSON falls back to `stepsText = ""`.
  */
-function workflowComparableText(name: string, definitionJson: string | null): string {
-  const parts: string[] = [name];
-  if (!definitionJson) return parts.join(" ");
+function workflowSignals(
+  name: string,
+  definitionJson: string | null
+): { nameText: string; stepsText: string } {
+  if (!definitionJson) return { nameText: name, stepsText: "" };
   try {
     const def = JSON.parse(definitionJson);
+    const stepParts: string[] = [];
     if (Array.isArray(def?.steps)) {
       for (const step of def.steps) {
-        if (typeof step?.name === "string") parts.push(step.name);
-        if (typeof step?.prompt === "string") parts.push(step.prompt);
+        if (typeof step?.name === "string") stepParts.push(step.name);
+        if (typeof step?.prompt === "string") stepParts.push(step.prompt);
       }
     }
+    return { nameText: name, stepsText: stepParts.join(" ") };
   } catch {
-    // Malformed JSON — fall back to just the name.
+    return { nameText: name, stepsText: "" };
   }
-  return parts.join(" ");
 }
 
 export interface SimilarWorkflowMatch {
@@ -87,9 +125,9 @@ export async function findSimilarWorkflows(
     .where(eq(workflows.projectId, projectId));
 
   const matches: SimilarWorkflowMatch[] = [];
-  const candidateKeywords = extractKeywords(
-    workflowComparableText(candidateName, candidateDefinitionJson)
-  );
+  const candidateSignals = workflowSignals(candidateName, candidateDefinitionJson);
+  const candidateNameKeywords = extractKeywords(candidateSignals.nameText);
+  const candidateStepKeywords = extractKeywords(candidateSignals.stepsText);
   const candidateNameLower = candidateName.trim().toLowerCase();
 
   for (const row of existing) {
@@ -104,11 +142,14 @@ export async function findSimilarWorkflows(
       continue;
     }
 
-    // Tier 2: Jaccard similarity on keywords
-    const existingKeywords = extractKeywords(
-      workflowComparableText(row.name, row.definition)
-    );
-    const similarity = jaccard(candidateKeywords, existingKeywords);
+    // Tier 2: weighted Jaccard — name and step signals scored separately,
+    // then combined with WORKFLOW_NAME_WEIGHT / WORKFLOW_STEPS_WEIGHT so
+    // target-entity variants (same verb, different noun) are not flagged.
+    const existingSignals = workflowSignals(row.name, row.definition);
+    const nameJ = jaccard(candidateNameKeywords, extractKeywords(existingSignals.nameText));
+    const stepsJ = jaccard(candidateStepKeywords, extractKeywords(existingSignals.stepsText));
+    const similarity =
+      WORKFLOW_NAME_WEIGHT * nameJ + WORKFLOW_STEPS_WEIGHT * stepsJ;
     if (similarity >= WORKFLOW_DEDUP_THRESHOLD) {
       matches.push({
         id: row.id,
@@ -203,7 +244,7 @@ export function workflowTools(ctx: ToolContext) {
           .boolean()
           .optional()
           .describe(
-            "Set to true to bypass the near-duplicate check and always create a new workflow. Only use this when the user has explicitly confirmed they want a second workflow alongside a similar existing one (e.g., 'v2', 'alternate approach'). Default false."
+            "Set to true to bypass the near-duplicate check and always create a new workflow. Only use this when the user has explicitly confirmed they want a second workflow alongside a similar existing one (e.g., 'v2', 'alternate approach'). The dedup check already tolerates target-entity variants (e.g., 'Enrich contacts' vs 'Enrich accounts', 'Daily' vs 'Weekly' standup digest) — so you should NOT pass force=true for those. Default false."
           ),
       },
       async (args) => {
