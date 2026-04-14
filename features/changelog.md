@@ -2,6 +2,16 @@
 
 ## 2026-04-14
 
+### Completed — chat-environment-integration (P2)
+
+The chat Skills tab now surfaces per-skill environment metadata: health (derived from `modifiedAt` age — `healthy` <180d / `stale` 180-365d / `aging` ≥365d / `unknown`), cross-tool sync status (`synced` / `claude-only` / `codex-only` / `shared` based on file presence), profile linkage (from `environment_artifacts.linked_profile_id` populated by the existing profile-linker), and scope (`user` | `project`). A passive "Recommended" star appears on healthy skills whose name + preview keywords match the conversation's recent user messages (≥2 distinct hits, stopword-filtered); per-conversation dismissal persists 7 days. Fire-and-forget `POST /api/environment/rescan-if-stale` is called on every conversation activation — reuses the existing `shouldRescan` + `ensureFreshScan` helpers from `auto-scan.ts`, so no new stampede/lock code was needed.
+
+Architecture is strictly read-only over the existing scanner. `listSkillsEnriched()` goes directly to the DB (`getLatestScan()` + `getArtifacts()`) because `linkedProfileId` only lives on the DB row — not the in-memory `EnvironmentArtifact` type the scanner returns. The `list_skills` MCP tool's `enriched: boolean` param is additive and backwards compatible. `SkillRow` renders 4 badges + optional dismissable star + ↗ deep-link to `/environment?skill=<name>` when the skill isn't fully synced.
+
+**Scope-adjusted from spec**: the profile-suggestion *chip above the input* became a passive star inside the Skills tab — same match logic, lower UI intrusiveness, simpler state.
+
+37 new unit tests; `npx tsc --noEmit` clean; endpoint smoke-verified on localhost:3010.
+
 ### Completed — chat-command-namespace-refactor (P1)
 
 **Breaking UX change** (accepted per spec Q7 — alpha product, no deprecation shim). The `/` popover is now tabbed (Actions / Skills / Tools / Entities) instead of a single grouped list. Eight new session commands (`/clear`, `/compact`, `/export`, `/help`, `/settings`, `/new-task`, `/new-workflow`, `/new-schedule`) live under a new `Session` group that surfaces first in the Actions tab. A runtime-aware capability banner renders below the chat input on runtimes that lack filesystem + Bash tools (Ollama, Anthropic-direct, OpenAI-direct) and stays silent on Claude + Codex App Server. The ⌘K palette gained Skills and Files groups (files with 200ms debounced search against `/api/chat/files/search`). New keyboard bindings: `⌘L` / `⌘⇧L` to clear, `⌘/` to focus the input and open the slash menu.

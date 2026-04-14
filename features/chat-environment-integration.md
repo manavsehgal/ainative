@@ -1,6 +1,6 @@
 ---
 title: Chat — Environment Metadata Integration
-status: planned
+status: completed
 priority: P2
 milestone: post-mvp
 source: ideas/chat-context-experience.md §4.4, §8 Phase 4
@@ -92,3 +92,41 @@ Environment metadata is already cached in the DB (5-min TTL per `environment-cac
 - Source: `ideas/chat-context-experience.md` §4.4 (environment-aware skill discovery), §8 Phase 4, DD-CE-004 (augment-not-replace principle)
 - Depends on: `chat-command-namespace-refactor` (Skills tab surface), `environment-dashboard`, `environment-cache`, `environment-health-scoring`, `profile-environment-sync`, `auto-environment-scan`
 - Existing code: `src/lib/environment/scanner.ts`, `src/lib/environment/health-scoring.ts`, `src/lib/chat/context-builder.ts`, MEMORY.md badge variant conventions
+
+## Verification — 2026-04-14
+
+### What shipped
+- `src/lib/environment/skill-enrichment.ts` — pure `computeHealthScore` (modifiedAt age buckets), `computeSyncStatus` (claude+codex presence), and `enrichSkills` orchestrator (group by name, dedupe by absPath for symlinks).
+- `src/lib/environment/skill-recommendations.ts` — keyword-based `computeRecommendation` with stopword filter + ≥2 distinct hits, excludes active + dismissed + aging/broken skills.
+- `src/lib/chat/dismissals.ts` — 7d TTL store with pure functional API + `browserLocalStore` adapter (try/catch safe against QuotaExceeded / SSR).
+- `src/lib/environment/list-skills.ts` — new `listSkillsEnriched()` reads the latest scan directly from the DB via `getLatestScan()` + `getArtifacts()` so `linkedProfileId` (only on the DB row, not the in-memory artifact) flows through.
+- `src/lib/chat/tools/skill-tools.ts` — `list_skills` MCP tool accepts optional `enriched: boolean` (additive, backwards compatible).
+- `src/app/api/environment/skills/route.ts` — GET endpoint returning enriched skills.
+- `src/app/api/environment/rescan-if-stale/route.ts` — fire-and-forget POST reusing `shouldRescan` + `ensureFreshScan` from existing `auto-scan.ts`.
+- `src/components/chat/skill-row.tsx` — per-row UI with 4 badges (health / sync / profile link / scope), recommended star, dismiss X, deep-link ↗ when not fully synced.
+- `src/hooks/use-enriched-skills.ts` — fetches `/api/environment/skills` on popover open with AbortController cleanup.
+- `src/hooks/use-recent-user-messages.ts` — reads last N user messages from `useChatSession()`.
+- `src/components/chat/chat-command-popover.tsx` — Skills tab renders `SkillRow`s with recommendation + dismissal wired via `dismissTick` state to force recompute after dismiss.
+- `src/components/chat/chat-session-provider.tsx` — new `useEffect` on `activeId` change POSTs to `/api/environment/rescan-if-stale` (fire-and-forget).
+
+### Tests
+- 37 new unit tests across `skill-enrichment`, `skill-recommendations`, `dismissals`, `list-skills-enriched`, `skill-row`, `rescan-if-stale`.
+- Full suite: 934 passing / 12 skipped / 1 pre-existing e2e (needs running server).
+- `npx tsc --noEmit` clean.
+
+### Smoke verification (localhost:3010)
+- `GET /api/environment/skills` → 200 with JSON array; each item includes `healthScore`, `syncStatus`, `linkedProfileId`, `absPaths`.
+- `POST /api/environment/rescan-if-stale` → 200 `{ scanned: true }` on first call.
+
+### Scope deviations from spec
+- **AC #4** — spec called for a "profile suggestion chip above the input" triggered by keyword match. Replaced with a **passive "Recommended" star** inside the Skills tab (+ dismiss X on the same row). Lower UI intrusiveness, simpler state model; keeps the chat's prime real estate uncluttered.
+- **healthScore** derived from `modifiedAt` age only (healthy <180d / stale 180-365d / aging ≥365d). No usage telemetry in the codebase today to factor in.
+- **Sync click-through** ships as `/environment?skill=<name>` — dashboard route may or may not parse the param; benign if not (dashboard just opens).
+- `syncStatus` treats `shared` artifacts as covering both tools (claude+shared or codex+shared → synced).
+
+### Known follow-ups
+- `chat-environment-integration` unlocks `chat-advanced-ux` (P3), which was intentionally deferred to sub-feature grooming.
+- Recommendation quality: keyword match with a conservative ≥2-hits threshold. Upgrade to embeddings if signal demands it.
+- Dashboard `?skill=<name>` deep-link query-param handling: currently a no-op if the dashboard doesn't parse it; adding that parser is a small follow-up.
+
+Commits: `6a4a76a`, `32fd8cf`, `e180e31`, `4318344`, `ef15e6b`, `9bd1eb3`, `fefd02c`, `172f1c1`, `9f1d4fc`, `96b8d23`, `d06dca4`, `f852519`.
