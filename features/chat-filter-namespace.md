@@ -1,6 +1,6 @@
 ---
 title: Chat — `#key:value` Filter Namespace
-status: in-progress  # v1 (chat popover) shipped 2026-04-14; v2 list-page + skills-tab deferred
+status: completed
 priority: P2
 milestone: post-mvp
 source: chat-advanced-ux.md §1 (split during grooming, 2026-04-14)
@@ -56,16 +56,16 @@ Published map of `{ surface → allowedKeys }` so popovers can autocomplete the 
 
 ## Acceptance Criteria
 
-- [x] `parseFilterInput(str)` unit tests cover: single clause, multiple clauses, raw-query remainder, hyphens/underscores in keys, case preservation, back-to-back clauses, special characters (17 tests, excluding quoted values — deferred to v2)
+- [x] `parseFilterInput(str)` unit tests cover: single clause, multiple clauses, raw-query remainder, hyphens/underscores in keys, case preservation, back-to-back clauses, special characters, AND quoted values (22 tests — v1 17 + v2 5)
 - [x] Typing `@ #type:task` inside the chat mention popover filters entities to tasks only
 - [x] Typing `@ #status:completed` filters to entities with matching status (case-insensitive substring)
 - [x] Combined clauses (`@ #type:task #status:completed`) apply AND semantics
 - [x] Mention-trigger regex extended to allow space + `#` continuation without closing the popover
 - [x] Unknown keys pass through without errors (skipped per `matchesClauses` contract)
 - [x] No regression in existing popover text search — `rawQuery` (filter-stripped) is what cmdk sees for fuzzy match
-- [ ] Typing `#scope:project` inside `/skills` filters the Skills tab (deferred — v2)
+- [x] Typing `#scope:project` inside `/skills` filters the Skills tab (shipped v2 — `filteredEnrichedSkills` memo in `chat-command-popover.tsx`)
 - [ ] Backspace/delete correctly clears partial filter clauses (works by regex structure; no explicit UX handling)
-- [ ] `/tasks?filter=%23status%3Ablocked` list page applies the same filter (deferred — v2)
+- [x] `/documents?filter=%23type%3Apdf` list page applies the same filter (v2 — reference consumer is `/documents`, not `/tasks` which is a redirect stub)
 
 ## v1 Shipped Scope (2026-04-14)
 
@@ -74,13 +74,19 @@ Published map of `{ surface → allowedKeys }` so popovers can autocomplete the 
 - Regex extension in `use-chat-autocomplete.ts` to keep popover open through space+`#`
 - 17 parser unit tests + browser-verified end-to-end
 
-## v2 Deferred Scope
+## v2 Shipped Scope (2026-04-14)
 
-- Quoted values (`#tag:"needs review"`) — v1 value terminates at whitespace or `#`
-- List-page consumption (`/tasks`, `/projects`, `/workflows` URL state)
-- Skills-tab filtering (`/skills #scope:project`)
-- More filter keys (`#priority` requires extending entities/search response shape)
+- Quoted values (`#tag:"needs review"`) — `CLAUSE_PATTERN` extended to `/#([A-Za-z][\w-]*):(?:"([^"]*)"|([^\s#]+))/g`
+- List-page reference consumer at `/documents` — `FilterInput` in `<FilterBar>`, URL state via `?filter=`
+- Skills-tab filtering (`/skills #scope:project`, `/skills #type:<tool>`)
+- Shared `FilterInput` component at `src/components/shared/filter-input.tsx`
+
+## v3 Deferred Scope
+
+- More filter keys on entity-search response shape (`#priority`, `#assignee`)
 - NOT/OR logic
+- Full list-page rollout (`/projects`, `/workflows`, tables) — `/documents` is the reference consumer
+- Per-surface key autocomplete in the popover
 
 ## Scope Boundaries
 

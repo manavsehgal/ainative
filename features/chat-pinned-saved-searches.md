@@ -1,6 +1,6 @@
 ---
 title: Chat — Pinned Entries & Saved Searches
-status: in-progress  # v1 pinning shipped 2026-04-14; saved searches deferred to v2
+status: completed
 priority: P3
 milestone: post-mvp
 source: chat-advanced-ux.md §2 (split during grooming, 2026-04-14)
@@ -66,9 +66,9 @@ One JSON read on app boot, in-memory in a `useSettings()` hook. Mutations POST t
 - [x] Settings migration is a no-op — new `chat.pinnedEntries` key is self-initializing via `getSetting` returning null → `[]`
 - [x] Pinned items hidden from their regular type group so they don't render twice
 - [x] Pin records denormalize `label`, `description`, `status` so they render standalone even when outside `entities/search`'s top-N window
-- [ ] `Save this view` button appears only when filter clauses are present (deferred — v2)
-- [ ] Saved searches appear in the `Saved` group of the relevant popover and in `⌘K` (deferred — v2)
-- [ ] Right-click / `⌘P` on popover item pins it (deferred — hover-button is v1 UX)
+- [x] `Save this view` footer appears in the chat popover when filter clauses are present (shipped v2 via `SaveViewFooter` in `chat-command-popover.tsx`)
+- [x] Saved searches appear in a `Saved` group of the mention popover (surface-scoped via first-result inference) AND in the `⌘K` palette (shipped v2)
+- [ ] Right-click / `⌘P` on popover item pins it (deferred — hover-button is v1/v2 UX; keyboard shortcut deferred to v3)
 
 ## v1 Shipped Scope (2026-04-14)
 
@@ -78,13 +78,21 @@ One JSON read on app boot, in-memory in a `useSettings()` hook. Mutations POST t
 - Denormalized pin record (id, type, label, description, status, pinnedAt)
 - Dedup-by-id on PUT (last-write-wins) in the route handler
 
-## v2 Deferred Scope
+## v2 Shipped Scope (2026-04-14)
 
-- Saved searches (whole feature — depends on picking UX for "Save this view")
+- `/api/settings/chat/saved-searches` route (GET + PUT) with Zod validation + 6 tests
+- `useSavedSearches()` hook — fetch-once + optimistic save/remove
+- `Saved` cmdk group in the chat mention popover, surface-scoped by the first filtered entity type
+- `Save this view` footer affordance (inline rename → persist) when `parsed.clauses.length > 0`
+- `⌘K` palette `Saved searches` group — navigates to the surface's list route with `?filter=<input>`
+
+## v3 Deferred Scope
+
 - Right-click context menu + ⌘P keyboard shortcut
-- `⌘K` palette surfacing of saved searches
-- Reordering pins
+- Reordering pins (drag or explicit up/down)
 - Stale-label refresh (pins pointing to renamed entities stay stale until un-pin/re-pin)
+- Slash-mode (skills/profiles tab) surface inference for saved searches — v2 is mention-mode only
+- Editing a saved search's label post-save
 
 ## Scope Boundaries
 

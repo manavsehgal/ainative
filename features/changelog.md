@@ -2,6 +2,31 @@
 
 ## 2026-04-14
 
+### Shipped v2 — chat-filter-namespace + chat-pinned-saved-searches (Phase 1 of retired chat-advanced-ux umbrella)
+
+Closed out the two `in-progress` specs spun out of `chat-advanced-ux`. Both now `completed`.
+
+**chat-filter-namespace v2:**
+- Parser accepts double-quoted values (`#tag:"needs review"`) — `CLAUSE_PATTERN` extended with a two-alternative regex, 5 new parser tests (22 total)
+- Shared `FilterInput` component (`src/components/shared/filter-input.tsx`) — reusable outside chat
+- `/documents` list page is the reference consumer — free-text search input replaced with `FilterInput`, clauses AND with existing Select filters, raw string syncs to `?filter=` URL param (shareable, refresh-persistent)
+- Skills popover tab applies `#scope:project|user` and `#type:<tool>` via `filteredEnrichedSkills` memo + disambiguated empty-state ("no skills match these filters" vs "no skills available yet")
+
+**chat-pinned-saved-searches v2 (saved searches):**
+- New `/api/settings/chat/saved-searches` route (GET/PUT) + 6 Zod-validated tests — mirrors the v1 pins route pattern (dedup-by-id, malformed-value recovery)
+- `useSavedSearches()` hook — fetch-once + optimistic save/remove
+- Mention popover renders a `Saved` cmdk group at the top (surface-scoped by inferring from first filtered entity type)
+- `SaveViewFooter` component — "Save this view" button when `parsed.clauses.length > 0`, expands to inline rename form → persists via the hook
+- `⌘K` palette gets a `Saved searches` group between Recent and Navigation; selecting a search navigates to `SURFACE_ROUTE[surface]?filter=<input>`
+
+**Design decisions:**
+- `/documents` picked over `/tasks` as the list-page reference consumer — `src/app/tasks/page.tsx` is a 5-line redirect stub to `/dashboard`, while `DocumentBrowser` already mounted `<FilterBar>`. Wider list-page rollout deferred to v3.
+- Surface inference for saved searches uses the first filtered entity type. Slash-mode (skills/profiles) surface inference deferred to v3 — the ⌘K palette still surfaces ALL saved searches regardless of surface.
+- `onApplySavedSearch` threaded as an optional prop on `ChatCommandPopoverProps` (no-op if consumer doesn't pass it) — avoids a deeper refactor of the popover's input-binding layer.
+- `SaveViewFooter` uses plain `<form>`/`<input>` (not shadcn `<Form>`) for a tight footer inside cmdk — simpler and avoids nested React Hook Form state in a dropdown.
+
+**Smoke-test budget note:** No runtime-catalog imports touched; unit + route tests + tsc sufficient. Full vitest run: 971 pass / 12 skipped (1 unrelated E2E suite skips without dev-server).
+
 ### Status Sync — Feature Audit
 
 Audited all 26 non-terminal feature specs against the codebase. Adjustments:
