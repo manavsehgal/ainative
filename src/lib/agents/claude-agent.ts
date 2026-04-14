@@ -15,7 +15,12 @@ import {
 import { getProfile } from "./profiles/registry";
 import { resolveProfileRuntimePayload, type ResolvedProfileRuntimePayload } from "./profiles/compatibility";
 import type { CanUseToolPolicy } from "./profiles/types";
-import { buildClaudeSdkEnv } from "./runtime/claude-sdk";
+import {
+  buildClaudeSdkEnv,
+  CLAUDE_SDK_ALLOWED_TOOLS,
+  CLAUDE_SDK_SETTING_SOURCES,
+} from "./runtime/claude-sdk";
+import { getFeaturesForModel } from "@/lib/chat/types";
 import { getActiveLearnedContext } from "./learned-context";
 import { getLaunchCwd, getWorkspaceContext } from "@/lib/environment/workspace-context";
 import { analyzeForLearnedPatterns } from "./pattern-extractor";
@@ -75,16 +80,29 @@ async function withStagentMcpServer(
 
 /**
  * Prepend `mcp__stagent__*` to a profile's explicit allowedTools so the
- * stagent tool registration survives the SDK preset filter. Returns
- * `undefined` when the profile has no allowedTools — callers should spread
- * the result conditionally so the SDK falls through to preset defaults in
- * that case.
+ * stagent tool registration survives the SDK preset filter. When the
+ * profile has no explicit allowlist and `includeSdkTools` is true, fall
+ * back to Phase 1a's CLAUDE_SDK_ALLOWED_TOOLS (Skill, Read/Grep/Glob,
+ * Edit/Write/Bash, TodoWrite) so task execution gets the same toolset as
+ * chat. Returns `undefined` only when the profile has no allowlist AND
+ * the caller does not want SDK tools added — letting the SDK fall
+ * through to claude_code preset defaults.
  */
 function withStagentAllowedTools(
   profileAllowedTools: string[] | undefined,
+  includeSdkTools: boolean,
 ): string[] | undefined {
-  if (!profileAllowedTools) return undefined;
-  return Array.from(new Set(["mcp__stagent__*", ...profileAllowedTools]));
+  if (profileAllowedTools) {
+    // Profile has explicit list — respect it. Only prepend stagent.
+    return Array.from(new Set(["mcp__stagent__*", ...profileAllowedTools]));
+  }
+  if (includeSdkTools) {
+    // No profile allowlist but runtime has native skills — pass the
+    // Phase 1a tool set alongside mcp__stagent__* + browser/external
+    // (callers merge their own browser/external patterns into this list).
+    return ["mcp__stagent__*", ...CLAUDE_SDK_ALLOWED_TOOLS];
+  }
+  return undefined;
 }
 
 /**
@@ -550,11 +568,25 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
       externalServers,
       task.projectId,
     );
-    // allowedTools prepended via shared helper (see withStagentAllowedTools).
-    // Computed once so the conditional spread below does not invoke the
-    // helper twice. Returns undefined when the profile has no allowlist so
-    // the SDK falls through to claude_code preset defaults.
-    const mergedAllowedTools = withStagentAllowedTools(ctx.payload?.allowedTools);
+    // Capability gate: only pass settingSources + CLAUDE_SDK tools when the
+    // runtime is claude-code (or a future runtime with hasNativeSkills).
+    // Anthropic-direct and OpenAI-direct task runtimes don't understand
+    // these SDK-specific options. Tasks do not carry a model field yet —
+    // an empty string falls through to the claude-code default in
+    // getFeaturesForModel, so the gate opens by default for the primary
+    // claude-code use case. Task 4's resume path follows the same pattern.
+    const runtimeFeatures = getFeaturesForModel("");
+    const includeSdkNativeTools = runtimeFeatures.hasNativeSkills;
+
+    // allowedTools merged via shared helper. When the profile has no explicit
+    // allowlist AND the runtime has native skills, we fall back to Phase 1a's
+    // CLAUDE_SDK_ALLOWED_TOOLS (Skill, Read/Grep/Glob, Edit/Write/Bash,
+    // TodoWrite) so task execution matches chat. Computed once so the
+    // conditional spread below does not invoke the helper twice.
+    const mergedAllowedTools = withStagentAllowedTools(
+      ctx.payload?.allowedTools,
+      includeSdkNativeTools,
+    );
 
     const authEnv = await getAuthEnv();
     const response = query({
@@ -573,6 +605,11 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
         // F4: Per-execution budget cap — use task-specific override if set
         maxBudgetUsd: task.maxBudgetUsd ?? DEFAULT_MAX_BUDGET_USD,
         ...(mergedAllowedTools && { allowedTools: mergedAllowedTools }),
+        // Phase 1a parity: load user + project settings (.claude/skills,
+        // CLAUDE.md, .claude/rules/*.md) when the runtime supports it.
+        ...(includeSdkNativeTools && {
+          settingSources: [...CLAUDE_SDK_SETTING_SOURCES],
+        }),
         ...(Object.keys(mergedMcpServers).length > 0 && {
           mcpServers: mergedMcpServers,
         }),
@@ -682,8 +719,9 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
     );
     // allowedTools prepended via shared helper (see withStagentAllowedTools).
     // Computed once so the conditional spread below does not invoke the
-    // helper twice.
-    const mergedAllowedTools = withStagentAllowedTools(ctx.payload?.allowedTools);
+    // helper twice. Pass false for includeSdkTools — Task 4 will add the
+    // capability gate and native-skill fallback to resumeClaudeTask.
+    const mergedAllowedTools = withStagentAllowedTools(ctx.payload?.allowedTools, false);
 
     const authEnv = await getAuthEnv();
     const response = query({
