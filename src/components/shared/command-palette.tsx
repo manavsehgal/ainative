@@ -23,11 +23,24 @@ import {
   BookOpen,
   Sparkles,
   FileCode,
+  Bookmark,
 } from "lucide-react";
 import { navigationItems, createItems } from "@/lib/chat/command-data";
 import { toggleTheme } from "@/lib/theme";
 import { useProjectSkills } from "@/hooks/use-project-skills";
+import { useSavedSearches, type SavedSearchSurface } from "@/hooks/use-saved-searches";
 import { toast } from "sonner";
+
+// Maps each saved-search surface to its list-page route. Tasks route to
+// /dashboard since /tasks is still a redirect stub.
+const SURFACE_ROUTE: Record<SavedSearchSurface, string> = {
+  task: "/dashboard",
+  project: "/projects",
+  workflow: "/workflows",
+  document: "/documents",
+  skill: "/skills",
+  profile: "/profiles",
+};
 
 interface RecentProject {
   id: string;
@@ -75,6 +88,7 @@ export function CommandPalette() {
   const fileDebounceRef = useRef<number | null>(null);
   const router = useRouter();
   const { skills } = useProjectSkills(null);
+  const { searches: savedSearches } = useSavedSearches();
 
   // Defer render until after hydration to avoid Radix ID mismatch
   useEffect(() => setMounted(true), []);
@@ -243,6 +257,31 @@ export function CommandPalette() {
         )}
 
         {hasRecent && <CommandSeparator />}
+
+        {/* Saved searches */}
+        {savedSearches.length > 0 && (
+          <>
+            <CommandGroup heading="Saved searches">
+              {savedSearches.map((s) => (
+                <CommandItem
+                  key={`saved-${s.id}`}
+                  value={`saved ${s.label} ${s.filterInput} ${s.surface}`}
+                  onSelect={() => {
+                    const base = SURFACE_ROUTE[s.surface];
+                    navigate(`${base}?filter=${encodeURIComponent(s.filterInput)}`);
+                  }}
+                  keywords={["saved", "search", s.surface]}
+                >
+                  <Bookmark className="h-4 w-4" />
+                  <span className="flex-1 truncate">{s.label}</span>
+                  <span className="text-xs text-muted-foreground font-mono">{s.filterInput}</span>
+                  <span className="ml-2 text-xs text-muted-foreground">{s.surface}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+            <CommandSeparator />
+          </>
+        )}
 
         {/* Navigation */}
         <CommandGroup heading="Navigation">
