@@ -24,7 +24,8 @@ function parseFrontmatter(content: string): Record<string, string> | null {
 
 function loadFilesystemSkills(
   skillsDir: string,
-  origin: "filesystem-project" | "filesystem-user"
+  origin: "filesystem-project" | "filesystem-user",
+  projectRootDir: string | undefined
 ): AgentProfile[] {
   if (!existsSync(skillsDir)) return [];
   const profiles: AgentProfile[] = [];
@@ -38,7 +39,7 @@ function loadFilesystemSkills(
       const fm = parseFrontmatter(content);
       if (!fm || !fm.name) {
         console.warn(
-          `[listAllProfiles] skipping ${skillMdPath}: missing name in frontmatter`
+          `[listFusedProfiles] skipping ${skillMdPath}: missing name in frontmatter`
         );
         continue;
       }
@@ -56,11 +57,11 @@ function loadFilesystemSkills(
         origin,
         scope: origin === "filesystem-project" ? "project" : "user",
         readOnly: true,
-        projectDir: origin === "filesystem-project" ? skillsDir : undefined,
+        projectDir: origin === "filesystem-project" ? projectRootDir : undefined,
       } as AgentProfile);
     } catch (err) {
       console.warn(
-        `[listAllProfiles] failed to load skill at ${skillPath}:`,
+        `[listFusedProfiles] failed to load skill at ${skillPath}:`,
         (err as Error).message
       );
     }
@@ -69,30 +70,33 @@ function loadFilesystemSkills(
 }
 
 /**
- * Lists every agent profile reachable from this Stagent instance:
+ * Lists every agent profile reachable from this Stagent instance, merging
+ * registry profiles with filesystem skills ("fused" view):
  *   1. Registry profiles (builtins + user registry)
- *   2. Project filesystem skills at `<projectDir>/.claude/skills/*\/SKILL.md`
- *   3. User filesystem skills at `~/.claude/skills/*\/SKILL.md` (or `userSkillsDir` override)
- * Dedupes by id — registry profiles win on collision (they're curated).
+ *   2. User filesystem skills at `~/.claude/skills/*\/SKILL.md` (or `userSkillsDir` override)
+ *   3. Project filesystem skills at `<projectDir>/.claude/skills/*\/SKILL.md`
+ * Dedupes by id — registry profiles win on collision (they're curated), then
+ * user skills win over project skills.
  *
- * @param projectDir Absolute path to the active project's working directory
+ * @param projectDir Absolute path to the active project's working directory (project root)
  * @param userSkillsDir Override for user skills dir (tests); defaults to `~/.claude/skills`
  */
-export async function listAllProfiles(
+export async function listFusedProfiles(
   projectDir: string | null | undefined,
   userSkillsDir: string = join(homedir(), ".claude", "skills")
 ): Promise<AgentProfile[]> {
   const registry = listProfiles();
   const registryIds = new Set(registry.map((p) => p.id));
 
-  const userSkills = loadFilesystemSkills(userSkillsDir, "filesystem-user").filter(
+  const userSkills = loadFilesystemSkills(userSkillsDir, "filesystem-user", undefined).filter(
     (p) => !registryIds.has(p.id)
   );
 
   const projectSkills = projectDir
     ? loadFilesystemSkills(
         join(projectDir, ".claude", "skills"),
-        "filesystem-project"
+        "filesystem-project",
+        projectDir
       ).filter((p) => !registryIds.has(p.id) && !userSkills.some((u) => u.id === p.id))
     : [];
 
