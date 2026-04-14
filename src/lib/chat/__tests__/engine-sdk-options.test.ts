@@ -75,3 +75,17 @@ describe("canUseTool auto-allow policy for SDK filesystem tools", () => {
     expect(result.behavior).not.toBe("allow");
   });
 });
+
+describe("hooks excluded per Q2", () => {
+  it("does not declare a hooks field alongside settingSources", async () => {
+    const fs = await import("fs");
+    const path = await import("path");
+    const enginePath = path.resolve(__dirname, "../engine.ts");
+    const source = fs.readFileSync(enginePath, "utf8");
+    // Assert that within the query() options block, there is no `hooks:` field.
+    // This is a regex-level check because the options object is inline literals.
+    const optionsBlock = source.match(/query\(\s*\{[\s\S]*?\}\s*\)/)?.[0] ?? "";
+    expect(optionsBlock).toContain("settingSources");
+    expect(optionsBlock).not.toMatch(/\bhooks\s*:/);
+  });
+});
