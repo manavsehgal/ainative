@@ -92,7 +92,11 @@ function withStagentAllowedTools(
   profileAllowedTools: string[] | undefined,
   includeSdkTools: boolean,
 ): string[] | undefined {
-  if (profileAllowedTools) {
+  // An empty `allowedTools: []` is treated the same as `undefined` — an
+  // empty array is almost never the profile author's intent (they'd get
+  // only `mcp__stagent__*` and nothing else). Require at least one tool
+  // name for the "profile has explicit list" branch.
+  if (profileAllowedTools && profileAllowedTools.length > 0) {
     // Profile has explicit list — respect it. Only prepend stagent.
     return Array.from(new Set(["mcp__stagent__*", ...profileAllowedTools]));
   }
