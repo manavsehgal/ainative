@@ -81,6 +81,10 @@ describe("runtime catalog", () => {
       "stagentInjectsSkills",
     ];
 
+    // Guard against the "list grows stale" failure mode: if a new key is added
+    // to RuntimeFeatures but not to expectedKeys above, this catches it.
+    expect(expectedKeys.length).toBe(Object.keys(getRuntimeFeatures()).length);
+
     for (const runtime of runtimes) {
       for (const key of expectedKeys) {
         expect(
