@@ -21,9 +21,13 @@ import {
   CheckCheck,
   Loader2,
   BookOpen,
+  Sparkles,
+  FileCode,
 } from "lucide-react";
 import { navigationItems, createItems } from "@/lib/chat/command-data";
 import { toggleTheme } from "@/lib/theme";
+import { useProjectSkills } from "@/hooks/use-project-skills";
+import { toast } from "sonner";
 
 interface RecentProject {
   id: string;
@@ -64,8 +68,13 @@ export function CommandPalette() {
   const [recentTasks, setRecentTasks] = useState<RecentTask[]>([]);
   const [playbookItems, setPlaybookItems] = useState<PlaybookItem[]>([]);
   const [loadingRecent, setLoadingRecent] = useState(false);
+  const [fileQuery, setFileQuery] = useState("");
+  const [fileResults, setFileResults] = useState<Array<{ entityId: string; label: string; description?: string }>>([]);
   const abortRef = useRef<AbortController | null>(null);
+  const fileAbortRef = useRef<AbortController | null>(null);
+  const fileDebounceRef = useRef<number | null>(null);
   const router = useRouter();
+  const { skills } = useProjectSkills(null);
 
   // Defer render until after hydration to avoid Radix ID mismatch
   useEffect(() => setMounted(true), []);
@@ -86,6 +95,10 @@ export function CommandPalette() {
     if (!open) {
       abortRef.current?.abort();
       abortRef.current = null;
+      fileAbortRef.current?.abort();
+      if (fileDebounceRef.current) window.clearTimeout(fileDebounceRef.current);
+      setFileQuery("");
+      setFileResults([]);
       return;
     }
 
@@ -108,6 +121,33 @@ export function CommandPalette() {
       .finally(() => setLoadingRecent(false));
   }, [open]);
 
+  function handleInputChange(value: string) {
+    setFileQuery(value);
+    if (fileDebounceRef.current) {
+      window.clearTimeout(fileDebounceRef.current);
+    }
+    fileAbortRef.current?.abort();
+    if (!value || value.length < 2) {
+      setFileResults([]);
+      return;
+    }
+    fileDebounceRef.current = window.setTimeout(() => {
+      const controller = new AbortController();
+      fileAbortRef.current = controller;
+      const params = new URLSearchParams({ q: value, limit: "8" });
+      fetch(`/api/chat/files/search?${params}`, { signal: controller.signal })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (Array.isArray(data)) setFileResults(data);
+          else if (Array.isArray(data?.results)) setFileResults(data.results);
+          else setFileResults([]);
+        })
+        .catch(() => {
+          // aborted or failed — ignore
+        });
+    }, 200);
+  }
+
   const navigate = useCallback(
     (href: string) => {
       setOpen(false);
@@ -119,6 +159,24 @@ export function CommandPalette() {
   function handleToggleTheme() {
     setOpen(false);
     toggleTheme();
+  }
+
+  function handleSelectSkill(id: string, name: string) {
+    setOpen(false);
+    window.dispatchEvent(
+      new CustomEvent("stagent.chat.activate-skill", { detail: { id } })
+    );
+    toast.info(`Skill "${name}" — activation coming soon`);
+  }
+
+  function handleSelectFile(entityId: string, label: string) {
+    setOpen(false);
+    window.dispatchEvent(
+      new CustomEvent("stagent.chat.insert-mention", {
+        detail: { type: "file", path: entityId, label },
+      })
+    );
+    toast.info(`File "${label}" — mention insert coming soon`);
   }
 
   async function markAllRead() {
@@ -133,7 +191,11 @@ export function CommandPalette() {
 
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>
-      <CommandInput placeholder="Type a command or search..." />
+      <CommandInput
+        placeholder="Type a command or search..."
+        value={fileQuery}
+        onValueChange={handleInputChange}
+      />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
 
@@ -235,6 +297,51 @@ export function CommandPalette() {
         </CommandGroup>
 
         <CommandSeparator />
+
+        {/* Skills */}
+        {skills.length > 0 && (
+          <>
+            <CommandGroup heading="Skills">
+              {skills.map((skill) => (
+                <CommandItem
+                  key={`skill-${skill.id}`}
+                  value={`skill-${skill.name}`}
+                  onSelect={() => handleSelectSkill(skill.id, skill.name)}
+                  keywords={["skill", "profile"]}
+                >
+                  <Sparkles className="h-4 w-4" />
+                  <span className="flex-1 truncate">{skill.name}</span>
+                  {skill.description && (
+                    <span className="text-xs text-muted-foreground truncate max-w-[40%]">
+                      {skill.description}
+                    </span>
+                  )}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+            <CommandSeparator />
+          </>
+        )}
+
+        {/* Files */}
+        {fileResults.length > 0 && (
+          <>
+            <CommandGroup heading="Files">
+              {fileResults.map((file) => (
+                <CommandItem
+                  key={`file-${file.entityId}`}
+                  value={`file-${file.label}`}
+                  onSelect={() => handleSelectFile(file.entityId, file.label)}
+                  keywords={["file", "path"]}
+                >
+                  <FileCode className="h-4 w-4" />
+                  <span className="flex-1 truncate font-mono text-xs">{file.label}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+            <CommandSeparator />
+          </>
+        )}
 
         {/* Utility */}
         <CommandGroup heading="Utility">
