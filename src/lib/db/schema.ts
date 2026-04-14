@@ -542,6 +542,16 @@ export const conversations = sqliteTable(
       .notNull(),
     sessionId: text("session_id"),
     contextScope: text("context_scope"), // JSON: context config overrides
+    /**
+     * Opaque skill ID of the Stagent-activated skill for this conversation.
+     * When set, the context builder injects that skill's SKILL.md into the
+     * Tier 0 system prompt every turn. Primary use case is Ollama (no
+     * SDK-native skill support); Claude and Codex can also use it as a
+     * programmatic skill-activation path alongside their native Skill tools.
+     *
+     * See `features/chat-ollama-native-skills.md`.
+     */
+    activeSkillId: text("active_skill_id"),
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
   },

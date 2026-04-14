@@ -149,6 +149,12 @@ const STAGENT_TOOLS: ToolCatalogEntry[] = [
   { name: "get_settings", description: "Get current Stagent settings", group: "Settings", paramHint: "key" },
   { name: "set_settings", description: "Update a Stagent setting (approval required)", group: "Settings", paramHint: "key, value" },
 
+  // ── Skills ──
+  { name: "list_skills", description: "List all discoverable skills (user + project scopes)", group: "Skills" },
+  { name: "get_skill", description: "Get full SKILL.md content + metadata for one skill", group: "Skills", paramHint: "id" },
+  { name: "activate_skill", description: "Bind a skill to a conversation — SKILL.md is injected into every turn's system prompt", group: "Skills", paramHint: "conversationId, skillId" },
+  { name: "deactivate_skill", description: "Clear the active skill from a conversation", group: "Skills", paramHint: "conversationId" },
+
   // ── Tables ──
   { name: "list_tables", description: "List tables, filter by project or source", group: "Tables", paramHint: "projectId, source" },
   { name: "get_table_schema", description: "Get column definitions for a table", group: "Tables", paramHint: "tableId" },

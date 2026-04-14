@@ -22,6 +22,7 @@ import { handoffTools } from "./tools/handoff-tools";
 import { tableTools } from "./tools/table-tools";
 import { runtimeTools } from "./tools/runtime-tools";
 import { blueprintTools } from "./tools/blueprint-tools";
+import { skillTools } from "./tools/skill-tools";
 
 
 // ── Tool server types ────────────────────────────────────────────────
@@ -59,6 +60,7 @@ function collectAllTools(ctx: ToolContext): ToolDefinition[] {
     ...tableTools(ctx),
     ...runtimeTools(ctx),
     ...blueprintTools(ctx),
+    ...skillTools(ctx),
   ];
 }
 

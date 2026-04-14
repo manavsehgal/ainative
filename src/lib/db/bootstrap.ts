@@ -333,6 +333,12 @@ export function bootstrapStagentDatabase(sqlite: Database.Database): void {
   addColumnIfMissing(`ALTER TABLE documents ADD COLUMN source TEXT DEFAULT 'upload';`);
   addColumnIfMissing(`ALTER TABLE documents ADD COLUMN conversation_id TEXT REFERENCES conversations(id);`);
   addColumnIfMissing(`ALTER TABLE documents ADD COLUMN message_id TEXT;`);
+  // chat-ollama-native-skills: conversation-scoped active skill binding.
+  // Ollama can't use the SDK's native skill support, so we inject the
+  // selected skill's SKILL.md into Tier 0 of the system prompt on every
+  // turn while this column is set. Same machinery is usable from Claude
+  // and Codex as a programmatic skill-activation path.
+  addColumnIfMissing(`ALTER TABLE conversations ADD COLUMN active_skill_id TEXT;`);
   // Workflow step delays — resume_at for schedule-based delay resumption.
   // The partial index on resume_at is created by migration 0024 for fresh DBs;
   // existing DBs that don't run migrations will do a small table scan instead.
@@ -455,6 +461,7 @@ export function bootstrapStagentDatabase(sqlite: Database.Database): void {
       status TEXT DEFAULT 'active' NOT NULL,
       session_id TEXT,
       context_scope TEXT,
+      active_skill_id TEXT,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL,
       FOREIGN KEY (project_id) REFERENCES projects(id) ON UPDATE NO ACTION ON DELETE NO ACTION

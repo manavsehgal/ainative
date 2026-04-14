@@ -6,6 +6,7 @@ import { getProfile } from "@/lib/agents/profiles/registry";
 import { STAGENT_SYSTEM_PROMPT } from "./system-prompt";
 import type { WorkspaceContext } from "@/lib/environment/workspace-context";
 import { expandFileMention } from "./files/expand-mention";
+import { conversations } from "@/lib/db/schema";
 
 // ── Token budget constants ─────────────────────────────────────────────
 
@@ -49,6 +50,49 @@ function buildTier0(
     );
   }
   return parts.join("\n");
+}
+
+// ── Active skill injection (Ollama-first, runtime-agnostic) ────────────
+
+/**
+ * Token budget for a conversation-bound skill's SKILL.md content.
+ *
+ * Per spec §7.1: 1000-4000 tokens typical, with 300 tokens of index/
+ * metadata on top. We cap at ~4000 tokens (≈16K chars) so a large skill
+ * can't blow out a small-context local model. Single-active-skill is
+ * enforced at the MCP-tool layer.
+ */
+const ACTIVE_SKILL_BUDGET = 4_000;
+
+/**
+ * Build the "Active Skill" section of the system prompt, if one is bound
+ * to the conversation via `conversations.active_skill_id`. Returns "" for
+ * conversations without an active skill.
+ *
+ * Primary use case: Ollama has no SDK-native skill support, so this is
+ * how SKILL.md reaches a local model. Claude and Codex runtimes can
+ * also bind a skill via this path alongside their native Skill tools.
+ *
+ * See `features/chat-ollama-native-skills.md`.
+ */
+async function buildActiveSkill(conversationId: string): Promise<string> {
+  const row = await db
+    .select({ activeSkillId: conversations.activeSkillId })
+    .from(conversations)
+    .where(eq(conversations.id, conversationId))
+    .get();
+  const id = row?.activeSkillId;
+  if (!id) return "";
+
+  // Dynamic import keeps the scanner + fs dependency off the hot path for
+  // conversations that don't have an active skill (the common case).
+  const { getSkill } = await import("@/lib/environment/list-skills");
+  const skill = getSkill(id);
+  if (!skill) return "";
+
+  const header = `## Active Skill: ${skill.name}\n`;
+  const body = truncateToTokenBudget(skill.content, ACTIVE_SKILL_BUDGET);
+  return `${header}\n${body}`;
 }
 
 // ── Tier 1: Conversation history ───────────────────────────────────────
@@ -322,15 +366,21 @@ export async function buildChatContext(opts: {
   workspace?: WorkspaceContext | null;
   mentions?: MentionReference[];
 }): Promise<ChatContext> {
-  const [history, tier2, tier3] = await Promise.all([
+  const [history, tier2, tier3, activeSkill] = await Promise.all([
     buildTier1(opts.conversationId),
     buildTier2(opts.projectId),
     buildTier3(opts.mentions ?? []),
+    buildActiveSkill(opts.conversationId),
   ]);
 
   const tier0 = buildTier0(opts.projectName, opts.workspace);
 
   const systemParts = [tier0];
+
+  // Active skill (from conversations.active_skill_id) sits right below
+  // Tier 0 so its instructions carry the most weight. Empty string when
+  // no skill is bound — common case.
+  if (activeSkill) systemParts.push(activeSkill);
 
   if (tier3) systemParts.push(tier3);
   if (tier2) systemParts.push(tier2);
