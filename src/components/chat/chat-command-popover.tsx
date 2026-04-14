@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import {
   Command,
@@ -29,6 +29,13 @@ import {
 import type { AutocompleteMode, EntitySearchResult } from "@/hooks/use-chat-autocomplete";
 import { CommandTabBar } from "./command-tab-bar";
 import { partitionCatalogByTab, type CommandTabId } from "@/lib/chat/command-tabs";
+import { useEnrichedSkills } from "@/hooks/use-enriched-skills";
+import { useRecentUserMessages } from "@/hooks/use-recent-user-messages";
+import { SkillRow } from "./skill-row";
+import { computeRecommendation } from "@/lib/environment/skill-recommendations";
+import { browserLocalStore, activeDismissedIds } from "@/lib/chat/dismissals";
+import { useChatSession } from "@/components/chat/chat-session-provider";
+import type { EnrichedSkill } from "@/lib/environment/skill-enrichment";
 
 interface ChatCommandPopoverProps {
   open: boolean;
@@ -107,6 +114,33 @@ export function ChatCommandPopover({
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open, onClose]);
 
+  // Enriched skills — only fetch when popover is open in slash mode
+  const enrichedSkills = useEnrichedSkills(open && mode === "slash");
+
+  // Session context for recommendation
+  const { activeId } = useChatSession();
+  const recentMessages = useRecentUserMessages(activeId, 20);
+
+  const dismissStore = useMemo(
+    () => browserLocalStore("stagent.chat.dismissed-suggestions"),
+    []
+  );
+  const dismissedIds = useMemo(
+    () =>
+      activeId
+        ? activeDismissedIds(dismissStore, activeId)
+        : new Set<string>(),
+    [dismissStore, activeId]
+  );
+
+  const recommended = useMemo(
+    () =>
+      computeRecommendation(enrichedSkills, recentMessages, {
+        dismissedIds,
+      }),
+    [enrichedSkills, recentMessages, dismissedIds]
+  );
+
   if (!open || !anchorRect || !mode) return null;
 
   // Position above the caret
@@ -147,6 +181,8 @@ export function ChatCommandPopover({
                   onSelect={onSelect}
                   projectProfiles={projectProfiles}
                   activeTab={activeTab}
+                  enrichedSkills={enrichedSkills}
+                  recommendedId={recommended?.id ?? null}
                 />
               </div>
             </CommandList>
@@ -172,10 +208,14 @@ function ToolCatalogItems({
   onSelect,
   projectProfiles,
   activeTab,
+  enrichedSkills,
+  recommendedId,
 }: {
   onSelect: ChatCommandPopoverProps["onSelect"];
   projectProfiles?: ChatCommandPopoverProps["projectProfiles"];
   activeTab: CommandTabId;
+  enrichedSkills: EnrichedSkill[];
+  recommendedId?: string | null;
 }) {
   const catalog = getToolCatalogWithSkills({
     includeBrowser: true,
@@ -189,6 +229,29 @@ function ToolCatalogItems({
       <div className="px-4 py-6 text-sm text-muted-foreground text-center">
         Type <span className="font-mono text-foreground">@</span> to reference projects, tasks, documents, or files.
       </div>
+    );
+  }
+
+  // When the skills tab has enriched data, render the enriched list
+  if (activeTab === "skills" && enrichedSkills.length > 0) {
+    return (
+      <CommandGroup heading="Skills">
+        {enrichedSkills.map((skill) => (
+          <SkillRow
+            key={skill.id}
+            skill={skill}
+            recommended={recommendedId === skill.id}
+            onSelect={() =>
+              onSelect({
+                type: "slash",
+                id: skill.name,
+                label: skill.name,
+                text: `Use the ${skill.name} profile: `,
+              })
+            }
+          />
+        ))}
+      </CommandGroup>
     );
   }
 
