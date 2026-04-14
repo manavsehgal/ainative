@@ -2,6 +2,23 @@
 
 ## 2026-04-14
 
+### Completed — chat-command-namespace-refactor (P1)
+
+**Breaking UX change** (accepted per spec Q7 — alpha product, no deprecation shim). The `/` popover is now tabbed (Actions / Skills / Tools / Entities) instead of a single grouped list. Eight new session commands (`/clear`, `/compact`, `/export`, `/help`, `/settings`, `/new-task`, `/new-workflow`, `/new-schedule`) live under a new `Session` group that surfaces first in the Actions tab. A runtime-aware capability banner renders below the chat input on runtimes that lack filesystem + Bash tools (Ollama, Anthropic-direct, OpenAI-direct) and stays silent on Claude + Codex App Server. The ⌘K palette gained Skills and Files groups (files with 200ms debounced search against `/api/chat/files/search`). New keyboard bindings: `⌘L` / `⌘⇧L` to clear, `⌘/` to focus the input and open the slash menu.
+
+Architecture: a single-rooted cmdk `<Command>` wraps both tabbed-slash and mention modes so focus/selection state never flickers on tab switch. The partition is a pure function over the existing `ToolCatalogEntry[]`, with `GROUP_TO_TAB` exhaustively typed via `satisfies Record<ToolGroup, CommandTabId>` so any future `ToolGroup` added without a tab assignment fails to compile. Session commands dispatch `stagent.chat.{clear,compact,export,help}` CustomEvents from `chat-input.tsx`; the session provider listens and routes them (`/clear` → `createConversation()`, `/export` → new `POST /api/chat/export` endpoint that writes inline markdown to `~/.stagent/uploads/chat-exports/` and inserts a documents row, `/help` → `HelpDialog`, `/compact` → toast stub). Per-user tab persistence via `localStorage`; per-session banner dismissal via `sessionStorage`, keyed on `runtimeId`.
+
+Frontend-designer sign-off recorded in the feature spec. 3 design-review findings addressed (MI=2 motion trim, focus-visible ring on banner dismiss, dialog padding redundancy).
+
+22 new unit tests; `npx tsc --noEmit` clean; browser-verified on Claude + Ollama (`gpt-oss`) runtimes.
+
+Deferred:
+- AC #3 env-aware Skills-tab badges → `chat-environment-integration` (still planned).
+- AC #4 Tools-tab "Advanced reveal" toggle → softened to "always visible" during HOLD scope approval.
+- ⌘K palette Skills / Files dispatch listeners on the chat-input side → short follow-up.
+- `/compact` machinery (currently a toast stub) → `chat-advanced-ux` or its own feature.
+- Edge case: typing `/help`+Enter while last-remembered active tab is `Entities` (which has no cmdk-items under its placeholder) sends the text to chat — logged as follow-up.
+
 ### Completed — chat-codex-app-server-skills (P1)
 
 Closed out as a **scope-adjusted** feature. The original spec called for wiring `turn/start` skill parameters into `sendCodexMessage()`, but a closer read of the App Server reference (`.claude/reference/developers-openai-com-codex-sdk/app-server.md` + `skills.md`) confirmed that the protocol has no such parameters — what the spec described is Codex's *natural* behavior when the App Server's `cwd` is set correctly. `cwd` plumbing already worked (`codex-engine.ts:104-105` overrides `workspace.cwd` with the project's `workingDirectory` before any App Server call).

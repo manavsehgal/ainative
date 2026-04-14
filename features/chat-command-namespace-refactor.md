@@ -1,6 +1,6 @@
 ---
 title: Chat — Command Namespace Refactor (/ = verbs, @ = nouns)
-status: planned
+status: completed
 priority: P1
 milestone: post-mvp
 source: ideas/chat-context-experience.md §5, §8 Phase 3, §11 (frontend-designer), Q7, Q9
@@ -123,3 +123,49 @@ Per taste metrics: **DESIGN_VARIANCE 3-4**, **MOTION_INTENSITY 2**, **VISUAL_DEN
 - Existing code: `src/components/chat/chat-command-popover.tsx`, `src/hooks/use-chat-autocomplete.ts`, `src/components/chat/chat-input.tsx`, `src/components/shared/app-sidebar.tsx`
 - Design: taste metrics DV 3-4, MI 2, VD 7 per `.claude/skills/taste/SKILL.md`
 - Memory: MEMORY.md "SheetContent body padding" convention applies to any new Sheet-based surfaces
+
+## Verification — 2026-04-14
+
+### What shipped
+- `src/lib/chat/command-tabs.ts` — pure partition model, 4 tabs (Actions / Skills / Tools / Entities), `GROUP_TO_TAB` exhaustively mapped via `satisfies Record<ToolGroup, CommandTabId>`.
+- `src/components/chat/command-tab-bar.tsx` — `role=tablist` with arrow-key nav, roving tabindex, ARIA labels.
+- `src/components/chat/chat-command-popover.tsx` — tabbed slash mode, single `<Command>` root preserved (avoids focus-state loss on tab switch). Entities tab renders a pointer to `@`.
+- `src/components/chat/capability-banner.tsx` — single-line `role=status` banner, per-runtime `sessionStorage` dismissal. Hidden on `claude-code`/`openai-codex-app-server`; visible on `ollama`/`anthropic-direct`/`openai-direct`.
+- `src/components/chat/help-dialog.tsx` — keyboard shortcut dialog rendered from the session provider; opens via `stagent.chat.help` CustomEvent.
+- `src/app/api/chat/export/route.ts` — NEW endpoint that writes inline markdown to `~/.stagent/uploads/chat-exports/<name>.md` and inserts a documents row with `direction: "output"`, `source: "chat-export"`.
+- `src/components/chat/chat-session-provider.tsx` — wires `stagent.chat.{clear,compact,export,help}` CustomEvents. `/compact` currently shows a "coming soon" toast (no compact machinery yet).
+- `src/components/chat/chat-input.tsx` — dispatches session commands via CustomEvents; derives runtime via `resolveAgentRuntime(getRuntimeForModel(modelId))`; binds `⌘L` / `⌘⇧L` (clear) and `⌘/` (focus + slash).
+- `src/components/shared/command-palette.tsx` — ⌘K palette extended with Skills (guarded by `skills.length > 0`) and Files (debounced 200ms search against `/api/chat/files/search`).
+- 8 new session commands in `tool-catalog.ts` under a new `Session` group: `clear`, `compact`, `export`, `help`, `settings`, `new-task`, `new-workflow`, `new-schedule`.
+
+### Tests
+- 22 new unit tests across `command-tabs`, `use-chat-autocomplete-tabs`, and `capability-banner`.
+- Full suite: 897 passing / 12 skipped / 1 pre-existing e2e (needs running server).
+- `npx tsc --noEmit` clean.
+
+### `/frontend-designer` sign-off
+Reviewed against Calm Ops design system + DV 3-4 / MI 2 / VD 7 taste metrics. Verdict: ✅ APPROVED WITH MINOR NOTES. All 3 non-debatable findings addressed in commit `571d685`:
+- popover: dropped `zoom-in-95 slide-in-from-bottom-2` (MI=2 target is fade-only)
+- capability-banner: added `focus-visible:ring-2 focus-visible:ring-ring` to dismiss button
+- help-dialog: dropped redundant `px-6 pb-6` (DialogContent already applies `p-6`)
+
+Two palette `toast.info("… coming soon")` stubs for Skills activation + File mention insertion are intentional — CustomEvents are dispatched but no listener wires them back to the chat input yet. Deferred to a follow-up.
+
+### Browser smoke (localhost:3010, Claude in Chrome)
+- Tab bar renders with 4 tabs; Actions/Skills/Tools/Entities route catalog entries correctly.
+- Session group appears first under Actions with all 8 commands; `paramHint` visible for `new-task`, `new-workflow`, `new-schedule`.
+- `localStorage` tab persistence verified across navigation.
+- Capability banner: hidden on Claude (Opus), visible on Ollama (`gpt-oss`) with the exact spec text, dismissible via X button.
+- ⌘K palette opens globally.
+
+### Scope deviations from spec
+- AC #4 ("Tools tab hidden behind Advanced reveal"): softened to "Tools tab visible by default" during HOLD-mode scope approval. Toggle can be added later if muscle memory suggests it.
+- AC #3 (Skills-tab env-aware badges): intentionally deferred to `chat-environment-integration` (still planned). Skills tab ships without badges.
+
+### Known follow-ups
+- `/compact` is a stub (toast only) — real compaction machinery to be added alongside `chat-advanced-ux` or a dedicated feature.
+- `/help` + Enter when the popover's last-remembered tab is **Entities** sends the text as a chat message (edge case: no cmdk-item is selected under the Entities placeholder). Happy path on Actions tab works as expected.
+- ⌘K palette → Skills / Files selection dispatches CustomEvents but has no chat-input listener yet; `toast.info("coming soon")` provides user feedback.
+- `chat-file-mentions` listener on `stagent.chat.insert-mention` to wire the Files group once it lands.
+
+Commits: `99cd92e`, `827d0df`, `9283338`, `3851fd3`, `29f161c`, `4140e99`, `1bc1078`, `d2469e4`, `728017b`, `541c6fd`, `571d685`, `db235aa`.

@@ -202,7 +202,7 @@ Runtime-native skills, filesystem context, file mentions, and a command-namespac
 | [chat-codex-app-server-skills](chat-codex-app-server-skills.md) | P1 | planned | chat-claude-sdk-skills, codex-chat-engine, openai-codex-app-server, environment-scanner, runtime-capability-matrix |
 | [chat-ollama-native-skills](chat-ollama-native-skills.md) | P2 | planned | chat-claude-sdk-skills, ollama-runtime-provider, environment-scanner, runtime-capability-matrix, chat-data-layer |
 | [chat-file-mentions](chat-file-mentions.md) | P1 | planned | chat-command-mentions, chat-claude-sdk-skills, workspace-context-awareness |
-| [chat-command-namespace-refactor](chat-command-namespace-refactor.md) | P1 | planned | chat-claude-sdk-skills, chat-file-mentions, runtime-capability-matrix, command-palette-enhancement |
+| [chat-command-namespace-refactor](chat-command-namespace-refactor.md) | P1 | completed | chat-claude-sdk-skills, chat-file-mentions, runtime-capability-matrix, command-palette-enhancement |
 | [chat-environment-integration](chat-environment-integration.md) | P2 | planned | chat-command-namespace-refactor, environment-dashboard, environment-cache, profile-environment-sync, environment-health-scoring |
 | [chat-advanced-ux](chat-advanced-ux.md) | P3 | planned | chat-command-namespace-refactor, chat-environment-integration, chat-ollama-native-skills, workflow-blueprints, chat-conversation-persistence |
 | [onboarding-runtime-provider-choice](onboarding-runtime-provider-choice.md) | P2 | planned | app-shell, provider-runtime-abstraction, runtime-capability-matrix |
