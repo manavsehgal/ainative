@@ -25,7 +25,6 @@ import {
   getToolCatalogWithSkills,
   groupToolCatalog,
   TOOL_GROUP_ICONS,
-  type ToolCatalogEntry,
 } from "@/lib/chat/tool-catalog";
 import type { AutocompleteMode, EntitySearchResult } from "@/hooks/use-chat-autocomplete";
 import { CommandTabBar } from "./command-tab-bar";
