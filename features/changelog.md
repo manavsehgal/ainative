@@ -2,6 +2,24 @@
 
 ## 2026-04-14
 
+### Completed — chat-ollama-native-skills (P2)
+
+Stagent-managed conversation-scoped skill activation, runtime-agnostic by design but motivated by Ollama (which has no SDK-native skill support). When a skill is bound to a conversation via the new `activate_skill` MCP tool, its SKILL.md is injected into Tier 0 of the system prompt on every subsequent turn until `deactivate_skill` clears it. Same machinery works on Claude / Codex as a programmatic skill-activation path alongside their native handling.
+
+Changes:
+- DB: `conversations.active_skill_id TEXT` column. Added to both the `CREATE TABLE` (fresh DBs) and via `addColumnIfMissing` (existing DBs). Drizzle schema updated. The CREATE-table addition was needed because `addColumnIfMissing` runs before the table CREATE in `bootstrap.ts`, so on fresh DBs the ALTER fails silently — caught by failing tests on a fresh temp DB.
+- Discovery: `src/lib/environment/list-skills.ts` filters scanner artifacts by `category === "skill"` and resolves the SKILL.md inside each skill directory (probing `SKILL.md` → `skill.md` → first `*.md`).
+- 4 MCP tools in `src/lib/chat/tools/skill-tools.ts` (`list_skills`, `get_skill`, `activate_skill`, `deactivate_skill`) registered in `stagent-tools.ts` and the popover catalog under "Skills". Single-active-skill enforced server-side; activate validates skill + conversation exist before writing.
+- Tier 0 injection: `context-builder.ts` `buildActiveSkill` helper reads the bound id and appends SKILL.md under `## Active Skill: <name>` between Tier 0 and Tier 3. ~4000 token cap. Dynamic import keeps the scanner off the hot path for conversations without an active skill.
+
+Tests: 11 skill-tool unit tests + 4 Tier 0 injection tests. **171/171 chat tests green** including the existing finalize-safety-net + reconcile suites that touch the conversations table.
+
+Browser-verified end-to-end via Claude in Chrome: `list_skills` enumerated 62 skills correctly across user/project/shared scopes; `activate_skill` persisted the binding to SQLite; the next turn's system prompt contained the literal `## Active Skill: technical-writer` line + SKILL.md content (model quoted it verbatim).
+
+The smoke test caught a real bug that unit tests missed: `getSkill` was calling `readFileSync(absPath)` where absPath is the skill **directory**, not the SKILL.md file — `EISDIR` was silently swallowed, returning null. Unit tests didn't catch it because they mocked the helper at its outermost boundary. Fix: `resolveSkillFile` helper. **Exactly the failure mode the project's smoke-test budget rule was designed to surface.**
+
+Deferred: context-window warning toast (depends on unsettled per-runtime context-window probing — belongs in `chat-environment-integration` or its own feature); persistent active-skill chip in chat input (UI affordance for `chat-command-namespace-refactor`); SKILL.md duplication suppression on Claude/Codex (their native skill handling already loads the same content; the Tier 0 injection is harmless but redundant).
+
 ### Completed — chat-file-mentions (P1)
 
 Users can now type `@src/lib/db/schema.ts` in chat and have the file either inlined (if <8 KB) or referenced (so Claude agents can fetch it via the `Read` tool). CLI muscle memory reaches the web UI. Extends the existing `@` mention pipeline with a new `entityType: "file"` — no new plumbing.

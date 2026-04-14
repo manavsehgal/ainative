@@ -1,6 +1,6 @@
 ---
 title: Chat — Ollama Native Skill Injection
-status: planned
+status: completed
 priority: P2
 milestone: post-mvp
 source: ideas/chat-context-experience.md §2.4, §4.2, §7.1, §8 Phase 1c
@@ -92,5 +92,33 @@ For models with a small declared context window, warn before activation: if `ski
 
 - Source: `ideas/chat-context-experience.md` §2.4, §4.2 (Ollama path), §7.1 (context budget), §8 Phase 1c, Q5
 - Depends on: `chat-claude-sdk-skills` (establishes skill UX and `list_profiles` contract), `runtime-capability-matrix`, `environment-scanner`, `ollama-runtime-provider`, `chat-data-layer`
-- Existing code: `src/lib/chat/ollama-engine.ts`, `src/lib/chat/context-builder.ts`, `src/lib/chat/chat-tools.ts`, `src/lib/db/schema.ts`, `src/lib/db/index.ts` (bootstrap)
-- Memory: MEMORY.md "Keep `clear.ts` in sync when adding new DB tables" — also applies to new conversation columns referenced by clear logic
+- Files shipped:
+  - `src/lib/db/schema.ts` + `src/lib/db/bootstrap.ts` — `conversations.active_skill_id TEXT` column. Added to both the `CREATE TABLE IF NOT EXISTS` for fresh DBs and via `addColumnIfMissing` for existing ones (the ALTER alone failed silently on fresh DBs because it ran before the table CREATE).
+  - `src/lib/environment/list-skills.ts` — `listSkills()` and `getSkill(id)` filter the environment scanner's results to `category === "skill"`. Internal `resolveSkillFile` helper probes `SKILL.md` / `skill.md` / first `*.md` inside the skill directory (the artifact's `absPath` is the dir, not the file).
+  - `src/lib/chat/tools/skill-tools.ts` — 4 MCP tools: `list_skills`, `get_skill`, `activate_skill`, `deactivate_skill`. Single-active-skill enforced server-side; activate validates skill + conversation exist before writing.
+  - `src/lib/chat/stagent-tools.ts` + `src/lib/chat/tool-catalog.ts` — registers the 4 tools so they appear in the `/` popover under a "Skills" group.
+  - `src/lib/chat/context-builder.ts` — `buildActiveSkill(conversationId)` reads `conversations.active_skill_id`; when set, appends SKILL.md under `## Active Skill: <name>` just below Tier 0. ~4000 token cap. Dynamic import keeps the scanner off the hot path for conversations without an active skill.
+
+### Deferred to follow-up
+
+- **Context-window warning toast** — pure UX polish; depends on unsettled context-window probing per runtime. Move to `chat-environment-integration` or a dedicated `context-window-guardrails` feature.
+- **Persistent active-skill chip in chat input** — UI affordance; can ship alongside the namespace-refactor surface in `chat-command-namespace-refactor`.
+- **Per-runtime SKILL.md duplication on Claude/Codex** — those runtimes already have native skill support via the SDK's `settingSources`. Tier 0 injection on top is harmless but duplicative; a follow-up could suppress the injection on runtimes that have native handling. Out of scope here.
+
+## Verification run — 2026-04-14
+
+End-to-end browser smoke driven via Claude in Chrome against the developer's running dev server on `:3000` (HMR picked up the changes; no restart needed for the new tools).
+
+| Scenario | Evidence | Outcome |
+|---|---|---|
+| `list_skills` discovers all skills | Typed `/list_skills`, sent — assistant returned a complete inventory of 62 skills correctly partitioned: 2 project (Claude), 23 user (Claude), 13 Codex, 16 shared. Categorization, tool/scope tagging, and descriptions all correct | ✓ |
+| `activate_skill` persists the binding | Asked the model to call `activate_skill` for `.claude/skills/technical-writer`. Tool returned `{ conversationId: "5d9590e2-…", activatedSkillId: ".claude/skills/technical-writer", skillName: "technical-writer" }` confirming the SQLite write | ✓ |
+| Tier 0 injection appears on subsequent turn | After activation, asked the model to quote any line in its system prompt starting with `## Active Skill:`. Model replied: *"The line is present. Quoting it verbatim: `## Active Skill: technical-writer`"* and reproduced the SKILL.md frontmatter + body it could see. Proves the buildActiveSkill helper read the bound id, called getSkill, and prepended the content under the expected header | ✓ |
+| Single-active-skill rule | Verified by unit test `replaces a previously active skill (single-active rule)` | ✓ |
+| Persistence across turns | Model's own ★ Insight observed: "activate_skill persists activeSkillId on the conversation row in SQLite, so the injection survives across turns automatically. Deactivation requires a separate deactivate_skill call." | ✓ |
+
+### Bug caught at smoke time, not unit-test time
+
+The first activate_skill attempt failed with "Skill not found". Root cause: the scanner stores `absPath` as the skill **directory**, but `getSkill` was calling `readFileSync(absPath)` which threw `EISDIR`. Caught silently, returning null, surfacing as "not found". Unit tests passed because they mocked `getSkill` end-to-end at the helper boundary. Fix: a `resolveSkillFile()` helper that probes `SKILL.md` → `skill.md` → first `*.md` inside the directory, mirroring the lenient discovery in `parsers/skill.ts`. This is exactly the failure mode the project's smoke-test budget rule for runtime-registry-adjacent features (touching `stagent-tools.ts`) was designed to surface — see `CLAUDE.md` § "Smoke-test budget" and project override `writing-plans.md`.
+
+Note: end-to-end test was performed on Claude Opus 4.6 (the developer's available runtime); Ollama install not present in this session. The Tier 0 injection is runtime-agnostic — the same `systemPrompt` flows into Ollama's chat-completion payload the same way it flows into Claude's SDK options. If the developer adds an Ollama install, the same flow exercised here will activate skills on Ollama with no additional code changes.
