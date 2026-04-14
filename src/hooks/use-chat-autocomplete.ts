@@ -229,8 +229,15 @@ export function useChatAutocomplete(
         return;
       }
 
-      // Check for "@" trigger — must be at position 0 or after whitespace
-      const mentionMatch = textBeforeCursor.match(/(?:^|\s)(@[^\s]*)$/);
+      // Check for "@" trigger — must be at position 0 or after whitespace.
+      // The mention body stops at whitespace or `#` so the filter-namespace
+      // (`#key:value`) can chain after a space: `@foo #status:blocked`.
+      // Filter tokens are part of the same trigger span so the popover stays
+      // open while the user types them. Partial tokens (`@foo #` or
+      // `@foo #sta`) are accepted — the parser handles incomplete input.
+      const mentionMatch = textBeforeCursor.match(
+        /(?:^|\s)(@[^\s#]*(?:\s+#[A-Za-z]?[\w-]*:?[^\s#]*)*)\s*$/
+      );
       if (mentionMatch) {
         const triggerIndex = cursorPos - mentionMatch[1].length;
         const query = mentionMatch[1].substring(1); // text after "@"

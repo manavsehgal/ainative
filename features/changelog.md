@@ -2,6 +2,18 @@
 
 ## 2026-04-14
 
+### Shipped v1 — chat-filter-namespace (P2, in-progress)
+
+`#key:value` filter namespace now works inside the chat mention popover. Typing `@ #type:task` narrows the popover to tasks only; `@ #type:task #status:completed` combines clauses with AND semantics; free-text search still composes on top via cmdk (e.g. `@ auth #type:task` narrows to tasks AND fuzzy-matches "auth"). Unknown keys pass through silently per the parser contract, so typos don't break the flow.
+
+Architecture: pure parser module at `src/lib/filters/parse.ts` (17 unit tests — single/multi-clause, case preservation, hyphen/underscore keys, back-to-back clauses without separator, raw-query remainder, `#123` treated as text not clause). The `matchesClauses()` helper takes a caller-supplied predicate map per known key so consumers stay decoupled from the parser. In the popover, clauses are applied client-side against the cached `entityResults` (entities/search returns all entity types in one shot at popover-open, so no new API surface is needed). The trigger-detection regex in `use-chat-autocomplete.ts` was extended from `@[^\s]*` to `@[^\s#]*(?:\s+#[A-Za-z]?[\w-]*:?[^\s#]*)*` — the key trick is the `?` on `[A-Za-z]` so partial input like `@foo #` (space-hash, no key yet) keeps the popover open while the user types. The inner `:?[^\s#]*` accepts both partial (`@foo #sta`) and complete (`@foo #status:blocked`) forms. cmdk receives the filter-stripped `rawQuery` instead of the raw input so its fuzzy scorer doesn't mis-match `#key:value` tokens against entity names.
+
+Known filter keys for v1: `status` (case-insensitive substring match on `result.status`), `type` (exact match on `result.entityType`). Value pattern `[^\s#]+` terminates at whitespace OR the next `#` so back-to-back clauses like `#a:1#b:2` parse correctly — the tradeoff is no literal `#` in values until quoted-value support lands in v2.
+
+Browser-verified end-to-end: baseline 5 entities across 3 types → `@ #type:task` reduces to 2 tasks → `@ #type:task #status:completed` combines to 2 items in the Tasks group → `@ #status:nonexistent_status` renders the "No matching entities" empty state cleanly.
+
+Status kept as `in-progress` (not `completed`) because v2 scope — list-page consumption (`/tasks` FilterBar), skills-tab filtering (`/skills #scope:project`), quoted values, more filter keys like `#priority` (requires extending entities/search response shape) — is explicitly deferred per grooming scope discipline. Parser is reusable by future v2 consumers without changes.
+
 ### Completed — chat-conversation-templates (P2)
 
 Three entry points — empty-state "Start from template" button, `/new-from-template` slash command (`Session` group, `execute_immediately`), and a `Templates` group in the `⌘K` palette — open a sliding sheet picker that lists all 13 built-in blueprints from `GET /api/blueprints`. Selecting a blueprint with required variables renders a dynamic parameter form (text / textarea / select / number / boolean); the "Start conversation" button is disabled until all required params are filled. Zero-parameter blueprints start instantly. A new `renderBlueprintPrompt()` utility reuses `resolveTemplate` (shared with the workflow engine) and supports both the new optional `chatPrompt` blueprint field and a fallback to `steps[0].promptTemplate` — so all 13 built-ins work without edits.

@@ -36,6 +36,7 @@ import { computeRecommendation } from "@/lib/environment/skill-recommendations";
 import { browserLocalStore, activeDismissedIds, saveDismissal } from "@/lib/chat/dismissals";
 import { useChatSession } from "@/components/chat/chat-session-provider";
 import type { EnrichedSkill } from "@/lib/environment/skill-enrichment";
+import { parseFilterInput, matchesClauses } from "@/lib/filters/parse";
 
 interface ChatCommandPopoverProps {
   open: boolean;
@@ -144,6 +145,30 @@ export function ChatCommandPopover({
     [enrichedSkills, recentMessages, dismissedIds]
   );
 
+  // Parse `#key:value` filter clauses from the query. Relevant for mention
+  // mode — slash mode does its own tab-based grouping and doesn't currently
+  // consume free-text filters.
+  const parsed = useMemo(() => parseFilterInput(query), [query]);
+
+  // Pre-filter entity results by known filter keys. Unknown keys pass through
+  // per the parser contract (silently skipped). cmdk still runs its own
+  // fuzzy match on top using `parsed.rawQuery`.
+  const filteredEntityResults = useMemo(() => {
+    if (parsed.clauses.length === 0) return entityResults;
+    return entityResults.filter((r) =>
+      matchesClauses(r, parsed.clauses, {
+        // `#status:blocked` — case-insensitive substring match so partial
+        // values like `#status:block` also hit (helps while typing).
+        status: (item, value) =>
+          typeof item.status === "string" &&
+          item.status.toLowerCase().includes(value.toLowerCase()),
+        // `#type:task` — exact match on the entity-type discriminator.
+        type: (item, value) =>
+          item.entityType.toLowerCase() === value.toLowerCase(),
+      })
+    );
+  }, [entityResults, parsed.clauses]);
+
   if (!open || !anchorRect || !mode) return null;
 
   // Position above the caret
@@ -163,9 +188,11 @@ export function ChatCommandPopover({
       className="rounded-lg border bg-popover text-popover-foreground shadow-lg animate-in fade-in-0"
     >
       <Command shouldFilter loop>
-        {/* Hidden input for cmdk filtering — synced to query */}
+        {/* Hidden input for cmdk filtering. In mention mode we pass the
+            filter-stripped `rawQuery` so cmdk's fuzzy match doesn't see
+            `#key:value` tokens and score every entity to zero. */}
         <div className="sr-only">
-          <CommandInput value={query} />
+          <CommandInput value={mode === "mention" ? parsed.rawQuery : query} />
         </div>
 
         {mode === "slash" ? (
@@ -202,7 +229,7 @@ export function ChatCommandPopover({
           <CommandList className="max-h-[320px]">
             <CommandEmpty>No matching entities</CommandEmpty>
             <MentionItems
-              results={entityResults}
+              results={filteredEntityResults}
               loading={entityLoading}
               onSelect={onSelect}
             />

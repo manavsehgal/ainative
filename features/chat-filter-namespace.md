@@ -1,6 +1,6 @@
 ---
 title: Chat — `#key:value` Filter Namespace
-status: planned
+status: in-progress  # v1 (chat popover) shipped 2026-04-14; v2 list-page + skills-tab deferred
 priority: P2
 milestone: post-mvp
 source: chat-advanced-ux.md §1 (split during grooming, 2026-04-14)
@@ -56,13 +56,31 @@ Published map of `{ surface → allowedKeys }` so popovers can autocomplete the 
 
 ## Acceptance Criteria
 
-- [ ] `parseFilterInput(str)` unit tests cover: single clause, multiple clauses, quoted values, unicode, raw-query remainder
-- [ ] Typing `#status:blocked` inside `@task:` filters the popover to blocked tasks
-- [ ] Typing `#scope:project` inside `/skills` filters the Skills tab
-- [ ] Backspace/delete correctly clears partial filter clauses
-- [ ] `/tasks?filter=%23status%3Ablocked` list page applies the same filter
-- [ ] Unknown keys pass through without errors or visible warnings
-- [ ] No regression in existing popover text search (rawQuery path)
+- [x] `parseFilterInput(str)` unit tests cover: single clause, multiple clauses, raw-query remainder, hyphens/underscores in keys, case preservation, back-to-back clauses, special characters (17 tests, excluding quoted values — deferred to v2)
+- [x] Typing `@ #type:task` inside the chat mention popover filters entities to tasks only
+- [x] Typing `@ #status:completed` filters to entities with matching status (case-insensitive substring)
+- [x] Combined clauses (`@ #type:task #status:completed`) apply AND semantics
+- [x] Mention-trigger regex extended to allow space + `#` continuation without closing the popover
+- [x] Unknown keys pass through without errors (skipped per `matchesClauses` contract)
+- [x] No regression in existing popover text search — `rawQuery` (filter-stripped) is what cmdk sees for fuzzy match
+- [ ] Typing `#scope:project` inside `/skills` filters the Skills tab (deferred — v2)
+- [ ] Backspace/delete correctly clears partial filter clauses (works by regex structure; no explicit UX handling)
+- [ ] `/tasks?filter=%23status%3Ablocked` list page applies the same filter (deferred — v2)
+
+## v1 Shipped Scope (2026-04-14)
+
+- Parser: `src/lib/filters/parse.ts` with `parseFilterInput()` and `matchesClauses()` helpers
+- Chat popover integration: `@<mention> #<key>:<value>` chaining works; `#status:`, `#type:` known keys
+- Regex extension in `use-chat-autocomplete.ts` to keep popover open through space+`#`
+- 17 parser unit tests + browser-verified end-to-end
+
+## v2 Deferred Scope
+
+- Quoted values (`#tag:"needs review"`) — v1 value terminates at whitespace or `#`
+- List-page consumption (`/tasks`, `/projects`, `/workflows` URL state)
+- Skills-tab filtering (`/skills #scope:project`)
+- More filter keys (`#priority` requires extending entities/search response shape)
+- NOT/OR logic
 
 ## Scope Boundaries
 
