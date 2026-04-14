@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { db } from "@/lib/db";
 import { documents, tasks, projects, workflows } from "@/lib/db/schema";
 import { desc, eq } from "drizzle-orm";
@@ -47,7 +48,9 @@ export default async function DocumentsPage() {
 
   return (
     <PageShell title="Documents">
-      <DocumentBrowser initialDocuments={docs} projects={projectList} />
+      <Suspense fallback={null}>
+        <DocumentBrowser initialDocuments={docs} projects={projectList} />
+      </Suspense>
     </PageShell>
   );
 }

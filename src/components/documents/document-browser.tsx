@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -11,7 +10,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { LayoutGrid, LayoutList, Upload, Trash2, Search } from "lucide-react";
+import { LayoutGrid, LayoutList, Upload, Trash2 } from "lucide-react";
+import { FilterInput } from "@/components/shared/filter-input";
+import { parseFilterInput, matchesClauses, type FilterClause } from "@/lib/filters/parse";
 import { toast } from "sonner";
 import { DocumentTable } from "./document-table";
 import { DocumentGrid } from "./document-grid";
@@ -30,7 +31,12 @@ export function DocumentBrowser({
 }: DocumentBrowserProps) {
   const [docs, setDocs] = useState(initialDocuments);
   const [view, setView] = useState<"table" | "grid">("table");
-  const [search, setSearch] = useState("");
+  const searchParams = useSearchParams();
+  const initialFilter = searchParams.get("filter") ?? "";
+  const initialParsed = parseFilterInput(initialFilter);
+  const [filterRaw, setFilterRaw] = useState(initialFilter);
+  const [rawQuery, setRawQuery] = useState(initialParsed.rawQuery);
+  const [clauses, setClauses] = useState<FilterClause[]>(initialParsed.clauses);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [directionFilter, setDirectionFilter] = useState<string>("all");
   const [projectFilter, setProjectFilter] = useState<string>("all");
@@ -54,16 +60,20 @@ export function DocumentBrowser({
 
   const filtered = docs.filter((doc) => {
     if (
-      search &&
-      !doc.originalName.toLowerCase().includes(search.toLowerCase()) &&
-      !(doc.extractedText ?? "").toLowerCase().includes(search.toLowerCase())
+      rawQuery &&
+      !doc.originalName.toLowerCase().includes(rawQuery.toLowerCase()) &&
+      !(doc.extractedText ?? "").toLowerCase().includes(rawQuery.toLowerCase())
     ) {
       return false;
     }
     if (statusFilter !== "all" && doc.status !== statusFilter) return false;
     if (directionFilter !== "all" && doc.direction !== directionFilter) return false;
     if (projectFilter !== "all" && doc.projectId !== projectFilter) return false;
-    return true;
+    return matchesClauses(doc, clauses, {
+      status: (d, v) => (d.status ?? "").toLowerCase() === v.toLowerCase(),
+      direction: (d, v) => (d.direction ?? "").toLowerCase() === v.toLowerCase(),
+      type: (d, v) => (d.mimeType ?? "").toLowerCase().includes(v.toLowerCase()),
+    });
   });
 
   function toggleSelect(id: string) {
@@ -112,27 +122,35 @@ export function DocumentBrowser({
 
       <FilterBar
         activeCount={
-          (search ? 1 : 0) +
+          (filterRaw ? 1 : 0) +
           (statusFilter !== "all" ? 1 : 0) +
           (directionFilter !== "all" ? 1 : 0) +
           (projectFilter !== "all" ? 1 : 0)
         }
         onClear={() => {
-          setSearch("");
+          setFilterRaw("");
+          setRawQuery("");
+          setClauses([]);
           setStatusFilter("all");
           setDirectionFilter("all");
           setProjectFilter("all");
+          router.replace("?", { scroll: false });
         }}
       >
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by name or content..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
-        </div>
+        <FilterInput
+          value={filterRaw}
+          onChange={({ raw, clauses, rawQuery }) => {
+            setFilterRaw(raw);
+            setClauses(clauses);
+            setRawQuery(rawQuery);
+            const params = new URLSearchParams(searchParams.toString());
+            if (raw) params.set("filter", raw);
+            else params.delete("filter");
+            const query = params.toString();
+            router.replace(query ? `?${query}` : "?", { scroll: false });
+          }}
+          placeholder="Search or #status:ready #type:pdf …"
+        />
 
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[140px]">
