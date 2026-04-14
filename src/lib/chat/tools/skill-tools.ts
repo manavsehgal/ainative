@@ -24,16 +24,39 @@ export function skillTools(_ctx: ToolContext) {
   return [
     defineTool(
       "list_skills",
-      "List all Stagent-discoverable skills across user (~/.claude, ~/.codex) and project (.claude, .agents) scopes. Returns id, name, tool persona, scope, and a short preview for each. Read-only. Use this to see what skills are available for activation.",
-      {},
-      async () => {
+      "List all Stagent-discoverable skills across user (~/.claude, ~/.codex) and project (.claude, .agents) scopes. Returns id, name, tool persona, scope, and a short preview for each. Pass `enriched: true` for additional per-skill metadata (healthScore, syncStatus, linkedProfileId). Read-only.",
+      {
+        enriched: z
+          .boolean()
+          .optional()
+          .describe(
+            "When true, include healthScore ('healthy'|'stale'|'aging'|'unknown'), syncStatus ('synced'|'claude-only'|'codex-only'|'shared'), and linkedProfileId per skill."
+          ),
+      },
+      async (args) => {
         try {
+          if (args.enriched) {
+            const { listSkillsEnriched } = await import("@/lib/environment/list-skills");
+            const skills = listSkillsEnriched();
+            return ok({
+              count: skills.length,
+              skills: skills.map((s) => ({
+                id: s.id,
+                name: s.name,
+                tool: s.tool,
+                scope: s.scope,
+                preview: s.preview,
+                sizeBytes: s.sizeBytes,
+                healthScore: s.healthScore,
+                syncStatus: s.syncStatus,
+                linkedProfileId: s.linkedProfileId,
+              })),
+            });
+          }
           const { listSkills } = await import("@/lib/environment/list-skills");
           const skills = listSkills();
           return ok({
             count: skills.length,
-            // Omit absPath from the LLM-visible result — it's an internal
-            // handle only Tier 0 injection needs.
             skills: skills.map((s) => ({
               id: s.id,
               name: s.name,
