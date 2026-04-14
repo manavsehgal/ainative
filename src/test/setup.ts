@@ -3,6 +3,16 @@ import { mkdtempSync, mkdirSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 
+// Mock ResizeObserver for cmdk
+global.ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+
+// Mock scrollIntoView for cmdk
+HTMLElement.prototype.scrollIntoView = () => {};
+
 if (!process.env.STAGENT_DATA_DIR) {
   const tempDataDir = mkdtempSync(join(tmpdir(), "stagent-vitest-"));
   mkdirSync(tempDataDir, { recursive: true });
