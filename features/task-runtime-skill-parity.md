@@ -1,6 +1,6 @@
 ---
 title: Task Runtime — Skill Parity With Chat
-status: complete
+status: completed
 priority: P1
 milestone: post-mvp
 source: ideas/chat-context-experience.md §11 (architect drift concern)

@@ -1,6 +1,6 @@
 ---
 title: Chat — Claude SDK-Native Skills & Filesystem Context
-status: complete
+status: completed
 priority: P0
 milestone: post-mvp
 source: ideas/chat-context-experience.md §4.1, §4.2, §8 Phase 1a

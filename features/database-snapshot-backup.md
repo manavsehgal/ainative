@@ -1,6 +1,6 @@
 ---
 title: Database Snapshot Backup
-status: in-progress
+status: completed
 priority: P1
 milestone: post-mvp
 source: brainstorming session 2026-04-03

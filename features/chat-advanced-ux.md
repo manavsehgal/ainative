@@ -1,6 +1,6 @@
 ---
 title: Chat — Advanced UX (retired umbrella — split 2026-04-14)
-status: split
+status: deferred
 priority: P3
 milestone: post-mvp
 source: ideas/chat-context-experience.md §5.1, §8 Phase 5

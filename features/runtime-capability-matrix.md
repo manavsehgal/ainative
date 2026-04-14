@@ -1,6 +1,6 @@
 ---
 title: Runtime Capability Matrix
-status: complete
+status: completed
 priority: P1
 milestone: post-mvp
 source: ideas/chat-context-experience.md §2.7, §11 (architect)

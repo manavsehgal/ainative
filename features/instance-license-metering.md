@@ -1,6 +1,6 @@
 ---
 title: Hybrid Instance License Metering
-status: planned
+status: deferred
 priority: P2
 milestone: post-mvp
 source: features/architect-report.md

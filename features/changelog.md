@@ -2,6 +2,29 @@
 
 ## 2026-04-14
 
+### Status Sync — Feature Audit
+
+Audited all 26 non-terminal feature specs against the codebase. Adjustments:
+
+**Marked completed** (code shipped, spec already satisfied):
+- `database-snapshot-backup` — `src/lib/snapshots/{snapshot-manager,auto-backup,retention}.ts` implemented with full WAL-safe tarball pipeline
+- `workflow-run-history` — `workflowRunNumber` + `runNumber` columns present in `src/lib/db/schema.ts`
+- `runtime-capability-matrix` — normalized `status: complete` → `completed`; feature matrix live in `src/lib/agents/runtime/catalog.ts`
+- `chat-claude-sdk-skills` — normalized `complete` → `completed`
+- `task-runtime-skill-parity` — normalized `complete` → `completed`
+
+**Marked in-progress** (partially shipped):
+- `upgrade-detection` — `src/lib/instance/upgrade-poller.ts` exists; badge UI still pending
+
+**Marked deferred**:
+- `instance-license-metering` (P2) — community edition (commit 0436803) removed all billing/tier logic; metering inapplicable
+- `chat-advanced-ux` (P3) — normalized non-standard `status: split` → `deferred`; retired umbrella (5 sub-specs already tracked)
+
+**Normalized non-standard status**:
+- `schedule-collision-prevention` — `proposed` → `planned` (proposed is not a valid state)
+
+Unchanged (confirmed correct): 16 `planned` specs with no matching code, and `chat-filter-namespace` / `chat-pinned-saved-searches` / `profile-environment-sync` / `enrichment-planner-test-hardening` / `runtime-validation-hardening` remain `in-progress` (partial code found).
+
 ### Shipped v1 — chat-pinned-saved-searches (P3, in-progress)
 
 Pinning entities from the chat `@` mention popover now works end-to-end. Hover-reveal Pin button on each entity row; click to pin; a "Pinned" cmdk group renders at the top of the popover on next open, with matching Unpin buttons. Pinned items are hidden from their regular type group so they don't render twice. Per-user persistence via a new `GET/PUT /api/settings/chat/pins` route backed by the existing `settings` key-value table under the `chat.pinnedEntries` key.

@@ -1,6 +1,6 @@
 ---
 title: Upstream Upgrade Detection & Badge
-status: planned
+status: in-progress
 priority: P1
 milestone: post-mvp
 source: features/architect-report.md

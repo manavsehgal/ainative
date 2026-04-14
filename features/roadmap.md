@@ -115,7 +115,7 @@ Features that enhance the product but aren't essential for first use — homepag
 | [chat-settings-tool](chat-settings-tool.md) | P1 | in-progress | tool-permission-persistence, chat-engine |
 | [task-hierarchy-clarity](task-hierarchy-clarity.md) | P1 | completed | workflow-engine, task-board, project-management |
 | [agent-document-api-access](agent-document-api-access.md) | P2 | completed | document-preprocessing, file-attachment-data-layer, tool-permission-persistence |
-| [database-snapshot-backup](database-snapshot-backup.md) | P1 | in-progress | — |
+| [database-snapshot-backup](database-snapshot-backup.md) | P1 | completed | — |
 
 ### Workspace Intelligence
 
@@ -204,7 +204,7 @@ Runtime-native skills, filesystem context, file mentions, and a command-namespac
 | [chat-file-mentions](chat-file-mentions.md) | P1 | planned | chat-command-mentions, chat-claude-sdk-skills, workspace-context-awareness |
 | [chat-command-namespace-refactor](chat-command-namespace-refactor.md) | P1 | completed | chat-claude-sdk-skills, chat-file-mentions, runtime-capability-matrix, command-palette-enhancement |
 | [chat-environment-integration](chat-environment-integration.md) | P2 | completed | chat-command-namespace-refactor, environment-dashboard, environment-cache, profile-environment-sync, environment-health-scoring |
-| [chat-advanced-ux](chat-advanced-ux.md) | P3 | split | ← retired umbrella, split 2026-04-14 into 5 sub-specs ↓ |
+| [chat-advanced-ux](chat-advanced-ux.md) | P3 | deferred | ← retired umbrella, split 2026-04-14 into 5 sub-specs ↓ |
 | [chat-conversation-templates](chat-conversation-templates.md) | P2 | completed | workflow-blueprints, chat-conversation-persistence, chat-command-namespace-refactor |
 | [chat-filter-namespace](chat-filter-namespace.md) | P2 | in-progress | chat-command-namespace-refactor, chat-environment-integration |
 | [chat-pinned-saved-searches](chat-pinned-saved-searches.md) | P3 | in-progress | chat-filter-namespace, chat-command-namespace-refactor |
@@ -271,7 +271,7 @@ Runtime-native skills, filesystem context, file mentions, and a command-namespac
 
 | Feature | Priority | Status | Dependencies |
 |---------|----------|--------|--------------|
-| [workflow-run-history](workflow-run-history.md) | P1 | planned | workflow-engine, workflow-editing, document-output-generation |
+| [workflow-run-history](workflow-run-history.md) | P1 | completed | workflow-engine, workflow-editing, document-output-generation |
 | [entity-relationship-detail-views](entity-relationship-detail-views.md) | P2 | planned | workflow-run-history, detail-view-redesign |
 | [relationship-summary-cards](relationship-summary-cards.md) | P2 | planned | entity-relationship-detail-views |
 
@@ -332,9 +332,9 @@ Automates the PRIVATE-INSTANCES runbook — turns the manual `git merge main` + 
 | Feature | Priority | Status | Dependencies |
 |---------|----------|--------|--------------|
 | [instance-bootstrap](instance-bootstrap.md) | P1 | completed | — |
-| [upgrade-detection](upgrade-detection.md) | P1 | planned | instance-bootstrap, scheduled-prompt-loops |
+| [upgrade-detection](upgrade-detection.md) | P1 | in-progress | instance-bootstrap, scheduled-prompt-loops |
 | [upgrade-session](upgrade-session.md) | P1 | planned | instance-bootstrap, upgrade-detection, agent-integration, agent-profile-catalog |
-| [instance-license-metering](instance-license-metering.md) | P2 | planned | instance-bootstrap, local-license-manager, license-activation-flow |
+| [instance-license-metering](instance-license-metering.md) | P2 | deferred | instance-bootstrap, local-license-manager, license-activation-flow |
 
 ### Growth-Enabling Primitives
 

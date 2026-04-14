@@ -1,6 +1,6 @@
 ---
 title: Workflow Run History & Document Lineage
-status: planned
+status: completed
 priority: P1
 milestone: post-mvp
 source: conversation/2026-04-02-entity-relationships

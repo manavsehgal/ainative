@@ -1,6 +1,6 @@
 ---
 title: Schedule Collision Prevention & Turn Budget Optimization
-status: proposed
+status: planned
 priority: P1
 milestone: post-mvp
 source: wealth-mgr field deployment learnings
