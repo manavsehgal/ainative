@@ -5,9 +5,9 @@
  * the non-filter remainder as `rawQuery`. Designed to be reused across chat
  * popovers (entity filtering) and list pages (URL state, FilterBar input).
  *
- * Syntax (v1):
+ * Syntax (v2):
  *   - `#key:value` — single clause. Keys are `[A-Za-z][\w-]*`, values are
- *     `[^\s]+` (whitespace-terminated). No quoted values in v1.
+ *     double-quoted strings `"..."` (may contain spaces or `#`) OR a whitespace/`#`-terminated bare run.
  *   - Multiple clauses may chain: `#status:blocked #priority:high` → two clauses.
  *   - Clauses may appear anywhere in the input; everything else becomes rawQuery.
  *   - Unknown keys pass through unchanged — the consumer decides what to do.
@@ -32,13 +32,11 @@ export interface ParsedFilterInput {
 }
 
 // Clause pattern: `#<key>:<value>`. Key must start with a letter to avoid
-// eating `#123` hash references. `\b` after value ensures we stop at the next
-// whitespace or input boundary — non-greedy match not needed because `[^\s]+`
-// is already bounded by whitespace.
-// Value terminates at whitespace OR the next `#` so back-to-back clauses like
-// `#a:1#b:2` parse as two clauses. Downside: literal `#` can't appear in a
-// value — deferred to v2 (quoted values).
-const CLAUSE_PATTERN = /#([A-Za-z][\w-]*):([^\s#]+)/g;
+// eating `#123` hash references. Value may be either:
+//   - a double-quoted run of any non-quote chars: `"..."`  (captured in group 2)
+//   - OR an unquoted whitespace/`#`-terminated run   (captured in group 3)
+// Exactly one of group 2 / group 3 will be defined per match.
+const CLAUSE_PATTERN = /#([A-Za-z][\w-]*):(?:"([^"]*)"|([^\s#]+))/g;
 
 export function parseFilterInput(input: string): ParsedFilterInput {
   if (!input) return { clauses: [], rawQuery: "" };
@@ -50,10 +48,14 @@ export function parseFilterInput(input: string): ParsedFilterInput {
   // collapse whitespace. This is simpler than maintaining offsets and survives
   // back-to-back clauses like `#a:1#b:2` (which we don't officially support
   // but shouldn't crash on — the regex with `g` flag matches both).
-  rawQuery = rawQuery.replace(CLAUSE_PATTERN, (_match, key: string, value: string) => {
-    clauses.push({ key, value });
-    return " ";
-  });
+  rawQuery = rawQuery.replace(
+    CLAUSE_PATTERN,
+    (_match, key: string, quoted: string | undefined, bare: string | undefined) => {
+      const value = quoted !== undefined ? quoted : bare ?? "";
+      clauses.push({ key, value });
+      return " ";
+    }
+  );
 
   rawQuery = rawQuery.replace(/\s+/g, " ").trim();
 
