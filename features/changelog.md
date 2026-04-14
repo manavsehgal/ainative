@@ -2,6 +2,18 @@
 
 ## 2026-04-14
 
+### Shipped v1 — chat-pinned-saved-searches (P3, in-progress)
+
+Pinning entities from the chat `@` mention popover now works end-to-end. Hover-reveal Pin button on each entity row; click to pin; a "Pinned" cmdk group renders at the top of the popover on next open, with matching Unpin buttons. Pinned items are hidden from their regular type group so they don't render twice. Per-user persistence via a new `GET/PUT /api/settings/chat/pins` route backed by the existing `settings` key-value table under the `chat.pinnedEntries` key.
+
+**Denormalization decision**: pin records store `label`, `description`, and `status` inline (not just `id` + `type`). This means pins surface reliably even when the underlying entity falls outside the `entities/search` top-20-per-type window — otherwise a user who pinned something a week ago wouldn't see it today. Trade-off: labels go stale on rename until the user re-pins. Mitigation via lazy refresh is a v2 follow-up.
+
+**Saved searches deferred to v2.** The spec bundled pinning + saved searches, but the two are structurally independent and saved-search UX (footer affordance, palette surfacing, filter-applied navigation) adds significant design surface. Shipping pinning alone gets the power-user "quick access to repeat entities" value without tangling the two concerns.
+
+Architecture: new `src/app/api/settings/chat/pins/route.ts` with Zod validation, de-dup-by-id on PUT (last-write-wins). New `src/hooks/use-pinned-entries.ts` with optimistic mutations + background PUT — failures are silently swallowed (optimistic update already applied). Popover changes in `chat-command-popover.tsx` split `MentionItems` into pinned vs. unpinned views, with `rawQuery`-aware pin filtering so typing a query still narrows the Pinned group.
+
+Browser-verified: pin button click → group appears → GET returns `[{id, type, label, ...}]` → close + reopen popover → Pinned group at top, entity correctly hidden from its type group → click Unpin → empties list → GET returns `{ pins: [] }`.
+
 ### Shipped v1 — chat-filter-namespace (P2, in-progress)
 
 `#key:value` filter namespace now works inside the chat mention popover. Typing `@ #type:task` narrows the popover to tasks only; `@ #type:task #status:completed` combines clauses with AND semantics; free-text search still composes on top via cmdk (e.g. `@ auth #type:task` narrows to tasks AND fuzzy-matches "auth"). Unknown keys pass through silently per the parser contract, so typos don't break the flow.

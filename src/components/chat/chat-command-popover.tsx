@@ -19,6 +19,8 @@ import {
   Bot,
   Clock,
   Loader2,
+  Pin,
+  PinOff,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -37,6 +39,7 @@ import { browserLocalStore, activeDismissedIds, saveDismissal } from "@/lib/chat
 import { useChatSession } from "@/components/chat/chat-session-provider";
 import type { EnrichedSkill } from "@/lib/environment/skill-enrichment";
 import { parseFilterInput, matchesClauses } from "@/lib/filters/parse";
+import { usePinnedEntries, type PinnedEntry } from "@/hooks/use-pinned-entries";
 
 interface ChatCommandPopoverProps {
   open: boolean;
@@ -145,6 +148,10 @@ export function ChatCommandPopover({
     [enrichedSkills, recentMessages, dismissedIds]
   );
 
+  // Pinned entries persist under settings.chat.pinnedEntries. Hook self-
+  // fetches on mount and sends optimistic PUTs on mutation.
+  const { pins, isPinned, pin, unpin } = usePinnedEntries();
+
   // Parse `#key:value` filter clauses from the query. Relevant for mention
   // mode — slash mode does its own tab-based grouping and doesn't currently
   // consume free-text filters.
@@ -232,6 +239,11 @@ export function ChatCommandPopover({
               results={filteredEntityResults}
               loading={entityLoading}
               onSelect={onSelect}
+              pins={pins}
+              isPinned={isPinned}
+              onPin={pin}
+              onUnpin={unpin}
+              rawQuery={parsed.rawQuery}
             />
           </CommandList>
         )}
@@ -361,10 +373,20 @@ function MentionItems({
   results,
   loading,
   onSelect,
+  pins,
+  isPinned,
+  onPin,
+  onUnpin,
+  rawQuery,
 }: {
   results: EntitySearchResult[];
   loading: boolean;
   onSelect: ChatCommandPopoverProps["onSelect"];
+  pins: PinnedEntry[];
+  isPinned: (id: string) => boolean;
+  onPin: (entry: Omit<PinnedEntry, "pinnedAt">) => void;
+  onUnpin: (id: string) => void;
+  rawQuery: string;
 }) {
   if (loading && results.length === 0) {
     return (
@@ -375,59 +397,155 @@ function MentionItems({
     );
   }
 
-  const grouped = groupByType(results);
+  // Pins render from the standalone pin records (denormalized label/status),
+  // so they surface even when outside the current entities/search window.
+  // Filter pins by `rawQuery` so typing a query narrows pins too.
+  const q = rawQuery.toLowerCase();
+  const visiblePins =
+    q.length === 0
+      ? pins
+      : pins.filter(
+          (p) =>
+            p.label.toLowerCase().includes(q) ||
+            p.description?.toLowerCase().includes(q)
+        );
+
+  // Hide pinned items from their regular type group so they don't render
+  // twice on the same popover open.
+  const unpinnedResults = results.filter((r) => !isPinned(r.entityId));
+  const grouped = groupByType(unpinnedResults);
   const entityTypes = Object.keys(grouped);
 
-  if (entityTypes.length === 0) {
+  if (visiblePins.length === 0 && entityTypes.length === 0) {
     return null; // CommandEmpty will show
   }
 
   return (
     <>
+      {visiblePins.length > 0 && (
+        <CommandGroup heading="Pinned">
+          {visiblePins.map((p) => {
+            const Icon = ENTITY_ICONS[p.type] ?? FileText;
+            return (
+              <CommandItem
+                key={`pin-${p.id}`}
+                value={`pinned ${p.type} ${p.label} ${p.description ?? ""} ${p.status ?? ""}`}
+                onSelect={() =>
+                  onSelect({
+                    type: "mention",
+                    id: p.type,
+                    label: p.label,
+                    entityType: p.type,
+                    entityId: p.id,
+                  })
+                }
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                <div className="flex flex-col min-w-0">
+                  <span className="flex-1 truncate">{p.label}</span>
+                  {p.description && (
+                    <span className="truncate text-xs text-muted-foreground">
+                      {p.description}
+                    </span>
+                  )}
+                </div>
+                {p.status && (
+                  <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+                    {p.status}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  aria-label={`Unpin ${p.label}`}
+                  className="ml-2 shrink-0 rounded p-0.5 text-muted-foreground hover:text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  // Stop cmdk's parent row selection on pin-button click —
+                  // otherwise the unpin fires AND the item is inserted.
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onUnpin(p.id);
+                  }}
+                >
+                  <PinOff className="h-3.5 w-3.5" />
+                </button>
+              </CommandItem>
+            );
+          })}
+        </CommandGroup>
+      )}
       {entityTypes.map((type) => {
         const Icon = ENTITY_ICONS[type] ?? FileText;
         const groupLabel = ENTITY_LABELS[type] ?? type;
         const isFile = type === "file";
         return (
           <CommandGroup key={type} heading={groupLabel}>
-            {grouped[type].map((entity) => (
-              <CommandItem
-                key={`${entity.entityType}-${entity.entityId}`}
-                value={`${entity.entityType} ${entity.label} ${entity.description ?? ""} ${entity.status ?? ""}`}
-                onSelect={() =>
-                  onSelect({
-                    type: "mention",
-                    id: entity.entityType,
-                    label: entity.label,
-                    entityType: entity.entityType,
-                    entityId: entity.entityId,
-                  })
-                }
-              >
-                <Icon className="h-4 w-4 shrink-0" />
-                <div className="flex flex-col min-w-0">
-                  <span
-                    className={
-                      isFile
-                        ? "flex-1 truncate font-mono text-xs"
-                        : "flex-1 truncate"
-                    }
-                  >
-                    {entity.label}
-                  </span>
-                  {entity.description && (
-                    <span className="truncate text-xs text-muted-foreground">
-                      {entity.description}
+            {grouped[type].map((entity) => {
+              const pinnable = entity.entityType !== "file";
+              return (
+                <CommandItem
+                  key={`${entity.entityType}-${entity.entityId}`}
+                  value={`${entity.entityType} ${entity.label} ${entity.description ?? ""} ${entity.status ?? ""}`}
+                  onSelect={() =>
+                    onSelect({
+                      type: "mention",
+                      id: entity.entityType,
+                      label: entity.label,
+                      entityType: entity.entityType,
+                      entityId: entity.entityId,
+                    })
+                  }
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  <div className="flex flex-col min-w-0">
+                    <span
+                      className={
+                        isFile
+                          ? "flex-1 truncate font-mono text-xs"
+                          : "flex-1 truncate"
+                      }
+                    >
+                      {entity.label}
+                    </span>
+                    {entity.description && (
+                      <span className="truncate text-xs text-muted-foreground">
+                        {entity.description}
+                      </span>
+                    )}
+                  </div>
+                  {entity.status && (
+                    <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+                      {entity.status}
                     </span>
                   )}
-                </div>
-                {entity.status && (
-                  <span className="ml-auto shrink-0 text-xs text-muted-foreground">
-                    {entity.status}
-                  </span>
-                )}
-              </CommandItem>
-            ))}
+                  {pinnable && (
+                    <button
+                      type="button"
+                      aria-label={`Pin ${entity.label}`}
+                      className="ml-2 shrink-0 rounded p-0.5 text-muted-foreground opacity-0 group-hover:opacity-100 data-[selected=true]:opacity-100 hover:text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring transition-opacity"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onPin({
+                          id: entity.entityId,
+                          type: entity.entityType,
+                          label: entity.label,
+                          description: entity.description,
+                          status: entity.status,
+                        });
+                      }}
+                    >
+                      <Pin className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </CommandItem>
+              );
+            })}
           </CommandGroup>
         );
       })}

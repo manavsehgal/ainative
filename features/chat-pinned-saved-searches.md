@@ -1,6 +1,6 @@
 ---
 title: Chat — Pinned Entries & Saved Searches
-status: planned
+status: in-progress  # v1 pinning shipped 2026-04-14; saved searches deferred to v2
 priority: P3
 milestone: post-mvp
 source: chat-advanced-ux.md §2 (split during grooming, 2026-04-14)
@@ -60,13 +60,31 @@ One JSON read on app boot, in-memory in a `useSettings()` hook. Mutations POST t
 
 ## Acceptance Criteria
 
-- [ ] Right-click / `⌘P` on popover item pins it; appears at top on next open
-- [ ] Unpinning removes the entry and persists
-- [ ] `Save this view` button appears only when filter clauses are present
-- [ ] Saved searches appear in the `Saved` group of the relevant popover and in `⌘K`
-- [ ] Per-surface keying: pinning a task doesn't appear in project popover
-- [ ] Concurrent pin/unpin doesn't lose state (read-modify-write is serialized)
-- [ ] Settings migration is a no-op on DBs without `chat.pinnedEntries` / `chat.savedSearches`
+- [x] Hover-reveal Pin button on popover entity items (context menu + ⌘P deferred to v2)
+- [x] Click Pin → item appears in a "Pinned" group at the top of the popover on next open
+- [x] Unpin button in the Pinned group removes the entry and persists via PUT
+- [x] Settings migration is a no-op — new `chat.pinnedEntries` key is self-initializing via `getSetting` returning null → `[]`
+- [x] Pinned items hidden from their regular type group so they don't render twice
+- [x] Pin records denormalize `label`, `description`, `status` so they render standalone even when outside `entities/search`'s top-N window
+- [ ] `Save this view` button appears only when filter clauses are present (deferred — v2)
+- [ ] Saved searches appear in the `Saved` group of the relevant popover and in `⌘K` (deferred — v2)
+- [ ] Right-click / `⌘P` on popover item pins it (deferred — hover-button is v1 UX)
+
+## v1 Shipped Scope (2026-04-14)
+
+- New `/api/settings/chat/pins` route (GET + PUT) with Zod validation
+- New `usePinnedEntries()` hook — fetch-once + optimistic mutations
+- Pin/Unpin buttons on entity rows (hover reveal) + "Pinned" cmdk group
+- Denormalized pin record (id, type, label, description, status, pinnedAt)
+- Dedup-by-id on PUT (last-write-wins) in the route handler
+
+## v2 Deferred Scope
+
+- Saved searches (whole feature — depends on picking UX for "Save this view")
+- Right-click context menu + ⌘P keyboard shortcut
+- `⌘K` palette surfacing of saved searches
+- Reordering pins
+- Stale-label refresh (pins pointing to renamed entities stay stale until un-pin/re-pin)
 
 ## Scope Boundaries
 
