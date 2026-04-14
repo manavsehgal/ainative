@@ -2,6 +2,25 @@
 
 ## 2026-04-13
 
+### Completed — task-runtime-skill-parity (P1)
+
+Mirror of Phase 1a (`chat-claude-sdk-skills`) into the Claude task execution runtime. Project skills, CLAUDE.md, and filesystem tools (`Skill`, `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash`, `TodoWrite`) now reach background tasks on the `claude-code` runtime the same way they reach interactive chat — closing the architect drift flagged in `ideas/chat-context-experience.md` §11.
+
+Key changes:
+- `CLAUDE_SDK_{ALLOWED_TOOLS,SETTING_SOURCES,READ_ONLY_FS_TOOLS}` extracted from `chat/engine.ts` into shared `agents/runtime/claude-sdk.ts` so both callers use a single source of truth.
+- `handleToolPermission` gains a Layer 1.75 (SDK filesystem + `Skill` auto-allow). Profile `autoDeny` still wins via Layer 1 precedence.
+- Both `executeClaudeTask` and `resumeClaudeTask` pass `settingSources` + merged allowed-tools, capability-gated on `getFeaturesForModel(...).hasNativeSkills`. Profile allowedTools wins when explicit; `CLAUDE_SDK_ALLOWED_TOOLS` is the fallback. Empty-allowlist edge case tightened (`length > 0` required).
+- Parity regression test splits `claude-agent.ts` source on `export async function resumeClaudeTask` so execute and resume `query()` blocks are unambiguously attributed.
+- Pre-existing `A-stagent-3` test updated to lock in the new allowedTools contract (Phase 1a list now ships by default when no profile allowlist is set).
+
+Scope pushback documented: the spec's §3 (shared Tier 0 partition helper) was deferred — chat's system prompt embeds conversation history, task's embeds document/table/output context, making a shared helper speculative abstraction.
+
+TDR-032 smoke test verified: a real task (`39331e2f-71a5-42fc-8928-bbe4c8f66ae3`) invoked the `task-smoke` fixture skill via the `Skill` tool and returned the exact sentinel `TASK_SMOKE_SKILL_REACHED_AGENT`. No `ReferenceError` in dev-server output. Smoke fixture deleted post-run.
+
+Commits: `bc597d0` → `f966c7d` (9 commits). Plan: `.claude/plans/faithful-task-mirror.md`.
+
+Unblocks: — (the P1 Claude-runtime skill story is now complete; remaining Chat Context Experience features can proceed independently).
+
 ### Completed — chat-claude-sdk-skills (P0)
 
 Flipped Stagent chat on the `claude-code` runtime from "isolation mode" to "SDK-native." Two small changes to `src/lib/chat/engine.ts` do the heavy lifting: `settingSources: ["user", "project"]` activates the SDK's CLAUDE.md + `.claude/skills/` + `~/.claude/skills/` auto-loading, and adding Skill, Read, Grep, Glob, Edit, Write, Bash, TodoWrite to `allowedTools` exposes the full filesystem tool suite. A read-only auto-allow branch in the existing `canUseTool` closure silences permission prompts for Read/Grep/Glob (mirroring the browser/exa pattern). Edit/Write/Bash/TodoWrite route through the pre-existing side-channel permission bridge automatically — no new plumbing. `Task` subagent tool intentionally excluded; Stagent task primitives replace it.
