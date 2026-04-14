@@ -176,6 +176,21 @@ export function ChatCommandPopover({
     );
   }, [entityResults, parsed.clauses]);
 
+  // Filter enriched skills by `#scope:` and `#type:` clauses so users can
+  // narrow the skills tab with e.g. `/skills #scope:project` or
+  // `/skills #type:claude-agent-sdk`. Unknown clauses pass through silently.
+  const filteredEnrichedSkills = useMemo(() => {
+    if (parsed.clauses.length === 0) return enrichedSkills;
+    return enrichedSkills.filter((skill) =>
+      matchesClauses(skill, parsed.clauses, {
+        // `#scope:project` / `#scope:user` — exact case-insensitive match.
+        scope: (s, v) => s.scope.toLowerCase() === v.toLowerCase(),
+        // `#type:skill-name` — substring match on the tool name.
+        type: (s, v) => (s.tool ?? "").toLowerCase().includes(v.toLowerCase()),
+      })
+    );
+  }, [enrichedSkills, parsed.clauses]);
+
   if (!open || !anchorRect || !mode) return null;
 
   // Position above the caret
@@ -218,7 +233,8 @@ export function ChatCommandPopover({
                   onSelect={onSelect}
                   projectProfiles={projectProfiles}
                   activeTab={activeTab}
-                  enrichedSkills={enrichedSkills}
+                  enrichedSkills={filteredEnrichedSkills}
+                  totalSkillCount={enrichedSkills.length}
                   recommendedId={recommended?.id ?? null}
                   onDismissRecommendation={
                     activeId
@@ -259,13 +275,17 @@ function ToolCatalogItems({
   projectProfiles,
   activeTab,
   enrichedSkills,
+  totalSkillCount,
   recommendedId,
   onDismissRecommendation,
 }: {
   onSelect: ChatCommandPopoverProps["onSelect"];
   projectProfiles?: ChatCommandPopoverProps["projectProfiles"];
   activeTab: CommandTabId;
+  /** Filtered list of skills to render (may be a subset of all skills). */
   enrichedSkills: EnrichedSkill[];
+  /** Total number of skills before any filter is applied — used for empty-state copy. */
+  totalSkillCount: number;
   recommendedId?: string | null;
   onDismissRecommendation?: (skillId: string) => void;
 }) {
@@ -315,7 +335,11 @@ function ToolCatalogItems({
   if (entries.length === 0) {
     return (
       <div className="px-4 py-6 text-sm text-muted-foreground text-center">
-        {activeTab === "skills" ? "No skills available yet." : "Nothing here."}
+        {activeTab === "skills"
+          ? totalSkillCount > 0
+            ? "No skills match these filters."
+            : "No skills available yet."
+          : "Nothing here."}
       </div>
     );
   }
