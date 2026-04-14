@@ -292,6 +292,13 @@ export function ChatSessionProvider({ children }: { children: ReactNode }) {
     }
   }, [setActiveConversation]);
 
+  // ── Environment rescan on conversation activation ────────────────────
+  // Fire-and-forget; endpoint self-guards with shouldRescan() (5min TTL).
+  useEffect(() => {
+    if (!activeId) return;
+    fetch("/api/environment/rescan-if-stale", { method: "POST" }).catch(() => {});
+  }, [activeId]);
+
   // ── Chat command event listeners ─────────────────────────────────────
   // Handles CustomEvents dispatched by chat-input.tsx (⌘L, slash commands).
   useEffect(() => {
