@@ -2,6 +2,16 @@
 
 ## 2026-04-14
 
+### Completed — chat-settings-tool (P1)
+
+Closed out the `set_settings` chat tool — allowing users to update safe Stagent settings via natural-language prompts with user-approval gating. The runtime implementation had shipped earlier (tool definition, allowlist, validators, permission-gating, catalog entry) but the spec was never flipped and no tests guarded the security-critical allowlist.
+
+Changes:
+- `src/lib/chat/tools/__tests__/settings-tools.test.ts` (new, 31 tests) — positive path, unknown-key rejection, **parameterized secret-exclusion guardrail** (11 forbidden keys: `auth.apiKey`, `auth.method`, `permissions.allow`, `usage.budgetPolicy`, `browser.*Config`, etc.), per-key validation coverage (integer bounds, enums, bool, step alignment, empty-string, float ranges).
+- `features/chat-settings-tool.md` — writable-keys table synced to match the shipped reality (12 keys, up from the 9 originally scoped — the 3 budget keys `budget_max_cost_per_task`, `budget_max_tokens_per_task`, `budget_max_daily_cost` were added during implementation). Status flipped `planned` → `completed`. Verification run appended.
+
+No runtime code changes. The secret-exclusion test fails noisily if any of `auth.apiKey`, `auth.method`, `permissions.allow`, `usage.budgetPolicy`, or any `browser.*Config` key is ever added to the `WRITABLE_SETTINGS` allowlist — the guardrail is now self-auditing.
+
 ### Completed — chat-session-persistence-provider (P0)
 
 Closed out the provider-hoisting fix that makes chat streams survive sidebar navigation. The provider + layout wiring + `ChatShell` refactor + four unit tests shipped in an earlier (unrecorded) commit; this pass adds the remaining `client.stream.view-remount` telemetry reason code from AC §5 and verifies the fix end-to-end. No server-side changes.

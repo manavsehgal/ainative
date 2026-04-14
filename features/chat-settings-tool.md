@@ -1,6 +1,6 @@
 ---
 title: Chat Settings Tool
-status: planned
+status: completed
 priority: P1
 milestone: post-mvp
 source: conversation
@@ -41,6 +41,9 @@ As a stagent user, I want to say "set my timeout to 120 seconds" or "enable Play
 | `learning.contextCharLimit` | integer 2000-32000, step 1000 | Learning context limit |
 | `ollama.baseUrl` | non-empty URL string | Ollama server URL |
 | `ollama.defaultModel` | non-empty string | Default Ollama model |
+| `budget_max_cost_per_task` | float 0.5–50 | Max cost per task (USD) |
+| `budget_max_tokens_per_task` | integer 1000–500000 | Max tokens per task |
+| `budget_max_daily_cost` | float 1–500 | Max daily spend (USD) |
 
 ### Excluded Keys (by design)
 
@@ -80,3 +83,21 @@ As a stagent user, I want to say "set my timeout to 120 seconds" or "enable Play
 - Permission system: `src/lib/chat/engine.ts` (PERMISSION_GATED_TOOLS)
 - Settings helpers: `src/lib/settings/helpers.ts` (getSetting/setSetting)
 - Tool catalog: `src/lib/chat/tool-catalog.ts`
+
+## Verification run — 2026-04-14
+
+Close-out of this feature exposed that the implementation had shipped earlier but the spec was never flipped to `completed` and no unit tests existed to guard the security-critical allowlist. Implementation state at verification:
+
+| AC | State at verification |
+|---|---|
+| `set_settings` available in chat + tool catalog | `settings-tools.ts:173-210` + `tool-catalog.ts:150` |
+| Unknown keys rejected with valid-key list | `settings-tools.ts:182-186` |
+| Per-key validation rejects invalid with descriptive messages | 12 validators, string-returning error contract |
+| Permission-gated via `PERMISSION_GATED_TOOLS` | `engine.ts:372` — `mcp__stagent__set_settings` listed |
+| Returns `{ key, oldValue, newValue }` on success | `settings-tools.ts:199-203` |
+| Secrets / internal keys excluded | None of `auth.apiKey`, `auth.method`, `permissions.allow`, `usage.budgetPolicy`, `browser.*Config` are in the allowlist — confirmed by parameterized test |
+| `get_settings` unchanged | Still present; expanded with a `writable` flag surfaced to the LLM |
+
+The close-out pass added `src/lib/chat/tools/__tests__/settings-tools.test.ts` (31 cases covering positive path, unknown-key rejection, 11-key secret-exclusion guardrail, per-key validation ranges / enums / step alignment / empty-string rejection). The spec's writable-keys table was updated to match the actual implementation: the shipped allowlist contains 3 budget keys (`budget_max_cost_per_task`, `budget_max_tokens_per_task`, `budget_max_daily_cost`) beyond the 9 originally scoped.
+
+No runtime code changes during close-out. All tests green in ~15ms.
