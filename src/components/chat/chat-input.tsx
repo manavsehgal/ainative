@@ -37,7 +37,7 @@ export function ChatInput({
 }: ChatInputProps) {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const autocomplete = useChatAutocomplete();
+  const autocomplete = useChatAutocomplete({ projectId });
   const { skills: projectSkills } = useProjectSkills(projectId);
 
   // Sync textarea ref with autocomplete hook

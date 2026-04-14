@@ -47,21 +47,35 @@ const CLOSED_STATE: AutocompleteState = {
   anchorRect: null,
 };
 
+/** Compact size label for file popover rows (e.g., "1.4 KB", "23 B"). */
+function humanSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 /**
  * Detects "/" and "@" triggers in a textarea and manages autocomplete state.
  *
  * "/" triggers at position 0 or after a newline.
  * "@" triggers at position 0 or after whitespace.
  */
-export function useChatAutocomplete(): ChatAutocompleteReturn {
+export function useChatAutocomplete(
+  options: { projectId?: string | null } = {}
+): ChatAutocompleteReturn {
   const [state, setState] = useState<AutocompleteState>(CLOSED_STATE);
   const [entityResults, setEntityResults] = useState<EntitySearchResult[]>([]);
+  const [fileResults, setFileResults] = useState<EntitySearchResult[]>([]);
   const [entityLoading, setEntityLoading] = useState(false);
   const [mentions, setMentions] = useState<MentionReference[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const fileAbortRef = useRef<AbortController | null>(null);
+  const fileDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const entityCacheRef = useRef<EntitySearchResult[] | null>(null);
   const getCaretCoordinates = useCaretPosition();
+  const projectIdRef = useRef(options.projectId ?? null);
+  projectIdRef.current = options.projectId ?? null;
 
   // Ref to let the keyboard handler access current state synchronously
   const stateRef = useRef(state);
@@ -74,9 +88,51 @@ export function useChatAutocomplete(): ChatAutocompleteReturn {
   const close = useCallback(() => {
     setState(CLOSED_STATE);
     setEntityResults([]);
+    setFileResults([]);
     setEntityLoading(false);
     entityCacheRef.current = null;
     if (abortRef.current) abortRef.current.abort();
+    if (fileAbortRef.current) fileAbortRef.current.abort();
+    if (fileDebounceRef.current) clearTimeout(fileDebounceRef.current);
+  }, []);
+
+  /**
+   * Query the file search API with debounce + abort. Results are stored
+   * in `fileResults` and merged into the popover stream alongside
+   * entity results. Query is bound to the active "@" typeahead text.
+   */
+  const loadFiles = useCallback((query: string) => {
+    // Debounce: wait 150ms after the last keystroke before firing.
+    if (fileDebounceRef.current) clearTimeout(fileDebounceRef.current);
+    fileDebounceRef.current = setTimeout(() => {
+      if (fileAbortRef.current) fileAbortRef.current.abort();
+      const controller = new AbortController();
+      fileAbortRef.current = controller;
+
+      const params = new URLSearchParams({ q: query, limit: "20" });
+      const projectId = projectIdRef.current;
+      if (projectId) params.set("projectId", projectId);
+
+      fetch(`/api/chat/files/search?${params}`, { signal: controller.signal })
+        .then((res) => (res.ok ? res.json() : { results: [] }))
+        .then(
+          (data: {
+            results?: Array<{ path: string; sizeBytes: number }>;
+          }) => {
+            const hits = data.results ?? [];
+            const mapped: EntitySearchResult[] = hits.map((h) => ({
+              entityType: "file",
+              entityId: h.path,
+              label: h.path,
+              description: humanSize(h.sizeBytes),
+            }));
+            setFileResults(mapped);
+          }
+        )
+        .catch(() => {
+          // Aborted or failed — leave previous results in place.
+        });
+    }, 150);
   }, []);
 
   // Fetch all recent entities once on "@" trigger, cache for cmdk client-side filtering
@@ -157,6 +213,14 @@ export function useChatAutocomplete(): ChatAutocompleteReturn {
           anchorRect: coords,
         });
         loadEntities();
+        // File search fires only when the user has typed something after `@`
+        // — an empty query would return every tracked file in the repo, which
+        // is noisy and defeats the whole "type to narrow" interaction.
+        if (query.length > 0) {
+          loadFiles(query);
+        } else {
+          setFileResults([]);
+        }
         return;
       }
 
@@ -165,7 +229,7 @@ export function useChatAutocomplete(): ChatAutocompleteReturn {
         close();
       }
     },
-    [getCaretCoordinates, loadEntities, close]
+    [getCaretCoordinates, loadEntities, loadFiles, close]
   );
 
   /**
@@ -271,12 +335,17 @@ export function useChatAutocomplete(): ChatAutocompleteReturn {
   useEffect(() => {
     return () => {
       if (abortRef.current) abortRef.current.abort();
+      if (fileAbortRef.current) fileAbortRef.current.abort();
+      if (fileDebounceRef.current) clearTimeout(fileDebounceRef.current);
     };
   }, []);
 
   return {
     state,
-    entityResults,
+    // Merge entity results with file results so the popover's single
+    // group-by-entityType render path covers both — no second props
+    // channel needed.
+    entityResults: [...entityResults, ...fileResults],
     entityLoading,
     mentions,
     handleChange,
