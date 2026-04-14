@@ -41,3 +41,66 @@ export function computeSyncStatus(tools: string[]): SyncStatus {
   if (hasCodex) return "codex-only";
   return "shared";
 }
+
+import type { SkillSummary } from "./list-skills";
+
+export interface EnrichedSkill extends SkillSummary {
+  healthScore: HealthScore;
+  syncStatus: SyncStatus;
+  linkedProfileId: string | null;
+  /** All absPaths for the same skill name (for symlink/dup handling). */
+  absPaths: string[];
+}
+
+export interface EnrichmentContext {
+  modifiedAtMsByPath: Record<string, number | null>;
+  linkedProfilesByPath: Record<string, string | null>;
+  nowMs?: number;
+}
+
+export function enrichSkills(
+  skills: SkillSummary[],
+  ctx: EnrichmentContext
+): EnrichedSkill[] {
+  const nowMs = ctx.nowMs ?? Date.now();
+  // Dedupe by absPath first (symlink loops).
+  const seen = new Set<string>();
+  const deduped: SkillSummary[] = [];
+  for (const s of skills) {
+    if (seen.has(s.absPath)) continue;
+    seen.add(s.absPath);
+    deduped.push(s);
+  }
+  // Group by name.
+  const byName = new Map<string, SkillSummary[]>();
+  for (const s of deduped) {
+    const list = byName.get(s.name) ?? [];
+    list.push(s);
+    byName.set(s.name, list);
+  }
+  const out: EnrichedSkill[] = [];
+  for (const [, group] of byName) {
+    const tools = group.map((g) => g.tool);
+    const syncStatus = computeSyncStatus(tools);
+    // Use the highest health (most recent modification) across the group.
+    const ages = group.map((g) => ctx.modifiedAtMsByPath[g.absPath] ?? null);
+    const newest = ages.reduce<number | null>(
+      (acc, v) => (v != null && (acc == null || v > acc) ? v : acc),
+      null
+    );
+    const healthScore = computeHealthScore(newest, nowMs);
+    const linkedProfileId =
+      group
+        .map((g) => ctx.linkedProfilesByPath[g.absPath] ?? null)
+        .find((v) => v != null) ?? null;
+    const primary = group[0];
+    out.push({
+      ...primary,
+      healthScore,
+      syncStatus,
+      linkedProfileId,
+      absPaths: group.map((g) => g.absPath),
+    });
+  }
+  return out;
+}
