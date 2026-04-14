@@ -21,6 +21,7 @@ import {
   Loader2,
   Pin,
   PinOff,
+  Bookmark,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -39,7 +40,9 @@ import { browserLocalStore, activeDismissedIds, saveDismissal } from "@/lib/chat
 import { useChatSession } from "@/components/chat/chat-session-provider";
 import type { EnrichedSkill } from "@/lib/environment/skill-enrichment";
 import { parseFilterInput, matchesClauses } from "@/lib/filters/parse";
+import type { FilterClause } from "@/lib/filters/parse";
 import { usePinnedEntries, type PinnedEntry } from "@/hooks/use-pinned-entries";
+import { useSavedSearches, type SavedSearch, type SavedSearchSurface } from "@/hooks/use-saved-searches";
 
 interface ChatCommandPopoverProps {
   open: boolean;
@@ -60,6 +63,7 @@ interface ChatCommandPopoverProps {
     entityId?: string;
   }) => void;
   onClose: () => void;
+  onApplySavedSearch?: (filterInput: string) => void;
 }
 
 const ENTITY_ICONS: Record<string, LucideIcon> = {
@@ -103,6 +107,7 @@ export function ChatCommandPopover({
   onTabChange,
   onSelect,
   onClose,
+  onApplySavedSearch,
 }: ChatCommandPopoverProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -175,6 +180,27 @@ export function ChatCommandPopover({
       })
     );
   }, [entityResults, parsed.clauses]);
+
+  const { forSurface, save } = useSavedSearches();
+
+  // Surface inference for saved-search scoping. In mention mode, look at
+  // the first filtered entity result's type; fall back to "task" when the
+  // list is empty so the "Save this view" button still has a valid target.
+  // Slash-mode surface inference is deferred — Saved group renders in
+  // mention mode only in v2.
+  const currentSurface: SavedSearchSurface = useMemo(() => {
+    if (mode !== "mention") return "task";
+    const firstType = filteredEntityResults[0]?.entityType as SavedSearchSurface | undefined;
+    if (firstType && ["task", "project", "workflow", "document", "skill", "profile"].includes(firstType)) {
+      return firstType;
+    }
+    return "task";
+  }, [mode, filteredEntityResults]);
+
+  const savedForSurface = useMemo(
+    () => forSurface(currentSurface),
+    [forSurface, currentSurface]
+  );
 
   // Filter enriched skills by `#scope:` and `#type:` clauses so users can
   // narrow the skills tab with e.g. `/skills #scope:project` or
@@ -260,7 +286,23 @@ export function ChatCommandPopover({
               onPin={pin}
               onUnpin={unpin}
               rawQuery={parsed.rawQuery}
+              savedSearches={savedForSurface}
+              onApplySavedSearch={(filterInput) => onApplySavedSearch?.(filterInput)}
             />
+            {parsed.clauses.length > 0 && (
+              <SaveViewFooter
+                surface={currentSurface}
+                clauses={parsed.clauses}
+                filterInput={query}
+                onSave={(label) =>
+                  save({
+                    surface: currentSurface,
+                    label: label || parsed.clauses.map((c) => `#${c.key}:${c.value}`).join(" "),
+                    filterInput: query,
+                  })
+                }
+              />
+            )}
           </CommandList>
         )}
       </Command>
@@ -402,6 +444,8 @@ function MentionItems({
   onPin,
   onUnpin,
   rawQuery,
+  savedSearches,
+  onApplySavedSearch,
 }: {
   results: EntitySearchResult[];
   loading: boolean;
@@ -411,6 +455,8 @@ function MentionItems({
   onPin: (entry: Omit<PinnedEntry, "pinnedAt">) => void;
   onUnpin: (id: string) => void;
   rawQuery: string;
+  savedSearches: SavedSearch[];
+  onApplySavedSearch?: (filterInput: string) => void;
 }) {
   if (loading && results.length === 0) {
     return (
@@ -440,12 +486,29 @@ function MentionItems({
   const grouped = groupByType(unpinnedResults);
   const entityTypes = Object.keys(grouped);
 
-  if (visiblePins.length === 0 && entityTypes.length === 0) {
+  if (savedSearches.length === 0 && visiblePins.length === 0 && entityTypes.length === 0) {
     return null; // CommandEmpty will show
   }
 
   return (
     <>
+      {savedSearches.length > 0 && (
+        <CommandGroup heading="Saved">
+          {savedSearches.map((s) => (
+            <CommandItem
+              key={`saved-${s.id}`}
+              value={`saved ${s.label} ${s.filterInput}`}
+              onSelect={() => onApplySavedSearch?.(s.filterInput)}
+            >
+              <Bookmark className="h-4 w-4 shrink-0" />
+              <span className="flex-1 truncate">{s.label}</span>
+              <span className="ml-auto shrink-0 text-xs font-mono text-muted-foreground">
+                {s.filterInput}
+              </span>
+            </CommandItem>
+          ))}
+        </CommandGroup>
+      )}
       {visiblePins.length > 0 && (
         <CommandGroup heading="Pinned">
           {visiblePins.map((p) => {
@@ -574,5 +637,74 @@ function MentionItems({
         );
       })}
     </>
+  );
+}
+
+function SaveViewFooter({
+  surface,
+  clauses,
+  filterInput,
+  onSave,
+}: {
+  surface: SavedSearchSurface;
+  clauses: FilterClause[];
+  filterInput: string;
+  onSave: (label: string) => void;
+}) {
+  const [renaming, setRenaming] = useState(false);
+  const [draft, setDraft] = useState("");
+
+  const defaultLabel = clauses.map((c) => `#${c.key}:${c.value}`).join(" ");
+
+  if (!renaming) {
+    return (
+      <div className="border-t px-2 py-1.5">
+        <button
+          type="button"
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground px-1 py-0.5 rounded transition-colors"
+          onClick={() => setRenaming(true)}
+        >
+          <Bookmark className="h-3.5 w-3.5" />
+          Save this view ({surface})
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <form
+      className="border-t px-2 py-1.5 flex items-center gap-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSave(draft.trim());
+        setRenaming(false);
+        setDraft("");
+      }}
+    >
+      <input
+        autoFocus
+        type="text"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        placeholder={defaultLabel}
+        className="flex-1 h-7 px-2 text-xs rounded border bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+      />
+      <button
+        type="submit"
+        className="h-7 px-2 text-xs rounded bg-primary text-primary-foreground hover:bg-primary/90"
+      >
+        Save
+      </button>
+      <button
+        type="button"
+        className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+        onClick={() => {
+          setRenaming(false);
+          setDraft("");
+        }}
+      >
+        Cancel
+      </button>
+    </form>
   );
 }
