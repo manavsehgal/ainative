@@ -31,7 +31,13 @@ export interface ProfileRuntimeCapabilityOverride {
 export type ProfileScope = "builtin" | "user" | "project";
 
 /** How a profile entered the system — distinct from scope (where it lives). */
-export type ProfileOrigin = "manual" | "environment" | "import" | "ai-assist";
+export type ProfileOrigin =
+  | "manual"
+  | "environment"
+  | "import"
+  | "ai-assist"
+  | "filesystem-project"
+  | "filesystem-user";
 
 export interface AgentProfile {
   id: string;
