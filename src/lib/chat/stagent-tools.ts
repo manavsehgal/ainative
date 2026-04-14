@@ -117,22 +117,3 @@ export function createToolServer(
   };
 }
 
-// ── Backward-compatible export ───────────────────────────────────────
-
-/**
- * Create an in-process MCP server exposing all Stagent tools.
- * The `projectId` closure auto-scopes operations to the active project.
- * `onToolResult` is called after each successful CRUD operation with the
- * tool name and returned entity data — used by the entity detector to
- * generate deterministic Quick Access navigation links.
- *
- * @deprecated Use `createToolServer()` for new code. This wrapper exists
- *   for backward compatibility with the chat engine.
- */
-export function createStagentMcpServer(
-  projectId?: string | null,
-  onToolResult?: (toolName: string, result: unknown) => void,
-  projectDir?: string | null,
-) {
-  return createToolServer(projectId, onToolResult, projectDir).asMcpServer();
-}

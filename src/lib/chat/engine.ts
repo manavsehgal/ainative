@@ -42,7 +42,7 @@ import {
 } from "./permission-bridge";
 import { isToolAllowed } from "@/lib/settings/permissions";
 import { getLaunchCwd, getWorkspaceContext } from "@/lib/environment/workspace-context";
-import { createStagentMcpServer } from "./stagent-tools";
+import { createToolServer } from "./stagent-tools";
 import {
   getBrowserMcpServers,
   getBrowserAllowedToolPatterns,
@@ -325,11 +325,11 @@ export async function* sendMessage(
 
     // Create in-process MCP server for Stagent CRUD tools
     const toolResults: ToolResultCapture[] = [];
-    const stagentServer = createStagentMcpServer(
+    const stagentServer = createToolServer(
       conversation.projectId,
       (toolName, result) => { toolResults.push({ toolName, result }); },
       projectCwd,
-    );
+    ).asMcpServer();
 
     yield { type: "status", phase: "connecting", message: "Connecting to model..." };
 
