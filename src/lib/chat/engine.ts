@@ -366,7 +366,6 @@ export async function* sendMessage(
           ...externalToolPatterns,
           ...CLAUDE_SDK_ALLOWED_TOOLS,
         ],
-        // @ts-expect-error SDK types lag behind runtime features — settingSources is supported in ^0.2.71
         settingSources: [...CLAUDE_SDK_SETTING_SOURCES],
         // @ts-expect-error Agent SDK canUseTool types are incomplete — our async handler is compatible at runtime
         canUseTool: async (
