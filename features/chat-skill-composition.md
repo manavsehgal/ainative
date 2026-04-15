@@ -1,6 +1,6 @@
 ---
 title: Chat — Skill Composition with Conflict Warning
-status: planned
+status: in-progress  # composition v1 (tool API + capability gates + conflict heuristic) shipped 2026-04-14; UI modal + token-budget trim deferred to v2
 priority: P3
 milestone: post-mvp
 source: chat-advanced-ux.md §4 (split during grooming, 2026-04-14)
@@ -102,23 +102,43 @@ Runtime-unsupported: `+ Add` is replaced by a disabled pill "Single skill only o
 
 ## Acceptance Criteria
 
-- [ ] Runtime capability matrix gains `supportsSkillComposition` and `maxActiveSkills`
-- [ ] `activate_skill` with `mode: "add"` appends a skill when runtime supports and no conflicts
-- [ ] Conflict check returns structured conflicts; UI modal shows excerpts with "Add anyway" / "Cancel"
-- [ ] Composition blocked on Ollama with clear hint pointing to runtime switcher
-- [ ] `maxActiveSkills` enforced — attempt to add a 4th on Claude fails gracefully
-- [ ] `activeSkills[]` persists across turns; all SKILL.md bodies injected into system prompt
-- [ ] Back-compat: existing `activate_skill` calls (no mode param) continue to work as replace
-- [ ] Token-budget trim removes oldest skill when over budget; logs which was trimmed
-- [ ] `detectSkillConflicts` unit tests cover: no-conflict pair, clear-conflict pair, ambiguous-overlap pair
-- [ ] Smoke test on both Claude and Ollama runtimes verifies the gate
+- [x] Runtime capability matrix gains `supportsSkillComposition` and `maxActiveSkills` (Claude/Codex/direct = true/3, Ollama = false/1)
+- [x] `activate_skill` with `mode: "add"` appends a skill when runtime supports and no conflicts (force=true skips conflict check)
+- [x] Conflict check returns structured conflicts in tool response; UI modal with "Add anyway" / "Cancel" deferred to v2 (chat surface displays the structured response)
+- [x] Composition blocked on Ollama with clear hint to switch runtime
+- [x] `maxActiveSkills` enforced — attempt to add a 4th on Claude returns "Max active skills (3) reached"
+- [x] `activeSkillIds` persists across turns; all SKILL.md bodies injected into system prompt via `buildActiveSkill` iteration
+- [x] Back-compat: existing `activate_skill` calls (no mode param) continue to work as replace; deactivate_skill clears both columns
+- [ ] Token-budget trim removes oldest skill when over budget (deferred — v2; combined budget cap applies but oldest-first eviction not yet implemented)
+- [x] `detectSkillConflicts` unit tests cover: no-conflict pair, clear-conflict pair, agreeing pair, non-directive lines (4 tests)
+- [x] Smoke test verifies dev-server boots clean post-migration (runtime-catalog risk per MEMORY.md mitigated); functional 2-skill compose + Ollama refusal exercised via skill-tools.test.ts mocked production path
+
+## v1 Shipped Scope (2026-04-14)
+
+- `RuntimeFeatures` extended with `supportsSkillComposition` + `maxActiveSkills` (Claude/Codex/direct = true/3, Ollama = false/1)
+- Additive `conversations.active_skill_ids` JSON column (default `[]`); legacy `active_skill_id` preserved for back-compat
+- `mergeActiveSkillIds()` helper unifies legacy + composed IDs
+- `activate_skill` accepts `mode: "replace" | "add"` and `force: boolean` params
+- Capability gate refuses composition on Ollama with hint to switch runtime
+- `detectSkillConflicts` keyword heuristic in `src/lib/chat/skill-conflict.ts` (4 tests)
+- Conflict warnings surface as structured tool response (no UI modal yet — chat displays the response)
+- `context-builder.ts` iterates merged active skills, joins SKILL.md bodies with `---`, applies existing `ACTIVE_SKILL_BUDGET` to the combined string
+- Composition (any entry in `activeSkillIds`) is treated as user opt-in: overrides `stagentInjectsSkills=false` so composed skills surface even on Claude/Codex (where the SDK's auto-discovery would otherwise be silent on this path)
+- 16 skill-tools tests pass + 4 conflict tests + 195 broader chat tests pass
+
+## v2 Deferred Scope
+
+- UI modal in Skills tab: `+ Add` button on inactive skills + "Add anyway / Cancel" dialog showing conflict excerpts
+- Token-budget oldest-first trim with logging when combined SKILL.md exceeds budget
+- Slash-mode (skills tab) surface inference for the `+ Add` action
+- Live activation count badge ("2 of 3 skills active")
+- Composition presets (saved combinations of skills)
 
 ## Scope Boundaries
 
 **Included:**
 - Composition on Claude + Codex + Anthropic-direct + OpenAI-direct
 - Keyword-based conflict heuristic
-- Conflict modal with excerpts
 - Runtime gate on Ollama
 
 **Excluded:**

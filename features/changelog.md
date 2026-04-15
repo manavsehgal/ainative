@@ -2,6 +2,24 @@
 
 ## 2026-04-14
 
+### Shipped v1 — chat-skill-composition (Phase 2 of retired chat-advanced-ux umbrella)
+
+Composition v1 lands the chat-tool API + capability gates + conflict heuristic + context-builder iteration. Spec status `in-progress` — UI modal + token-budget trim deferred to v2.
+
+**What shipped:**
+- `RuntimeFeatures.supportsSkillComposition` + `maxActiveSkills` flags (Claude/Codex/direct = true/3, Ollama = false/1)
+- Additive `conversations.active_skill_ids` JSON column (legacy `active_skill_id` preserved); bootstrap.ts dual update per the MEMORY.md ordering gotcha
+- `mergeActiveSkillIds()` helper canonicalizes legacy + composed reads
+- `activate_skill` accepts `mode: "replace" | "add"` and `force: boolean`; on `mode:add` runs capability gate → conflict heuristic → append (or returns structured `{requiresConfirmation, conflicts: [...]}`)
+- `detectSkillConflicts` keyword heuristic in `src/lib/chat/skill-conflict.ts` — extracts directive lines (always/never/prefer/avoid) and pairs polarity-divergent lines on shared keywords
+- `context-builder.ts` iterates merged skills, joins SKILL.md bodies with `---`, treats composition (`activeSkillIds.length > 0`) as user opt-in to override `stagentInjectsSkills=false` for Claude/Codex
+
+**Design decisions:**
+- Additive schema (don't replace `activeSkillId` with `activeSkillIds`) — preserves zero-risk back-compat for every existing read path. New code uses `mergeActiveSkillIds(legacyId, composed)`. Future migration can collapse to a single column when all readers are updated.
+- Conflict response is structured (no modal in v1) — chat surface displays the JSON, user re-calls with `force:true` to override. Modal UI deferred to v2 because the Skills tab `+ Add` action needs design work.
+- Composition opt-in overrides the `stagentInjectsSkills=false` default — without this, composed skills would silently no-op on Claude/Codex (where the SDK auto-discovers from filesystem). Single-skill default behavior is unchanged on those runtimes.
+- Smoke verified: dev server boots clean post-migration; 16 skill-tools tests + 4 conflict tests + 195 broader chat tests pass; the full functional 2-skill compose + Ollama refusal is exercised via the production-code path through `vi.mock` boundaries.
+
 ### Shipped v2 — chat-filter-namespace + chat-pinned-saved-searches (Phase 1 of retired chat-advanced-ux umbrella)
 
 Closed out the two `in-progress` specs spun out of `chat-advanced-ux`. Both now `completed`.
