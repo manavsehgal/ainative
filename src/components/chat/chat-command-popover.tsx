@@ -371,6 +371,7 @@ export function ChatCommandPopover({
               rawQuery={parsed.rawQuery}
               savedSearches={savedForSurface}
               onApplySavedSearch={(filterInput) => onApplySavedSearch?.(filterInput)}
+              clauses={parsed.clauses}
             />
             {parsed.clauses.length > 0 && (() => {
               // Persist the cleaned filterInput so saved searches don't
@@ -624,6 +625,7 @@ function MentionItems({
   rawQuery,
   savedSearches,
   onApplySavedSearch,
+  clauses,
 }: {
   results: EntitySearchResult[];
   loading: boolean;
@@ -635,6 +637,7 @@ function MentionItems({
   rawQuery: string;
   savedSearches: SavedSearch[];
   onApplySavedSearch?: (filterInput: string) => void;
+  clauses: FilterClause[];
 }) {
   if (loading && results.length === 0) {
     return (
@@ -665,7 +668,17 @@ function MentionItems({
   const entityTypes = Object.keys(grouped);
 
   if (savedSearches.length === 0 && visiblePins.length === 0 && entityTypes.length === 0) {
-    return null; // CommandEmpty will show
+    if (clauses.length > 0) {
+      return (
+        <CommandEmpty>
+          No matches for{" "}
+          <span className="font-mono">
+            {clauses.map((c) => `#${c.key}:${c.value}`).join(" ")}
+          </span>
+        </CommandEmpty>
+      );
+    }
+    return null; // Generic "No results" handled by parent CommandList
   }
 
   return (
