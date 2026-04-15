@@ -44,6 +44,7 @@ interface UseSavedSearchesReturn {
    * See features/saved-search-polish-v1.md for the bug history.
    */
   refetch: () => Promise<void>;
+  rename: (id: string, label: string) => void;
 }
 
 export function useSavedSearches(): UseSavedSearchesReturn {
@@ -123,5 +124,19 @@ export function useSavedSearches(): UseSavedSearchesReturn {
 
   const refetch = useCallback(() => fetchSearches(), [fetchSearches]);
 
-  return { searches, loading, save, remove, forSurface, refetch };
+  const rename = useCallback(
+    (id: string, label: string) => {
+      setSearches((prev) => {
+        const idx = prev.findIndex((s) => s.id === id);
+        if (idx === -1) return prev;
+        const next = prev.slice();
+        next[idx] = { ...next[idx], label };
+        void persist(next);
+        return next;
+      });
+    },
+    [persist]
+  );
+
+  return { searches, loading, save, remove, forSurface, refetch, rename };
 }
