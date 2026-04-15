@@ -1,6 +1,6 @@
 ---
 title: Saved Search Polish v1 — Clean filterInput + Cross-Component Revalidation
-status: planned
+status: completed
 priority: P2
 milestone: post-mvp
 source: output/screengrabs/dogfood-log-2026-04-14.md §§2-3
@@ -56,12 +56,12 @@ interface UseSavedSearchesReturn {
 
 ## Acceptance Criteria
 
-- [ ] Saving `@task: #priority:high` produces a persisted record with `filterInput = "#priority:high"` (no `task: ` prefix)
-- [ ] Saving `@task: foo #priority:high` produces `filterInput = "#priority:high foo"` (or `"foo #priority:high"` — clause order preserved; free text preserved)
-- [ ] Regression test asserts no mention-trigger cruft in `filterInput`
-- [ ] Saving in the chat popover, then opening `⌘K` without reload → new saved search appears in palette's Saved group
-- [ ] Existing palette-open flow is no slower than before (single refetch, not on every keystroke)
-- [ ] Hook backwards-compatible: existing consumers that didn't call refetch still work
+- [x] Saving `@task: #priority:high` produces a persisted record with `filterInput = "#priority:high"` (no `task: ` prefix)
+- [x] Saving `@task: foo #priority:high` produces `filterInput = "#priority:high foo"` — clause order + free text preserved
+- [x] Regression tests assert no mention-trigger cruft (7 unit tests in `src/lib/chat/__tests__/clean-filter-input.test.ts`)
+- [x] Saving in the chat popover, then opening `⌘K` triggers a refetch so new saved search appears in palette's Saved group without page reload
+- [x] Palette-open refetch fires only on closed→open transition (not on every keystroke)
+- [x] Hook backwards-compatible — `refetch` is an additional field; consumers that didn't call it still work (pins-hook pattern preserved)
 
 ## Scope Boundaries
 

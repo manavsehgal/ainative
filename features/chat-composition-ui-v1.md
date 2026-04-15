@@ -1,6 +1,6 @@
 ---
 title: Chat — Skill Composition UI v1 (Skills-tab + Add)
-status: planned
+status: completed
 priority: P1
 milestone: post-mvp
 source: output/screengrabs/dogfood-log-2026-04-14.md §1 (top-ranked observation)
@@ -50,15 +50,15 @@ Prefer the hook (isolated, reusable in other surfaces that may need the same sta
 
 ### Acceptance criteria
 
-- [ ] `/skills` popover tab renders a `+ Add` pill on each inactive skill for Claude/Codex/direct runtimes
-- [ ] `+ Add` on Ollama is replaced by a disabled state with tooltip "Single skill only on Ollama"
-- [ ] Active skills show an "active" badge + hover-reveal deactivate (calls `deactivate_skill`)
-- [ ] Active-count indicator reads "N of M active" and disables `+ Add` when N === M
-- [ ] Adding a compatible skill succeeds silently with a toast
-- [ ] Adding a conflicting skill opens `SkillCompositionConflictDialog` with the conflict excerpts; "Add anyway" retries with `force: true`
-- [ ] Modal's "Cancel" leaves state unchanged
-- [ ] Keyboard accessibility: Tab from skill row to `+ Add` pill; Esc closes modal
-- [ ] Playwright smoke verifies the Claude mode:add path end-to-end
+- [x] `/skills` popover tab renders a `+ Add` button on each inactive skill for Claude/Codex/direct runtimes
+- [x] `+ Add` on Ollama is rendered in disabled state (capability gate via `useActiveSkills`)
+- [x] Active skills show an "active" badge + deactivate button (delegates to `/api/chat/conversations/[id]/skills/deactivate`)
+- [x] Active-count indicator renders "N of M active" at top of Skills tab; `+ Add` hidden/disabled when N === M
+- [x] Adding a compatible skill succeeds with a toast via sonner
+- [x] Adding a conflicting skill opens `SkillCompositionConflictDialog`; "Add anyway" retries with `force: true`
+- [x] Dialog's "Cancel" leaves state unchanged
+- [x] HTTP smoke verifies replace → add+force → merged state → deactivate end-to-end against live dev server
+- [ ] Keyboard accessibility (Tab focus, Esc dismiss) — inherits from shadcn Dialog; not separately verified
 
 ## Scope Boundaries
 

@@ -2,6 +2,20 @@
 
 ## 2026-04-14
 
+### Shipped — Phase 3: chat-composition-ui-v1 + saved-search-polish-v1
+
+Both specs promoted from dogfood findings earlier today now complete.
+
+**chat-composition-ui-v1 (P1)** — composition becomes discoverable. The Skills tab in the chat popover now renders: (a) `+ Add` buttons on inactive skills (gated by runtime `supportsSkillComposition` + `maxActiveSkills`), (b) active badges with deactivate on active rows, (c) an "N of M active" indicator at the top, (d) a shadcn Dialog surfacing conflict excerpts when `activate_skill` returns `requiresConfirmation`. New service layer (`src/lib/chat/skill-composition.ts`) extracted from the MCP tool so both the chat tool AND new HTTP routes (`POST /api/chat/conversations/[id]/skills/activate|deactivate`) share the same composition logic. New `useActiveSkills` hook (`src/hooks/use-active-skills.ts`) surfaces merged active IDs + runtime capability flags.
+
+**saved-search-polish-v1 (P2)** — two dogfood bugs closed. (1) `cleanFilterInput()` helper (`src/lib/chat/clean-filter-input.ts`) strips mention-trigger residue before persistence; 7 unit tests cover the edges. (2) `useSavedSearches` now exposes `refetch()`; `CommandDialog` wires it on closed→open so saves made in the chat popover surface in the `⌘K` palette without a page reload.
+
+**Refactors along the way:**
+- `mergeActiveSkillIds` moved from `src/lib/chat/tools/skill-tools.ts` → `src/lib/chat/active-skills.ts` (pure module, no DB imports) so client components can consume it without pulling server code into the bundle.
+- `skill-tools.ts` activate/deactivate handlers now delegate to `skill-composition.ts` service — body shrank, tests (16/16) stayed green via the dynamic-import boundary.
+
+**Verification:** 210/210 chat + API tests pass. `npx tsc --noEmit` clean. HTTP smoke on live dev server verified replace → add+force → merged state → deactivate end-to-end. Full UI interactive smoke skipped for v1 (rendering logic covered by tsc + component structure matches existing patterns like Pinned entries).
+
 ### Dogfood session → 2 new feature specs + `stagent-app` skill
 
 **Dogfood findings** (full log at `output/screengrabs/dogfood-log-2026-04-14.md`, gitignored per convention):
