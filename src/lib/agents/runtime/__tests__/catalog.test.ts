@@ -79,6 +79,8 @@ describe("runtime catalog", () => {
       "hasHooks",
       "autoLoadsInstructions",
       "stagentInjectsSkills",
+      "supportsSkillComposition",
+      "maxActiveSkills",
     ];
 
     // Guard against the "list grows stale" failure mode: if a new key is added
@@ -115,7 +117,9 @@ describe("runtime catalog", () => {
           "hasProgressiveDisclosure": false,
           "hasSubagentDelegation": false,
           "hasTodoWrite": false,
+          "maxActiveSkills": 3,
           "stagentInjectsSkills": false,
+          "supportsSkillComposition": true,
         },
         "claude-code": {
           "autoLoadsInstructions": "CLAUDE.md",
@@ -126,7 +130,9 @@ describe("runtime catalog", () => {
           "hasProgressiveDisclosure": true,
           "hasSubagentDelegation": false,
           "hasTodoWrite": true,
+          "maxActiveSkills": 3,
           "stagentInjectsSkills": false,
+          "supportsSkillComposition": true,
         },
         "ollama": {
           "autoLoadsInstructions": null,
@@ -137,7 +143,9 @@ describe("runtime catalog", () => {
           "hasProgressiveDisclosure": false,
           "hasSubagentDelegation": false,
           "hasTodoWrite": false,
+          "maxActiveSkills": 1,
           "stagentInjectsSkills": true,
+          "supportsSkillComposition": false,
         },
         "openai-codex-app-server": {
           "autoLoadsInstructions": "AGENTS.md",
@@ -148,7 +156,9 @@ describe("runtime catalog", () => {
           "hasProgressiveDisclosure": true,
           "hasSubagentDelegation": false,
           "hasTodoWrite": true,
+          "maxActiveSkills": 3,
           "stagentInjectsSkills": false,
+          "supportsSkillComposition": true,
         },
         "openai-direct": {
           "autoLoadsInstructions": null,
@@ -159,7 +169,9 @@ describe("runtime catalog", () => {
           "hasProgressiveDisclosure": false,
           "hasSubagentDelegation": false,
           "hasTodoWrite": false,
+          "maxActiveSkills": 3,
           "stagentInjectsSkills": false,
+          "supportsSkillComposition": true,
         },
       }
     `);

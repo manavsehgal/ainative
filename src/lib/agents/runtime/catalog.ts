@@ -52,6 +52,18 @@ export interface RuntimeFeatures {
    * into the system prompt to expose skills to the LLM.
    */
   stagentInjectsSkills: boolean;
+  /**
+   * Runtime supports composing multiple active skills in one conversation.
+   * When false, only one skill may be active at a time (Ollama: context
+   * budget too tight). When true, `activate_skill mode:"add"` is allowed
+   * up to `maxActiveSkills`.
+   */
+  supportsSkillComposition: boolean;
+  /**
+   * Maximum number of skills that may be simultaneously active. Enforced
+   * by the activate_skill tool. Ignored when supportsSkillComposition=false.
+   */
+  maxActiveSkills: number;
 }
 
 export interface RuntimeModelConfig {
@@ -98,6 +110,8 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
       hasHooks: false, // excluded per Q2
       autoLoadsInstructions: "CLAUDE.md",
       stagentInjectsSkills: false,
+      supportsSkillComposition: true,
+      maxActiveSkills: 3,
     },
     models: {
       default: "sonnet",
@@ -129,6 +143,8 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
       hasHooks: false,
       autoLoadsInstructions: "AGENTS.md",
       stagentInjectsSkills: false,
+      supportsSkillComposition: true,
+      maxActiveSkills: 3,
     },
     models: {
       default: "gpt-5.4",
@@ -162,6 +178,8 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
       hasHooks: false,
       autoLoadsInstructions: null,
       stagentInjectsSkills: false,
+      supportsSkillComposition: true,
+      maxActiveSkills: 3,
     },
     models: {
       default: "claude-sonnet-4-20250514",
@@ -195,6 +213,8 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
       hasHooks: false,
       autoLoadsInstructions: null,
       stagentInjectsSkills: false,
+      supportsSkillComposition: true,
+      maxActiveSkills: 3,
     },
     models: {
       default: "gpt-4.1",
@@ -226,6 +246,8 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
       hasHooks: false,
       autoLoadsInstructions: null,
       stagentInjectsSkills: true,
+      supportsSkillComposition: false,
+      maxActiveSkills: 1,
     },
     models: {
       default: "llama3",
