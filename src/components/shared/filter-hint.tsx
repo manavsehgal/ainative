@@ -22,12 +22,19 @@ interface FilterHintProps {
  * Consumers: chat-command-popover, filter-input (list pages).
  */
 export function FilterHint({ inputValue, storageKey, message }: FilterHintProps) {
-  const [dismissed, setDismissed] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return window.localStorage.getItem(storageKey) === "1";
-  });
+  const [dismissed, setDismissed] = useState(false);
 
   const parsed = useMemo(() => parseFilterInput(inputValue), [inputValue]);
+
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem(storageKey) === "1") {
+        setDismissed(true);
+      }
+    } catch {
+      // Private-mode or disabled storage — hint stays visible.
+    }
+  }, [storageKey]);
 
   useEffect(() => {
     if (dismissed) return;

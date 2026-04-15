@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, beforeEach } from "vitest";
 import { FilterHint } from "../filter-hint";
 
@@ -24,9 +24,12 @@ describe("FilterHint", () => {
     expect(screen.queryByText(/#key:value/i)).toBeNull();
   });
 
-  it("sets dismissal flag when input parses a valid clause", () => {
+  it("sets dismissal flag and hides when input parses a valid clause", async () => {
     render(<FilterHint inputValue="#type:pdf" storageKey={KEY} />);
     expect(localStorage.getItem(KEY)).toBe("1");
+    await waitFor(() => {
+      expect(screen.queryByText(/#key:value/i)).toBeNull();
+    });
   });
 
   it("stays hidden on subsequent mounts once dismissed", () => {
