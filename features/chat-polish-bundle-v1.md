@@ -1,6 +1,6 @@
 ---
 title: Chat Polish Bundle v1 — Filter Hint, Saved-Search CRUD, Empty-Group Suppression
-status: planned
+status: completed
 priority: P3
 milestone: post-mvp
 source: chat-advanced-ux umbrella dogfood log (Phase 3 close-out, 2026-04-14)
@@ -150,3 +150,16 @@ The summary string is built from `parsed.clauses.map(c => '#' + c.key + ':' + c.
   - `src/components/chat/chat-command-popover.tsx`
   - `src/hooks/use-saved-searches.ts`
 - Deferred sibling: [chat-conversation-branches](chat-conversation-branches.md)
+
+## Verification — 2026-04-14
+
+Browser smoke verified end-to-end on Playwright:
+- FilterHint visible on `/documents`; auto-dismisses after typing `#type:pdf`; persists across reload
+- `⌘K` palette renders Saved-searches group with inline trash button + "Manage saved searches…" row when ≥1 saved search exists
+- `SavedSearchesManager` dialog opens; rename via inline input + Tab-blur persists to API (`PUT /api/settings/chat/saved-searches`)
+- Deliberate two-click delete (Delete → Confirm delete) removes the row from API
+- Zero console errors throughout
+- Full unit suite green (1009 tests)
+- 7 implementation tasks shipped on `main`: 76a64fa, f3c18a2, 54be881, 5bacedd, 5a43d38, 6159346, d84c20f, 9e80ca8, 9bc5166, 0e68b3e
+
+Status: shipped.
