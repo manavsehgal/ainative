@@ -339,6 +339,7 @@ export function CommandPalette() {
                     type="button"
                     aria-label={`Delete saved search: ${s.label}`}
                     className="ml-1 p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive opacity-0 group-hover/item:opacity-100 focus-visible:opacity-100 transition-opacity"
+                    onPointerDown={(e) => e.stopPropagation()}
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
