@@ -89,7 +89,7 @@ async function buildActiveSkill(conversationId: string): Promise<string> {
   // Merge legacy single-active + new composed array. Dynamic import to
   // avoid loading the chat tools module on the hot path / risk import
   // cycles per the runtime-catalog smoke-test budget rule in MEMORY.md.
-  const { mergeActiveSkillIds } = await import("@/lib/chat/tools/skill-tools");
+  const { mergeActiveSkillIds } = await import("@/lib/chat/active-skills");
   const merged = mergeActiveSkillIds(row?.activeSkillId, row?.activeSkillIds);
   if (merged.length === 0) return "";
 
