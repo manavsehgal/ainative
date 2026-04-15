@@ -42,26 +42,23 @@ export function SavedSearchesManager({
   const [draft, setDraft] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
-  // Guard: Escape sets this flag so the subsequent blur doesn't commit
-  const [cancelledByEscape, setCancelledByEscape] = useState(false);
 
   function startRename(s: SavedSearch) {
     setRenamingId(s.id);
     setDraft(s.label);
     setError(null);
-    setCancelledByEscape(false);
   }
 
   function cancelRename() {
     setRenamingId(null);
     setDraft("");
     setError(null);
-    setCancelledByEscape(false);
   }
 
   function commitRename(s: SavedSearch) {
-    // If Escape already cancelled, the blur that follows should be a no-op
-    if (cancelledByEscape) return;
+    // If renaming was already cancelled (e.g., via Escape) the renamingId
+    // no longer matches — blur fires after cancelRename() has set it to null.
+    if (renamingId !== s.id) return;
 
     const next = draft.trim();
     if (next.length === 0) {
@@ -119,7 +116,6 @@ export function SavedSearchesManager({
                           onKeyDown={(e) => {
                             if (e.key === "Escape") {
                               e.preventDefault();
-                              setCancelledByEscape(true);
                               cancelRename();
                             } else if (e.key === "Enter") {
                               e.preventDefault();

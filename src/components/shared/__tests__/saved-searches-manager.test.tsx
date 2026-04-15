@@ -125,6 +125,7 @@ describe("SavedSearchesManager", () => {
     fireEvent.change(input, { target: { value: "Changed" } });
     fireEvent.keyDown(input, { key: "Escape" });
     expect(onRename).not.toHaveBeenCalled();
+    expect(screen.queryByRole("textbox", { name: /rename/i })).toBeNull();
   });
 
   it("delete requires explicit confirm", () => {
