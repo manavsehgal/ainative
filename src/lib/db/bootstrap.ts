@@ -339,6 +339,9 @@ export function bootstrapStagentDatabase(sqlite: Database.Database): void {
   // turn while this column is set. Same machinery is usable from Claude
   // and Codex as a programmatic skill-activation path.
   addColumnIfMissing(`ALTER TABLE conversations ADD COLUMN active_skill_id TEXT;`);
+  // chat-skill-composition v1: array of additionally-activated skill IDs
+  // beyond the legacy active_skill_id. Default empty JSON array.
+  addColumnIfMissing(`ALTER TABLE conversations ADD COLUMN active_skill_ids TEXT DEFAULT '[]';`);
   // Workflow step delays — resume_at for schedule-based delay resumption.
   // The partial index on resume_at is created by migration 0024 for fresh DBs;
   // existing DBs that don't run migrations will do a small table scan instead.
@@ -462,6 +465,7 @@ export function bootstrapStagentDatabase(sqlite: Database.Database): void {
       session_id TEXT,
       context_scope TEXT,
       active_skill_id TEXT,
+      active_skill_ids TEXT DEFAULT '[]',
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL,
       FOREIGN KEY (project_id) REFERENCES projects(id) ON UPDATE NO ACTION ON DELETE NO ACTION

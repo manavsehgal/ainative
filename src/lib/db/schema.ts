@@ -552,6 +552,16 @@ export const conversations = sqliteTable(
      * See `features/chat-ollama-native-skills.md`.
      */
     activeSkillId: text("active_skill_id"),
+    /**
+     * Composition v1 — array of additionally-activated skill IDs (beyond
+     * the legacy `activeSkillId`). Default `[]`. Read paths merge legacy
+     * + new and dedupe via `mergeActiveSkillIds`. Stored as JSON text.
+     *
+     * See `features/chat-skill-composition.md`.
+     */
+    activeSkillIds: text("active_skill_ids", { mode: "json" })
+      .$type<string[]>()
+      .default([] as unknown as string[]),
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
   },
