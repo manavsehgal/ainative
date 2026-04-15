@@ -1,6 +1,6 @@
 ---
 title: Runtime Validation Hardening
-status: in-progress
+status: completed
 priority: P1
 milestone: post-mvp
 source: conversation — reddit-researcher profile crash (2026-03-31)
@@ -26,14 +26,14 @@ As a user chatting with Stagent, I want to create and execute tasks with specifi
 
 ## Acceptance Criteria
 
-- [ ] `execute_task` MCP tool uses `DEFAULT_AGENT_RUNTIME` from catalog.ts instead of hardcoded `"claude"` string
-- [ ] `execute_task` MCP tool validates `assignedAgent` param against `SUPPORTED_AGENT_RUNTIMES` before writing to DB; returns a tool error with valid options if invalid
-- [ ] `create_task` MCP tool exposes optional `assignedAgent` (validated) and `agentProfile` parameters
-- [ ] `update_task` MCP tool exposes optional `assignedAgent` (validated) and `agentProfile` parameters
-- [ ] `resolveAgentRuntime()` returns `DEFAULT_AGENT_RUNTIME` with a console warning instead of throwing on unknown IDs (graceful degradation)
-- [ ] Existing Zod validator in `task.ts` remains the source of truth for REST API validation (no duplication)
-- [ ] Unit test covers: valid runtime passes, invalid runtime returns error (MCP tool level), unknown runtime falls back (resolveAgentRuntime level)
-- [ ] The `execute_task` tool description documents valid runtime IDs (e.g. `claude-code`, `openai-codex-app-server`, `anthropic-direct`, `openai-direct`)
+- [x] `execute_task` MCP tool uses `DEFAULT_AGENT_RUNTIME` from catalog.ts instead of hardcoded `"claude"` string
+- [x] `execute_task` MCP tool validates `assignedAgent` param against `SUPPORTED_AGENT_RUNTIMES` before writing to DB; returns a tool error with valid options if invalid
+- [x] `create_task` MCP tool exposes optional `assignedAgent` (validated) and `agentProfile` parameters
+- [x] `update_task` MCP tool exposes optional `assignedAgent` (validated) and `agentProfile` parameters
+- [x] `resolveAgentRuntime()` returns `DEFAULT_AGENT_RUNTIME` with a console warning instead of throwing on unknown IDs (graceful degradation)
+- [x] Existing Zod validator in `task.ts` remains the source of truth for REST API validation (no duplication)
+- [x] Unit test covers: valid runtime passes, invalid runtime returns error (MCP tool level), unknown runtime falls back (resolveAgentRuntime level)
+- [x] The `execute_task` tool description documents valid runtime IDs (e.g. `claude-code`, `openai-codex-app-server`, `anthropic-direct`, `openai-direct`)
 
 ## Technical Approach
 

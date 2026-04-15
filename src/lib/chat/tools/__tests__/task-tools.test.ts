@@ -282,6 +282,53 @@ describe("execute_task stale agentProfile surfacing", () => {
   });
 });
 
+describe("create_task assignedAgent runtime validation", () => {
+  it("returns a descriptive error listing valid runtime ids when assignedAgent is invalid", async () => {
+    const result = await callHandler("create_task", {
+      title: "test task",
+      assignedAgent: "claude-bogus",
+    });
+    expect(result.isError).toBe(true);
+    const text = getToolResultText(result);
+    expect(text).toContain("claude-bogus");
+    expect(text).toMatch(/Invalid runtime/i);
+    expect(text).toMatch(/anthropic-direct|openai-direct|claude/);
+  });
+
+  it("inserts with the given assignedAgent when it is a valid runtime id", async () => {
+    const result = await callHandler("create_task", {
+      title: "test task",
+      assignedAgent: "anthropic-direct",
+    });
+    expect(result.isError).toBeFalsy();
+    expect(mockState.lastInsertValues?.assignedAgent).toBe("anthropic-direct");
+  });
+});
+
+describe("execute_task assignedAgent runtime validation", () => {
+  beforeEach(() => {
+    mockState.rows = [{
+      id: "task-1",
+      title: "existing",
+      status: "planned",
+      projectId: null,
+      agentProfile: null,
+      assignedAgent: null,
+    } as TaskRow];
+  });
+
+  it("returns an error listing valid runtime ids when the passed assignedAgent is invalid", async () => {
+    const result = await callHandler("execute_task", {
+      taskId: "task-1",
+      assignedAgent: "claude-bogus",
+    });
+    expect(result.isError).toBe(true);
+    const text = getToolResultText(result);
+    expect(text).toContain("claude-bogus");
+    expect(text).toMatch(/Invalid runtime/i);
+  });
+});
+
 describe("list_tasks empty-result note", () => {
   it("returns an envelope with note when a project filter is active and zero rows result", async () => {
     mockState.rows = [];

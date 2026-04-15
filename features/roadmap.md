@@ -143,7 +143,7 @@ Features that enhance the product but aren't essential for first use — homepag
 |---------|----------|--------|--------------|
 | [sdk-runtime-hardening](sdk-runtime-hardening.md) | P2 | completed | provider-runtime-abstraction, usage-metering-ledger, spend-budget-guardrails, agent-self-improvement |
 | [e2e-test-automation](e2e-test-automation.md) | P2 | completed | provider-runtime-abstraction, workflow-engine, agent-profile-catalog |
-| [runtime-validation-hardening](runtime-validation-hardening.md) | P1 | in-progress | provider-runtime-abstraction, multi-agent-routing |
+| [runtime-validation-hardening](runtime-validation-hardening.md) | P1 | completed | provider-runtime-abstraction, multi-agent-routing |
 
 ### Governance & Analytics
 
@@ -174,7 +174,7 @@ Features that enhance the product but aren't essential for first use — homepag
 | [environment-health-scoring](environment-health-scoring.md) | P3 | completed | environment-cache |
 | [agent-profile-from-environment](agent-profile-from-environment.md) | P3 | completed | environment-cache, multi-agent-routing |
 | [workspace-discovery](workspace-discovery.md) | P1 | completed | environment-scanner, environment-cache |
-| [profile-environment-sync](profile-environment-sync.md) | P1 | in-progress | agent-profile-from-environment, environment-cache, agent-profile-catalog, skill-portfolio |
+| [profile-environment-sync](profile-environment-sync.md) | P1 | completed | agent-profile-from-environment, environment-cache, agent-profile-catalog, skill-portfolio |
 
 ### Chat Conversation
 
@@ -458,6 +458,8 @@ content-handling (MVP, completed)
 
 Environment onboarding chain:
 
+> Environment and workspace-intelligence chains below are fully shipped. Diagrams retained for dependency reference. See the status table for authoritative per-feature state.
+
 ```
 environment-scanner
     └── environment-cache
@@ -470,17 +472,17 @@ environment-scanner
             ├── skill-portfolio
             ├── environment-health-scoring
             └── agent-profile-from-environment
-                    └── profile-environment-sync (P1, planned)
+                    └── profile-environment-sync
 
 Workspace intelligence chain:
 
-environment-scanner (completed) + environment-cache (completed)
-    └── auto-environment-scan (P1)
-            └── project-scoped-profiles (P1)
-                    └── dynamic-slash-commands (P2)
+environment-scanner + environment-cache
+    └── auto-environment-scan
+            └── project-scoped-profiles
+                    └── dynamic-slash-commands
 
-chat-engine (completed) + environment-scanner (completed)
-    └── workspace-context-awareness (P1)
+chat-engine + environment-scanner
+    └── workspace-context-awareness
 ```
 
 Structured data (Tables) chain:
@@ -578,32 +580,7 @@ playbook-documentation (completed)
                     └── living-book-self-updating (completed)
 ```
 
-PLG Monetization chain:
-
-```
-local-license-manager (P0) ─────────┐
-supabase-cloud-backend (P0) ────────┤
-                                    │
-                    stripe-billing-integration (P0)
-                                    │
-              ┌─────────────────────┼──────────────────────┐
-              │                     │                       │
-community-edition-soft-limits  subscription-management-ui  license-activation-flow
-              │                     │
-    upgrade-cta-banners       outcome-analytics-dashboard
-              │
-    parallel-workflow-limit
-              │
-    cloud-sync (also needs supabase + stripe)
-    marketplace-access-gate
-              │
-    first-run-onboarding (also needs supabase)
-    transactional-email-flows (also needs supabase + stripe + soft-limits)
-    marketing-site-pricing-page (needs stripe)
-    telemetry-foundation (needs supabase + license)
-    upgrade-conversion-instrumentation (needs supabase + banners + soft-limits)
-    edition-readme-update (no dependencies — parallel from Week 1)
-```
+> **PLG Monetization chain removed (2026-04-13).** The license manager, Stripe billing, subscription UI, supabase cloud backend, cloud-sync, upgrade CTAs, telemetry, marketing pricing page, and related chain were implemented and then ripped out in commit `0436803` as part of the community-edition pivot. The specs in the status table remain marked `completed` as an archival record of what shipped pre-pivot — they do not reflect current codebase state. Stagent is 100% free community edition; no pricing, tier gates, or billing code exists anywhere.
 
 Vision alignment chain:
 
@@ -686,15 +663,9 @@ Phase 4 — Runtime Expansion
 
 > Structured Data (Tables) initiative (14 features) fully shipped 2026-04-03. Sprints 38-43 completed. 52 new files, 13 new DB tables, 12 agent tools, 12 built-in templates.
 
-App Marketplace chain (26 features, 8 sprints):
+Sprint 44 — WIP cleanup (completed 2026-04-15): runtime-validation-hardening, database-snapshot-backup, dynamic-slash-commands, profile-environment-sync all closed.
 
-44. **Sprint 44 — Clear WIP + Gate Layer**: Finish runtime-validation-hardening, database-snapshot-backup, dynamic-slash-commands, profile-environment-sync. Build marketplace-install-hardening (P1) — the sole remaining gate (instance-bootstrap, local-license-manager, supabase-cloud-backend, marketplace-access-gate all verified complete)
-45. **Sprint 45 — Core App Platform**: app-package-format (P1) + app-extended-primitives-tier1 (P1) + marketplace-app-listing (P1) — all 3 parallelize, everything else builds on these
-46. **Sprint 46 — Authoring + Seed Data**: app-seed-data-generation (P1) + chat-app-builder (P1) + promote-conversation-to-app (P1, stagger) — enables app creation workflows
-47. **Sprint 47 — Publishing Pipeline (P1 Complete)**: app-cli-tools (P1) + marketplace-app-publishing (P1) + marketplace-trust-ladder (P1) — all 9 P1 marketplace features done, end-to-end flow operational
-48. **Sprint 48 — P2 Wave 1**: app-extended-primitives-tier2 + conversational-app-editing + app-remix + app-single-file-format + app-conflict-resolution
-49. **Sprint 49 — P2 Wave 2**: visual-app-studio + app-distribution-channels + app-forking-remix + creator-portal + app-updates-dependencies
-50. **Sprint 50 — P3 Polish**: app-mcp-server-wiring + app-budget-policies + marketplace-reviews + marketplace-local-first-discovery + curated-collections + app-embeddable-install-widget
+> **App Marketplace chain deferred (2026-04-13).** The 26-feature marketplace/apps chain originally planned as Sprints 44–50 was descoped as part of the community-edition pivot (commits `0436803` "remove app catalog, marketplace, and subscription tiering" and `05fe720` "reconcile roadmap with community-edition pivot"). All related specs are marked `deferred` in the tables above — see their frontmatter for authoritative status. Revisit only if the community-edition scope changes.
 
 Browser automation chain:
 
@@ -738,4 +709,4 @@ Items from `ideas/vision/` that are explicitly deferred — documented for futur
 - **OpenClaw Gateway MCP bridge** — defer until OpenClaw Foundation stabilizes
 - **ClawHub import bridge** — can extend skills-repo-import later
 - **Workspace git export** — useful but lower leverage than proactive intelligence
-- ~~**Bidirectional messaging** (Phase 2 of multi-channel-delivery) — delivery-only first~~ → Promoted to `bidirectional-channel-chat` (P1, planned)
+- ~~**Bidirectional messaging** (Phase 2 of multi-channel-delivery) — delivery-only first~~ → Promoted to `bidirectional-channel-chat` (completed)

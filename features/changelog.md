@@ -2,6 +2,15 @@
 
 ## 2026-04-15
 
+### Completed — runtime-validation-hardening
+
+Closed the P1 runtime-validation feature. Implementation had already shipped across three production changes; the remaining gap was negative-path test coverage for MCP-tool `assignedAgent` validation.
+
+- `src/lib/chat/tools/__tests__/task-tools.test.ts` — added two describe blocks covering `create_task` and `execute_task` runtime-id validation: invalid runtime → `Invalid runtime` error message listing valid ids; valid runtime → insert succeeds with `assignedAgent` persisted. Mirrors the existing `agentProfile` coverage pattern.
+- Verified already-shipped production changes: `resolveAgentRuntime()` in `catalog.ts:281–286` warn-and-fallback (no throw); `task-tools.ts` handlers at lines 134, 216, 304 all validate via `isAgentRuntimeId`; `execute_task` fallback at line 343 uses `DEFAULT_AGENT_RUNTIME` (no hardcoded `"claude"` remains); tool description at line 288 lists valid runtime ids.
+
+**Verification:** 23/23 `task-tools.test.ts` green (2 new). Existing `catalog.test.ts` coverage of unknown-id fallback retained.
+
 ### Fixed — upgrade sessions no longer deadlock on agent questions
 
 The upgrade flow runs as a task (it needs Bash + git, which chat tools don't have), but the original implementation had no channel for the agent to ask the user a free-form question. The `upgrade-assistant` SKILL.md said *"stop and ask the user"* on merge conflicts and drifted-main cases — but the agent emitted the question as plain log text, and `PendingApprovalHost` only rendered Allow/Deny buttons, so the task silently stalled until the 55-second permission timeout fired a deny.
