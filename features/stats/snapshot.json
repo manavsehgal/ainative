@@ -1,0 +1,24 @@
+{
+  "generatedAt": "2026-04-15T00:00:00Z",
+  "fromSha": "efb73bd25a5952d0ea6923c93dc7c8e091add107",
+  "features": {
+    "completed": 62,
+    "inProgress": 0,
+    "planned": 5,
+    "deferred": 14
+  },
+  "chatTools": 95,
+  "dbTables": 45,
+  "builtinProfiles": 21,
+  "workflowBlueprints": 13,
+  "skills": {
+    "claude": 25,
+    "codex": 36,
+    "shared": 22
+  },
+  "referenceLibraries": 3,
+  "velocity": {
+    "source": "unavailable",
+    "note": "features/retros/ does not exist; run /supervisor retrospective to generate"
+  }
+}

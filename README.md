@@ -511,7 +511,7 @@ All 14 features shipped across three layers:
 |----------|---------|
 | **Documents** (5) | File attachments, preprocessing (5 formats), agent context injection, document browser, output generation |
 | **Agent Intelligence** (6) | Multi-agent routing, autonomous loops, multi-agent swarm, AI assist→workflows, agent self-improvement, workflow context batching |
-| **Agent Profiles** (2) | Agent profile catalog (21 profiles), workflow blueprints (8 templates) |
+| **Agent Profiles** (2) | Agent profile catalog (<!-- STAT:builtinProfiles -->21<!-- /STAT --> profiles), workflow blueprints (<!-- STAT:workflowBlueprints -->13<!-- /STAT --> templates) |
 | **UI Enhancement** (13) | Ambient approvals, learned context UX, micro-visualizations, command palette, operational surface, profile surface, accessibility, UI density, kanban operations, board persistence, detail view redesign, playbook documentation, workflow UX overhaul |
 | **Platform** (8) | Scheduled prompt loops, tool permissions, provider runtimes, OpenAI Codex runtime, cross-provider profiles, parallel fork/join, tool permission presets, npm publish (deferred) |
 | **Runtime Quality** (2) | SDK runtime hardening, E2E test automation |
