@@ -27,6 +27,8 @@ export const SETTINGS_KEYS = {
   SCHEDULE_MAX_CONCURRENT: "schedule.maxConcurrent",
   SCHEDULE_MAX_RUN_DURATION_SEC: "schedule.maxRunDurationSec",
   SCHEDULE_CHAT_PRESSURE_DELAY_SEC: "schedule.chatPressureDelaySec",
+  // Environment / profile sync
+  AUTO_PROMOTE_SKILLS: "environment.autoPromoteSkills",
 } as const;
 
 export type RoutingPreference = "cost" | "latency" | "quality" | "manual";

@@ -1,6 +1,6 @@
 ---
 title: Profile-Environment Sync
-status: in-progress
+status: shipped
 priority: P1
 milestone: post-mvp
 source: features/agent-profile-from-environment.md
@@ -151,7 +151,7 @@ Setting `auto_promote_skills: boolean` (default: `false`, opt-in). When enabled,
 - [ ] Task creation dropdown shows origin badge per profile
 - [ ] Drift detection: when SKILL.md content differs between profile and artifact, drift indicator appears
 - [ ] `listProfilesWithEnvironmentStatus()` returns environment linkage for all profiles
-- [ ] Auto-promotion setting exists in settings (default off), when on auto-creates profiles for unlinked skills
+- [x] Auto-promotion setting exists in settings (default off), when on auto-creates profiles for unlinked skills
 
 ## Scope Boundaries
 

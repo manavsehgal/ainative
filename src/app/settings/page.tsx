@@ -7,6 +7,7 @@ import { ChatSettingsSection } from "@/components/settings/chat-settings-section
 import { RuntimeTimeoutSection } from "@/components/settings/runtime-timeout-section";
 import { BrowserToolsSection } from "@/components/settings/browser-tools-section";
 import { WebSearchSection } from "@/components/settings/web-search-section";
+import { EnvironmentSection } from "@/components/settings/environment-section";
 import { LearningContextSection } from "@/components/settings/learning-context-section";
 import { OllamaSection } from "@/components/settings/ollama-section";
 import { ChannelsSection } from "@/components/settings/channels-section";
@@ -29,6 +30,7 @@ export default function SettingsPage() {
         <RuntimeTimeoutSection />
         <LearningContextSection />
         <WebSearchSection />
+        <EnvironmentSection />
         <BrowserToolsSection />
         <ChannelsSection />
         <BudgetGuardrailsSection />

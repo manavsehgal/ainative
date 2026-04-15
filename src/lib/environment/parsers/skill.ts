@@ -18,6 +18,10 @@ export function parseSkillDir(
   if (!stat?.isDirectory()) return null;
 
   const name = basename(dirPath);
+  // Skip hidden directories (e.g., .system, .DS_Store).
+  // These are never user-authored skills and would otherwise
+  // surface as spurious profiles under auto-promote.
+  if (name.startsWith(".")) return null;
   let mainFile = "";
   let content = "";
 

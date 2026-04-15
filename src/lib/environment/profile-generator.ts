@@ -6,6 +6,9 @@ import { getArtifacts } from "./data";
 import { evaluateRules, generateTier2Suggestions, type ProfileSuggestion } from "./profile-rules";
 import { listProfiles, createProfile } from "@/lib/agents/profiles/registry";
 import type { ProfileConfig } from "@/lib/validators/profile";
+import { getSettingSync } from "@/lib/settings/helpers";
+import { SETTINGS_KEYS } from "@/lib/constants/settings";
+import { linkArtifactsToProfiles } from "./profile-linker";
 
 const MIN_CURATED_CONFIDENCE = 0.6;
 
@@ -128,4 +131,55 @@ export function createProfileFromSuggestion(
   // Note: the created profile will have author "stagent-env" which,
   // combined with the env- prefix on the ID, identifies it as environment-originated.
   // The profile registry can infer origin from the author field.
+}
+
+export interface AutoPromoteResult {
+  created: string[];
+  skipped: string[];
+  errors: Array<{ ruleId: string; message: string }>;
+}
+
+/**
+ * If the AUTO_PROMOTE_SKILLS setting is enabled, auto-create profiles for
+ * every unlinked Tier 2 suggestion discovered in the given scan, then re-link
+ * the scan's artifacts so the newly-created profiles show as linked.
+ *
+ * Returns a summary of what happened. No-ops (returns empty result) when the
+ * setting is disabled.
+ */
+export function autoPromoteUnlinkedSkills(scanId: string): AutoPromoteResult {
+  const result: AutoPromoteResult = { created: [], skipped: [], errors: [] };
+
+  const flag = getSettingSync(SETTINGS_KEYS.AUTO_PROMOTE_SKILLS);
+  if (flag !== "true") return result;
+
+  const { discovered } = suggestProfilesTiered(scanId);
+  if (discovered.length === 0) return result;
+
+  for (const suggestion of discovered) {
+    try {
+      createProfileFromSuggestion(suggestion);
+      result.created.push(suggestion.ruleId);
+    } catch (err) {
+      // Skip duplicates (registry throws when a profile with the same id
+      // already exists) — count them as skipped, not errors.
+      const message = err instanceof Error ? err.message : String(err);
+      if (message.toLowerCase().includes("already exists")) {
+        result.skipped.push(suggestion.ruleId);
+      } else {
+        result.errors.push({ ruleId: suggestion.ruleId, message });
+      }
+    }
+  }
+
+  // Re-link so freshly-created profiles are marked on their artifacts.
+  if (result.created.length > 0) {
+    try {
+      linkArtifactsToProfiles(scanId);
+    } catch (err) {
+      console.warn("[auto-promote] Re-link after promotion failed:", err);
+    }
+  }
+
+  return result;
 }

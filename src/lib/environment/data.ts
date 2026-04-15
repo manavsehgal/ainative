@@ -78,6 +78,15 @@ export function createScan(
     console.warn("[environment] Profile linking failed (non-blocking):", err);
   }
 
+  // Auto-promote unlinked skills to profiles if the user opted in.
+  // Imported lazily to avoid a top-level circular import with profile-generator.ts.
+  // Fire-and-forget: auto-promote runs asynchronously and failures are logged only.
+  import("./profile-generator")
+    .then((m) => m.autoPromoteUnlinkedSkills(scanId))
+    .catch((err) =>
+      console.warn("[environment] Auto-promote failed (non-blocking):", err)
+    );
+
   return db
     .select()
     .from(environmentScans)
