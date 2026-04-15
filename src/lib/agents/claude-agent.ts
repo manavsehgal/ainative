@@ -39,6 +39,11 @@ import {
   handleToolPermission,
   clearPermissionCache,
 } from "./tool-permissions";
+import {
+  classifyTaskFailureReason,
+  toRetryableRuntimeLaunchError,
+  type RuntimeLaunchProgress,
+} from "@/lib/agents/runtime/launch-failure";
 
 // ─── Stagent MCP injection helpers ──────────────────────────────────────
 //
@@ -110,33 +115,6 @@ function withStagentAllowedTools(
 }
 
 /**
- * Classify an error into a machine-readable failure reason string.
- * Used by writeTerminalFailureReason and handleExecutionError.
- */
-function classifyError(error: unknown): string {
-  if (!(error instanceof Error)) return "sdk_error";
-  if (error.name === "AbortError" || error.message.includes("aborted")) {
-    return "aborted";
-  }
-  const lower = error.message.toLowerCase();
-  if (
-    lower.includes("turn") &&
-    (lower.includes("limit") || lower.includes("exhausted") || lower.includes("max"))
-  ) {
-    return "turn_limit_exceeded";
-  }
-  if (lower.includes("timeout") || lower.includes("timed out")) return "timeout";
-  if (lower.includes("budget")) return "budget_exceeded";
-  if (lower.includes("authentication") || lower.includes("oauth")) {
-    return "auth_failed";
-  }
-  if (lower.includes("rate limit") || lower.includes("429")) {
-    return "rate_limited";
-  }
-  return "sdk_error";
-}
-
-/**
  * Write an explicit failure_reason to tasks at terminal-state transitions.
  * Called from handleExecutionError and the execute/resume functions on known
  * error classes. Prefer this over reverse-engineering reasons from text via
@@ -146,7 +124,7 @@ export async function writeTerminalFailureReason(
   taskId: string,
   error: unknown,
 ): Promise<void> {
-  const reason = classifyError(error);
+  const reason = classifyTaskFailureReason(error);
   await db
     .update(tasks)
     .set({ failureReason: reason, updatedAt: new Date() })
@@ -222,6 +200,14 @@ export async function finalizeTaskUsage(
     startedAt: state.startedAt,
     finishedAt: new Date(),
   });
+
+  await db
+    .update(tasks)
+    .set({
+      effectiveModelId: state.modelId ?? null,
+      updatedAt: new Date(),
+    })
+    .where(eq(tasks.id, state.taskId));
 }
 
 /**
@@ -234,7 +220,8 @@ async function processAgentStream(
   response: AsyncIterable<Record<string, unknown>>,
   abortController: AbortController,
   agentProfileId = "general",
-  usageState: TaskUsageState
+  usageState: TaskUsageState,
+  launchProgress?: RuntimeLaunchProgress
 ): Promise<void> {
   let sessionId: string | null = null;
   let receivedResult = false;
@@ -297,8 +284,14 @@ async function processAgentStream(
     // Handle assistant messages (tool use starts)
     if (message.type === "assistant" && message.message?.content) {
       turnCount++;
+      if (launchProgress) {
+        launchProgress.hasTurnStarted = true;
+      }
       for (const block of message.message.content) {
         if (block.type === "tool_use") {
+          if (launchProgress) {
+            launchProgress.hasToolUse = true;
+          }
           // Track screenshot tool_use IDs for result interception
           const toolBlock = block as { type: string; id?: string; name?: string; input?: unknown };
           if (typeof toolBlock.name === "string" && SCREENSHOT_TOOL_NAMES.has(toolBlock.name) && typeof toolBlock.id === "string") {
@@ -367,6 +360,9 @@ async function processAgentStream(
         return;
       }
       receivedResult = true;
+      if (launchProgress) {
+        launchProgress.hasResult = true;
+      }
       const resultText =
         typeof message.result === "string"
           ? message.result
@@ -538,6 +534,7 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
   const [task] = await db.select().from(tasks).where(eq(tasks.id, taskId));
   if (!task) throw new Error(`Task ${taskId} not found`);
   const usageState = createTaskUsageState(task);
+  const launchProgress: RuntimeLaunchProgress = {};
 
   const abortController = new AbortController();
   const agentProfileId = task.agentProfile ?? "general";
@@ -633,7 +630,8 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
       response as AsyncIterable<Record<string, unknown>>,
       abortController,
       agentProfileId,
-      usageState
+      usageState,
+      launchProgress
     );
 
     try {
@@ -642,6 +640,14 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
       console.error("[self-improvement] pattern extraction failed:", err);
     }
   } catch (error: unknown) {
+    const retryableLaunchError = toRetryableRuntimeLaunchError({
+      runtimeId: "claude-code",
+      error,
+      progress: launchProgress,
+    });
+    if (retryableLaunchError) {
+      throw retryableLaunchError;
+    }
     await handleExecutionError(
       taskId,
       task.title,
@@ -855,8 +861,7 @@ async function handleExecutionError(
     return;
   }
 
-  const failureReason = classifyError(error);
-
+  const failureReason = classifyTaskFailureReason(error);
   await db
     .update(tasks)
     .set({

@@ -80,12 +80,14 @@ export function ChatMessage({ message, isStreaming, conversationId, onStatusChan
   let quickAccess: QuickAccessItem[] = [];
   let attachments: ScreenshotAttachment[] = [];
   let modelLabel: string | null = null;
+  let fallbackReason: string | null = null;
   if (!isUser && message.metadata) {
     try {
       const meta = JSON.parse(message.metadata);
       if (Array.isArray(meta.quickAccess)) quickAccess = meta.quickAccess;
       if (Array.isArray(meta.attachments)) attachments = meta.attachments;
       if (meta.modelId) modelLabel = resolveModelLabel(meta.modelId);
+      if (meta.fallbackReason) fallbackReason = meta.fallbackReason;
     } catch {
       // Invalid metadata
     }
@@ -148,9 +150,16 @@ export function ChatMessage({ message, isStreaming, conversationId, onStatusChan
       </div>
       {/* Model label for completed assistant messages */}
       {!isUser && !isStreaming && modelLabel && (
-        <span className="text-[10px] text-muted-foreground/50 mt-0.5 ml-1">
-          {modelLabel}
-        </span>
+        <div className="mt-0.5 ml-1 space-y-0.5">
+          <span className="block text-[10px] text-muted-foreground/50">
+            {modelLabel}
+          </span>
+          {fallbackReason && (
+            <span className="block text-[10px] text-amber-700/80 dark:text-amber-300/80">
+              {fallbackReason}
+            </span>
+          )}
+        </div>
       )}
     </div>
   );

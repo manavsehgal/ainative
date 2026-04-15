@@ -34,6 +34,7 @@ import {
   cleanupConversation,
 } from "./permission-bridge";
 import { getWorkspaceContext } from "@/lib/environment/workspace-context";
+import type { ResolvedExecutionTarget } from "@/lib/agents/runtime/execution-target";
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -57,7 +58,8 @@ function asString(v: unknown): string | null {
 export async function* sendCodexMessage(
   conversationId: string,
   userContent: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  targetOverride?: ResolvedExecutionTarget
 ): AsyncGenerator<ChatStreamEvent> {
   const conversation = await getConversation(conversationId);
   if (!conversation) {
@@ -65,7 +67,7 @@ export async function* sendCodexMessage(
     return;
   }
 
-  const runtimeId = conversation.runtimeId;
+  const runtimeId = targetOverride?.effectiveRuntimeId ?? conversation.runtimeId;
   const providerId = getProviderForRuntime(runtimeId);
 
   // Enforce budget
@@ -187,8 +189,10 @@ export async function* sendCodexMessage(
       const availableIds = new Set(
         (modelResponse.models ?? []).map((m: { id: string }) => m.id)
       );
-      if (conversation.modelId && availableIds.has(conversation.modelId)) {
-        validatedModel = conversation.modelId;
+      const requestedModelId =
+        targetOverride?.effectiveModelId ?? conversation.modelId;
+      if (requestedModelId && availableIds.has(requestedModelId)) {
+        validatedModel = requestedModelId;
       }
       // If not available, validatedModel stays undefined → Codex uses its default
     } catch {
@@ -376,7 +380,18 @@ export async function* sendCodexMessage(
 
     // Save usage metadata
     const metadata = JSON.stringify({
-      modelId: usage.modelId ?? conversation.modelId,
+      modelId:
+        usage.modelId ??
+        targetOverride?.effectiveModelId ??
+        conversation.modelId,
+      runtimeId,
+      requestedRuntimeId:
+        targetOverride?.requestedRuntimeId ?? conversation.runtimeId,
+      requestedModelId:
+        targetOverride?.requestedModelId ?? conversation.modelId,
+      ...(targetOverride?.fallbackReason
+        ? { fallbackReason: targetOverride.fallbackReason }
+        : {}),
       inputTokens: usage.inputTokens,
       outputTokens: usage.outputTokens,
       ...(quickAccess.length > 0 ? { quickAccess } : {}),
@@ -393,7 +408,11 @@ export async function* sendCodexMessage(
       activityType: "chat_turn",
       runtimeId,
       providerId,
-      modelId: usage.modelId ?? conversation.modelId ?? null,
+      modelId:
+        usage.modelId ??
+        targetOverride?.effectiveModelId ??
+        conversation.modelId ??
+        null,
       inputTokens: usage.inputTokens ?? null,
       outputTokens: usage.outputTokens ?? null,
       totalTokens: usage.totalTokens ?? null,
@@ -413,7 +432,11 @@ export async function* sendCodexMessage(
       activityType: "chat_turn",
       runtimeId,
       providerId,
-      modelId: usage.modelId ?? conversation.modelId ?? null,
+      modelId:
+        usage.modelId ??
+        targetOverride?.effectiveModelId ??
+        conversation.modelId ??
+        null,
       inputTokens: usage.inputTokens ?? null,
       outputTokens: usage.outputTokens ?? null,
       totalTokens: usage.totalTokens ?? null,

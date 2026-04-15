@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { workflows, tasks, agentLogs, notifications } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
-import { executeTaskWithRuntime } from "@/lib/agents/runtime";
+import { startTaskExecution } from "@/lib/agents/task-dispatch";
 import { classifyTaskProfile } from "@/lib/agents/router";
 import type { WorkflowDefinition, WorkflowState, StepState, LoopState } from "./types";
 import { createInitialState } from "./types";
@@ -916,7 +916,7 @@ export async function executeChildTask(
     description: enrichedPrompt,
     status: "queued",
     priority: 1,
-    assignedAgent: assignedAgent ?? null,
+      assignedAgent: assignedAgent ?? runtimeId ?? null,
     agentProfile: resolvedProfile ?? null,
     workflowRunNumber: workflow?.runNumber ?? null,
     maxBudgetUsd: maxBudgetUsd ?? null,
@@ -930,7 +930,9 @@ export async function executeChildTask(
     .where(eq(tasks.id, taskId));
 
   try {
-    await executeTaskWithRuntime(taskId, runtimeId);
+    await startTaskExecution(taskId, {
+      requestedRuntimeId: runtimeId ?? assignedAgent,
+    });
   } catch (err) {
     console.error(`[workflow-engine] Runtime execution failed for task ${taskId}:`, err);
     // Mark task as failed in DB so the status check below correctly detects failure

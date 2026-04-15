@@ -16,7 +16,7 @@ import { schedules, tasks, agentLogs, scheduleDocumentInputs, documents, workflo
 import { eq, and, lte, inArray, sql, asc, isNotNull } from "drizzle-orm";
 import { resumeWorkflow } from "@/lib/workflows/engine";
 import { computeNextFireTime } from "./interval-parser";
-import { executeTaskWithRuntime } from "@/lib/agents/runtime";
+import { startTaskExecution } from "@/lib/agents/task-dispatch";
 import { getSetting } from "@/lib/settings/helpers";
 import { SETTINGS_KEYS } from "@/lib/constants/settings";
 import { checkActiveHours } from "./active-hours";
@@ -92,7 +92,7 @@ export async function drainQueue(): Promise<void> {
 
       console.log(`[scheduler] draining queue → running task ${nextQueued.id}`);
       try {
-        await executeTaskWithRuntime(nextQueued.id);
+        await startTaskExecution(nextQueued.id);
       } catch (err) {
         console.error(`[scheduler] drain task ${nextQueued.id} failed:`, err);
       }
@@ -600,7 +600,7 @@ async function fireSchedule(
   // poll loop must keep claiming other due schedules), but on completion we
   // record metrics and trigger drainQueue() so any tasks queued by colliding
   // schedules execute immediately instead of waiting for the next poll.
-  executeTaskWithRuntime(taskId)
+  startTaskExecution(taskId)
     .catch((err) => {
       console.error(
         `[scheduler] task execution failed for schedule ${schedule.id}, task ${taskId}:`,
@@ -750,7 +750,7 @@ async function fireHeartbeat(
 
   // 5. Execute and wait for result (with timeout)
   try {
-    await executeTaskWithRuntime(evalTaskId);
+    await startTaskExecution(evalTaskId);
   } catch (err) {
     console.error(`[scheduler] heartbeat evaluation failed for "${schedule.name}":`, err);
   }

@@ -1,15 +1,12 @@
 import { listProfiles, getProfile } from "./profiles/registry";
 import { profileSupportsRuntime } from "./profiles/compatibility";
 import {
-  executeTaskWithRuntime,
-  resumeTaskWithRuntime,
-} from "./runtime";
-import {
   DEFAULT_AGENT_RUNTIME,
   SUPPORTED_AGENT_RUNTIMES,
   type AgentRuntimeId,
 } from "./runtime/catalog";
 import type { RoutingPreference } from "@/lib/constants/settings";
+import { resumeTaskExecution, startTaskExecution } from "./task-dispatch";
 
 // ── Keyword signal maps for runtime scoring ──────────────────────────
 
@@ -217,12 +214,12 @@ export async function executeTaskWithAgent(
   taskId: string,
   agentType: string | null | undefined = DEFAULT_AGENT_RUNTIME
 ): Promise<void> {
-  return executeTaskWithRuntime(taskId, agentType);
+  return startTaskExecution(taskId, { requestedRuntimeId: agentType });
 }
 
 export async function resumeTaskWithAgent(
   taskId: string,
   agentType: string | null | undefined = DEFAULT_AGENT_RUNTIME
 ): Promise<void> {
-  return resumeTaskWithRuntime(taskId, agentType);
+  return resumeTaskExecution(taskId, { requestedRuntimeId: agentType });
 }

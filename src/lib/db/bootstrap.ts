@@ -70,6 +70,9 @@ export function bootstrapStagentDatabase(sqlite: Database.Database): void {
       status TEXT DEFAULT 'planned' NOT NULL,
       assigned_agent TEXT,
       agent_profile TEXT,
+      effective_runtime_id TEXT,
+      effective_model_id TEXT,
+      runtime_fallback_reason TEXT,
       priority INTEGER DEFAULT 2 NOT NULL,
       result TEXT,
       session_id TEXT,
@@ -303,6 +306,9 @@ export function bootstrapStagentDatabase(sqlite: Database.Database): void {
 
   addColumnIfMissing(`ALTER TABLE tasks ADD COLUMN agent_profile TEXT;`);
   sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_tasks_agent_profile ON tasks(agent_profile);`);
+  addColumnIfMissing(`ALTER TABLE tasks ADD COLUMN effective_runtime_id TEXT;`);
+  addColumnIfMissing(`ALTER TABLE tasks ADD COLUMN effective_model_id TEXT;`);
+  addColumnIfMissing(`ALTER TABLE tasks ADD COLUMN runtime_fallback_reason TEXT;`);
 
   addColumnIfMissing(`ALTER TABLE tasks ADD COLUMN workflow_id TEXT REFERENCES workflows(id);`);
   sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_tasks_workflow_id ON tasks(workflow_id);`);

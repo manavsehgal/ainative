@@ -58,6 +58,7 @@ import {
   isExaTool,
   isExaReadOnly,
 } from "@/lib/agents/browser-mcp";
+import { resolveChatExecutionTarget } from "@/lib/agents/runtime/execution-target";
 
 // Re-exported from runtime/claude-sdk.ts so chat/engine.ts remains a stable
 // import surface for the Phase 1a test suite. The canonical definitions
@@ -185,21 +186,43 @@ export async function* sendMessage(
     return;
   }
 
+  let target;
+  try {
+    target = await resolveChatExecutionTarget({
+      requestedRuntimeId: conversation.runtimeId,
+      requestedModelId: conversation.modelId,
+    });
+  } catch (error) {
+    yield {
+      type: "error",
+      message: error instanceof Error ? error.message : "No chat runtime is available",
+    };
+    return;
+  }
+
+  if (target.fallbackApplied && target.fallbackReason) {
+    yield {
+      type: "status",
+      phase: "runtime_fallback",
+      message: target.fallbackReason,
+    };
+  }
+
   // Route to Codex App Server for OpenAI models
-  if (conversation.runtimeId === "openai-codex-app-server") {
+  if (target.effectiveRuntimeId === "openai-codex-app-server") {
     const { sendCodexMessage } = await import("./codex-engine");
-    yield* sendCodexMessage(conversationId, userContent, signal);
+    yield* sendCodexMessage(conversationId, userContent, signal, target);
     return;
   }
 
   // Route to Ollama for local models
-  if (conversation.runtimeId === "ollama") {
+  if (target.effectiveRuntimeId === "ollama") {
     const { sendOllamaMessage } = await import("./ollama-engine");
     yield* sendOllamaMessage(conversationId, userContent, signal);
     return;
   }
 
-  const runtimeId = conversation.runtimeId;
+  const runtimeId = target.effectiveRuntimeId;
   const providerId = getProviderForRuntime(runtimeId);
 
   // Enforce budget before the turn
@@ -335,7 +358,7 @@ export async function* sendMessage(
     const response = query({
       prompt: generatePrompt(fullPrompt),
       options: {
-        model: conversation.modelId || undefined,
+        model: target.effectiveModelId || conversation.modelId || undefined,
         maxTurns,
         abortController,
         includePartialMessages: true,
@@ -682,7 +705,11 @@ export async function* sendMessage(
 
     // Save usage metadata + quick access links + screenshot attachments
     const metadata = JSON.stringify({
-      modelId: usage.modelId ?? conversation.modelId,
+      modelId: usage.modelId ?? target.effectiveModelId ?? conversation.modelId,
+      runtimeId,
+      requestedRuntimeId: target.requestedRuntimeId ?? conversation.runtimeId,
+      requestedModelId: target.requestedModelId ?? conversation.modelId,
+      ...(target.fallbackReason ? { fallbackReason: target.fallbackReason } : {}),
       inputTokens: usage.inputTokens,
       outputTokens: usage.outputTokens,
       ...(quickAccess.length > 0 ? { quickAccess } : {}),
@@ -699,7 +726,7 @@ export async function* sendMessage(
       activityType: "chat_turn",
       runtimeId,
       providerId,
-      modelId: usage.modelId ?? conversation.modelId ?? null,
+      modelId: usage.modelId ?? target.effectiveModelId ?? conversation.modelId ?? null,
       inputTokens: usage.inputTokens ?? null,
       outputTokens: usage.outputTokens ?? null,
       totalTokens: usage.totalTokens ?? null,
@@ -762,7 +789,7 @@ export async function* sendMessage(
         activityType: "chat_turn",
         runtimeId,
         providerId,
-        modelId: usage.modelId ?? conversation.modelId ?? null,
+        modelId: usage.modelId ?? target.effectiveModelId ?? conversation.modelId ?? null,
         inputTokens: usage.inputTokens ?? null,
         outputTokens: usage.outputTokens ?? null,
         totalTokens: usage.totalTokens ?? null,
@@ -789,7 +816,7 @@ export async function* sendMessage(
         activityType: "chat_turn",
         runtimeId,
         providerId,
-        modelId: usage.modelId ?? conversation.modelId ?? null,
+        modelId: usage.modelId ?? target.effectiveModelId ?? conversation.modelId ?? null,
         inputTokens: usage.inputTokens ?? null,
         outputTokens: usage.outputTokens ?? null,
         totalTokens: usage.totalTokens ?? null,

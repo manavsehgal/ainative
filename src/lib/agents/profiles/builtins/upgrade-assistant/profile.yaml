@@ -3,8 +3,8 @@ name: Upgrade Assistant
 version: "1.0.0"
 domain: work
 tags: [upgrade, git, merge, maintenance, instance]
-supportedRuntimes: [claude-code, anthropic-direct]
-preferredRuntime: anthropic-direct
+supportedRuntimes: [claude-code, openai-codex-app-server]
+preferredRuntime: claude-code
 
 maxTurns: 40
 

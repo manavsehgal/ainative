@@ -26,6 +26,7 @@ import { taskStatusVariant } from "@/lib/constants/status-colors";
 import { MAX_RESUME_COUNT } from "@/lib/constants/task-status";
 import { formatTimestamp } from "@/lib/utils/format-timestamp";
 import type { TaskItem } from "./task-card";
+import { getRuntimeCatalogEntry } from "@/lib/agents/runtime/catalog";
 
 const priorityConfig: Record<number, { icon: typeof ArrowUp; label: string }> = {
   0: { icon: ArrowUp, label: "P0 Critical" },
@@ -59,6 +60,12 @@ export function TaskChipBar({
 }: TaskChipBarProps) {
   const priority = priorityConfig[task.priority] ?? priorityConfig[2];
   const PriorityIcon = priority.icon;
+  const requestedRuntimeLabel = task.assignedAgent
+    ? getRuntimeCatalogEntry(task.assignedAgent as never).label
+    : null;
+  const effectiveRuntimeLabel = task.effectiveRuntimeId
+    ? getRuntimeCatalogEntry(task.effectiveRuntimeId as never).label
+    : null;
 
   const hasRelationships = task.projectId || task.workflowId || task.scheduleId;
 
@@ -149,7 +156,29 @@ export function TaskChipBar({
         {task.assignedAgent && (
           <Badge variant="secondary" className="text-xs gap-1">
             <Bot className="h-3 w-3" />
-            {task.assignedAgent}
+            {requestedRuntimeLabel ?? task.assignedAgent}
+          </Badge>
+        )}
+
+        {task.effectiveRuntimeId &&
+          task.effectiveRuntimeId !== task.assignedAgent && (
+            <Badge
+              variant="outline"
+              className="text-xs gap-1 border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+              title={task.runtimeFallbackReason ?? undefined}
+            >
+              <Bot className="h-3 w-3" />
+              Ran on {effectiveRuntimeLabel ?? task.effectiveRuntimeId}
+            </Badge>
+          )}
+
+        {task.runtimeFallbackReason && (
+          <Badge
+            variant="outline"
+            className="text-xs border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+            title={task.runtimeFallbackReason}
+          >
+            Fallback applied
           </Badge>
         )}
 

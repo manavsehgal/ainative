@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { tasks } from "@/lib/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
-import { resumeTaskWithAgent } from "@/lib/agents/router";
 import { MAX_RESUME_COUNT } from "@/lib/constants/task-status";
-import { DEFAULT_AGENT_RUNTIME } from "@/lib/agents/runtime/catalog";
 import {
   BudgetLimitExceededError,
   enforceTaskBudgetGuardrails,
 } from "@/lib/settings/budget-guardrails";
+import { resolveResumeExecutionTarget } from "@/lib/agents/runtime/execution-target";
+import { resumeTaskExecution } from "@/lib/agents/task-dispatch";
 
 export async function POST(
   _req: NextRequest,
@@ -67,8 +67,29 @@ export async function POST(
     );
   }
 
+  try {
+    await resolveResumeExecutionTarget({
+      requestedRuntimeId: task.assignedAgent,
+      effectiveRuntimeId: task.effectiveRuntimeId,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    db.update(tasks)
+      .set({
+        status: "failed",
+        result: message,
+        updatedAt: new Date(),
+      })
+      .where(eq(tasks.id, id))
+      .run();
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+
   // Fire-and-forget
-  resumeTaskWithAgent(id, task.assignedAgent ?? DEFAULT_AGENT_RUNTIME).catch((err) =>
+  resumeTaskExecution(id, {
+    requestedRuntimeId: task.assignedAgent,
+    effectiveRuntimeId: task.effectiveRuntimeId,
+  }).catch((err) =>
     console.error(`Task ${id} resume error:`, err)
   );
 

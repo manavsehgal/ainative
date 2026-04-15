@@ -98,6 +98,53 @@ describe("profile registry", () => {
     expect(codeReviewer!.canUseToolPolicy!.autoApprove).toContain("Grep");
   });
 
+  it("preserves preferredRuntime from profile.yaml", async () => {
+    const originalHome = process.env.HOME;
+    const tempHome = fs.mkdtempSync(
+      path.join(os.tmpdir(), "registry-preferred-runtime-")
+    );
+
+    try {
+      process.env.HOME = tempHome;
+      vi.resetModules();
+
+      const profileId = `preferred-runtime-${Date.now()}`;
+      const profileDir = path.join(tempHome, ".claude", "skills", profileId);
+      fs.mkdirSync(profileDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(profileDir, "profile.yaml"),
+        yaml.dump({
+          id: profileId,
+          name: "Preferred Runtime Test",
+          version: "1.0.0",
+          domain: "work",
+          tags: ["runtime"],
+          preferredRuntime: "openai-direct",
+        })
+      );
+      fs.writeFileSync(
+        path.join(profileDir, "SKILL.md"),
+        `---
+name: ${profileId}
+description: Preferred runtime test profile.
+---
+
+Testing preferred runtime loading.
+`
+      );
+
+      const registry = await import("../registry");
+      const loaded = registry.getProfile(profileId);
+
+      expect(loaded).toBeDefined();
+      expect(loaded?.preferredRuntime).toBe("openai-direct");
+    } finally {
+      process.env.HOME = originalHome;
+      fs.rmSync(tempHome, { recursive: true, force: true });
+      vi.resetModules();
+    }
+  });
+
   it("getProfileTags returns tag map", () => {
     const tagMap = getProfileTags();
     expect(tagMap.get("researcher")).toContain("research");

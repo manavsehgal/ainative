@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { schedules, tasks, usageLedger } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { executeTaskWithRuntime } from "@/lib/agents/runtime";
 import { claimSlot, countRunningScheduledSlots } from "@/lib/schedules/slot-claim";
 import {
   getScheduleMaxConcurrent,
   getScheduleMaxRunDurationSec,
 } from "@/lib/schedules/config";
 import { randomUUID } from "crypto";
+import { startTaskExecution } from "@/lib/agents/task-dispatch";
 
 /**
  * Manually fire a schedule. Honors the global concurrency cap by default.
@@ -103,7 +103,7 @@ export async function POST(
 
   // Fire-and-forget: the route returns immediately with taskId; execution runs
   // in the background. Errors are logged but do not affect the 200 response.
-  executeTaskWithRuntime(taskId).catch((err) => {
+  startTaskExecution(taskId).catch((err) => {
     console.error(`[api/schedules/execute] task ${taskId} failed:`, err);
   });
 

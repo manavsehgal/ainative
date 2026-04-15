@@ -125,8 +125,8 @@ export async function processHandoffs(): Promise<void> {
 
     // Fire-and-forget task execution
     try {
-      const { executeTaskWithRuntime } = await import("@/lib/agents/runtime");
-      executeTaskWithRuntime(taskId).catch((err) => {
+      const { startTaskExecution } = await import("@/lib/agents/task-dispatch");
+      startTaskExecution(taskId).catch((err) => {
         console.error(`[handoff] task execution failed for message ${msg.id}:`, err);
       });
     } catch (err) {

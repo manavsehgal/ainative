@@ -324,7 +324,7 @@ export function taskTools(ctx: ToolContext) {
             );
           }
 
-          const runtimeId = args.assignedAgent ?? task.assignedAgent ?? DEFAULT_AGENT_RUNTIME;
+          const runtimeId = args.assignedAgent ?? task.assignedAgent ?? null;
 
           // Set status to queued
           await db
@@ -337,7 +337,11 @@ export function taskTools(ctx: ToolContext) {
           executeTaskWithAgent(taskId, runtimeId).catch(() => {});
 
           ctx.onToolResult?.("execute_task", { id: taskId, title: task.title });
-          return ok({ message: "Execution started", taskId, runtime: runtimeId });
+          return ok({
+            message: "Execution started",
+            taskId,
+            runtime: runtimeId ?? DEFAULT_AGENT_RUNTIME,
+          });
         } catch (e) {
           return err(e instanceof Error ? e.message : "Failed to execute task");
         }

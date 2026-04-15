@@ -396,6 +396,14 @@ async function executeOpenAIDirectTask(taskId: string, isResume = false): Promis
       startedAt: usageState.startedAt,
       finishedAt: new Date(),
     });
+
+    await db
+      .update(tasks)
+      .set({
+        effectiveModelId: result.totalUsage.modelId ?? modelId,
+        updatedAt: new Date(),
+      })
+      .where(eq(tasks.id, taskId));
   } catch (err) {
     if (!abortController.signal.aborted) {
       const errorMsg = err instanceof Error ? err.message : String(err);

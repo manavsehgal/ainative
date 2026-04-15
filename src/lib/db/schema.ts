@@ -29,6 +29,12 @@ export const tasks = sqliteTable(
       .notNull(),
     assignedAgent: text("assigned_agent"),
     agentProfile: text("agent_profile"),
+    /** Runtime actually used for the most recent execution attempt. */
+    effectiveRuntimeId: text("effective_runtime_id"),
+    /** Model actually used for the most recent execution attempt. */
+    effectiveModelId: text("effective_model_id"),
+    /** Human-readable reason when execution fell back from the requested runtime/model. */
+    runtimeFallbackReason: text("runtime_fallback_reason"),
     priority: integer("priority").default(2).notNull(),
     result: text("result"),
     sessionId: text("session_id"),

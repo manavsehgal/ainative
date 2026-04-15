@@ -23,6 +23,12 @@ import {
   readCodexAuthStateFromClient,
   resolveOpenAICodexAuthContext,
 } from "./openai-codex-auth";
+import {
+  classifyTaskFailureReason,
+  RetryableRuntimeLaunchError,
+  toRetryableRuntimeLaunchError,
+  type RuntimeLaunchProgress,
+} from "./launch-failure";
 import type {
   AgentRuntimeAdapter,
   RuntimeConnectionResult,
@@ -228,6 +234,14 @@ async function finalizeTaskUsage(
     startedAt: state.startedAt,
     finishedAt: new Date(),
   });
+
+  await db
+    .update(tasks)
+    .set({
+      effectiveModelId: state.modelId ?? null,
+      updatedAt: new Date(),
+    })
+    .where(eq(tasks.id, state.taskId));
 }
 
 function buildTurnInput(prompt: string) {
@@ -373,6 +387,7 @@ async function markTaskFailed(taskId: string, title: string, message: string) {
     .set({
       status: "failed",
       result: message,
+      failureReason: classifyTaskFailureReason(new Error(message)),
       updatedAt: new Date(),
     })
     .where(eq(tasks.id, taskId));
@@ -690,6 +705,7 @@ async function executeOpenAICodexTask(
   let turnId: string | null = null;
   let agentOutput = "";
   let settled = false;
+  const launchProgress: RuntimeLaunchProgress = {};
   let resolveCompletion: (() => void) | null = null;
   let rejectCompletion: ((error: Error) => void) | null = null;
   const usageState = createTaskUsageState(task, Boolean(task.sessionId));
@@ -704,6 +720,18 @@ async function executeOpenAICodexTask(
     client = await auth.connect(cwd);
 
     client.onProcessError = (error) => {
+      const retryableLaunchError =
+        !options.resume
+          ? toRetryableRuntimeLaunchError({
+              runtimeId: "openai-codex-app-server",
+              error,
+              progress: launchProgress,
+            })
+          : null;
+      if (retryableLaunchError) {
+        rejectCompletion?.(retryableLaunchError);
+        return;
+      }
       if (settled) return;
       void settle(async () => {
         await markTaskFailed(taskId, task.title, error.message);
@@ -744,6 +772,7 @@ async function executeOpenAICodexTask(
 
             case "turn/started": {
               turnId = extractTurnId(params);
+              launchProgress.hasTurnStarted = true;
               setExecution(taskId, {
                 abortController,
                 sessionId: threadId,
@@ -782,6 +811,7 @@ async function executeOpenAICodexTask(
             }
 
             case "item/commandExecution/outputDelta": {
+              launchProgress.hasToolUse = true;
               await insertLog(taskId, "command_output_delta", {
                 threadId,
                 turnId,
@@ -803,6 +833,7 @@ async function executeOpenAICodexTask(
 
             case "turn/completed": {
               const { status, errorMessage } = extractTurnStatus(params);
+              launchProgress.hasResult = true;
 
               if (status === "completed") {
                 const finalResult =
@@ -915,6 +946,10 @@ async function executeOpenAICodexTask(
   } catch (error) {
     if (abortController.signal.aborted || settled) {
       return;
+    }
+
+    if (error instanceof RetryableRuntimeLaunchError) {
+      throw error;
     }
 
     const message = error instanceof Error ? error.message : String(error);

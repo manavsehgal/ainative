@@ -17,6 +17,9 @@ export interface TaskItem {
   priority: number;
   assignedAgent: string | null;
   agentProfile: string | null;
+  effectiveRuntimeId?: string | null;
+  effectiveModelId?: string | null;
+  runtimeFallbackReason?: string | null;
   projectId: string | null;
   projectName?: string;
   workflowId: string | null;

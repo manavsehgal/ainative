@@ -118,6 +118,22 @@ function ensureBuiltins(): void {
           changed = true;
         }
 
+        if (
+          source.preferredRuntime !== undefined &&
+          target.preferredRuntime !== source.preferredRuntime
+        ) {
+          target.preferredRuntime = source.preferredRuntime;
+          changed = true;
+        }
+
+        if (
+          source.capabilityOverrides !== undefined &&
+          target.capabilityOverrides === undefined
+        ) {
+          target.capabilityOverrides = source.capabilityOverrides;
+          changed = true;
+        }
+
         if (changed) {
           fs.writeFileSync(targetYaml, yaml.dump(target));
         }
@@ -206,7 +222,9 @@ function scanProfiles(): Map<string, AgentProfile> {
         tests: config.tests,
         importMeta: config.importMeta,
         supportedRuntimes: getSupportedRuntimes(config),
+        preferredRuntime: config.preferredRuntime,
         runtimeOverrides: config.runtimeOverrides,
+        capabilityOverrides: config.capabilityOverrides,
         origin,
       });
     } catch (err) {

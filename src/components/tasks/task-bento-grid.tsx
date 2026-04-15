@@ -18,6 +18,7 @@ import { formatCompactDateTime } from "@/lib/utils/format-timestamp";
 import { TaskBentoCell } from "./task-bento-cell";
 import type { TaskItem } from "./task-card";
 import type { DocumentRow } from "@/lib/db/schema";
+import { getRuntimeCatalogEntry } from "@/lib/agents/runtime/catalog";
 
 const priorityConfig: Record<number, { icon: typeof ArrowUp; label: string }> = {
   0: { icon: ArrowUp, label: "P0 Critical" },
@@ -78,6 +79,7 @@ export function TaskBentoGrid({ task, docs }: TaskBentoGridProps) {
 
   const inputDocs = docs.filter((d) => d.direction === "input");
   const outputDocs = docs.filter((d) => d.direction === "output");
+  const modelId = task.effectiveModelId ?? usage?.modelId ?? null;
   const docSummary =
     inputDocs.length > 0 && outputDocs.length > 0
       ? `${inputDocs.length} in / ${outputDocs.length} out`
@@ -154,11 +156,19 @@ export function TaskBentoGrid({ task, docs }: TaskBentoGridProps) {
         />
       )}
 
-      {usage?.modelId && (
+      {task.effectiveRuntimeId && (
+        <TaskBentoCell
+          icon={Cpu}
+          label="Runtime Used"
+          value={getRuntimeCatalogEntry(task.effectiveRuntimeId as never).label}
+        />
+      )}
+
+      {modelId && (
         <TaskBentoCell
           icon={Cpu}
           label="Model"
-          value={<span className="text-sm font-semibold">{truncateModel(usage.modelId)}</span>}
+          value={<span className="text-sm font-semibold">{truncateModel(modelId)}</span>}
         />
       )}
 
