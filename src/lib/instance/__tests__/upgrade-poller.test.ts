@@ -76,6 +76,56 @@ describe("tick", () => {
     expect(getUpgradeState().pollFailureCount).toBe(3);
   });
 
+  it("inserts one failure notification after 3 consecutive failures, dedupes on the 4th, clears on success", async () => {
+    const { tick } = await import("../upgrade-poller");
+    const { db } = await import("@/lib/db");
+    const { notifications } = await import("@/lib/db/schema");
+    const { eq, and, isNull } = await import("drizzle-orm");
+
+    // 2 failures: no notification yet
+    await tick(tempDir);
+    await tick(tempDir);
+    let open = await db
+      .select()
+      .from(notifications)
+      .where(and(eq(notifications.toolName, "upgrade_check_failing"), isNull(notifications.respondedAt)));
+    expect(open).toHaveLength(0);
+
+    // 3rd failure: notification created
+    await tick(tempDir);
+    open = await db
+      .select()
+      .from(notifications)
+      .where(and(eq(notifications.toolName, "upgrade_check_failing"), isNull(notifications.respondedAt)));
+    expect(open).toHaveLength(1);
+    expect(open[0].title).toBe("Upgrade check failing");
+    expect(open[0].body).toContain("Last 3 upgrade checks failed");
+
+    // 4th failure: still exactly one open notification (deduped)
+    await tick(tempDir);
+    open = await db
+      .select()
+      .from(notifications)
+      .where(and(eq(notifications.toolName, "upgrade_check_failing"), isNull(notifications.respondedAt)));
+    expect(open).toHaveLength(1);
+
+    // Success clears the notification
+    const bareDir = mkdtempSync(join(tmpdir(), "stagent-bare-"));
+    try {
+      runGit(["init", "--bare", "-b", "main"], bareDir);
+      runGit(["remote", "add", "origin", bareDir], tempDir);
+      runGit(["push", "origin", "main"], tempDir);
+      await tick(tempDir);
+      open = await db
+        .select()
+        .from(notifications)
+        .where(and(eq(notifications.toolName, "upgrade_check_failing"), isNull(notifications.respondedAt)));
+      expect(open).toHaveLength(0);
+    } finally {
+      rmSync(bareDir, { recursive: true, force: true });
+    }
+  });
+
   it("successfully updates state with zero commitsBehind when local == origin/main", async () => {
     // Set up a local 'origin' remote pointing to a bare copy of the same repo
     const bareDir = mkdtempSync(join(tmpdir(), "stagent-bare-"));

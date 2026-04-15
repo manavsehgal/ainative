@@ -30,3 +30,7 @@ allowedTools:
   - Bash(npm install)
   - Read
   - Write
+  # Used for every decision point (merge conflicts, drifted main, etc.) —
+  # the agent must NEVER emit a question as plain text; always invoke this
+  # tool so the user can answer through the session UI.
+  - AskUserQuestion

@@ -2,6 +2,39 @@
 
 ## 2026-04-15
 
+### Fixed — upgrade sessions no longer deadlock on agent questions
+
+The upgrade flow runs as a task (it needs Bash + git, which chat tools don't have), but the original implementation had no channel for the agent to ask the user a free-form question. The `upgrade-assistant` SKILL.md said *"stop and ask the user"* on merge conflicts and drifted-main cases — but the agent emitted the question as plain log text, and `PendingApprovalHost` only rendered Allow/Deny buttons, so the task silently stalled until the 55-second permission timeout fired a deny.
+
+End-to-end fix reusing existing primitives (`handleToolPermission` already supports `AskUserQuestion` → `agent_message` notification + `waitForToolPermissionResponse()` polling):
+
+- `src/lib/agents/profiles/builtins/upgrade-assistant/profile.yaml` — allowlist `AskUserQuestion`.
+- `src/lib/agents/profiles/builtins/upgrade-assistant/SKILL.md` — new "How to ask the user a question" section with the two canonical payload shapes (free-form + 3-choice options). Rules 1 and 5 rewritten to mandate `AskUserQuestion` invocation — never plain text.
+- `src/components/notifications/permission-response-actions.tsx` — new `QuestionReplyActions` branch triggered by `toolName === "AskUserQuestion"`. Renders a `radiogroup` of option cards when `toolInput.options` is present, otherwise a `<Textarea>` + Send button (⌘/Ctrl+Enter submits). Posts `{ behavior: "allow", updatedInput: { answer } }` to `/api/tasks/[id]/respond`.
+- `src/app/api/tasks/[id]/respond/route.ts` — carve out an `AskUserQuestion` branch in the `updatedInput` key-sanitizer. Original toolInput describes the question (`question`, `options`) but the response carries an `answer` key not in the original — the existing subset check was rejecting it with HTTP 400. New branch validates a tight `{ answer: string }` shape instead.
+
+This keeps task-pipeline isolation (TDR-024) intact — no chat-tool git shelling — while delivering the chat-like UX the upgrade feature was originally designed around.
+
+**Verification:** 4/4 `permission-response-actions.test.tsx` cases green (adds 2 new: option cards → `{answer}`, textarea → `{answer}`). 7/7 `upgrade-poller.test.ts` still green. `npx tsc --noEmit` clean. End-to-end smoke deferred to the upgrade-session follow-up (requires a dirty clone + real upstream commit).
+
+### Completed — upgrade-detection
+
+Closed the last two real gaps in `upgrade-detection` and flipped the spec to `completed`:
+
+- **Failure notification after 3 polls** — `src/lib/instance/upgrade-poller.ts` now inserts a single "Upgrade check failing" row into `notifications` (type `agent_message`, `toolName="upgrade_check_failing"` as dedup sentinel) once `pollFailureCount` crosses 3, and clears it on the next successful tick. One open notification at a time; no schema change.
+- **Closeout note on the spec** documents two shipped-but-deviating decisions: (1) hourly polling is `setInterval`-driven rather than a `schedules`-table row (scheduler-engine registration deferred to a follow-up), (2) `UpgradeBadge` is a Client Component reading `/api/instance/upgrade/status` rather than a DB-reading Server Component. Behavior identical either way.
+
+**Verification:** 7/7 `upgrade-poller.test.ts` green, including a new 3-failures → dedup → success-clears case that drives the notification insert + clear paths end-to-end. `npx tsc --noEmit` clean.
+
+### Reconciled — roadmap ↔ spec frontmatter sync
+
+Audit of 230 feature specs vs `roadmap.md` surfaced 9 rows where the roadmap table lagged behind already-shipped work. All 9 specs carried `status: completed` in their frontmatter; the roadmap still listed them as `planned` or `in-progress`. Synced the roadmap to match:
+
+- `chat-settings-tool` (was in-progress)
+- `chat-session-persistence-provider`, `chat-dedup-variant-tolerance`, `app-cli-tools`, `chat-app-builder`, `promote-conversation-to-app`, `marketplace-app-listing`, `marketplace-app-publishing`, `marketplace-trust-ladder` (were planned)
+
+No spec bodies were modified — this was a pure roadmap-table reconciliation. Three features remain legitimately `in-progress` (`profile-environment-sync`, `runtime-validation-hardening`, `upgrade-detection`); none show activity since 2026-03-01 and may warrant a separate staleness review.
+
 ### Completed — chat-skill-composition closeout
 
 Closed out the last real gap in `chat-skill-composition`: prompt-budget handling for composed skills. The feature had already shipped its runtime gates, additive schema, conflict heuristic, HTTP/MCP activation flow, and Skills-tab UI, but `buildActiveSkill()` still hard-truncated the combined SKILL.md payload. It now drops older composed skills first when the merged prompt would exceed `ACTIVE_SKILL_BUDGET`, prepends an explicit omission note naming the evicted skills, and only truncates when the newest remaining single skill is still too large.

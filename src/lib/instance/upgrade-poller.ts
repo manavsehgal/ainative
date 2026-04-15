@@ -10,6 +10,9 @@
 
 import { existsSync, mkdirSync, writeFileSync, unlinkSync, statSync } from "fs";
 import { join } from "path";
+import { and, eq, isNull } from "drizzle-orm";
+import { db } from "@/lib/db";
+import { notifications } from "@/lib/db/schema";
 import { isDevMode, hasGitDir } from "./detect";
 import { createGitOps } from "./git-ops";
 import { getUpgradeState, setUpgradeState } from "./settings";
@@ -17,6 +20,9 @@ import { getUpgradeState, setUpgradeState } from "./settings";
 const POLL_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 const LOCK_TTL_MS = 5 * 60 * 1000; // 5 minutes
 const LOCK_FILENAME = ".stagent-upgrade-check.lock";
+const FAILURE_THRESHOLD = 3;
+// Sentinel value in notifications.toolName so we can dedupe / clear the banner.
+const FAILURE_MARKER = "upgrade_check_failing";
 
 let intervalHandle: ReturnType<typeof setInterval> | null = null;
 let ticking = false;
@@ -69,12 +75,16 @@ export async function tick(cwd: string = process.cwd()): Promise<UpgradeTickResu
         git.fetchOrigin();
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
+        const nextFailureCount = current.pollFailureCount + 1;
         await setUpgradeState({
           ...current,
           lastPolledAt: Math.floor(Date.now() / 1000),
-          pollFailureCount: current.pollFailureCount + 1,
+          pollFailureCount: nextFailureCount,
           lastPollError: message,
         });
+        if (nextFailureCount >= FAILURE_THRESHOLD) {
+          await ensureFailureNotification(nextFailureCount, message);
+        }
         return { skipped: "fetch_failed", error: message };
       }
 
@@ -94,6 +104,9 @@ export async function tick(cwd: string = process.cwd()): Promise<UpgradeTickResu
         lastPollError: null,
       };
       await setUpgradeState(newState);
+      if (current.pollFailureCount >= FAILURE_THRESHOLD) {
+        await clearFailureNotification();
+      }
       return { updated: newState };
     } finally {
       releaseLock(lockPath);
@@ -149,5 +162,44 @@ function releaseLock(lockPath: string): void {
     unlinkSync(lockPath);
   } catch {
     /* ignore */
+  }
+}
+
+/**
+ * Insert a persistent "Upgrade check failing" notification, at most one at a time.
+ * Dedup key: `notifications.toolName = FAILURE_MARKER` with no response set.
+ */
+async function ensureFailureNotification(failureCount: number, error: string): Promise<void> {
+  try {
+    const existing = await db
+      .select({ id: notifications.id })
+      .from(notifications)
+      .where(and(eq(notifications.toolName, FAILURE_MARKER), isNull(notifications.respondedAt)))
+      .limit(1);
+    if (existing.length > 0) return;
+
+    await db.insert(notifications).values({
+      id: crypto.randomUUID(),
+      type: "agent_message",
+      title: "Upgrade check failing",
+      body: `Last ${failureCount} upgrade checks failed: ${error.slice(0, 400)}. Open Settings → Instance to retry.`,
+      toolName: FAILURE_MARKER,
+      read: false,
+      createdAt: new Date(),
+    });
+  } catch (err) {
+    console.error("[upgrade-poller] failed to insert failure notification:", err);
+  }
+}
+
+/** Mark any open failure notification as responded so the inbox clears it. */
+async function clearFailureNotification(): Promise<void> {
+  try {
+    await db
+      .update(notifications)
+      .set({ respondedAt: new Date(), read: true })
+      .where(and(eq(notifications.toolName, FAILURE_MARKER), isNull(notifications.respondedAt)));
+  } catch (err) {
+    console.error("[upgrade-poller] failed to clear failure notification:", err);
   }
 }

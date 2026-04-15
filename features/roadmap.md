@@ -112,7 +112,7 @@ Features that enhance the product but aren't essential for first use — homepag
 | [cross-provider-profile-compatibility](cross-provider-profile-compatibility.md) | P2 | completed | provider-runtime-abstraction, openai-codex-app-server, agent-profile-catalog |
 | [parallel-research-fork-join](parallel-research-fork-join.md) | P2 | completed | workflow-engine, multi-agent-routing |
 | [tool-permission-presets](tool-permission-presets.md) | P2 | completed | tool-permission-persistence |
-| [chat-settings-tool](chat-settings-tool.md) | P1 | in-progress | tool-permission-persistence, chat-engine |
+| [chat-settings-tool](chat-settings-tool.md) | P1 | completed | tool-permission-persistence, chat-engine |
 | [task-hierarchy-clarity](task-hierarchy-clarity.md) | P1 | completed | workflow-engine, task-board, project-management |
 | [agent-document-api-access](agent-document-api-access.md) | P2 | completed | document-preprocessing, file-attachment-data-layer, tool-permission-persistence |
 | [database-snapshot-backup](database-snapshot-backup.md) | P1 | completed | — |
@@ -334,7 +334,7 @@ Automates the PRIVATE-INSTANCES runbook — turns the manual `git merge main` + 
 | Feature | Priority | Status | Dependencies |
 |---------|----------|--------|--------------|
 | [instance-bootstrap](instance-bootstrap.md) | P1 | completed | — |
-| [upgrade-detection](upgrade-detection.md) | P1 | in-progress | instance-bootstrap, scheduled-prompt-loops |
+| [upgrade-detection](upgrade-detection.md) | P1 | completed | instance-bootstrap, scheduled-prompt-loops |
 | [upgrade-session](upgrade-session.md) | P1 | planned | instance-bootstrap, upgrade-detection, agent-integration, agent-profile-catalog |
 | [instance-license-metering](instance-license-metering.md) | P2 | deferred | instance-bootstrap, local-license-manager, license-activation-flow |
 
@@ -356,10 +356,10 @@ Durable fixes that replace symptom-level hotfixes with architectural contracts. 
 | [workflow-status-view-pattern-router](workflow-status-view-pattern-router.md) | P2 | completed | workflow-engine, autonomous-loop-execution, bulk-row-enrichment |
 | [workflow-create-dedup](workflow-create-dedup.md) | P1 | completed | chat-engine, workflow-engine |
 | [chat-stream-resilience-telemetry](chat-stream-resilience-telemetry.md) | P2 | completed | chat-engine, chat-api-routes |
-| [chat-session-persistence-provider](chat-session-persistence-provider.md) | P0 | planned | chat-engine, chat-ui-shell, chat-stream-resilience-telemetry |
+| [chat-session-persistence-provider](chat-session-persistence-provider.md) | P0 | completed | chat-engine, chat-ui-shell, chat-stream-resilience-telemetry |
 | [marketplace-install-hardening](marketplace-install-hardening.md) | P1 | deferred | instance-bootstrap |
 | [enrichment-planner-test-hardening](enrichment-planner-test-hardening.md) | P2 | planned | tables-enrichment-runtime-v2, tables-enrichment-planner-api |
-| [chat-dedup-variant-tolerance](chat-dedup-variant-tolerance.md) | P3 | planned | workflow-create-dedup |
+| [chat-dedup-variant-tolerance](chat-dedup-variant-tolerance.md) | P3 | completed | workflow-create-dedup |
 | [task-runtime-stagent-mcp-injection](task-runtime-stagent-mcp-injection.md) | P0 | completed | agent-integration, chat-engine |
 | [task-create-profile-validation](task-create-profile-validation.md) | P1 | completed | agent-integration, agent-profile-catalog |
 | [schedule-maxturns-api-control](schedule-maxturns-api-control.md) | P2 | completed | scheduled-prompt-loops |
@@ -375,7 +375,7 @@ Runtime bundle system, packaging format, and install hardening. The keystone for
 | [marketplace-install-hardening](marketplace-install-hardening.md) | P1 | deferred | instance-bootstrap |
 | [app-package-format](app-package-format.md) | P1 | deferred | marketplace-install-hardening |
 | [app-seed-data-generation](app-seed-data-generation.md) | P1 | deferred | app-package-format |
-| [app-cli-tools](app-cli-tools.md) | P1 | planned | app-package-format, app-seed-data-generation |
+| [app-cli-tools](app-cli-tools.md) | P1 | completed | app-package-format, app-seed-data-generation |
 | [app-conflict-resolution](app-conflict-resolution.md) | P2 | deferred | app-package-format, marketplace-install-hardening |
 | [app-updates-dependencies](app-updates-dependencies.md) | P2 | deferred | app-conflict-resolution, app-cli-tools |
 | [app-single-file-format](app-single-file-format.md) | P2 | deferred | app-package-format |
@@ -400,8 +400,8 @@ Build, remix, and edit apps through conversation — Stagent's unique differenti
 
 | Feature | Priority | Status | Dependencies |
 |---------|----------|--------|--------------|
-| [chat-app-builder](chat-app-builder.md) | P1 | planned | app-package-format, app-extended-primitives-tier1 |
-| [promote-conversation-to-app](promote-conversation-to-app.md) | P1 | planned | chat-app-builder, app-seed-data-generation |
+| [chat-app-builder](chat-app-builder.md) | P1 | completed | app-package-format, app-extended-primitives-tier1 |
+| [promote-conversation-to-app](promote-conversation-to-app.md) | P1 | completed | chat-app-builder, app-seed-data-generation |
 | [app-remix](app-remix.md) | P2 | deferred | chat-app-builder |
 | [conversational-app-editing](conversational-app-editing.md) | P2 | deferred | chat-app-builder |
 | [visual-app-studio](visual-app-studio.md) | P2 | deferred | app-extended-primitives-tier2, app-package-format |
@@ -412,9 +412,9 @@ Marketplace listing, publishing, trust, and community ecosystem features.
 
 | Feature | Priority | Status | Dependencies |
 |---------|----------|--------|--------------|
-| [marketplace-app-listing](marketplace-app-listing.md) | P1 | planned | marketplace-access-gate, app-runtime-bundle-foundation |
-| [marketplace-app-publishing](marketplace-app-publishing.md) | P1 | planned | app-package-format, app-cli-tools, marketplace-access-gate |
-| [marketplace-trust-ladder](marketplace-trust-ladder.md) | P1 | planned | marketplace-app-publishing, app-extended-primitives-tier1 |
+| [marketplace-app-listing](marketplace-app-listing.md) | P1 | completed | marketplace-access-gate, app-runtime-bundle-foundation |
+| [marketplace-app-publishing](marketplace-app-publishing.md) | P1 | completed | app-package-format, app-cli-tools, marketplace-access-gate |
+| [marketplace-trust-ladder](marketplace-trust-ladder.md) | P1 | completed | marketplace-app-publishing, app-extended-primitives-tier1 |
 | [app-distribution-channels](app-distribution-channels.md) | P2 | deferred | app-cli-tools, marketplace-app-publishing |
 | [app-forking-remix](app-forking-remix.md) | P2 | deferred | marketplace-app-publishing, app-remix |
 | [creator-portal](creator-portal.md) | P2 | deferred | marketplace-app-publishing, telemetry-foundation |

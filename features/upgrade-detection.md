@@ -1,11 +1,16 @@
 ---
 title: Upstream Upgrade Detection & Badge
-status: in-progress
+status: completed
 priority: P1
 milestone: post-mvp
 source: features/architect-report.md
 dependencies: [instance-bootstrap, scheduled-prompt-loops]
 ---
+
+> **Closeout note (2026-04-15):** Shipped with two deliberate deviations from the spec.
+> 1. The hourly poll is driven by `setInterval` in `src/lib/instance/upgrade-poller.ts`, not a row in the `schedules` table. Behavior is identical; scheduler-engine registration is tracked for a future `upgrade-detection-followup`.
+> 2. `UpgradeBadge` is a Client Component reading `/api/instance/upgrade/status` rather than a Server Component reading the DB directly. Matches how the Instance settings surface already consumes the state.
+> Failure notifications after 3 consecutive polls now ship via the `notifications` table with `toolName="upgrade_check_failing"` as the dedup sentinel; notification clears on the first successful tick.
 
 # Upstream Upgrade Detection & Badge
 

@@ -43,25 +43,41 @@ export async function POST(
     return NextResponse.json({ error: "Already responded" }, { status: 409 });
   }
 
-  // Validate updatedInput keys against the original tool input to prevent injection
+  // Validate updatedInput keys against the original tool input to prevent injection.
+  // AskUserQuestion is a special case: the original toolInput describes the question
+  // (`question`, `options?`) but the response carries the user's `answer` — a key not
+  // present in the original. Allow a tightly-scoped `{answer: string}` shape.
   let sanitizedUpdatedInput = updatedInput;
+  const isQuestion = notification.toolName === "AskUserQuestion";
   if (updatedInput !== undefined && updatedInput !== null && typeof updatedInput === "object" && !Array.isArray(updatedInput)) {
-    try {
-      const originalToolInput = typeof notification.toolInput === "string" ? JSON.parse(notification.toolInput) : (notification.toolInput ?? {});
-      if (typeof originalToolInput === "object" && originalToolInput !== null) {
-        const allowedKeys = new Set(Object.keys(originalToolInput));
-        const inputRecord = updatedInput as Record<string, unknown>;
-        const extraKeys = Object.keys(inputRecord).filter((k) => !allowedKeys.has(k));
-        if (extraKeys.length > 0) {
-          return NextResponse.json(
-            { error: `updatedInput contains disallowed keys: ${extraKeys.join(", ")}` },
-            { status: 400 }
-          );
-        }
+    if (isQuestion) {
+      const inputRecord = updatedInput as Record<string, unknown>;
+      const keys = Object.keys(inputRecord);
+      const extraKeys = keys.filter((k) => k !== "answer");
+      if (extraKeys.length > 0 || typeof inputRecord.answer !== "string") {
+        return NextResponse.json(
+          { error: "AskUserQuestion response must be { answer: string }" },
+          { status: 400 }
+        );
       }
-    } catch {
-      // If we can't parse the original notification data, reject updatedInput entirely
-      sanitizedUpdatedInput = undefined;
+    } else {
+      try {
+        const originalToolInput = typeof notification.toolInput === "string" ? JSON.parse(notification.toolInput) : (notification.toolInput ?? {});
+        if (typeof originalToolInput === "object" && originalToolInput !== null) {
+          const allowedKeys = new Set(Object.keys(originalToolInput));
+          const inputRecord = updatedInput as Record<string, unknown>;
+          const extraKeys = Object.keys(inputRecord).filter((k) => !allowedKeys.has(k));
+          if (extraKeys.length > 0) {
+            return NextResponse.json(
+              { error: `updatedInput contains disallowed keys: ${extraKeys.join(", ")}` },
+              { status: 400 }
+            );
+          }
+        }
+      } catch {
+        // If we can't parse the original notification data, reject updatedInput entirely
+        sanitizedUpdatedInput = undefined;
+      }
     }
   }
 
