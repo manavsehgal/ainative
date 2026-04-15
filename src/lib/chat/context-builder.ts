@@ -79,26 +79,31 @@ async function buildActiveSkill(conversationId: string): Promise<string> {
   const row = await db
     .select({
       activeSkillId: conversations.activeSkillId,
+      activeSkillIds: conversations.activeSkillIds,
       runtimeId: conversations.runtimeId,
     })
     .from(conversations)
     .where(eq(conversations.id, conversationId))
     .get();
-  const id = row?.activeSkillId;
-  if (!id) return "";
 
-  // Respect the runtime capability matrix: only inject SKILL.md when the
-  // active runtime declares `stagentInjectsSkills: true`. Runtimes that
-  // discover skills natively (Claude SDK, Codex App Server) already load
-  // the same SKILL.md from .claude/skills or .agents/skills via their
-  // own machinery — injecting on top would duplicate context. Today only
-  // Ollama opts in to Stagent-driven injection.
-  if (row?.runtimeId) {
+  // Merge legacy single-active + new composed array. Dynamic import to
+  // avoid loading the chat tools module on the hot path / risk import
+  // cycles per the runtime-catalog smoke-test budget rule in MEMORY.md.
+  const { mergeActiveSkillIds } = await import("@/lib/chat/tools/skill-tools");
+  const merged = mergeActiveSkillIds(row?.activeSkillId, row?.activeSkillIds);
+  if (merged.length === 0) return "";
+
+  // Composition (any entry in the new activeSkillIds column) is an
+  // explicit user opt-in to override the SDK-native default. Without
+  // this carve-out, composed skills would silently no-op on Claude/
+  // Codex where stagentInjectsSkills=false. When only the legacy
+  // activeSkillId is set, fall back to the original capability gate
+  // (Ollama-only injection).
+  const isComposed = (row?.activeSkillIds?.length ?? 0) > 0;
+
+  if (!isComposed && row?.runtimeId) {
     try {
       const { getRuntimeFeatures } = await import("@/lib/agents/runtime/catalog");
-      // Cast — runtimeId is a free-form string in the DB but the catalog
-      // accepts only known IDs. Catalog throws on unknown; the catch
-      // below handles that as "fall through and inject".
       const features = getRuntimeFeatures(
         row.runtimeId as Parameters<typeof getRuntimeFeatures>[0]
       );
@@ -112,12 +117,15 @@ async function buildActiveSkill(conversationId: string): Promise<string> {
   // Dynamic import keeps the scanner + fs dependency off the hot path for
   // conversations that don't have an active skill (the common case).
   const { getSkill } = await import("@/lib/environment/list-skills");
-  const skill = getSkill(id);
-  if (!skill) return "";
-
-  const header = `## Active Skill: ${skill.name}\n`;
-  const body = truncateToTokenBudget(skill.content, ACTIVE_SKILL_BUDGET);
-  return `${header}\n${body}`;
+  const sections: string[] = [];
+  for (const id of merged) {
+    const skill = getSkill(id);
+    if (!skill) continue;
+    sections.push(`## Active Skill: ${skill.name}\n\n${skill.content}`);
+  }
+  if (sections.length === 0) return "";
+  const combined = sections.join("\n\n---\n\n");
+  return truncateToTokenBudget(combined, ACTIVE_SKILL_BUDGET);
 }
 
 // ── Tier 1: Conversation history ───────────────────────────────────────
