@@ -225,7 +225,7 @@ export function ChatShell({
           </Sheet>
         </div>
 
-        {!activeId && messages.length === 0 ? (
+        {messages.length === 0 ? (
           /* Hero mode: vertically centered greeting + input + chips */
           <div className="flex-1 flex items-center justify-center overflow-hidden">
             <ChatEmptyState
