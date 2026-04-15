@@ -306,6 +306,7 @@ export function ChatInput({
         onTabChange={autocomplete.setActiveTab}
         onSelect={handlePopoverSelect}
         onClose={autocomplete.close}
+        conversationId={conversationId}
       />
     </div>
   );

@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { toast } from "sonner";
 import {
   Command,
   CommandEmpty,
@@ -23,6 +24,7 @@ import {
   PinOff,
   Bookmark,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type { LucideIcon } from "lucide-react";
 import {
   getToolCatalogWithSkills,
@@ -44,6 +46,9 @@ import type { FilterClause } from "@/lib/filters/parse";
 import { cleanFilterInput } from "@/lib/chat/clean-filter-input";
 import { usePinnedEntries, type PinnedEntry } from "@/hooks/use-pinned-entries";
 import { useSavedSearches, type SavedSearch, type SavedSearchSurface } from "@/hooks/use-saved-searches";
+import { useActiveSkills } from "@/hooks/use-active-skills";
+import { SkillCompositionConflictDialog } from "./skill-composition-conflict-dialog";
+import type { SkillConflict } from "@/lib/chat/skill-conflict";
 
 interface ChatCommandPopoverProps {
   open: boolean;
@@ -65,6 +70,8 @@ interface ChatCommandPopoverProps {
   }) => void;
   onClose: () => void;
   onApplySavedSearch?: (filterInput: string) => void;
+  /** Active conversation id — used for skill composition HTTP calls. */
+  conversationId?: string | null;
 }
 
 const ENTITY_ICONS: Record<string, LucideIcon> = {
@@ -109,6 +116,7 @@ export function ChatCommandPopover({
   onSelect,
   onClose,
   onApplySavedSearch,
+  conversationId,
 }: ChatCommandPopoverProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -123,6 +131,62 @@ export function ChatCommandPopover({
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open, onClose]);
+
+  // -----------------------------------------------------------------------
+  // Skill composition state
+  // -----------------------------------------------------------------------
+  const { activeIds, supportsComposition, maxActive, refetch: refetchActive } =
+    useActiveSkills(conversationId ?? null);
+
+  // When activate returns requiresConfirmation, we stash the pending request
+  // and open the conflict dialog for the user to decide.
+  const [pendingAdd, setPendingAdd] = useState<{
+    skillId: string;
+    skillName: string;
+    conflicts: SkillConflict[];
+  } | null>(null);
+
+  const callActivate = useCallback(
+    async (skillId: string, skillName: string, mode: "replace" | "add", force = false) => {
+      if (!conversationId) return;
+      const r = await fetch(
+        `/api/chat/conversations/${conversationId}/skills/activate`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ skillId, mode, force }),
+        }
+      );
+      if (!r.ok) {
+        const body = await r.json().catch(() => ({})) as Record<string, unknown>;
+        toast.error(typeof body.error === "string" ? body.error : "Failed to add skill");
+        return;
+      }
+      const body = await r.json() as Record<string, unknown>;
+      if (body.requiresConfirmation) {
+        setPendingAdd({
+          skillId,
+          skillName,
+          conflicts: (body.conflicts as SkillConflict[]) ?? [],
+        });
+        return;
+      }
+      await refetchActive();
+      const activeCount = Array.isArray(body.activeSkillIds)
+        ? (body.activeSkillIds as string[]).length
+        : 1;
+      toast.success(`Added ${skillName} — ${activeCount} skill${activeCount !== 1 ? "s" : ""} active`);
+    },
+    [conversationId, refetchActive]
+  );
+
+  const callDeactivate = useCallback(async () => {
+    if (!conversationId) return;
+    await fetch(`/api/chat/conversations/${conversationId}/skills/deactivate`, {
+      method: "POST",
+    });
+    await refetchActive();
+  }, [conversationId, refetchActive]);
 
   // Enriched skills — only fetch when popover is open in slash mode
   const enrichedSkills = useEnrichedSkills(open && mode === "slash");
@@ -247,6 +311,12 @@ export function ChatCommandPopover({
         {mode === "slash" ? (
           <>
             <CommandTabBar activeTab={activeTab} onChange={onTabChange} />
+            {/* Active skill count indicator — shown only on the skills tab. */}
+            {activeTab === "skills" && conversationId && (
+              <div className="px-3 py-1.5 text-xs text-muted-foreground border-b">
+                {activeIds.length} of {maxActive} active
+              </div>
+            )}
             <CommandList className="max-h-[320px]">
               {activeTab !== "entities" && (
                 <CommandEmpty>No matching tools</CommandEmpty>
@@ -271,6 +341,16 @@ export function ChatCommandPopover({
                         }
                       : undefined
                   }
+                  activeSkillIds={activeIds}
+                  supportsComposition={supportsComposition}
+                  maxActive={maxActive}
+                  onAddSkill={
+                    conversationId
+                      ? (skillId, skillName) =>
+                          callActivate(skillId, skillName, "add")
+                      : undefined
+                  }
+                  onDeactivate={conversationId ? callDeactivate : undefined}
                 />
               </div>
             </CommandList>
@@ -323,7 +403,22 @@ export function ChatCommandPopover({
     </div>
   );
 
-  return createPortal(content, document.body);
+  return (
+    <>
+      {createPortal(content, document.body)}
+      {pendingAdd && (
+        <SkillCompositionConflictDialog
+          open={!!pendingAdd}
+          onOpenChange={(o) => { if (!o) setPendingAdd(null); }}
+          newSkillName={pendingAdd.skillName}
+          conflicts={pendingAdd.conflicts}
+          onConfirm={() => {
+            void callActivate(pendingAdd.skillId, pendingAdd.skillName, "add", true);
+          }}
+        />
+      )}
+    </>
+  );
 }
 
 function ToolCatalogItems({
@@ -334,6 +429,11 @@ function ToolCatalogItems({
   totalSkillCount,
   recommendedId,
   onDismissRecommendation,
+  activeSkillIds,
+  supportsComposition,
+  maxActive,
+  onAddSkill,
+  onDeactivate,
 }: {
   onSelect: ChatCommandPopoverProps["onSelect"];
   projectProfiles?: ChatCommandPopoverProps["projectProfiles"];
@@ -344,6 +444,16 @@ function ToolCatalogItems({
   totalSkillCount: number;
   recommendedId?: string | null;
   onDismissRecommendation?: (skillId: string) => void;
+  /** Currently active skill IDs for this conversation. */
+  activeSkillIds?: string[];
+  /** Whether the current runtime supports composing 2+ skills. */
+  supportsComposition?: boolean;
+  /** Max simultaneously-active skills for this runtime. */
+  maxActive?: number;
+  /** Called when the user clicks "+ Add" on an inactive skill. */
+  onAddSkill?: (skillId: string, skillName: string) => void;
+  /** Called when the user deactivates the current skill. */
+  onDeactivate?: () => void;
 }) {
   const catalog = getToolCatalogWithSkills({
     includeBrowser: true,
@@ -362,28 +472,80 @@ function ToolCatalogItems({
 
   // When the skills tab has enriched data, render the enriched list
   if (activeTab === "skills" && enrichedSkills.length > 0) {
+    const activeSet = new Set(activeSkillIds ?? []);
+    const resolvedMax = maxActive ?? 1;
+    const atCapacity = (activeSkillIds?.length ?? 0) >= resolvedMax;
+
     return (
       <CommandGroup heading="Skills">
-        {enrichedSkills.map((skill) => (
-          <SkillRow
-            key={skill.id}
-            skill={skill}
-            recommended={recommendedId === skill.id}
-            onDismissRecommendation={
-              recommendedId === skill.id
-                ? () => onDismissRecommendation?.(skill.id)
-                : undefined
-            }
-            onSelect={() =>
-              onSelect({
-                type: "slash",
-                id: skill.name,
-                label: skill.name,
-                text: `Use the ${skill.name} profile: `,
-              })
-            }
-          />
-        ))}
+        {enrichedSkills.map((skill) => {
+          const isActive = activeSet.has(skill.id);
+          // Show "+ Add" only when composition is available, slot is free, and
+          // we have a conversationId to POST to.
+          const canAdd =
+            !isActive &&
+            supportsComposition &&
+            !atCapacity &&
+            !!onAddSkill;
+          // Show disabled "+" when at capacity or runtime doesn't support composition.
+          const showDisabled = !isActive && !canAdd && !!onAddSkill;
+          const disabledReason = atCapacity
+            ? `Max ${resolvedMax} skills active`
+            : "Single skill only on this runtime — switch runtime to compose";
+
+          return (
+            <SkillRow
+              key={skill.id}
+              skill={skill}
+              recommended={recommendedId === skill.id}
+              onDismissRecommendation={
+                recommendedId === skill.id
+                  ? () => onDismissRecommendation?.(skill.id)
+                  : undefined
+              }
+              onSelect={() =>
+                onSelect({
+                  type: "slash",
+                  id: skill.name,
+                  label: skill.name,
+                  text: `Use the ${skill.name} profile: `,
+                })
+              }
+              isActive={isActive}
+              addButton={
+                canAdd ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="ml-auto h-6 px-2 text-[10px] shrink-0"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAddSkill(skill.id, skill.name);
+                    }}
+                  >
+                    + Add
+                  </Button>
+                ) : showDisabled ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled
+                    aria-label={disabledReason}
+                    title={disabledReason}
+                    className="ml-auto h-6 px-2 text-[10px] shrink-0"
+                  >
+                    + Add
+                  </Button>
+                ) : undefined
+              }
+              onDeactivate={isActive && onDeactivate ? onDeactivate : undefined}
+            />
+          );
+        })}
       </CommandGroup>
     );
   }

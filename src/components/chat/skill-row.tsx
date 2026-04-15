@@ -3,12 +3,19 @@ import { Sparkles, Star, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { CommandItem } from "@/components/ui/command";
 import type { EnrichedSkill } from "@/lib/environment/skill-enrichment";
+import type { ReactNode } from "react";
 
 interface SkillRowProps {
   skill: EnrichedSkill;
   recommended?: boolean;
   onSelect: () => void;
   onDismissRecommendation?: () => void;
+  /** Whether this skill is currently active on the conversation. */
+  isActive?: boolean;
+  /** Optional "+ Add" / disabled "+ Add" button rendered to the right. */
+  addButton?: ReactNode;
+  /** Called when the user wants to deactivate this (active) skill. */
+  onDeactivate?: () => void;
 }
 
 function healthVariant(
@@ -38,6 +45,9 @@ export function SkillRow({
   recommended,
   onSelect,
   onDismissRecommendation,
+  isActive,
+  addButton,
+  onDeactivate,
 }: SkillRowProps) {
   const syncHref =
     skill.syncStatus !== "synced"
@@ -54,6 +64,11 @@ export function SkillRow({
       <div className="flex flex-col min-w-0 gap-0.5">
         <div className="flex items-center gap-1.5">
           <span className="truncate text-sm font-medium">{skill.name}</span>
+          {isActive && (
+            <Badge variant="default" className="text-[10px] shrink-0">
+              active
+            </Badge>
+          )}
           {recommended && (
             <Star
               className="h-3 w-3 shrink-0 fill-amber-500 text-amber-500"
@@ -97,7 +112,27 @@ export function SkillRow({
           </Badge>
         </div>
       </div>
-      {syncHref && (
+      {/* Right-side slot: either the env link or the Add/Deactivate button. */}
+      {isActive && onDeactivate ? (
+        <button
+          type="button"
+          aria-label={`Deactivate ${skill.name}`}
+          title="Deactivate skill"
+          className="ml-auto shrink-0 text-[10px] text-muted-foreground hover:text-foreground rounded px-1 py-0.5 hover:bg-muted focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDeactivate();
+          }}
+        >
+          <X className="h-3 w-3" />
+        </button>
+      ) : addButton ? (
+        addButton
+      ) : syncHref ? (
         <a
           href={syncHref}
           aria-label={`Open ${skill.name} in environment dashboard`}
@@ -106,7 +141,7 @@ export function SkillRow({
         >
           ↗
         </a>
-      )}
+      ) : null}
     </CommandItem>
   );
 }
