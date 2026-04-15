@@ -156,7 +156,7 @@ const STAGENT_TOOLS: ToolCatalogEntry[] = [
   // ── Skills ──
   { name: "list_skills", description: "List all discoverable skills (user + project scopes)", group: "Skills" },
   { name: "get_skill", description: "Get full SKILL.md content + metadata for one skill", group: "Skills", paramHint: "id" },
-  { name: "activate_skill", description: "Bind a skill to a conversation — SKILL.md is injected into every turn's system prompt", group: "Skills", paramHint: "conversationId, skillId" },
+  { name: "activate_skill", description: "Bind a skill to a conversation — SKILL.md is injected into every turn's system prompt. Pass mode='add' to compose (runtime-gated).", group: "Skills", paramHint: "conversationId, skillId, mode?" },
   { name: "deactivate_skill", description: "Clear the active skill from a conversation", group: "Skills", paramHint: "conversationId" },
 
   // ── Tables ──

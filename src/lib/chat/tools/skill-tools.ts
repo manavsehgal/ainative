@@ -20,6 +20,28 @@ import { ok, err, type ToolContext } from "./helpers";
  *
  * See `features/chat-ollama-native-skills.md`.
  */
+
+/**
+ * Merge legacy `active_skill_id` (single) with the new `active_skill_ids`
+ * JSON array, dedupe, and return the canonical "currently active skills"
+ * list. Order: legacy first (preserves prior behavior for read paths),
+ * then composed adds in insertion order.
+ */
+export function mergeActiveSkillIds(
+  legacyId: string | null | undefined,
+  composed: string[] | null | undefined
+): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  if (legacyId) { out.push(legacyId); seen.add(legacyId); }
+  if (composed) {
+    for (const id of composed) {
+      if (id && !seen.has(id)) { out.push(id); seen.add(id); }
+    }
+  }
+  return out;
+}
+
 export function skillTools(_ctx: ToolContext) {
   return [
     defineTool(
@@ -101,14 +123,20 @@ export function skillTools(_ctx: ToolContext) {
 
     defineTool(
       "activate_skill",
-      "Activate a skill on a conversation. While active, the skill's SKILL.md is injected into the system prompt on every subsequent turn. Only one skill per conversation can be active at a time — activating a second skill replaces the first. Primary use case is Ollama; Claude and Codex can use it as a programmatic path alongside their native Skill tools.",
+      "Activate a skill on a conversation. While active, the skill's SKILL.md is injected into the system prompt on every subsequent turn. Default mode 'replace' clears any prior active skills and binds just this one. Pass mode='add' to compose multiple skills (gated by runtime — Ollama refuses; Claude/Codex/direct allow up to 3). Pass force=true to skip conflict warnings on add.",
       {
-        conversationId: z
-          .string()
-          .describe("ID of the conversation to bind the skill to."),
-        skillId: z
-          .string()
-          .describe("Opaque skill ID from list_skills (typically the relative path)."),
+        conversationId: z.string().describe("ID of the conversation to bind the skill to."),
+        skillId: z.string().describe("Opaque skill ID from list_skills (typically the relative path)."),
+        mode: z
+          .enum(["replace", "add"])
+          .optional()
+          .default("replace")
+          .describe("'replace' (default) clears prior active skills; 'add' appends — runtime must support composition."),
+        force: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("When mode='add', skip the conflict heuristic check and add anyway."),
       },
       async (args) => {
         try {
@@ -117,18 +145,83 @@ export function skillTools(_ctx: ToolContext) {
           if (!skill) return err(`Skill not found: ${args.skillId}`);
 
           const existing = await db
-            .select({ id: conversations.id })
+            .select({
+              id: conversations.id,
+              activeSkillId: conversations.activeSkillId,
+              activeSkillIds: conversations.activeSkillIds,
+              runtimeId: conversations.runtimeId,
+            })
             .from(conversations)
             .where(eq(conversations.id, args.conversationId))
             .get();
-          if (!existing) {
-            return err(`Conversation not found: ${args.conversationId}`);
+          if (!existing) return err(`Conversation not found: ${args.conversationId}`);
+
+          if (args.mode === "add") {
+            const { getRuntimeFeatures } = await import("@/lib/agents/runtime/catalog");
+            let features;
+            try {
+              features = getRuntimeFeatures(
+                existing.runtimeId as Parameters<typeof getRuntimeFeatures>[0]
+              );
+            } catch {
+              return err(`Unknown runtime '${existing.runtimeId ?? "(none)"}' — cannot determine composition support`);
+            }
+            if (!features.supportsSkillComposition) {
+              return err(`Runtime '${existing.runtimeId}' does not support skill composition — switch to a Claude/Codex/direct runtime to compose skills`);
+            }
+            const currentIds = mergeActiveSkillIds(existing.activeSkillId, existing.activeSkillIds);
+            if (currentIds.includes(args.skillId)) {
+              return ok({
+                conversationId: args.conversationId,
+                activeSkillIds: currentIds,
+                note: "skill already active",
+              });
+            }
+            if (currentIds.length >= features.maxActiveSkills) {
+              return err(`Max active skills (${features.maxActiveSkills}) reached on '${existing.runtimeId}' — deactivate one first`);
+            }
+            if (!args.force && currentIds.length > 0) {
+              const { detectSkillConflicts } = await import("@/lib/chat/skill-conflict");
+              const allConflicts = [];
+              for (const otherId of currentIds) {
+                const other = getSkill(otherId);
+                if (!other) continue;
+                const conflicts = detectSkillConflicts(
+                  { id: skill.id, name: skill.name, content: skill.content },
+                  { id: other.id, name: other.name, content: other.content }
+                );
+                allConflicts.push(...conflicts);
+              }
+              if (allConflicts.length > 0) {
+                return ok({
+                  conversationId: args.conversationId,
+                  requiresConfirmation: true,
+                  conflicts: allConflicts,
+                  hint: "Re-call activate_skill with force=true to add anyway",
+                });
+              }
+            }
+            // Append: store ALL composed IDs in the new column. Keep legacy
+            // activeSkillId as-is so single-skill read paths still work.
+            const newComposed = [...(existing.activeSkillIds ?? []), args.skillId];
+            await db
+              .update(conversations)
+              .set({ activeSkillIds: newComposed, updatedAt: new Date() })
+              .where(eq(conversations.id, args.conversationId));
+            return ok({
+              conversationId: args.conversationId,
+              activatedSkillId: args.skillId,
+              activeSkillIds: mergeActiveSkillIds(existing.activeSkillId, newComposed),
+              skillName: skill.name,
+            });
           }
 
+          // mode === "replace" (legacy / default)
           await db
             .update(conversations)
             .set({
               activeSkillId: args.skillId,
+              activeSkillIds: [],
               updatedAt: new Date(),
             })
             .where(eq(conversations.id, args.conversationId));
@@ -168,7 +261,11 @@ export function skillTools(_ctx: ToolContext) {
 
           await db
             .update(conversations)
-            .set({ activeSkillId: null, updatedAt: new Date() })
+            .set({
+              activeSkillId: null,
+              activeSkillIds: [],
+              updatedAt: new Date(),
+            })
             .where(eq(conversations.id, args.conversationId));
 
           return ok({

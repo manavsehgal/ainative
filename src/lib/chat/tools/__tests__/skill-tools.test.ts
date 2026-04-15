@@ -13,7 +13,12 @@ const { mockState } = vi.hoisted(() => ({
       absPath: string;
       content: string;
     }>,
-    conversations: new Map<string, { id: string; activeSkillId: string | null }>(),
+    conversations: new Map<string, {
+      id: string;
+      activeSkillId: string | null;
+      activeSkillIds: string[];
+      runtimeId: string;
+    }>(),
     lastUpdateId: null as string | null,
     lastUpdateValues: null as Record<string, unknown> | null,
     lastSelectedId: null as string | null,
@@ -64,6 +69,10 @@ vi.mock("@/lib/db", () => {
                       "activeSkillId" in values
                         ? (values.activeSkillId as string | null)
                         : row.activeSkillId,
+                    activeSkillIds:
+                      "activeSkillIds" in values
+                        ? (values.activeSkillIds as string[])
+                        : row.activeSkillIds,
                   });
                 }
               }
@@ -77,7 +86,12 @@ vi.mock("@/lib/db", () => {
 });
 
 vi.mock("@/lib/db/schema", () => ({
-  conversations: { id: "id", activeSkillId: "activeSkillId" },
+  conversations: {
+    id: "id",
+    activeSkillId: "activeSkillId",
+    activeSkillIds: "activeSkillIds",
+    runtimeId: "runtimeId",
+  },
 }));
 
 vi.mock("drizzle-orm", () => ({
@@ -87,6 +101,23 @@ vi.mock("drizzle-orm", () => ({
     mockState.lastSelectedId = id;
     mockState.lastUpdateId = id;
     return {};
+  },
+}));
+
+vi.mock("@/lib/agents/runtime/catalog", () => ({
+  getRuntimeFeatures: (runtimeId: string) => {
+    if (runtimeId === "ollama") {
+      return { supportsSkillComposition: false, maxActiveSkills: 1 };
+    }
+    if (
+      runtimeId === "claude-code" ||
+      runtimeId === "openai-codex-app-server" ||
+      runtimeId === "anthropic-direct" ||
+      runtimeId === "openai-direct"
+    ) {
+      return { supportsSkillComposition: true, maxActiveSkills: 3 };
+    }
+    throw new Error(`Unknown runtime: ${runtimeId}`);
   },
 }));
 
@@ -203,7 +234,7 @@ describe("skill-tools", () => {
           content: "# capture",
         },
       ];
-      mockState.conversations.set("conv-1", { id: "conv-1", activeSkillId: null });
+      mockState.conversations.set("conv-1", { id: "conv-1", activeSkillId: null, activeSkillIds: [], runtimeId: "claude-code" });
 
       const { data, isError } = parse(
         await call("activate_skill", {
@@ -246,7 +277,7 @@ describe("skill-tools", () => {
     });
 
     it("errors on unknown skill id (validates before writing)", async () => {
-      mockState.conversations.set("conv-1", { id: "conv-1", activeSkillId: null });
+      mockState.conversations.set("conv-1", { id: "conv-1", activeSkillId: null, activeSkillIds: [], runtimeId: "claude-code" });
       const { data, isError } = parse(
         await call("activate_skill", {
           conversationId: "conv-1",
@@ -284,6 +315,8 @@ describe("skill-tools", () => {
       mockState.conversations.set("conv-1", {
         id: "conv-1",
         activeSkillId: "first",
+        activeSkillIds: [],
+        runtimeId: "claude-code",
       });
 
       await call("activate_skill", {
@@ -292,6 +325,115 @@ describe("skill-tools", () => {
       });
       expect(mockState.conversations.get("conv-1")?.activeSkillId).toBe("second");
     });
+
+    it("mode:add appends a second skill on a composition-capable runtime", async () => {
+      mockState.skills = [
+        { id: "first-skill", name: "first", tool: "x", scope: "project", preview: "", sizeBytes: 100, absPath: "/a", content: "# first\nUse foo." },
+        { id: "second-skill", name: "second", tool: "x", scope: "project", preview: "", sizeBytes: 100, absPath: "/b", content: "# second\nUse bar." },
+      ];
+      mockState.conversations.set("conv-1", {
+        id: "conv-1",
+        activeSkillId: "first-skill",
+        activeSkillIds: [],
+        runtimeId: "claude-code",
+      });
+      const { data, isError } = parse(
+        await call("activate_skill", {
+          conversationId: "conv-1",
+          skillId: "second-skill",
+          mode: "add",
+          force: true,
+        })
+      );
+      expect(isError).toBe(false);
+      expect(data.activeSkillIds).toEqual(["first-skill", "second-skill"]);
+    });
+
+    it("mode:add fails on Ollama with capability hint", async () => {
+      mockState.skills = [
+        { id: "any", name: "any", tool: "x", scope: "project", preview: "", sizeBytes: 100, absPath: "/a", content: "# any" },
+      ];
+      mockState.conversations.set("conv-1", {
+        id: "conv-1",
+        activeSkillId: null,
+        activeSkillIds: [],
+        runtimeId: "ollama",
+      });
+      const { data, isError } = parse(
+        await call("activate_skill", {
+          conversationId: "conv-1",
+          skillId: "any",
+          mode: "add",
+        })
+      );
+      expect(isError).toBe(true);
+      expect(data.error).toMatch(/composition/i);
+    });
+
+    it("mode:add enforces maxActiveSkills (Claude allows 3)", async () => {
+      mockState.skills = [
+        { id: "a", name: "a", tool: "x", scope: "project", preview: "", sizeBytes: 100, absPath: "/a", content: "" },
+        { id: "b", name: "b", tool: "x", scope: "project", preview: "", sizeBytes: 100, absPath: "/b", content: "" },
+        { id: "c", name: "c", tool: "x", scope: "project", preview: "", sizeBytes: 100, absPath: "/c", content: "" },
+        { id: "d", name: "d", tool: "x", scope: "project", preview: "", sizeBytes: 100, absPath: "/d", content: "" },
+      ];
+      mockState.conversations.set("conv-1", {
+        id: "conv-1",
+        activeSkillId: "a",
+        activeSkillIds: ["b", "c"],
+        runtimeId: "claude-code",
+      });
+      const { data, isError } = parse(
+        await call("activate_skill", {
+          conversationId: "conv-1",
+          skillId: "d",
+          mode: "add",
+          force: true,
+        })
+      );
+      expect(isError).toBe(true);
+      expect(data.error).toMatch(/max active skills/i);
+    });
+
+    it("mode:add returns conflicts without writing when conflicts detected (no force)", async () => {
+      mockState.skills = [
+        { id: "tdd", name: "tdd", tool: "x", scope: "project", preview: "", sizeBytes: 100, absPath: "/a", content: "Always write tests first." },
+        { id: "spike", name: "spike", tool: "x", scope: "project", preview: "", sizeBytes: 100, absPath: "/b", content: "Never write tests during a spike." },
+      ];
+      mockState.conversations.set("conv-1", {
+        id: "conv-1",
+        activeSkillId: "tdd",
+        activeSkillIds: [],
+        runtimeId: "claude-code",
+      });
+      const { data, isError } = parse(
+        await call("activate_skill", {
+          conversationId: "conv-1",
+          skillId: "spike",
+          mode: "add",
+        })
+      );
+      expect(isError).toBe(false);
+      expect(data.requiresConfirmation).toBe(true);
+      expect(Array.isArray(data.conflicts)).toBe(true);
+      // Must NOT have written
+      expect(mockState.conversations.get("conv-1")?.activeSkillIds).toEqual([]);
+    });
+
+    it("default mode:replace clears prior composed skills (back-compat)", async () => {
+      mockState.skills = [
+        { id: "new", name: "new", tool: "x", scope: "project", preview: "", sizeBytes: 100, absPath: "/n", content: "" },
+      ];
+      mockState.conversations.set("conv-1", {
+        id: "conv-1",
+        activeSkillId: "old",
+        activeSkillIds: ["other"],
+        runtimeId: "claude-code",
+      });
+      await call("activate_skill", { conversationId: "conv-1", skillId: "new" });
+      expect(mockState.conversations.get("conv-1")?.activeSkillId).toBe("new");
+      expect(mockState.conversations.get("conv-1")?.activeSkillIds).toEqual([]);
+    });
   });
 
   describe("deactivate_skill", () => {
@@ -299,6 +441,8 @@ describe("skill-tools", () => {
       mockState.conversations.set("conv-1", {
         id: "conv-1",
         activeSkillId: ".claude/skills/capture",
+        activeSkillIds: [],
+        runtimeId: "claude-code",
       });
       const { data, isError } = parse(
         await call("deactivate_skill", { conversationId: "conv-1" })
@@ -310,7 +454,7 @@ describe("skill-tools", () => {
     });
 
     it("is idempotent when no skill was active", async () => {
-      mockState.conversations.set("conv-1", { id: "conv-1", activeSkillId: null });
+      mockState.conversations.set("conv-1", { id: "conv-1", activeSkillId: null, activeSkillIds: [], runtimeId: "claude-code" });
       const { data, isError } = parse(
         await call("deactivate_skill", { conversationId: "conv-1" })
       );
