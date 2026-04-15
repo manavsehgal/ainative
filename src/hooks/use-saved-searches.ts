@@ -34,29 +34,42 @@ interface UseSavedSearchesReturn {
   save: (entry: Omit<SavedSearch, "id" | "createdAt">) => SavedSearch;
   remove: (id: string) => void;
   forSurface: (surface: SavedSearchSurface) => SavedSearch[];
+  /**
+   * Re-fetch from the server. Each `useSavedSearches()` consumer holds
+   * its own state — the chat popover and the ⌘K palette do not share a
+   * cache. Components that need to see edits made elsewhere (e.g. the
+   * palette opening after a save in the popover) call `refetch()` at
+   * the right moment to revalidate.
+   *
+   * See features/saved-search-polish-v1.md for the bug history.
+   */
+  refetch: () => Promise<void>;
 }
 
 export function useSavedSearches(): UseSavedSearchesReturn {
   const [searches, setSearches] = useState<SavedSearch[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/settings/chat/saved-searches")
-      .then((r) => (r.ok ? r.json() : { searches: [] }))
-      .then((data: { searches?: SavedSearch[] }) => {
-        if (!cancelled) setSearches(data.searches ?? []);
-      })
-      .catch(() => {
-        if (!cancelled) setSearches([]);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
+  // Single fetch helper used by both the mount effect and `refetch`.
+  // Returns void so consumers can `await` revalidation if they want
+  // to wait for fresh data before continuing.
+  const fetchSearches = useCallback(async (): Promise<void> => {
+    try {
+      const r = await fetch("/api/settings/chat/saved-searches");
+      const data: { searches?: SavedSearch[] } = r.ok
+        ? await r.json()
+        : { searches: [] };
+      setSearches(data.searches ?? []);
+    } catch {
+      setSearches([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void fetchSearches();
+  }, [fetchSearches]);
 
   const persist = useCallback(async (next: SavedSearch[]) => {
     try {
@@ -108,5 +121,7 @@ export function useSavedSearches(): UseSavedSearchesReturn {
     [searches]
   );
 
-  return { searches, loading, save, remove, forSurface };
+  const refetch = useCallback(() => fetchSearches(), [fetchSearches]);
+
+  return { searches, loading, save, remove, forSurface, refetch };
 }

@@ -88,7 +88,7 @@ export function CommandPalette() {
   const fileDebounceRef = useRef<number | null>(null);
   const router = useRouter();
   const { skills } = useProjectSkills(null);
-  const { searches: savedSearches } = useSavedSearches();
+  const { searches: savedSearches, refetch: refetchSavedSearches } = useSavedSearches();
 
   // Defer render until after hydration to avoid Radix ID mismatch
   useEffect(() => setMounted(true), []);
@@ -204,7 +204,17 @@ export function CommandPalette() {
   if (!mounted) return null;
 
   return (
-    <CommandDialog open={open} onOpenChange={setOpen}>
+    <CommandDialog
+      open={open}
+      onOpenChange={(next) => {
+        // Revalidate saved searches on every open. Each useSavedSearches
+        // consumer holds its own state, so a save in the chat popover
+        // wouldn't otherwise appear here until page reload.
+        // See features/saved-search-polish-v1.md.
+        if (next && !open) void refetchSavedSearches();
+        setOpen(next);
+      }}
+    >
       <CommandInput
         placeholder="Type a command or search..."
         value={fileQuery}

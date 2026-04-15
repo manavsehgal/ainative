@@ -41,6 +41,7 @@ import { useChatSession } from "@/components/chat/chat-session-provider";
 import type { EnrichedSkill } from "@/lib/environment/skill-enrichment";
 import { parseFilterInput, matchesClauses } from "@/lib/filters/parse";
 import type { FilterClause } from "@/lib/filters/parse";
+import { cleanFilterInput } from "@/lib/chat/clean-filter-input";
 import { usePinnedEntries, type PinnedEntry } from "@/hooks/use-pinned-entries";
 import { useSavedSearches, type SavedSearch, type SavedSearchSurface } from "@/hooks/use-saved-searches";
 
@@ -289,20 +290,33 @@ export function ChatCommandPopover({
               savedSearches={savedForSurface}
               onApplySavedSearch={(filterInput) => onApplySavedSearch?.(filterInput)}
             />
-            {parsed.clauses.length > 0 && (
-              <SaveViewFooter
-                surface={currentSurface}
-                clauses={parsed.clauses}
-                filterInput={query}
-                onSave={(label) =>
-                  save({
-                    surface: currentSurface,
-                    label: label || parsed.clauses.map((c) => `#${c.key}:${c.value}`).join(" "),
-                    filterInput: query,
-                  })
-                }
-              />
-            )}
+            {parsed.clauses.length > 0 && (() => {
+              // Persist the cleaned filterInput so saved searches don't
+              // carry the mention-trigger residue (e.g. `task: `) into
+              // their stored value. See features/saved-search-polish-v1.md.
+              const persistedFilterInput = cleanFilterInput(
+                parsed.clauses,
+                parsed.rawQuery
+              );
+              return (
+                <SaveViewFooter
+                  surface={currentSurface}
+                  clauses={parsed.clauses}
+                  filterInput={persistedFilterInput}
+                  onSave={(label) =>
+                    save({
+                      surface: currentSurface,
+                      label:
+                        label ||
+                        parsed.clauses
+                          .map((c) => `#${c.key}:${c.value}`)
+                          .join(" "),
+                      filterInput: persistedFilterInput,
+                    })
+                  }
+                />
+              );
+            })()}
           </CommandList>
         )}
       </Command>
