@@ -2,6 +2,21 @@
 
 ## 2026-04-14
 
+### Dogfood session → 2 new feature specs + `stagent-app` skill
+
+**Dogfood findings** (full log at `output/screengrabs/dogfood-log-2026-04-14.md`, gitignored per convention):
+
+Real-browser use of Phase 1 + Phase 2 features surfaced 9 observations. Two became new feature specs for immediate planning:
+
+- **New spec:** `chat-composition-ui-v1` (P1) — Skills-tab `+ Add` action + inline conflict dialog. Top-ranked blocker for adoption of the shipped `chat-skill-composition` runtime, which has zero UI surface today. Scoped to lift the v2-deferred UX from the parent spec into a discrete v1.
+- **New spec:** `saved-search-polish-v1` (P2) — fixes two Phase 1 bugs found in dogfood: (1) `SaveViewFooter` captures mention-trigger cruft in `filterInput`; (2) `useSavedSearches` hook instances don't revalidate across components (popover save doesn't appear in `⌘K` palette until page reload).
+
+Other observations captured in the log but not promoted to specs: skill-composition needs no DB fix (Phase 2 correctness holds), `@` popover triggering is fragile under programmatic automation (affects future e2e harness design), discoverability of `#key:value` syntax is low (candidate for a later `chat-filter-hint` spec).
+
+**New skill:** `.claude/skills/stagent-app/SKILL.md` — scaffolds Stagent-native apps by composing shipped primitives (profiles, blueprints, tables, schedules) via YAML manifest. Zero TypeScript required. Emits per-primitive artifacts into the registries that already load them (`.claude/skills/<app>--<profile>/`, `~/.stagent/blueprints/<app>--<blueprint>.yaml`) plus a forward-compatible app manifest at `.claude/apps/<app>/manifest.yaml` for when the deferred `.sap` format lands. Skill is discoverable via the Skill tool registry.
+
+**Recommended Phase 3:** bundle `chat-composition-ui-v1` + `saved-search-polish-v1` for a ~1-session tight-scope PR. `chat-conversation-branches` (largest remaining `chat-advanced-ux` sub-spec) stays deferred; current evidence points to polishing the shipped features before building the largest unshipped one.
+
 ### Shipped v1 — chat-skill-composition (Phase 2 of retired chat-advanced-ux umbrella)
 
 Composition v1 lands the chat-tool API + capability gates + conflict heuristic + context-builder iteration. Spec status `in-progress` — UI modal + token-budget trim deferred to v2.

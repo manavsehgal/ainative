@@ -209,6 +209,8 @@ Runtime-native skills, filesystem context, file mentions, and a command-namespac
 | [chat-filter-namespace](chat-filter-namespace.md) | P2 | completed | chat-command-namespace-refactor, chat-environment-integration |
 | [chat-pinned-saved-searches](chat-pinned-saved-searches.md) | P3 | completed | chat-filter-namespace, chat-command-namespace-refactor |
 | [chat-skill-composition](chat-skill-composition.md) | P3 | in-progress | chat-claude-sdk-skills, chat-codex-app-server-skills, chat-ollama-native-skills, chat-environment-integration |
+| [chat-composition-ui-v1](chat-composition-ui-v1.md) | P1 | planned | chat-skill-composition, chat-command-namespace-refactor |
+| [saved-search-polish-v1](saved-search-polish-v1.md) | P2 | planned | chat-pinned-saved-searches |
 | [chat-conversation-branches](chat-conversation-branches.md) | P3 | planned | chat-conversation-persistence, chat-data-layer |
 | [onboarding-runtime-provider-choice](onboarding-runtime-provider-choice.md) | P2 | planned | app-shell, provider-runtime-abstraction, runtime-capability-matrix |
 
