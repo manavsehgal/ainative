@@ -43,6 +43,7 @@ import { useChatSession } from "@/components/chat/chat-session-provider";
 import type { EnrichedSkill } from "@/lib/environment/skill-enrichment";
 import { parseFilterInput, matchesClauses } from "@/lib/filters/parse";
 import type { FilterClause } from "@/lib/filters/parse";
+import { FilterHint } from "@/components/shared/filter-hint";
 import { cleanFilterInput } from "@/lib/chat/clean-filter-input";
 import { usePinnedEntries, type PinnedEntry } from "@/hooks/use-pinned-entries";
 import { useSavedSearches, type SavedSearch, type SavedSearchSurface } from "@/hooks/use-saved-searches";
@@ -318,6 +319,7 @@ export function ChatCommandPopover({
               </div>
             )}
             <CommandList className="max-h-[320px]">
+              <FilterHint inputValue={query} storageKey="stagent.filter-hint.dismissed" />
               {activeTab !== "entities" && (
                 <CommandEmpty>No matching tools</CommandEmpty>
               )}

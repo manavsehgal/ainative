@@ -5,6 +5,7 @@ import { Hash } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { parseFilterInput, type FilterClause } from "@/lib/filters/parse";
+import { FilterHint } from "./filter-hint";
 
 interface FilterInputProps {
   value: string;
@@ -30,26 +31,29 @@ export function FilterInput({ value, onChange, placeholder }: FilterInputProps) 
   const parsed = parseFilterInput(local);
 
   return (
-    <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
-      <div className="relative flex-1 min-w-[16rem]">
-        <Hash className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-        <Input
-          value={local}
-          onChange={(e) => {
-            const next = e.target.value;
-            setLocal(next);
-            const p = parseFilterInput(next);
-            onChange({ raw: next, clauses: p.clauses, rawQuery: p.rawQuery });
-          }}
-          placeholder={placeholder ?? "#status:blocked or search…"}
-          className="pl-7 h-8"
-        />
+    <div className="flex flex-col gap-1 flex-1 min-w-0">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-[16rem]">
+          <Hash className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+          <Input
+            value={local}
+            onChange={(e) => {
+              const next = e.target.value;
+              setLocal(next);
+              const p = parseFilterInput(next);
+              onChange({ raw: next, clauses: p.clauses, rawQuery: p.rawQuery });
+            }}
+            placeholder={placeholder ?? "#status:blocked or search…"}
+            className="pl-7 h-8"
+          />
+        </div>
+        {parsed.clauses.map((c, i) => (
+          <Badge key={`${c.key}-${i}`} variant="outline" className="text-xs font-mono">
+            #{c.key}:{c.value}
+          </Badge>
+        ))}
       </div>
-      {parsed.clauses.map((c, i) => (
-        <Badge key={`${c.key}-${i}`} variant="outline" className="text-xs font-mono">
-          #{c.key}:{c.value}
-        </Badge>
-      ))}
+      <FilterHint inputValue={local} storageKey="stagent.filter-hint.dismissed" />
     </div>
   );
 }
