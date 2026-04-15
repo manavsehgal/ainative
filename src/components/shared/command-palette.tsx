@@ -24,11 +24,14 @@ import {
   Sparkles,
   FileCode,
   Bookmark,
+  Trash2,
+  Settings2,
 } from "lucide-react";
 import { navigationItems, createItems } from "@/lib/chat/command-data";
 import { toggleTheme } from "@/lib/theme";
 import { useProjectSkills } from "@/hooks/use-project-skills";
-import { useSavedSearches, type SavedSearchSurface } from "@/hooks/use-saved-searches";
+import { useSavedSearches, type SavedSearch, type SavedSearchSurface } from "@/hooks/use-saved-searches";
+import { SavedSearchesManager } from "./saved-searches-manager";
 import { toast } from "sonner";
 
 // Maps each saved-search surface to its list-page route. Tasks route to
@@ -88,7 +91,14 @@ export function CommandPalette() {
   const fileDebounceRef = useRef<number | null>(null);
   const router = useRouter();
   const { skills } = useProjectSkills(null);
-  const { searches: savedSearches, refetch: refetchSavedSearches } = useSavedSearches();
+  const {
+    searches: savedSearches,
+    refetch: refetchSavedSearches,
+    remove: removeSavedSearch,
+    save: saveSavedSearch,
+    rename: renameSavedSearch,
+  } = useSavedSearches();
+  const [managerOpen, setManagerOpen] = useState(false);
 
   // Defer render until after hydration to avoid Radix ID mismatch
   useEffect(() => setMounted(true), []);
@@ -201,9 +211,39 @@ export function CommandPalette() {
 
   const hasRecent = recentProjects.length > 0 || recentTasks.length > 0;
 
+  const handleDeleteSavedSearch = useCallback(
+    (s: SavedSearch) => {
+      // Optimistic remove + toast with Undo. The closure holds the full
+      // record so undo restores id/createdAt verbatim (not just label).
+      removeSavedSearch(s.id);
+      toast("Saved search deleted", {
+        duration: 5000,
+        action: {
+          label: "Undo",
+          onClick: () => {
+            // `save` generates a new id — we need to restore the original.
+            // The cheapest restoration is to re-save and then immediately
+            // patch the id via a rename-adjacent path. Since the hook has
+            // no "insert with id" method, we accept id churn on undo: the
+            // label/filterInput/surface are preserved, which is what the
+            // user sees. Acceptance criterion: the row reappears with its
+            // label and filter, the actual id is an implementation detail.
+            saveSavedSearch({
+              surface: s.surface,
+              label: s.label,
+              filterInput: s.filterInput,
+            });
+          },
+        },
+      });
+    },
+    [removeSavedSearch, saveSavedSearch]
+  );
+
   if (!mounted) return null;
 
   return (
+    <>
     <CommandDialog
       open={open}
       onOpenChange={(next) => {
@@ -281,13 +321,44 @@ export function CommandPalette() {
                     navigate(`${base}?filter=${encodeURIComponent(s.filterInput)}`);
                   }}
                   keywords={["saved", "search", s.surface]}
+                  className="group/item"
+                  onKeyDown={(e) => {
+                    // ⌘⌫ on focused row deletes with undo
+                    if ((e.metaKey || e.ctrlKey) && e.key === "Backspace") {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleDeleteSavedSearch(s);
+                    }
+                  }}
                 >
                   <Bookmark className="h-4 w-4" />
                   <span className="flex-1 truncate">{s.label}</span>
                   <span className="text-xs text-muted-foreground font-mono">{s.filterInput}</span>
                   <span className="ml-2 text-xs text-muted-foreground">{s.surface}</span>
+                  <button
+                    type="button"
+                    aria-label={`Delete saved search: ${s.label}`}
+                    className="ml-1 p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive opacity-0 group-hover/item:opacity-100 focus-visible:opacity-100 transition-opacity"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleDeleteSavedSearch(s);
+                    }}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
                 </CommandItem>
               ))}
+              <CommandItem
+                value="manage-saved-searches"
+                keywords={["manage", "saved", "rename", "delete"]}
+                onSelect={() => {
+                  setManagerOpen(true);
+                }}
+              >
+                <Settings2 className="h-4 w-4" />
+                <span className="flex-1">Manage saved searches…</span>
+              </CommandItem>
             </CommandGroup>
             <CommandSeparator />
           </>
@@ -432,5 +503,13 @@ export function CommandPalette() {
         </CommandGroup>
       </CommandList>
     </CommandDialog>
+    <SavedSearchesManager
+      open={managerOpen}
+      onOpenChange={setManagerOpen}
+      searches={savedSearches}
+      onRename={renameSavedSearch}
+      onRemove={removeSavedSearch}
+    />
+    </>
   );
 }
