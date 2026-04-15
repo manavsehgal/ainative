@@ -41,7 +41,7 @@ describe("useSavedSearches — rename", () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.searches[0].label).toBe("Old label");
 
-    act(() => {
+    await act(async () => {
       result.current.rename("s1", "New label");
     });
 
@@ -61,7 +61,7 @@ describe("useSavedSearches — rename", () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
     const before = result.current.searches;
 
-    act(() => {
+    await act(async () => {
       result.current.rename("does-not-exist", "Whatever");
     });
 
