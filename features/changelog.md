@@ -1,5 +1,15 @@
 # Feature Changelog
 
+## 2026-04-15
+
+### Completed — chat-skill-composition closeout
+
+Closed out the last real gap in `chat-skill-composition`: prompt-budget handling for composed skills. The feature had already shipped its runtime gates, additive schema, conflict heuristic, HTTP/MCP activation flow, and Skills-tab UI, but `buildActiveSkill()` still hard-truncated the combined SKILL.md payload. It now drops older composed skills first when the merged prompt would exceed `ACTIVE_SKILL_BUDGET`, prepends an explicit omission note naming the evicted skills, and only truncates when the newest remaining single skill is still too large.
+
+This is intentionally a closeout pass, not a new feature wave. The parent spec is now `completed`, and the roadmap statuses were reconciled with already-shipped chat-runtime work (`chat-codex-app-server-skills`, `chat-ollama-native-skills`, `chat-file-mentions`, `chat-skill-composition`) so the next session starts from repo truth instead of stale planning state.
+
+**Verification:** `active-skill-injection.test.ts` expanded from 8 → 12 cases, covering composed-skill injection on Claude, oldest-first eviction, and single-section truncation after eviction. Targeted validation green: 32/32 tests across active-skill injection + skill tools + conflict heuristic, plus `npx tsc --noEmit`.
+
 ## 2026-04-14
 
 ### Shipped — Phase 3: chat-composition-ui-v1 + saved-search-polish-v1

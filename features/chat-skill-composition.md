@@ -1,6 +1,6 @@
 ---
 title: Chat — Skill Composition with Conflict Warning
-status: in-progress  # composition v1 (tool API + capability gates + conflict heuristic) shipped 2026-04-14; UI modal + token-budget trim deferred to v2
+status: completed  # closed out 2026-04-15 after oldest-first prompt-budget eviction shipped
 priority: P3
 milestone: post-mvp
 source: chat-advanced-ux.md §4 (split during grooming, 2026-04-14)
@@ -98,41 +98,38 @@ Runtime-unsupported: `+ Add` is replaced by a disabled pill "Single skill only o
 
 ### Context injection
 
-`context-builder.ts` already injects the active skill's SKILL.md. Change to iterate over `activeSkills[]`, injecting each SKILL.md separated by `---`. Total injection capped at N tokens (runtime-dependent); oldest-activated skill trimmed first if exceeded.
+`context-builder.ts` injects the merged `activeSkills[]` SKILL.md payload under `## Active Skill:` sections separated by `---`. Total injection is capped at `ACTIVE_SKILL_BUDGET`; when the combined payload exceeds budget, older composed skills are omitted first and the system prompt includes an explicit omission note. If even the newest remaining skill is too large, that final section is truncated with the existing marker.
 
 ## Acceptance Criteria
 
 - [x] Runtime capability matrix gains `supportsSkillComposition` and `maxActiveSkills` (Claude/Codex/direct = true/3, Ollama = false/1)
 - [x] `activate_skill` with `mode: "add"` appends a skill when runtime supports and no conflicts (force=true skips conflict check)
-- [x] Conflict check returns structured conflicts in tool response; UI modal with "Add anyway" / "Cancel" deferred to v2 (chat surface displays the structured response)
+- [x] Conflict check returns structured conflicts in tool response; Skills-tab UI surfaces a modal with "Add anyway" / "Cancel"
 - [x] Composition blocked on Ollama with clear hint to switch runtime
 - [x] `maxActiveSkills` enforced — attempt to add a 4th on Claude returns "Max active skills (3) reached"
 - [x] `activeSkillIds` persists across turns; all SKILL.md bodies injected into system prompt via `buildActiveSkill` iteration
 - [x] Back-compat: existing `activate_skill` calls (no mode param) continue to work as replace; deactivate_skill clears both columns
-- [ ] Token-budget trim removes oldest skill when over budget (deferred — v2; combined budget cap applies but oldest-first eviction not yet implemented)
+- [x] Token-budget trim removes oldest skill when over budget; if one remaining skill still exceeds budget it is truncated in place with an omission note for evicted skills
 - [x] `detectSkillConflicts` unit tests cover: no-conflict pair, clear-conflict pair, agreeing pair, non-directive lines (4 tests)
 - [x] Smoke test verifies dev-server boots clean post-migration (runtime-catalog risk per MEMORY.md mitigated); functional 2-skill compose + Ollama refusal exercised via skill-tools.test.ts mocked production path
 
-## v1 Shipped Scope (2026-04-14)
+## Shipped Scope
 
 - `RuntimeFeatures` extended with `supportsSkillComposition` + `maxActiveSkills` (Claude/Codex/direct = true/3, Ollama = false/1)
 - Additive `conversations.active_skill_ids` JSON column (default `[]`); legacy `active_skill_id` preserved for back-compat
 - `mergeActiveSkillIds()` helper unifies legacy + composed IDs
-- `activate_skill` accepts `mode: "replace" | "add"` and `force: boolean` params
-- Capability gate refuses composition on Ollama with hint to switch runtime
-- `detectSkillConflicts` keyword heuristic in `src/lib/chat/skill-conflict.ts` (4 tests)
-- Conflict warnings surface as structured tool response (no UI modal yet — chat displays the response)
-- `context-builder.ts` iterates merged active skills, joins SKILL.md bodies with `---`, applies existing `ACTIVE_SKILL_BUDGET` to the combined string
-- Composition (any entry in `activeSkillIds`) is treated as user opt-in: overrides `stagentInjectsSkills=false` so composed skills surface even on Claude/Codex (where the SDK's auto-discovery would otherwise be silent on this path)
-- 16 skill-tools tests pass + 4 conflict tests + 195 broader chat tests pass
+- `activate_skill` accepts `mode: "replace" | "add"` and `force: boolean`; `skill-composition.ts` is the shared service for MCP + HTTP callers
+- Capability gate refuses composition on Ollama with a clear hint; `maxActiveSkills` is enforced on composition-capable runtimes
+- `detectSkillConflicts` keyword heuristic in `src/lib/chat/skill-conflict.ts` returns structured excerpts for the UI and tool surface
+- Skills-tab UI ships `+ Add`, active badges, deactivate action, active-count indicator, and `SkillCompositionConflictDialog`
+- `context-builder.ts` iterates merged active skills, joins SKILL.md bodies with `---`, omits oldest composed skills first when over budget, and truncates the newest remaining section only if still oversized
+- Composition (any entry in `activeSkillIds`) is treated as explicit user opt-in: it overrides `stagentInjectsSkills=false` so composed skills still surface on Claude/Codex
 
-## v2 Deferred Scope
+## Follow-Up Ideas
 
-- UI modal in Skills tab: `+ Add` button on inactive skills + "Add anyway / Cancel" dialog showing conflict excerpts
-- Token-budget oldest-first trim with logging when combined SKILL.md exceeds budget
-- Slash-mode (skills tab) surface inference for the `+ Add` action
-- Live activation count badge ("2 of 3 skills active")
 - Composition presets (saved combinations of skills)
+- Reordering composed skills inside a conversation
+- Composition analytics or usage insights
 
 ## Scope Boundaries
 
@@ -152,5 +149,5 @@ Runtime-unsupported: `+ Add` is replaced by a disabled pill "Single skill only o
 - Split from: [chat-advanced-ux](chat-advanced-ux.md) §4
 - Depends on: all 3 runtime-skills features (foundational single-skill contract)
 - Depends on: [chat-environment-integration](chat-environment-integration.md) (Skills tab UI)
-- Existing code: `src/lib/agents/runtime/catalog.ts`, `src/lib/chat/tools/skills.ts`, `src/lib/chat/context-builder.ts`
+- Existing code: `src/lib/agents/runtime/catalog.ts`, `src/lib/chat/skill-composition.ts`, `src/lib/chat/tools/skill-tools.ts`, `src/lib/chat/context-builder.ts`
 - MEMORY.md cross-references: `addColumnIfMissing` + CREATE TABLE ordering gotcha; cross-runtime system-prompt impact; SheetContent padding rule if the conflict modal uses a sheet

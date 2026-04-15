@@ -199,16 +199,16 @@ Runtime-native skills, filesystem context, file mentions, and a command-namespac
 | [runtime-capability-matrix](runtime-capability-matrix.md) | P1 | completed | provider-runtime-abstraction |
 | [chat-claude-sdk-skills](chat-claude-sdk-skills.md) | P0 | completed | chat-engine, runtime-capability-matrix, skill-portfolio, environment-scanner |
 | [task-runtime-skill-parity](task-runtime-skill-parity.md) | P1 | completed | chat-claude-sdk-skills, agent-integration, task-runtime-stagent-mcp-injection |
-| [chat-codex-app-server-skills](chat-codex-app-server-skills.md) | P1 | planned | chat-claude-sdk-skills, codex-chat-engine, openai-codex-app-server, environment-scanner, runtime-capability-matrix |
-| [chat-ollama-native-skills](chat-ollama-native-skills.md) | P2 | planned | chat-claude-sdk-skills, ollama-runtime-provider, environment-scanner, runtime-capability-matrix, chat-data-layer |
-| [chat-file-mentions](chat-file-mentions.md) | P1 | planned | chat-command-mentions, chat-claude-sdk-skills, workspace-context-awareness |
+| [chat-codex-app-server-skills](chat-codex-app-server-skills.md) | P1 | completed | chat-claude-sdk-skills, codex-chat-engine, openai-codex-app-server, environment-scanner, runtime-capability-matrix |
+| [chat-ollama-native-skills](chat-ollama-native-skills.md) | P2 | completed | chat-claude-sdk-skills, ollama-runtime-provider, environment-scanner, runtime-capability-matrix, chat-data-layer |
+| [chat-file-mentions](chat-file-mentions.md) | P1 | completed | chat-command-mentions, chat-claude-sdk-skills, workspace-context-awareness |
 | [chat-command-namespace-refactor](chat-command-namespace-refactor.md) | P1 | completed | chat-claude-sdk-skills, chat-file-mentions, runtime-capability-matrix, command-palette-enhancement |
 | [chat-environment-integration](chat-environment-integration.md) | P2 | completed | chat-command-namespace-refactor, environment-dashboard, environment-cache, profile-environment-sync, environment-health-scoring |
 | [chat-advanced-ux](chat-advanced-ux.md) | P3 | deferred | ← retired umbrella, split 2026-04-14 into 5 sub-specs ↓ |
 | [chat-conversation-templates](chat-conversation-templates.md) | P2 | completed | workflow-blueprints, chat-conversation-persistence, chat-command-namespace-refactor |
 | [chat-filter-namespace](chat-filter-namespace.md) | P2 | completed | chat-command-namespace-refactor, chat-environment-integration |
 | [chat-pinned-saved-searches](chat-pinned-saved-searches.md) | P3 | completed | chat-filter-namespace, chat-command-namespace-refactor |
-| [chat-skill-composition](chat-skill-composition.md) | P3 | in-progress | chat-claude-sdk-skills, chat-codex-app-server-skills, chat-ollama-native-skills, chat-environment-integration |
+| [chat-skill-composition](chat-skill-composition.md) | P3 | completed | chat-claude-sdk-skills, chat-codex-app-server-skills, chat-ollama-native-skills, chat-environment-integration |
 | [chat-composition-ui-v1](chat-composition-ui-v1.md) | P1 | completed | chat-skill-composition, chat-command-namespace-refactor |
 | [saved-search-polish-v1](saved-search-polish-v1.md) | P2 | completed | chat-pinned-saved-searches |
 | [chat-conversation-branches](chat-conversation-branches.md) | P3 | planned | chat-conversation-persistence, chat-data-layer |

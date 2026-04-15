@@ -64,6 +64,30 @@ function buildTier0(
  */
 const ACTIVE_SKILL_BUDGET = 4_000;
 
+interface ActiveSkillSection {
+  name: string;
+  text: string;
+}
+
+function renderActiveSkillSections(
+  kept: ActiveSkillSection[],
+  omitted: ActiveSkillSection[]
+): string {
+  if (kept.length === 0) return "";
+
+  const parts: string[] = [];
+  if (omitted.length > 0) {
+    const label = omitted.length === 1 ? "skill" : "skills";
+    parts.push(
+      `## Active Skill Note\nOmitted ${omitted.length} older active ${label} to fit the prompt budget: ${omitted
+        .map((section) => section.name)
+        .join(", ")}.`
+    );
+  }
+  parts.push(...kept.map((section) => section.text));
+  return parts.join("\n\n---\n\n");
+}
+
 /**
  * Build the "Active Skill" section of the system prompt, if one is bound
  * to the conversation via `conversations.active_skill_id`. Returns "" for
@@ -117,14 +141,29 @@ async function buildActiveSkill(conversationId: string): Promise<string> {
   // Dynamic import keeps the scanner + fs dependency off the hot path for
   // conversations that don't have an active skill (the common case).
   const { getSkill } = await import("@/lib/environment/list-skills");
-  const sections: string[] = [];
+  const sections: ActiveSkillSection[] = [];
   for (const id of merged) {
     const skill = getSkill(id);
     if (!skill) continue;
-    sections.push(`## Active Skill: ${skill.name}\n\n${skill.content}`);
+    sections.push({
+      name: skill.name,
+      text: `## Active Skill: ${skill.name}\n\n${skill.content}`,
+    });
   }
   if (sections.length === 0) return "";
-  const combined = sections.join("\n\n---\n\n");
+
+  const kept = [...sections];
+  const omitted: ActiveSkillSection[] = [];
+  while (
+    kept.length > 1 &&
+    estimateTokens(renderActiveSkillSections(kept, omitted)) > ACTIVE_SKILL_BUDGET
+  ) {
+    const oldest = kept.shift();
+    if (oldest) omitted.push(oldest);
+  }
+
+  const combined = renderActiveSkillSections(kept, omitted);
+  if (estimateTokens(combined) <= ACTIVE_SKILL_BUDGET) return combined;
   return truncateToTokenBudget(combined, ACTIVE_SKILL_BUDGET);
 }
 
