@@ -4,7 +4,7 @@ subtitle: "Workflow Orchestration"
 chapter: 5
 part: 2
 readingTime: 14
-lastGeneratedBy: "2026-04-05T00:00:00.000Z"
+lastGeneratedBy: "2026-04-16T00:00:00.000Z"
 relatedDocs: ["workflows", "agent-intelligence"]
 relatedJourney: "power-user"
 ---
@@ -119,6 +119,8 @@ The workflow engine is live and handling real workloads. Here is the current sta
 **Workflow UI**: The `/workflows` route provides a management interface for creating, viewing, and monitoring workflows. The workflow detail view shows step status with dependency visualization. Three dedicated components in `src/components/workflows/` handle the list, detail, and creation experiences.
 
 **Profile Integration**: Each workflow step specifies an `agentProfile` that governs the agent's behavior during that step. Different steps in the same workflow can use different profiles — a `general` profile for planning, a `code-reviewer` for implementation, a `document-writer` for documentation.
+
+**Conversation Templates from Blueprints**: Blueprints now serve as conversation starters, not just workflow definitions. An optional `chatPrompt` field on any blueprint provides a template that initializes a new conversation with pre-filled context and instructions. Three entry points surface this capability: an empty-state button when no conversation is active, a `/new-from-template` slash command, and the `⌘K` command palette. The `renderBlueprintPrompt()` function resolves template variables — project name, date, profile — before injecting the prompt. This extends the blueprint concept from "how work is orchestrated" to "how work begins," making it easier for users to start complex workflows from a single conversational entry point.
 
 ## Roadmap Vision
 

@@ -6,7 +6,7 @@ route: "/settings"
 tags: ["settings", "configuration", "auth", "runtime", "browser-tools", "permissions", "budget", "ollama", "channels", "instance", "upgrade"]
 features: ["session-management", "tool-permission-persistence", "tool-permission-presets", "browser-use", "spend-budget-guardrails", "settings-interactive-controls", "ollama-runtime-provider", "multi-channel-delivery", "bidirectional-channel-chat", "database-snapshot-backup", "instance-bootstrap", "upgrade-detection", "upgrade-session", "instance-license-metering"]
 screengrabCount: 11
-lastUpdated: "2026-04-08"
+lastUpdated: "2026-04-15"
 ---
 
 # Settings
@@ -187,7 +187,7 @@ When `STAGENT_DEV_MODE=true` is set in `.env.local` or the `.git/stagent-dev-mod
 An hourly scheduled poll runs `git fetch` against the upstream remote and compares `HEAD` to `origin/main`. When upstream is ahead, the sidebar shows a small **Upgrade available** badge next to Settings and the Instance card surfaces a "New version available" card with the number of commits behind. Detection is `git`-based rather than GitHub REST to avoid rate limits. Three consecutive poll failures escalate to a persistent notification.
 
 ### Upgrade Session
-Clicking **Start upgrade** opens the upgrade session as a right-side sheet — not a full-page navigation, so you can glance back at your workspace while the upgrade runs. The session is backed by a task row with the `upgrade-assistant` profile, so it reuses all the existing execution infrastructure: fire-and-forget launch, canUseTool approval caching, SSE log streaming, and conflict resolution via the pending-approval host. If merge conflicts occur, a 3-card cluster (Keep mine / Take theirs / Show diff) appears inline and you resolve them without leaving the sheet.
+Clicking **Start upgrade** opens the upgrade session as a right-side sheet — not a full-page navigation, so you can glance back at your workspace while the upgrade runs. The session is backed by a task row with the `upgrade-assistant` profile, so it reuses all the existing execution infrastructure: fire-and-forget launch, canUseTool approval caching, SSE log streaming, and conflict resolution via the pending-approval host. If merge conflicts occur, a 3-card cluster (Keep mine / Take theirs / Show diff) appears inline and you resolve them without leaving the sheet. When the assistant needs a direct answer (e.g., to disambiguate a conflict), it now calls **AskUserQuestion**, which renders a typed reply field via the inbox's `QuestionReplyActions` branch — you answer in-place and the assistant resumes. The `upgrade-assistant` profile explicitly allowlists AskUserQuestion so it is not gated behind a generic permission prompt.
 
 ### Footer Upgrade Button
 A subtle **Upgrade** button appears in the sidebar footer once an upgrade is available — the same surface that shows trust tier and the command palette shortcut. Clicking it opens the same upgrade session sheet from any page without navigating to Settings first.

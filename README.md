@@ -73,6 +73,9 @@ Run the same business process on different AI providers without changing a line 
 | 📦 | **[Workflow Context Batching](#workflow-context-batching)** | Workflow-scoped proposal buffering with batch approve/reject for learned context |
 | 🧪 | **[E2E Test Automation](#e2e-test-automation)** | API-level end-to-end test suite covering both runtimes, 4 profiles, and 4 workflow patterns |
 | ⌨️ | **[Command Palette](#command-palette)** | Global `⌘K` search for fast navigation across tasks, projects, workflows, and settings |
+| 🧱 | **[Skill Composition](#skill-composition)** | Activate up to 3 skills at once with conflict detection and runtime-aware capability gates |
+| 🔎 | **[Filters & Saved Searches](#filters--saved-searches)** | `#key:value` filter grammar, pinned and saved searches surfaced in `⌘K` palette |
+| 🛡️ | **[Upgrade Detection](#upgrade-detection)** | Hourly upstream check with in-app notifications and guided merge sessions |
 | 📖 | **[Playbook](#playbook)** | Built-in documentation with usage-stage awareness, adoption heatmap, and guided learning journeys |
 | 📚 | **[Living Book](#living-book)** | AI-native book reader with 9 chapters, agent-powered regeneration, staleness detection, and reading paths |
 | 🌐 | **[Environment](#environment)** | Control plane for Claude Code and Codex CLI environments with scanning, caching, sync, and templates |
@@ -276,6 +279,9 @@ Pending permission requests now surface through a shell-level approval presenter
 #### Tool Permission Presets
 Pre-configured permission bundles that reduce friction for common tool approval patterns. Three layered presets — read-only (file reads, glob, grep), git-safe (adds git operations), and full-auto (adds write, edit, bash) — compose with existing "Always Allow" patterns. Presets are layered: enabling git-safe automatically includes read-only patterns; removing git-safe only strips its unique additions. Risk badges indicate the trust level of each preset. Manage presets from the Settings page alongside individual tool permissions.
 
+#### Upgrade Detection
+Hourly poller checks the upstream `origin/main` for new commits and surfaces them via an in-app `UpgradeBadge` + notification queue. If three consecutive checks fail, a single deduplicated "Upgrade check failing" notification is inserted (and cleared on the next successful tick). The `upgrade-assistant` profile drives guided merge sessions end-to-end — including free-form questions and 3-choice option cards when a merge conflict or drifted `main` requires operator input. Dev repos are fully gated via `STAGENT_DEV_MODE` and a `.git/stagent-dev-mode` sentinel so contributor pushes are never blocked.
+
 #### Schedules
 Time-based scheduling for agent tasks with human-friendly intervals (`5m`, `2h`, `1d`) and raw 5-field cron expressions. One-shot and recurring modes with pause/resume lifecycle, expiry limits, and max firings. Each firing creates a child task through the shared execution pipeline, and schedules can now target a runtime explicitly. Scheduler runs as a poll-based engine started via Next.js instrumentation hook.
 
@@ -308,6 +314,12 @@ Conversational control plane for all workspace primitives — projects, tasks, w
 | Tool Catalog | Model Selector | Create Tab |
 |:-:|:-:|:-:|
 | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/chat-list.png" alt="Chat tool catalog with category tabs" width="380" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/chat-model-selector.png" alt="Chat model selector with cost tiers" width="380" /> | <img src="https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/chat-create-tab.png" alt="Chat Create category prompts" width="380" /> |
+
+#### Skill Composition
+Activate up to three skills in a single conversation with conflict detection and runtime-aware capability gates. The Skills tab in the chat popover surfaces `+ Add` buttons on inactive skills, active badges with deactivate actions, and an "N of M active" indicator. When two skills issue polarity-divergent directives on shared keywords, a conflict dialog previews the excerpts and lets you confirm with `force:true` or back out. Composition honors the runtime capability matrix — Claude Code and Codex App Server support up to 3 active skills, while Ollama stays at 1. Conversations persist active skills through an additive `active_skill_ids` column that preserves legacy single-skill reads.
+
+#### Filters & Saved Searches
+Structured `#key:value` filter grammar across chat, documents, and the `⌘K` palette. The shared `FilterInput` parser accepts bare clauses, quoted values (`#tag:"needs review"`), and free text — clauses AND with surface-specific Select filters and sync to URL params for shareable, refresh-persistent views. Save any filter expression with a rename footer; saved searches appear as a dedicated group in the mention popover and in the command palette, so views built in one surface are reachable from anywhere. Pinned saved searches sit at the top of both lists for zero-click recall.
 
 #### Monitoring
 Real-time agent log streaming via Server-Sent Events. Filter by task or event type, click entries to jump to task details, and auto-pause polling when the tab is hidden (Page Visibility API).
@@ -516,7 +528,8 @@ All 14 features shipped across three layers:
 | **Platform** (8) | Scheduled prompt loops, tool permissions, provider runtimes, OpenAI Codex runtime, cross-provider profiles, parallel fork/join, tool permission presets, npm publish (deferred) |
 | **Runtime Quality** (2) | SDK runtime hardening, E2E test automation |
 | **Governance** (3) | Usage metering ledger, spend budget guardrails, cost & usage dashboard |
-| **Chat** (6) | Chat data layer, chat engine (5-tier context, CRUD tools), API routes (SSE streaming), UI shell, message rendering (Quick Access pills), input composer (tool catalog, model selector) |
+| **Chat** (10) | Chat data layer, chat engine (5-tier context, CRUD tools), API routes (SSE streaming), UI shell, message rendering (Quick Access pills), input composer (tool catalog, model selector), skill composition (multi-skill with conflict detection), filter namespace (`#key:value` grammar), pinned + saved searches, conversation templates |
+| **Platform Hardening** (2) | Runtime validation hardening (MCP-tool runtime-id validation with safe fallbacks), upgrade detection (hourly upstream poll + guided merge sessions) |
 | **Environment** (11) | Environment scanner, cache, dashboard, git checkpoint manager, sync engine, project onboarding, templates, cross-project comparison, skill portfolio, health scoring, agent profile from environment |
 | **Living Book** (5) | Content merge (chapters → playbook), author's notes, reading paths, markdown pipeline, self-updating chapters |
 

@@ -5,7 +5,7 @@ chapter: 8
 part: 3
 readingTime: 16
 relatedDocs: [profiles, agent-intelligence]
-lastGeneratedBy: "2026-04-05T00:00:00.000Z"
+lastGeneratedBy: "2026-04-16T00:00:00.000Z"
 ---
 
 # The Swarm — Multi-Agent Coordination
@@ -148,6 +148,8 @@ const workflow = await fetch("/api/workflows", {
 The task classifier analyzes incoming task descriptions and routes them to the most appropriate agent profile. A task mentioning "review the security of" gets routed to the code-reviewer profile. A task asking to "research alternatives for" goes to the researcher. This routing is not keyword matching -- it uses an LLM classification step that considers the full task description, the project context, and the available profiles.
 
 Handoffs between agents in a workflow preserve the execution context. When a coordinator delegates to a worker, it passes not just the task description but the relevant portion of the coordinator's reasoning -- why this subtask was carved out, what constraints apply, and what the expected output format is. When the worker completes, its results and any learned context flow back to the coordinator for synthesis.
+
+A newer form of multi-agent coordination operates within a single conversation rather than across workflow steps: **skill composition**. Multiple skills can now be active simultaneously -- up to three on Claude and Codex runtimes, one on Ollama -- governed by the `RuntimeFeatures.supportsSkillComposition` and `maxActiveSkills` flags in the runtime catalog. When skills are composed, a conflict detection heuristic scans for polarity-divergent directives (for example, one skill encouraging verbose output while another demands brevity). If the prompt budget is exceeded, the system evicts the oldest skill. This is coordination at the instruction level rather than the task level -- agents that carry multiple behavioral directives and resolve tensions between them within a single conversation turn.
 
 ## Roadmap Vision
 

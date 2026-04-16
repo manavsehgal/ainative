@@ -4,9 +4,9 @@ category: "feature-reference"
 section: "tool-permissions"
 route: "cross-cutting"
 tags: [permissions, trust, safety, approval, human-in-the-loop, presets]
-features: ["tool-permission-persistence", "tool-permission-presets", "ambient-approval-toast"]
+features: ["tool-permission-persistence", "tool-permission-presets", "ambient-approval-toast", "upgrade-session"]
 screengrabCount: 1
-lastUpdated: "2026-03-31"
+lastUpdated: "2026-04-15"
 ---
 
 # Tool Permissions
@@ -45,6 +45,10 @@ Before executing a task, the runtime performs a permission pre-check against the
 ### Human-in-the-Loop Approval
 
 When a tool request exceeds the current trust tier and has not been persisted, a notification is created in the inbox. You can approve or deny from the Inbox or from the task detail view, keeping the agent paused until a decision is made.
+
+### AskUserQuestion Tool
+
+A special tool — `AskUserQuestion` — lets agents ask you for direct input rather than request permission. Instead of an Approve / Deny pair, the inbox notification renders a typed reply box (the `QuestionReplyActions` branch of the permission response view). This is the primitive behind the upgrade assistant's conflict resolution flow: when the merge hits an ambiguous decision, the upgrade profile asks a targeted question and waits for your reply before proceeding. `AskUserQuestion` is never auto-approved and is explicitly allowlisted on the `upgrade-assistant` profile.
 
 ### Ambient Approval Toast
 

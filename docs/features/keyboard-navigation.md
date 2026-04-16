@@ -3,10 +3,10 @@ title: "Keyboard Navigation"
 category: "feature-reference"
 section: "keyboard-navigation"
 route: "cross-cutting"
-tags: [keyboard, command-palette, accessibility, aria, a11y, navigation]
-features: ["command-palette-enhancement", "accessibility", "keyboard-shortcut-system"]
+tags: [keyboard, command-palette, accessibility, aria, a11y, navigation, templates, saved-searches, slash-commands]
+features: ["command-palette-enhancement", "accessibility", "keyboard-shortcut-system", "chat-conversation-templates", "chat-pinned-saved-searches", "saved-search-polish-v1"]
 screengrabCount: 2
-lastUpdated: "2026-03-31"
+lastUpdated: "2026-04-15"
 ---
 
 # Keyboard Navigation
@@ -31,6 +31,15 @@ Activated with **Meta+K** (Cmd+K on macOS, Ctrl+K on other platforms), the comma
 - **Cross-entity search** -- type to search across projects, tasks, workflows, documents, and schedules in a single unified list.
 - **Keyboard navigation** -- arrow keys to browse results, Enter to select, Escape to dismiss.
 - **Action shortcuts** -- create new tasks, projects, or workflows directly from the palette.
+- **Templates group** -- browse conversation templates generated from workflow blueprints; pick one to open a pre-primed chat.
+- **Saved group** -- recall pinned search + filter combinations across Chat, Documents, and Tables. Saved searches round-trip through a settings endpoint and refetch automatically when new ones are added.
+
+### Slash Commands
+
+In addition to the palette, the Chat composer recognizes slash commands for fast actions:
+
+- `/new-from-template` -- open the conversation template picker inline without leaving the composer.
+- Additional slash commands live alongside the `/` popover tabs (Actions, Skills, Tools, Entities).
 
 ### Focus-Visible Rings
 

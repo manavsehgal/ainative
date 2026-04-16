@@ -1,6 +1,6 @@
 {
-  "generated": "2026-04-03T22:00:00Z",
-  "version": 3,
+  "generated": "2026-04-15T15:30:00Z",
+  "version": 4,
   "sections": [
     {
       "slug": "home-workspace",
@@ -29,7 +29,7 @@
       "path": "features/inbox-notifications.md",
       "route": "/inbox",
       "tags": ["inbox", "approvals", "notifications", "human-in-the-loop", "handoffs"],
-      "features": ["inbox-notifications", "ambient-approval-toast", "agent-async-handoffs"],
+      "features": ["inbox-notifications", "ambient-approval-toast", "agent-async-handoffs", "upgrade-detection", "upgrade-session"],
       "screengrabCount": 2
     },
     {
@@ -38,8 +38,8 @@
       "category": "feature-reference",
       "path": "features/chat.md",
       "route": "/chat",
-      "tags": ["chat", "conversations", "ai", "tool-catalog", "mentions", "model-selection", "channels"],
-      "features": ["chat-data-layer", "chat-engine", "chat-api-routes", "chat-ui-shell", "chat-message-rendering", "chat-input-composer", "bidirectional-channel-chat"],
+      "tags": ["chat", "conversations", "ai", "tool-catalog", "mentions", "model-selection", "channels", "skills", "templates", "filters", "saved-searches"],
+      "features": ["chat-data-layer", "chat-engine", "chat-api-routes", "chat-ui-shell", "chat-message-rendering", "chat-input-composer", "bidirectional-channel-chat", "chat-skill-composition", "chat-composition-ui-v1", "chat-conversation-templates", "chat-filter-namespace", "chat-pinned-saved-searches", "saved-search-polish-v1"],
       "screengrabCount": 4
     },
     {
@@ -59,7 +59,7 @@
       "path": "features/workflows.md",
       "route": "/workflows",
       "tags": ["workflows", "orchestration", "blueprints", "parallel", "swarm", "step-builder", "business-blueprints"],
-      "features": ["workflow-engine", "workflow-blueprints", "parallel-research-fork-join", "multi-agent-swarm", "autonomous-loop-execution", "workflow-ux-overhaul", "business-function-profiles"],
+      "features": ["workflow-engine", "workflow-blueprints", "parallel-research-fork-join", "multi-agent-swarm", "autonomous-loop-execution", "workflow-ux-overhaul", "business-function-profiles", "chat-conversation-templates", "workflow-run-history"],
       "screengrabCount": 3
     },
     {
@@ -69,7 +69,7 @@
       "path": "features/documents.md",
       "route": "/documents",
       "tags": ["documents", "upload", "preprocessing", "agent-context", "extraction"],
-      "features": ["document-manager", "file-attachment-data-layer", "document-preprocessing", "agent-document-context", "document-output-generation"],
+      "features": ["document-manager", "file-attachment-data-layer", "document-preprocessing", "agent-document-context", "document-output-generation", "chat-filter-namespace", "chat-pinned-saved-searches"],
       "screengrabCount": 2
     },
     {
@@ -129,7 +129,7 @@
       "path": "features/settings.md",
       "route": "/settings",
       "tags": ["settings", "authentication", "permissions", "presets", "budgets", "browser-tools", "ollama", "channels", "snapshots"],
-      "features": ["session-management", "tool-permission-persistence", "tool-permission-presets", "browser-use", "spend-budget-guardrails", "ollama-runtime-provider", "multi-channel-delivery", "bidirectional-channel-chat", "database-snapshot-backup"],
+      "features": ["session-management", "tool-permission-persistence", "tool-permission-presets", "browser-use", "spend-budget-guardrails", "ollama-runtime-provider", "multi-channel-delivery", "bidirectional-channel-chat", "database-snapshot-backup", "upgrade-detection", "upgrade-session"],
       "screengrabCount": 9
     },
     {
@@ -159,7 +159,7 @@
       "path": "features/provider-runtimes.md",
       "route": "cross-cutting",
       "tags": ["runtimes", "claude", "openai", "codex", "ollama", "providers", "architecture", "smart-router"],
-      "features": ["provider-runtime-abstraction", "openai-codex-app-server", "agent-integration", "ollama-runtime-provider", "anthropic-direct-runtime", "openai-direct-runtime", "smart-runtime-router"],
+      "features": ["provider-runtime-abstraction", "openai-codex-app-server", "agent-integration", "ollama-runtime-provider", "anthropic-direct-runtime", "openai-direct-runtime", "smart-runtime-router", "runtime-validation-hardening", "runtime-capability-matrix"],
       "screengrabCount": 2
     },
     {
@@ -169,7 +169,7 @@
       "path": "features/agent-intelligence.md",
       "route": "cross-cutting",
       "tags": ["ai", "routing", "loops", "swarm", "self-improvement", "ai-assist", "episodic-memory", "handoffs"],
-      "features": ["multi-agent-routing", "autonomous-loop-execution", "multi-agent-swarm", "agent-self-improvement", "workflow-context-batching", "ai-assist-workflow-creation", "agent-episodic-memory", "agent-async-handoffs"],
+      "features": ["multi-agent-routing", "autonomous-loop-execution", "multi-agent-swarm", "agent-self-improvement", "workflow-context-batching", "ai-assist-workflow-creation", "agent-episodic-memory", "agent-async-handoffs", "chat-skill-composition"],
       "screengrabCount": 0
     },
     {
@@ -179,7 +179,7 @@
       "path": "features/tool-permissions.md",
       "route": "cross-cutting",
       "tags": ["permissions", "approvals", "presets", "governance", "trust-tiers"],
-      "features": ["tool-permission-persistence", "tool-permission-presets", "ambient-approval-toast"],
+      "features": ["tool-permission-persistence", "tool-permission-presets", "ambient-approval-toast", "upgrade-session"],
       "screengrabCount": 1
     },
     {
@@ -199,7 +199,7 @@
       "path": "features/keyboard-navigation.md",
       "route": "cross-cutting",
       "tags": ["keyboard", "navigation", "command-palette", "accessibility", "shortcuts"],
-      "features": ["command-palette", "keyboard-shortcuts", "focus-management"],
+      "features": ["command-palette", "keyboard-shortcuts", "focus-management", "chat-conversation-templates", "chat-pinned-saved-searches", "saved-search-polish-v1"],
       "screengrabCount": 2
     },
     {
@@ -209,7 +209,7 @@
       "path": "features/shared-components.md",
       "route": "cross-cutting",
       "tags": ["components", "reusable", "page-shell", "detail-pane", "status-chip", "data-table"],
-      "features": ["page-shell", "detail-pane", "status-chip", "data-table", "empty-state", "error-state"],
+      "features": ["page-shell", "detail-pane", "status-chip", "data-table", "empty-state", "error-state", "filter-input", "chat-filter-namespace"],
       "screengrabCount": 0
     }
   ],
@@ -275,8 +275,8 @@
   ],
   "metadata": {
     "totalDocs": 30,
-    "totalScreengrabs": 48,
-    "featuresCovered": 82,
+    "totalScreengrabs": 42,
+    "featuresCovered": 95,
     "appSections": 16
   }
 }

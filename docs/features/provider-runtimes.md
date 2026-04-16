@@ -4,9 +4,9 @@ category: "feature-reference"
 section: "provider-runtimes"
 route: "cross-cutting"
 tags: [claude, codex, runtime, oauth, websocket, mcp, providers, ollama, anthropic-direct, openai-direct, smart-router]
-features: ["provider-runtime-abstraction", "openai-codex-app-server", "cross-provider-profile-compatibility", "ollama-runtime-provider", "anthropic-direct-runtime", "openai-direct-runtime", "smart-runtime-router"]
+features: ["provider-runtime-abstraction", "openai-codex-app-server", "cross-provider-profile-compatibility", "ollama-runtime-provider", "anthropic-direct-runtime", "openai-direct-runtime", "smart-runtime-router", "runtime-validation-hardening", "runtime-capability-matrix"]
 screengrabCount: 2
-lastUpdated: "2026-03-31"
+lastUpdated: "2026-04-15"
 ---
 
 # Provider Runtimes
@@ -85,6 +85,20 @@ The smart router automatically selects the best runtime for each task based on m
 - **Credential filtering** -- only runtimes with valid credentials are considered
 
 The default selection is "Auto (recommended)" which lets the router decide. You can always override with a specific runtime in task, schedule, or workflow forms.
+
+### Runtime Capability Matrix
+
+Each runtime advertises its capabilities through a central matrix used by the rest of the app to decide whether to show a feature, gate it, or substitute a fallback. The most visible flags today:
+
+- **`supportsSkillComposition`** — whether the runtime accepts multiple concurrent skills on a single conversation. Gates the Chat Skills tab multi-activation behavior.
+- **`maxActiveSkills`** — hard cap on the active skill stack. The Chat composer shows "N of M active" against this value.
+- **`hasNativeSkills`** / **`stagentInjectsSkills`** / **`autoLoadsInstructions`** — decide whether Stagent should inject SKILL.md or trust the runtime's native loader, preventing duplicated context on Codex and Claude.
+
+Reading this matrix before wiring a feature is the canonical way to answer "should Stagent do X, or trust the runtime to do X."
+
+### Runtime Validation Hardening
+
+The MCP task-tools surface now validates every incoming `runtimeId` before dispatching work — unknown IDs are rejected at the boundary rather than crashing downstream. This protects the runtime registry from malformed chat-tool calls and surfaces bad configurations with a clean error message instead of a stack trace.
 
 ### Cross-Provider Profile Compatibility
 

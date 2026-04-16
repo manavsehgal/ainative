@@ -6,7 +6,7 @@ difficulty: "advanced"
 estimatedTime: "30 minutes"
 sections: ["settings", "environment", "chat", "monitoring", "profiles", "workflows", "tables", "schedules", "delivery-channels"]
 tags: ["advanced", "developer", "settings", "environment", "cli", "api", "monitoring", "profiles", "ollama", "channels", "handoffs", "memory", "tables"]
-lastUpdated: "2026-04-08"
+lastUpdated: "2026-04-16"
 ---
 
 # Developer Guide
@@ -55,7 +55,7 @@ Riley sets up Ollama as the fifth runtime adapter for private, zero-cost executi
 
 Riley sets up Slack and Telegram as delivery channels for schedule notifications and bidirectional chat.
 
-![Settings data management section](../screengrabs/settings-data.png)
+![Settings Delivery Channels section](../screengrabs/settings-channels.png)
 
 1. Scroll to **Delivery Channels** in Settings
 2. Click **+ Add Channel** and select **Slack**
@@ -217,6 +217,29 @@ Riley builds the CLI for scripted operations and CI/CD integration.
 2. Verify: `node dist/cli.js --help`
 3. Test CRUD operations: `node dist/cli.js projects list`, `node dist/cli.js tasks create --title "CLI test"`
 4. Verify CLI-created entities appear in the web UI (shared SQLite database)
+
+### Step 14a: Understand the Runtime Capability Matrix
+
+Riley wants to know why some features show up on one runtime but not another. The answer lives in the runtime capability matrix.
+
+1. Open `src/lib/agents/runtime/catalog.ts` — each runtime adapter declares flags like `supportsSkillComposition`, `maxActiveSkills`, `hasNativeSkills`, `stagentInjectsSkills`, and `autoLoadsInstructions`
+2. The Chat Skills tab reads `supportsSkillComposition` to decide whether to enable multi-skill activation and "N of M active" reporting
+3. The SKILL.md injector reads `stagentInjectsSkills` to avoid duplicating context on runtimes (like Codex App Server and Claude Agent SDK) that load instructions natively
+4. When you wire a new feature that touches system prompts or skills, consult the matrix before deciding whether Stagent should inject something or trust the runtime to do so
+
+> **Tip:** The MCP task-tools boundary also validates the runtime ID now (runtime-validation-hardening). Malformed `runtimeId` values are rejected at the boundary with a clean error, rather than crashing the dispatcher.
+
+### Step 14b: Observe the Upgrade Detection Poller
+
+![Instance section showing dev mode status and upgrade detection gate](../screengrabs/settings-instance.png)
+
+1. Scroll to the **Instance** section in Settings to see the dev mode status and upgrade detection gate
+2. The hourly scheduler runs `git fetch` against the upstream remote and compares `HEAD` to `origin/main`
+3. When upstream is ahead, the sidebar shows an **Upgrade available** badge and the Instance card reports the commits-behind count
+4. Three consecutive poll failures escalate to a persistent inbox notification (three-strike dedup prevents notification floods)
+5. The upgrade session uses the `upgrade-assistant` profile, which allowlists **AskUserQuestion** — the assistant can ask direct questions mid-merge without hitting a generic permission prompt
+
+> **Tip:** The Instance card also shows bootstrap status. In dev mode (indicated by `STAGENT_DEV_MODE=true` or the `.git/stagent-dev-mode` sentinel), auto-upgrade machinery is skipped to avoid interfering with contributor workflows.
 
 ### Step 15: Verify Platform Health
 

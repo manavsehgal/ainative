@@ -4,9 +4,9 @@ category: "feature-reference"
 section: "workflows"
 route: "/workflows"
 tags: [workflows, patterns, sequence, parallel, swarm, autonomous, templates, multi-step, blueprints, delays, drip]
-features: ["workflow-engine", "workflow-blueprints", "ai-assist-workflow-creation", "workflow-context-batching", "business-function-profiles", "workflow-step-delays"]
+features: ["workflow-engine", "workflow-blueprints", "ai-assist-workflow-creation", "workflow-context-batching", "business-function-profiles", "workflow-step-delays", "chat-conversation-templates", "workflow-run-history"]
 screengrabCount: 4
-lastUpdated: "2026-04-08"
+lastUpdated: "2026-04-15"
 ---
 
 # Workflows
@@ -47,6 +47,10 @@ The blueprint gallery offers pre-built workflow templates for common patterns:
 - **Business-function blueprints** -- lead research pipeline, content marketing pipeline, customer support triage, financial reporting, business daily briefing
 
 Click any blueprint to preview its steps, then create a workflow pre-populated with the template configuration. Customize steps, profiles, and runtimes to match your specific process.
+
+### Blueprints as Chat Templates
+
+Blueprints also double as **conversation templates** for the Chat surface. A blueprint can declare an optional `chatPrompt` field that provides a purpose-built opening prompt for chat use; if it is not set, the chat launcher falls back to `steps[0].promptTemplate`. This means the same blueprint asset powers three entry points — the Workflows gallery, the Chat empty-state picker, and the `/new-from-template` slash command — without requiring parallel definitions. See the [Chat](./chat.md) feature doc for the conversation-side flow.
 
 ### Tabs: All, Templates, Runs
 The workflow page organizes content into three tabs. "All" shows every workflow. "Templates" shows reusable patterns you can instantiate. "Runs" shows active and historical executions with their current status.

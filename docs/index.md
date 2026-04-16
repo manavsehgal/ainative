@@ -1,7 +1,7 @@
 ---
 title: "Stagent Documentation"
 category: "index"
-lastUpdated: "2026-04-03"
+lastUpdated: "2026-04-15"
 ---
 
 # Stagent Documentation

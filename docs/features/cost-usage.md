@@ -15,7 +15,7 @@ Track spend across providers and monitor token consumption with the cost and usa
 
 ## Screenshots
 
-![Cost and usage dashboard with spend breakdown](../screengrabs/cost-usage-list.png)
+![Cost and usage dashboard with spend breakdown](../screengrabs/costs-list.png)
 *The cost and usage dashboard showing spend metrics, provider breakdown, and budget pacing indicators.*
 
 ![Cost and usage below fold](../screengrabs/cost-usage-below-fold.png)

@@ -1,29 +1,159 @@
 {
-  "generated": "2026-04-08T20:00:00Z",
-  "summary": {
-    "totalFeatures": 86,
-    "coveredFeatures": 85,
-    "gapCount": 1,
-    "unusedScreenshotCount": 0,
-    "brokenReferences": 0,
-    "orphanedImages": 0
-  },
+  "generated": "2026-04-16T05:57:41Z",
   "gaps": [
     {
-      "feature": "tables-document-import",
-      "category": "Structured Data",
-      "screenshots": [],
-      "journeyCoverage": ["work-use"],
-      "suggestedPersona": "work",
-      "note": "Import wizard has no dedicated screenshot. The feature is referenced narratively in the Work journey at Step 7, but a dedicated capture is blocked by the Tables list being empty (no seed data). Residual gap — revisit after seeding sample tables."
+      "feature": "ai-assist-workflow-creation",
+      "category": "Agent Intelligence",
+      "screenshots": [
+        "dashboard-create-form-ai-assist.png",
+        "dashboard-create-form-ai-applied.png",
+        "dashboard-create-form-ai-breakdown.png",
+        "dashboard-workflow-confirm.png"
+      ],
+      "journeyCoverage": [],
+      "suggestedPersona": "power-user"
+    },
+    {
+      "feature": "autonomous-loop-execution",
+      "category": "Schedules",
+      "screenshots": [
+        "schedules-detail.png"
+      ],
+      "journeyCoverage": [],
+      "suggestedPersona": "power-user"
+    },
+    {
+      "feature": "chat-composition-ui-v1",
+      "category": "Chat",
+      "screenshots": [
+        "chat-skills-tab.png"
+      ],
+      "journeyCoverage": [],
+      "suggestedPersona": "personal"
+    },
+    {
+      "feature": "chat-dedup-variant-tolerance",
+      "category": "Chat",
+      "screenshots": [
+        "chat-conversation.png"
+      ],
+      "journeyCoverage": [],
+      "suggestedPersona": "personal"
+    },
+    {
+      "feature": "chat-file-mentions",
+      "category": "Chat",
+      "screenshots": [
+        "chat-mentions-popover.png",
+        "chat-entities-tab.png"
+      ],
+      "journeyCoverage": [],
+      "suggestedPersona": "personal"
+    },
+    {
+      "feature": "chat-settings-tool",
+      "category": "Chat",
+      "screenshots": [
+        "chat-tools-tab.png"
+      ],
+      "journeyCoverage": [],
+      "suggestedPersona": "personal"
+    },
+    {
+      "feature": "chat-skill-composition",
+      "category": "Agent Intelligence",
+      "screenshots": [
+        "chat-skills-tab.png",
+        "chat-slash-popover.png"
+      ],
+      "journeyCoverage": [],
+      "suggestedPersona": "power-user"
+    },
+    {
+      "feature": "instance-bootstrap",
+      "category": "Platform/Runtime",
+      "screenshots": [
+        "settings-instance.png"
+      ],
+      "journeyCoverage": [],
+      "suggestedPersona": "developer"
+    },
+    {
+      "feature": "multi-agent-swarm",
+      "category": "Agent Intelligence",
+      "screenshots": [
+        "dashboard-create-form-ai-breakdown.png"
+      ],
+      "journeyCoverage": [],
+      "suggestedPersona": "power-user"
+    },
+    {
+      "feature": "task-definition-ai",
+      "category": "Agent Intelligence",
+      "screenshots": [
+        "dashboard-create-form-ai-assist.png",
+        "dashboard-create-form-empty.png",
+        "dashboard-create-form-filled.png"
+      ],
+      "journeyCoverage": [],
+      "suggestedPersona": "power-user"
+    },
+    {
+      "feature": "upgrade-detection",
+      "category": "Platform/Runtime",
+      "screenshots": [
+        "settings-instance.png"
+      ],
+      "journeyCoverage": [],
+      "suggestedPersona": "developer"
     }
   ],
-  "brokenReferences": [],
-  "orphanedImages": [],
-  "notes": [
-    "Closed 3 of 4 prior gaps: book-content-merge, book-reading-paths, database-snapshot-backup.",
-    "Closed 14 prior broken references — journey docs now reference only fixtures that exist in public/readme/.",
-    "Cleared 20 orphaned images by overwriting public/readme/ with the fresh screengrab set.",
-    "Added 4 new feature entries to reflect schedule-orchestration-v2, workflow-step-delays, bulk-row-enrichment, instance-bootstrap/upgrade-session/license-metering."
-  ]
+  "unusedScreenshots": [
+    "analytics-list.png",
+    "chat-actions-tab.png",
+    "chat-conversation.png",
+    "chat-entities-tab.png",
+    "chat-mentions-popover.png",
+    "chat-model-picker.png",
+    "chat-search-filter.png",
+    "chat-skills-tab.png",
+    "chat-slash-popover.png",
+    "chat-tools-tab.png",
+    "dashboard-below-fold.png",
+    "dashboard-create-form-ai-applied.png",
+    "dashboard-create-form-ai-assist.png",
+    "dashboard-create-form-ai-breakdown.png",
+    "dashboard-create-form-empty.png",
+    "dashboard-create-form-filled.png",
+    "dashboard-workflow-confirm.png",
+    "schedules-create-form-empty.png",
+    "schedules-create-form-filled.png",
+    "schedules-detail.png",
+    "settings-browser-tools.png",
+    "settings-channels-add-form.png",
+    "settings-instance.png",
+    "settings-ollama-connected.png",
+    "settings-ollama.png",
+    "tables-detail-details.png",
+    "tables-detail-triggers.png",
+    "tables-detail.png",
+    "trust-tier-popover.png",
+    "workflows-create-form-delay.png"
+  ],
+  "contentMismatches": [
+    {
+      "journey": "work-use.md",
+      "step": "Step 14",
+      "screenshot": "inbox-expanded.png",
+      "severity": "WRONG",
+      "issue": "Shows task detail page, not expanded inbox notification. Needs recapture."
+    }
+  ],
+  "summary": {
+    "totalFeatures": 50,
+    "coveredFeatures": 39,
+    "gapCount": 11,
+    "unusedScreenshotCount": 30,
+    "contentMismatchCount": 1
+  }
 }

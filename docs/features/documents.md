@@ -4,9 +4,9 @@ category: "feature-reference"
 section: "documents"
 route: "/documents"
 tags: [documents, upload, preprocessing, pdf, office, text-extraction, agent-context]
-features: ["document-manager", "file-attachment-data-layer", "document-preprocessing", "agent-document-context", "document-output-generation"]
+features: ["document-manager", "file-attachment-data-layer", "document-preprocessing", "agent-document-context", "document-output-generation", "chat-filter-namespace", "chat-pinned-saved-searches"]
 screengrabCount: 2
-lastUpdated: "2026-03-31"
+lastUpdated: "2026-04-15"
 ---
 
 # Documents
@@ -25,6 +25,9 @@ The Document Library is where you upload, manage, and organize files that agents
 
 ### Table and Grid Views
 Toggle between a table view for dense scanning (file name, type, size, processing status, timestamps) and a grid view with visual cards. Both views support selection for bulk operations.
+
+### FilterInput and Saved Searches
+The `/documents` list page is the reference consumer for the shared **FilterInput** component. Type `#type:pdf` or `#scope:"legal review"` to filter by namespace — double-quoted values cleanly handle phrases with spaces. Combine filters with a free-text search, then click **Save view** in the footer to pin the combination as a saved search. Saved searches are available across surfaces (Chat, Tables, Documents) via the `⌘K` palette **Saved** group.
 
 ### Upload Dialog with Drag-and-Drop
 The upload dialog accepts files via drag-and-drop or file picker. A visual indicator shows supported file types. Multiple files can be uploaded in a single batch.

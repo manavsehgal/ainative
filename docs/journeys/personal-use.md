@@ -6,7 +6,7 @@ difficulty: "beginner"
 estimatedTime: "30 minutes"
 sections: ["home-workspace", "dashboard-kanban", "projects", "chat", "tables", "schedules", "user-guide", "book"]
 tags: ["beginner", "solo", "tasks", "kanban", "chat", "tables", "schedules", "delivery-channels", "book"]
-lastUpdated: "2026-04-08"
+lastUpdated: "2026-04-16"
 ---
 
 # Personal Use Guide
@@ -69,9 +69,13 @@ Before setting up a formal project, Alex tries the Chat feature to brainstorm id
 2. Notice the **Tool Catalog** with a welcoming hero heading and suggested prompt categories (Explore, Create, Debug, Automate)
 3. Browse the **Smart Picks** row for personalized suggestions
 4. Type a question like "What pages should a developer portfolio website include?" and press Enter
-5. Review the AI response
+5. Review the AI response -- notice how Chat keeps a clean conversation thread, deduplicating similar messages so the history stays readable
+6. Try typing **@** in the composer to open the mentions popover -- you can reference tasks, projects, documents, profiles, and workflows inline to give the AI richer context
+7. Next time, try **Start from template** on the empty-state hero (or type `/new-from-template` in the composer) to open a conversation pre-primed with a blueprint like "Research a topic" or "Draft a plan"
 
-> **Tip:** Chat is perfect for quick brainstorming sessions. You do not need to create a project first -- just ask a question. The conversation history stays in the sidebar so you can return to it later.
+![@ mentions popover showing pinned entities, tasks, projects, and documents](../screengrabs/chat-mentions-popover.png)
+
+> **Tip:** Chat is perfect for quick brainstorming sessions. You do not need to create a project first -- just ask a question. The conversation history stays in the sidebar so you can return to it later. Pin useful filter + search combinations as **saved searches** (available from the `⌘K` palette under the **Saved** group) so you can jump back to them later.
 
 ### Step 5: Create a New Project
 
@@ -122,7 +126,10 @@ Alex creates the first task for the portfolio project.
 3. Write a **Description** with detail about requirements
 4. Assign the task to the **Portfolio Website** project
 5. Set **Priority** to High and leave **Status** as Planned
-6. Click **Create** to add the task to the board
+6. Open the **/** popover in the composer to browse available tools (create_task, execute_task, read_file) and entities -- these are the same capabilities the AI uses when running tasks
+7. Click **Create** to add the task to the board
+
+![/ popover Tools tab showing available runtime tools](../screengrabs/chat-tools-tab.png)
 
 > **Tip:** Write task descriptions as if you are briefing a colleague. The more specific you are, the better the AI agent results will be.
 
@@ -181,7 +188,7 @@ Alex wants Stagent to proactively check on the portfolio project every morning. 
 
 Alex wants to receive schedule results on the go. Setting up a Telegram delivery channel takes less than two minutes.
 
-![Settings page showing provider and runtime configuration](../screengrabs/settings-auth.png)
+![Settings page showing Delivery Channels configuration](../screengrabs/settings-channels.png)
 
 1. Open **Settings** from the sidebar under **Configure**
 2. Scroll to the **Delivery Channels** section

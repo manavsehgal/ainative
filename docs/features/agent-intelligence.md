@@ -4,9 +4,9 @@ category: "feature-reference"
 section: "agent-intelligence"
 route: "cross-cutting"
 tags: [ai-assist, routing, autonomous, swarm, self-improvement, context, parallel, episodic-memory, handoffs]
-features: ["task-definition-ai", "multi-agent-routing", "autonomous-loop-execution", "multi-agent-swarm", "agent-self-improvement", "workflow-context-batching", "parallel-research-fork-join", "agent-episodic-memory", "agent-async-handoffs"]
+features: ["task-definition-ai", "multi-agent-routing", "autonomous-loop-execution", "multi-agent-swarm", "agent-self-improvement", "workflow-context-batching", "parallel-research-fork-join", "agent-episodic-memory", "agent-async-handoffs", "chat-skill-composition"]
 screengrabCount: 0
-lastUpdated: "2026-03-31"
+lastUpdated: "2026-04-15"
 ---
 
 # Agent Intelligence
@@ -64,6 +64,16 @@ Agents can hand off work to other agents asynchronously through a message bus:
 - **Handoff policies** -- configure which profiles can hand off to which, and under what conditions
 
 This enables multi-agent workflows where a researcher discovers a code issue and hands it off to the code reviewer without requiring a pre-built workflow definition.
+
+### Skill Composition
+
+Chat conversations on capable runtimes can run multiple skills simultaneously, layering specialized behaviors (research, code review, document drafting) onto a single session. The composition engine enforces three guardrails:
+
+- **Capability gating** — only runtimes that advertise `supportsSkillComposition` accept more than one active skill; others fall back to single-skill mode with a visible hint.
+- **Conflict heuristic** — new skills whose tools or instructions overlap with an active one trigger a confirmation dialog before the swap is applied.
+- **Prompt-budget eviction** — when the combined skill prompts approach the model's context budget, the oldest low-priority skill is evicted automatically so the conversation stays responsive.
+
+The active stack persists on the conversation row (`conversations.active_skill_ids`), and the `mergeActiveSkillIds` helper keeps updates atomic across concurrent activations. See the [Chat](./chat.md) feature doc for the user-facing flow.
 
 ### Workflow Context Batching
 

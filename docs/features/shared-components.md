@@ -3,10 +3,10 @@ title: "Shared Components"
 category: "feature-reference"
 section: "shared-components"
 route: "cross-cutting"
-tags: [components, page-shell, detail-pane, status-chip, filter-bar, data-table, reusable]
-features: ["shared-component-library", "page-shell", "detail-pane", "status-chip", "filter-bar", "view-switcher"]
+tags: [components, page-shell, detail-pane, status-chip, filter-bar, filter-input, data-table, reusable]
+features: ["shared-component-library", "page-shell", "detail-pane", "status-chip", "filter-bar", "view-switcher", "chat-filter-namespace"]
 screengrabCount: 0
-lastUpdated: "2026-03-31"
+lastUpdated: "2026-04-15"
 ---
 
 # Shared Components
@@ -30,6 +30,10 @@ Five status chip families that map to entity lifecycle states. Each chip renders
 ### FilterBar
 
 Horizontal filter strip placed below page headers. Supports multiple filter types (select, search, date range) and displays an active filter count badge. Filters persist in URL search params for shareable filtered views.
+
+### FilterInput
+
+Typed input used for namespace-aware filtering (`#scope:`, `#type:`, and similar qualifiers). Supports double-quoted values so phrases with spaces parse correctly — e.g. `#scope:"customer support"`. Used by Chat search, the `@` / `/` popovers, the `/documents` list page, and the `⌘K` palette, giving every surface the same filter syntax. Paired with the `cleanFilterInput()` helper, which strips mention-trigger residue (`@`, `#`, `/`) when a pinned saved search is reapplied.
 
 ### ViewSwitcher
 

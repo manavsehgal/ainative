@@ -3,9 +3,9 @@ title: "The Governance Layer"
 subtitle: "Trust at Scale"
 chapter: 9
 part: 3
-readingTime: 13
+readingTime: 14
 relatedDocs: [inbox-notifications, tool-permissions, settings]
-lastGeneratedBy: "2026-04-05T00:00:00.000Z"
+lastGeneratedBy: "2026-04-16T00:00:00.000Z"
 ---
 
 # The Governance Layer — Trust at Scale
@@ -145,6 +145,12 @@ The notification inbox aggregates all pending approval requests across all runni
 The escalation timeout adds a safety net. If a human does not respond to an approval request within the configured timeout (default 15 minutes), the request is automatically rejected and the agent is notified. This prevents agents from blocking indefinitely on approvals when the human is unavailable. The agent can then either find an alternative approach that uses auto-approved tools or report that it cannot complete the task without the requested tool.
 
 The settings page provides a unified view of the governance configuration. Users can see the current permission tiers, review the list of "always allowed" tool-profile-project combinations, and adjust defaults. The interface is deliberately simple -- three lists (auto-approve, require approval, deny) that can be modified with drag-and-drop or manual entry.
+
+**Structured Human Escalation**: The governance layer now supports richer human-agent dialogue than binary Allow/Deny. The `AskUserQuestion` primitive lets an agent pose a free-form question or present a three-choice option card mid-task. The `upgrade-assistant` profile uses this during guided merge sessions -- when an upstream update introduces a conflict, the agent can ask the user which resolution strategy to apply rather than guessing or halting. This moves human-in-the-loop from a gate (approve or reject) toward a conversation (here are the trade-offs, which do you prefer?).
+
+**Runtime Boundary Validation**: MCP task-tools now validate the `runtime-id` at the system boundary via `isAgentRuntimeId()`. An invalid runtime produces a clean error listing all valid IDs rather than silently falling through to a default. The `DEFAULT_AGENT_RUNTIME` fallback replaces previously hardcoded values. This is the boundary validation pattern applied to governance: trust internal code paths, but validate every external input at the edge.
+
+**Skill Composition Conflict Detection**: When multiple skills are active in a single conversation (see Chapter 8), a keyword heuristic scans for polarity-divergent directives -- skills that issue contradictory instructions. Conflicts are surfaced to the user rather than silently resolved. This extends governance from tool-level permissions to instruction-level coherence: not just "can the agent do this?" but "are the agent's directives internally consistent?"
 
 ## Roadmap Vision
 

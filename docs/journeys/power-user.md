@@ -6,7 +6,7 @@ difficulty: "advanced"
 estimatedTime: "30 minutes"
 sections: ["dashboard-kanban", "profiles", "chat", "workflows", "tables", "schedules", "monitoring", "settings"]
 tags: ["advanced", "automation", "workflows", "profiles", "tables", "schedules", "monitoring", "bulk-operations", "ollama", "episodic-memory", "nlp-scheduling"]
-lastUpdated: "2026-04-03"
+lastUpdated: "2026-04-16"
 ---
 
 # Power User Guide
@@ -88,14 +88,16 @@ Sam wants to run privacy-sensitive tasks on local models with zero API cost.
 
 Sam creates schedules by describing them in plain English instead of writing cron expressions.
 
-![Schedules list with active and heartbeat schedules](../screengrabs/schedules-list.png)
+![New schedule form filled — Daily Standup Summary with weekday 9am cron](../screengrabs/schedules-create-form-filled.png)
 
 1. Navigate to **Schedules** and click **Create Schedule**
 2. In the interval field, type natural language: "every weekday at 10pm," "every 6 hours during business hours," or "twice daily at 9am and 5pm"
 3. A **preview** appears showing exactly how the system parsed the input
 4. Select **Heartbeat** type to add intelligence -- the agent evaluates a checklist before acting
 5. Add checklist items specific to your automation needs
-6. Save the schedule
+6. Save the schedule and click on it to open the **detail sheet** -- review firing history, next run time, and pause/resume controls
+
+![Schedule detail sheet with firing history and autonomous loop controls](../screengrabs/schedules-detail.png)
 
 > **Tip:** NLP scheduling removes the friction of cron syntax. If the preview does not match your intent, rephrase and it re-parses instantly.
 
@@ -103,10 +105,10 @@ Sam creates schedules by describing them in plain English instead of writing cro
 
 Sam customizes a workflow for a "Deploy & Verify" pipeline with specialized profiles at each step.
 
-![Workflows list showing existing workflow definitions](../screengrabs/workflows-list.png)
+![New workflow form with delay step — ML Pipeline Orchestrator with 3-step sequence](../screengrabs/workflows-create-form-delay.png)
 
 1. From the Workflows page, click **Create Workflow** (or customize a blueprint)
-2. Configure steps with different agent profiles at each stage
+2. Add steps with different agent profiles at each stage -- notice the **delay step** option for inserting timed pauses between steps (e.g., a 2-hour cooldown between deploy and verification)
 3. Use the business-function profiles for non-technical steps (e.g., Content Creator for documentation, Operations Coordinator for runbook updates)
 4. Save the workflow
 
@@ -146,7 +148,27 @@ Sam connects a table to the workflow engine so that row changes automatically ki
 
 > **Tip:** Table triggers turn spreadsheets into event-driven automation surfaces. Sam uses them to auto-run incident postmortems whenever an incident row status changes to "Resolved."
 
-### Step 11: Batch-Manage Tasks on the Kanban
+### Step 11: Create Tasks with AI Assist
+
+Sam uses AI Assist to turn a rough task idea into a fully specified, workflow-ready plan.
+
+![AI Assist returned — improved description, complexity analysis, and Swarm pattern recommendation](../screengrabs/dashboard-create-form-ai-assist.png)
+
+1. From the Dashboard, click **Create Task**
+2. Enter a rough title and description -- for example, "API Security Audit" with a one-line description
+3. Click **AI Assist** -- the system analyzes the task and returns an improved description, complexity rating, recommended execution pattern (e.g., Swarm), and a checkpoint flag
+4. Review the **breakdown** -- for complex tasks, AI Assist generates a multi-step workflow with per-step descriptions
+
+![AI Assist breakdown — 6-step security audit workflow with per-step descriptions](../screengrabs/dashboard-create-form-ai-breakdown.png)
+
+5. Click **Apply** to replace the original description with the AI-improved version, or **Convert to Workflow** to generate a full workflow from the breakdown
+6. The resulting workflow lands on the confirmation page, ready for review and customization
+
+![Task form after clicking Apply — improved description replaces original](../screengrabs/dashboard-create-form-ai-applied.png)
+
+> **Tip:** AI Assist is the bridge between "I have a vague idea" and "I have a production-ready plan." For complex tasks, it recommends the Swarm pattern where multiple agents tackle sub-steps in parallel -- this is how multi-agent swarm execution works in practice.
+
+### Step 12: Batch-Manage Tasks on the Kanban
 
 Sam cleans up the task board using bulk select mode.
 
@@ -160,7 +182,7 @@ Sam cleans up the task board using bulk select mode.
 
 > **Tip:** After a weekend of autonomous heartbeat runs, Sam's first Monday task is always a bulk cleanup.
 
-### Step 12: Schedule Automated Prompt Loops
+### Step 13: Schedule Automated Prompt Loops
 
 ![Schedules list showing active schedules and firing status](../screengrabs/schedules-list.png)
 
@@ -170,7 +192,7 @@ Sam cleans up the task board using bulk select mode.
 4. Verify stop conditions and delivery channels
 5. Toggle **Pause/Resume** as needed
 
-### Step 13: Leverage Episodic Memory
+### Step 14: Leverage Episodic Memory
 
 Sam notices agents are re-researching the same topics. Episodic memory lets agents retain factual knowledge across executions.
 
@@ -184,7 +206,7 @@ Sam notices agents are re-researching the same topics. Episodic memory lets agen
 
 > **Tip:** Episodic memory means a Financial Analyst profile that researches a company once can recall that research in future tasks without re-doing the work. It builds institutional knowledge automatically.
 
-### Step 14: Watch Agent Execution in Real-Time
+### Step 15: Watch Agent Execution in Real-Time
 
 ![Agent monitoring dashboard showing real-time execution logs](../screengrabs/monitor-list.png)
 
@@ -196,16 +218,25 @@ Sam notices agents are re-researching the same topics. Episodic memory lets agen
 
 > **Tip:** The Monitor is Sam's operational dashboard. When something goes wrong in an autonomous loop at 3am, the execution traces are the fastest path to diagnosis.
 
-### Step 15: Use Chat Suggested Prompts
+### Step 16: Use Chat Suggested Prompts and Skill Composition
 
-![Chat interface with suggested prompt categories](../screengrabs/chat-list.png)
+![/ popover Skills tab with composition status indicator](../screengrabs/chat-skills-tab.png)
 
 1. Navigate to **Chat** and notice the **suggested prompt tabs** (Explore, Create, Debug, Automate)
 2. Click the **Create** tab to see prompts for creating tasks, workflows, and schedules
 3. Click a suggested prompt to populate the input
-4. Edit and send -- these prompts are optimized for the best agent responses
+4. Type **/** to open the slash popover -- browse four tabs: **Actions**, **Skills**, **Tools**, and **Entities**
 
-### Step 16: Chain Everything Together
+![/ popover with four tabs: Actions, Skills, Tools, Entities](../screengrabs/chat-slash-popover.png)
+
+5. Switch to the **Skills** tab — click **+ Add** to stack a second skill onto the conversation (e.g., a research skill plus a code-review skill running concurrently)
+6. If the new skill clashes with an active one, review the **conflict dialog** and decide which to keep — the engine's heuristic surfaces overlapping tools or contradictory instructions
+7. Watch the "N of M active" indicator; once you approach the runtime's `maxActiveSkills` cap, prompt-budget eviction automatically trims the oldest low-priority skill
+8. For a faster start, try **Start from template** or `/new-from-template` to open a conversation pre-primed from a workflow blueprint — the blueprint's optional `chatPrompt` provides the opening context
+
+> **Tip:** Skill composition only engages on runtimes where `supportsSkillComposition` is true. On other runtimes the Skills tab stays read-only with a hint, and the chat behaves as a single-skill session.
+
+### Step 17: Chain Everything Together
 
 Sam connects the dots: profiles define *how*, workflows define *what*, schedules define *when*, Ollama handles the *cheap stuff*, episodic memory provides the *knowledge*, and delivery channels deliver the *results*.
 
@@ -221,7 +252,7 @@ Sam connects the dots: profiles define *how*, workflows define *what*, schedules
 
 > **Tip:** Sam's automation philosophy: start small, observe, then expand. Run a workflow manually three times before scheduling it. Trust builds incrementally -- and so should autonomy.
 
-### Step 17: What's Next
+### Step 18: What's Next
 
 Sam's workspace is a fully autonomous operations engine. The next step is going deeper into the platform layer.
 

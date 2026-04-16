@@ -4,9 +4,9 @@ category: "feature-reference"
 section: "inbox-notifications"
 route: "/inbox"
 tags: [inbox, notifications, permissions, approval, human-in-the-loop, toast, handoffs, agent-messages]
-features: ["inbox-notifications", "ambient-approval-toast", "content-handling", "agent-async-handoffs"]
+features: ["inbox-notifications", "ambient-approval-toast", "content-handling", "agent-async-handoffs", "upgrade-detection", "upgrade-session"]
 screengrabCount: 2
-lastUpdated: "2026-03-31"
+lastUpdated: "2026-04-15"
 ---
 
 # Inbox & Notifications
@@ -40,6 +40,14 @@ When an agent requests permission to use a tool, a "Permission Required" notific
 
 ### Agent Handoff Approvals
 When one agent hands off work to another via the async message bus, a handoff notification appears in the inbox. You can approve the handoff to let the receiving agent proceed, or deny it to stop the chain. Governance gates enforce chain depth limits and prevent self-handoffs.
+
+### Agent Questions (AskUserQuestion)
+
+When an agent needs a direct answer from you — for example, to disambiguate between two valid paths during an upgrade merge — it uses the **AskUserQuestion** tool. These surface in the inbox as question notifications with a typed reply box (rendered by the `QuestionReplyActions` branch of the permission-response view). Submit a short answer inline and the agent resumes from where it paused. Questions are distinct from permission requests: there is no "Approve / Deny," only the reply field.
+
+### Upgrade Failure Notifications
+
+If the hourly upgrade-detection poller fails three consecutive times (network error, unreachable remote, etc.), a persistent notification is posted to the inbox so the issue does not go silent. The three-strike dedup prevents a flood — only the first sustained failure raises a notification, and it clears automatically once the poller succeeds again.
 
 ### Ambient Approval Toasts
 For quick permission grants, ambient toasts appear at the edge of the screen. You can approve or deny without navigating to the inbox, keeping your workflow uninterrupted.

@@ -4,7 +4,7 @@ subtitle: "Scheduled Intelligence"
 chapter: 6
 part: 2
 readingTime: 12
-lastGeneratedBy: "2026-04-05T00:00:00.000Z"
+lastGeneratedBy: "2026-04-16T00:00:00.000Z"
 relatedDocs: ["schedules", "monitoring"]
 relatedJourney: "power-user"
 ---
@@ -130,6 +130,8 @@ The scheduling infrastructure is complete and running in production:
 **Loop Executor**: The autonomous loop executor supports multi-iteration execution with iteration context passing, four stop condition types, and pause/resume capability. The `LoopStatusView` component provides real-time monitoring.
 
 **Heartbeat Checklists**: Heartbeat-type schedules accept structured checklists with prioritized inspection items. The agent receives the checklist as structured instructions and reports against each item.
+
+**Upgrade Detection**: A concrete arena-style pattern is now running in production: the upgrade detector. An hourly poller checks upstream for new commits and surfaces available updates. A three-strike dedup mechanism prevents repeated failure notifications from flooding the inbox. When an upgrade is available, the `upgrade-assistant` profile drives a guided merge session — and critically, it can ask the user free-form questions or present structured three-choice option cards via `AskUserQuestion`. This is the arena pattern in miniature: a scheduled loop with a clear metric (is there an upstream update?), a fixed budget (one check per hour), and a human escalation path that goes beyond binary Allow/Deny to structured, contextual dialogue.
 
 ## Roadmap Vision
 

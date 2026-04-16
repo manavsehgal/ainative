@@ -6,7 +6,7 @@ difficulty: "intermediate"
 estimatedTime: "30 minutes"
 sections: ["projects", "chat", "documents", "tables", "workflows", "schedules", "cost-usage", "inbox-notifications", "delivery-channels"]
 tags: ["intermediate", "team", "documents", "tables", "workflows", "schedules", "costs", "inbox", "channels", "handoffs"]
-lastUpdated: "2026-04-03"
+lastUpdated: "2026-04-16"
 ---
 
 # Work Use Guide
@@ -56,6 +56,9 @@ Rather than clicking through every page, Jordan asks Chat for a quick status upd
 2. Type a question such as "What is the status of the Q2 planning project?"
 3. Review the response -- notice **Quick Access pills** linking to specific items
 4. Click a pill to jump directly to the referenced entity
+5. Use **@** mentions to pull specific entities into the conversation -- type `@` to browse tasks, projects, documents, and workflows without leaving the composer
+
+![@ mentions popover for referencing workspace entities in chat](../screengrabs/chat-mentions-popover.png)
 
 > **Tip:** Chat is the fastest way to get a cross-cutting status overview. Ask one question and follow the entity links.
 
@@ -107,6 +110,9 @@ Jordan has a CSV export from the previous quarter's performance review. Importin
 3. Review the column mapping -- Stagent auto-detects column types from the data
 4. Assign the table to the relevant project
 5. Click **Create** to import the data into a fully editable spreadsheet view
+6. Click into the table to open the **Data tab** with a spreadsheet-style editor -- edit cells inline, add rows, and review content
+
+![Table detail Data tab with spreadsheet editor and row content](../screengrabs/tables-detail.png)
 
 > **Tip:** Imported tables retain all their data as editable rows. You can add formula columns, charts, and workflow triggers on top of imported data.
 
@@ -150,7 +156,7 @@ Jordan schedules a weekly status summary using plain English instead of cron syn
 
 ### Step 11: Monitor Spending and Budgets
 
-![Cost and Usage dashboard showing spend metrics and budget gauges](../screengrabs/cost-usage-list.png)
+![Cost and Usage dashboard showing spend metrics and budget gauges](../screengrabs/costs-list.png)
 
 1. Click **Cost & Usage** in the sidebar
 2. Review **total spend** for the current billing period
@@ -188,12 +194,14 @@ Jordan's agents have been running in the background. Some have generated handoff
 2. For permission requests, review the tool name, arguments, and reason
 3. Choose **Approve**, **Deny**, or **Always Allow**
 4. For handoffs, approve to let the receiving agent begin work
+5. If an agent sends an **AskUserQuestion** notification, type your answer in the inline reply field — there is no approve/deny, just a short response that lets the agent resume
+6. Watch for **upgrade available** notifications and the occasional upgrade-failure alert (raised only after three consecutive poller failures, so these should be rare)
 
 ### Step 15: Configure Multi-Channel Notifications
 
 Jordan sets up Slack so the entire team receives schedule results and important alerts.
 
-![Settings page showing provider and runtime configuration](../screengrabs/settings-auth.png)
+![Settings page showing Delivery Channels configuration](../screengrabs/settings-channels.png)
 
 1. Open **Settings** and scroll to **Delivery Channels**
 2. Click **+ Add Channel** and select **Slack**
@@ -205,13 +213,14 @@ Jordan sets up Slack so the entire team receives schedule results and important 
 
 ### Step 16: Manage Schedules
 
-![Schedules list with status indicators and next run timestamps](../screengrabs/schedules-list.png)
+![Schedule detail sheet showing firing history and pause/resume controls](../screengrabs/schedules-detail.png)
 
 1. Return to **Schedules**
-2. Locate the "Weekly Status Report" schedule
-3. Check **Last Run** and **Next Run** timestamps
-4. Click to review firing history and generated tasks
-5. Edit or pause as needed
+2. Locate the "Weekly Status Report" schedule and click to open its **detail sheet**
+3. Review the **firing history** with timestamps and outcomes -- suppressed heartbeat runs appear dimmed
+4. Check **Next Run** to confirm the cadence
+5. Use the **Pause/Resume** toggle when you need to temporarily silence a schedule during quiet periods
+6. Edit or delete as needed
 
 ### Step 17: What's Next
 

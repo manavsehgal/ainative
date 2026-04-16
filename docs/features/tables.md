@@ -6,7 +6,7 @@ route: "/tables"
 tags: [tables, structured-data, spreadsheet, charts, triggers, templates, import, export, formulas]
 features: ["tables-data-layer", "tables-list-page", "tables-spreadsheet-editor", "tables-document-import", "tables-template-gallery", "tables-agent-integration", "tables-chat-queries", "tables-computed-columns", "tables-cross-joins", "tables-agent-charts", "tables-workflow-triggers", "tables-nl-creation", "tables-export", "tables-versioning", "bulk-row-enrichment"]
 screengrabCount: 8
-lastUpdated: "2026-04-08"
+lastUpdated: "2026-04-15"
 ---
 
 # Tables
@@ -37,6 +37,8 @@ Tables is Stagent's structured data system -- a built-in spreadsheet-meets-datab
 
 ### Table and Grid Views
 Browse all your tables from the `/tables` list page. Toggle between a compact table view and a visual grid view. Use the filter bar to narrow by category or search by name. Click any table to open it.
+
+The filter bar uses the shared **FilterInput** component and the `#namespace:value` syntax (double-quote values that contain spaces, e.g. `#type:"customer list"`). Saved filter + query combinations can be pinned as **saved searches** and recalled from the `⌘K` palette under the **Saved** group — useful for recurring table views like "open orders" or "stale leads." See the [Documents](./documents.md) page for a cross-surface reference implementation.
 
 ### Create Tables
 Open the create dialog to define a new table with a name, description, and columns. The inline column builder lets you set each column's name, type, and whether it is required -- all before the table is saved. Supported column types include text, number, date, boolean, select (dropdown), URL, email, and computed.

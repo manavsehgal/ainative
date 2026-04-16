@@ -4,7 +4,7 @@ subtitle: "Task Execution at Scale"
 chapter: 4
 part: 2
 readingTime: 16
-lastGeneratedBy: "2026-04-05T00:00:00.000Z"
+lastGeneratedBy: "2026-04-16T00:00:00.000Z"
 relatedDocs: ["agent-intelligence", "profiles", "monitoring"]
 relatedJourney: "work-use"
 ---
@@ -150,6 +150,8 @@ The forge is operational. Here is the current state:
 **Tool Permission Persistence**: The "Always Allow" button persists tool approval decisions to the settings table. A permission pre-check runs before each tool call, checking for stored approvals before falling back to the notification-based human approval flow.
 
 **Agent Logs Table**: Every execution writes structured logs — tool calls with arguments, model responses, errors, and final results. The logs table is the forge's black box recorder, enabling post-execution review and debugging.
+
+**Profile Environment Sync**: The forge now extends beyond manually curated profiles. An opt-in auto-promote feature scans the local environment — specifically skills discovered in `~/.claude/skills/` — and automatically promotes them into the profile registry. This closes a gap where useful skills existed on disk but were invisible to the routing and dispatch system. The environment scanner feeds the forge without manual intervention, so new capabilities surface as soon as they are installed rather than waiting for a human to wire them in.
 
 ## Roadmap Vision
 
