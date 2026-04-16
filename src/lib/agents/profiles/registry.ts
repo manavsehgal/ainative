@@ -11,6 +11,7 @@ import { invalidateLatestScan, getLatestScan } from "@/lib/environment/data";
 import { db } from "@/lib/db";
 import { environmentArtifacts } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
+import { getStagentProfilesDir } from "@/lib/utils/stagent-paths";
 
 /**
  * Builtins ship inside the repo at src/lib/agents/profiles/builtins/.
@@ -36,6 +37,12 @@ const SKILLS_DIR = path.join(
   "skills"
 );
 
+/**
+ * Auto-promoted profiles (from environment discovery) are written here
+ * instead of SKILLS_DIR to avoid colliding with Claude Code's skill namespace.
+ */
+const PROMOTED_PROFILES_DIR = getStagentProfilesDir();
+
 // ---------------------------------------------------------------------------
 // Cache
 // ---------------------------------------------------------------------------
@@ -43,37 +50,44 @@ const SKILLS_DIR = path.join(
 let profileCache: Map<string, AgentProfile> | null = null;
 let profileCacheSignature: string | null = null;
 
-function getSkillsDirectorySignature(): string {
-  if (!fs.existsSync(SKILLS_DIR)) {
-    return "missing";
-  }
+function getDirectorySignatureParts(baseDir: string): string[] {
+  if (!fs.existsSync(baseDir)) return [];
 
   const entries = fs
-    .readdirSync(SKILLS_DIR, { withFileTypes: true })
+    .readdirSync(baseDir, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  const signatureParts: string[] = [];
+  const parts: string[] = [];
 
   for (const entry of entries) {
-    const dir = path.join(SKILLS_DIR, entry.name);
+    const dir = path.join(baseDir, entry.name);
     const yamlPath = path.join(dir, "profile.yaml");
     const skillPath = path.join(dir, "SKILL.md");
 
-    signatureParts.push(entry.name);
+    parts.push(entry.name);
 
     if (fs.existsSync(yamlPath)) {
       const stats = fs.statSync(yamlPath);
-      signatureParts.push(`yaml:${stats.mtimeMs}:${stats.size}`);
+      parts.push(`yaml:${stats.mtimeMs}:${stats.size}`);
     }
 
     if (fs.existsSync(skillPath)) {
       const stats = fs.statSync(skillPath);
-      signatureParts.push(`skill:${stats.mtimeMs}:${stats.size}`);
+      parts.push(`skill:${stats.mtimeMs}:${stats.size}`);
     }
   }
 
-  return signatureParts.join("|");
+  return parts;
+}
+
+function getSkillsDirectorySignature(): string {
+  const skillsParts = getDirectorySignatureParts(SKILLS_DIR);
+  const promotedParts = getDirectorySignatureParts(PROMOTED_PROFILES_DIR);
+
+  if (skillsParts.length === 0 && promotedParts.length === 0) return "missing";
+
+  return [...skillsParts, "||promoted||", ...promotedParts].join("|");
 }
 
 // ---------------------------------------------------------------------------
@@ -156,15 +170,16 @@ function ensureBuiltins(): void {
 // scanProfiles — read .claude/skills/*/profile.yaml, validate, pair w/ SKILL.md
 // ---------------------------------------------------------------------------
 
-function scanProfiles(): Map<string, AgentProfile> {
-  const profiles = new Map<string, AgentProfile>();
+function scanProfilesFromDir(
+  baseDir: string,
+  profiles: Map<string, AgentProfile>
+): void {
+  if (!fs.existsSync(baseDir)) return;
 
-  if (!fs.existsSync(SKILLS_DIR)) return profiles;
-
-  for (const entry of fs.readdirSync(SKILLS_DIR, { withFileTypes: true })) {
+  for (const entry of fs.readdirSync(baseDir, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;
 
-    const dir = path.join(SKILLS_DIR, entry.name);
+    const dir = path.join(baseDir, entry.name);
     const yamlPath = path.join(dir, "profile.yaml");
     const skillPath = path.join(dir, "SKILL.md");
 
@@ -232,6 +247,12 @@ function scanProfiles(): Map<string, AgentProfile> {
     }
   }
 
+}
+
+function scanProfiles(): Map<string, AgentProfile> {
+  const profiles = new Map<string, AgentProfile>();
+  scanProfilesFromDir(SKILLS_DIR, profiles);
+  scanProfilesFromDir(PROMOTED_PROFILES_DIR, profiles);
   return profiles;
 }
 
@@ -317,6 +338,28 @@ export function createProfile(config: ProfileConfig, skillMd: string): void {
   invalidateLatestScan();
 }
 
+/**
+ * Create an auto-promoted profile in ~/.stagent/profiles/ (not ~/.claude/skills/).
+ * This avoids colliding with Claude Code's skill discovery namespace.
+ */
+export function createPromotedProfile(config: ProfileConfig, skillMd: string): void {
+  const result = ProfileConfigSchema.safeParse(config);
+  if (!result.success) {
+    throw new Error(`Invalid profile: ${result.error.issues.map(i => i.message).join(", ")}`);
+  }
+
+  const dir = path.join(PROMOTED_PROFILES_DIR, config.id);
+  if (fs.existsSync(path.join(dir, "profile.yaml"))) {
+    throw new Error(`Profile "${config.id}" already exists`);
+  }
+
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, "profile.yaml"), yaml.dump(config));
+  fs.writeFileSync(path.join(dir, "SKILL.md"), skillMd);
+  reloadProfiles();
+  invalidateLatestScan();
+}
+
 /** Update an existing custom profile (rejects builtins) */
 export function updateProfile(id: string, config: ProfileConfig, skillMd: string): void {
   if (isBuiltin(id)) {
@@ -328,8 +371,15 @@ export function updateProfile(id: string, config: ProfileConfig, skillMd: string
     throw new Error(`Invalid profile: ${result.error.issues.map(i => i.message).join(", ")}`);
   }
 
-  const dir = path.join(SKILLS_DIR, id);
-  if (!fs.existsSync(dir)) {
+  const skillsDir = path.join(SKILLS_DIR, id);
+  const promotedDir = path.join(PROMOTED_PROFILES_DIR, id);
+  const dir = fs.existsSync(skillsDir)
+    ? skillsDir
+    : fs.existsSync(promotedDir)
+      ? promotedDir
+      : null;
+
+  if (!dir) {
     throw new Error(`Profile "${id}" not found`);
   }
 
@@ -339,14 +389,21 @@ export function updateProfile(id: string, config: ProfileConfig, skillMd: string
   invalidateLatestScan();
 }
 
-/** Delete a custom profile (rejects builtins) */
+/** Delete a custom profile (rejects builtins). Checks both user and promoted dirs. */
 export function deleteProfile(id: string): void {
   if (isBuiltin(id)) {
     throw new Error("Cannot delete built-in profiles");
   }
 
-  const dir = path.join(SKILLS_DIR, id);
-  if (!fs.existsSync(dir)) {
+  const skillsDir = path.join(SKILLS_DIR, id);
+  const promotedDir = path.join(PROMOTED_PROFILES_DIR, id);
+  const dir = fs.existsSync(skillsDir)
+    ? skillsDir
+    : fs.existsSync(promotedDir)
+      ? promotedDir
+      : null;
+
+  if (!dir) {
     throw new Error(`Profile "${id}" not found`);
   }
 

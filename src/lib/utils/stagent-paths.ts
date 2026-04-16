@@ -52,3 +52,7 @@ export function getStagentCodexConfigPath(): string {
 export function getStagentCodexAuthPath(): string {
   return join(getStagentCodexDir(), "auth.json");
 }
+
+export function getStagentProfilesDir(): string {
+  return join(getStagentDataDir(), "profiles");
+}

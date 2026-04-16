@@ -17,19 +17,19 @@ vi.mock("../data", () => ({
 
 vi.mock("@/lib/agents/profiles/registry", () => ({
   listProfiles: vi.fn(() => []),
-  createProfile: vi.fn(),
+  createPromotedProfile: vi.fn(),
 }));
 
 import { autoPromoteUnlinkedSkills } from "../profile-generator";
 import { getSettingSync } from "@/lib/settings/helpers";
 import { linkArtifactsToProfiles } from "../profile-linker";
 import { getArtifacts } from "../data";
-import { createProfile } from "@/lib/agents/profiles/registry";
+import { createPromotedProfile } from "@/lib/agents/profiles/registry";
 
 const mockGetSettingSync = getSettingSync as ReturnType<typeof vi.fn>;
 const mockLinker = linkArtifactsToProfiles as ReturnType<typeof vi.fn>;
 const mockGetArtifacts = getArtifacts as ReturnType<typeof vi.fn>;
-const mockCreateProfile = createProfile as ReturnType<typeof vi.fn>;
+const mockCreateProfile = createPromotedProfile as ReturnType<typeof vi.fn>;
 
 function unlinkedSkill(name: string) {
   return {

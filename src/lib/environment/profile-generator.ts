@@ -4,7 +4,7 @@
 
 import { getArtifacts } from "./data";
 import { evaluateRules, generateTier2Suggestions, type ProfileSuggestion } from "./profile-rules";
-import { listProfiles, createProfile } from "@/lib/agents/profiles/registry";
+import { listProfiles, createPromotedProfile } from "@/lib/agents/profiles/registry";
 import type { ProfileConfig } from "@/lib/validators/profile";
 import { getSettingSync } from "@/lib/settings/helpers";
 import { SETTINGS_KEYS } from "@/lib/constants/settings";
@@ -126,7 +126,7 @@ export function createProfileFromSuggestion(
     skillMd = skillMd.replace(suggestion.systemPrompt, overrides.systemPrompt);
   }
 
-  createProfile(config, skillMd);
+  createPromotedProfile(config, skillMd);
 
   // Note: the created profile will have author "stagent-env" which,
   // combined with the env- prefix on the ID, identifies it as environment-originated.
