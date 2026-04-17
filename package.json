@@ -1,6 +1,6 @@
 {
   "name": "stagent",
-  "version": "0.11.0",
+  "version": "0.11.1",
   "description": "AI Business Operating System — run your business with AI agents. Local-first, multi-provider, governed.",
   "keywords": [
     "ai",
