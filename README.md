@@ -580,4 +580,4 @@ See `AGENTS.md` for architecture details and development conventions.
 
 Licensed under the [Apache License 2.0](LICENSE).
 
-Copyright 2025-2026 [Manav Sehgal](https://stagent.io)
+Copyright 2025-2026 [Manav Sehgal](https://github.com/manavsehgal)
