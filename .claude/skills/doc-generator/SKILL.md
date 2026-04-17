@@ -495,7 +495,7 @@ Read these files to generate README content:
 - `CLAUDE.md` — tech stack, quick start commands, architecture summary
 - `features/*.md` — individual feature descriptions (frontmatter `status` field)
 - `package.json` — project name, version, description
-- `.claude/reference/stagent-io-about/` — captured snapshot of https://stagent.io/about/, used verbatim as the `## About` section body (rename `### Why Stagent` → `### Research Premise` to avoid colliding with the top-level `## Why Stagent` heading). If the snapshot is missing, invoke `/capture https://stagent.io/about/` before continuing.
+- `.claude/reference/stagent-io-about/` — captured snapshot of https://stagent.io/about/, used verbatim as the `## About Author` section body (rename `### Why Stagent` → `### Research Premise` to avoid colliding with the top-level `## Why Stagent` heading). If the snapshot is missing, invoke `/capture https://stagent.io/about/` before continuing.
 
 ### README Structure
 
@@ -526,7 +526,7 @@ Each links to a detail section or doc below the fold.
 **Below the fold (progressive detail for engaged readers):**
 
 ```
-## About
+## About Author
 Insert the content of `.claude/reference/stagent-io-about/` verbatim,
 wrapped in `<!-- ABOUT:BEGIN source=https://stagent.io/about/ -->` and
 `<!-- ABOUT:END -->` sync markers. Always sits immediately after
@@ -570,7 +570,7 @@ Condensed view of features/roadmap.md.
 - Use emoji icons sparingly in the Features section for visual scanning
 - Quick Start should be copy-paste-ready (minimal steps to get running)
 - **No subscription/pricing content** — Stagent is 100% Community Edition (Apache 2.0) with all features free and unlimited. Do NOT generate subscription tiers, pricing tables, soft limits, "Premium" sections, or upgrade CTAs. If feature specs still reference tiers, ignore those references in README output
-- **About section is always present** — every generated README must include a `## About` section sourced from `.claude/reference/stagent-io-about/`, wrapped in `<!-- ABOUT:BEGIN source=https://stagent.io/about/ -->` … `<!-- ABOUT:END -->`. Placement is locked: immediately after `## Why Stagent`, before `## Runtime Bridge` / `## Architecture`. Do not paraphrase the captured content; only rename `### Why Stagent` → `### Research Premise` to avoid colliding with the top-level heading. If the captured reference is missing or empty, invoke `/capture https://stagent.io/about/` before writing README and abort README regeneration if capture fails
+- **About section is always present** — every generated README must include a `## About Author` section sourced from `.claude/reference/stagent-io-about/`, wrapped in `<!-- ABOUT:BEGIN source=https://stagent.io/about/ -->` … `<!-- ABOUT:END -->`. Placement is locked: immediately after `## Why Stagent`, before `## Runtime Bridge` / `## Architecture`. Do not paraphrase the captured content; only rename `### Why Stagent` → `### Research Premise` to avoid colliding with the top-level heading. If the captured reference is missing or empty, invoke `/capture https://stagent.io/about/` before writing README and abort README regeneration if capture fails
 
 ### Steps
 
@@ -706,7 +706,7 @@ docs/
 - [ ] All image refs validated
 - [ ] All cross-doc links validated
 - [ ] README.md generated/updated
-- [ ] README.md `## About` section present and matches `.claude/reference/stagent-io-about/` (modulo the `Why Stagent` → `Research Premise` rename)
+- [ ] README.md `## About Author` section present and matches `.claude/reference/stagent-io-about/` (modulo the `Why Stagent` → `Research Premise` rename)
 - [ ] Coverage report generated
 - [ ] Cross-cutting docs generated (Design System, Keyboard Navigation, Shared Components, User Guide)
 - [ ] Persona data profiles defined and used consistently in journeys

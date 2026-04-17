@@ -4,7 +4,7 @@ Captured from: https://stagent.io/about/
 Date: 2026-04-17
 Files: 1 | ~2KB total
 
-This folder is the **canonical source** for the `## About` section in `README.md`. The README block between `<!-- ABOUT:BEGIN source=https://stagent.io/about/ -->` and `<!-- ABOUT:END -->` is kept in sync with [about.md](about.md) by:
+This folder is the **canonical source** for the `## About Author` section in `README.md`. The README block between `<!-- ABOUT:BEGIN source=https://stagent.io/about/ -->` and `<!-- ABOUT:END -->` is kept in sync with [about.md](about.md) by:
 
 - `refresh-content-pipeline` Stage 4 — re-captures the source and auto-edits between markers on drift
 - `doc-generator` Phase 7 — splices this content into every regenerated README

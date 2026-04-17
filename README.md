@@ -39,7 +39,7 @@ The AI agent stack is broken for business operators. You can spin up an agent in
 
 ---
 
-## About
+## About Author
 
 <!-- ABOUT:BEGIN source=https://stagent.io/about/ -->
 
