@@ -1,5 +1,19 @@
 # Feature Changelog
 
+## 2026-04-17
+
+### Completed — npm-package-ownership-migration
+
+Metadata-only patch migrating the npm publisher account from `navamio` to `manavsehgal`. Completes the identity migration started with the GitHub repo rename (`navam-io/stagent` → `manavsehgal/stagent`, 2026-04-17). No runtime code changes — `npm install stagent@latest` and `npx stagent` continue to work unchanged.
+
+- Registry ownership: `manavsehgal` invited as maintainer via npm web UI; `navamio` removed after `0.11.1` publish verified clean.
+- Published `stagent@0.11.1` from the `manavsehgal` account — first tarball where the `_npmUser` / "published by" field names the new maintainer.
+- Manifest: `repository.url` + `bugs.url` already corrected during the GitHub migration; `0.11.1` is the first npm release carrying the corrected URLs.
+- Historical versions `<0.11.1` deprecated with an upgrade notice so pinned installs nudge users toward `latest`.
+- Local `~/.npmrc` stale `navamio` `_authToken` revoked after the owner transfer.
+
+**Verification:** `npm view stagent@0.11.1 _npmUser.name` → `manavsehgal`; `npm owner ls stagent` → `manavsehgal` only; `npm view stagent@0.10.0 deprecated` → upgrade notice present; scratch-dir `npx stagent@latest --help` runs clean.
+
 ## 2026-04-15
 
 ### Completed — runtime-validation-hardening

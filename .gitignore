@@ -45,3 +45,7 @@ supabase/.temp/
 
 # private operational docs (local only)
 PRIVATE-INSTANCES.md
+SCRATCH.md
+
+# runtime lock files
+.claude/scheduled_tasks.lock
