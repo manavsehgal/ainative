@@ -495,6 +495,7 @@ Read these files to generate README content:
 - `CLAUDE.md` — tech stack, quick start commands, architecture summary
 - `features/*.md` — individual feature descriptions (frontmatter `status` field)
 - `package.json` — project name, version, description
+- `.claude/reference/stagent-io-about/` — captured snapshot of https://stagent.io/about/, used verbatim as the `## About` section body (rename `### Why Stagent` → `### Research Premise` to avoid colliding with the top-level `## Why Stagent` heading). If the snapshot is missing, invoke `/capture https://stagent.io/about/` before continuing.
 
 ### README Structure
 
@@ -525,6 +526,12 @@ Each links to a detail section or doc below the fold.
 **Below the fold (progressive detail for engaged readers):**
 
 ```
+## About
+Insert the content of `.claude/reference/stagent-io-about/` verbatim,
+wrapped in `<!-- ABOUT:BEGIN source=https://stagent.io/about/ -->` and
+`<!-- ABOUT:END -->` sync markers. Always sits immediately after
+`## Why Stagent` and before `## Runtime Bridge` / `## Architecture`.
+
 ## Architecture
 How It Works diagram (code block or mermaid), rendering pattern,
 data flow, key design decisions. Product-facing, not developer-jargon.
@@ -563,6 +570,7 @@ Condensed view of features/roadmap.md.
 - Use emoji icons sparingly in the Features section for visual scanning
 - Quick Start should be copy-paste-ready (minimal steps to get running)
 - **No subscription/pricing content** — Stagent is 100% Community Edition (Apache 2.0) with all features free and unlimited. Do NOT generate subscription tiers, pricing tables, soft limits, "Premium" sections, or upgrade CTAs. If feature specs still reference tiers, ignore those references in README output
+- **About section is always present** — every generated README must include a `## About` section sourced from `.claude/reference/stagent-io-about/`, wrapped in `<!-- ABOUT:BEGIN source=https://stagent.io/about/ -->` … `<!-- ABOUT:END -->`. Placement is locked: immediately after `## Why Stagent`, before `## Runtime Bridge` / `## Architecture`. Do not paraphrase the captured content; only rename `### Why Stagent` → `### Research Premise` to avoid colliding with the top-level heading. If the captured reference is missing or empty, invoke `/capture https://stagent.io/about/` before writing README and abort README regeneration if capture fails
 
 ### Steps
 
@@ -570,6 +578,7 @@ Condensed view of features/roadmap.md.
 2. **Identify completed/in-progress features** — only these appear in the Features section; group by domain
 3. **Summarize architecture** — translate CLAUDE.md's developer-facing architecture into a product-facing "How It Works" overview
 4. **Generate README.md** — write or overwrite the file following the pyramid structure above
+4a. **Inject About section** — read `.claude/reference/stagent-io-about/` (invoking `/capture https://stagent.io/about/` first if missing), rename the `### Why Stagent` subheading to `### Research Premise`, and splice the result between `<!-- ABOUT:BEGIN source=https://stagent.io/about/ -->` and `<!-- ABOUT:END -->` markers immediately after the `## Why Stagent` section
 5. **Verify progressive disclosure** — confirm hero + value prop + Quick Start + feature highlights appear in the first ~50 lines
 6. **Verify scannability** — ensure no section is a wall of text; every section uses tables, lists, or code blocks
 7. **Log in changelog** — add a "README updated" entry if part of a Ship phase
@@ -697,6 +706,7 @@ docs/
 - [ ] All image refs validated
 - [ ] All cross-doc links validated
 - [ ] README.md generated/updated
+- [ ] README.md `## About` section present and matches `.claude/reference/stagent-io-about/` (modulo the `Why Stagent` → `Research Premise` rename)
 - [ ] Coverage report generated
 - [ ] Cross-cutting docs generated (Design System, Keyboard Navigation, Shared Components, User Guide)
 - [ ] Persona data profiles defined and used consistently in journeys
