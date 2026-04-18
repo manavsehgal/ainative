@@ -9,7 +9,7 @@ let tempDir: string;
 
 beforeEach(() => {
   tempDir = mkdtempSync(join(tmpdir(), "stagent-crypto-test-"));
-  vi.stubEnv("STAGENT_DATA_DIR", tempDir);
+  vi.stubEnv("AINATIVE_DATA_DIR", tempDir);
 });
 
 afterEach(() => {

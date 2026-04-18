@@ -6,10 +6,10 @@ import { documents, tasks } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import { processDocument } from "./processor";
 
-const STAGENT_DATA_DIR =
-  process.env.STAGENT_DATA_DIR || path.join(homedir(), ".stagent");
-const TASK_OUTPUTS_DIR = path.join(STAGENT_DATA_DIR, "outputs");
-const OUTPUT_ARCHIVE_DIR = path.join(STAGENT_DATA_DIR, "documents", "output");
+const AINATIVE_DATA_DIR =
+  process.env.AINATIVE_DATA_DIR || path.join(homedir(), ".stagent");
+const TASK_OUTPUTS_DIR = path.join(AINATIVE_DATA_DIR, "outputs");
+const OUTPUT_ARCHIVE_DIR = path.join(AINATIVE_DATA_DIR, "documents", "output");
 
 const OUTPUT_MIME_TYPES: Record<string, string> = {
   ".md": "text/markdown",

@@ -15,9 +15,9 @@ import {
 import { join, dirname, relative, basename } from "path";
 import { homedir } from "os";
 
-const STAGENT_DATA_DIR =
-  process.env.STAGENT_DATA_DIR || join(homedir(), ".stagent");
-const BACKUPS_DIR = join(STAGENT_DATA_DIR, "backups");
+const AINATIVE_DATA_DIR =
+  process.env.AINATIVE_DATA_DIR || join(homedir(), ".stagent");
+const BACKUPS_DIR = join(AINATIVE_DATA_DIR, "backups");
 
 interface BackupResult {
   backupPath: string;

@@ -10,7 +10,7 @@ const KEY_LENGTH = 32;
 
 function getKeyfilePath(): string {
   return join(
-    process.env.STAGENT_DATA_DIR || join(homedir(), ".stagent"),
+    process.env.AINATIVE_DATA_DIR || join(homedir(), ".stagent"),
     ".keyfile"
   );
 }

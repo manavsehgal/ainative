@@ -24,8 +24,8 @@ async function loadDetect() {
 }
 
 describe("isDevMode", () => {
-  it("returns true when STAGENT_DEV_MODE=true", async () => {
-    vi.stubEnv("STAGENT_DEV_MODE", "true");
+  it("returns true when AINATIVE_DEV_MODE=true", async () => {
+    vi.stubEnv("AINATIVE_DEV_MODE", "true");
     const { isDevMode } = await loadDetect();
     expect(isDevMode(tempDir)).toBe(true);
   });
@@ -41,16 +41,16 @@ describe("isDevMode", () => {
     expect(isDevMode(tempDir)).toBe(false);
   });
 
-  it("returns false when STAGENT_INSTANCE_MODE=true overrides env gate", async () => {
-    vi.stubEnv("STAGENT_DEV_MODE", "true");
-    vi.stubEnv("STAGENT_INSTANCE_MODE", "true");
+  it("returns false when AINATIVE_INSTANCE_MODE=true overrides env gate", async () => {
+    vi.stubEnv("AINATIVE_DEV_MODE", "true");
+    vi.stubEnv("AINATIVE_INSTANCE_MODE", "true");
     const { isDevMode } = await loadDetect();
     expect(isDevMode(tempDir)).toBe(false);
   });
 
-  it("returns false when STAGENT_INSTANCE_MODE=true overrides sentinel gate", async () => {
+  it("returns false when AINATIVE_INSTANCE_MODE=true overrides sentinel gate", async () => {
     writeFileSync(join(gitDir, "stagent-dev-mode"), "");
-    vi.stubEnv("STAGENT_INSTANCE_MODE", "true");
+    vi.stubEnv("AINATIVE_INSTANCE_MODE", "true");
     const { isDevMode } = await loadDetect();
     expect(isDevMode(tempDir)).toBe(false);
   });
@@ -70,26 +70,26 @@ describe("hasGitDir", () => {
 });
 
 describe("isPrivateInstance", () => {
-  it("returns false when STAGENT_DATA_DIR is unset", async () => {
-    vi.stubEnv("STAGENT_DATA_DIR", "");
+  it("returns false when AINATIVE_DATA_DIR is unset", async () => {
+    vi.stubEnv("AINATIVE_DATA_DIR", "");
     const { isPrivateInstance } = await loadDetect();
     expect(isPrivateInstance()).toBe(false);
   });
 
-  it("returns false when STAGENT_DATA_DIR equals default ~/.stagent", async () => {
-    vi.stubEnv("STAGENT_DATA_DIR", join(homedir(), ".stagent"));
+  it("returns false when AINATIVE_DATA_DIR equals default ~/.stagent", async () => {
+    vi.stubEnv("AINATIVE_DATA_DIR", join(homedir(), ".stagent"));
     const { isPrivateInstance } = await loadDetect();
     expect(isPrivateInstance()).toBe(false);
   });
 
-  it("returns true when STAGENT_DATA_DIR is a custom path", async () => {
-    vi.stubEnv("STAGENT_DATA_DIR", "/Users/manavsehgal/.stagent-wealth");
+  it("returns true when AINATIVE_DATA_DIR is a custom path", async () => {
+    vi.stubEnv("AINATIVE_DATA_DIR", "/Users/manavsehgal/.stagent-wealth");
     const { isPrivateInstance } = await loadDetect();
     expect(isPrivateInstance()).toBe(true);
   });
 
-  it("returns false when STAGENT_DATA_DIR equals default with trailing slash", async () => {
-    vi.stubEnv("STAGENT_DATA_DIR", join(homedir(), ".stagent") + "/");
+  it("returns false when AINATIVE_DATA_DIR equals default with trailing slash", async () => {
+    vi.stubEnv("AINATIVE_DATA_DIR", join(homedir(), ".stagent") + "/");
     const { isPrivateInstance } = await loadDetect();
     expect(isPrivateInstance()).toBe(false);
   });

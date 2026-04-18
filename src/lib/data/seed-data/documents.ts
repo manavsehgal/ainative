@@ -3,7 +3,7 @@ import { join } from "path";
 import { homedir } from "os";
 
 const uploadsDir = join(
-  process.env.STAGENT_DATA_DIR || join(homedir(), ".stagent"),
+  process.env.AINATIVE_DATA_DIR || join(homedir(), ".stagent"),
   "uploads"
 );
 

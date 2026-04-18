@@ -8,7 +8,7 @@ let tempDir: string;
 beforeEach(() => {
   tempDir = mkdtempSync(join(tmpdir(), "stagent-pricing-registry-"));
   vi.resetModules();
-  vi.stubEnv("STAGENT_DATA_DIR", tempDir);
+  vi.stubEnv("AINATIVE_DATA_DIR", tempDir);
 });
 
 afterEach(() => {

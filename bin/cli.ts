@@ -66,7 +66,7 @@ Data:
   Logs             ${join(dir, "logs")}
 
 Environment variables:
-  STAGENT_DATA_DIR Custom data directory for the web app
+  AINATIVE_DATA_DIR Custom data directory for the web app
   ANTHROPIC_API_KEY Claude runtime access
   OPENAI_API_KEY   OpenAI Codex runtime access
 
@@ -82,7 +82,7 @@ program
   .version(pkg.version)
   .addHelpText("after", getHelpText)
   .option("-p, --port <number>", "port to start on", "3000")
-  .option("--data-dir <path>", "custom data directory (overrides STAGENT_DATA_DIR)")
+  .option("--data-dir <path>", "custom data directory (overrides AINATIVE_DATA_DIR)")
   .option("--reset", "delete the local database before starting")
   .option("--no-open", "don't auto-open browser");
 
@@ -92,7 +92,7 @@ const opts = program.opts();
 
 // Apply --data-dir before resolving paths
 if (opts.dataDir) {
-  process.env.STAGENT_DATA_DIR = opts.dataDir;
+  process.env.AINATIVE_DATA_DIR = opts.dataDir;
 }
 
 // Migrate any legacy ~/.stagent/ layout to ~/.ainative/ before resolving any
@@ -229,8 +229,8 @@ async function main() {
     stdio: "inherit",
     env: {
       ...process.env,
-      STAGENT_DATA_DIR: DATA_DIR,
-      STAGENT_LAUNCH_CWD: launchCwd,
+      AINATIVE_DATA_DIR: DATA_DIR,
+      AINATIVE_LAUNCH_CWD: launchCwd,
       PORT: String(actualPort),
     },
   });

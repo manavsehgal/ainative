@@ -8,7 +8,7 @@ import { isDevMode, isPrivateInstance } from "@/lib/instance/detect";
 
 /** The directory the user launched stagent from (falls back to process.cwd()). */
 export function getLaunchCwd(): string {
-  return process.env.STAGENT_LAUNCH_CWD || process.cwd();
+  return process.env.AINATIVE_LAUNCH_CWD || process.cwd();
 }
 
 export interface WorkspaceContext {

@@ -13,8 +13,8 @@ export const dynamic = "force-dynamic";
  * POST /api/workspace/fix-data-dir
  *
  * Fixes a data-dir mismatch for domain clones by:
- * 1. Deriving the correct STAGENT_DATA_DIR from the folder name
- * 2. Writing it to .env.local (alongside STAGENT_CLOUD_DISABLED=true)
+ * 1. Deriving the correct AINATIVE_DATA_DIR from the folder name
+ * 2. Writing it to .env.local
  * 3. Creating the data dir + bootstrapping an empty database there
  *
  * Requires a dev server restart to take effect.
@@ -33,7 +33,7 @@ export async function POST() {
   // Guard: already isolated
   if (isPrivateInstance()) {
     return NextResponse.json(
-      { error: "STAGENT_DATA_DIR is already set to a non-default path" },
+      { error: "AINATIVE_DATA_DIR is already set to a non-default path" },
       { status: 400 }
     );
   }
@@ -51,14 +51,14 @@ export async function POST() {
     envContent = readFileSync(envLocalPath, "utf-8");
   }
 
-  // Replace or append STAGENT_DATA_DIR
-  if (/^STAGENT_DATA_DIR=.*/m.test(envContent)) {
+  // Replace or append AINATIVE_DATA_DIR
+  if (/^AINATIVE_DATA_DIR=.*/m.test(envContent)) {
     envContent = envContent.replace(
-      /^STAGENT_DATA_DIR=.*/m,
-      `STAGENT_DATA_DIR=${dataDir}`
+      /^AINATIVE_DATA_DIR=.*/m,
+      `AINATIVE_DATA_DIR=${dataDir}`
     );
   } else {
-    envContent = envContent.trimEnd() + `\nSTAGENT_DATA_DIR=${dataDir}\n`;
+    envContent = envContent.trimEnd() + `\nAINATIVE_DATA_DIR=${dataDir}\n`;
   }
 
   writeFileSync(envLocalPath, envContent, "utf-8");

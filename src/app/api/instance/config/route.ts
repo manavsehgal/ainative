@@ -13,7 +13,7 @@ import { isDevMode } from "@/lib/instance/detect";
  * in a single response. Used by the Settings → Instance section and by
  * the upgrade pre-flight modal.
  *
- * When running on the canonical dev repo (STAGENT_DEV_MODE=true or the
+ * When running on the canonical dev repo (AINATIVE_DEV_MODE=true or the
  * .git/stagent-dev-mode sentinel), returns `{ devMode: true }` with null
  * payloads. This prevents stale instance rows written during prior testing
  * from surfacing in the UI as if the dev repo were a real instance.

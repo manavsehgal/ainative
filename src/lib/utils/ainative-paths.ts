@@ -2,7 +2,7 @@ import { homedir } from "os";
 import { join } from "path";
 
 export function getAinativeDataDir(): string {
-  return process.env.AINATIVE_DATA_DIR || process.env.STAGENT_DATA_DIR || join(homedir(), ".ainative");
+  return process.env.AINATIVE_DATA_DIR || join(homedir(), ".ainative");
 }
 
 export function getAinativeDbPath(): string {

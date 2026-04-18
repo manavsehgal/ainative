@@ -141,7 +141,7 @@ if [ -z "$current_branch" ]; then
   exit 0
 fi
 
-data_dir="\${STAGENT_DATA_DIR:-$HOME/.stagent}"
+data_dir="\${AINATIVE_DATA_DIR:-$HOME/.stagent}"
 db_path="$data_dir/stagent.db"
 if [ ! -f "$db_path" ] || ! command -v sqlite3 >/dev/null 2>&1; then
   exit 0
@@ -280,7 +280,7 @@ export async function resolveConsentDecision(): Promise<ConsentDecision> {
  */
 export async function ensureInstance(cwd: string = process.cwd()): Promise<EnsureResult> {
   if (isDevMode(cwd)) {
-    const reason = process.env.STAGENT_DEV_MODE === "true" ? "dev_mode_env" : "dev_mode_sentinel";
+    const reason = process.env.AINATIVE_DEV_MODE === "true" ? "dev_mode_env" : "dev_mode_sentinel";
     return { skipped: reason, steps: [] };
   }
 
