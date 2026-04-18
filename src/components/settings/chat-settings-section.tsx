@@ -56,6 +56,21 @@ export function ChatSettingsSection() {
       .catch(() => {});
   }, [fetchSettings]);
 
+  // Stay in sync with cascades from other surfaces (routing cascade on the
+  // same page, chat pane on /chat). Same CustomEvent the provider listens to.
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<{ modelId?: string }>).detail;
+      if (detail?.modelId) {
+        setDefaultModel(detail.modelId);
+      }
+    };
+    window.addEventListener("ainative.chat.default-model-changed", handler);
+    return () => {
+      window.removeEventListener("ainative.chat.default-model-changed", handler);
+    };
+  }, []);
+
   const handleModelChange = async (modelId: string) => {
     setDefaultModel(modelId);
     await fetch("/api/settings/chat", {
