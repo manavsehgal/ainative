@@ -241,13 +241,13 @@ Shipped: twenty-one built-in agent profiles plus custom profile creation; thirte
 
 In flight: `instance-bootstrap` (`features/instance-bootstrap.md`). The specification is complete, the implementation plan is written, and the upstream repository already ships with `STAGENT_DEV_MODE=true` and a `.git/stagent-dev-mode` sentinel to keep contributors safe from premature bootstrap. What remains is the idempotent first-boot logic that will automate branch creation and pre-push hook installation for every private clone.
 
-Not yet: an upgrade assistant that guides upstream merges into a long-lived domain branch, a formal `.stagent-app.yaml` manifest for portable domain-application definitions, and community template sharing so builders can learn from each other's configurations. The primitives exist. The composition workflow is proven. The tooling around it is next.
+Not yet: an upgrade assistant that guides upstream merges into a long-lived domain branch, a formal `.ainative-app.yaml` manifest for portable domain-application definitions, and community template sharing so builders can learn from each other's configurations. The primitives exist. The composition workflow is proven. The tooling around it is next.
 
 ## Roadmap Vision
 
 - **Instance bootstrap ships behind a consent gate.** Every private clone gets a local branch, a pre-push hook that blocks accidental origin pushes, and a stable `instanceId` automatically.
 - **Chat-driven composition becomes a first-class workflow.** The builder describes a full domain in a single conversation; the agent generates tables, profiles, blueprints, triggers, and routes as a coordinated configuration. What took a day for the Wealth Manager should take an hour as the tooling matures.
-- **Domain-app manifests formalize the pattern.** A `.stagent-app.yaml` declares tables, profiles, blueprints, triggers, schedules, and routes — making domain applications portable and reproducible across clones.
+- **Domain-app manifests formalize the pattern.** A `.ainative-app.yaml` declares tables, profiles, blueprints, triggers, schedules, and routes — making domain applications portable and reproducible across clones.
 - **Cross-domain pattern reuse.** The Wealth Manager's Conviction Brief pattern — synthesizing multiple signal sources into one actionable summary — becomes a reusable template the Growth module's pipeline review can adopt without rewriting.
 - **Community template sharing.** Builders share domain-application configurations — table templates, profile definitions, blueprint YAML — so others can learn from and adapt proven patterns. The governance layer guarantees that any imported configuration inherits the recipient's own permission policies and cost budgets.
 

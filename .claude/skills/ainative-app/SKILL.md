@@ -1,11 +1,11 @@
 ---
-name: stagent-app
-description: Scaffold a Stagent-native app by composing existing primitives (agent profiles, workflow blueprints, user tables, schedules, document routing) from a YAML manifest instead of writing TypeScript. Use when the user asks to "create a Stagent app", "scaffold an app", "build an app manifest", "design an app in Stagent", "wealth-manager-style app", "app from config", "compose a Stagent app", or when they want to package a workflow + profile + schedule + table combination as a reusable bundle. Also triggers when the user wants to turn an ad-hoc workflow into a shippable app or when a proposed feature can be built entirely by composition of existing primitives. Do NOT use for writing new TypeScript components, new DB migrations, new chat tools, or net-new primitive kinds — those are outside the config-over-code contract; route to `product-manager` or `architect` instead.
+name: ainative-app
+description: Scaffold an ainative-native app by composing existing primitives (agent profiles, workflow blueprints, user tables, schedules, document routing) from a YAML manifest instead of writing TypeScript. Use when the user asks to "create an ainative app", "scaffold an app", "build an app manifest", "design an app in ainative", "wealth-manager-style app", "app from config", "compose an ainative app", or when they want to package a workflow + profile + schedule + table combination as a reusable bundle. Also triggers when the user wants to turn an ad-hoc workflow into a shippable app or when a proposed feature can be built entirely by composition of existing primitives. Do NOT use for writing new TypeScript components, new DB migrations, new chat tools, or net-new primitive kinds — those are outside the config-over-code contract; route to `product-manager` or `architect` instead.
 ---
 
-# stagent-app
+# ainative-app
 
-Turn "I want a Stagent app that does X" into a ready-to-register scaffold composed of Stagent's shipped primitives. No TypeScript, no schema migrations — just YAML, markdown, and chat-tool invocations that wire into existing registries.
+Turn "I want an ainative app that does X" into a ready-to-register scaffold composed of ainative's shipped primitives. No TypeScript, no schema migrations — just YAML, markdown, and chat-tool invocations that wire into existing registries.
 
 ## Core Principle
 

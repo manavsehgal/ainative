@@ -202,12 +202,12 @@ Per handoff §5. Full rewrite of:
   - Notes: package rename, repo rename, data migration behavior.
 - `docs/` — full sweep for `stagent` → `ainative`.
 - `AGENTS.md` + `CLAUDE.md` + `FLOW.md` — update env var names, path references, any inline examples.
-- `.claude/skills/**/*.md` — sweep. Note: some skills (`upgrade-assistant`, `stagent-app` scaffolder) have `stagent` in the skill name itself. Rename skill directories via `git mv` too.
+- `.claude/skills/**/*.md` — sweep. Note: some skills (`upgrade-assistant`, `ainative-app` scaffolder) have `stagent` in the skill name itself. Rename skill directories via `git mv` too.
 - `MEMORY.md` — sweep.
 
 ### Skill directory renames (nuance)
 
-The `.claude/skills/stagent-app/` skill directory contains the scaffolder. Renaming to `.claude/skills/ainative-app/` is consistent. Skill frontmatter `name:` field also renames. No user data at stake since skills aren't DB-backed.
+The `.claude/skills/ainative-app/` skill directory contains the scaffolder. Renaming to `.claude/skills/ainative-app/` is consistent. Skill frontmatter `name:` field also renames. No user data at stake since skills aren't DB-backed.
 
 ### Checkpoint
 - `rg -i stagent docs/ README.md CHANGELOG.md AGENTS.md CLAUDE.md FLOW.md MEMORY.md .claude/skills/` → zero matches.

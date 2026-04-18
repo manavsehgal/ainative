@@ -28,7 +28,7 @@ Files deleted (old):
 - `src/lib/chat/stagent-tools.ts` (renamed to `ainative-tools.ts`)
 - Historical `*stagent*.md` filenames (renamed via `git mv`)
 - `public/ainative-s-64.png` / `public/ainative-s-128.png` (renamed)
-- `.claude/skills/stagent-app/` directory (renamed to `ainative-app/`)
+- `.claude/skills/ainative-app/` directory (renamed to `ainative-app/`)
 
 Files heavily modified (contents rewritten, path unchanged):
 - `package.json`, `package-lock.json`, `.gitignore`
@@ -1313,39 +1313,39 @@ Contents rewritten in prior phases; this commit is pure rename."
 
 ---
 
-### Task 16: Rename `.claude/skills/stagent-app/` directory
+### Task 16: Rename `.claude/skills/ainative-app/` directory
 
 - [ ] **Step 1: Rename dir**
 
 ```bash
-git mv .claude/skills/stagent-app .claude/skills/ainative-app
+git mv .claude/skills/ainative-app .claude/skills/ainative-app
 ```
 
 - [ ] **Step 2: Update frontmatter and external references**
 
 ```bash
-rg -l 'stagent-app' .claude/skills/ainative-app/
+rg -l 'ainative-app' .claude/skills/ainative-app/
 ```
 
-Open each file and update `name: stagent-app` → `name: ainative-app`.
+Open each file and update `name: ainative-app` → `name: ainative-app`.
 
 ```bash
-for f in $(rg -l 'stagent-app' . --glob '!node_modules' --glob '!.git' --glob '!*.bak-*'); do
-  sd 'stagent-app' 'ainative-app' "$f"
+for f in $(rg -l 'ainative-app' . --glob '!node_modules' --glob '!.git' --glob '!*.bak-*'); do
+  sd 'ainative-app' 'ainative-app' "$f"
 done
 ```
 
 - [ ] **Step 3: Verify + commit**
 
 ```bash
-git ls-files | grep -i 'stagent-app'
+git ls-files | grep -i 'ainative-app'
 ```
 
 Expected: zero.
 
 ```bash
 git add -A
-git commit -m "refactor(skills): rename stagent-app skill to ainative-app"
+git commit -m "refactor(skills): rename ainative-app skill to ainative-app"
 ```
 
 ---

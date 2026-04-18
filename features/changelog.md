@@ -82,7 +82,7 @@ Both specs promoted from dogfood findings earlier today now complete.
 
 **Verification:** 210/210 chat + API tests pass. `npx tsc --noEmit` clean. HTTP smoke on live dev server verified replace → add+force → merged state → deactivate end-to-end. Full UI interactive smoke skipped for v1 (rendering logic covered by tsc + component structure matches existing patterns like Pinned entries).
 
-### Dogfood session → 2 new feature specs + `stagent-app` skill
+### Dogfood session → 2 new feature specs + `ainative-app` skill
 
 **Dogfood findings** (full log at `output/screengrabs/dogfood-log-2026-04-14.md`, gitignored per convention):
 
@@ -93,7 +93,7 @@ Real-browser use of Phase 1 + Phase 2 features surfaced 9 observations. Two beca
 
 Other observations captured in the log but not promoted to specs: skill-composition needs no DB fix (Phase 2 correctness holds), `@` popover triggering is fragile under programmatic automation (affects future e2e harness design), discoverability of `#key:value` syntax is low (candidate for a later `chat-filter-hint` spec).
 
-**New skill:** `.claude/skills/stagent-app/SKILL.md` — scaffolds Stagent-native apps by composing shipped primitives (profiles, blueprints, tables, schedules) via YAML manifest. Zero TypeScript required. Emits per-primitive artifacts into the registries that already load them (`.claude/skills/<app>--<profile>/`, `~/.stagent/blueprints/<app>--<blueprint>.yaml`) plus a forward-compatible app manifest at `.claude/apps/<app>/manifest.yaml` for when the deferred `.sap` format lands. Skill is discoverable via the Skill tool registry.
+**New skill:** `.claude/skills/ainative-app/SKILL.md` — scaffolds Stagent-native apps by composing shipped primitives (profiles, blueprints, tables, schedules) via YAML manifest. Zero TypeScript required. Emits per-primitive artifacts into the registries that already load them (`.claude/skills/<app>--<profile>/`, `~/.stagent/blueprints/<app>--<blueprint>.yaml`) plus a forward-compatible app manifest at `.claude/apps/<app>/manifest.yaml` for when the deferred `.sap` format lands. Skill is discoverable via the Skill tool registry.
 
 **Recommended Phase 3:** bundle `chat-composition-ui-v1` + `saved-search-polish-v1` for a ~1-session tight-scope PR. `chat-conversation-branches` (largest remaining `chat-advanced-ux` sub-spec) stays deferred; current evidence points to polishing the shipped features before building the largest unshipped one.
 
