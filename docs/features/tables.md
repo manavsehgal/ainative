@@ -11,7 +11,7 @@ lastUpdated: "2026-04-15"
 
 # Tables
 
-Tables is ainative's structured data system -- a built-in spreadsheet-meets-database that lets you organize business data, track metrics, and build lightweight operational workflows without leaving the platform. Create tables from scratch, import from files, or let an agent build one from a plain-language description. Each table supports inline editing, computed columns, charts, automated triggers, and full agent access so your AI assistants can query, update, and act on your data.
+Tables is `ainative-business`'s structured data system -- a built-in spreadsheet-meets-database that lets you organize business data, track metrics, and build lightweight operational workflows without leaving the platform. Create tables from scratch, import from files, or let an agent build one from a plain-language description. Each table supports inline editing, computed columns, charts, automated triggers, and full agent access so your AI assistants can query, update, and act on your data.
 
 ## Screenshots
 

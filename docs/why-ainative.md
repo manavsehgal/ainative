@@ -1,10 +1,10 @@
 ---
-title: "Why ainative"
+title: "Why ainative-business"
 category: "overview"
-lastUpdated: "2026-03-31"
+lastUpdated: "2026-04-18"
 ---
 
-# Why ainative
+# Why `ainative-business`
 
 ## The Broken AI Agent Stack
 
@@ -22,9 +22,9 @@ AI agents can write code, research markets, draft proposals, and triage support 
 
 **5. Distribution gap.** Setting up an agent workspace should not require cloning a repo, configuring a build system, and managing a database. Operators need `npx ainative-business` — one command, zero config, own your data.
 
-## ainative: AI Business Operating System
+## `ainative-business`: AI Business Operating System
 
-ainative closes all five gaps in a single local-first platform.
+`ainative-business` closes all five gaps in a single local-first platform.
 
 **Projects as business units.** Organize work into projects with scoped context and working directories. Each project is a container for tasks, documents, workflows, and agent activity — mapping directly to how you think about your business.
 
@@ -42,7 +42,7 @@ ainative closes all five gaps in a single local-first platform.
 
 ## Who It's For
 
-**Solo founders** who need to run content pipelines, lead research, support triage, and other business processes without hiring a team. ainative's profiles and workflows replace the coordination overhead of managing multiple tools and prompts.
+**Solo founders** who need to run content pipelines, lead research, support triage, and other business processes without hiring a team. `ainative-business`'s profiles and workflows replace the coordination overhead of managing multiple tools and prompts.
 
 **Micro-teams (2-10 people)** who want governed AI operations without building internal tooling. Projects organize workstreams, profiles standardize agent behavior across team members, and the inbox keeps a human in the loop for high-stakes decisions.
 

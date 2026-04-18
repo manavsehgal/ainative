@@ -83,7 +83,7 @@ const observeItems: NavItem[] = [
 ];
 
 const learnItems: NavItem[] = [
-  { title: "AI Native Book", href: "/book", icon: BookOpen, description: "Philosophy and patterns" },
+  { title: "AI Native Business", href: "/book", icon: BookOpen, description: "Philosophy and patterns" },
   { title: "User Guide", href: "/user-guide", icon: BookMarked, description: "How-tos and walkthroughs" },
 ];
 

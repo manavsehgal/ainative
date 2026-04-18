@@ -11,7 +11,7 @@ lastUpdated: "2026-04-15"
 
 # Shared Components
 
-ainative maintains a library of reusable components that enforce layout consistency and reduce duplication across all surfaces. These components implement the Calm Ops design tokens and are used throughout the application.
+`ainative-business` maintains a library of reusable components that enforce layout consistency and reduce duplication across all surfaces. These components implement the Calm Ops design tokens and are used throughout the application.
 
 ## Key Features
 

@@ -11,7 +11,7 @@ lastUpdated: "2026-04-15"
 
 # Tool Permissions
 
-ainative provides a layered permission system that balances agent autonomy with human oversight. Trust tiers control what tools an agent can invoke, while persistence and ambient approval mechanisms reduce friction for trusted operations.
+`ainative-business` provides a layered permission system that balances agent autonomy with human oversight. Trust tiers control what tools an agent can invoke, while persistence and ambient approval mechanisms reduce friction for trusted operations.
 
 ## Screenshots
 

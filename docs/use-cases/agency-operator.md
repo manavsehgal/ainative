@@ -6,11 +6,11 @@ lastUpdated: "2026-03-31"
 
 # Agency Operator
 
-You run an AI agency — deploying agent workflows for clients across industries. Each client has different requirements, different content domains, and different tolerance for AI autonomy. ainative gives you a multi-tenant operating layer where projects map to clients, profiles customize per vertical, and workflow blueprints package your service offerings.
+You run an AI agency — deploying agent workflows for clients across industries. Each client has different requirements, different content domains, and different tolerance for AI autonomy. `ainative-business` gives you a multi-tenant operating layer where projects map to clients, profiles customize per vertical, and workflow blueprints package your service offerings.
 
-## How ainative Maps to Your Agency
+## How `ainative-business` Maps to Your Agency
 
-| Agency Concept | ainative Feature | What It Does |
+| Agency Concept | `ainative-business` Feature | What It Does |
 |---------------|----------------|--------------|
 | Client portfolios | **Projects** | One project per client with scoped documents, tasks, and working directories |
 | Vertical expertise | **Profiles** | Custom agent profiles per industry — e-commerce researcher, legal document writer, SaaS code reviewer |
@@ -23,13 +23,13 @@ You run an AI agency — deploying agent workflows for clients across industries
 
 ### Multi-Project Client Management
 
-Each client gets their own ainative project. Upload client-specific reference documents (brand guidelines, SOPs, competitive analysis) that agents automatically consult during execution. Working directories scope file operations to the client's deliverables folder.
+Each client gets their own `ainative-business` project. Upload client-specific reference documents (brand guidelines, SOPs, competitive analysis) that agents automatically consult during execution. Working directories scope file operations to the client's deliverables folder.
 
 **Pattern:** Create a project template checklist — brand docs uploaded, relevant profiles assigned, workflow blueprints instantiated, schedules configured, budget guardrails set. Repeat for each new client onboarding.
 
 ### Profile Customization Per Vertical
 
-Start with ainative's 21 built-in profiles, then customize or create new ones for your verticals:
+Start with `ainative-business`'s 21 built-in profiles, then customize or create new ones for your verticals:
 
 - **E-commerce:** Product description writer, competitor price monitor, review sentiment analyzer
 - **Legal:** Contract clause reviewer, compliance checker, case research summarizer
@@ -53,7 +53,7 @@ Each blueprint defines required variables (client name, industry, deliverable fo
 
 ### Multi-Provider Strategy
 
-Different clients may prefer different AI providers based on cost, capability, or compliance requirements. ainative's runtime registry lets you:
+Different clients may prefer different AI providers based on cost, capability, or compliance requirements. `ainative-business`'s runtime registry lets you:
 
 - Run research tasks on Claude for reasoning depth
 - Run code generation on Codex for coding performance
@@ -81,4 +81,4 @@ npx ainative-business
 4. Set a schedule for recurring deliverables and configure budget guardrails
 5. Use the cost dashboard to track per-client spend after the first week
 
-See the [Work Use Journey](../journeys/work-use.md) for a guided walkthrough of team operations, or [Why ainative](../why-ainative.md) for the full platform overview.
+See the [Work Use Journey](../journeys/work-use.md) for a guided walkthrough of team operations, or [Why `ainative-business`](../why-ainative.md) for the full platform overview.

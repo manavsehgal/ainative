@@ -6,11 +6,11 @@ lastUpdated: "2026-03-31"
 
 # Solo Founder
 
-You are one person running a business. You handle product, marketing, support, ops, and finance — often in the same afternoon. ainative lets you deploy AI agents as your team, with the governance and cost controls a business requires.
+You are one person running a business. You handle product, marketing, support, ops, and finance — often in the same afternoon. `ainative-business` lets you deploy AI agents as your team, with the governance and cost controls a business requires.
 
-## How ainative Maps to Your Business
+## How `ainative-business` Maps to Your Business
 
-| Business Concept | ainative Feature | What It Does |
+| Business Concept | `ainative-business` Feature | What It Does |
 |-----------------|----------------|--------------|
 | Business units | **Projects** | Organize work by product line, client, or initiative. Each project scopes tasks, documents, and agent activity |
 | Business processes | **Workflows** | Multi-step automations with 6 patterns — sequence, parallel, loop, planner-executor, checkpoint, swarm |
@@ -72,4 +72,4 @@ npx ainative-business
 3. Run the task and approve tool requests from the inbox
 4. Check the cost dashboard after a few runs to establish your baseline spend
 
-See the [Personal Use Journey](../journeys/personal-use.md) for a step-by-step walkthrough, or [Why ainative](../why-ainative.md) for the full platform overview.
+See the [Personal Use Journey](../journeys/personal-use.md) for a step-by-step walkthrough, or [Why `ainative-business`](../why-ainative.md) for the full platform overview.

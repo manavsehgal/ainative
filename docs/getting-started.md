@@ -6,19 +6,19 @@ lastUpdated: "2026-03-31"
 
 # Getting Started
 
-Get ainative running in under a minute and create your first AI-powered business task.
+Get `ainative-business` running in under a minute and create your first AI-powered business task.
 
 ## Installation
 
 ### Quick Start (npx)
 
-ainative runs as a single command with no clone or build step required:
+`ainative-business` runs as a single command with no clone or build step required:
 
 ```bash
 npx ainative-business
 ```
 
-This downloads and launches ainative on [localhost:3000](http://localhost:3000). All data is stored locally:
+This downloads and launches `ainative-business` on [localhost:3000](http://localhost:3000). All data is stored locally:
 
 - **Database**: `~/.ainative/ainative.db` (SQLite with WAL mode)
 - **Uploads**: `~/.ainative/uploads/`
@@ -43,7 +43,7 @@ npm run dev
 
 ## First Run
 
-When you open ainative for the first time at [localhost:3000](http://localhost:3000):
+When you open `ainative-business` for the first time at [localhost:3000](http://localhost:3000):
 
 1. **Home Workspace** appears with empty stat cards, an activity feed placeholder, and sidebar navigation
 2. **Configure a runtime** by navigating to **Settings** to enter your provider credentials
@@ -102,7 +102,7 @@ Agents request permission before using tools. Streamline approvals from **Settin
 
 ### Delivery Channels
 
-Receive schedule results and chat with ainative from Slack, Telegram, or webhooks:
+Receive schedule results and chat with `ainative-business` from Slack, Telegram, or webhooks:
 
 1. Navigate to **Settings** and scroll to **Delivery Channels**
 2. Click **+ Add Channel** and configure your messaging service
@@ -113,7 +113,7 @@ See the [Delivery Channels](./features/delivery-channels.md) guide for detailed 
 
 ### Seed Sample Data
 
-To explore ainative with example data before creating your own:
+To explore `ainative-business` with example data before creating your own:
 
 1. Navigate to **Settings** then **Data Management**
 2. Click **Seed Sample Data**
@@ -133,7 +133,7 @@ To explore ainative with example data before creating your own:
 
 ## CLI Usage
 
-ainative includes a CLI for headless and scripted workflows:
+`ainative-business` includes a CLI for headless and scripted workflows:
 
 ```bash
 # Build the CLI from source
@@ -143,7 +143,7 @@ npm run build:cli
 node dist/cli.js
 
 # Or use the published package
-ainative
+npx ainative-business
 ```
 
 ### Useful Commands

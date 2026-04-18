@@ -11,7 +11,7 @@ lastUpdated: "2026-03-31"
 
 # Home Workspace
 
-The Home Workspace is your command center when you open ainative. It provides a real-time overview of agent activity, business tasks, and items that need your attention -- so you can triage your AI-powered operations at a glance. The persistent sidebar organizes all areas into four logical groups for quick navigation.
+The Home Workspace is your command center when you open `ainative-business`. It provides a real-time overview of agent activity, business tasks, and items that need your attention -- so you can triage your AI-powered operations at a glance. The persistent sidebar organizes all areas into five logical groups for quick navigation.
 
 ## Screenshots
 
@@ -37,7 +37,7 @@ The sidebar organizes `ainative-business` into five groups:
 - **Home** -- Dashboard, Tasks, Inbox, Chat
 - **Compose** -- Projects, Workflows, Profiles, Schedules, Documents, Tables
 - **Observe** -- Monitor, Cost & Usage, Analytics
-- **Learn** -- AI Native Book, User Guide
+- **Learn** -- AI Native Business, User Guide
 - **Configure** -- Environment, Settings
 
 ### Trust Tier Badge
@@ -49,7 +49,7 @@ The sidebar footer shows the active workspace name and path, so you always know 
 ## How To
 
 ### Check What Needs Your Attention
-1. Open ainative -- the home workspace loads by default at `/`.
+1. Open `ainative-business` -- the home workspace loads by default at `/`.
 2. Scan the stat cards for any tasks awaiting review.
 3. Scroll to the "Needs Attention" section for actionable items.
 4. Click any item to navigate directly to the relevant detail view.
@@ -58,7 +58,7 @@ The sidebar footer shows the active workspace name and path, so you always know 
 1. Use the sidebar on the left to find the area you need.
 2. Work items (Dashboard, Inbox, Chat, Projects, Workflows, Documents) are in the top group.
 3. Management tools (Monitor, Profiles, Schedules, Cost & Usage) are in the second group.
-4. Learning resources (AI Native Book, User Guide) are in the third group.
+4. Learning resources (AI Native Business, User Guide) are in the third group.
 5. Configuration (Environment, Settings) is at the bottom.
 
 ### Check Your Trust Tier

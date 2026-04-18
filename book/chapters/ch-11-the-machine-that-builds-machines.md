@@ -1,6 +1,6 @@
 ---
 title: "The Machine That Builds Machines"
-subtitle: "ainative Building Itself Using Itself"
+subtitle: "ainative-business Building Itself Using Itself"
 chapter: 11
 part: 4
 readingTime: 14

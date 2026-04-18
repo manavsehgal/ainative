@@ -12,10 +12,10 @@ lastUpdated: "2026-04-01"
 
 # Delivery Channels
 
-Delivery Channels connect ainative to external messaging services. Channels support two modes:
+Delivery Channels connect `ainative-business` to external messaging services. Channels support two modes:
 
-- **Outbound** -- ainative pushes notifications when scheduled tasks fire, complete, or need attention
-- **Bidirectional (Chat)** -- Users can chat with ainative agents directly from Slack or Telegram, and receive responses in the same conversation
+- **Outbound** -- `ainative-business` pushes notifications when scheduled tasks fire, complete, or need attention
+- **Bidirectional (Chat)** -- Users can chat with `ainative-business` agents directly from Slack or Telegram, and receive responses in the same conversation
 
 Channels are configured in Settings and can be toggled between outbound-only and bidirectional mode at any time.
 
@@ -33,14 +33,14 @@ Three adapter types are supported, each requiring different configuration:
 
 ### Bidirectional Chat
 
-When Chat mode is enabled on a Slack or Telegram channel, you can message ainative directly from your messaging app. ainative processes your message through the same chat engine used in the web UI, including:
+When Chat mode is enabled on a Slack or Telegram channel, you can message `ainative-business` directly from your messaging app. `ainative-business` processes your message through the same chat engine used in the web UI, including:
 
 - **Multi-turn conversations** -- context is maintained across messages
 - **Tool access** -- the agent can query projects, tasks, documents, schedules, and more
-- **Permission handling** -- if a tool requires approval, ainative asks in the channel and you reply with "approve" or "deny"
+- **Permission handling** -- if a tool requires approval, `ainative-business` asks in the channel and you reply with "approve" or "deny"
 - **Turn locking** -- if you send a message while the agent is still processing, you get a "Still processing, please wait..." reply
 
-Channel conversations also appear in the ainative Chat sidebar, so you can continue them from the web UI.
+Channel conversations also appear in the `ainative-business` Chat sidebar, so you can continue them from the web UI.
 
 ### Connection Testing
 
@@ -67,7 +67,7 @@ When Chat is enabled, a webhook URL is displayed below the channel card for refe
 
 ### Schedule Integration
 
-When a schedule fires, ainative checks if it has delivery channels assigned. If so, a notification is posted to each active channel containing:
+When a schedule fires, `ainative-business` checks if it has delivery channels assigned. If so, a notification is posted to each active channel containing:
 
 - The schedule name and firing number
 - The task prompt (truncated)
@@ -77,13 +77,13 @@ Delivery failures are logged but never block task execution -- the agent work co
 
 ### Auto-Polling (Local Development)
 
-For local development, ainative includes a built-in poller that checks Telegram and Slack for new messages every 5 seconds. This runs automatically when the dev server starts -- no public URL or webhook registration needed. The poller only polls channels that have both Chat enabled and Active status on.
+For local development, `ainative-business` includes a built-in poller that checks Telegram and Slack for new messages every 5 seconds. This runs automatically when the dev server starts -- no public URL or webhook registration needed. The poller only polls channels that have both Chat enabled and Active status on.
 
 ## How To
 
-### Connect Slack to ainative
+### Connect Slack to `ainative-business`
 
-This walkthrough creates a Slack App and connects it to ainative for both outbound notifications and bidirectional chat.
+This walkthrough creates a Slack App and connects it to `ainative-business` for both outbound notifications and bidirectional chat.
 
 **Part 1 -- Create the Slack App**
 
@@ -116,9 +116,9 @@ This walkthrough creates a Slack App and connects it to ainative for both outbou
 16. Open Slack in a browser and navigate to the target channel
 17. The Channel ID is in the URL: `app.slack.com/client/WORKSPACE_ID/CHANNEL_ID` -- copy the `CHANNEL_ID` (starts with `C`)
 
-**Part 5 -- Add the Channel in ainative**
+**Part 5 -- Add the Channel in `ainative-business`**
 
-18. Open **Settings** in ainative (sidebar → Configure → Settings)
+18. Open **Settings** in `ainative-business` (sidebar → Configure → Settings)
 19. Scroll down to the **Delivery Channels** section
 20. Click **+ Add Channel**
 21. Set Channel Type to **Slack**
@@ -141,9 +141,9 @@ This walkthrough creates a Slack App and connects it to ainative for both outbou
 3. Search for your bot by its username and **send it any message** (e.g., "hello") -- this is required before you can retrieve your Chat ID
 4. Get your **Chat ID** by visiting `https://api.telegram.org/bot<TOKEN>/getUpdates` in your browser -- the `chat.id` field in the JSON response contains the value you need (negative for groups). If the result array is empty, send another message to the bot first, then reload the URL
 
-**Part 2 -- Add the Channel in ainative**
+**Part 2 -- Add the Channel in `ainative-business`**
 
-5. In ainative Settings → Delivery Channels → **+ Add Channel**
+5. In `ainative-business` Settings → Delivery Channels → **+ Add Channel**
 6. Set Channel Type to **Telegram**
 7. Enter the Bot Token and Chat ID
 8. Click **Create Channel**
@@ -154,7 +154,7 @@ This walkthrough creates a Slack App and connects it to ainative for both outbou
 
 ### Add a Generic Webhook
 
-1. In ainative Settings → Delivery Channels → **+ Add Channel**
+1. In `ainative-business` Settings → Delivery Channels → **+ Add Channel**
 2. Set Channel Type to **Webhook**
 3. Enter the destination **URL** (any HTTP endpoint that accepts POST requests)
 4. Optionally enter **Custom Headers** as JSON (e.g., `{"Authorization": "Bearer your-token"}`)

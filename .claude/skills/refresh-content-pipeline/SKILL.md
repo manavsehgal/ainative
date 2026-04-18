@@ -22,6 +22,10 @@ A **thin, change-aware orchestrator**. This skill holds no business logic of its
 
 **Delegate, never duplicate.** If the downstream skills change how they discover routes, scan features, or parse frontmatter, this skill should not need updates — it only knows *when* to invoke them and *in what order*.
 
+## Brand Convention (Delegated)
+
+The naming distinction between **`ainative-business`** (software — npm package, CLI, code-styled in prose) and **ainative** (brand/project/repo/domain — plain text) is owned by `/doc-generator`, `/book-updater`, and `/user-guide-sync` per `handoff/2026-04-18-ainative-business-naming-and-rendering.md`. The book title is **AI Native Business** (plain title case). This orchestrator does not enforce brand rules directly — each downstream skill applies them to its own output. The Stage 4 README validator only intervenes inside `<!-- ABOUT:BEGIN … --> … <!-- ABOUT:END -->` markers (synced verbatim from `https://ainative.business/about/`) and code-block symbol checks, never in free-form prose.
+
 ## Why This Skill Exists
 
 Before this skill, refreshing derived content meant invoking 4+ skills by hand in the right order, remembering the coverage-gap feedback loop between `/doc-generator` and `/user-guide-sync`, and manually updating hardcoded stat numbers in README and book chapters. Two concrete drift sources motivated it:
@@ -52,7 +56,7 @@ This skill fixes both by treating content as a derived output of code state, wit
   [4] README + code-sample validator (in-skill logic)
           │  Reads stats snapshot. Auto-edits when drift is unambiguous.
           ▼
-  [5] /book-updater ──▶ book/chapters/, ainative.io/
+  [5] /book-updater ──▶ book/chapters/, ainative-business.github.io/
           │
           ▼
   [6] Write .refresh-pipeline/last-run.json
@@ -146,11 +150,11 @@ Stages 1–3 and 5 are delegations. Stage 4 is the substantive in-skill logic.
 
 4. **About section sync** in `README.md`. The About block is wrapped in:
    ```
-   <!-- ABOUT:BEGIN source=https://ainative.io/about/ -->
+   <!-- ABOUT:BEGIN source=https://ainative.business/about/ -->
    …content…
    <!-- ABOUT:END -->
    ```
-   Before validating, re-run `/capture https://ainative.io/about/` to refresh the canonical snapshot at `.claude/reference/ainative-io-about/`. Then diff the README body between the ABOUT markers against the captured markdown (normalizing whitespace and accepting the documented rename `### Why ainative` → `### Research Premise`). When the two differ, auto-replace the README content between the markers with the captured content (applying the same rename). If `/capture` fails (network down, upstream HTML change), skip the auto-edit and record a "reported drift" entry pointing at the failure — do not delete or truncate the existing About block.
+   Before validating, re-run `/capture https://ainative.business/about/` to refresh the canonical snapshot at `.claude/reference/ainative-business-about/`. Then diff the README body between the ABOUT markers against the captured markdown (normalizing whitespace and accepting the documented rename `### Why ainative-business` → `### Research Premise`). When the two differ, auto-replace the README content between the markers with the captured content (applying the same rename). Upstream wording (including `` `ainative-business` `` backticks and `AI Native Business` book title) is canonical — do not retroactively change brand styling inside the block. If `/capture` fails (network down, upstream HTML change), skip the auto-edit and record a "reported drift" entry pointing at the failure — do not delete or truncate the existing About block.
 
 ### Auto-edit rules
 
@@ -252,7 +256,7 @@ Run these checks after creating or modifying this skill:
 4. **Feedback loop** — force a coverage gap in `docs/.coverage-gaps.json` after stage 3 → verify stage 2 re-runs exactly once, then stage 3 re-verifies.
 5. **Marker auto-edit** — introduce a stale `<!-- STAT:featureCount -->99<!-- /STAT -->` in README → stage 4 corrects it to the snapshot value and logs the auto-edit.
 6. **Code-block rename** — rename a symbol exported from `src/lib/chat/ainative-tools/` → stage 4 updates references in README and `docs/features/*.md`.
-7. **About sync** — introduce a trivial edit between `<!-- ABOUT:BEGIN … -->` and `<!-- ABOUT:END -->` in README (e.g., change "Ex Amazon AGI" to "Ex Amazon"). Run Stage 4. Expected: the block is restored to match `.claude/reference/ainative-io-about/` content, one auto-edit is logged as `auto-edit: README.md ABOUT block ← ainative.io/about`.
+7. **About sync** — introduce a trivial edit between `<!-- ABOUT:BEGIN … -->` and `<!-- ABOUT:END -->` in README (e.g., change "Ex Amazon AGI" to "Ex Amazon"). Run Stage 4. Expected: the block is restored to match `.claude/reference/ainative-business-about/` content, one auto-edit is logged as `auto-edit: README.md ABOUT block ← ainative.business/about`.
 8. **No duplication** — `rg -n "route discovery|image copying|frontmatter parsing" .claude/skills/refresh-content-pipeline/` should return zero matches. All such logic lives in downstream skills.
 
 ---

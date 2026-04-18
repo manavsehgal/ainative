@@ -1,15 +1,15 @@
 ---
-title: "ainative Documentation"
+title: "ainative-business Documentation"
 category: "index"
-lastUpdated: "2026-04-15"
+lastUpdated: "2026-04-18"
 ---
 
-# ainative Documentation
+# `ainative-business` Documentation
 
-ainative is an AI Business Operating System that lets solo founders and micro-teams run their entire business with AI agents -- locally, governed, and cost-controlled. Deploy specialized profiles across five runtime providers (including local models via Ollama), automate multi-step business processes with heartbeat scheduling and natural language cadence, and maintain full visibility over spend and execution across channels like Slack and Telegram.
+`ainative-business` is an AI Business Operating System that lets solo founders and micro-teams run their entire business with AI agents -- locally, governed, and cost-controlled. Deploy specialized profiles across five runtime providers (including local models via Ollama), automate multi-step business processes with heartbeat scheduling and natural language cadence, and maintain full visibility over spend and execution across channels like Slack and Telegram.
 
 ## Getting Started
-- [Why ainative](./why-ainative.md) -- The problem, the solution, and who it's for
+- [Why `ainative-business`](./why-ainative.md) -- The problem, the solution, and who it's for
 - [Quick Start Guide](./getting-started.md)
 
 ## Use Cases

@@ -11,7 +11,7 @@ lastUpdated: "2026-04-15"
 
 # Agent Intelligence
 
-ainative layers several AI-powered capabilities on top of basic task execution. From one-click description improvement to multi-agent coordination, episodic memory, and async handoffs, these features reduce manual effort and improve output quality across the workspace.
+`ainative-business` layers several AI-powered capabilities on top of basic task execution. From one-click description improvement to multi-agent coordination, episodic memory, and async handoffs, these features reduce manual effort and improve output quality across the workspace.
 
 ## Key Features
 

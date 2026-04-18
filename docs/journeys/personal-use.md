@@ -11,11 +11,11 @@ lastUpdated: "2026-04-16"
 
 # Personal Use Guide
 
-Meet Alex, a solo founder who just discovered ainative. Alex has a side project -- a personal portfolio website -- that needs planning and execution help, but has never used an AI business operating system before. Over the next 30 minutes, Alex will explore the platform, chat with AI, create a project, manage tasks on a kanban board, set up a heartbeat schedule, and discover delivery channels for Telegram notifications. By the end, Alex will have a fully organized project with proactive AI monitoring.
+Meet Alex, a solo founder who just discovered `ainative-business`. Alex has a side project -- a personal portfolio website -- that needs planning and execution help, but has never used an AI business operating system before. Over the next 30 minutes, Alex will explore the platform, chat with AI, create a project, manage tasks on a kanban board, set up a heartbeat schedule, and discover delivery channels for Telegram notifications. By the end, Alex will have a fully organized project with proactive AI monitoring.
 
 ## Prerequisites
 
-- ainative installed and running locally (`npm run dev`)
+- `ainative-business` installed and running locally (`npm run dev`)
 - A browser pointed at `http://localhost:3000`
 - A project idea in mind (we will use a "Portfolio Website" as our example)
 
@@ -28,7 +28,7 @@ Alex opens `ainative-business` for the first time. The home page greets with a s
 ![Home page with sidebar expanded showing navigation and activity overview](../screengrabs/home-list.png)
 
 1. Open `ainative-business` at `http://localhost:3000` to land on the home page
-2. Scan the **sidebar** on the left -- notice the five groups: Home (Dashboard, Tasks, Inbox, Chat), Compose (Projects, Workflows, Profiles, Schedules, Documents, Tables), Observe (Monitor, Cost & Usage, Analytics), Learn (AI Native Book, User Guide), and Configure (Environment, Settings)
+2. Scan the **sidebar** on the left -- notice the five groups: Home (Dashboard, Tasks, Inbox, Chat), Compose (Projects, Workflows, Profiles, Schedules, Documents, Tables), Observe (Monitor, Cost & Usage, Analytics), Learn (AI Native Business, User Guide), and Configure (Environment, Settings)
 3. Review the **stat cards** showing active tasks, completed today, awaiting review, active projects, and active workflows
 4. Note the **needs attention** section that will surface items requiring your input as agents run
 
@@ -48,7 +48,7 @@ Alex scrolls down the home page and discovers additional context -- recent proje
 
 ### Step 3: Navigate with the Command Palette
 
-Before diving deeper, Alex learns the fastest way to get around ainative -- the Command Palette.
+Before diving deeper, Alex learns the fastest way to get around `ainative-business` -- the Command Palette.
 
 ![Command palette overlay showing search results](../screengrabs/command-palette-search.png)
 
@@ -171,7 +171,7 @@ Alex wants to keep a structured list of portfolio pages, their status, and targe
 
 ### Step 12: Set Up a Heartbeat Schedule
 
-Alex wants ainative to proactively check on the portfolio project every morning. A heartbeat schedule evaluates conditions before deciding whether to act -- it only creates tasks when something meaningful needs attention.
+Alex wants `ainative-business` to proactively check on the portfolio project every morning. A heartbeat schedule evaluates conditions before deciding whether to act -- it only creates tasks when something meaningful needs attention.
 
 ![Schedules list showing active and paused schedules](../screengrabs/schedules-list.png)
 
@@ -197,9 +197,9 @@ Alex wants to receive schedule results on the go. Setting up a Telegram delivery
 5. Get your Chat ID by messaging the bot and visiting the getUpdates URL
 6. Enter the Bot Token and Chat ID, then click **Create Channel**
 7. Click **Test** to verify -- you should see a test message in Telegram
-8. Toggle **Chat** on to enable bidirectional mode -- now you can message ainative from Telegram
+8. Toggle **Chat** on to enable bidirectional mode -- now you can message `ainative-business` from Telegram
 
-> **Tip:** With Chat mode enabled, you can ask ainative questions directly from Telegram. "What's the status of my portfolio project?" works just like the web chat.
+> **Tip:** With Chat mode enabled, you can ask `ainative-business` questions directly from Telegram. "What's the status of my portfolio project?" works just like the web chat.
 
 ### Step 14: Browse the User Guide
 
@@ -212,13 +212,13 @@ Alex discovers the built-in documentation hub.
 3. Check the **guided journeys** for your current skill level
 4. Use the feature grid to discover areas you have not tried yet
 
-### Step 15: Read the AI Native Book
+### Step 15: Read the AI Native Business book
 
-Alex wants deeper context on how ainative fits into the broader shift to AI-native work. The Living Book is built into the sidebar under the **Learn** group.
+Alex wants deeper context on how `ainative-business` fits into the broader shift to AI-native work. The Living Book is built into the sidebar under the **Learn** group.
 
-![AI Native Book — chapter list with reading progress](../screengrabs/book-list.png)
+![AI Native Business — chapter list with reading progress](../screengrabs/book-list.png)
 
-1. Click **AI Native Book** in the sidebar under the **Learn** group to open the chapter list
+1. Click **AI Native Business** in the sidebar under the **Learn** group to open the chapter list
 2. Scan the table of contents — chapters are organised from foundational concepts (From Hierarchy to Intelligence) through advanced topics (Autonomous Organization, The Road Ahead)
 3. Pick a reading path that matches your current focus:
    - **Newcomer path** — start with the intro chapters on the AI-native blueprint and refinery

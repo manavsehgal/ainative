@@ -12,7 +12,7 @@ relatedDocs: ["workflows", "profiles", "schedules"]
 
 Throughout this book we have examined six case studies, each from a company building AI-native systems in production. Each revealed a pattern. Each pattern maps to something `ainative-business` does today and something it will do tomorrow. The following table is the distillation of everything we have learned.
 
-| Pattern (Source) | Current in ainative | Future Direction |
+| Pattern (Source) | Current in `ainative-business` | Future Direction |
 |---|---|---|
 | Devbox isolation (Stripe) | Working directory per project | Sandbox execution with snapshot/restore |
 | Background agents (Ramp) | Fire-and-forget tasks | Persistent sessions surviving browser close |

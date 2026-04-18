@@ -544,7 +544,7 @@ Read these files to generate README content:
 - `CLAUDE.md` — tech stack, quick start commands, architecture summary
 - `features/*.md` — individual feature descriptions (frontmatter `status` field)
 - `package.json` — project name, version, description
-- `.claude/reference/ainative-io-about/` — captured snapshot of https://ainative.io/about/, used verbatim as the `## About Author` section body (rename `### Why ainative` → `### Research Premise` to avoid colliding with the top-level `## Why ainative` heading). If the snapshot is missing, invoke `/capture https://ainative.io/about/` before continuing.
+- `.claude/reference/ainative-business-about/` — captured snapshot of https://ainative.business/about/, used verbatim as the `## About Author` section body (rename `### Why ainative-business` → `### Research Premise` to avoid colliding with the top-level `## Why \`ainative-business\`` heading). If the snapshot is missing, invoke `/capture https://ainative.business/about/` before continuing. The captured page already applies canonical brand styling — `` `ainative-business` `` in backticks for software and `AI Native Business` plain-title for the book — so do not retroactively re-style the block contents.
 
 ### README Structure
 
@@ -576,10 +576,10 @@ Each links to a detail section or doc below the fold.
 
 ```
 ## About Author
-Insert the content of `.claude/reference/ainative-io-about/` verbatim,
-wrapped in `<!-- ABOUT:BEGIN source=https://ainative.io/about/ -->` and
+Insert the content of `.claude/reference/ainative-business-about/` verbatim,
+wrapped in `<!-- ABOUT:BEGIN source=https://ainative.business/about/ -->` and
 `<!-- ABOUT:END -->` sync markers. Always sits immediately after
-`## Why ainative` and before `## Runtime Bridge` / `## Architecture`.
+`## Why \`ainative-business\`` and before `## Runtime Bridge` / `## Architecture`.
 
 ## Architecture
 How It Works diagram (code block or mermaid), rendering pattern,
@@ -635,7 +635,7 @@ Condensed view of features/roadmap.md.
 2. **Identify completed/in-progress features** — only these appear in the Features section; group by domain
 3. **Summarize architecture** — translate CLAUDE.md's developer-facing architecture into a product-facing "How It Works" overview
 4. **Generate README.md** — write or overwrite the file following the pyramid structure above
-4a. **Inject About section** — read `.claude/reference/ainative-io-about/` (invoking `/capture https://ainative.io/about/` first if missing), rename the `### Why ainative` subheading to `### Research Premise`, and splice the result between `<!-- ABOUT:BEGIN source=https://ainative.io/about/ -->` and `<!-- ABOUT:END -->` markers immediately after the `## Why ainative` section
+4a. **Inject About section** — read `.claude/reference/ainative-business-about/` (invoking `/capture https://ainative.business/about/` first if missing), rename the `### Why ainative-business` subheading to `### Research Premise`, and splice the result between `<!-- ABOUT:BEGIN source=https://ainative.business/about/ -->` and `<!-- ABOUT:END -->` markers immediately after the `## Why \`ainative-business\`` section. The captured upstream page is authoritative for wording and brand styling — keep backticks around `` `ainative-business` `` and plain "AI Native Business" intact.
 5. **Verify progressive disclosure** — confirm hero + value prop + Quick Start + feature highlights appear in the first ~50 lines
 6. **Verify scannability** — ensure no section is a wall of text; every section uses tables, lists, or code blocks
 7. **Log in changelog** — add a "README updated" entry if part of a Ship phase

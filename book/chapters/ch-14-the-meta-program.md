@@ -114,7 +114,7 @@ export const GROWTH_PROFILES: GrowthProfileDef[] = [
 ];
 ```
 
-Both serializations load through the same profile registry. The registry does not care whether a profile arrived as YAML or as an imported module. What it cares about is the shape — a name, a domain, a tool allowlist, a system prompt, optional behavioral tests. Four new Growth profiles join the twenty-one built-ins that ship with ainative. They appear in the same profile gallery. They route the same way through the multi-agent classifier described in Chapter 8.
+Both serializations load through the same profile registry. The registry does not care whether a profile arrived as YAML or as an imported module. What it cares about is the shape — a name, a domain, a tool allowlist, a system prompt, optional behavioral tests. Four new Growth profiles join the twenty-one built-ins that ship with `ainative-business`. They appear in the same profile gallery. They route the same way through the multi-agent classifier described in Chapter 8.
 
 **Layer 4: Triggers that turn rows into agent work.** The most interesting primitive is the row trigger. When the Growth bootstrap runs, it installs two triggers on the tables it just created:
 

@@ -16,19 +16,19 @@ Open [localhost:3000](http://localhost:3000). That's it — zero config, local S
 
 **Profiles & Policies** · **Blueprints & Schedules** · **Built-in Playbook** · **Open Source**
 
-<img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/home-list.png" alt="ainative home workspace" width="1200" />
+<img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/home-list.png" alt="ainative-business home workspace" width="1200" />
 
 | Home Workspace | Reusable Profiles | Workflow Blueprints | Governed Execution |
 |:-:|:-:|:-:|:-:|
 | Workspace briefing with active work, pending review, project signals, and live activity | Specialist definitions with prompts, tool policy, and runtime tuning you can reuse | Pre-configured templates with dynamic forms, YAML editing, and lineage tracking | Human-in-the-loop approvals, tool permissions, and ambient supervision |
 
-<img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/home-below-fold.png" alt="ainative home workspace below fold — projects, activity feed, and signals" width="1200" />
+<img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/home-below-fold.png" alt="ainative-business home workspace below fold — projects, activity feed, and signals" width="1200" />
 
 ---
 
-## Why ainative
+## Why `ainative-business`
 
-The AI agent stack is broken for business operators. You can spin up an agent in minutes — but running it reliably for real work means stitching together orchestration, governance, cost controls, and team coordination yourself. ainative closes that gap with a single local-first platform where agents do the work and you stay in control.
+The AI agent stack is broken for business operators. You can spin up an agent in minutes — but running it reliably for real work means stitching together orchestration, governance, cost controls, and team coordination yourself. `ainative-business` closes that gap with a single local-first platform where agents do the work and you stay in control.
 
 - **Local-first** — SQLite database, no cloud dependency, `npx ainative-business` and go
 - **Multi-provider** — Claude Code + OpenAI Codex App Server behind one runtime registry
@@ -47,11 +47,11 @@ The AI agent stack is broken for business operators. You can spin up an agent in
 
 Solutions Leader, AWS Frontier AI.
 
-Author, AI Native open book. 2M+ Kaggle views. Ex Amazon AGI.
+Author, AI Native Business open book. 2M+ Kaggle views. Ex Amazon AGI.
 
 #### A personal research project
 
-ainative & AI Native — Free and open source. Building AI Native over weekends, using personal laptop and capped AI plans.
+`ainative-business` & AI Native Business — Free and open source. Building AI Native Business over weekends, using personal laptop and capped AI plans.
 
 #### Executive Credentials
 
@@ -61,7 +61,7 @@ ainative & AI Native — Free and open source. Building AI Native over weekends,
 
 #### Short version
 
-> "ainative is a personal research project exploring what it takes to build AI-native on a shoestring budget over weekends." The AI Native open book serves as its 14-chapter playbook expanding this research.
+> "`ainative-business` is a personal research project exploring what it takes to build AI-native on a shoestring budget over weekends." The AI Native Business open book serves as its 14-chapter playbook expanding this research.
 
 ### Bio
 
@@ -69,11 +69,11 @@ Manav is a solutions leader at AWS Frontier AI, collaborating with Anthropic, NV
 
 ### Research Premise
 
-"ainative is a personal research project exploring what an AI-native operating system looks like." The AI Native book is its 14-chapter playbook for building autonomous business systems with AI agents.
+"`ainative-business` is a personal research project exploring what an AI-native operating system looks like." The AI Native Business book is its 14-chapter playbook for building autonomous business systems with AI agents.
 
 ### Attribution
 
-ainative and AI Native are personal works of Manav Sehgal created in own personal time and resources. While they may refer to AWS technologies which enable the AI Native promise, the opinions expressed in the website are author's personal opinions and not that of the employer.
+`ainative-business` and AI Native Business are personal works of Manav Sehgal created in own personal time and resources. While they may refer to AWS technologies which enable the AI Native promise, the opinions expressed in the website are author's personal opinions and not that of the employer.
 
 ### Previously published
 
@@ -86,7 +86,7 @@ ainative and AI Native are personal works of Manav Sehgal created in own persona
 
 ## Runtime Bridge
 
-Run the same business process on different AI providers without changing a line of configuration. ainative's shared runtime registry routes tasks, schedules, and workflow steps through **Claude Code** (Anthropic Claude Agent SDK) and **OpenAI Codex App Server**, landing everything in the same inbox, monitoring, and cost surfaces. Switching providers is a settings change, not a rewrite.
+Run the same business process on different AI providers without changing a line of configuration. `ainative-business`'s shared runtime registry routes tasks, schedules, and workflow steps through **Claude Code** (Anthropic Claude Agent SDK) and **OpenAI Codex App Server**, landing everything in the same inbox, monitoring, and cost surfaces. Switching providers is a settings change, not a rewrite.
 
 ---
 
@@ -133,7 +133,7 @@ Run the same business process on different AI providers without changing a line 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/architecture-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/architecture-light.svg">
-  <img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/architecture-light.svg" alt="ainative architecture diagram" width="900" />
+  <img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/architecture-light.svg" alt="ainative-business architecture diagram" width="900" />
 </picture>
 
 **Key design decisions:**
@@ -160,7 +160,7 @@ Workspace-level briefing with active work, pending review, failed items, project
 #### Task Execution
 Status-driven execution board with five columns: Planned → Queued → Running → Completed → Failed. Filter across projects, create tasks inline, and open task detail to inspect status, description, and runtime state without leaving the board.
 
-<img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/tasks-list.png" alt="ainative tasks kanban board" width="1200" />
+<img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/tasks-list.png" alt="ainative-business tasks kanban board" width="1200" />
 
 | Below the Fold |
 |:-:|
@@ -176,7 +176,7 @@ Create and organize projects as containers for related tasks. Each project can s
 ### Agent
 
 #### Provider Runtimes
-ainative supports two governed execution runtimes behind a shared runtime registry:
+`ainative-business` supports two governed execution runtimes behind a shared runtime registry:
 - **Claude Code** via the Anthropic Claude Agent SDK
 - **OpenAI Codex App Server** via `codex app-server`
 
@@ -186,12 +186,12 @@ Tasks, schedules, and workflow steps can target a runtime explicitly, while sett
 Claude Agent SDK integration with the `canUseTool` polling pattern remains the default Claude execution path. Tasks are dispatched fire-and-forget and run asynchronously, while every tool call, reasoning step, and decision is surfaced through inbox approvals and monitor logs.
 
 #### OpenAI Codex Runtime
-OpenAI Codex App Server is integrated as ainative's second governed runtime. Codex-backed tasks preserve project working directories, document context, resumable thread IDs, inbox approval requests, user questions, and provider-labeled logs. The same runtime can also power task assist, scheduled firings, and workflow child tasks.
+OpenAI Codex App Server is integrated as `ainative-business`'s second governed runtime. Codex-backed tasks preserve project working directories, document context, resumable thread IDs, inbox approval requests, user questions, and provider-labeled logs. The same runtime can also power task assist, scheduled firings, and workflow child tasks.
 
 #### Agent Profiles
 Profile-backed execution with specialist definitions for different job types. Each profile packages instructions, allowed tools, max turns, and output format so teams can reuse behavior intentionally instead of relying on ad hoc prompts. Profile cards display role-based icon circles with keyword-inferred colors (blue for work, purple for personal), alongside domain tags, runtime badges, and tool counts. Workflow steps and schedules can reference profiles directly, and runtimes can be selected independently when provider support differs.
 
-<img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/profiles-list.png" alt="ainative agent profiles with role-based icon circles" width="1200" />
+<img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/profiles-list.png" alt="ainative-business agent profiles with role-based icon circles" width="1200" />
 
 #### Workflows
 Multi-step task orchestration with six patterns:
@@ -205,7 +205,7 @@ Multi-step task orchestration with six patterns:
 State machine engine with step-level retry, project association, and real-time status visualization.
 
 #### Parallel + Swarm Workflows
-ainative supports two bounded expansion patterns on top of the workflow engine:
+`ainative-business` supports two bounded expansion patterns on top of the workflow engine:
 - **Parallel research fork/join** — 2-5 concurrent branches followed by one synthesis step
 - **Swarm orchestration** — mayor → worker pool → refinery with retryable stages and configurable worker concurrency
 
@@ -235,7 +235,7 @@ Curated agent profiles across work and personal domains, built as portable Claud
 #### Workflow Blueprints
 Pre-configured workflow templates across work and personal domains. Browse blueprints in a gallery with pattern-colored icon circles, domain tags, and difficulty badges. Preview steps and required variables, fill in a dynamic form, and create draft workflows with resolved prompts and profile assignments. Create custom blueprints via YAML or import from GitHub URLs. Lineage tracking connects workflows back to their source blueprint.
 
-<img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/workflows-list.png" alt="ainative workflows with keyword-inferred icon circles" width="1200" />
+<img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/workflows-list.png" alt="ainative-business workflows with keyword-inferred icon circles" width="1200" />
 
 | Workflow Detail |
 |:-:|
@@ -279,10 +279,10 @@ Airtable-like structured data system at `/tables` with 14 features. Create table
 #### Playbook
 Built-in documentation system at `/playbook` with usage-stage awareness that adapts content to your experience level (new, early, active, power user). Browse feature reference docs and guided learning journeys organized by persona (Personal, Work, Power User, Developer). Adoption heatmap tracks which features you've explored, while journey cards show progress through multi-step learning paths. Markdown rendering with automatic internal link resolution, table of contents, related docs, and screengrab embedding.
 
-<img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/playbook-list.png" alt="ainative playbook documentation" width="1200" />
+<img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/playbook-list.png" alt="ainative-business playbook documentation" width="1200" />
 
 #### Living Book
-AI-native book reader at `/book` with 9 chapters across 3 parts (Foundation, Intelligence, Autonomy). Each chapter is generated from ainative's own source code and feature docs by the document-writer agent — making this a book that writes itself.
+AI-native book reader at `/book` with 9 chapters across 3 parts (Foundation, Intelligence, Autonomy). Each chapter is generated from `ainative-business`'s own source code and feature docs by the document-writer agent — making this a book that writes itself.
 
 - **Chapter regeneration** — one-click regeneration via the document-writer agent profile with fire-and-forget task execution
 - **Staleness detection** — git-based change tracking compares source file timestamps against `lastGeneratedBy` frontmatter to show when chapters need updating
@@ -294,7 +294,7 @@ AI-native book reader at `/book` with 9 chapters across 3 parts (Foundation, Int
 ### Environment
 
 #### Environment
-ainative doubles as a **control plane for AI coding environments** — scanning, caching, and syncing configuration for Claude Code and Codex CLI across projects. The environment dashboard surfaces detected tools, active configurations, git checkpoint status, and health scores.
+`ainative-business` doubles as a **control plane for AI coding environments** — scanning, caching, and syncing configuration for Claude Code and Codex CLI across projects. The environment dashboard surfaces detected tools, active configurations, git checkpoint status, and health scores.
 
 - **Environment Scanner** — detects Claude Code and Codex CLI configurations, MCP servers, skills, and project settings
 - **Environment Cache** — persists scanned state for fast dashboard rendering without re-scanning
@@ -308,7 +308,7 @@ ainative doubles as a **control plane for AI coding environments** — scanning,
 - **Environment Health Scoring** — composite health score based on configuration completeness and freshness
 - **Agent Profile from Environment** — auto-generate agent profiles from detected environment capabilities
 
-<img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/environment-list.png" alt="ainative environment dashboard" width="1200" />
+<img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/environment-list.png" alt="ainative-business environment dashboard" width="1200" />
 
 #### Browser Tools
 Enable browser automation in chat and task execution through two MCP integrations: **Chrome DevTools MCP** (29 tools for connecting to a running Chrome instance via CDP) and **Playwright MCP** (50+ tools for headless browser automation). Configure both from Settings with independent toggles and permission tiering — read-only operations auto-approve while mutations are gated through the inbox approval flow.
@@ -330,7 +330,7 @@ Hourly poller checks the upstream `origin/main` for new commits and surfaces the
 #### Schedules
 Time-based scheduling for agent tasks with human-friendly intervals (`5m`, `2h`, `1d`) and raw 5-field cron expressions. One-shot and recurring modes with pause/resume lifecycle, expiry limits, and max firings. Each firing creates a child task through the shared execution pipeline, and schedules can now target a runtime explicitly. Scheduler runs as a poll-based engine started via Next.js instrumentation hook.
 
-<img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/schedules-list.png" alt="ainative schedules" width="1200" />
+<img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/schedules-list.png" alt="ainative-business schedules" width="1200" />
 
 #### Micro-Visualizations
 Pure SVG chart primitives (Sparkline, MiniBar, DonutRing) with zero charting dependencies. Integrated into: homepage stats cards (7-day trends), activity feed (24h bar chart), project cards (completion donuts), monitor overview (success rate), and project detail (stacked status + 14-day sparkline). Full accessibility with `role="img"` and `aria-label`.
@@ -338,23 +338,23 @@ Pure SVG chart primitives (Sparkline, MiniBar, DonutRing) with zero charting dep
 #### Cost & Usage
 Provider-normalized metering tracks token and spend activity across tasks, resumes, workflow child tasks, schedules, task assist, and profile tests. The dedicated `Cost & Usage` surface adds summary cards, trend views, provider/model breakdowns, and budget-aware audit visibility on top of the usage ledger.
 
-<img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/cost-usage-list.png" alt="ainative cost and usage dashboard" width="1200" />
+<img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/cost-usage-list.png" alt="ainative-business cost and usage dashboard" width="1200" />
 
 ### UI & DevEx
 
 #### Inbox & Human-in-the-Loop
 When an agent needs approval or input, a notification appears in your inbox. Review tool permission requests with "Allow Once" / "Always Allow" / "Deny" buttons, answer agent questions, and see task completion summaries. Supports bulk dismiss and 10s polling.
 
-<img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/inbox-list.png" alt="ainative inbox approval flow" width="1200" />
+<img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/inbox-list.png" alt="ainative-business inbox approval flow" width="1200" />
 
 | Expanded Notification |
 |:-:|
 | <img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/inbox-expanded.png" alt="Inbox notification expanded" width="580" /> |
 
 #### Chat
-Conversational control plane for all workspace primitives — projects, tasks, workflows, documents, and profiles are all reachable from the chat surface. The chat interface is organized as a **tool catalog** with five categories (Explore, Create, Debug, Automate, Smart Picks) that help discover workspace capabilities. Progressive 5-tier context injection (~53K token budget) builds workspace awareness from lightweight summaries up to full document content. **@ mentions** let you reference documents and entities directly in prompts with fuzzy search autocomplete, injecting their content as context. **Slash commands** (`/`) provide quick access to tools and actions. Multi-provider model selection with cost tiers ($, $$, $$$) spans Claude Haiku through Opus and GPT-5.x models. Browser automation via Chrome DevTools and Playwright MCP enables screenshot capture and web interaction from chat. Quick Access navigation pills in responses provide entity deep-linking. ainative CRUD tools let you create, update, and delete workspace entities through natural language.
+Conversational control plane for all workspace primitives — projects, tasks, workflows, documents, and profiles are all reachable from the chat surface. The chat interface is organized as a **tool catalog** with five categories (Explore, Create, Debug, Automate, Smart Picks) that help discover workspace capabilities. Progressive 5-tier context injection (~53K token budget) builds workspace awareness from lightweight summaries up to full document content. **@ mentions** let you reference documents and entities directly in prompts with fuzzy search autocomplete, injecting their content as context. **Slash commands** (`/`) provide quick access to tools and actions. Multi-provider model selection with cost tiers ($, $$, $$$) spans Claude Haiku through Opus and GPT-5.x models. Browser automation via Chrome DevTools and Playwright MCP enables screenshot capture and web interaction from chat. Quick Access navigation pills in responses provide entity deep-linking. `ainative-business` CRUD tools let you create, update, and delete workspace entities through natural language.
 
-<img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/chat-conversation.png" alt="ainative chat conversation with @ document context" width="1200" />
+<img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/chat-conversation.png" alt="ainative-business chat conversation with @ document context" width="1200" />
 
 | Tool Catalog | Model Selector | Create Tab |
 |:-:|:-:|:-:|
@@ -369,7 +369,7 @@ Structured `#key:value` filter grammar across chat, documents, and the `⌘K` pa
 #### Monitoring
 Real-time agent log streaming via Server-Sent Events. Filter by task or event type, click entries to jump to task details, and auto-pause polling when the tab is hidden (Page Visibility API).
 
-<img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/monitor-list.png" alt="ainative monitoring dashboard" width="1200" />
+<img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/monitor-list.png" alt="ainative-business monitoring dashboard" width="1200" />
 
 #### Content Handling
 File upload with drag-and-drop in task creation. Type-aware content preview for text, markdown (via react-markdown), code, and JSON. Copy-to-clipboard and download-as-file for task outputs.
@@ -377,7 +377,7 @@ File upload with drag-and-drop in task creation. Type-aware content preview for 
 #### Settings
 Configuration hub with provider-aware sections: Claude authentication (API key or OAuth), OpenAI Codex runtime API-key management, chat defaults (model selection), **browser tools** (Chrome DevTools and Playwright MCP toggles), runtime configuration (SDK timeout and max turns), tool permissions (saved "Always Allow" patterns with revoke), permission presets, budget guardrails, **database snapshots** (automatic backups with configurable retention and one-click restore), and data management.
 
-<img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/settings-list.png" alt="ainative settings" width="1200" />
+<img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/settings-list.png" alt="ainative-business settings" width="1200" />
 
 | Browser Tools | Permission Presets | Budget Configuration |
 |:-:|:-:|:-:|
@@ -397,7 +397,7 @@ Global `⌘K` command palette for fast navigation and search across tasks, proje
 | <img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/command-palette-empty.png" alt="Command palette empty state" width="580" /> | <img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/command-palette-search.png" alt="Command palette search results" width="580" /> |
 
 #### App Shell
-Responsive sidebar with collapsible icon-only mode, custom ainative logo, tooltip navigation, dark/light/system theme, and OKLCH hue 250 blue-indigo color palette. Built on shadcn/ui (New York style) with PWA manifest and app icons. Routes: Home, Dashboard, Inbox, Chat, Projects, Workflows, Documents, Monitor, Profiles, Schedules, Cost & Usage, AI Native Book, User Guide, Environment, Settings.
+Responsive sidebar with collapsible icon-only mode, custom ainative logo, tooltip navigation, dark/light/system theme, and OKLCH hue 250 blue-indigo color palette. Built on shadcn/ui (New York style) with PWA manifest and app icons. Routes: Home, Dashboard, Inbox, Chat, Projects, Workflows, Documents, Monitor, Profiles, Schedules, Cost & Usage, AI Native Business, User Guide, Environment, Settings.
 
 #### E2E Test Automation
 API-level end-to-end test suite built on Vitest with 120-second timeouts and sequential execution. Five test files cover single-task execution, sequence workflows, parallel workflows, blueprints, and cross-runtime scenarios across both Claude and Codex backends. Tests skip gracefully when runtimes are not configured, preventing CI failures. Run with `npm run test:e2e`.

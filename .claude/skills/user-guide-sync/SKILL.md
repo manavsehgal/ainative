@@ -310,7 +310,7 @@ perl -lne 'print "$ARGV:$.: $_" if /\bainative\b(?!(\.\w|-))/' \
 | Markdown headings (`## ...ainative...`) | **CORRECT** — keeps slugs stable for cross-doc anchors |
 | Image alt text inside `![...](...)` | **CORRECT** — backticks render as literal text in alt attributes |
 | Inside fenced code blocks (`` ``` ``) | **CORRECT** — code fence already renders monospace |
-| Inside the `<!-- ABOUT:BEGIN ... -->` … `<!-- ABOUT:END -->` block in README | **CORRECT (respect upstream)** — content is captured verbatim from `ainative.io/about/`; do not flag drift inside this block |
+| Inside the `<!-- ABOUT:BEGIN ... -->` … `<!-- ABOUT:END -->` block in README | **CORRECT (respect upstream)** — content is captured verbatim from `ainative.business/about/`; do not flag drift inside this block |
 
 #### Report
 
