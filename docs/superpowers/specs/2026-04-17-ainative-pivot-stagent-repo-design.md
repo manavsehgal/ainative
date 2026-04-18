@@ -170,8 +170,8 @@ All `stagent`-bearing filenames rename via `git mv`. Per handoff verification st
 - (And any other `stagent-*.ts` / `stagent-*.tsx` files found during scan.)
 
 **Asset filenames:**
-- `public/stagent-s-64.png` → `public/ainative-s-64.png`
-- `public/stagent-s-128.png` → `public/ainative-s-128.png`
+- `public/ainative-s-64.png` → `public/ainative-s-64.png`
+- `public/ainative-s-128.png` → `public/ainative-s-128.png`
 - Any SVGs referencing the name (`public/readme/architecture-light.svg`, etc.) — rename if filename contains `stagent`, update contents regardless.
 - Update `package.json` `files[]` entries to match.
 
@@ -246,7 +246,7 @@ Single final commit before publish.
 | `bugs.url` | `"https://github.com/manavsehgal/stagent/issues"` | `"https://github.com/manavsehgal/ainative/issues"` |
 | `keywords` | existing list | keep + add `ai-native-business`, `book-companion` |
 | `bin` | `{"stagent": "./dist/cli.js"}` | `{"ainative": "./dist/cli.js"}` |
-| `files` | includes `public/stagent-s-*.png` | update to `public/ainative-s-*.png` |
+| `files` | includes `public/ainative-s-*.png` | update to `public/ainative-s-*.png` |
 
 ### Other files in this commit
 - `.gitignore`: `stagent-*.tgz` → `ainative-*.tgz`

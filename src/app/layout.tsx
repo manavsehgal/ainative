@@ -32,10 +32,10 @@ export const metadata: Metadata = {
   description: "AI agent task management",
   icons: {
     icon: [
-      { url: "/stagent-s-64.png", sizes: "64x64", type: "image/png" },
+      { url: "/ainative-s-64.png", sizes: "64x64", type: "image/png" },
     ],
     apple: [
-      { url: "/stagent-s-128.png", sizes: "128x128", type: "image/png" },
+      { url: "/ainative-s-128.png", sizes: "128x128", type: "image/png" },
     ],
   },
 };

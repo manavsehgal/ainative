@@ -27,7 +27,7 @@ Files deleted (old):
 - `src/lib/utils/stagent-paths.ts` (replaced by `ainative-paths.ts`)
 - `src/lib/chat/stagent-tools.ts` (renamed to `ainative-tools.ts`)
 - Historical `*stagent*.md` filenames (renamed via `git mv`)
-- `public/stagent-s-64.png` / `public/stagent-s-128.png` (renamed)
+- `public/ainative-s-64.png` / `public/ainative-s-128.png` (renamed)
 - `.claude/skills/stagent-app/` directory (renamed to `ainative-app/`)
 
 Files heavily modified (contents rewritten, path unchanged):
@@ -1218,20 +1218,20 @@ git commit -m "refactor(files): rename stagent-tools.ts → ainative-tools.ts"
 
 ### Task 14: Rename public assets
 
-**Files:** `public/stagent-s-*.png`; any SVG with `stagent` in filename or content.
+**Files:** `public/ainative-s-*.png`; any SVG with `stagent` in filename or content.
 
 - [ ] **Step 1: Rename PNGs**
 
 ```bash
-git mv public/stagent-s-64.png public/ainative-s-64.png
-git mv public/stagent-s-128.png public/ainative-s-128.png
+git mv public/ainative-s-64.png public/ainative-s-64.png
+git mv public/ainative-s-128.png public/ainative-s-128.png
 ```
 
 - [ ] **Step 2: Update references**
 
 ```bash
-for f in $(rg -l 'stagent-s-(64|128)\.png' . --glob '!node_modules' --glob '!.git' --glob '!*.bak-*'); do
-  sd 'stagent-s-' 'ainative-s-' "$f"
+for f in $(rg -l 'ainative-s-(64|128)\.png' . --glob '!node_modules' --glob '!.git' --glob '!*.bak-*'); do
+  sd 'ainative-s-' 'ainative-s-' "$f"
 done
 ```
 
@@ -1254,7 +1254,7 @@ Expected: zero.
 
 ```bash
 git add -A
-git commit -m "refactor(assets): rename stagent-s-*.png and SVG contents"
+git commit -m "refactor(assets): rename ainative-s-*.png and SVG contents"
 ```
 
 ---

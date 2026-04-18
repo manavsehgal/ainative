@@ -23,7 +23,7 @@ export default function manifest(): MetadataRoute.Manifest {
         purpose: "maskable",
       },
       {
-        src: "/stagent-s-64.png",
+        src: "/ainative-s-64.png",
         sizes: "64x64",
         type: "image/png",
       },
