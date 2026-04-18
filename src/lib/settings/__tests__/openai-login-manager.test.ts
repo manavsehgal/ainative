@@ -10,9 +10,9 @@ const fakeClient = {
 };
 
 vi.mock("@/lib/agents/runtime/openai-codex-auth", () => ({
-  connectStagentCodexClient: vi.fn(async () => fakeClient),
+  connectCodexClient: vi.fn(async () => fakeClient),
   initializeCodexClient: vi.fn(async () => {}),
-  readStagentCodexAuthState: vi.fn(async () => ({
+  readCodexAuthState: vi.fn(async () => ({
     connected: false,
     account: null,
     rateLimits: null,

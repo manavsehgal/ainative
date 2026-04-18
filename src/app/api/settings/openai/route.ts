@@ -3,7 +3,7 @@ import {
   getOpenAIAuthSettings,
   setOpenAIAuthSettings,
 } from "@/lib/settings/openai-auth";
-import { readStagentCodexAuthState } from "@/lib/agents/runtime/openai-codex-auth";
+import { readCodexAuthState } from "@/lib/agents/runtime/openai-codex-auth";
 import { updateOpenAISettingsSchema } from "@/lib/validators/settings";
 
 export async function GET() {
@@ -13,7 +13,7 @@ export async function GET() {
   }
 
   try {
-    const current = await readStagentCodexAuthState({ refreshToken: true });
+    const current = await readCodexAuthState({ refreshToken: true });
     return NextResponse.json({
       ...settings,
       oauthConnected: current.connected,

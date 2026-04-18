@@ -1,7 +1,7 @@
 export async function registerNodeInstrumentation() {
   try {
-    const { migrateFromStagent } = await import("@/lib/utils/migrate-to-ainative");
-    await migrateFromStagent();
+    const { migrateLegacyData } = await import("@/lib/utils/migrate-to-ainative");
+    await migrateLegacyData();
 
     // Instance bootstrap — creates local branch, handles dev-mode gates, consent flow.
     // Runs BEFORE other startup so instance config is available downstream.
@@ -77,17 +77,17 @@ async function runPendingMigrations() {
   const { drizzle } = await import("drizzle-orm/better-sqlite3");
   const { migrate } = await import("drizzle-orm/better-sqlite3/migrator");
   const {
-    hasLegacyStagentTables,
+    hasLegacyTables,
     hasMigrationHistory,
     markAllMigrationsApplied,
-    bootstrapStagentDatabase,
+    bootstrapAinativeDatabase,
   } = await import("@/lib/db/bootstrap");
 
   const needsLegacyRecovery =
-    hasLegacyStagentTables(sqlite) && !hasMigrationHistory(sqlite);
+    hasLegacyTables(sqlite) && !hasMigrationHistory(sqlite);
 
   if (needsLegacyRecovery) {
-    bootstrapStagentDatabase(sqlite);
+    bootstrapAinativeDatabase(sqlite);
     markAllMigrationsApplied(sqlite, migrationsDir);
     console.log("[db] Recovered legacy database — all migrations stamped.");
   } else {

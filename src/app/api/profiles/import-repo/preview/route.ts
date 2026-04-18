@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchSkillContent, type DiscoveredSkill } from "@/lib/import/repo-scanner";
-import { adaptSkillMdOnly, adaptStagentNative, type ReadmeContext } from "@/lib/import/format-adapter";
+import { adaptSkillMdOnly, adaptAinativeNative, type ReadmeContext } from "@/lib/import/format-adapter";
 import { checkDuplicates } from "@/lib/import/dedup";
 import { listProfiles } from "@/lib/agents/profiles/registry";
 
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
           };
 
           const adapted = skill.format === "stagent" && profileYaml
-            ? adaptStagentNative(skill, skillMd, profileYaml, repoMeta, readmeCtx)
+            ? adaptAinativeNative(skill, skillMd, profileYaml, repoMeta, readmeCtx)
             : adaptSkillMdOnly(skill, skillMd, repoMeta, readmeCtx);
 
           return { skill, adapted, error: null };

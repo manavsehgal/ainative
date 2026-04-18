@@ -51,7 +51,7 @@ export interface RuntimeFeatures {
    * Runtime has no native skill support — Stagent must inject SKILL.md content
    * into the system prompt to expose skills to the LLM.
    */
-  stagentInjectsSkills: boolean;
+  ainativeInjectsSkills: boolean;
   /**
    * Runtime supports composing multiple active skills in one conversation.
    * When false, only one skill may be active at a time (Ollama: context
@@ -109,7 +109,7 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
       hasSubagentDelegation: false, // Stagent task primitives replace SDK Task tool
       hasHooks: false, // excluded per Q2
       autoLoadsInstructions: "CLAUDE.md",
-      stagentInjectsSkills: false,
+      ainativeInjectsSkills: false,
       supportsSkillComposition: true,
       maxActiveSkills: 3,
     },
@@ -142,7 +142,7 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
       hasSubagentDelegation: false,
       hasHooks: false,
       autoLoadsInstructions: "AGENTS.md",
-      stagentInjectsSkills: false,
+      ainativeInjectsSkills: false,
       supportsSkillComposition: true,
       maxActiveSkills: 3,
     },
@@ -177,7 +177,7 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
       hasSubagentDelegation: false,
       hasHooks: false,
       autoLoadsInstructions: null,
-      stagentInjectsSkills: false,
+      ainativeInjectsSkills: false,
       supportsSkillComposition: true,
       maxActiveSkills: 3,
     },
@@ -212,7 +212,7 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
       hasSubagentDelegation: false,
       hasHooks: false,
       autoLoadsInstructions: null,
-      stagentInjectsSkills: false,
+      ainativeInjectsSkills: false,
       supportsSkillComposition: true,
       maxActiveSkills: 3,
     },
@@ -245,7 +245,7 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
       hasSubagentDelegation: false,
       hasHooks: false,
       autoLoadsInstructions: null,
-      stagentInjectsSkills: true,
+      ainativeInjectsSkills: true,
       supportsSkillComposition: false,
       maxActiveSkills: 1,
     },

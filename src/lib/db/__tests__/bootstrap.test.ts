@@ -6,8 +6,8 @@ import { tmpdir } from "os";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import {
-  bootstrapStagentDatabase,
-  hasLegacyStagentTables,
+  bootstrapAinativeDatabase,
+  hasLegacyTables,
   hasMigrationHistory,
   markAllMigrationsApplied,
 } from "../bootstrap";
@@ -29,9 +29,9 @@ describe("database bootstrap recovery", () => {
 
   it("recovers a bootstrapped database that has no drizzle migration history", () => {
     const bootstrapDb = new Database(dbPath);
-    bootstrapStagentDatabase(bootstrapDb);
+    bootstrapAinativeDatabase(bootstrapDb);
 
-    expect(hasLegacyStagentTables(bootstrapDb)).toBe(true);
+    expect(hasLegacyTables(bootstrapDb)).toBe(true);
     expect(hasMigrationHistory(bootstrapDb)).toBe(false);
 
     markAllMigrationsApplied(bootstrapDb, migrationsFolder);

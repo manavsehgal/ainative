@@ -5,7 +5,7 @@ const { mockState } = vi.hoisted(() => ({
     activeSkillId: null as string | null,
     activeSkillIds: [] as string[],
     skills: {} as Record<string, { name: string; content: string }>,
-    runtimeId: "ollama" as string, // default: Ollama (stagentInjectsSkills: true)
+    runtimeId: "ollama" as string, // default: Ollama (ainativeInjectsSkills: true)
   },
 }));
 
@@ -122,7 +122,7 @@ describe("active skill Tier 0 injection", () => {
     expect(ctx.systemPrompt.length).toBeLessThan(50_000);
   });
 
-  describe("runtime capability flag (stagentInjectsSkills)", () => {
+  describe("runtime capability flag (ainativeInjectsSkills)", () => {
     it("does NOT inject on claude-code (native skill support — would duplicate)", async () => {
       mockState.runtimeId = "claude-code";
       mockState.activeSkillId = ".claude/skills/capture";

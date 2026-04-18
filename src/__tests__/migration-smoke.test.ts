@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { existsSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { migrateFromStagent } from "@/lib/utils/migrate-to-ainative";
+import { migrateLegacyData } from "@/lib/utils/migrate-to-ainative";
 
 describe("migration smoke", () => {
   it("migrates a realistic stagent dir in one call", async () => {
@@ -14,7 +14,7 @@ describe("migration smoke", () => {
       mkdirSync(join(oldDir, "screenshots"), { recursive: true });
       writeFileSync(join(oldDir, "stagent.db"), "");
 
-      const report = await migrateFromStagent({ home });
+      const report = await migrateLegacyData({ home });
 
       expect(report.dirMigrated).toBe(true);
       expect(report.dbFilesRenamed).toBeGreaterThanOrEqual(1);

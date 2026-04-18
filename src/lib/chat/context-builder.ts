@@ -3,7 +3,7 @@ import { projects, tasks, workflows, documents, schedules } from "@/lib/db/schem
 import { eq, desc, and } from "drizzle-orm";
 import { getMessages } from "@/lib/data/chat";
 import { getProfile } from "@/lib/agents/profiles/registry";
-import { STAGENT_SYSTEM_PROMPT } from "./system-prompt";
+import { AINATIVE_SYSTEM_PROMPT } from "./system-prompt";
 import type { WorkspaceContext } from "@/lib/environment/workspace-context";
 import { expandFileMention } from "./files/expand-mention";
 import { conversations } from "@/lib/db/schema";
@@ -33,7 +33,7 @@ function buildTier0(
   workspace?: WorkspaceContext | null
 ): string {
   const parts = [
-    STAGENT_SYSTEM_PROMPT,
+    AINATIVE_SYSTEM_PROMPT,
     "",
     `Current time: ${new Date().toISOString()}`,
   ];
@@ -120,7 +120,7 @@ async function buildActiveSkill(conversationId: string): Promise<string> {
   // Composition (any entry in the new activeSkillIds column) is an
   // explicit user opt-in to override the SDK-native default. Without
   // this carve-out, composed skills would silently no-op on Claude/
-  // Codex where stagentInjectsSkills=false. When only the legacy
+  // Codex where ainativeInjectsSkills=false. When only the legacy
   // activeSkillId is set, fall back to the original capability gate
   // (Ollama-only injection).
   const isComposed = (row?.activeSkillIds?.length ?? 0) > 0;
@@ -131,7 +131,7 @@ async function buildActiveSkill(conversationId: string): Promise<string> {
       const features = getRuntimeFeatures(
         row.runtimeId as Parameters<typeof getRuntimeFeatures>[0]
       );
-      if (!features.stagentInjectsSkills) return "";
+      if (!features.ainativeInjectsSkills) return "";
     } catch {
       // Unknown runtime — fall through and inject (safer default than
       // silently dropping the skill on an unrecognized runtime id).

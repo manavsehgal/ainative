@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { readStagentCodexAuthState } from "@/lib/agents/runtime/openai-codex-auth";
+import { readCodexAuthState } from "@/lib/agents/runtime/openai-codex-auth";
 import { getRuntimeSetupStates } from "@/lib/settings/runtime-setup";
 import { getRoutingPreference } from "@/lib/settings/routing";
 import { getAuthSettings } from "@/lib/settings/auth";
@@ -16,7 +16,7 @@ export async function GET() {
   let openaiAuth = initialOpenaiAuth;
   if (openaiAuth.method === "oauth") {
     try {
-      const current = await readStagentCodexAuthState({ refreshToken: true });
+      const current = await readCodexAuthState({ refreshToken: true });
       openaiAuth = {
         ...openaiAuth,
         oauthConnected: current.connected,

@@ -167,7 +167,7 @@ export async function buildCodexAuthEnv(
   };
 }
 
-export async function connectStagentCodexClient(options: {
+export async function connectCodexClient(options: {
   cwd?: string;
   env?: Record<string, string | undefined>;
 } = {}) {
@@ -259,7 +259,7 @@ export async function resolveOpenAICodexAuthContext(): Promise<ResolvedOpenAICod
   if (settings.method === "oauth") {
     if (!settings.oauthConnected) {
       try {
-        const state = await readStagentCodexAuthState({ refreshToken: false });
+        const state = await readCodexAuthState({ refreshToken: false });
         if (!state.connected) {
           throw new Error("OpenAI ChatGPT sign-in is not configured.");
         }
@@ -274,7 +274,7 @@ export async function resolveOpenAICodexAuthContext(): Promise<ResolvedOpenAICod
       method: "oauth",
       apiKeySource: "oauth",
       connect: (cwd?: string) =>
-        connectStagentCodexClient({
+        connectCodexClient({
           cwd,
           env: { OPENAI_API_KEY: undefined },
         }),
@@ -290,7 +290,7 @@ export async function resolveOpenAICodexAuthContext(): Promise<ResolvedOpenAICod
     method: "api_key",
     apiKeySource: source,
     connect: (cwd?: string) =>
-      connectStagentCodexClient({
+      connectCodexClient({
         cwd,
         env: { OPENAI_API_KEY: apiKey },
       }),
@@ -332,14 +332,14 @@ export async function ensureOpenAICodexClientAuthenticated(
   });
 }
 
-export async function readStagentCodexAuthState(options: {
+export async function readCodexAuthState(options: {
   refreshToken?: boolean;
   cwd?: string;
 } = {}) {
   let client: CodexAppServerClient | null = null;
 
   try {
-    client = await connectStagentCodexClient({ cwd: options.cwd });
+    client = await connectCodexClient({ cwd: options.cwd });
     await initializeCodexClient(client);
 
     const state = await readCodexAuthStateFromClient(client, {
@@ -364,11 +364,11 @@ export async function readStagentCodexAuthState(options: {
   }
 }
 
-export async function logoutStagentCodexAuth() {
+export async function logoutCodexAuth() {
   let client: CodexAppServerClient | null = null;
 
   try {
-    client = await connectStagentCodexClient();
+    client = await connectCodexClient();
     await initializeCodexClient(client);
     await client.request("account/logout");
   } catch {

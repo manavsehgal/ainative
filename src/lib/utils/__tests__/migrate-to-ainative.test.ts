@@ -3,13 +3,13 @@ import { mkdtempSync, existsSync, mkdirSync, writeFileSync, readFileSync, rmSync
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import Database from "better-sqlite3";
-import { migrateFromStagent } from "../migrate-to-ainative";
+import { migrateLegacyData } from "../migrate-to-ainative";
 
 function makeTempHome(): string {
   return mkdtempSync(join(tmpdir(), "ainative-migrate-test-"));
 }
 
-describe("migrateFromStagent", () => {
+describe("migrateLegacyData", () => {
   let tempHome: string;
 
   beforeEach(() => {
@@ -28,7 +28,7 @@ describe("migrateFromStagent", () => {
     mkdirSync(oldDir, { recursive: true });
     writeFileSync(join(oldDir, "marker.txt"), "hello");
 
-    const report = await migrateFromStagent({ home: tempHome });
+    const report = await migrateLegacyData({ home: tempHome });
 
     expect(existsSync(oldDir)).toBe(false);
     expect(existsSync(newDir)).toBe(true);
@@ -41,8 +41,8 @@ describe("migrateFromStagent", () => {
     mkdirSync(oldDir, { recursive: true });
     writeFileSync(join(oldDir, "marker.txt"), "hello");
 
-    await migrateFromStagent({ home: tempHome });
-    const secondReport = await migrateFromStagent({ home: tempHome });
+    await migrateLegacyData({ home: tempHome });
+    const secondReport = await migrateLegacyData({ home: tempHome });
 
     expect(secondReport.dirMigrated).toBe(false);
   });
@@ -54,7 +54,7 @@ describe("migrateFromStagent", () => {
     writeFileSync(join(oldDir, "stagent.db-shm"), "shm");
     writeFileSync(join(oldDir, "stagent.db-wal"), "wal");
 
-    const report = await migrateFromStagent({ home: tempHome });
+    const report = await migrateLegacyData({ home: tempHome });
 
     const newDir = join(tempHome, ".ainative");
     expect(existsSync(join(newDir, "ainative.db"))).toBe(true);
@@ -75,7 +75,7 @@ describe("migrateFromStagent", () => {
     );
     db.close();
 
-    await migrateFromStagent({ home: tempHome });
+    await migrateLegacyData({ home: tempHome });
 
     const newDb = new Database(join(tempHome, ".ainative", "ainative.db"));
     const row = newDb.prepare("SELECT allowed_tools FROM agent_profiles WHERE id = ?").get("test") as { allowed_tools: string };
@@ -97,7 +97,7 @@ describe("migrateFromStagent", () => {
     );
     db.close();
 
-    await migrateFromStagent({ home: tempHome });
+    await migrateLegacyData({ home: tempHome });
 
     const newDb = new Database(join(tempHome, ".ainative", "ainative.db"));
     const row = newDb.prepare("SELECT import_meta FROM agent_profiles WHERE id = ?").get("test") as { import_meta: string };
@@ -107,7 +107,7 @@ describe("migrateFromStagent", () => {
   });
 
   it("returns empty report when neither old nor new dir exists", async () => {
-    const report = await migrateFromStagent({ home: tempHome });
+    const report = await migrateLegacyData({ home: tempHome });
     expect(report.dirMigrated).toBe(false);
     expect(report.dbFilesRenamed).toBe(0);
   });
@@ -117,7 +117,7 @@ describe("migrateFromStagent", () => {
     mkdirSync(newDir, { recursive: true });
     writeFileSync(join(newDir, "keep.txt"), "keep");
 
-    const report = await migrateFromStagent({ home: tempHome });
+    const report = await migrateLegacyData({ home: tempHome });
 
     expect(existsSync(join(newDir, "keep.txt"))).toBe(true);
     expect(report.dirMigrated).toBe(false);

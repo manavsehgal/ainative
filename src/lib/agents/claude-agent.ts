@@ -74,12 +74,12 @@ async function withStagentMcpServer(
   projectId?: string | null,
 ): Promise<Record<string, unknown>> {
   const { createToolServer } = await import("@/lib/chat/stagent-tools");
-  const stagentServer = createToolServer(projectId).asMcpServer();
+  const ainativeServer = createToolServer(projectId).asMcpServer();
   return {
     ...profileServers,
     ...browserServers,
     ...externalServers,
-    stagent: stagentServer,
+    stagent: ainativeServer,
   };
 }
 

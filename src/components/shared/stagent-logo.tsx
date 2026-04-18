@@ -6,7 +6,7 @@ interface AinativeLogoProps {
   variant?: "icon" | "symbol";
 }
 
-export function StagentLogo({ size = 24, className, variant = "icon" }: AinativeLogoProps) {
+export function AinativeLogo({ size = 24, className, variant = "icon" }: AinativeLogoProps) {
   return (
     <span className={`inline-flex items-center justify-center shrink-0 ${className ?? ""}`}>
       <Image

@@ -497,7 +497,7 @@ export function adaptSkillMdOnly(
  * Adapt a Stagent-native format (profile.yaml + SKILL.md) from a remote repo.
  * Enriches tags/description from SKILL.md body + README if the profile.yaml values are weak.
  */
-export function adaptStagentNative(
+export function adaptAinativeNative(
   skill: DiscoveredSkill,
   skillMd: string,
   profileYamlContent: string,

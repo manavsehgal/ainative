@@ -5,7 +5,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
 import Database from "better-sqlite3";
 import { getLaunchCwd } from "@/lib/environment/workspace-context";
 import { isDevMode, isPrivateInstance } from "@/lib/instance/detect";
-import { bootstrapStagentDatabase } from "@/lib/db/bootstrap";
+import { bootstrapAinativeDatabase } from "@/lib/db/bootstrap";
 
 export const dynamic = "force-dynamic";
 
@@ -69,7 +69,7 @@ export async function POST() {
   const sqlite = new Database(dbPath);
   sqlite.pragma("journal_mode = WAL");
   sqlite.pragma("foreign_keys = ON");
-  bootstrapStagentDatabase(sqlite);
+  bootstrapAinativeDatabase(sqlite);
   sqlite.close();
 
   return NextResponse.json({

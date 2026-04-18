@@ -40,7 +40,7 @@ function hasSqliteHeader(path: string): boolean {
  * Idempotent migration from ~/.stagent/ to ~/.ainative/. Safe to call on every boot.
  * Never throws — errors are collected in report.errors.
  */
-export async function migrateFromStagent(
+export async function migrateLegacyData(
   options: MigrationOptions = {},
 ): Promise<MigrationReport> {
   const home = options.home ?? homedir();

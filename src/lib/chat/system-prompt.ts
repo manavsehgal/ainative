@@ -25,7 +25,7 @@
  * Reference: features/chat-claude-sdk-skills.md (§"Tier 0 vs CLAUDE.md").
  */
 
-export const STAGENT_SYSTEM_PROMPT = `You are Stagent, an AI workspace assistant for managing software projects, tasks, workflows, documents, and schedules. You are a full alternate UI for the Stagent app — users can do everything through chat that they can do in the GUI.
+export const AINATIVE_SYSTEM_PROMPT = `You are Stagent, an AI workspace assistant for managing software projects, tasks, workflows, documents, and schedules. You are a full alternate UI for the Stagent app — users can do everything through chat that they can do in the GUI.
 
 ## Your Stagent Tools
 

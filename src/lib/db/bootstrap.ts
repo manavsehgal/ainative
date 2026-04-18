@@ -1,7 +1,7 @@
 import type Database from "better-sqlite3";
 import { readMigrationFiles } from "drizzle-orm/migrator";
 
-const STAGENT_TABLES = [
+const LEGACY_DATA_TABLES = [
   "projects",
   "tasks",
   "workflows",
@@ -49,7 +49,7 @@ const STAGENT_TABLES = [
   "schedule_firing_metrics",
 ] as const;
 
-export function bootstrapStagentDatabase(sqlite: Database.Database): void {
+export function bootstrapAinativeDatabase(sqlite: Database.Database): void {
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS projects (
       id TEXT PRIMARY KEY NOT NULL,
@@ -943,15 +943,15 @@ export function bootstrapStagentDatabase(sqlite: Database.Database): void {
   }
 }
 
-export function hasLegacyStagentTables(sqlite: Database.Database): boolean {
-  const placeholders = STAGENT_TABLES.map(() => "?").join(", ");
+export function hasLegacyTables(sqlite: Database.Database): boolean {
+  const placeholders = LEGACY_DATA_TABLES.map(() => "?").join(", ");
   const row = sqlite
     .prepare(
       `SELECT COUNT(*) AS count
        FROM sqlite_master
        WHERE type = 'table' AND name IN (${placeholders})`
     )
-    .get(...STAGENT_TABLES) as { count: number };
+    .get(...LEGACY_DATA_TABLES) as { count: number };
 
   return row.count > 0;
 }

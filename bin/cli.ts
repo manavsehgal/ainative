@@ -22,12 +22,12 @@ import {
 } from "../src/lib/desktop/sidecar-launch";
 import { getAinativeDataDir, getAinativeDbPath } from "../src/lib/utils/ainative-paths";
 import {
-  bootstrapStagentDatabase,
-  hasLegacyStagentTables,
+  bootstrapAinativeDatabase,
+  hasLegacyTables,
   hasMigrationHistory,
   markAllMigrationsApplied,
 } from "../src/lib/db/bootstrap";
-import { migrateFromStagent } from "../src/lib/utils/migrate-to-ainative";
+import { migrateLegacyData } from "../src/lib/utils/migrate-to-ainative";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const appDir = join(__dirname, "..");
@@ -99,7 +99,7 @@ if (opts.dataDir) {
 // data-dir paths below. Must run here at module top-level (not inside main())
 // because the following const declarations and mkdirSync/Database calls also
 // execute at module-load time. Idempotent — safe on every invocation.
-await migrateFromStagent();
+await migrateLegacyData();
 
 const DATA_DIR = getAinativeDataDir();
 const dbPath = getAinativeDbPath();
@@ -136,15 +136,15 @@ sqlite.pragma("foreign_keys = ON");
 const migrationsDir = join(appDir, "src", "lib", "db", "migrations");
 const db = drizzle(sqlite);
 const needsLegacyRecovery =
-  hasLegacyStagentTables(sqlite) && !hasMigrationHistory(sqlite);
+  hasLegacyTables(sqlite) && !hasMigrationHistory(sqlite);
 
 if (needsLegacyRecovery) {
-  bootstrapStagentDatabase(sqlite);
+  bootstrapAinativeDatabase(sqlite);
   markAllMigrationsApplied(sqlite, migrationsDir);
   console.log("Recovered legacy database schema.");
 } else {
   migrate(db, { migrationsFolder: migrationsDir });
-  bootstrapStagentDatabase(sqlite);
+  bootstrapAinativeDatabase(sqlite);
 }
 
 sqlite.close();

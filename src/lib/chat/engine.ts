@@ -334,7 +334,7 @@ export async function* sendMessage(
 
     // Create in-process MCP server for Stagent CRUD tools
     const toolResults: ToolResultCapture[] = [];
-    const stagentServer = createToolServer(
+    const ainativeServer = createToolServer(
       conversation.projectId,
       (toolName, result) => { toolResults.push({ toolName, result }); },
       projectCwd,
@@ -369,7 +369,7 @@ export async function* sendMessage(
           // Keep only last 50 chunks to avoid unbounded memory
           if (stderrChunks.length > 50) stderrChunks.shift();
         },
-        mcpServers: { stagent: stagentServer, ...browserServers, ...externalServers },
+        mcpServers: { stagent: ainativeServer, ...browserServers, ...externalServers },
         allowedTools: [
           "mcp__stagent__*",
           ...browserToolPatterns,

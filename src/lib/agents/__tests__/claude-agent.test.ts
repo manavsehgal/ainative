@@ -286,10 +286,10 @@ describe("executeClaudeTask", () => {
     expect(queryCall.options.allowedTools).toContain("Read");
     expect(queryCall.options.allowedTools).toContain("Grep");
     // Duplicates not added when profile didn't already include the pattern
-    const stagentCount = queryCall.options.allowedTools!.filter(
+    const ainativeCount = queryCall.options.allowedTools!.filter(
       (t) => t === "mcp__stagent__*"
     ).length;
-    expect(stagentCount).toBe(1);
+    expect(ainativeCount).toBe(1);
   });
 
   it("A-stagent-3: falls back to CLAUDE_SDK_ALLOWED_TOOLS when profile has none and runtime has native skills", async () => {

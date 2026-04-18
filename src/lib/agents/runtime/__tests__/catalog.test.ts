@@ -53,13 +53,13 @@ describe("runtime catalog", () => {
     expect(features.hasNativeSkills).toBe(true);
     expect(features.hasProgressiveDisclosure).toBe(true);
     expect(features.autoLoadsInstructions).toBe("CLAUDE.md");
-    expect(features.stagentInjectsSkills).toBe(false);
+    expect(features.ainativeInjectsSkills).toBe(false);
   });
 
   it("marks Ollama as requiring Stagent-injected skills", () => {
     const features = getRuntimeFeatures("ollama");
     expect(features.hasNativeSkills).toBe(false);
-    expect(features.stagentInjectsSkills).toBe(true);
+    expect(features.ainativeInjectsSkills).toBe(true);
     expect(features.autoLoadsInstructions).toBeNull();
   });
 
@@ -78,7 +78,7 @@ describe("runtime catalog", () => {
       "hasSubagentDelegation",
       "hasHooks",
       "autoLoadsInstructions",
-      "stagentInjectsSkills",
+      "ainativeInjectsSkills",
       "supportsSkillComposition",
       "maxActiveSkills",
     ];
@@ -109,6 +109,7 @@ describe("runtime catalog", () => {
     expect(snapshot).toMatchInlineSnapshot(`
       {
         "anthropic-direct": {
+          "ainativeInjectsSkills": false,
           "autoLoadsInstructions": null,
           "hasBash": false,
           "hasFilesystemTools": false,
@@ -118,10 +119,10 @@ describe("runtime catalog", () => {
           "hasSubagentDelegation": false,
           "hasTodoWrite": false,
           "maxActiveSkills": 3,
-          "stagentInjectsSkills": false,
           "supportsSkillComposition": true,
         },
         "claude-code": {
+          "ainativeInjectsSkills": false,
           "autoLoadsInstructions": "CLAUDE.md",
           "hasBash": true,
           "hasFilesystemTools": true,
@@ -131,10 +132,10 @@ describe("runtime catalog", () => {
           "hasSubagentDelegation": false,
           "hasTodoWrite": true,
           "maxActiveSkills": 3,
-          "stagentInjectsSkills": false,
           "supportsSkillComposition": true,
         },
         "ollama": {
+          "ainativeInjectsSkills": true,
           "autoLoadsInstructions": null,
           "hasBash": false,
           "hasFilesystemTools": false,
@@ -144,10 +145,10 @@ describe("runtime catalog", () => {
           "hasSubagentDelegation": false,
           "hasTodoWrite": false,
           "maxActiveSkills": 1,
-          "stagentInjectsSkills": true,
           "supportsSkillComposition": false,
         },
         "openai-codex-app-server": {
+          "ainativeInjectsSkills": false,
           "autoLoadsInstructions": "AGENTS.md",
           "hasBash": true,
           "hasFilesystemTools": true,
@@ -157,10 +158,10 @@ describe("runtime catalog", () => {
           "hasSubagentDelegation": false,
           "hasTodoWrite": true,
           "maxActiveSkills": 3,
-          "stagentInjectsSkills": false,
           "supportsSkillComposition": true,
         },
         "openai-direct": {
+          "ainativeInjectsSkills": false,
           "autoLoadsInstructions": null,
           "hasBash": false,
           "hasFilesystemTools": false,
@@ -170,7 +171,6 @@ describe("runtime catalog", () => {
           "hasSubagentDelegation": false,
           "hasTodoWrite": false,
           "maxActiveSkills": 3,
-          "stagentInjectsSkills": false,
           "supportsSkillComposition": true,
         },
       }

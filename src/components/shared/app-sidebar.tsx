@@ -44,7 +44,7 @@ import { TrustTierBadge } from "@/components/shared/trust-tier-badge";
 import { UnreadBadge } from "@/components/notifications/unread-badge";
 import { UpgradeBadge } from "@/components/instance/upgrade-badge";
 import { AuthStatusDot } from "@/components/settings/auth-status-dot";
-import { StagentLogo } from "@/components/shared/stagent-logo";
+import { AinativeLogo } from "@/components/shared/stagent-logo";
 import { WorkspaceIndicator } from "@/components/shared/workspace-indicator";
 
 interface NavItem {
@@ -224,11 +224,11 @@ export function AppSidebar() {
       <SidebarHeader className="px-4 py-3">
         <div className="flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 group-data-[collapsible=icon]:hidden">
-            <StagentLogo size={24} className="shrink-0" />
+            <AinativeLogo size={24} className="shrink-0" />
             <span className="text-lg font-bold tracking-tight">Stagent</span>
           </Link>
           <Link href="/" className="hidden group-data-[collapsible=icon]:flex items-center justify-center" aria-label="Stagent home">
-            <StagentLogo size={20} />
+            <AinativeLogo size={20} />
           </Link>
           <SidebarTrigger className="group-data-[collapsible=icon]:hidden" />
         </div>
