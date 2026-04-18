@@ -48,7 +48,7 @@ export function DataManagementSection() {
       if (data.success) {
         const s = data.seeded;
         toast.success(
-          `Seeded ${s.profiles} profiles, ${s.projects} projects, ${s.tasks} tasks, ${s.workflows} workflows, ${s.schedules} schedules, ${s.documents} documents, ${s.userTables} tables (${s.userTableRows} rows), ${s.conversations} conversations, ${s.chatMessages} messages, ${s.usageLedger} usage entries, ${s.learnedContext} learned context, ${s.views} views, ${s.profileTestResults} test results, ${s.repoImports} repo imports, ${s.agentLogs} logs, ${s.notifications} notifications`
+          `Seeded ${s.profiles} profiles, ${s.projects} projects, ${s.tasks} tasks, ${s.workflows} workflows, ${s.schedules} schedules, ${s.documents} documents, ${s.userTables} tables (${s.userTableRows} rows, ${s.tableViews} views, ${s.tableTriggers} triggers, ${s.tableRelationships} links), ${s.conversations} conversations, ${s.chatMessages} messages, ${s.agentMemory} memories, ${s.agentMessages} handoffs, ${s.channelConfigs} channels (${s.channelBindings} bindings), ${s.environmentScans} scans (${s.environmentArtifacts} artifacts, ${s.environmentCheckpoints} checkpoints, ${s.environmentTemplates} templates), ${s.workflowExecutionStats} workflow-stats, ${s.scheduleFiringMetrics} firing-metrics, ${s.usageLedger} usage entries, ${s.learnedContext} learned context, ${s.views} views, ${s.profileTestResults} test results, ${s.repoImports} repo imports, ${s.agentLogs} logs, ${s.notifications} notifications`
         );
       } else {
         toast.error(`Seed failed: ${data.error}`);
@@ -100,14 +100,19 @@ export function DataManagementSection() {
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
               Populate with 5 agent profiles, 8 projects across 3 personas
-              (solo founder, agency, PE ops), 48 tasks with agent profiles and
-              source types, 8 workflows (sequence, checkpoint, planner-executor),
-              8 schedules (including 3 heartbeat monitors), 18 markdown documents
-              (input and output), 6 data tables with rows (pipeline, content,
-              health scores, KPIs, listings, campaigns), 6 conversations with
-              45 messages, 45 usage ledger entries across 3 runtimes, learned
-              context, 6 saved views, 4 profile test results, 3 repo imports,
-              agent logs, and 28 notifications. Existing data is cleared first.
+              (solo founder, agency, PE ops), 48 tasks, 8 workflows, 8 schedules
+              (3 heartbeat monitors), 18 markdown documents, 6 data tables with
+              rows, views, triggers, and cross-table links, 6 conversations
+              with chat messages, ~17 agent memories across fact/preference/
+              pattern/outcome categories, 9 inter-profile handoffs (pending,
+              accepted, completed, expired), 5 channel configs (Slack,
+              Telegram, webhooks) with bidirectional bindings, an environment
+              scan with 15 discovered artifacts + checkpoints + templates,
+              workflow execution stats + schedule firing metrics for the
+              Analytics page, document and table input pools, usage ledger,
+              learned context, saved views, profile test results, repo
+              imports, agent logs, and notifications. Existing data is
+              cleared first.
             </p>
             <Button
               variant="outline"
@@ -139,7 +144,7 @@ export function DataManagementSection() {
         open={seedOpen}
         onOpenChange={setSeedOpen}
         title="Seed sample data?"
-        description="This will clear all existing data first, then populate with 5 agent profiles, 8 projects across 3 personas (solo founder, agency, PE ops), 48 tasks, 8 workflows, 8 schedules (3 heartbeat), 18 markdown documents, 6 data tables with rows, 6 conversations, 45 usage entries across 3 runtimes, learned context, saved views, profile test results, repo imports, agent logs, and 28 notifications. Any current data will be lost."
+        description="This will clear all existing data first, then populate profiles, projects, tasks, workflows, schedules, documents, tables (with views/triggers/relationships), conversations, agent memories, handoffs, channels, an environment scan with artifacts/checkpoints/templates, analytics rollups, document and table input pools, usage ledger, learned context, saved views, profile test results, repo imports, agent logs, and notifications. Any current data will be lost."
         confirmLabel="Seed Data"
         onConfirm={handleSeed}
       />

@@ -13,6 +13,19 @@ import {
   views,
   profileTestResults,
   repoImports,
+  agentMemory,
+  agentMessages,
+  channelConfigs,
+  channelBindings,
+  environmentScans,
+  environmentArtifacts,
+  environmentCheckpoints,
+  environmentTemplates,
+  workflowExecutionStats,
+  scheduleFiringMetrics,
+  userTableViews,
+  userTableTriggers,
+  userTableRelationships,
 } from "@/lib/db/schema";
 import { clearAllData } from "./clear";
 import { createProjects } from "./seed-data/projects";
@@ -32,6 +45,16 @@ import { createViews } from "./seed-data/views";
 import { createProfileTestResults } from "./seed-data/profile-test-results";
 import { createRepoImports } from "./seed-data/repo-imports";
 import { createUserTables } from "./seed-data/user-tables";
+import { createAgentMemory } from "./seed-data/agent-memory";
+import { createAgentMessages } from "./seed-data/agent-messages";
+import { createChannels } from "./seed-data/channels";
+import { createEnvironment } from "./seed-data/environment";
+import {
+  createWorkflowStats,
+  createScheduleFiringMetrics,
+} from "./seed-data/workflow-stats";
+import { createTableExtras } from "./seed-data/table-extras";
+import { createDocumentPools } from "./seed-data/document-pools";
 import { createTable, addRows } from "@/lib/data/tables";
 
 /**
@@ -171,6 +194,8 @@ export async function seedSampleData() {
   // 17. Insert user-created tables with columns and rows
   const userTableSeeds = createUserTables(projectIds);
   let totalTableRows = 0;
+  const tableIdByName = new Map<string, string>();
+  const { listTables } = await import("@/lib/data/tables");
   for (const tableSeed of userTableSeeds) {
     await createTable({
       name: tableSeed.name,
@@ -187,17 +212,169 @@ export async function seedSampleData() {
       })),
     });
     // createTable generates its own ID; retrieve it by name+project
-    const { listTables } = await import("@/lib/data/tables");
     const tables = await listTables({ projectId: tableSeed.projectId });
     const created = tables.find((t) => t.name === tableSeed.name);
-    if (created && tableSeed.rows.length > 0) {
-      await addRows(
-        created.id,
-        tableSeed.rows.map((data) => ({ data }))
-      );
-      totalTableRows += tableSeed.rows.length;
+    if (created) {
+      tableIdByName.set(tableSeed.name, created.id);
+      if (tableSeed.rows.length > 0) {
+        await addRows(
+          created.id,
+          tableSeed.rows.map((data) => ({ data }))
+        );
+        totalTableRows += tableSeed.rows.length;
+      }
     }
   }
+
+  // 18. Agent memory entries (fact/preference/pattern/outcome)
+  const memorySeeds = createAgentMemory(completedTaskIds);
+  for (const m of memorySeeds) {
+    db.insert(agentMemory).values(m).run();
+  }
+
+  // 19. Inter-profile handoffs (pending/accepted/completed/expired mix)
+  const messageSeeds = createAgentMessages(completedTaskIds, runningTaskIds);
+  for (const msg of messageSeeds) {
+    db.insert(agentMessages).values(msg).run();
+  }
+
+  // 20. Channel configs + bindings (multi-channel delivery / bidir chat)
+  const conversationIds = convSeeds.map((c) => c.id);
+  const { configs: channelConfigSeeds, bindings: channelBindingSeeds } =
+    createChannels(conversationIds);
+  for (const c of channelConfigSeeds) {
+    db.insert(channelConfigs).values(c).run();
+  }
+  for (const b of channelBindingSeeds) {
+    db.insert(channelBindings).values(b).run();
+  }
+
+  // 21. Environment scans + artifacts + checkpoints + templates
+  const envSeeds = createEnvironment(projectIds);
+  for (const s of envSeeds.scans) {
+    db.insert(environmentScans).values(s).run();
+  }
+  for (const a of envSeeds.artifacts) {
+    db.insert(environmentArtifacts).values(a).run();
+  }
+  for (const cp of envSeeds.checkpoints) {
+    db.insert(environmentCheckpoints).values(cp).run();
+  }
+  for (const t of envSeeds.templates) {
+    db.insert(environmentTemplates).values(t).run();
+  }
+
+  // 22. Workflow execution stats (rollups) + schedule firing metrics
+  const workflowStatsSeeds = createWorkflowStats();
+  for (const ws of workflowStatsSeeds) {
+    db.insert(workflowExecutionStats).values(ws).run();
+  }
+  const firingMetricSeeds = createScheduleFiringMetrics(
+    scheduleIds,
+    completedTaskIds
+  );
+  for (const fm of firingMetricSeeds) {
+    db.insert(scheduleFiringMetrics).values(fm).run();
+  }
+
+  // 23. User-table extras: views, triggers, relationships
+  const tableExtras = createTableExtras();
+  const now = new Date();
+  let tableViewCount = 0;
+  let tableTriggerCount = 0;
+  let tableRelCount = 0;
+
+  // Find workflow id by name for trigger actionConfig resolution
+  const workflowIdByName = new Map<string, string>();
+  for (const w of workflowSeeds) {
+    workflowIdByName.set(w.name, w.id);
+  }
+
+  for (const v of tableExtras.views) {
+    const tableId = tableIdByName.get(v.tableName);
+    if (!tableId) continue;
+    db.insert(userTableViews)
+      .values({
+        id: crypto.randomUUID(),
+        tableId,
+        name: v.name,
+        type: v.type,
+        config: JSON.stringify(v.config),
+        isDefault: v.isDefault,
+        createdAt: v.createdAt,
+        updatedAt: v.updatedAt,
+      })
+      .run();
+    tableViewCount++;
+  }
+
+  for (const t of tableExtras.triggers) {
+    const tableId = tableIdByName.get(t.tableName);
+    if (!tableId) continue;
+    // Resolve workflowName → workflowId in action config
+    const resolvedActionConfig: Record<string, unknown> = { ...t.actionConfig };
+    if (
+      t.actionType === "run_workflow" &&
+      typeof resolvedActionConfig.workflowName === "string"
+    ) {
+      const wfId = workflowIdByName.get(
+        resolvedActionConfig.workflowName as string
+      );
+      if (wfId) resolvedActionConfig.workflowId = wfId;
+      delete resolvedActionConfig.workflowName;
+    }
+    db.insert(userTableTriggers)
+      .values({
+        id: crypto.randomUUID(),
+        tableId,
+        name: t.name,
+        triggerEvent: t.triggerEvent,
+        condition: t.condition ? JSON.stringify(t.condition) : null,
+        actionType: t.actionType,
+        actionConfig: JSON.stringify(resolvedActionConfig),
+        status: t.status,
+        fireCount: t.fireCount,
+        lastFiredAt: t.lastFiredAt,
+        createdAt: t.createdAt,
+        updatedAt: t.updatedAt,
+      })
+      .run();
+    tableTriggerCount++;
+  }
+
+  for (const r of tableExtras.relationships) {
+    const fromId = tableIdByName.get(r.fromTableName);
+    const toId = tableIdByName.get(r.toTableName);
+    if (!fromId || !toId) continue;
+    db.insert(userTableRelationships)
+      .values({
+        id: crypto.randomUUID(),
+        fromTableId: fromId,
+        fromColumn: r.fromColumn,
+        toTableId: toId,
+        toColumn: r.toColumn,
+        relationshipType: r.relationshipType,
+        config: r.config ? JSON.stringify(r.config) : null,
+        createdAt: r.createdAt,
+      })
+      .run();
+    tableRelCount++;
+  }
+
+  // 24. Document + table input pools (junction wiring for context surfaces)
+  const tableIdList = Array.from(tableIdByName.values());
+  const documentIdList = docSeeds.map((d) => d.id);
+  const pools = await createDocumentPools({
+    projectIds,
+    workflowIds,
+    scheduleIds,
+    taskIds,
+    documentIds: documentIdList,
+    tableIds: tableIdList,
+  });
+
+  // Quiet the unused-`now` flag; the helpers above reuse Date.now() inline.
+  void now;
 
   return {
     profiles: profileCount,
@@ -217,5 +394,25 @@ export async function seedSampleData() {
     repoImports: repoImportSeeds.length,
     userTables: userTableSeeds.length,
     userTableRows: totalTableRows,
+    agentMemory: memorySeeds.length,
+    agentMessages: messageSeeds.length,
+    channelConfigs: channelConfigSeeds.length,
+    channelBindings: channelBindingSeeds.length,
+    environmentScans: envSeeds.scans.length,
+    environmentArtifacts: envSeeds.artifacts.length,
+    environmentCheckpoints: envSeeds.checkpoints.length,
+    environmentTemplates: envSeeds.templates.length,
+    workflowExecutionStats: workflowStatsSeeds.length,
+    scheduleFiringMetrics: firingMetricSeeds.length,
+    tableViews: tableViewCount,
+    tableTriggers: tableTriggerCount,
+    tableRelationships: tableRelCount,
+    projectDocumentDefaults: pools.projectDefaults,
+    workflowDocumentInputs: pools.workflowInputs,
+    scheduleDocumentInputs: pools.scheduleInputs,
+    tableDocumentInputs: pools.tableDocInputs,
+    workflowTableInputs: pools.workflowTableInputs,
+    scheduleTableInputs: pools.scheduleTableInputs,
+    taskTableInputs: pools.taskTableInputs,
   };
 }
