@@ -4,6 +4,19 @@
 
 This project was formerly published as `stagent` on npm and hosted at `github.com/manavsehgal/stagent`. As of 2026-04-17 it is `ainative`. The old GitHub URL redirects permanently; `stagent` on npm is deprecated with an upgrade pointer to `ainative`.
 
+## [0.12.1] — 2026-04-18
+
+### Changed
+
+- **npm package renamed** from `ainative` to `ainative-business`. Install with `npm i ainative-business` or run `npx ainative-business`. The CLI binary remains `ainative`.
+- **Brand wordmark** added — new `AinativeWordmark` component used in dashboard welcome and sidebar header.
+- **Icon set refreshed** — `public/icon-512.png`, `public/ainative-s-64.png`, `public/ainative-s-128.png` updated to the new visual identity.
+- **Skill naming convention** documented in `book-updater`, `doc-generator`, and `user-guide-sync` SKILL.md files.
+
+### Unchanged
+
+- Runtime behavior, CLI subcommands, SQLite schema, agent contracts, workflow blueprint format.
+
 ## [0.12.0] — 2026-04-17
 
 ### Changed — BREAKING
