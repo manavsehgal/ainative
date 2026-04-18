@@ -29,21 +29,21 @@
   <rect width="900" height="520" rx="16" fill="url(#bgGrad)"/>
 
   <!-- Title -->
-  <text x="450" y="36" text-anchor="middle" fill="#94A3B8" font-size="12" font-weight="500" letter-spacing="2">STAGENT ARCHITECTURE</text>
+  <text x="450" y="36" text-anchor="middle" fill="#94A3B8" font-size="12" font-weight="500" letter-spacing="2">AINATIVE ARCHITECTURE</text>
 
   <!-- ═══════════ BROWSER LAYER ═══════════ -->
   <rect x="40" y="52" width="820" height="78" rx="12" fill="none" stroke="url(#browserGrad)" stroke-width="1.5" opacity="0.8" filter="url(#shadow)"/>
   <rect x="40" y="52" width="820" height="78" rx="12" fill="#0F172A" opacity="0.6"/>
 
   <text x="64" y="74" fill="#22D3EE" font-size="11" font-weight="700" letter-spacing="1.5">BROWSER</text>
-  <text x="152" y="74" fill="#94A3B8" font-size="10">React 19 · 39 operator surfaces</text>
+  <text x="152" y="74" fill="#94A3B8" font-size="10">React 19 · 37 operator surfaces</text>
 
   <!-- Route pills -->
   <rect x="64" y="86" width="60" height="24" rx="12" fill="#2563EB" opacity="0.2"/>
   <text x="94" y="102" text-anchor="middle" fill="#60A5FA" font-size="10" font-weight="500">Home</text>
 
   <rect x="132" y="86" width="76" height="24" rx="12" fill="#2563EB" opacity="0.2"/>
-  <text x="170" y="102" text-anchor="middle" fill="#60A5FA" font-size="10" font-weight="500">Dashboard</text>
+  <text x="170" y="102" text-anchor="middle" fill="#60A5FA" font-size="10" font-weight="500">Tasks</text>
 
   <rect x="216" y="86" width="60" height="24" rx="12" fill="#2563EB" opacity="0.2"/>
   <text x="246" y="102" text-anchor="middle" fill="#60A5FA" font-size="10" font-weight="500">Chat</text>
@@ -76,7 +76,7 @@
   <!-- Connection labels -->
   <text x="240" y="150" fill="#475569" font-size="9">Server Components</text>
   <text x="237" y="159" fill="#334155" font-size="8">(direct DB queries)</text>
-  <text x="556" y="150" fill="#475569" font-size="9">149 API Routes</text>
+  <text x="556" y="150" fill="#475569" font-size="9">160 API Routes</text>
   <text x="550" y="159" fill="#334155" font-size="8">(mutations + streams)</text>
 
   <!-- ═══════════ SERVER LAYER ═══════════ -->
@@ -91,13 +91,13 @@
   <rect x="64" y="200" width="4" height="60" rx="2" fill="#22D3EE"/>
   <text x="80" y="222" fill="#F1F5F9" font-size="12" font-weight="600">Drizzle ORM</text>
   <text x="80" y="240" fill="#64748B" font-size="10">SQLite · WAL mode</text>
-  <text x="80" y="252" fill="#64748B" font-size="10">46 tables · Self-healing bootstrap</text>
+  <text x="80" y="252" fill="#64748B" font-size="10">45 tables · Self-healing bootstrap</text>
 
   <!-- Runtime Registry -->
   <rect x="280" y="200" width="220" height="60" rx="8" fill="#1E293B" stroke="#334155" stroke-width="1"/>
   <rect x="280" y="200" width="4" height="60" rx="2" fill="#2563EB"/>
   <text x="296" y="222" fill="#F1F5F9" font-size="12" font-weight="600">Runtime Registry</text>
-  <text x="296" y="240" fill="#64748B" font-size="10">6-provider abstraction layer</text>
+  <text x="296" y="240" fill="#64748B" font-size="10">5-provider abstraction layer</text>
   <text x="296" y="252" fill="#64748B" font-size="10">Claude · OpenAI · Ollama · Direct</text>
 
   <!-- SSE Stream -->
@@ -111,7 +111,7 @@
   <rect x="692" y="200" width="152" height="60" rx="8" fill="#1E293B" stroke="#334155" stroke-width="1"/>
   <rect x="692" y="200" width="4" height="60" rx="2" fill="#F59E0B"/>
   <text x="708" y="222" fill="#F1F5F9" font-size="12" font-weight="600">Profile Engine</text>
-  <text x="708" y="240" fill="#64748B" font-size="10">56 agent profiles</text>
+  <text x="708" y="240" fill="#64748B" font-size="10">21 agent profiles</text>
   <text x="708" y="252" fill="#64748B" font-size="10">MCP · Tools · Tuning</text>
 
   <!-- Row 2: Engines -->
@@ -126,7 +126,7 @@
   <rect x="280" y="276" width="220" height="60" rx="8" fill="#1E293B" stroke="#334155" stroke-width="1"/>
   <rect x="280" y="276" width="4" height="60" rx="2" fill="#EC4899"/>
   <text x="296" y="298" fill="#F1F5F9" font-size="12" font-weight="600">Workflow Engine</text>
-  <text x="296" y="316" fill="#64748B" font-size="10">31 orchestration patterns</text>
+  <text x="296" y="316" fill="#64748B" font-size="10">6 orchestration patterns</text>
   <text x="296" y="328" fill="#64748B" font-size="10">Sequence · Planner · Swarm · Loop</text>
 
   <!-- Permission Checker -->
