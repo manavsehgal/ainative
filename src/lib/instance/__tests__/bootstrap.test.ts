@@ -492,7 +492,7 @@ describe("ensureInstance orchestrator", () => {
     }
   });
 
-  it("skips ensureLocalBranch with warning when rebase is in progress", async () => {
+  it("skips ensureLocalBranchShim with warning when rebase is in progress", async () => {
     mkdirSync(join(tempDir, ".git", "rebase-merge"));
     const { ensureInstance } = await import("../bootstrap");
     const result = await ensureInstance(tempDir);
