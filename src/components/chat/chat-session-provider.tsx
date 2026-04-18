@@ -63,6 +63,7 @@ interface ChatSessionValue {
   messages: ChatMessageRow[]; // messages for the active conversation
   isStreaming: boolean;
   modelId: string;
+  savedDefaultModel: string; // the persisted chat.defaultModel, separate from the currently-displayed modelId
   availableModels: ChatModelOption[];
   hydrated: boolean;
 
@@ -108,6 +109,7 @@ export function ChatSessionProvider({ children }: { children: ReactNode }) {
     null
   );
   const [modelId, setModelIdState] = useState<string>(DEFAULT_CHAT_MODEL);
+  const [savedDefaultModel, setSavedDefaultModel] = useState<string>(DEFAULT_CHAT_MODEL);
   const [availableModels, setAvailableModels] =
     useState<ChatModelOption[]>(CHAT_MODELS);
   const [hydrated, setHydrated] = useState(false);
@@ -131,6 +133,7 @@ export function ChatSessionProvider({ children }: { children: ReactNode }) {
       .then((data) => {
         if (!cancelled && data?.defaultModel) {
           setModelIdState(data.defaultModel);
+          setSavedDefaultModel(data.defaultModel);
         }
       })
       .catch(() => {});
@@ -438,6 +441,24 @@ export function ChatSessionProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // ── Settings-cascade listener ────────────────────────────────────────
+  // When the routing cascade (or any other surface) writes a new
+  // chat.defaultModel, the provider's local modelId would otherwise stay
+  // stale until a full page reload. This listener keeps the dropdown and
+  // the active conversation in sync immediately.
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<{ modelId?: string }>).detail;
+      if (!detail?.modelId) return;
+      setSavedDefaultModel(detail.modelId);
+      void setModelId(detail.modelId);
+    };
+    window.addEventListener("ainative.chat.default-model-changed", handler);
+    return () => {
+      window.removeEventListener("ainative.chat.default-model-changed", handler);
+    };
+  }, [setModelId]);
+
   // ── Streaming: sendMessage + stopStreaming ──────────────────────────
   // The SSE reader loop runs inside the provider. If the consumer view
   // (ChatShell) unmounts mid-stream, this loop continues — state updates
@@ -734,6 +755,7 @@ export function ChatSessionProvider({ children }: { children: ReactNode }) {
       messages,
       isStreaming,
       modelId,
+      savedDefaultModel,
       availableModels,
       hydrated,
       hydrate,
@@ -752,6 +774,7 @@ export function ChatSessionProvider({ children }: { children: ReactNode }) {
       messages,
       isStreaming,
       modelId,
+      savedDefaultModel,
       availableModels,
       hydrated,
       hydrate,

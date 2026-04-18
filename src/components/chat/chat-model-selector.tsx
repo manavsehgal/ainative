@@ -17,6 +17,12 @@ import { cn } from "@/lib/utils";
 
 interface ChatModelSelectorProps {
   modelId: string;
+  /**
+   * The user's saved chat.defaultModel. Used to mark the "(Default)" suffix
+   * on whichever model is currently their default. Falls back to the
+   * hardcoded DEFAULT_CHAT_MODEL when undefined (pre-settings environments).
+   */
+  savedDefaultModel?: string;
   onModelChange: (modelId: string) => void;
   models?: ChatModelOption[];
 }
@@ -30,9 +36,11 @@ const tierEmoji: Record<string, string> = {
 
 export function ChatModelSelector({
   modelId,
+  savedDefaultModel,
   onModelChange,
   models = CHAT_MODELS,
 }: ChatModelSelectorProps) {
+  const effectiveDefault = savedDefaultModel ?? DEFAULT_CHAT_MODEL;
   const [ollamaModels, setOllamaModels] = useState<ChatModelOption[]>([]);
 
   // Fetch available Ollama models on mount
@@ -68,7 +76,7 @@ export function ChatModelSelector({
           size="sm"
           className="h-7 gap-1 rounded-md border border-border px-2 text-xs text-muted-foreground hover:text-foreground"
         >
-          {current.label}{modelId === DEFAULT_CHAT_MODEL ? " (Default)" : ""}
+          {current.label}{modelId === effectiveDefault ? " (Default)" : ""}
           <ChevronDown className="h-3 w-3" />
         </Button>
       </DropdownMenuTrigger>

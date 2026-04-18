@@ -41,6 +41,7 @@ export function ChatShell({
     messages,
     isStreaming,
     modelId,
+    savedDefaultModel,
     availableModels,
     hydrated,
     hydrate,
@@ -240,6 +241,7 @@ export function ChatShell({
                 isHeroMode
                 previewText={hoverPreview}
                 modelId={modelId}
+                savedDefaultModel={savedDefaultModel}
                 onModelChange={setModelId}
                 availableModels={availableModels}
                 projectId={activeConversation?.projectId}
@@ -282,6 +284,7 @@ export function ChatShell({
               isStreaming={isStreaming}
               isHeroMode={false}
               modelId={modelId}
+              savedDefaultModel={savedDefaultModel}
               onModelChange={setModelId}
               availableModels={availableModels}
               projectId={activeConversation?.projectId}

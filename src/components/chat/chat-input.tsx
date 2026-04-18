@@ -22,6 +22,7 @@ interface ChatInputProps {
   isHeroMode: boolean;
   previewText?: string | null;
   modelId?: string;
+  savedDefaultModel?: string;
   onModelChange?: (modelId: string) => void;
   availableModels?: ChatModelOption[];
   projectId?: string | null;
@@ -41,6 +42,7 @@ export function ChatInput({
   isHeroMode,
   previewText,
   modelId,
+  savedDefaultModel,
   onModelChange,
   availableModels,
   projectId,
@@ -266,6 +268,7 @@ export function ChatInput({
               {modelId && onModelChange && (
                 <ChatModelSelector
                   modelId={modelId}
+                  savedDefaultModel={savedDefaultModel}
                   onModelChange={onModelChange}
                   models={availableModels}
                 />

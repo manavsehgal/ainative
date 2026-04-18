@@ -292,16 +292,71 @@ export function ProvidersAndRuntimesSection() {
   const anthropicRowRef = useRef<HTMLDivElement | null>(null);
   const openaiRowRef = useRef<HTMLDivElement | null>(null);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (): Promise<ProvidersPayload | null> => {
     try {
       const res = await fetch("/api/settings/providers");
       if (res.ok) {
-        setData(await res.json());
+        const json = (await res.json()) as ProvidersPayload;
+        setData(json);
+        return json;
       }
+      return null;
     } finally {
       setLoading(false);
     }
   }, []);
+
+  // ── Reverse cascade: detect divergence from the active recommendation ──
+  // Called AFTER any user-initiated change that could shift auth or model away
+  // from the current routing's recommendation. If the state no longer matches,
+  // flip the routing radio to Manual silently — the two-way cause-effect.
+  const maybeSwitchToManualIfDiverged = useCallback(
+    async (fresh: ProvidersPayload) => {
+      if (fresh.routingPreference === "manual") return;
+      const rec = recommendForRouting(fresh.routingPreference, {
+        ollamaAvailable: fresh.ollama?.connected ?? false,
+        ollamaDefaultModel: fresh.ollama?.defaultModel,
+      });
+      if (!rec) return;
+
+      const anthAuthOK =
+        (fresh.providers.anthropic.authMethod ?? "api_key") === rec.anthropic.auth;
+      const openaiAuthOK =
+        (fresh.providers.openai.authMethod ?? "api_key") === rec.openai.auth;
+
+      // Direct-model settings are only consumed by *-direct runtimes. For
+      // Quality (claude-code / codex-app-server), the direct-model setting
+      // value is irrelevant to the recommendation.
+      const anthModelOK =
+        rec.anthropic.runtimeId !== "anthropic-direct" ||
+        fresh.providers.anthropic.directModel == null ||
+        fresh.providers.anthropic.directModel === rec.anthropic.model;
+      const openaiModelOK =
+        rec.openai.runtimeId !== "openai-direct" ||
+        fresh.providers.openai.directModel == null ||
+        fresh.providers.openai.directModel === rec.openai.model;
+
+      // Chat default: null means "use DEFAULT_CHAT_MODEL". If the user never
+      // ran a cascade, chat.defaultModel may still be null — that's fine as
+      // long as the recommendation's chatModel matches what null resolves to.
+      const chatModelOK =
+        fresh.chatDefaultModel == null ||
+        fresh.chatDefaultModel === rec.chatModel;
+
+      const diverges =
+        !anthAuthOK || !openaiAuthOK || !anthModelOK || !openaiModelOK || !chatModelOK;
+
+      if (diverges) {
+        await fetch("/api/settings/routing", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ preference: "manual" }),
+        });
+        setData((prev) => (prev ? { ...prev, routingPreference: "manual" } : prev));
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     fetchData();
@@ -341,7 +396,10 @@ export function ProvidersAndRuntimesSection() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ method }),
     });
-    if (res.ok) fetchData();
+    if (res.ok) {
+      const fresh = await fetchData();
+      if (fresh) await maybeSwitchToManualIfDiverged(fresh);
+    }
   }
 
   async function handleAnthropicSaveKey(apiKey: string) {
@@ -350,7 +408,10 @@ export function ProvidersAndRuntimesSection() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ method: "api_key", apiKey }),
     });
-    if (res.ok) fetchData();
+    if (res.ok) {
+      const fresh = await fetchData();
+      if (fresh) await maybeSwitchToManualIfDiverged(fresh);
+    }
   }
 
   async function handleAnthropicTest() {
@@ -368,7 +429,10 @@ export function ProvidersAndRuntimesSection() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ method: "api_key", apiKey }),
     });
-    if (res.ok) fetchData();
+    if (res.ok) {
+      const fresh = await fetchData();
+      if (fresh) await maybeSwitchToManualIfDiverged(fresh);
+    }
   }
 
   async function handleOpenAIMethodChange(method: AuthMethod) {
@@ -377,7 +441,10 @@ export function ProvidersAndRuntimesSection() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ method }),
     });
-    if (res.ok) fetchData();
+    if (res.ok) {
+      const fresh = await fetchData();
+      if (fresh) await maybeSwitchToManualIfDiverged(fresh);
+    }
   }
 
   async function handleOpenAITest() {
@@ -514,9 +581,24 @@ export function ProvidersAndRuntimesSection() {
 
     const results = await Promise.allSettled(tasks.map((t) => t.promise));
     const failed: string[] = [];
+    const succeededLabels: string[] = [];
     results.forEach((r, i) => {
-      if (r.status === "rejected" || !r.value.ok) failed.push(tasks[i].label);
+      if (r.status === "rejected" || !r.value.ok) {
+        failed.push(tasks[i].label);
+      } else {
+        succeededLabels.push(tasks[i].label);
+      }
     });
+
+    // Notify listeners (ChatSessionProvider) that the chat default changed,
+    // so the chat dropdown updates without waiting for a page reload.
+    if (rec.chatModel && succeededLabels.includes("Chat default")) {
+      window.dispatchEvent(
+        new CustomEvent("ainative.chat.default-model-changed", {
+          detail: { modelId: rec.chatModel },
+        }),
+      );
+    }
 
     if (failed.length === 0) {
       toast.success(`Routing set to ${value} — updated ${tasks.map((t) => t.label).join(", ")}`);
@@ -759,7 +841,9 @@ export function ProvidersAndRuntimesSection() {
                   updatedAt: new Date().toISOString(),
                 }
               }
-              onChanged={fetchData}
+              onChanged={async () => {
+                await fetchData();
+              }}
               onLoginStateChange={setOpenAILoginState}
             />
           ) : (
