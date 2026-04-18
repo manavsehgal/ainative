@@ -30,8 +30,8 @@ describe("ProfileConfigSchema", () => {
       },
       maxTurns: 20,
       outputFormat: "markdown",
-      author: "stagent",
-      source: "https://github.com/stagent/profiles",
+      author: "ainative",
+      source: "https://github.com/ainative/profiles",
       tests: [
         {
           task: "Do a thing",
