@@ -7,7 +7,7 @@ tags: [marketing, content, seo, campaigns]
 pattern: checkpoint
 estimatedDuration: "15-30 min"
 difficulty: intermediate
-author: stagent
+author: ainative
 
 variables:
   - id: topic

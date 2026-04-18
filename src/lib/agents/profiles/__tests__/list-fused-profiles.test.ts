@@ -9,8 +9,8 @@ describe("listFusedProfiles", () => {
   let userSkillsDir: string;
 
   beforeEach(() => {
-    projectDir = mkdtempSync(join(tmpdir(), "stagent-skills-"));
-    userSkillsDir = mkdtempSync(join(tmpdir(), "stagent-user-skills-"));
+    projectDir = mkdtempSync(join(tmpdir(), "ainative-skills-"));
+    userSkillsDir = mkdtempSync(join(tmpdir(), "ainative-user-skills-"));
     mkdirSync(join(projectDir, ".claude", "skills"), { recursive: true });
   });
 

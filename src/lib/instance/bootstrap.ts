@@ -113,12 +113,12 @@ export function ensureMainShim(git: GitOps): EnsureStepResult {
   }
 }
 
-export const STAGENT_HOOK_VERSION = "1.0.0";
+export const AINATIVE_HOOK_VERSION = "1.0.0";
 
 /**
  * Pre-push hook template. Installed verbatim at .git/hooks/pre-push.
  *
- * Reads the blocked branch list from the stagent SQLite settings table
+ * Reads the blocked branch list from the ainative SQLite settings table
  * via a bounded sqlite3 invocation. The query is hardcoded — no user
  * input reaches the shell.
  *
@@ -126,7 +126,7 @@ export const STAGENT_HOOK_VERSION = "1.0.0";
  * for legitimate cherry-pick pushes.
  */
 const PRE_PUSH_HOOK_TEMPLATE = `#!/bin/sh
-# STAGENT_HOOK_VERSION=${STAGENT_HOOK_VERSION}
+# AINATIVE_HOOK_VERSION=${AINATIVE_HOOK_VERSION}
 # Blocks pushes of private instance branches to origin.
 # Escape hatch: ALLOW_PRIVATE_PUSH=1 git push ...
 #
@@ -141,8 +141,8 @@ if [ -z "$current_branch" ]; then
   exit 0
 fi
 
-data_dir="\${AINATIVE_DATA_DIR:-$HOME/.stagent}"
-db_path="$data_dir/stagent.db"
+data_dir="\${AINATIVE_DATA_DIR:-$HOME/.ainative}"
+db_path="$data_dir/ainative.db"
 if [ ! -f "$db_path" ] || ! command -v sqlite3 >/dev/null 2>&1; then
   exit 0
 fi
@@ -153,8 +153,8 @@ if [ -z "$blocked_json" ]; then
 fi
 
 if echo "$blocked_json" | grep -q "\\"$current_branch\\""; then
-  echo "stagent: refusing to push private instance branch '$current_branch' to origin." >&2
-  echo "stagent: set ALLOW_PRIVATE_PUSH=1 to override (not recommended)." >&2
+  echo "ainative: refusing to push private instance branch '$current_branch' to origin." >&2
+  echo "ainative: set ALLOW_PRIVATE_PUSH=1 to override (not recommended)." >&2
   exit 1
 fi
 
@@ -167,14 +167,14 @@ exit 0
  */
 export function ensurePrePushHook(git: GitOps): EnsureStepResult {
   const hookPath = join(git.getGitDir(), "hooks", "pre-push");
-  const markerLine = `STAGENT_HOOK_VERSION=${STAGENT_HOOK_VERSION}`;
+  const markerLine = `AINATIVE_HOOK_VERSION=${AINATIVE_HOOK_VERSION}`;
 
   if (existsSync(hookPath)) {
     const existing = readFileSync(hookPath, "utf-8");
     if (existing.includes(markerLine)) {
       return { step: "pre-push-hook", status: "skipped", reason: "already_installed" };
     }
-    if (existing.includes("STAGENT_HOOK_VERSION=")) {
+    if (existing.includes("AINATIVE_HOOK_VERSION=")) {
       try {
         writeFileSync(hookPath, PRE_PUSH_HOOK_TEMPLATE, { mode: 0o755 });
         return { step: "pre-push-hook", status: "ok", reason: "upgraded" };
@@ -187,7 +187,7 @@ export function ensurePrePushHook(git: GitOps): EnsureStepResult {
       }
     }
     try {
-      renameSync(hookPath, `${hookPath}.stagent-backup`);
+      renameSync(hookPath, `${hookPath}.ainative-backup`);
     } catch (err) {
       return {
         step: "pre-push-hook",
@@ -339,7 +339,7 @@ export async function ensureInstance(cwd: string = process.cwd()): Promise<Ensur
         await setGuardrails({
           ...current,
           prePushHookInstalled: true,
-          prePushHookVersion: STAGENT_HOOK_VERSION,
+          prePushHookVersion: AINATIVE_HOOK_VERSION,
           pushRemoteBlocked: blockedBranches,
         });
       }

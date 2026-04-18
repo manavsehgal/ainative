@@ -62,7 +62,7 @@ describe("output-scanner", () => {
   const originalDataDir = process.env.AINATIVE_DATA_DIR;
 
   beforeEach(() => {
-    tempDataDir = fs.mkdtempSync(path.join(os.tmpdir(), "stagent-output-scanner-"));
+    tempDataDir = fs.mkdtempSync(path.join(os.tmpdir(), "ainative-output-scanner-"));
     process.env.AINATIVE_DATA_DIR = tempDataDir;
     vi.resetModules();
     mockSelect.mockClear();

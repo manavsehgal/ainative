@@ -40,7 +40,7 @@ export async function POST() {
 
   const folderName = basename(cwd);
   const home = homedir();
-  // stagent-wealth → ~/.ainative-wealth, stagent-growth → ~/.ainative-growth
+  // ainative-wealth → ~/.ainative-wealth, ainative-growth → ~/.ainative-growth
   const dataDir = join(home, `.${folderName}`);
   const displayDataDir = `~/.${folderName}`;
 
@@ -65,7 +65,7 @@ export async function POST() {
 
   // --- 2. Create data dir + bootstrap DB ---
   mkdirSync(dataDir, { recursive: true });
-  const dbPath = join(dataDir, "stagent.db");
+  const dbPath = join(dataDir, "ainative.db");
   const sqlite = new Database(dbPath);
   sqlite.pragma("journal_mode = WAL");
   sqlite.pragma("foreign_keys = ON");

@@ -1,8 +1,8 @@
 #!/bin/bash
-# clr-dev.sh — Clean up stagent dev server processes
+# clr-dev.sh — Clean up ainative dev server processes
 # Kills next dev, next-server children, and checks for DB locks
 
-DB_PATH="$HOME/.stagent/stagent.db"
+DB_PATH="$HOME/.ainative/ainative.db"
 FOUND=0
 
 # 1. Kill "next dev" parent processes
@@ -38,7 +38,7 @@ fi
 
 # 4. Final status
 if [ "$FOUND" -eq 0 ]; then
-  echo "No stagent dev server processes found."
+  echo "No ainative dev server processes found."
 else
   echo "Cleanup complete."
 fi

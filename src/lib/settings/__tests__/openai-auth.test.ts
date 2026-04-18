@@ -24,7 +24,7 @@ vi.mock("@/lib/utils/crypto", () => ({
 }));
 
 vi.mock("@/lib/utils/ainative-paths", () => ({
-  getAinativeCodexAuthPath: () => "/tmp/stagent-codex/auth.json",
+  getAinativeCodexAuthPath: () => "/tmp/ainative-codex/auth.json",
 }));
 
 mockFrom.mockReturnValue({ where: mockWhere });

@@ -53,7 +53,7 @@ export function FilterInput({ value, onChange, placeholder }: FilterInputProps) 
           </Badge>
         ))}
       </div>
-      <FilterHint inputValue={local} storageKey="stagent.filter-hint.dismissed" />
+      <FilterHint inputValue={local} storageKey="ainative.filter-hint.dismissed" />
     </div>
   );
 }

@@ -65,9 +65,9 @@ export function ChatShell({
     function onOpen() {
       setTemplatePickerOpen(true);
     }
-    window.addEventListener("stagent.chat.openTemplatePicker", onOpen);
+    window.addEventListener("ainative.chat.openTemplatePicker", onOpen);
     return () =>
-      window.removeEventListener("stagent.chat.openTemplatePicker", onOpen);
+      window.removeEventListener("ainative.chat.openTemplatePicker", onOpen);
   }, []);
 
   // Track streaming state + activeId in refs so the unmount cleanup sees the

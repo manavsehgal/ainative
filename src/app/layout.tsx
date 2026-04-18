@@ -67,7 +67,7 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Resolve theme server-side from the stagent-theme cookie. Every client-side
+  // Resolve theme server-side from the ainative-theme cookie. Every client-side
   // theme toggle writes this cookie (see src/lib/theme.ts), so SSR stays in
   // sync with the user's preference and there is no FOUC — and no pre-hydration
   // <script> tag, which is what React 19 warns about.

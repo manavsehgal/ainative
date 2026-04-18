@@ -7,7 +7,7 @@ tags: [health, nutrition, meal-prep, shopping]
 pattern: sequence
 estimatedDuration: "5-10 min"
 difficulty: beginner
-author: stagent
+author: ainative
 
 variables:
   - id: goal

@@ -197,7 +197,7 @@ export function ChatCommandPopover({
   const recentMessages = useRecentUserMessages(activeId, 20);
 
   const dismissStore = useMemo(
-    () => browserLocalStore("stagent.chat.dismissed-suggestions"),
+    () => browserLocalStore("ainative.chat.dismissed-suggestions"),
     []
   );
 
@@ -319,7 +319,7 @@ export function ChatCommandPopover({
               </div>
             )}
             <CommandList className="max-h-[320px]">
-              <FilterHint inputValue={query} storageKey="stagent.filter-hint.dismissed" />
+              <FilterHint inputValue={query} storageKey="ainative.filter-hint.dismissed" />
               {activeTab !== "entities" && (
                 <CommandEmpty>No matching tools</CommandEmpty>
               )}

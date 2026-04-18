@@ -11,7 +11,7 @@ interface CapabilityBannerProps {
 }
 
 function dismissKey(runtimeId: string): string {
-  return `stagent.capability-banner.dismissed.${runtimeId}`;
+  return `ainative.capability-banner.dismissed.${runtimeId}`;
 }
 
 function readDismissed(runtimeId: string): boolean {

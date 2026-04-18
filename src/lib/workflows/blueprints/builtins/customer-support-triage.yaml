@@ -7,7 +7,7 @@ tags: [support, triage, customer-service, escalation]
 pattern: sequence
 estimatedDuration: "5-15 min"
 difficulty: beginner
-author: stagent
+author: ainative
 
 variables:
   - id: ticket_content

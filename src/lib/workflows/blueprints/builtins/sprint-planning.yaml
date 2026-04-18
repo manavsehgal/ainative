@@ -7,7 +7,7 @@ tags: [planning, estimation, sprint, project-management]
 pattern: sequence
 estimatedDuration: "10-20 min"
 difficulty: beginner
-author: stagent
+author: ainative
 
 variables:
   - id: goal

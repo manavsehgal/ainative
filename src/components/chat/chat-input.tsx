@@ -112,22 +112,22 @@ export function ChatInput({
         fetch("/api/notifications/mark-all-read", { method: "PATCH" });
         return;
       case "clear":
-        window.dispatchEvent(new CustomEvent("stagent.chat.clear"));
+        window.dispatchEvent(new CustomEvent("ainative.chat.clear"));
         return;
       case "compact":
-        window.dispatchEvent(new CustomEvent("stagent.chat.compact"));
+        window.dispatchEvent(new CustomEvent("ainative.chat.compact"));
         return;
       case "export":
-        window.dispatchEvent(new CustomEvent("stagent.chat.export"));
+        window.dispatchEvent(new CustomEvent("ainative.chat.export"));
         return;
       case "help":
-        window.dispatchEvent(new CustomEvent("stagent.chat.help"));
+        window.dispatchEvent(new CustomEvent("ainative.chat.help"));
         return;
       case "settings":
         window.location.href = "/settings";
         return;
       case "new-from-template":
-        window.dispatchEvent(new CustomEvent("stagent.chat.openTemplatePicker"));
+        window.dispatchEvent(new CustomEvent("ainative.chat.openTemplatePicker"));
         return;
     }
   }, []);

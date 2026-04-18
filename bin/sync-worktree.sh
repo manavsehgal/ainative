@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Sync a stagent worktree with the latest main branch.
+# Sync a ainative worktree with the latest main branch.
 # Usage: npm run sync-worktree  (or bash bin/sync-worktree.sh)
 
 # Verify we're in a worktree, not the main repo
@@ -14,7 +14,7 @@ COMMON_DIR="$(git rev-parse --git-common-dir)"
 GIT_DIR="$(git rev-parse --git-dir)"
 if [ "$COMMON_DIR" = "$GIT_DIR" ]; then
   echo "Error: this appears to be the main repo, not a worktree." >&2
-  echo "Run this from a worktree directory (e.g. ../stagent-worktrees/<name>)" >&2
+  echo "Run this from a worktree directory (e.g. ../ainative-worktrees/<name>)" >&2
   exit 1
 fi
 

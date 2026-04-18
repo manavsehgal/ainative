@@ -81,7 +81,7 @@ These 7 directives apply to all skills, all code, and all reviews. They are the 
 
 ## Worktree Context
 
-- Dogfooding worktrees use isolated data dirs via `STAGENT_DATA_DIR` in `.env.local`. Never share a DB between instances.
+- Dogfooding worktrees use isolated data dirs via `AINATIVE_DATA_DIR` in `.env.local`. Never share a DB between instances.
 - Migration files: use `XXXX_` prefix during development, renumber to next sequential at PR time.
 - Run `/worktree-production` for setup, sync, seed, and migration procedures.
 - In a dogfooding worktree: focus on using the app. Report bugs — don't fix them here.
@@ -93,12 +93,12 @@ The canonical ainative dev repo (`/Users/manavsehgal/Developer/ainative`) must s
 
 Two independent gates prevent this, both already in place:
 
-1. **`STAGENT_DEV_MODE=true` in `.env.local`** (primary, per-developer). Set on this machine. Required for every contributor's local setup — add it to your `.env.local` before first `npm run dev` after pulling in the instance-bootstrap feature.
+1. **`AINATIVE_DEV_MODE=true` in `.env.local`** (primary, per-developer). Set on this machine. Required for every contributor's local setup — add it to your `.env.local` before first `npm run dev` after pulling in the instance-bootstrap feature.
 2. **`.git/ainative-dev-mode` sentinel file** (secondary, git-dir-scoped). Never cloned, never committed, persists across `.env.local` edits. Create once per clone: `touch .git/ainative-dev-mode`.
 
 When either gate is active, `ensureInstance()` returns immediately with no side effects — no branches created, no hooks installed, no scheduled tasks registered.
 
-**To test the instance-bootstrap feature in the main repo** (e.g., verifying the consent flow): set `STAGENT_INSTANCE_MODE=true` in your shell — this override wins over both dev-mode gates. Unset it when done testing.
+**To test the instance-bootstrap feature in the main repo** (e.g., verifying the consent flow): set `AINATIVE_INSTANCE_MODE=true` in your shell — this override wins over both dev-mode gates. Unset it when done testing.
 
 See `features/instance-bootstrap.md` for the full gate logic and `PRIVATE-INSTANCES.md` (gitignored) for the end-user workflow this feature automates.
 

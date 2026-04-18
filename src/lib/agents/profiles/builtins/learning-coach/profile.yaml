@@ -16,7 +16,7 @@ canUseToolPolicy:
 
 maxTurns: 25
 
-author: stagent
+author: ainative
 
 tests:
   - task: "Create a 30-day study plan to learn Rust programming from scratch"

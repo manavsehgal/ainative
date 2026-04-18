@@ -8,4 +8,4 @@ preferredRuntime: claude-code
 maxTurns: 50
 outputFormat: json
 
-author: stagent
+author: ainative

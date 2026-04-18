@@ -17,7 +17,7 @@ import { handleInboundMessage } from "@/lib/channels/gateway";
 export async function POST(req: NextRequest) {
   // Guard: only accept requests from the internal poller.
   // The internal scheduler sets this header; external callers won't have it.
-  const internalToken = req.headers.get("x-stagent-internal");
+  const internalToken = req.headers.get("x-ainative-internal");
   if (internalToken !== "poll") {
     return NextResponse.json({ error: "Unauthorized — internal use only" }, { status: 401 });
   }

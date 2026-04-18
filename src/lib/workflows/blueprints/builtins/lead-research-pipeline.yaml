@@ -7,7 +7,7 @@ tags: [sales, research, leads, outreach]
 pattern: sequence
 estimatedDuration: "15-30 min"
 difficulty: intermediate
-author: stagent
+author: ainative
 
 variables:
   - id: target_industry

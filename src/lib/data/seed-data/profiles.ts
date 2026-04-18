@@ -16,11 +16,11 @@ const SAMPLE_PROFILE_AUTHOR = "ainative Sample Data";
 const SAMPLE_PROFILE_SOURCE = "https://ainative.business/profiles/samples";
 
 export const SAMPLE_PROFILE_IDS = [
-  "stagent-sample-gtm-launch-strategist",
-  "stagent-sample-content-production-editor",
-  "stagent-sample-customer-success-analyst",
-  "stagent-sample-due-diligence-analyst",
-  "stagent-sample-revenue-ops-analyst",
+  "ainative-sample-gtm-launch-strategist",
+  "ainative-sample-content-production-editor",
+  "ainative-sample-customer-success-analyst",
+  "ainative-sample-due-diligence-analyst",
+  "ainative-sample-revenue-ops-analyst",
 ] as const;
 
 export function getSampleProfiles(): SampleProfileSeed[] {

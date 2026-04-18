@@ -17,7 +17,7 @@ canUseToolPolicy:
 maxTurns: 20
 outputFormat: markdown-document
 
-author: stagent
+author: ainative
 
 tests:
   - task: "Write a technical specification for a REST API"

@@ -16,7 +16,7 @@ import { join, dirname, relative, basename } from "path";
 import { homedir } from "os";
 
 const AINATIVE_DATA_DIR =
-  process.env.AINATIVE_DATA_DIR || join(homedir(), ".stagent");
+  process.env.AINATIVE_DATA_DIR || join(homedir(), ".ainative");
 const BACKUPS_DIR = join(AINATIVE_DATA_DIR, "backups");
 
 interface BackupResult {

@@ -18,8 +18,8 @@ export function createRepoImports(): RepoImportSeed[] {
   return [
     {
       id: crypto.randomUUID(),
-      repoUrl: "https://github.com/stagent-community/marketing-agents",
-      repoOwner: "stagent-community",
+      repoUrl: "https://github.com/ainative-community/marketing-agents",
+      repoOwner: "ainative-community",
       repoName: "marketing-agents",
       branch: "main",
       commitSha: "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
@@ -34,8 +34,8 @@ export function createRepoImports(): RepoImportSeed[] {
     },
     {
       id: crypto.randomUUID(),
-      repoUrl: "https://github.com/stagent-community/sales-ops-agents",
-      repoOwner: "stagent-community",
+      repoUrl: "https://github.com/ainative-community/sales-ops-agents",
+      repoOwner: "ainative-community",
       repoName: "sales-ops-agents",
       branch: "main",
       commitSha: "f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1f6e5",
@@ -49,8 +49,8 @@ export function createRepoImports(): RepoImportSeed[] {
     },
     {
       id: crypto.randomUUID(),
-      repoUrl: "https://github.com/stagent-community/compliance-agents",
-      repoOwner: "stagent-community",
+      repoUrl: "https://github.com/ainative-community/compliance-agents",
+      repoOwner: "ainative-community",
       repoName: "compliance-agents",
       branch: "main",
       commitSha: "c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4",

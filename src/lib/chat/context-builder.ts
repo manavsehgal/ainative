@@ -397,7 +397,7 @@ async function buildTier3(mentions: MentionReference[]): Promise<string> {
       }
       case "file": {
         // `entityId` is a relative path scoped to the active project's
-        // workingDirectory (preferred) or the stagent launch cwd (fallback).
+        // workingDirectory (preferred) or the ainative launch cwd (fallback).
         // Security is enforced inside expandFileMention — the caller cannot
         // influence cwd.
         const { getLaunchCwd } = await import("@/lib/environment/workspace-context");

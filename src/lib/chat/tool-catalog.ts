@@ -92,7 +92,7 @@ export const TOOL_GROUP_ORDER: ToolGroup[] = [
 // Mirrors names/descriptions from src/lib/chat/tools/*.ts
 // Keep in sync when adding or renaming MCP tools.
 
-const STAGENT_TOOLS: ToolCatalogEntry[] = [
+const AINATIVE_TOOLS: ToolCatalogEntry[] = [
   // ── Tasks ──
   { name: "list_tasks", description: "List tasks, filter by project or status", group: "Tasks", paramHint: "projectId, status" },
   { name: "get_task", description: "Get full details for a task", group: "Tasks", paramHint: "taskId" },
@@ -233,13 +233,13 @@ export function getToolCatalog(opts?: { includeBrowser?: boolean }): ToolCatalog
 
   if (withBrowser) {
     if (!cachedWithBrowser) {
-      cachedWithBrowser = [...SESSION_ENTRIES, ...STAGENT_TOOLS, ...BROWSER_TOOLS, ...UTILITY_ENTRIES];
+      cachedWithBrowser = [...SESSION_ENTRIES, ...AINATIVE_TOOLS, ...BROWSER_TOOLS, ...UTILITY_ENTRIES];
     }
     return cachedWithBrowser;
   }
 
   if (!cachedCatalog) {
-    cachedCatalog = [...SESSION_ENTRIES, ...STAGENT_TOOLS, ...UTILITY_ENTRIES];
+    cachedCatalog = [...SESSION_ENTRIES, ...AINATIVE_TOOLS, ...UTILITY_ENTRIES];
   }
   return cachedCatalog;
 }

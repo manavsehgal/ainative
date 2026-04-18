@@ -19,7 +19,7 @@ import {
 } from "@/lib/utils/ainative-paths";
 import { CodexAppServerClient } from "./codex-app-server-client";
 
-const STAGENT_CODEX_CONFIG = `cli_auth_credentials_store = "file"
+const AINATIVE_CODEX_CONFIG = `cli_auth_credentials_store = "file"
 `;
 
 interface AccountReadResult {
@@ -150,8 +150,8 @@ async function ensureCodexHomeConfig() {
   }
 
   const next = current.trim().length > 0
-    ? `${current.trimEnd()}\n\n${STAGENT_CODEX_CONFIG}`
-    : STAGENT_CODEX_CONFIG;
+    ? `${current.trimEnd()}\n\n${AINATIVE_CODEX_CONFIG}`
+    : AINATIVE_CODEX_CONFIG;
   await writeFile(configPath, next, "utf8");
 }
 

@@ -6,7 +6,7 @@ import { join } from "path";
 import { getAinativeDataDir } from "@/lib/utils/ainative-paths";
 import { isDevMode, isPrivateInstance } from "@/lib/instance/detect";
 
-/** The directory the user launched stagent from (falls back to process.cwd()). */
+/** The directory the user launched ainative from (falls back to process.cwd()). */
 export function getLaunchCwd(): string {
   return process.env.AINATIVE_LAUNCH_CWD || process.cwd();
 }

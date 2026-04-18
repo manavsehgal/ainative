@@ -17,7 +17,7 @@ canUseToolPolicy:
 
 maxTurns: 20
 
-author: stagent
+author: ainative
 
 tests:
   - task: "Analyze monthly revenue data and create a financial summary"

@@ -53,7 +53,7 @@ describe("clearAllData coverage", () => {
  * FOREIGN KEY constraint failed. This test seeds a document attached to a
  * conversation and then calls clearAllData to ensure the ordering holds.
  *
- * Incident: the stagent-growth domain clone (2026-04-07) hit this because its
+ * Incident: the ainative-growth domain clone (2026-04-07) hit this because its
  * seeded data included chat-attached documents.
  */
 describe("clearAllData FK ordering", () => {

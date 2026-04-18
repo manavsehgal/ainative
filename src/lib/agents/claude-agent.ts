@@ -53,9 +53,9 @@ import {
 // fixes — do not duplicate these patterns inline.
 
 /**
- * Merge the in-process stagent MCP server into a profile/browser/external
+ * Merge the in-process ainative MCP server into a profile/browser/external
  * MCP server map. ainative is spread LAST so no upstream source can shadow
- * the `stagent` key with its own server.
+ * the `ainative` key with its own server.
  *
  * `@/lib/chat/ainative-tools` is loaded via dynamic `import()` to avoid a
  * circular-dependency crash: that module transitively pulls in the chat
@@ -85,7 +85,7 @@ async function withAinativeMcpServer(
 
 /**
  * Prepend `mcp__ainative__*` to a profile's explicit allowedTools so the
- * stagent tool registration survives the SDK preset filter. When the
+ * ainative tool registration survives the SDK preset filter. When the
  * profile has no explicit allowlist and `includeSdkTools` is true, fall
  * back to Phase 1a's CLAUDE_SDK_ALLOWED_TOOLS (Skill, Read/Grep/Glob,
  * Edit/Write/Bash, TodoWrite) so task execution gets the same toolset as
@@ -102,7 +102,7 @@ function withAinativeAllowedTools(
   // only `mcp__ainative__*` and nothing else). Require at least one tool
   // name for the "profile has explicit list" branch.
   if (profileAllowedTools && profileAllowedTools.length > 0) {
-    // Profile has explicit list — respect it. Only prepend stagent.
+    // Profile has explicit list — respect it. Only prepend ainative.
     return Array.from(new Set(["mcp__ainative__*", ...profileAllowedTools]));
   }
   if (includeSdkTools) {

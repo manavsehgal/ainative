@@ -41,10 +41,10 @@ export function TaskSurface({
   const router = useRouter();
   const [view, setView] = useTaskView();
   const [sheetTaskId, setSheetTaskId] = useState<string | null>(null);
-  const [projectFilter, setProjectFilter] = usePersistedState("stagent-project-filter", "all");
-  const [statusFilter, setStatusFilter] = usePersistedState("stagent-status-filter", "all");
-  const [sortOrder, setSortOrder] = usePersistedState<SortOrder>("stagent-sort-order", "priority");
-  const [density, setDensity] = usePersistedState<Density>("stagent-table-density", "comfortable");
+  const [projectFilter, setProjectFilter] = usePersistedState("ainative-project-filter", "all");
+  const [statusFilter, setStatusFilter] = usePersistedState("ainative-status-filter", "all");
+  const [sortOrder, setSortOrder] = usePersistedState<SortOrder>("ainative-sort-order", "priority");
+  const [density, setDensity] = usePersistedState<Density>("ainative-table-density", "comfortable");
 
   // Reset stale project filter (e.g. project was deleted between sessions)
   useEffect(() => {

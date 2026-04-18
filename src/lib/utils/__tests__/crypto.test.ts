@@ -8,7 +8,7 @@ import { tmpdir } from "os";
 let tempDir: string;
 
 beforeEach(() => {
-  tempDir = mkdtempSync(join(tmpdir(), "stagent-crypto-test-"));
+  tempDir = mkdtempSync(join(tmpdir(), "ainative-crypto-test-"));
   vi.stubEnv("AINATIVE_DATA_DIR", tempDir);
 });
 

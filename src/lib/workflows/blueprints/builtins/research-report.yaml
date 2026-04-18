@@ -7,7 +7,7 @@ tags: [research, analysis, report, writing]
 pattern: sequence
 estimatedDuration: "15-30 min"
 difficulty: intermediate
-author: stagent
+author: ainative
 
 variables:
   - id: topic

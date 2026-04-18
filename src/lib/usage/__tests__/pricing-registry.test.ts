@@ -6,7 +6,7 @@ import { tmpdir } from "os";
 let tempDir: string;
 
 beforeEach(() => {
-  tempDir = mkdtempSync(join(tmpdir(), "stagent-pricing-registry-"));
+  tempDir = mkdtempSync(join(tmpdir(), "ainative-pricing-registry-"));
   vi.resetModules();
   vi.stubEnv("AINATIVE_DATA_DIR", tempDir);
 });

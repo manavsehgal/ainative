@@ -2,7 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, beforeEach } from "vitest";
 import { FilterHint } from "../filter-hint";
 
-const KEY = "stagent.filter-hint.dismissed";
+const KEY = "ainative.filter-hint.dismissed";
 
 describe("FilterHint", () => {
   beforeEach(() => {

@@ -16,7 +16,7 @@ canUseToolPolicy:
 
 maxTurns: 20
 
-author: stagent
+author: ainative
 
 tests:
   - task: "Create a 4-week beginner strength training workout plan"

@@ -58,7 +58,7 @@ describe("desktop sidecar launch helpers", () => {
 
     expect(
       resolveNextEntrypoint(
-        "/workspace/apps/stagent",
+        "/workspace/apps/ainative",
         (targetPath) => existingPaths.has(targetPath),
       ),
     ).toBe("/workspace/node_modules/next/dist/bin/next");

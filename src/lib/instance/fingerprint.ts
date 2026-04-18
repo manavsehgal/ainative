@@ -2,7 +2,7 @@
  * Machine fingerprint generator.
  *
  * Produces a stable, non-identifying hash that uniquely identifies the machine
- * this stagent instance is running on. Used to give each stagent instance a
+ * this ainative instance is running on. Used to give each ainative instance a
  * durable identity (e.g., for telemetry correlation and multi-instance
  * disambiguation); no billing or cloud-metering dependency.
  *
@@ -15,7 +15,7 @@
  * never appears in logs or telemetry. The combined inputs are SHA-256'd
  * together to produce a 64-character hex string.
  *
- * Stability: the fingerprint is stable across reboots and stagent restarts
+ * Stability: the fingerprint is stable across reboots and ainative restarts
  * on the same machine. It changes if the user renames their account, renames
  * their machine, or swaps network hardware.
  */

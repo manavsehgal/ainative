@@ -7,7 +7,7 @@ import { and, eq } from "drizzle-orm";
 import { processDocument } from "./processor";
 
 const AINATIVE_DATA_DIR =
-  process.env.AINATIVE_DATA_DIR || path.join(homedir(), ".stagent");
+  process.env.AINATIVE_DATA_DIR || path.join(homedir(), ".ainative");
 const TASK_OUTPUTS_DIR = path.join(AINATIVE_DATA_DIR, "outputs");
 const OUTPUT_ARCHIVE_DIR = path.join(AINATIVE_DATA_DIR, "documents", "output");
 

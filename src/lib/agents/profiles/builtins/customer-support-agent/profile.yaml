@@ -19,7 +19,7 @@ canUseToolPolicy:
 
 maxTurns: 15
 
-author: stagent
+author: ainative
 
 tests:
   - task: "Classify and respond to a frustrated customer complaint about billing"

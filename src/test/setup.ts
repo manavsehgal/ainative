@@ -14,7 +14,7 @@ global.ResizeObserver = class ResizeObserver {
 HTMLElement.prototype.scrollIntoView = () => {};
 
 if (!process.env.AINATIVE_DATA_DIR) {
-  const tempDataDir = mkdtempSync(join(tmpdir(), "stagent-vitest-"));
+  const tempDataDir = mkdtempSync(join(tmpdir(), "ainative-vitest-"));
   mkdirSync(tempDataDir, { recursive: true });
   process.env.AINATIVE_DATA_DIR = tempDataDir;
 }

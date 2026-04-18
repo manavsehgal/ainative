@@ -8,7 +8,7 @@ preferredRuntime: claude-code
 
 maxTurns: 40
 
-author: stagent
+author: ainative
 
 # Bash tool allowlist — tight scope.
 # The upgrade assistant should only ever run git and npm install, nothing else.

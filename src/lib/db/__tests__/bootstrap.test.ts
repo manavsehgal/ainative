@@ -19,8 +19,8 @@ describe("database bootstrap recovery", () => {
   let dbPath: string;
 
   beforeEach(() => {
-    tempDir = mkdtempSync(join(tmpdir(), "stagent-db-bootstrap-"));
-    dbPath = join(tempDir, "stagent.db");
+    tempDir = mkdtempSync(join(tmpdir(), "ainative-db-bootstrap-"));
+    dbPath = join(tempDir, "ainative.db");
   });
 
   afterEach(() => {

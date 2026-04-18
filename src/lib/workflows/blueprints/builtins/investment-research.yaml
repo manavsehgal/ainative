@@ -7,7 +7,7 @@ tags: [finance, investing, research, risk-assessment]
 pattern: checkpoint
 estimatedDuration: "15-30 min"
 difficulty: advanced
-author: stagent
+author: ainative
 
 variables:
   - id: asset

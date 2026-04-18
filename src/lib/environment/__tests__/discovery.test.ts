@@ -6,7 +6,7 @@ import { discoverWorkspace } from "@/lib/environment/discovery";
 
 /** Create a temporary workspace with mock project structures. */
 function createTestWorkspace(): string {
-  const base = join(tmpdir(), `stagent-test-${Date.now()}`);
+  const base = join(tmpdir(), `ainative-test-${Date.now()}`);
   mkdirSync(base, { recursive: true });
   return base;
 }

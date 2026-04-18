@@ -76,7 +76,7 @@ export function generateProfileConfig(suggestion: ProfileSuggestion): ProfileCon
       autoDeny: [],
     },
     maxTurns: 30,
-    author: "stagent-env",
+    author: "ainative-env",
     tests: [
       {
         task: `Perform a ${suggestion.name.toLowerCase()} task`,
@@ -128,7 +128,7 @@ export function createProfileFromSuggestion(
 
   createPromotedProfile(config, skillMd);
 
-  // Note: the created profile will have author "stagent-env" which,
+  // Note: the created profile will have author "ainative-env" which,
   // combined with the env- prefix on the ID, identifies it as environment-originated.
   // The profile registry can infer origin from the author field.
 }

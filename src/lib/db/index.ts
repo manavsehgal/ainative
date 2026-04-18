@@ -8,7 +8,7 @@ import { bootstrapAinativeDatabase } from "./bootstrap";
 
 const dataDir = getAinativeDataDir();
 mkdirSync(dataDir, { recursive: true });
-const dbPath = join(dataDir, "stagent.db");
+const dbPath = join(dataDir, "ainative.db");
 
 const sqlite = new Database(dbPath);
 sqlite.pragma("journal_mode = WAL");

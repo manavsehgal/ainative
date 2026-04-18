@@ -7,7 +7,7 @@ tags: [finance, reporting, analysis, metrics]
 pattern: checkpoint
 estimatedDuration: "15-25 min"
 difficulty: intermediate
-author: stagent
+author: ainative
 
 variables:
   - id: reporting_period

@@ -117,7 +117,7 @@ export async function setupE2E(): Promise<void> {
   }
 
   // 2. Create sandbox directory with test files
-  sandboxDir = join(tmpdir(), `stagent-e2e-${Date.now()}`);
+  sandboxDir = join(tmpdir(), `ainative-e2e-${Date.now()}`);
   mkdirSync(join(sandboxDir, "src"), { recursive: true });
 
   for (const [relativePath, content] of Object.entries(SANDBOX_FILES)) {
