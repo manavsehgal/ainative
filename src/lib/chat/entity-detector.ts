@@ -119,9 +119,9 @@ export function extractToolResultEntities(
       });
       items.push({
         entityType: "task",
-        entityId: `dashboard-${id}`,
-        label: "Dashboard",
-        href: "/dashboard",
+        entityId: `tasks-${id}`,
+        label: "Tasks",
+        href: "/tasks",
       });
       if (entity.projectId) {
         items.push({
@@ -144,7 +144,7 @@ export function extractToolResultEntities(
         entityType: "project",
         entityId: `dashboard-${id}`,
         label: "Dashboard",
-        href: "/dashboard",
+        href: "/",
       });
     } else if (
       toolName === "create_workflow" ||

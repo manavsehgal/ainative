@@ -30,9 +30,9 @@ export function ChatQuickAccess({ items }: ChatQuickAccessProps) {
   return (
     <div className="border-t border-border mt-3 pt-3 flex flex-wrap gap-2">
       {items.map((item) => {
-        // Use LayoutDashboard icon for dashboard links
+        // Use LayoutDashboard icon for the Tasks kanban link
         const Icon =
-          item.href === "/dashboard"
+          item.href === "/tasks"
             ? LayoutDashboard
             : ENTITY_ICONS[item.entityType] ?? CheckSquare;
 

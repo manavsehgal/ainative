@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
         })
         .run();
 
-      // Create tasks for each step (with workflowId — hidden from dashboard kanban)
+      // Create tasks for each step (with workflowId — hidden from tasks kanban)
       for (const step of definition.steps) {
         const taskId = crypto.randomUUID();
         taskIds.push(taskId);

@@ -10,7 +10,7 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({
     push,
   }),
-  usePathname: () => "/dashboard",
+  usePathname: () => "/tasks",
 }));
 
 class EventSourceMock {

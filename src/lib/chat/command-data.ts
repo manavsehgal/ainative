@@ -1,6 +1,6 @@
 import {
-  Home,
   LayoutDashboard,
+  Table2,
   Inbox,
   Activity,
   FolderKanban,
@@ -28,8 +28,8 @@ export interface CreateItem {
 }
 
 export const navigationItems: NavigationItem[] = [
-  { title: "Home", href: "/", icon: Home, keywords: "landing welcome" },
-  { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard, keywords: "tasks kanban board" },
+  { title: "Dashboard", href: "/", icon: LayoutDashboard, keywords: "home overview stats priority today" },
+  { title: "Tasks", href: "/tasks", icon: Table2, keywords: "tasks kanban board queue" },
   { title: "Inbox", href: "/inbox", icon: Inbox, keywords: "notifications messages" },
   { title: "Monitor", href: "/monitor", icon: Activity, keywords: "logs agents streaming" },
   { title: "Projects", href: "/projects", icon: FolderKanban, keywords: "manage" },
@@ -43,7 +43,7 @@ export const navigationItems: NavigationItem[] = [
 ];
 
 export const createItems: CreateItem[] = [
-  { title: "New Task", href: "/dashboard?create=task", keywords: "create add task" },
+  { title: "New Task", href: "/tasks?create=task", keywords: "create add task" },
   { title: "New Project", href: "/projects?create=project", keywords: "create add project" },
   { title: "New Workflow", href: "/workflows/new", keywords: "create add workflow automation" },
   { title: "New Profile", href: "/profiles/new", keywords: "create add agent profile" },

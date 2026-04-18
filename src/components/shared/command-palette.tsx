@@ -34,10 +34,9 @@ import { useSavedSearches, type SavedSearch, type SavedSearchSurface } from "@/h
 import { SavedSearchesManager } from "./saved-searches-manager";
 import { toast } from "sonner";
 
-// Maps each saved-search surface to its list-page route. Tasks route to
-// /dashboard since /tasks is still a redirect stub.
+// Maps each saved-search surface to its list-page route.
 const SURFACE_ROUTE: Record<SavedSearchSurface, string> = {
-  task: "/dashboard",
+  task: "/tasks",
   project: "/projects",
   workflow: "/workflows",
   document: "/documents",

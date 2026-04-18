@@ -31,7 +31,7 @@ export function GlobalShortcuts() {
     () => [
       // Navigation
       { id: "nav-home", keys: "g h", description: "Go to Home", scope: "global", category: "Navigation", handler: () => router.push("/") },
-      { id: "nav-dashboard", keys: "g d", description: "Go to Dashboard", scope: "global", category: "Navigation", handler: () => router.push("/dashboard") },
+      { id: "nav-tasks", keys: "g t", description: "Go to Tasks", scope: "global", category: "Navigation", handler: () => router.push("/tasks") },
       { id: "nav-inbox", keys: "g i", description: "Go to Inbox", scope: "global", category: "Navigation", handler: () => router.push("/inbox") },
       { id: "nav-monitor", keys: "g m", description: "Go to Monitor", scope: "global", category: "Navigation", handler: () => router.push("/monitor") },
       { id: "nav-projects", keys: "g p", description: "Go to Projects", scope: "global", category: "Navigation", handler: () => router.push("/projects") },
