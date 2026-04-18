@@ -19,6 +19,7 @@ import {
   Globe,
   Settings,
   MessageCircle,
+  ListTodo,
   Table2,
   BarChart3,
   ChevronDown,
@@ -57,22 +58,26 @@ interface NavItem {
   alsoMatches?: string[];
 }
 
-type GroupId = "work" | "manage" | "learn" | "configure";
+type GroupId = "home" | "compose" | "observe" | "learn" | "configure";
 
-const workItems: NavItem[] = [
-  { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard, description: "Today's work at a glance", alsoMatches: ["/tasks"] },
+const homeItems: NavItem[] = [
+  { title: "Dashboard", href: "/", icon: LayoutDashboard, description: "Today's work at a glance" },
+  { title: "Tasks", href: "/tasks", icon: ListTodo, description: "Work in flight across projects", alsoMatches: ["/tasks/"] },
   { title: "Inbox", href: "/inbox", icon: Inbox, description: "Approvals and notifications", badge: true },
   { title: "Chat", href: "/chat", icon: MessageCircle, description: "Talk directly with agents" },
+];
+
+const composeItems: NavItem[] = [
   { title: "Projects", href: "/projects", icon: FolderKanban, description: "Group work by project" },
   { title: "Workflows", href: "/workflows", icon: Workflow, description: "Multi-step agent pipelines" },
+  { title: "Profiles", href: "/profiles", icon: Bot, description: "Tune agent behavior" },
+  { title: "Schedules", href: "/schedules", icon: Clock, description: "Recurring automated runs" },
   { title: "Documents", href: "/documents", icon: FileText, description: "Shared context library" },
   { title: "Tables", href: "/tables", icon: Table2, description: "Structured data views", alsoMatches: ["/tables/"] },
 ];
 
-const manageItems: NavItem[] = [
+const observeItems: NavItem[] = [
   { title: "Monitor", href: "/monitor", icon: Activity, description: "Live agent activity stream" },
-  { title: "Profiles", href: "/profiles", icon: Bot, description: "Tune agent behavior" },
-  { title: "Schedules", href: "/schedules", icon: Clock, description: "Recurring automated runs" },
   { title: "Cost & Usage", href: "/costs", icon: Wallet, description: "Spend and model metering" },
   { title: "Analytics", href: "/analytics", icon: BarChart3, description: "Throughput and outcomes" },
 ];
@@ -88,8 +93,9 @@ const configureItems: NavItem[] = [
 ];
 
 const groupMap: { id: GroupId; label: string; items: NavItem[] }[] = [
-  { id: "work", label: "Work", items: workItems },
-  { id: "manage", label: "Manage", items: manageItems },
+  { id: "home", label: "Home", items: homeItems },
+  { id: "compose", label: "Compose", items: composeItems },
+  { id: "observe", label: "Observe", items: observeItems },
   { id: "learn", label: "Learn", items: learnItems },
   { id: "configure", label: "Configure", items: configureItems },
 ];
@@ -213,7 +219,7 @@ export function AppSidebar() {
         if (isItemActive(item, pathname)) return group.id;
       }
     }
-    return "work" as GroupId; // default to Work if no match
+    return "home" as GroupId; // default to Home if no match
   }, [pathname]);
 
   const [expandedGroup, setExpandedGroup] = useState<GroupId | null>(activeGroup);
