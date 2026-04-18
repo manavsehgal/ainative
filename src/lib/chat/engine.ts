@@ -47,7 +47,7 @@ import {
 } from "./permission-bridge";
 import { isToolAllowed } from "@/lib/settings/permissions";
 import { getLaunchCwd, getWorkspaceContext } from "@/lib/environment/workspace-context";
-import { createToolServer } from "./stagent-tools";
+import { createToolServer } from "./ainative-tools";
 import {
   getBrowserMcpServers,
   getBrowserAllowedToolPatterns,

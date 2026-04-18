@@ -141,7 +141,7 @@ vi.mock("@/lib/agents/browser-mcp", () => ({
   isExaTool: vi.fn().mockReturnValue(false),
   isExaReadOnly: vi.fn().mockReturnValue(false),
 }));
-vi.mock("@/lib/chat/stagent-tools", () => ({
+vi.mock("@/lib/chat/ainative-tools", () => ({
   createToolServer: vi.fn((_projectId?: string | null) => ({
     asMcpServer: () => ({ __mockAinativeServer: true }),
   })),
@@ -150,7 +150,7 @@ vi.mock("@/lib/chat/stagent-tools", () => ({
 // Static imports (works because vi.mock is hoisted)
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import { executeClaudeTask, resumeClaudeTask } from "../claude-agent";
-import { createToolServer } from "@/lib/chat/stagent-tools";
+import { createToolServer } from "@/lib/chat/ainative-tools";
 
 const mockQuery = vi.mocked(query);
 

@@ -15,7 +15,7 @@ import {
   buildTaskQueryContext,
   createTaskUsageState,
 } from "../claude-agent";
-import { createToolServer } from "@/lib/chat/stagent-tools";
+import { createToolServer } from "@/lib/chat/ainative-tools";
 import type { AnthropicToolDef } from "@/lib/chat/tool-registry";
 import { handleToolPermission, clearPermissionCache } from "../tool-permissions";
 import {

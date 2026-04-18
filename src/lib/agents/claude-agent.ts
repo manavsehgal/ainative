@@ -57,13 +57,13 @@ import {
  * MCP server map. ainative is spread LAST so no upstream source can shadow
  * the `stagent` key with its own server.
  *
- * `@/lib/chat/stagent-tools` is loaded via dynamic `import()` to avoid a
+ * `@/lib/chat/ainative-tools` is loaded via dynamic `import()` to avoid a
  * circular-dependency crash: that module transitively pulls in the chat
  * tools registry, which imports the runtime registry (`runtime/catalog`,
  * `runtime/index`), which statically references `claudeRuntimeAdapter` —
  * the very module this file is defined in. A static import here would
  * crash with "Cannot access 'claudeRuntimeAdapter' before initialization"
- * at module-load time. The dynamic import defers the stagent-tools module
+ * at module-load time. The dynamic import defers the ainative-tools module
  * until `executeClaudeTask` / `resumeClaudeTask` actually run, by which
  * time every module in the graph has finished initializing.
  */
@@ -73,7 +73,7 @@ async function withAinativeMcpServer(
   externalServers: Record<string, unknown>,
   projectId?: string | null,
 ): Promise<Record<string, unknown>> {
-  const { createToolServer } = await import("@/lib/chat/stagent-tools");
+  const { createToolServer } = await import("@/lib/chat/ainative-tools");
   const ainativeServer = createToolServer(projectId).asMcpServer();
   return {
     ...profileServers,
@@ -557,7 +557,7 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
 
     // Merge browser + external MCP servers, then inject the in-process
     // ainative server via the shared helper (see withAinativeMcpServer above).
-    // The helper is async because it dynamically imports @/lib/chat/stagent-tools
+    // The helper is async because it dynamically imports @/lib/chat/ainative-tools
     // to break a module-load cycle with the runtime registry.
     const [browserServers, externalServers] = await Promise.all([
       getBrowserMcpServers(),
