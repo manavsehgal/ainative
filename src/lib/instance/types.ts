@@ -64,8 +64,14 @@ export interface GitOps {
   getCurrentBranch(): string | null;
   /** Returns true if a branch with the given name exists locally. */
   branchExists(name: string): boolean;
-  /** Creates a new branch at the current HEAD and checks it out. */
-  createAndCheckoutBranch(name: string): void;
+  /**
+   * Creates or repoints a branch to a given ref WITHOUT checking it out.
+   * Used for tracking shims that bootstrap re-aligns each boot.
+   * Idempotent: -f means existing branch at a different SHA gets repointed,
+   * non-existent branch gets created. Safe for shim semantics; do NOT use
+   * for user-facing branch creation where data loss might be a concern.
+   */
+  createBranchAt(name: string, ref: string): void;
   /** Sets a git config value. Throws on failure. */
   setConfig(key: string, value: string): void;
   /** Fetches from origin. Throws on failure. */
