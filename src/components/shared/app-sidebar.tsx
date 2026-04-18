@@ -45,6 +45,7 @@ import { UnreadBadge } from "@/components/notifications/unread-badge";
 import { UpgradeBadge } from "@/components/instance/upgrade-badge";
 import { AuthStatusDot } from "@/components/settings/auth-status-dot";
 import { AinativeLogo } from "@/components/shared/ainative-logo";
+import { AinativeWordmark } from "@/components/shared/ainative-wordmark";
 import { WorkspaceIndicator } from "@/components/shared/workspace-indicator";
 
 interface NavItem {
@@ -223,10 +224,7 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
       <SidebarHeader className="px-4 py-3">
         <div className="flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 group-data-[collapsible=icon]:hidden">
-            <AinativeLogo size={24} className="shrink-0" />
-            <span className="text-lg font-bold tracking-tight">ainative</span>
-          </Link>
+          <AinativeWordmark className="group-data-[collapsible=icon]:hidden" />
           <Link href="/" className="hidden group-data-[collapsible=icon]:flex items-center justify-center" aria-label="ainative home">
             <AinativeLogo size={20} />
           </Link>

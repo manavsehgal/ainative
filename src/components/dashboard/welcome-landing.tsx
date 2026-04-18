@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Shield, Zap, Wallet } from "lucide-react";
+import { AinativeWordmark } from "@/components/shared/ainative-wordmark";
 
 const pillars = [
   {
@@ -27,8 +28,9 @@ const pillars = [
 export function WelcomeLanding() {
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] max-w-2xl mx-auto text-center px-4">
+      <AinativeWordmark className="mb-4" />
       <h1 className="text-3xl font-bold tracking-tight mb-3">
-        Welcome to ainative
+        Welcome
       </h1>
       <p className="text-base text-muted-foreground mb-8 max-w-lg">
         Your AI Business Operating System. Deploy AI agents, automate business processes, and maintain full control of spend and execution.

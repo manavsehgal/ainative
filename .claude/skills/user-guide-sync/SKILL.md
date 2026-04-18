@@ -283,6 +283,58 @@ Report as:
 
 This ensures the user guide eventually covers all captured interactions and no new feature falls through the cracks.
 
+### 4f. Software Name Convention Audit
+
+Per `handoff/2026-04-18-ainative-business-naming-and-rendering.md`, generated content (journeys, feature docs, README) must distinguish software references — `` `ainative-business` `` (with backticks) — from brand/identity references (plain `ainative`). The website renders inline `<code>` with mono font, primary-blue text, and a tinted background; the user guide UI inherits the same `.prose code` styling, so the visual cue only fires when the content is correctly backticked.
+
+This phase scans the current generation output and reports drift, since `/user-guide-sync` is read-mostly — it never edits prose. Findings flow back to `/doc-generator`.
+
+#### Scan command
+
+```bash
+# Match bare `ainative` while skipping URLs (ainative.business), folder/path
+# names (ainative-wealth, ~/.ainative-...), and hyphenated identifiers.
+perl -lne 'print "$ARGV:$.: $_" if /\bainative\b(?!(\.\w|-))/' \
+  docs/index.md docs/getting-started.md \
+  docs/journeys/*.md docs/features/*.md \
+  README.md 2>/dev/null
+```
+
+#### Classify each hit
+
+| Location of hit | Treatment |
+|---|---|
+| Body prose describing what the software does/installs/runs | **WRONG** — should be `` `ainative-business` `` (with backticks) |
+| Body prose referencing the project, repo, domain, brand wordmark | **CORRECT** — leave as bare `ainative` |
+| YAML frontmatter (`title:`, `description:`, `subtitle:`) | **CORRECT** — backticks would break meta tags / OG cards |
+| Markdown headings (`## ...ainative...`) | **CORRECT** — keeps slugs stable for cross-doc anchors |
+| Image alt text inside `![...](...)` | **CORRECT** — backticks render as literal text in alt attributes |
+| Inside fenced code blocks (`` ``` ``) | **CORRECT** — code fence already renders monospace |
+| Inside the `<!-- ABOUT:BEGIN ... -->` … `<!-- ABOUT:END -->` block in README | **CORRECT (respect upstream)** — content is captured verbatim from `ainative.io/about/`; do not flag drift inside this block |
+
+#### Report
+
+```
+### Software Name Convention Audit
+
+| File | Line | Context | Verdict | Suggested Fix |
+|------|------|---------|---------|---------------|
+| docs/journeys/developer.md | 42 | "Install ainative globally with npm install" | WRONG | wrap as `ainative-business` (and update the npm command if it still says `npm install ainative`) |
+| docs/features/getting-started.md | 12 | "the ainative repo on GitHub" | CORRECT | no change |
+| README.md | 87 | YAML-style metadata `description: ainative ...` | CORRECT | leave bare |
+```
+
+Status rollup:
+
+- **CLEAN** — 0 WRONG hits
+- **DRIFT** — ≥1 WRONG hit; recommend re-running `/doc-generator` (which will re-apply the convention from its top-level "Software Name Convention" section)
+
+Add the WRONG count to the Phase 5 Sync Summary as a new metric (`Naming convention drift: N`) and to the overall status: any WRONG hit downgrades status to NEEDS_ATTENTION.
+
+#### Why this audit lives here, not in `/doc-generator`
+
+`/doc-generator` writes content; `/user-guide-sync` validates the assembled corpus — it sees the post-generation state across journey + feature + README files together, so it catches drift introduced by manual edits or by an old `/doc-generator` run that predates the naming convention. Findings are surfaced as recommendations, never auto-fixed (per the skill's "validate and copy, never modify" core principle).
+
 ### 4e-ii. Machine-Readable Gap Output
 
 Write the coverage gaps to `docs/.coverage-gaps.json` for consumption by `/doc-generator`:
@@ -344,13 +396,14 @@ Produce a final summary and write the sync timestamp.
 | Images synced | N new + M updated |
 | References validated | X valid / Y broken |
 | Content mismatches | Z found (W wrong, V stale, U minor) |
+| Naming convention drift | N WRONG hits (`ainative` should be `` `ainative-business` ``) |
 | Overall status | IN_SYNC / NEEDS_ATTENTION / OUT_OF_SYNC |
 ```
 
 **Status classification:**
-- **IN_SYNC** — 0 broken references, 0 WRONG mismatches
-- **NEEDS_ATTENTION** — 0 broken references, but STALE or MINOR mismatches exist
-- **OUT_OF_SYNC** — broken references or WRONG mismatches found
+- **IN_SYNC** — 0 broken references, 0 WRONG mismatches, 0 naming convention WRONG hits
+- **NEEDS_ATTENTION** — 0 broken references, but STALE/MINOR content mismatches OR naming convention WRONG hits exist
+- **OUT_OF_SYNC** — broken references or WRONG content mismatches found
 
 ### 5b. Write Sync Timestamp
 
@@ -370,6 +423,7 @@ Based on findings, recommend specific actions:
 | Orphaned images | Review manually — delete if unused, or add references if needed |
 | Docs older than screengrabs | Run `/doc-generator` to pick up new screenshots |
 | Feature coverage gaps > 0 | Run `/doc-generator` to regenerate journeys with coverage gap remediation — it will read `docs/.coverage-gaps.json` and insert missing features into appropriate persona journeys |
+| Naming convention drift > 0 | Re-run `/doc-generator` (the convention is encoded in its top-level "Software Name Convention" section). For one-off fixes, manually wrap the WRONG-classified bare `ainative` mentions in backticks per the Phase 4f scan output |
 
 ---
 
@@ -416,6 +470,9 @@ Based on findings, recommend specific actions:
 - [ ] Phase 4: Mismatch report with suggested fixes generated
 - [ ] Phase 4e: New feature coverage gaps reported
 - [ ] Phase 4e: `.coverage-gaps.json` written with feature gap data
+- [ ] Phase 4f: Software name convention scan run across docs/journeys/, docs/features/, docs/index.md, docs/getting-started.md, README.md
+- [ ] Phase 4f: Each hit classified (WRONG vs CORRECT per the table) and reported
+- [ ] Phase 4f: Naming convention drift count surfaced in Phase 5 Summary; status downgraded to NEEDS_ATTENTION when drift > 0
 - [ ] Phase 5: Summary with overall sync status
 - [ ] Phase 5: `.last-synced` timestamp written
 - [ ] Phase 5: Next-action recommendations provided
