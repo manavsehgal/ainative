@@ -173,3 +173,73 @@ Each decision has an ID (DD-NNN), decided date, rationale, and supersession chai
 - **Source:** Modern OKLCH design system research
 - **Pattern:** Derive border visibility from the lightness difference between the surface and its parent. Darker surfaces automatically get stronger borders via `color-mix(in oklab, var(--border) 80%, transparent)` or similar. Eliminates manual border-subtle/border/border-strong selection.
 - **Potential application:** Could replace the 3-tier border token system with a single computed border.
+
+---
+
+## Composition Patterns
+
+### DD-018: Bento for Paired Control + Effect Panel
+
+- **Decided:** 2026-04-18
+- **Context:** A compact control (2×2 radio group, toggle, filter) that drives an always-visible effect panel (recommendation banner, preview, summary) was stacked full-width by default. At wide viewports (>1024px) this wasted 40-60% of horizontal space and visually separated cause from effect.
+- **Decision:** When a control's primary output is always rendered, pair them in a 2-column bento: `grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-stretch`. Fixed 280px for the control column keeps it compact; effect panel absorbs remaining width. Below `lg:`, stack full-width.
+- **Consequences:**
+  - Cause ↔ effect stays within the user's visual locus — no saccade required
+  - Effect panel gets ~2× the area it had when stacked below
+  - Requires `min-w-0` discipline on the flex chain inside the right column so chips can truncate
+- **References:** `src/components/settings/providers-runtimes-section.tsx` (task-routing section)
+
+### DD-019: Locked Container Height on State-Changing Content
+
+- **Decided:** 2026-04-18
+- **Context:** When a container's content varies across user selections (e.g., a banner rendering 3, 4, or 5 rows based on a radio pick), the container resizes on every click. Sibling elements stretched via `flex-1` (paired columns, mode-switcher buttons) resize too. Users perceive "jarring" layout shift — a CLS-equivalent inside a session.
+- **Decision:** Lock the container with `lg:min-h-[Xpx]` where X is the tallest possible state + ~6% buffer. Combine with `lg:items-stretch` on the grid so sibling columns inherit the locked height. Inner content stays top-aligned; sparse states leave graceful whitespace rather than collapsing.
+- **Consequences:**
+  - Zero layout shift between user selections
+  - Design budget forced upfront: "what's the tallest state?" becomes an explicit design question
+  - Wastes a few pixels of vertical space in sparse states — acceptable tax for stability
+- **References:** `src/components/settings/providers-runtimes-section.tsx` `lg:min-h-[180px]`
+
+### DD-020: Crisp Single-Line Subtext in Narrow Columns
+
+- **Decided:** 2026-04-18
+- **Context:** Descriptive copy (section subtext, option hints, helper text) written at full sentence length wrapped onto multiple lines when placed in narrow columns (~280px or less). Wrapping doubled vertical consumption, broke uniform height of sibling descriptions, and read as a content problem disguised as a layout problem.
+- **Decision:** In columns narrower than 280px, subtext and option-level hints must fit single-line at 14px. Default to ≤35 characters; aim for ≤28 when possible. Apply `truncate` + `title={fullText}` tooltip as a safety net for dynamic content (translations, catalog-sourced strings), but always shorten copy at source first — truncation is a fallback, not a feature.
+- **Consequences:**
+  - Forces terser, more scannable copy — "How should ainative choose a runtime when creating tasks?" → "Pick how ainative picks a runtime."
+  - Option descriptions stay height-uniform across states
+  - Tooltip via `title` preserves full meaning for screen readers and hover
+- **References:** `src/components/settings/providers-runtimes-section.tsx` ROUTING_OPTIONS
+
+### DD-021: Horizontal Mode-Switcher Buttons
+
+- **Decided:** 2026-04-18
+- **Context:** Radio-as-button mode switchers (Latency / Cost / Quality / Manual) initially used stacked icon-above-label layout (`flex-col items-center`). In a 2×2 grid within a 280px column this crowded the horizontal axis and over-allocated vertical space (~56px per button), reading as "4 rich product cards" when the semantic is "4 mode toggles."
+- **Decision:** For 2×N mode-switcher grids at narrow widths, use horizontal `flex items-center gap-2` (icon beside label). Pairs icon with its label like a toolbar button. Reduces height ~18% (56→46px) and lets buttons fit 2×2 without hairline crowding.
+- **Consequences:**
+  - Reads as a control strip, not a product catalog — matches semantic weight of the choice
+  - `shrink-0` on icon + `truncate` on label ensures graceful degradation with longer labels
+  - NOT appropriate for actual product-choice grids (agent profile cards, etc.) where vertical stack still reads richer
+- **References:** `src/components/settings/providers-runtimes-section.tsx` radio buttons
+
+### DD-022: Outline Badges for Recommended State
+
+- **Decided:** 2026-04-18
+- **Context:** UI surfaces that show both "what the system recommends" and "what the user currently has configured" risk visual conflation — users mistake a recommendation pill for an already-applied setting. Filled badges read as committed state; unclear visual grammar breeds confusion.
+- **Decision:** "Recommended" chips use `Badge variant="outline"` (thin border, no fill) with an icon prefix (Key for api_key, Shield for oauth, Cpu for local). "Configured/active" chips keep the existing filled treatment (`AuthStatusBadge`). Meaning is reinforced by a container heading like "Recommended for {X}" — the container carries intent, individual chips stay compact.
+- **Consequences:**
+  - Outline ≠ filled is an at-a-glance differentiator that survives color-blindness better than hue alone
+  - Recommendation chips stay small — no extra "recommended:" label text per chip
+  - User can scan "what the system thinks" vs "what's actually set" without reading
+- **References:** `src/components/settings/providers-runtimes-section.tsx` `AuthModelPair` / `RecommendationBanner`
+
+### DD-023: Min-Width-Zero Chain for Flex Truncation
+
+- **Decided:** 2026-04-18
+- **Context:** `truncate` inside flex containers silently fails because Tailwind's flex children default to `min-width: auto` — children can never shrink below their content's intrinsic size. Developers debug this by trying `max-width` on just the truncating child, which doesn't help because the parent's `min-width: auto` still forces overflow.
+- **Decision:** Every ancestor from the truncating child up to the flex root must have `min-w-0`. Pattern: outer `flex min-w-0 items-center gap-2` → inner wrapper `flex min-w-0 flex-1 overflow-hidden` → target child `min-w-0 max-w-[Xpx] truncate`. Sibling "never-truncate" elements (icon hints, action buttons) bypass via `shrink-0`.
+- **Consequences:**
+  - `truncate` works reliably — model IDs, long labels, dynamic strings shrink gracefully with ellipsis
+  - Three levels of `min-w-0` look redundant but each one matters; removing any breaks the chain
+  - Combine with `title={fullText}` tooltip for accessibility (ellipsised text must remain readable on hover)
+- **References:** `src/components/settings/providers-runtimes-section.tsx` `RecommendationRow`, `AuthModelPair`

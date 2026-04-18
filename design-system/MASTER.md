@@ -163,6 +163,65 @@ Base: `--radius: 0.5rem` (8px)
 
 **Rule:** Maximum radius is `rounded-xl` (12px). No oversized 20-30px radii in enterprise surfaces.
 
+## Composition Patterns
+
+Reusable layout recipes for common pairings. See `.claude/skills/frontend-designer/references/design-decisions.md` for full rationale (DD-018 through DD-023).
+
+### Paired-control bento (DD-018)
+
+When a compact control (radios, toggle, filter) drives an always-visible effect panel (banner, preview, summary), pair them 2-col at `lg:`:
+
+```tsx
+<div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-stretch">
+  {/* 280px control column */}
+  {/* effect panel absorbs rest */}
+</div>
+```
+
+Below `lg:` stack full-width. Right column needs `min-w-0` so chips inside can truncate.
+
+### Locked height for state-changing content (DD-019)
+
+When inner content varies across user selections, lock the bento grid to the tallest possible state:
+
+```tsx
+<div className="grid gap-4 lg:grid-cols-[...] lg:items-stretch lg:min-h-[180px]">
+```
+
+Prevents radio buttons and sibling columns from resizing on every click. Tallest-state + ~6% buffer.
+
+### Horizontal mode-switcher buttons (DD-021)
+
+For 2×N mode-switcher grids in narrow columns, use horizontal `flex items-center gap-2` (icon beside label), not vertical stack:
+
+```tsx
+<Label className="flex items-center gap-2 rounded-xl border-2 px-3 py-2 ...">
+  <Icon className="h-4 w-4 shrink-0" />
+  <span className="truncate text-sm font-medium">{label}</span>
+</Label>
+```
+
+Reads as a toolbar/control-strip. Height ~46px vs 56px stacked. Buttons fit 2×2 at 280px column width without crowding.
+
+### Recommendation vs configured state (DD-022)
+
+Recommended chips: `Badge variant="outline"` with icon prefix. Configured chips: filled variants (`AuthStatusBadge`, etc.). Visual grammar — outline = suggestion, filled = committed.
+
+### Flex truncation chain (DD-023)
+
+For reliable `truncate` inside flex containers, every ancestor needs `min-w-0`:
+
+```tsx
+<div className="flex min-w-0 items-center gap-2">
+  <div className="flex min-w-0 flex-1 overflow-hidden">
+    <Badge className="min-w-0 max-w-[220px] truncate" title={fullText}>...</Badge>
+  </div>
+  <Button className="shrink-0">...</Button>
+</div>
+```
+
+Missing `min-w-0` on any ancestor breaks truncation because flex's default `min-width: auto` prevents shrinking below content size.
+
 ## Components
 
 ### Badge Variants
