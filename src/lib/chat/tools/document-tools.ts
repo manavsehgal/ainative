@@ -7,7 +7,7 @@ import { ok, err, resolveEntityId, type ToolContext } from "./helpers";
 import { access, stat, copyFile, mkdir } from "fs/promises";
 import { basename, extname, join } from "path";
 import crypto from "crypto";
-import { getStagentUploadsDir } from "@/lib/utils/stagent-paths";
+import { getAinativeUploadsDir } from "@/lib/utils/ainative-paths";
 import { processDocument } from "@/lib/documents/processor";
 
 const MIME_TYPES: Record<string, string> = {
@@ -162,7 +162,7 @@ export function documentTools(ctx: ToolContext) {
           const filename = `${id}${ext}`;
 
           // Copy to uploads directory
-          const uploadsDir = getStagentUploadsDir();
+          const uploadsDir = getAinativeUploadsDir();
           await mkdir(uploadsDir, { recursive: true });
           const storagePath = join(uploadsDir, filename);
           await copyFile(args.file_path, storagePath);

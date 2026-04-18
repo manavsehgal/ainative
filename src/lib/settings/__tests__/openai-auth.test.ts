@@ -23,8 +23,8 @@ vi.mock("@/lib/utils/crypto", () => ({
   decrypt: vi.fn((v: string) => v.replace("encrypted:", "")),
 }));
 
-vi.mock("@/lib/utils/stagent-paths", () => ({
-  getStagentCodexAuthPath: () => "/tmp/stagent-codex/auth.json",
+vi.mock("@/lib/utils/ainative-paths", () => ({
+  getAinativeCodexAuthPath: () => "/tmp/stagent-codex/auth.json",
 }));
 
 mockFrom.mockReturnValue({ where: mockWhere });

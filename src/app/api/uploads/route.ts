@@ -5,9 +5,9 @@ import { db } from "@/lib/db";
 import { documents } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { processDocument } from "@/lib/documents/processor";
-import { getStagentUploadsDir } from "@/lib/utils/stagent-paths";
+import { getAinativeUploadsDir } from "@/lib/utils/ainative-paths";
 
-const UPLOAD_DIR = getStagentUploadsDir();
+const UPLOAD_DIR = getAinativeUploadsDir();
 
 export async function POST(req: NextRequest) {
   const formData = await req.formData();

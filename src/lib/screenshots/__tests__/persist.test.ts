@@ -3,10 +3,10 @@ import { existsSync, unlinkSync, mkdirSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 
-// Mock stagent-paths to use a temp directory
+// Mock ainative-paths to use a temp directory
 const testDir = join(tmpdir(), "stagent-screenshot-test-" + Date.now());
-vi.mock("@/lib/utils/stagent-paths", () => ({
-  getStagentScreenshotsDir: () => testDir,
+vi.mock("@/lib/utils/ainative-paths", () => ({
+  getAinativeScreenshotsDir: () => testDir,
 }));
 
 // Mock the database

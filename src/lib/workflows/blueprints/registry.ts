@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import yaml from "js-yaml";
 import { BlueprintSchema } from "@/lib/validators/blueprint";
-import { getStagentBlueprintsDir } from "@/lib/utils/stagent-paths";
+import { getAinativeBlueprintsDir } from "@/lib/utils/ainative-paths";
 import { getAppRoot } from "@/lib/utils/app-root";
 import type { WorkflowBlueprint } from "./types";
 
@@ -11,7 +11,7 @@ const BUILTINS_DIR = path.resolve(
   "src", "lib", "workflows", "blueprints", "builtins"
 );
 
-const USER_BLUEPRINTS_DIR = getStagentBlueprintsDir();
+const USER_BLUEPRINTS_DIR = getAinativeBlueprintsDir();
 
 let blueprintCache: Map<string, WorkflowBlueprint> | null = null;
 

@@ -3,10 +3,10 @@ import { readFile, readdir, unlink } from "fs/promises";
 import { join } from "path";
 import { db } from "@/lib/db";
 import { documents } from "@/lib/db/schema";
-import { getStagentUploadsDir } from "@/lib/utils/stagent-paths";
+import { getAinativeUploadsDir } from "@/lib/utils/ainative-paths";
 import { eq } from "drizzle-orm";
 
-const UPLOAD_DIR = getStagentUploadsDir();
+const UPLOAD_DIR = getAinativeUploadsDir();
 
 const MIME_TYPES: Record<string, string> = {
   txt: "text/plain",

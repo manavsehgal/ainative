@@ -11,10 +11,10 @@ import { db, sqlite } from "@/lib/db";
 import { snapshots } from "@/lib/db/schema";
 import type { SnapshotRow } from "@/lib/db/schema";
 import {
-  getStagentDataDir,
-  getStagentSnapshotsDir,
-  getStagentDbPath,
-} from "@/lib/utils/stagent-paths";
+  getAinativeDataDir,
+  getAinativeSnapshotsDir,
+  getAinativeDbPath,
+} from "@/lib/utils/ainative-paths";
 import { eq, desc } from "drizzle-orm";
 import {
   mkdirSync,
@@ -117,9 +117,9 @@ export async function createSnapshot(
   const now = new Date();
   const sanitizedLabel = label.replace(/[^a-zA-Z0-9-_ ]/g, "_").slice(0, 100);
   const dirName = `${formatTimestamp(now)}_${sanitizedLabel.replace(/\s+/g, "_")}`;
-  const snapshotsDir = getStagentSnapshotsDir();
+  const snapshotsDir = getAinativeSnapshotsDir();
   const snapshotPath = join(snapshotsDir, dirName);
-  const dataDir = getStagentDataDir();
+  const dataDir = getAinativeDataDir();
 
   try {
     mkdirSync(snapshotPath, { recursive: true });
@@ -327,7 +327,7 @@ export async function getSnapshotsSize(): Promise<{
   totalBytes: number;
   snapshotCount: number;
 }> {
-  const snapshotsDir = getStagentSnapshotsDir();
+  const snapshotsDir = getAinativeSnapshotsDir();
   if (!existsSync(snapshotsDir)) return { totalBytes: 0, snapshotCount: 0 };
 
   const rows = await db.select().from(snapshots);
@@ -380,7 +380,7 @@ export async function restoreFromSnapshot(id: string): Promise<{
     );
 
     // 2. Replace file directories
-    const dataDir = getStagentDataDir();
+    const dataDir = getAinativeDataDir();
 
     // Clear existing file directories
     for (const dir of SNAPSHOT_DIRS) {
@@ -400,7 +400,7 @@ export async function restoreFromSnapshot(id: string): Promise<{
 
     // 3. Replace database file
     // Close any prepared statements first
-    const currentDbPath = getStagentDbPath();
+    const currentDbPath = getAinativeDbPath();
     const walPath = currentDbPath + "-wal";
     const shmPath = currentDbPath + "-shm";
 

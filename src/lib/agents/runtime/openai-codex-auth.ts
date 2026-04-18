@@ -13,10 +13,10 @@ import {
   type OpenAIRateLimitWindow,
 } from "@/lib/settings/openai-auth";
 import {
-  getStagentCodexAuthPath,
-  getStagentCodexConfigPath,
-  getStagentCodexDir,
-} from "@/lib/utils/stagent-paths";
+  getAinativeCodexAuthPath,
+  getAinativeCodexConfigPath,
+  getAinativeCodexDir,
+} from "@/lib/utils/ainative-paths";
 import { CodexAppServerClient } from "./codex-app-server-client";
 
 const STAGENT_CODEX_CONFIG = `cli_auth_credentials_store = "file"
@@ -118,7 +118,7 @@ export function extractPlanTypeFromIdToken(idToken: string): string | null {
 
 async function readStagentCodexPlanTypeFromAuthFile(): Promise<string | null> {
   try {
-    const raw = await readFile(getStagentCodexAuthPath(), "utf8");
+    const raw = await readFile(getAinativeCodexAuthPath(), "utf8");
     const parsed = JSON.parse(raw) as {
       tokens?: {
         id_token?: string | null;
@@ -132,8 +132,8 @@ async function readStagentCodexPlanTypeFromAuthFile(): Promise<string | null> {
 }
 
 async function ensureCodexHomeConfig() {
-  const codexDir = getStagentCodexDir();
-  const configPath = getStagentCodexConfigPath();
+  const codexDir = getAinativeCodexDir();
+  const configPath = getAinativeCodexConfigPath();
 
   await mkdir(codexDir, { recursive: true });
   await mkdir(dirname(configPath), { recursive: true });
@@ -162,7 +162,7 @@ export async function buildCodexAuthEnv(
 
   return {
     ...env,
-    CODEX_HOME: getStagentCodexDir(),
+    CODEX_HOME: getAinativeCodexDir(),
     OPENAI_API_KEY: env?.OPENAI_API_KEY,
   };
 }
@@ -380,7 +380,7 @@ export async function logoutStagentCodexAuth() {
   }
 
   try {
-    await rm(getStagentCodexAuthPath(), { force: true });
+    await rm(getAinativeCodexAuthPath(), { force: true });
   } catch {
     // Ignore cleanup failures.
   }

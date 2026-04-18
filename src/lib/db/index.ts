@@ -3,10 +3,10 @@ import { drizzle } from "drizzle-orm/better-sqlite3";
 import * as schema from "./schema";
 import { join } from "path";
 import { mkdirSync } from "fs";
-import { getStagentDataDir } from "@/lib/utils/stagent-paths";
+import { getAinativeDataDir } from "@/lib/utils/ainative-paths";
 import { bootstrapStagentDatabase } from "./bootstrap";
 
-const dataDir = getStagentDataDir();
+const dataDir = getAinativeDataDir();
 mkdirSync(dataDir, { recursive: true });
 const dbPath = join(dataDir, "stagent.db");
 
