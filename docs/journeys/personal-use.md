@@ -23,12 +23,12 @@ Meet Alex, a solo founder who just discovered ainative. Alex has a side project 
 
 ### Step 1: Explore the Home Page
 
-Alex opens ainative for the first time. The home page greets with a sidebar on the left showing every section of the workspace -- Work, Manage, Learn, and Configure groups -- and the main content area displays an activity overview with stat cards and a needs attention section.
+Alex opens `ainative-business` for the first time. The home page greets with a sidebar on the left showing every section of the workspace -- Home, Compose, Observe, Learn, and Configure groups -- and the main content area displays an activity overview with stat cards and a needs attention section.
 
 ![Home page with sidebar expanded showing navigation and activity overview](../screengrabs/home-list.png)
 
-1. Open ainative at `http://localhost:3000` to land on the home page
-2. Scan the **sidebar** on the left -- notice the four groups: Work (Dashboard, Inbox, Chat, Projects, Workflows, Documents), Manage (Monitor, Profiles, Schedules, Cost & Usage), Learn (AI Native Book, User Guide), and Configure (Environment, Settings)
+1. Open `ainative-business` at `http://localhost:3000` to land on the home page
+2. Scan the **sidebar** on the left -- notice the five groups: Home (Dashboard, Tasks, Inbox, Chat), Compose (Projects, Workflows, Profiles, Schedules, Documents, Tables), Observe (Monitor, Cost & Usage, Analytics), Learn (AI Native Book, User Guide), and Configure (Environment, Settings)
 3. Review the **stat cards** showing active tasks, completed today, awaiting review, active projects, and active workflows
 4. Note the **needs attention** section that will surface items requiring your input as agents run
 
@@ -65,7 +65,7 @@ Before setting up a formal project, Alex tries the Chat feature to brainstorm id
 
 ![Chat empty state with suggested prompt categories and conversation sidebar](../screengrabs/chat-list.png)
 
-1. Click **Chat** in the sidebar under the **Work** group
+1. Click **Chat** in the sidebar under the **Home** group
 2. Notice the **Tool Catalog** with a welcoming hero heading and suggested prompt categories (Explore, Create, Debug, Automate)
 3. Browse the **Smart Picks** row for personalized suggestions
 4. Type a question like "What pages should a developer portfolio website include?" and press Enter
@@ -83,7 +83,7 @@ Inspired by the chat brainstorm, Alex decides to formalize the portfolio idea in
 
 ![Projects list view showing project cards](../screengrabs/projects-list.png)
 
-1. Click **Projects** in the sidebar under the **Work** group
+1. Click **Projects** in the sidebar under the **Compose** group
 2. Click the **Create Project** button in the top-right corner
 3. Enter a **Project Name** such as "Portfolio Website"
 4. Add a **Description**: "Personal developer portfolio with project showcase, blog, and contact form"
@@ -97,7 +97,7 @@ With a project created, Alex heads to Tasks to start organizing work.
 
 ![Tasks kanban board with task cards organized across status columns](../screengrabs/tasks-list.png)
 
-1. Click **Dashboard** in the sidebar under the **Work** group
+1. Click **Tasks** in the sidebar under the **Home** group
 2. Review the kanban board layout with columns like **Planned**, **In Progress**, **Completed**, and others
 3. Notice the **view controls** in the header area -- the board view is selected by default
 
@@ -161,7 +161,7 @@ Alex wants to keep a structured list of portfolio pages, their status, and targe
 
 ![Tables list view showing structured data tables](../screengrabs/tables-list.png)
 
-1. Click **Tables** in the sidebar under the **Work** group
+1. Click **Tables** in the sidebar under the **Compose** group
 2. Click **Create Table** and enter a name: "Portfolio Pages"
 3. Add columns: **Page Name** (text), **Status** (select: Draft / In Progress / Done), **Target Date** (date)
 4. Start adding rows directly in the inline spreadsheet editor -- type into cells just like a regular spreadsheet
@@ -175,7 +175,7 @@ Alex wants ainative to proactively check on the portfolio project every morning.
 
 ![Schedules list showing active and paused schedules](../screengrabs/schedules-list.png)
 
-1. Click **Schedules** in the sidebar under the **Manage** group
+1. Click **Schedules** in the sidebar under the **Compose** group
 2. Click **Create Schedule** and select type **Heartbeat**
 3. Enter a **Name**: "Morning Portfolio Check"
 4. Set the interval using natural language: "weekdays at 8am"

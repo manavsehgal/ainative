@@ -50,7 +50,7 @@ Beyond the built-in catalog, you can create custom profiles tailored to your spe
 ## How To
 
 ### Browse Available Profiles
-1. Navigate to `/profiles` from the sidebar under the **Manage** group.
+1. Navigate to `/profiles` from the sidebar under the **Compose** group.
 2. Switch between **Work** and **Personal** tabs to see profiles by context.
 3. Read each card's description to understand what the profile specializes in.
 4. Note the runtime badges to see which providers each profile supports.

@@ -41,7 +41,7 @@ Progress bars and visual meters display current spend relative to your configure
 ## How To
 
 ### Review Current Spend
-1. Navigate to `/costs` from the sidebar under the **Manage** group.
+1. Navigate to `/costs` from the sidebar under the **Observe** group.
 2. View the total spend summary at the top of the dashboard.
 3. Check the provider breakdown to see spend by runtime.
 4. Review the visual meters for budget pacing.

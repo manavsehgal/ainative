@@ -28,7 +28,7 @@ Jordan starts the morning by reviewing the team's active projects.
 
 ![Projects list showing team workstreams with status and task counts](../screengrabs/projects-list.png)
 
-1. Click **Projects** in the sidebar under the **Work** group
+1. Click **Projects** in the sidebar under the **Compose** group
 2. Scan the project cards for status badges, task counts, and recent activity timestamps
 3. Click **Create Project** to set up a new workstream -- enter a descriptive name, description covering scope, and a working directory
 4. Click **Create Project** to save
@@ -91,7 +91,7 @@ Jordan needs a structured tracker for the team's quarterly OKRs. Instead of buil
 
 ![Template gallery showing pre-built table templates](../screengrabs/tables-templates.png)
 
-1. Click **Tables** in the sidebar under the **Work** group
+1. Click **Tables** in the sidebar under the **Compose** group
 2. Click **Create Table** and browse the **Template Gallery**
 3. Select a template that fits the use case (e.g., "OKR Tracker" or "Sprint Board")
 4. Review the pre-configured columns and customize as needed

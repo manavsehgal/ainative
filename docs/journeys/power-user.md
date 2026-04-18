@@ -41,7 +41,7 @@ Before building any automation, Sam reviews the available agent profiles. The ca
 
 ![Agent profiles grid showing available behavioral profiles](../screengrabs/profiles-list.png)
 
-1. Click **Profiles** in the sidebar under the **Manage** group
+1. Click **Profiles** in the sidebar under the **Compose** group
 2. Browse profile cards -- each displays the name, description, runtime badges, and capabilities
 3. Switch between **Work** and **Personal** tabs
 4. Note the business-function profiles: Marketing Strategist, Sales Researcher, Customer Support Agent, Financial Analyst, Content Creator, and Operations Coordinator

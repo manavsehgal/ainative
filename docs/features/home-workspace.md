@@ -33,9 +33,10 @@ Items requiring human action -- such as permission requests, failed tasks, stall
 A chronological feed of the latest events across your workspace: task completions, agent messages, workflow transitions, schedule firings, and document uploads. Gives you context on what happened while you were away.
 
 ### Sidebar Navigation
-The sidebar organizes ainative into four groups:
-- **Work** -- Dashboard, Inbox, Chat, Projects, Workflows, Documents
-- **Manage** -- Monitor, Profiles, Schedules, Cost & Usage
+The sidebar organizes `ainative-business` into five groups:
+- **Home** -- Dashboard, Tasks, Inbox, Chat
+- **Compose** -- Projects, Workflows, Profiles, Schedules, Documents, Tables
+- **Observe** -- Monitor, Cost & Usage, Analytics
 - **Learn** -- AI Native Book, User Guide
 - **Configure** -- Environment, Settings
 

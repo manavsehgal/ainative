@@ -38,7 +38,7 @@ Failed operations and agent errors surface prominently in the activity feed. Err
 ## How To
 
 ### Monitor Active Agents
-1. Navigate to `/monitor` from the sidebar under the **Manage** group.
+1. Navigate to `/monitor` from the sidebar under the **Observe** group.
 2. The activity feed loads automatically with the most recent log entries.
 3. New entries appear at the top of the feed in real time as agents execute tasks.
 
