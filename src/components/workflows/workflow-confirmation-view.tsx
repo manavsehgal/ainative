@@ -210,7 +210,7 @@ export function WorkflowConfirmationView({
         }
       );
       clearAssistState();
-      router.push("/dashboard");
+      router.push("/tasks");
     } catch {
       toast.error("Network error — could not create workflow");
     } finally {

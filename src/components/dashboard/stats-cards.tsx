@@ -49,8 +49,8 @@ export function StatsCards({
       icon: CheckCircle,
       color: "text-status-completed",
       chartColor: "var(--chart-2)",
-      href: "/dashboard",
-      destination: "Dashboard",
+      href: "/tasks",
+      destination: "Tasks",
       sparklineData: sparklines?.completions,
     },
     {

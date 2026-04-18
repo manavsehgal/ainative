@@ -53,7 +53,7 @@ export function TaskDetailView({ taskId, initialTask }: TaskDetailViewProps) {
     taskId,
     initialTask,
     enabled: true,
-    onDeleted: () => router.push("/dashboard"),
+    onDeleted: () => router.push("/tasks"),
   });
 
   useEffect(() => {

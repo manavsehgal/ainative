@@ -752,7 +752,7 @@ export function CostDashboard({
           action={
             <div className="flex flex-wrap items-center justify-center gap-2">
               <Button asChild size="sm">
-                <Link href="/dashboard?create=task">
+                <Link href="/tasks?create=task">
                   Create Task
                   <ArrowRight className="h-3.5 w-3.5" />
                 </Link>

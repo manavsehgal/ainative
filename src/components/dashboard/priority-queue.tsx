@@ -116,7 +116,7 @@ export function PriorityQueue({ tasks }: PriorityQueueProps) {
           </div>
         )}
         <div className="mt-auto pt-3">
-          <Link href="/dashboard">
+          <Link href="/tasks">
             <Button variant="outline" size="sm" className="w-full">
               View all tasks <ArrowRight className="h-3 w-3 ml-1" />
             </Button>

@@ -204,7 +204,7 @@ export function TaskCreatePanel({ projects, defaultProjectId }: TaskCreatePanelP
       });
       if (res.ok) {
         toast.success("Task created");
-        router.push("/dashboard");
+        router.push("/tasks");
       } else {
         const data = await res.json().catch(() => null);
         setError(data?.error ?? `Failed to create task (${res.status})`);
@@ -520,7 +520,7 @@ export function TaskCreatePanel({ projects, defaultProjectId }: TaskCreatePanelP
                   if (created > 0) {
                     toast.success(`Created ${created} sub-task(s)`);
                   }
-                  router.push("/dashboard");
+                  router.push("/tasks");
                 }}
                 onCreateWorkflow={(result) => {
                   saveAssistState({
