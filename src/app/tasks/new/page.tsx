@@ -17,7 +17,7 @@ export default async function NewTaskPage({
     .orderBy(projects.name);
 
   return (
-    <PageShell backHref="/dashboard" backLabel="Back to Dashboard">
+    <PageShell backHref="/tasks" backLabel="Back to Tasks">
       <TaskCreatePanel
         projects={allProjects}
         defaultProjectId={params.project}

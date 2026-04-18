@@ -50,7 +50,7 @@ export default async function TaskDetailPage({
   };
 
   return (
-    <PageShell backHref="/dashboard" backLabel="Back to Dashboard">
+    <PageShell backHref="/tasks" backLabel="Back to Tasks">
       <TaskDetailView taskId={id} initialTask={initialTask} />
     </PageShell>
   );

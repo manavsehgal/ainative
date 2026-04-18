@@ -61,7 +61,7 @@ export function TaskSurface({
     <div className="space-y-4">
       {/* Header row: title + filters + controls */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
-        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <h1 className="text-2xl font-bold">Tasks</h1>
         <div className="flex items-center gap-2 flex-wrap">
           {/* Filters */}
           {projects.length > 0 && (
