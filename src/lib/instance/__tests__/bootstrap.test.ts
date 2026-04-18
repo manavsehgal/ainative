@@ -105,52 +105,89 @@ describe("ensureInstanceConfig (Phase A)", () => {
   });
 });
 
-describe("ensureLocalBranch (Phase A)", () => {
-  it("creates local branch at current HEAD when it does not exist", async () => {
-    const { createGitOps } = await import("../git-ops");
-    const { ensureLocalBranch } = await import("../bootstrap");
-    const ops = createGitOps(tempDir);
-    const mainSha = execFileSync("git", ["rev-parse", "main"], { cwd: tempDir, encoding: "utf-8" }).trim();
-    const result = ensureLocalBranch(ops);
-    expect(result.status).toBe("ok");
-    expect(ops.branchExists("local")).toBe(true);
-    expect(ops.getCurrentBranch()).toBe("local");
-    const localSha = execFileSync("git", ["rev-parse", "local"], { cwd: tempDir, encoding: "utf-8" }).trim();
-    expect(localSha).toBe(mainSha);
-    const mainShaAfter = execFileSync("git", ["rev-parse", "main"], { cwd: tempDir, encoding: "utf-8" }).trim();
-    expect(mainShaAfter).toBe(mainSha);
+describe("ensureLocalBranchShim (Phase A)", () => {
+  let bareDir: string;
+
+  beforeEach(() => {
+    bareDir = setupOriginRemote(tempDir, tmpdir());
   });
 
-  it("is a no-op when local branch already exists", async () => {
+  afterEach(() => {
+    rmSync(bareDir, { recursive: true, force: true });
+  });
+
+  it("creates local at origin/main when it does not exist (no HEAD swap)", async () => {
     const { createGitOps } = await import("../git-ops");
-    const { ensureLocalBranch } = await import("../bootstrap");
+    const { ensureLocalBranchShim } = await import("../bootstrap");
     const ops = createGitOps(tempDir);
-    ops.createAndCheckoutBranch("local");
-    const shaBefore = execFileSync("git", ["rev-parse", "local"], { cwd: tempDir, encoding: "utf-8" }).trim();
-    const result = ensureLocalBranch(ops);
+    const upstreamSha = getGit(["rev-parse", "refs/remotes/origin/main"], tempDir);
+    const branchBefore = ops.getCurrentBranch();
+
+    const result = ensureLocalBranchShim(ops);
+
+    expect(result.status).toBe("ok");
+    expect(result.reason).toBe("created");
+    expect(ops.branchExists("local")).toBe(true);
+    expect(ops.getCurrentBranch()).toBe(branchBefore); // HEAD did NOT move
+    expect(getGit(["rev-parse", "local"], tempDir)).toBe(upstreamSha);
+  });
+
+  it("is a no-op when local already aligned with origin/main", async () => {
+    const { createGitOps } = await import("../git-ops");
+    const { ensureLocalBranchShim } = await import("../bootstrap");
+    const ops = createGitOps(tempDir);
+    ops.createBranchAt("local", "refs/remotes/origin/main");
+
+    const result = ensureLocalBranchShim(ops);
+
     expect(result.status).toBe("skipped");
-    expect(result.reason).toBe("branch_exists");
-    const shaAfter = execFileSync("git", ["rev-parse", "local"], { cwd: tempDir, encoding: "utf-8" }).trim();
-    expect(shaAfter).toBe(shaBefore);
+    expect(result.reason).toBe("shim_aligned");
   });
 
-  it("creates local at current HEAD even when user has local commits on main", async () => {
-    writeFileSync(join(tempDir, "custom.txt"), "user work\n");
-    runGit(["add", "custom.txt"], tempDir);
-    runGit(["commit", "-m", "user customization"], tempDir);
-    const mainSha = execFileSync("git", ["rev-parse", "main"], { cwd: tempDir, encoding: "utf-8" }).trim();
-
+  it("repoints local when it has drifted from origin/main", async () => {
     const { createGitOps } = await import("../git-ops");
-    const { ensureLocalBranch } = await import("../bootstrap");
+    const { ensureLocalBranchShim } = await import("../bootstrap");
     const ops = createGitOps(tempDir);
-    const result = ensureLocalBranch(ops);
+
+    // Create local at the OLD origin/main, then advance origin so they diverge.
+    ops.createBranchAt("local", "refs/remotes/origin/main");
+    const newUpstreamSha = advanceOriginMain(tempDir, bareDir, "advance upstream");
+
+    const result = ensureLocalBranchShim(ops);
 
     expect(result.status).toBe("ok");
-    expect(ops.branchExists("local")).toBe(true);
-    const localSha = execFileSync("git", ["rev-parse", "local"], { cwd: tempDir, encoding: "utf-8" }).trim();
-    expect(localSha).toBe(mainSha);
-    const mainShaAfter = execFileSync("git", ["rev-parse", "main"], { cwd: tempDir, encoding: "utf-8" }).trim();
-    expect(mainShaAfter).toBe(mainSha);
+    expect(result.reason).toBe("repointed");
+    expect(getGit(["rev-parse", "local"], tempDir)).toBe(newUpstreamSha);
+  });
+
+  it("skips when origin/main is not yet fetched", async () => {
+    const { createGitOps } = await import("../git-ops");
+    const { ensureLocalBranchShim } = await import("../bootstrap");
+
+    runGit(["remote", "remove", "origin"], tempDir);
+    rmSync(join(tempDir, ".git", "refs", "remotes", "origin"), { recursive: true, force: true });
+
+    const ops = createGitOps(tempDir);
+    const result = ensureLocalBranchShim(ops);
+
+    expect(result.status).toBe("skipped");
+    expect(result.reason).toBe("no_upstream_main");
+    expect(ops.branchExists("local")).toBe(false);
+  });
+
+  it("skips when local is currently checked out (avoids changing working tree)", async () => {
+    const { createGitOps } = await import("../git-ops");
+    const { ensureLocalBranchShim } = await import("../bootstrap");
+    const ops = createGitOps(tempDir);
+
+    ops.createBranchAt("local", "refs/remotes/origin/main");
+    runGit(["checkout", "local"], tempDir);
+    advanceOriginMain(tempDir, bareDir, "advance after local checkout");
+
+    const result = ensureLocalBranchShim(ops);
+
+    expect(result.status).toBe("skipped");
+    expect(result.reason).toBe("shim_is_current_branch");
   });
 });
 
@@ -203,9 +240,9 @@ describe("ensurePrePushHook (Phase B)", () => {
 describe("ensureBranchPushConfig (Phase B)", () => {
   it("sets branch.local.pushRemote=no_push", async () => {
     const { createGitOps } = await import("../git-ops");
-    const { ensureLocalBranch, ensureBranchPushConfig } = await import("../bootstrap");
+    const { ensureBranchPushConfig } = await import("../bootstrap");
     const ops = createGitOps(tempDir);
-    ensureLocalBranch(ops);
+    runGit(["branch", "local"], tempDir);
     const result = ensureBranchPushConfig(ops, ["local"]);
     expect(result.status).toBe("ok");
     const value = execFileSync("git", ["config", "--get", "branch.local.pushRemote"], { cwd: tempDir, encoding: "utf-8" }).trim();

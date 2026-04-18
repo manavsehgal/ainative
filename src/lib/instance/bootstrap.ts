@@ -26,18 +26,41 @@ export async function ensureInstanceConfig(): Promise<EnsureStepResult> {
   return { step: "instance-config", status: "ok" };
 }
 
+const SHIM_TRACK_REF = "refs/remotes/origin/main";
+
 /**
- * Phase A step 2: create the `local` branch at current HEAD if it doesn't exist.
- * Non-destructive: `git checkout -b local` preserves whatever branch the user
- * was on, including any local commits. Safe on drifted-main scenarios.
+ * Phase A step 2: align the `local` tracking shim with origin/main.
+ *
+ * Behavior matrix:
+ * - origin/main not fetched yet → skip with "no_upstream_main"
+ *   (heals on next boot after upgrade-poller runs git fetch)
+ * - local doesn't exist → create at origin/main
+ * - local exists at the same SHA as origin/main → no-op ("shim_aligned")
+ * - local exists at a different SHA AND is the currently-checked-out branch
+ *   → skip ("shim_is_current_branch") to avoid mutating the working tree
+ * - local exists at a different SHA AND is not checked out → repoint
+ *
+ * NEVER moves HEAD. NEVER throws. Bootstrap failures must not crash startup.
  */
-export function ensureLocalBranch(git: GitOps): EnsureStepResult {
-  if (git.branchExists(DEFAULT_BRANCH_NAME)) {
-    return { step: "local-branch", status: "skipped", reason: "branch_exists" };
+export function ensureLocalBranchShim(git: GitOps): EnsureStepResult {
+  const upstream = git.revParse(SHIM_TRACK_REF);
+  if (!upstream) {
+    return { step: "local-branch", status: "skipped", reason: "no_upstream_main" };
+  }
+  const existing = git.revParse(`refs/heads/${DEFAULT_BRANCH_NAME}`);
+  if (existing === upstream) {
+    return { step: "local-branch", status: "skipped", reason: "shim_aligned" };
+  }
+  if (existing !== null && git.getCurrentBranch() === DEFAULT_BRANCH_NAME) {
+    return { step: "local-branch", status: "skipped", reason: "shim_is_current_branch" };
   }
   try {
-    git.createAndCheckoutBranch(DEFAULT_BRANCH_NAME);
-    return { step: "local-branch", status: "ok" };
+    git.createBranchAt(DEFAULT_BRANCH_NAME, SHIM_TRACK_REF);
+    return {
+      step: "local-branch",
+      status: "ok",
+      reason: existing === null ? "created" : "repointed",
+    };
   } catch (err) {
     return {
       step: "local-branch",
@@ -232,7 +255,7 @@ export async function ensureInstance(cwd: string = process.cwd()): Promise<Ensur
   if (detectRebaseInProgress(cwd)) {
     steps.push({ step: "local-branch", status: "skipped", reason: "rebase_in_progress" });
   } else {
-    steps.push(ensureLocalBranch(git));
+    steps.push(ensureLocalBranchShim(git));
   }
 
   // Resolve consent (stamps firstBootCompletedAt on first call, returns decision)
