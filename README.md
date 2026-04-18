@@ -2,14 +2,14 @@
 
 > Companion software for the *AI Native Business* book by Manav Sehgal — a local-first agent runtime and builder scaffold for AI-native businesses.
 
-[![AI Business Operating System](https://img.shields.io/badge/AI_Business-Operating_System-6366F1)](https://ainative.business) [![npm](https://img.shields.io/npm/v/ainative)](https://www.npmjs.com/package/ainative) [![Next.js 16](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/) [![React 19](https://img.shields.io/badge/React-19-61DAFB)](https://react.dev/) [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6)](https://www.typescriptlang.org/) [![Claude Agent SDK](https://img.shields.io/badge/Claude-Agent_SDK-D97706)](https://docs.anthropic.com/) [![OpenAI Codex App Server](https://img.shields.io/badge/OpenAI-Codex_App_Server-10A37F)](https://developers.openai.com/codex/app-server) [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![AI Business Operating System](https://img.shields.io/badge/AI_Business-Operating_System-6366F1)](https://ainative.business) [![npm](https://img.shields.io/npm/v/ainative-business)](https://www.npmjs.com/package/ainative-business) [![Next.js 16](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/) [![React 19](https://img.shields.io/badge/React-19-61DAFB)](https://react.dev/) [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6)](https://www.typescriptlang.org/) [![Claude Agent SDK](https://img.shields.io/badge/Claude-Agent_SDK-D97706)](https://docs.anthropic.com/) [![OpenAI Codex App Server](https://img.shields.io/badge/OpenAI-Codex_App_Server-10A37F)](https://developers.openai.com/codex/app-server) [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
 **[ainative.business](https://ainative.business)** · **[GitHub](https://github.com/manavsehgal/ainative)**
 
 ## Quick Start
 
 ```bash
-npx ainative
+npx ainative-business
 ```
 
 Open [localhost:3000](http://localhost:3000). That's it — zero config, local SQLite, own your data.
@@ -30,7 +30,7 @@ Open [localhost:3000](http://localhost:3000). That's it — zero config, local S
 
 The AI agent stack is broken for business operators. You can spin up an agent in minutes — but running it reliably for real work means stitching together orchestration, governance, cost controls, and team coordination yourself. ainative closes that gap with a single local-first platform where agents do the work and you stay in control.
 
-- **Local-first** — SQLite database, no cloud dependency, `npx ainative` and go
+- **Local-first** — SQLite database, no cloud dependency, `npx ainative-business` and go
 - **Multi-provider** — Claude Code + OpenAI Codex App Server behind one runtime registry
 - **Your rules, enforced** — Tool permissions, inbox approvals, and audit trails for every agent action
 - **Your AI team** — 21 specialist profiles ready to deploy, each with instructions, tool policies, and runtime tuning
