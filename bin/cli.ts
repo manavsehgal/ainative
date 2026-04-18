@@ -27,6 +27,7 @@ import {
   hasMigrationHistory,
   markAllMigrationsApplied,
 } from "../src/lib/db/bootstrap";
+import { migrateFromStagent } from "../src/lib/utils/migrate-to-ainative";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const appDir = join(__dirname, "..");
@@ -157,6 +158,7 @@ function findAvailablePort(preferred: number): Promise<number> {
 }
 
 async function main() {
+  await migrateFromStagent();
   // Re-use the port from argv if one was passed explicitly.
   const actualPort = await resolveSidecarPort({
     argv: process.argv.slice(2),

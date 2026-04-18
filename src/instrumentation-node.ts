@@ -1,5 +1,8 @@
 export async function registerNodeInstrumentation() {
   try {
+    const { migrateFromStagent } = await import("@/lib/utils/migrate-to-ainative");
+    await migrateFromStagent();
+
     // Instance bootstrap — creates local branch, handles dev-mode gates, consent flow.
     // Runs BEFORE other startup so instance config is available downstream.
     // Safe in the canonical stagent dev repo thanks to STAGENT_DEV_MODE=true
