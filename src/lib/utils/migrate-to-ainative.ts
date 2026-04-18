@@ -91,7 +91,7 @@ export async function migrateFromStagent(
   const isSqlite = (() => {
     try {
       const header = readFileSync(dbPath, { encoding: null });
-      return header.length >= 16 && header.slice(0, 16).toString("binary") === SQLITE_MAGIC;
+      return header.length >= 16 && header.subarray(0, 16).toString("binary") === SQLITE_MAGIC;
     } catch {
       return false;
     }
