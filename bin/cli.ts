@@ -20,7 +20,7 @@ import {
   resolveNextEntrypoint,
   resolveSidecarPort,
 } from "../src/lib/desktop/sidecar-launch";
-import { getStagentDataDir, getStagentDbPath } from "../src/lib/utils/stagent-paths";
+import { getAinativeDataDir, getAinativeDbPath } from "../src/lib/utils/ainative-paths";
 import {
   bootstrapStagentDatabase,
   hasLegacyStagentTables,
@@ -56,8 +56,8 @@ if (existsSync(_envLocalPath)) {
 const pkg = JSON.parse(readFileSync(join(appDir, "package.json"), "utf-8"));
 
 function getHelpText() {
-  const dir = getStagentDataDir();
-  const db = getStagentDbPath();
+  const dir = getAinativeDataDir();
+  const db = getAinativeDbPath();
   return `
 Data:
   Directory        ${dir}
@@ -95,8 +95,14 @@ if (opts.dataDir) {
   process.env.STAGENT_DATA_DIR = opts.dataDir;
 }
 
-const DATA_DIR = getStagentDataDir();
-const dbPath = getStagentDbPath();
+// Migrate any legacy ~/.stagent/ layout to ~/.ainative/ before resolving any
+// data-dir paths below. Must run here at module top-level (not inside main())
+// because the following const declarations and mkdirSync/Database calls also
+// execute at module-load time. Idempotent — safe on every invocation.
+await migrateFromStagent();
+
+const DATA_DIR = getAinativeDataDir();
+const dbPath = getAinativeDbPath();
 const requestedPort = Number.parseInt(opts.port, 10);
 
 if (Number.isNaN(requestedPort) || requestedPort <= 0) {
@@ -158,7 +164,6 @@ function findAvailablePort(preferred: number): Promise<number> {
 }
 
 async function main() {
-  await migrateFromStagent();
   // Re-use the port from argv if one was passed explicitly.
   const actualPort = await resolveSidecarPort({
     argv: process.argv.slice(2),
