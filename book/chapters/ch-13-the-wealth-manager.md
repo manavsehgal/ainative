@@ -10,11 +10,11 @@ relatedDocs: ["workflows", "profiles", "schedules", "prediction-markets"]
 
 ## The One-Day Build
 
-On April 6, 2026, a single developer sat down with Stagent and built a wealth management application. Not a mockup. Not a wireframe. A working application with a portfolio dashboard, positions table, transaction history, watchlist, alerts engine, tax center, and reports feed — 7 pages, 7 components, a full data layer reading from Stagent's own tables — in a single session. The commit message is terse: "feat: add Wealth Manager app (Phase 1-4)." The diff is not: 2,181 lines of insertion across 17 files.
+On April 6, 2026, a single developer sat down with ainative and built a wealth management application. Not a mockup. Not a wireframe. A working application with a portfolio dashboard, positions table, transaction history, watchlist, alerts engine, tax center, and reports feed — 7 pages, 7 components, a full data layer reading from ainative's own tables — in a single session. The commit message is terse: "feat: add Wealth Manager app (Phase 1-4)." The diff is not: 2,181 lines of insertion across 17 files.
 
 Then, without pausing, the same developer and the same system added prediction market integration — connecting Polymarket's real-money-backed probability data to portfolio decisions. Six features shipped in rapid sequence: a prediction markets data layer, a price monitor extension, a macro signals dashboard, a prediction-enhanced rebalance analyzer, a news/prediction divergence detector, and a scenario modeler with market-priced probabilities. By the end of the day: 7,435 lines of new code across 44 files. A domain application that a fintech startup might spend months building.
 
-The developer was the founder of Stagent. The system used to build it was Stagent itself. And the application was not a demo — it was a working extension of the platform, reading from the same database, using the same workflow engine, governed by the same approval gates. The machine that builds machines had built something new, and the something new was a proof of concept for what any solo founder could build by shaping Stagent around their own domain.
+The developer was the founder of ainative. The system used to build it was ainative itself. And the application was not a demo — it was a working extension of the platform, reading from the same database, using the same workflow engine, governed by the same approval gates. The machine that builds machines had built something new, and the something new was a proof of concept for what any solo founder could build by shaping ainative around their own domain.
 
 This is the chapter about what happens when the self-building property described in Chapter 11 meets a concrete domain. Not in theory. In git history.
 
@@ -22,7 +22,7 @@ This is the chapter about what happens when the self-building property described
 
 The choice of domain was not arbitrary. It was strategic for three reasons.
 
-**First, wealth management is a coordination problem.** A portfolio is not a static thing. It is a system of positions, alerts, transactions, tax events, benchmarks, and market signals that interact continuously. The work is not "analyze this stock" — it is "monitor 20 positions against their targets, track wash sale windows, fire alerts when thresholds cross, check prediction markets for forward-looking signals, synthesize everything into actionable recommendations." This is exactly the kind of multi-step, multi-source, time-sensitive orchestration that Stagent's workflow engine was designed to handle.
+**First, wealth management is a coordination problem.** A portfolio is not a static thing. It is a system of positions, alerts, transactions, tax events, benchmarks, and market signals that interact continuously. The work is not "analyze this stock" — it is "monitor 20 positions against their targets, track wash sale windows, fire alerts when thresholds cross, check prediction markets for forward-looking signals, synthesize everything into actionable recommendations." This is exactly the kind of multi-step, multi-source, time-sensitive orchestration that ainative's workflow engine was designed to handle.
 
 **Second, prediction markets are a uniquely valuable signal layer.** Polymarket's public APIs provide something that no other data source offers: real-money-backed probabilities on macro events. When traders put dollars behind a 68% probability of a Fed rate cut, that number carries more information than any analyst's opinion. It is a price signal, not a sentiment signal. Integrating it into portfolio decisions is the kind of enhancement that separates a sophisticated wealth management tool from a spreadsheet with charts.
 
@@ -39,15 +39,15 @@ The commit history tells a story that no product roadmap could have predicted. I
 ```
 feat: add Wealth Manager app (Phase 1-4)
 Data layer, 7 pages, 7 components, sidebar integration.
-Reads from Stagent tables (positions, transactions, watchlist,
+Reads from ainative tables (positions, transactions, watchlist,
 alerts, wash_sales, portfolio_snapshots, alert_history).
 
 17 files changed, 2,181 insertions(+)
 ```
 
-Notice what this commit does not do. It does not create a new database. It does not build a separate backend. It reads from Stagent's existing tables. The positions, transactions, watchlist items, and alerts are all stored in `userTables` — the same structured data tables that any Stagent project uses. The wealth manager is not a separate application bolted onto Stagent. It is a view layer over Stagent's own data model.
+Notice what this commit does not do. It does not create a new database. It does not build a separate backend. It reads from ainative's existing tables. The positions, transactions, watchlist items, and alerts are all stored in `userTables` — the same structured data tables that any ainative project uses. The wealth manager is not a separate application bolted onto ainative. It is a view layer over ainative's own data model.
 
-This is the critical insight. The wealth manager did not require new infrastructure. It required a new interpretation of existing infrastructure. The `userTables` and `userTableRows` tables that Chapter 10 describes as the world model's structured data layer are the same tables that hold the portfolio. The `documents` table that stores workflow outputs stores the rebalance reports. The `alert_history` table that tracks any Stagent alert tracks prediction market shifts.
+This is the critical insight. The wealth manager did not require new infrastructure. It required a new interpretation of existing infrastructure. The `userTables` and `userTableRows` tables that Chapter 10 describes as the world model's structured data layer are the same tables that hold the portfolio. The `documents` table that stores workflow outputs stores the rebalance reports. The `alert_history` table that tracks any ainative alert tracks prediction market shifts.
 
 **Commits #2-3 — Dashboard Density**
 ```
@@ -90,16 +90,16 @@ This is the emergent roadmap in action — the pattern described in Chapter 12. 
 
 ## The Architecture of Composition
 
-What makes this build remarkable is not the speed. It is the architecture. Every piece of the wealth manager is composed from existing Stagent primitives.
+What makes this build remarkable is not the speed. It is the architecture. Every piece of the wealth manager is composed from existing ainative primitives.
 
-**Data Layer → Stagent Tables.** The portfolio data lives in `userTables` and `userTableRows`. The wealth manager's `data.ts` — 1,755 lines by the final commit — is a query layer that reads from and writes to the same tables that any Stagent project uses. Positions, transactions, watchlist items, alerts, wash sales, portfolio snapshots, prediction markets — all are rows in user-created tables. The functions — `getPositions()`, `getAlerts()`, `getPredictionMarkets()`, `computePortfolioSummary()`, `computeDailyConviction()` — are typed accessors over this shared data model.
+**Data Layer → ainative Tables.** The portfolio data lives in `userTables` and `userTableRows`. The wealth manager's `data.ts` — 1,755 lines by the final commit — is a query layer that reads from and writes to the same tables that any ainative project uses. Positions, transactions, watchlist items, alerts, wash sales, portfolio snapshots, prediction markets — all are rows in user-created tables. The functions — `getPositions()`, `getAlerts()`, `getPredictionMarkets()`, `computePortfolioSummary()`, `computeDailyConviction()` — are typed accessors over this shared data model.
 
 ```typescript
-// The wealth manager reads from the same tables as any Stagent project
+// The wealth manager reads from the same tables as any ainative project
 import { db } from "@/lib/db";
 import { userTables, userTableRows, documents } from "@/lib/db/schema";
 
-// Positions, predictions, alerts — all live in Stagent's structured data tables
+// Positions, predictions, alerts — all live in ainative's structured data tables
 export async function getPositions(): Promise<Position[]> { ... }
 export async function getPredictionMarkets(): Promise<PredictionMarket[]> { ... }
 export async function computeDailyConviction(): Promise<DailyConviction> { ... }
@@ -114,15 +114,15 @@ export function computePositionConfidence(
 ): number { ... }
 ```
 
-**Schedules → Stagent Scheduler.** The price monitor runs every 30 minutes during market hours. The news sentinel runs every 2 hours. These are Stagent schedules — the same heartbeat system described in Chapter 6 — configured with domain-specific prompts. The prediction market data stays fresh because the same scheduling infrastructure that fires any Stagent recurring task fires the Polymarket API fetcher.
+**Schedules → ainative Scheduler.** The price monitor runs every 30 minutes during market hours. The news sentinel runs every 2 hours. These are ainative schedules — the same heartbeat system described in Chapter 6 — configured with domain-specific prompts. The prediction market data stays fresh because the same scheduling infrastructure that fires any ainative recurring task fires the Polymarket API fetcher.
 
-**Workflows → Stagent Workflow Engine.** The rebalance analyzer is a planner-executor workflow. The scenario modeler is a planner-executor with checkpoint. The divergence detector extends the news deep-dive workflow. These are not new workflow engines. They are new workflow definitions running on the existing engine described in Chapter 5.
+**Workflows → ainative Workflow Engine.** The rebalance analyzer is a planner-executor workflow. The scenario modeler is a planner-executor with checkpoint. The divergence detector extends the news deep-dive workflow. These are not new workflow engines. They are new workflow definitions running on the existing engine described in Chapter 5.
 
-**Agents → Stagent Profiles.** The wealth-manager agent profile defines the system prompt, tool permissions, and behavioral constraints for financial analysis tasks. It allows WebSearch, WebFetch, and Read. It auto-denies Bash, Write, and Edit. It always ends with a financial disclaimer. This profile slots into the same registry that holds the general, code-reviewer, researcher, and document-writer profiles.
+**Agents → ainative Profiles.** The wealth-manager agent profile defines the system prompt, tool permissions, and behavioral constraints for financial analysis tasks. It allows WebSearch, WebFetch, and Read. It auto-denies Bash, Write, and Edit. It always ends with a financial disclaimer. This profile slots into the same registry that holds the general, code-reviewer, researcher, and document-writer profiles.
 
-**UI → Stagent Components.** The dashboard uses `PageShell`, the same layout wrapper as every other Stagent page. The components use shadcn/ui. The routing is Next.js App Router. The data fetching is server-side with Suspense boundaries. Nothing about the UI infrastructure is wealth-manager-specific.
+**UI → ainative Components.** The dashboard uses `PageShell`, the same layout wrapper as every other ainative page. The components use shadcn/ui. The routing is Next.js App Router. The data fetching is server-side with Suspense boundaries. Nothing about the UI infrastructure is wealth-manager-specific.
 
-The wealth manager is a composition, not a construction. It is assembled from the same parts that Stagent uses for everything else. The only new things are the domain logic — how to compute drift, how to score divergences, how to size trades — and the UI components that display the results. The infrastructure is borrowed whole.
+The wealth manager is a composition, not a construction. It is assembled from the same parts that ainative uses for everything else. The only new things are the domain logic — how to compute drift, how to score divergences, how to size trades — and the UI components that display the results. The infrastructure is borrowed whole.
 
 This is what Chapter 11's self-building property looks like in practice. The factory does not need a new wing. It needs a new product on the existing assembly line.
 
@@ -146,7 +146,7 @@ This is the world model doing what world models do: connecting information from 
 
 ## The Conviction Brief: Synthesis as a Feature
 
-The Daily Conviction Brief deserves its own section because it represents a pattern that will recur in every domain application built on Stagent.
+The Daily Conviction Brief deserves its own section because it represents a pattern that will recur in every domain application built on ainative.
 
 The brief is a synthesis layer. It does not produce new data. It reads data from five other features — portfolio drift, prediction market signals, scenario analysis, divergence detection, and rebalance recommendations — and synthesizes them into a single narrative. The output is a morning note that a hedge fund CIO might write: market regime classification, capital flow summary, per-position BUY/SELL/HOLD recommendations with confidence scores and dollar-amount trade sizing.
 
@@ -177,13 +177,13 @@ This pattern applies to every domain. A litigation attorney's synthesis layer wo
 
 ## The Feedback Loop That Improved the Platform
 
-The most important outcome of the wealth manager build was not the wealth manager. It was what the build revealed about Stagent itself.
+The most important outcome of the wealth manager build was not the wealth manager. It was what the build revealed about ainative itself.
 
 During the build, the developer discovered that when multiple schedules — the price monitor (every 30 minutes) and the news sentinel (every 2 hours) — fired at the same minute, queue starvation could occur. The second schedule's task would wait for the next poll cycle, potentially 30+ minutes. This was not a hypothetical bug. It was a real problem discovered by a real user (who happened to be the developer) running real schedules.
 
 The fix was substantial: schedule collision prevention with four phases. Phase 1: a drain loop that walks the queued task list after every firing completes, so collided schedules no longer wait. Phase 2: automatic staggering that offsets new schedules whose fire minutes land within 5 minutes of an existing active schedule. Phase 3: turn budget headers prepended to scheduled task descriptions, plus a prompt analyzer that warns about anti-patterns. Phase 4: firing metrics tracking with EMA of turns and auto-pause after 3 consecutive failures.
 
-This fix was not specific to the wealth manager. It improved every Stagent user's scheduling experience. It was merged to main while the wealth manager stayed on its branch. The platform got better because a domain application stressed it in ways that no test suite had predicted.
+This fix was not specific to the wealth manager. It improved every ainative user's scheduling experience. It was merged to main while the wealth manager stayed on its branch. The platform got better because a domain application stressed it in ways that no test suite had predicted.
 
 ```
 Commit #11
@@ -221,33 +221,33 @@ Every one of these numbers is verifiable in the git log. The commits are there. 
 
 ## What This Means for Solo Founders
 
-The wealth manager is a proof of concept for a thesis: that solo founders can build sophisticated domain applications on Stagent's infrastructure in a fraction of the time it would take to build from scratch.
+The wealth manager is a proof of concept for a thesis: that solo founders can build sophisticated domain applications on ainative's infrastructure in a fraction of the time it would take to build from scratch.
 
 The thesis rests on three pillars:
 
-**Pillar 1: The data model is already there.** Stagent's structured data tables can hold any domain's entities. Positions, transactions, alerts, prediction markets — these are all rows in tables, managed by the same table editor, queryable by the same agents, chartable by the same visualization system. A solo founder does not need to design a database schema. They need to define their domain's entities and populate the existing tables.
+**Pillar 1: The data model is already there.** ainative's structured data tables can hold any domain's entities. Positions, transactions, alerts, prediction markets — these are all rows in tables, managed by the same table editor, queryable by the same agents, chartable by the same visualization system. A solo founder does not need to design a database schema. They need to define their domain's entities and populate the existing tables.
 
 **Pillar 2: The orchestration is already there.** Schedules, workflows, and agent profiles handle the coordination layer. The wealth manager's price monitor is a schedule. The rebalance analyzer is a workflow. The conviction brief is a computation that agents can trigger. The solo founder does not need to build a scheduler, a workflow engine, or an agent runtime. They need to configure the existing ones for their domain.
 
-**Pillar 3: The governance is already there.** Every wealth manager action runs through Stagent's approval gates. The rebalance workflow pauses at checkpoints for human review. The agent profile auto-denies dangerous tools. The cost metering tracks spend per workflow. The solo founder does not need to build a governance layer. They inherit one.
+**Pillar 3: The governance is already there.** Every wealth manager action runs through ainative's approval gates. The rebalance workflow pauses at checkpoints for human review. The agent profile auto-denies dangerous tools. The cost metering tracks spend per workflow. The solo founder does not need to build a governance layer. They inherit one.
 
-What the solo founder does need to build is the domain logic — the TypeScript functions that compute drift, score divergences, classify market regimes, and size trades. That is the irreducible core of domain expertise. It cannot be abstracted away because it IS the value. But it is a small surface area compared to the full stack: data persistence, scheduling, workflow orchestration, agent management, governance, UI infrastructure, deployment. Stagent handles the stack. The founder handles the domain.
+What the solo founder does need to build is the domain logic — the TypeScript functions that compute drift, score divergences, classify market regimes, and size trades. That is the irreducible core of domain expertise. It cannot be abstracted away because it IS the value. But it is a small surface area compared to the full stack: data persistence, scheduling, workflow orchestration, agent management, governance, UI infrastructure, deployment. ainative handles the stack. The founder handles the domain.
 
-The math works out. The wealth manager's 7,435 lines of new code produced a 10-page application with prediction market integration, divergence detection, scenario modeling, and conviction synthesis. Without Stagent's infrastructure, that same application would require: a database (Postgres or SQLite setup, schema migrations, query layer), a scheduler (cron infrastructure, queue management, failure handling), a workflow engine (step execution, state management, checkpoint logic), an agent runtime (LLM integration, tool calling, context management), a governance layer (approval flows, permission scoping, budget tracking), and a deployment target (server, hosting, build pipeline). Conservatively, that is 30,000-50,000 lines of infrastructure code before a single line of wealth management logic is written.
+The math works out. The wealth manager's 7,435 lines of new code produced a 10-page application with prediction market integration, divergence detection, scenario modeling, and conviction synthesis. Without ainative's infrastructure, that same application would require: a database (Postgres or SQLite setup, schema migrations, query layer), a scheduler (cron infrastructure, queue management, failure handling), a workflow engine (step execution, state management, checkpoint logic), an agent runtime (LLM integration, tool calling, context management), a governance layer (approval flows, permission scoping, budget tracking), and a deployment target (server, hosting, build pipeline). Conservatively, that is 30,000-50,000 lines of infrastructure code before a single line of wealth management logic is written.
 
 The ratio — 7,435 lines of domain code versus 30,000-50,000 lines of infrastructure — is the business case for building on a platform. It is the same ratio that made Shopify viable for e-commerce merchants, that made Stripe viable for payment integrators, that made Heroku viable for application developers. The platform absorbs the undifferentiated heavy lifting. The builder focuses on what makes their application unique.
 
 ## The Recursive Proof
 
-Chapter 11 argued that Stagent builds itself using itself. The wealth manager is the next step in that argument: Stagent enables others to build on Stagent using Stagent.
+Chapter 11 argued that ainative builds itself using itself. The wealth manager is the next step in that argument: ainative enables others to build on ainative using ainative.
 
 The recursion has three levels:
 
-**Level 1: Stagent builds its own documentation.** The book pipeline captures case studies, generates chapters, and monitors the codebase for staleness. This is the self-building property described in Chapter 11.
+**Level 1: ainative builds its own documentation.** The book pipeline captures case studies, generates chapters, and monitors the codebase for staleness. This is the self-building property described in Chapter 11.
 
-**Level 2: Stagent builds its own features.** The schedule collision prevention fix discovered during the wealth manager build was implemented using Stagent's own development workflow — agent-assisted coding, automated testing, documented with Technical Decision Records. The platform improved itself through use.
+**Level 2: ainative builds its own features.** The schedule collision prevention fix discovered during the wealth manager build was implemented using ainative's own development workflow — agent-assisted coding, automated testing, documented with Technical Decision Records. The platform improved itself through use.
 
-**Level 3: Stagent enables domain applications that stress-test and improve the platform.** The wealth manager is the first instance. Future instances — the litigation tracker, the real estate analyzer, the supply chain monitor — will discover their own edge cases, generate their own platform improvements, and prove Stagent's viability in their own domains.
+**Level 3: ainative enables domain applications that stress-test and improve the platform.** The wealth manager is the first instance. Future instances — the litigation tracker, the real estate analyzer, the supply chain monitor — will discover their own edge cases, generate their own platform improvements, and prove ainative's viability in their own domains.
 
 Each level feeds the next. Domain applications discover platform gaps. Platform improvements enable better domain applications. Better domain applications attract more builders. More builders discover more gaps. The flywheel is not a marketing metaphor. It is an engineering reality, visible in the commit history.
 

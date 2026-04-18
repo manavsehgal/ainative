@@ -82,7 +82,7 @@ In [src/lib/instance/types.ts](../../src/lib/instance/types.ts) replace the exis
 
 - [ ] **Step 2: Confirm callers break (red signal)**
 
-Run: `cd /Users/manavsehgal/Developer/stagent/.claude/worktrees/loving-buck-fb4fec && npx tsc --noEmit 2>&1 | grep -E "(git-ops|bootstrap)" | head -10`
+Run: `cd /Users/manavsehgal/Developer/ainative/.claude/worktrees/loving-buck-fb4fec && npx tsc --noEmit 2>&1 | grep -E "(git-ops|bootstrap)" | head -10`
 
 Expected: TypeScript errors at `src/lib/instance/git-ops.ts:55` (impl no longer satisfies interface) and `src/lib/instance/bootstrap.ts:39` (caller). Plus the two test files. This is the red signal that drives Tasks 2-7.
 
@@ -214,7 +214,7 @@ function getGit(args: string[], cwd: string): string {
  * Returns the bare-clone path so callers can advance origin/main if needed.
  */
 function setupOriginRemote(dir: string, bareDirParent: string): string {
-  const bareDir = mkdtempSync(join(bareDirParent, "stagent-bootstrap-bare-"));
+  const bareDir = mkdtempSync(join(bareDirParent, "ainative-bootstrap-bare-"));
   rmSync(bareDir, { recursive: true, force: true });
   runGit(["clone", "--bare", dir, bareDir], dir);
   runGit(["remote", "add", "origin", bareDir], dir);
@@ -227,7 +227,7 @@ function setupOriginRemote(dir: string, bareDirParent: string): string {
  * re-fetches into `dir`. Returns the new origin/main SHA.
  */
 function advanceOriginMain(dir: string, bareDir: string, message: string): string {
-  const workDir = mkdtempSync(join(tmpdir(), "stagent-bootstrap-origin-work-"));
+  const workDir = mkdtempSync(join(tmpdir(), "ainative-bootstrap-origin-work-"));
   try {
     runGit(["clone", bareDir, workDir], workDir);
     runGit(["config", "user.email", "test@example.com"], workDir);
@@ -624,7 +624,7 @@ git commit -m "feat(instance): add ensureMainShim for domain-clone main re-align
 On a domain clone (branchName != 'main'), refs/heads/main is a tracking
 shim that bootstrap re-points to origin/main on every boot. Auto-heals the
 orphaned-main scenario from the 2026-04-17 navam-io → manavsehgal history
-rewrite that surfaced as a 570-update upgrade badge in stagent-wealth.
+rewrite that surfaced as a 570-update upgrade badge in ainative-wealth.
 
 Same skip-paths as ensureLocalBranchShim plus 'main_branch_absent' (don't
 invent a branch the user deleted) and 'main_is_current_branch' (don't
@@ -837,20 +837,20 @@ If clean, skip — Task 7 already left the suite green.
 
 ---
 
-## Task 9: Real-boot smoke test against `stagent-wealth`
+## Task 9: Real-boot smoke test against `ainative-wealth`
 
 **This is the verification that catches what unit tests cannot.** Bootstrap runs from `src/instrumentation-node.ts` at server boot — a regression crashes startup before any HTTP request lands. Per CLAUDE.md's smoke-test discipline, validate against a real instance running production-mode bootstrap.
 
-- [ ] **Step 1: Copy worktree changes into stagent-wealth**
+- [ ] **Step 1: Copy worktree changes into ainative-wealth**
 
 ```
-cd /Users/manavsehgal/Developer/stagent/.claude/worktrees/loving-buck-fb4fec
+cd /Users/manavsehgal/Developer/ainative/.claude/worktrees/loving-buck-fb4fec
 tar czf /tmp/instance-shim-fix.tar.gz \
   src/lib/instance/bootstrap.ts \
   src/lib/instance/git-ops.ts \
   src/lib/instance/types.ts
 
-cd /Users/manavsehgal/Developer/stagent-wealth
+cd /Users/manavsehgal/Developer/ainative-wealth
 git stash push -m "smoke-shim-fix-stash" --include-untracked || echo "nothing to stash"
 tar xzf /tmp/instance-shim-fix.tar.gz
 ```
@@ -858,7 +858,7 @@ tar xzf /tmp/instance-shim-fix.tar.gz
 - [ ] **Step 2: Re-orphan main to reproduce today's bug**
 
 ```
-cd /Users/manavsehgal/Developer/stagent-wealth
+cd /Users/manavsehgal/Developer/ainative-wealth
 git rev-parse main                                                    # record current SHA
 git update-ref refs/heads/main 06764ac28f0f131aadfbc8b218fa47083c3a626b
 git rev-list --count main..origin/main                                # expect non-zero
@@ -870,7 +870,7 @@ git branch --show-current                                             # expect w
 Run via Bash tool with `run_in_background: true`:
 
 ```
-cd /Users/manavsehgal/Developer/stagent-wealth && PORT=3010 npm run dev
+cd /Users/manavsehgal/Developer/ainative-wealth && PORT=3010 npm run dev
 ```
 
 Wait for the `Ready in Xs` line from Next.js (use Bash tool's output read after the bg task naturally settles — do NOT poll in tight loops).
@@ -878,7 +878,7 @@ Wait for the `Ready in Xs` line from Next.js (use Bash tool's output read after 
 - [ ] **Step 4: Verify bootstrap re-aligned main**
 
 ```
-cd /Users/manavsehgal/Developer/stagent-wealth
+cd /Users/manavsehgal/Developer/ainative-wealth
 git rev-parse main          # expect == origin/main SHA
 git rev-parse origin/main
 git rev-list --count main..origin/main   # expect 0
@@ -897,12 +897,12 @@ curl -s http://localhost:3010/api/instance/upgrade/status
 
 Expected: `commitsBehind: 0`, `upgradeAvailable: false`. (May briefly show stale values from the previous poll; trigger `POST /api/instance/upgrade/check` to refresh.)
 
-- [ ] **Step 7: Stop the dev server and restore stagent-wealth**
+- [ ] **Step 7: Stop the dev server and restore ainative-wealth**
 
 Kill the backgrounded dev server (capture PID from the bg Bash result). Then:
 
 ```
-cd /Users/manavsehgal/Developer/stagent-wealth
+cd /Users/manavsehgal/Developer/ainative-wealth
 git checkout HEAD -- src/lib/instance/bootstrap.ts src/lib/instance/git-ops.ts src/lib/instance/types.ts
 git stash pop || echo "nothing to pop"
 ```
@@ -914,7 +914,7 @@ Append to [features/instance-bootstrap-local-branch-shim.md](../../features/inst
 ```markdown
 ## Verification run — 2026-04-17
 
-Smoke against stagent-wealth (production-mode bootstrap, no dev-mode gates):
+Smoke against ainative-wealth (production-mode bootstrap, no dev-mode gates):
 
 1. Re-orphaned main to SHA 06764ac2 (570 commits behind origin/main).
 2. Booted PORT=3010 npm run dev.
@@ -930,11 +930,11 @@ Also flip the frontmatter `status: planned` to `status: completed`.
 - [ ] **Step 9: Commit verification close-out**
 
 ```
-cd /Users/manavsehgal/Developer/stagent/.claude/worktrees/loving-buck-fb4fec
+cd /Users/manavsehgal/Developer/ainative/.claude/worktrees/loving-buck-fb4fec
 git add features/instance-bootstrap-local-branch-shim.md
 git commit -m "docs(features): close out instance-bootstrap-local-branch-shim — smoke verified
 
-Verification run 2026-04-17 against stagent-wealth confirmed:
+Verification run 2026-04-17 against ainative-wealth confirmed:
 - Bootstrap re-aligns orphaned main to origin/main on boot
 - HEAD stays on the user's working branch (wealth-mgr)
 - Upgrade-detection badge clears (commitsBehind=0)

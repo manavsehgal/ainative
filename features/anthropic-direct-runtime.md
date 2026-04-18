@@ -11,13 +11,13 @@ dependencies: [provider-agnostic-tool-layer, provider-runtime-abstraction, cross
 
 ## Description
 
-Add `anthropic-direct` as a third runtime in Stagent's catalog. This runtime calls the Anthropic Messages API directly via `@anthropic-ai/sdk` instead of spawning a Claude Code subprocess. It provides sub-second first-token latency, access to prompt caching, extended thinking, server-side tools (web search, code execution, text editor), and works anywhere with just an API key — no Claude Code CLI required.
+Add `anthropic-direct` as a third runtime in ainative's catalog. This runtime calls the Anthropic Messages API directly via `@anthropic-ai/sdk` instead of spawning a Claude Code subprocess. It provides sub-second first-token latency, access to prompt caching, extended thinking, server-side tools (web search, code execution, text editor), and works anywhere with just an API key — no Claude Code CLI required.
 
 The existing `claude-code` runtime remains fully supported. Users choose per-task or per-profile which runtime to use. The `anthropic-direct` runtime is ideal for tasks that don't need file system tools, cost-sensitive workloads, and serverless/containerized deployments.
 
 ## User Story
 
-As a Stagent user, I want to run tasks via the Anthropic Messages API directly so that I get faster response times, lower costs through prompt caching, and don't need Claude Code CLI installed.
+As a ainative user, I want to run tasks via the Anthropic Messages API directly so that I get faster response times, lower costs through prompt caching, and don't need Claude Code CLI installed.
 
 ## Technical Approach
 
@@ -30,7 +30,7 @@ As a Stagent user, I want to run tasks via the Anthropic Messages API directly s
 
 The core loop follows the standard pattern:
 1. Call `messages.create()` with system prompt, messages, tools, and `stream: true`
-2. Process streaming events → map to Stagent SSE event types (delta, status, done, error)
+2. Process streaming events → map to ainative SSE event types (delta, status, done, error)
 3. Check `stop_reason`:
    - `"end_turn"` → task complete, extract final response
    - `"tool_use"` → for each tool_use block:
@@ -50,7 +50,7 @@ The core loop follows the standard pattern:
 
 ### Streaming Event Mapping
 
-| Anthropic SSE Event | Stagent Event |
+| Anthropic SSE Event | ainative Event |
 |---------------------|---------------|
 | `message_start` | `{ type: "status", phase: "running" }` |
 | `content_block_delta` (text) | `{ type: "delta", content }` |
@@ -92,14 +92,14 @@ The core loop follows the standard pattern:
 
 ### Auth
 
-- Uses `ANTHROPIC_API_KEY` from Stagent settings (existing `getAuthEnv()` already supports this)
+- Uses `ANTHROPIC_API_KEY` from ainative settings (existing `getAuthEnv()` already supports this)
 - `testConnection()` calls `GET /v1/models` to validate the key
 
 ## Acceptance Criteria
 
 - [ ] `anthropic-direct` appears in the runtime catalog and settings UI runtime dropdown
 - [ ] Tasks execute successfully via Anthropic Messages API with streaming output
-- [ ] Tool use works — agent can call Stagent tools and receive results across multiple turns
+- [ ] Tool use works — agent can call ainative tools and receive results across multiple turns
 - [ ] Human-in-the-loop approvals work — permission requests appear in inbox, block execution until resolved
 - [ ] Session resume works — paused tasks can be resumed from DB-persisted conversation state
 - [ ] Task cancellation works via AbortController

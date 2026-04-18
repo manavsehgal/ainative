@@ -3,7 +3,7 @@ title: Agent Async Handoffs
 status: completed
 priority: P2
 milestone: post-mvp
-source: ideas/vision/Stagent-OpenClaw-Companion-Research-Report.md
+source: ideas/vision/ainative-OpenClaw-Companion-Research-Report.md
 dependencies: [multi-agent-routing, heartbeat-scheduler]
 ---
 
@@ -155,13 +155,13 @@ GET    /api/profiles/[id]/handoffs/sent     -- Handoffs sent by a specific profi
 **Excluded:**
 - Broadcast messages (one-to-many) — future extension
 - Agent-to-agent negotiation protocols (request/counter-request) — future
-- Cross-instance handoffs (between different Stagent installations) — requires cloud sync
+- Cross-instance handoffs (between different ainative installations) — requires cloud sync
 - Handoff message editing after creation — immutable once sent
 - Visual handoff chain explorer (graph view) — simple list/badge for now
 
 ## References
 
-- Source: `ideas/vision/Stagent-OpenClaw-Companion-Research-Report.md` — Section 3.6 (Agent-to-Agent Communication via Handoffs)
+- Source: `ideas/vision/ainative-OpenClaw-Companion-Research-Report.md` — Section 3.6 (Agent-to-Agent Communication via Handoffs)
 - Existing multi-agent swarm: `src/lib/workflows/swarm.ts` (synchronous coordination)
 - Existing multi-agent routing: `src/lib/agents/profiles/` (profile registry and routing)
 - Related features: heartbeat-scheduler (handoffs consumed during heartbeats), multi-channel-delivery (handoff notifications), business-function-profiles (primary handoff senders/receivers)

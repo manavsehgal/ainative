@@ -6,7 +6,7 @@
 
 **Architecture:** Add a separate `RuntimeFeatures` interface alongside the existing `RuntimeCapabilities` (operational) bag on `RuntimeCatalogEntry`. Declare feature values for all five runtimes in `src/lib/agents/runtime/catalog.ts`. Expose two lookup helpers: `getRuntimeFeatures(runtimeId)` next to the existing operational-bag helper, and `getFeaturesForModel(modelId)` colocated with `getRuntimeForModel` in `src/lib/chat/types.ts`. Guard drift with an exhaustiveness unit test that fails the build whenever a new feature key is added and any runtime forgets to declare it.
 
-**Tech Stack:** TypeScript, Vitest, existing Stagent runtime catalog (`src/lib/agents/runtime/`).
+**Tech Stack:** TypeScript, Vitest, existing ainative runtime catalog (`src/lib/agents/runtime/`).
 
 ---
 
@@ -35,9 +35,9 @@
 | Failure mode | How it manifests | Recovery strategy |
 |---|---|---|
 | New feature key added but a runtime forgets to declare it | TypeScript compile error (if typed correctly) OR exhaustiveness unit test fails | Exhaustiveness test in Task 3 fails loudly with the missing runtime/key pair. Fix is mechanical: add the field to the offending runtime block in `RUNTIME_CATALOG`. |
-| Module-load cycle via chat-tools import (per project smoke-test override) | `ReferenceError: Cannot access 'claudeRuntimeAdapter' before initialization` at first request in `npm run dev` | Dynamic `await import()` at call site in any consumer that imports from `@/lib/chat/stagent-tools`. This plan doesn't add such a consumer — Task 5 verifies dev server boots and a real chat turn executes without the error. Reference: TDR-032, commits `092f925` → `2b5ae42`. |
+| Module-load cycle via chat-tools import (per project smoke-test override) | `ReferenceError: Cannot access 'claudeRuntimeAdapter' before initialization` at first request in `npm run dev` | Dynamic `await import()` at call site in any consumer that imports from `@/lib/chat/ainative-tools`. This plan doesn't add such a consumer — Task 5 verifies dev server boots and a real chat turn executes without the error. Reference: TDR-032, commits `092f925` → `2b5ae42`. |
 | Someone confuses `RuntimeCapabilities` (ops) with `RuntimeFeatures` (LLM surface) | Feature accessed via `entry.capabilities.hasNativeSkills` returns `undefined` | TypeScript catches it at compile time. Code review enforces the convention: `capabilities` = adapter plumbing, `features` = LLM/UX surface. |
-| Direct-API conservative defaults get treated as ground truth | Downstream popover hides Claude direct-API skills that could actually be Stagent-injected | This plan explicitly flags the direct-API row as "conservative — revisit when direct-API skill injection is designed." Owners of `chat-claude-sdk-skills` must revisit before their plan ships. |
+| Direct-API conservative defaults get treated as ground truth | Downstream popover hides Claude direct-API skills that could actually be ainative-injected | This plan explicitly flags the direct-API row as "conservative — revisit when direct-API skill injection is designed." Owners of `chat-claude-sdk-skills` must revisit before their plan ships. |
 
 ---
 
@@ -61,7 +61,7 @@ Append to `src/lib/agents/runtime/__tests__/catalog.test.ts` inside the existing
     expect(features.stagentInjectsSkills).toBe(false);
   });
 
-  it("marks Ollama as requiring Stagent-injected skills", () => {
+  it("marks Ollama as requiring ainative-injected skills", () => {
     const features = getRuntimeFeatures("ollama");
     expect(features.hasNativeSkills).toBe(false);
     expect(features.stagentInjectsSkills).toBe(true);
@@ -98,7 +98,7 @@ In `src/lib/agents/runtime/catalog.ts`, immediately **after** the existing `Runt
 ```typescript
 /**
  * LLM-surface features that affect what the model sees and which tools/skills
- * Stagent exposes to it. Distinct from RuntimeCapabilities above, which is
+ * ainative exposes to it. Distinct from RuntimeCapabilities above, which is
  * adapter-plumbing concerns (can the adapter resume/cancel/etc.).
  *
  * Values reflect post-Phase-1 capability (what the runtime SDK *can* do),
@@ -112,7 +112,7 @@ export interface RuntimeFeatures {
   hasProgressiveDisclosure: boolean;
   /** Read/Grep/Glob/Edit/Write available as LLM tools. */
   hasFilesystemTools: boolean;
-  /** Bash tool available (Stagent gates via permission bridge). */
+  /** Bash tool available (ainative gates via permission bridge). */
   hasBash: boolean;
   /** TodoWrite tool available. */
   hasTodoWrite: boolean;
@@ -123,7 +123,7 @@ export interface RuntimeFeatures {
   /** Which project-level instructions file the runtime auto-loads, if any. */
   autoLoadsInstructions: "CLAUDE.md" | "AGENTS.md" | null;
   /**
-   * Runtime has no native skill support — Stagent must inject SKILL.md content
+   * Runtime has no native skill support — ainative must inject SKILL.md content
    * into the system prompt to expose skills to the LLM.
    */
   stagentInjectsSkills: boolean;
@@ -158,7 +158,7 @@ In `RUNTIME_CATALOG["claude-code"]` (starts at line 42), add `features` immediat
       hasFilesystemTools: true,
       hasBash: true,
       hasTodoWrite: true,
-      hasSubagentDelegation: false, // Stagent task primitives replace SDK Task tool
+      hasSubagentDelegation: false, // ainative task primitives replace SDK Task tool
       hasHooks: false, // excluded per Q2
       autoLoadsInstructions: "CLAUDE.md",
       stagentInjectsSkills: false,
@@ -233,7 +233,7 @@ After the `capabilities` block of `ollama` (around line 136), before its `models
       hasProgressiveDisclosure: false,
       hasFilesystemTools: false,
       hasBash: false,
-      hasTodoWrite: false, // Stagent MCP exposes todo tools separately
+      hasTodoWrite: false, // ainative MCP exposes todo tools separately
       hasSubagentDelegation: false,
       hasHooks: false,
       autoLoadsInstructions: null,
@@ -605,13 +605,13 @@ EOF
 Run: `PORT=3010 npm run dev`
 Expected: starts cleanly, no `ReferenceError` on startup, `Ready in Xs` appears in console.
 
-If you see `ReferenceError: Cannot access 'claudeRuntimeAdapter' before initialization` — a cycle was introduced. Abort the smoke test, trace the import graph from any file that imports from `@/lib/chat/stagent-tools`, and introduce a dynamic `await import()` at the call site.
+If you see `ReferenceError: Cannot access 'claudeRuntimeAdapter' before initialization` — a cycle was introduced. Abort the smoke test, trace the import graph from any file that imports from `@/lib/chat/ainative-tools`, and introduce a dynamic `await import()` at the call site.
 
 - [ ] **Step 2: Trigger a real chat turn on the Claude runtime**
 
 In a separate terminal (or browser), open `http://localhost:3010`, select a Claude model (e.g. `sonnet`), and send the prompt: `list all agent profiles`.
 
-Expected: the chat turn completes, the assistant response appears, and the Stagent `list_profiles` MCP tool fires (visible in the activity/tool-result UI). No `ReferenceError` in the dev-server console during the turn.
+Expected: the chat turn completes, the assistant response appears, and the ainative `list_profiles` MCP tool fires (visible in the activity/tool-result UI). No `ReferenceError` in the dev-server console during the turn.
 
 - [ ] **Step 3: Trigger a real chat turn on an Ollama model (if Ollama is available locally)**
 

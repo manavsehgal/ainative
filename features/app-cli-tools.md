@@ -11,7 +11,7 @@ dependencies: [app-package-format, app-seed-data-generation]
 
 ## Description
 
-Extend the Stagent CLI with an `app` subcommand group that covers the full
+Extend the ainative CLI with an `app` subcommand group that covers the full
 app lifecycle for both creators and users. Creator commands help build,
 validate, and publish apps. User commands help discover, install, manage,
 and update apps. All commands operate on the `.sap` package format and
@@ -28,7 +28,7 @@ As an app creator, I want CLI commands to scaffold, validate, generate seed
 data, pack, and publish my app — so I can iterate quickly and distribute
 without leaving my terminal.
 
-As a Stagent user, I want CLI commands to install apps from local files or
+As a ainative user, I want CLI commands to install apps from local files or
 the marketplace, check for updates, and manage installed apps — so I have
 full control over my app environment from the command line.
 
@@ -36,30 +36,30 @@ full control over my app environment from the command line.
 
 ### 1. Command structure
 
-All commands live under `stagent app <subcommand>`:
+All commands live under `ainative app <subcommand>`:
 
 ```
-stagent app init [--template <name>]     # Scaffold new app
-stagent app validate [<dir>]             # Validate manifest + files
-stagent app seed [<dir>]                 # Generate sanitized seed data
-stagent app pack [<dir>]                 # Create .sap tarball
-stagent app publish [<file>]             # Upload to marketplace
-stagent app extract-templates [<dir>]    # Table definitions → YAML
-stagent app extract-profiles [<dir>]     # Code profiles → YAML
+ainative app init [--template <name>]     # Scaffold new app
+ainative app validate [<dir>]             # Validate manifest + files
+ainative app seed [<dir>]                 # Generate sanitized seed data
+ainative app pack [<dir>]                 # Create .sap tarball
+ainative app publish [<file>]             # Upload to marketplace
+ainative app extract-templates [<dir>]    # Table definitions → YAML
+ainative app extract-profiles [<dir>]     # Code profiles → YAML
 
-stagent app install <source>             # Install from file/URL/marketplace/git
-stagent app list                         # List installed apps
-stagent app browse [--category <cat>]    # Browse marketplace catalog
-stagent app update [<app-id>]            # Update to latest version
-stagent app outdated                     # Check for available updates
-stagent app disable <app-id>             # Disable installed app
-stagent app enable <app-id>              # Enable disabled app
-stagent app uninstall <app-id> [--purge] # Remove app (--purge removes data)
+ainative app install <source>             # Install from file/URL/marketplace/git
+ainative app list                         # List installed apps
+ainative app browse [--category <cat>]    # Browse marketplace catalog
+ainative app update [<app-id>]            # Update to latest version
+ainative app outdated                     # Check for available updates
+ainative app disable <app-id>             # Disable installed app
+ainative app enable <app-id>              # Enable disabled app
+ainative app uninstall <app-id> [--purge] # Remove app (--purge removes data)
 ```
 
 ### 2. Creator commands
 
-#### `stagent app init`
+#### `ainative app init`
 
 Scaffolds a new `.sap` directory with starter files:
 
@@ -82,7 +82,7 @@ Interactive prompts gather: app name, ID (auto-slugified from name),
 description, category, author info. Non-interactive mode via `--yes` flag
 uses defaults.
 
-#### `stagent app validate`
+#### `ainative app validate`
 
 Runs comprehensive validation on a `.sap` directory:
 
@@ -99,7 +99,7 @@ Runs comprehensive validation on a `.sap` directory:
 Exit code 0 on success, 1 on errors. Warnings (missing optional files) don't
 fail validation.
 
-#### `stagent app pack`
+#### `ainative app pack`
 
 Creates a distributable `.sap` tarball from a validated directory:
 
@@ -113,7 +113,7 @@ Creates a distributable `.sap` tarball from a validated directory:
 5. Write checksum file: `{app-id}-{version}.sap.sha256`
 6. Print size, file count, and checksum
 
-#### `stagent app publish`
+#### `ainative app publish`
 
 Uploads a packed `.sap` tarball to the marketplace:
 
@@ -125,13 +125,13 @@ Uploads a packed `.sap` tarball to the marketplace:
 
 Requires Operator tier or above.
 
-#### `stagent app extract-templates`
+#### `ainative app extract-templates`
 
 Reads the live database tables for a project and generates YAML table
 definition files in `templates/`. Useful for creators who built tables
 through the UI and want to package them.
 
-#### `stagent app extract-profiles`
+#### `ainative app extract-profiles`
 
 Reads agent profiles from `src/lib/agents/profiles/` and converts them to
 standalone SKILL.md files in `profiles/`. Extracts the profile's system
@@ -139,7 +139,7 @@ prompt, tools, and behavioral guidelines into portable markdown.
 
 ### 3. User commands
 
-#### `stagent app install <source>`
+#### `ainative app install <source>`
 
 Detects source type and delegates:
 
@@ -154,7 +154,7 @@ Detects source type and delegates:
 All paths converge on `installApp()` from `service.ts` after converting to
 an `AppBundle`.
 
-#### `stagent app list`
+#### `ainative app list`
 
 Displays a table of installed apps:
 
@@ -164,19 +164,19 @@ wealth-manager    ready     1.0.0    2026-04-10
 growth-module     disabled  1.0.0    2026-04-08
 ```
 
-#### `stagent app browse`
+#### `ainative app browse`
 
 Queries the marketplace catalog and displays available apps:
 
 ```
-stagent app browse --category finance
+ainative app browse --category finance
 
 ID                Category   Rating  Installs  Price
 wealth-manager    finance    4.8     1,234     Free
 crypto-tracker    finance    4.5     892       Free
 ```
 
-#### `stagent app update`
+#### `ainative app update`
 
 Checks for newer versions and applies updates:
 
@@ -187,7 +187,7 @@ Checks for newer versions and applies updates:
 5. Apply update (additive — new tables/columns, updated profiles/schedules)
 6. Preserve user data in existing tables
 
-#### `stagent app outdated`
+#### `ainative app outdated`
 
 Lists installed apps with available updates:
 
@@ -196,7 +196,7 @@ ID                Current  Latest   Source
 wealth-manager    1.0.0    1.1.0    marketplace
 ```
 
-#### `stagent app uninstall`
+#### `ainative app uninstall`
 
 Removes an installed app. Without `--purge`, preserves user data in tables.
 With `--purge`, drops app-created tables and their data.
@@ -241,18 +241,18 @@ in `src/lib/apps/cli/` with one file per command:
 ```
 src/lib/apps/cli/
   index.ts        # registerAppCommands() — wires all subcommands
-  init.ts         # stagent app init
-  validate.ts     # stagent app validate
-  seed.ts         # stagent app seed (delegates to seed-generator.ts)
-  pack.ts         # stagent app pack
-  publish.ts      # stagent app publish
-  install.ts      # stagent app install (multi-source)
-  list.ts         # stagent app list
-  browse.ts       # stagent app browse
-  update.ts       # stagent app update
-  outdated.ts     # stagent app outdated
-  manage.ts       # stagent app enable/disable/uninstall
-  extract.ts      # stagent app extract-templates/extract-profiles
+  init.ts         # ainative app init
+  validate.ts     # ainative app validate
+  seed.ts         # ainative app seed (delegates to seed-generator.ts)
+  pack.ts         # ainative app pack
+  publish.ts      # ainative app publish
+  install.ts      # ainative app install (multi-source)
+  list.ts         # ainative app list
+  browse.ts       # ainative app browse
+  update.ts       # ainative app update
+  outdated.ts     # ainative app outdated
+  manage.ts       # ainative app enable/disable/uninstall
+  extract.ts      # ainative app extract-templates/extract-profiles
 ```
 
 Each command handler exports a function matching the CLI framework's
@@ -261,21 +261,21 @@ it with the `app` group following the same pattern.
 
 ## Acceptance Criteria
 
-- [ ] `stagent app init` scaffolds a valid `.sap` directory that passes
-      `stagent app validate`.
-- [ ] `stagent app validate` catches all manifest errors, missing file
+- [ ] `ainative app init` scaffolds a valid `.sap` directory that passes
+      `ainative app validate`.
+- [ ] `ainative app validate` catches all manifest errors, missing file
       references, and invalid YAML with actionable messages.
-- [ ] `stagent app pack` creates a tarball and rejects packages containing
+- [ ] `ainative app pack` creates a tarball and rejects packages containing
       secrets or forbidden paths.
-- [ ] `stagent app install <path>` installs a local `.sap` directory or
+- [ ] `ainative app install <path>` installs a local `.sap` directory or
       tarball via the standard `installApp()` lifecycle.
-- [ ] `stagent app install <app-id>` installs from the marketplace catalog.
-- [ ] `stagent app list` displays all installed apps with status and version.
-- [ ] `stagent app uninstall` removes app resources; `--purge` additionally
+- [ ] `ainative app install <app-id>` installs from the marketplace catalog.
+- [ ] `ainative app list` displays all installed apps with status and version.
+- [ ] `ainative app uninstall` removes app resources; `--purge` additionally
       drops tables.
-- [ ] `stagent app enable` and `stagent app disable` toggle app state
+- [ ] `ainative app enable` and `ainative app disable` toggle app state
       correctly.
-- [ ] `stagent app outdated` correctly identifies apps with newer versions
+- [ ] `ainative app outdated` correctly identifies apps with newer versions
       available.
 - [ ] All commands handle errors gracefully with non-zero exit codes and
       helpful messages.

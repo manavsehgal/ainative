@@ -13,7 +13,7 @@ dependencies: [marketplace-app-listing]
 
 ## Description
 
-Stagent is a local-first platform, but the marketplace currently requires an
+ainative is a local-first platform, but the marketplace currently requires an
 internet connection to browse. This feature adds a cached marketplace catalog
 for offline browsing, an install queue that resolves when connectivity returns,
 and periodic background sync to keep the local cache fresh.
@@ -23,7 +23,7 @@ offline — the actual download happens on reconnect.
 
 ## User Story
 
-As a Stagent user working offline (on a plane, in a coffee shop with flaky
+As a ainative user working offline (on a plane, in a coffee shop with flaky
 wifi, or by choice), I want to browse the marketplace catalog and queue apps
 for installation, so connectivity gaps don't interrupt my workflow.
 

@@ -9,7 +9,7 @@ dependencies: [supabase-cloud-backend]
 
 # Stripe Billing Integration
 
-> **Superseded by `community-edition-simplification` (2026-04-13).** This feature shipped but was later fully reverted when Stagent pivoted to a 100% free Community Edition with no tiers, billing, or cloud dependency. Kept as historical record.
+> **Superseded by `community-edition-simplification` (2026-04-13).** This feature shipped but was later fully reverted when ainative pivoted to a 100% free Community Edition with no tiers, billing, or cloud dependency. Kept as historical record.
 
 ## Description
 
@@ -17,16 +17,16 @@ Configures complete Stripe billing — 3 products × 2 prices (monthly + annual)
 
 ## User Story
 
-As a visitor on stagent.io, I want to purchase a plan via Stripe Payment Link and then receive install instructions + automatic license activation when I run `npx stagent` and sign in with the same email.
+As a visitor on ainative.io, I want to purchase a plan via Stripe Payment Link and then receive install instructions + automatic license activation when I run `npx ainative` and sign in with the same email.
 
-As an existing Stagent user, I want to upgrade from within the app via Stripe Checkout and have my premium features unlock immediately when I return.
+As an existing ainative user, I want to upgrade from within the app via Stripe Checkout and have my premium features unlock immediately when I return.
 
 ## Technical Approach
 
 ### Two Entry Points, One Backend
 
 ```
-Marketing site (stagent.io)              Product (/settings/subscription)
+Marketing site (ainative.io)              Product (/settings/subscription)
          │                                         │
     Stripe Payment Link                    Stripe Checkout Session
          │                                         │
@@ -39,7 +39,7 @@ Marketing site (stagent.io)              Product (/settings/subscription)
               ┌───────────┴────────────┐
               │                        │
     Resend welcome email         Return URL redirect
-    "Install npx stagent,       → /settings/subscription?success=true
+    "Install npx ainative,       → /settings/subscription?success=true
      sign in with this email"   → auto-activate via LicenseManager
 ```
 
@@ -53,12 +53,12 @@ Marketing site (stagent.io)              Product (/settings/subscription)
 ### Payment Links (Marketing Site Entry)
 
 Stripe Payment Links are static URLs that can be embedded directly in Pricing.astro:
-- `https://buy.stagent.io/SOLO_LINK` — Solo monthly
-- `https://buy.stagent.io/OPERATOR_LINK` — Operator monthly
-- `https://buy.stagent.io/SCALE_LINK` — Scale monthly
+- `https://buy.ainative.io/SOLO_LINK` — Solo monthly
+- `https://buy.ainative.io/OPERATOR_LINK` — Operator monthly
+- `https://buy.ainative.io/SCALE_LINK` — Scale monthly
 - Each Payment Link collects email (required) — this is the identity anchor
-- After payment, Stripe redirects to `https://stagent.io/confirmed?session_id={CHECKOUT_SESSION_ID}`
-- The `/confirmed` page (already exists in site) shows: "Welcome! Install `npx stagent` and sign in with {email} to activate your subscription."
+- After payment, Stripe redirects to `https://ainative.io/confirmed?session_id={CHECKOUT_SESSION_ID}`
+- The `/confirmed` page (already exists in site) shows: "Welcome! Install `npx ainative` and sign in with {email} to activate your subscription."
 
 ### Checkout Sessions (In-App Entry)
 
@@ -84,12 +84,12 @@ The key insight: Stripe captures email on both Payment Links and Checkout Sessio
 4. If user doesn't exist → creates Supabase Auth user (magic link, no password) → creates license
 5. Sends welcome email via Resend with install instructions (if from Payment Link) or activation confirmation (if from Checkout Session)
 
-When the user later runs `npx stagent` and signs in with Supabase Auth using the same email, `LicenseManager.validate()` finds their license row and activates automatically. No license key copy-paste needed.
+When the user later runs `npx ainative` and signs in with Supabase Auth using the same email, `LicenseManager.validate()` finds their license row and activates automatically. No license key copy-paste needed.
 
 ### Email Module
 
 `src/lib/cloud/email.ts` — thin Resend API wrappers called via Supabase Edge Functions:
-- `sendWelcomeWithInstall(email, tier)` — for marketing site purchasers: "Install npx stagent, sign in with this email"
+- `sendWelcomeWithInstall(email, tier)` — for marketing site purchasers: "Install npx ainative, sign in with this email"
 - `sendUpgradeConfirmation(email, tier)` — for in-app upgraders: "Your {tier} features are now active"
 - `sendMemoryWarning(email, profileName, count, limit)` — memory cap approaching
 
@@ -136,7 +136,7 @@ When the user later runs `npx stagent` and signs in with Supabase Auth using the
 - Related: [local-license-manager](local-license-manager.md)
 - Related: [marketing-site-pricing-page](marketing-site-pricing-page.md) — embeds Payment Link URLs
 - Follow-on: [subscription-management-ui](subscription-management-ui.md), [upgrade-cta-banners](upgrade-cta-banners.md)
-- Marketing site confirmed page: `stagent.github.io/src/pages/confirmed.astro`
+- Marketing site confirmed page: `ainative.github.io/src/pages/confirmed.astro`
 
 ## Acceptance Criteria
 

@@ -11,15 +11,15 @@ lastUpdated: "2026-04-16"
 
 # Developer Guide
 
-Meet Riley, a platform engineer responsible for setting up, securing, and extending Stagent for a development team. Riley needs to configure authentication, connect Ollama for local models, set up delivery channels for Slack and Telegram, enforce budget guardrails, define permission presets, explore the environment control plane, understand the chat streaming and channel gateway architecture, monitor agent execution including async handoffs and episodic memory, and script batch operations via the CLI. This journey covers the infrastructure and configuration layer that keeps the AI business operating system secure, observable, and performant.
+Meet Riley, a platform engineer responsible for setting up, securing, and extending ainative for a development team. Riley needs to configure authentication, connect Ollama for local models, set up delivery channels for Slack and Telegram, enforce budget guardrails, define permission presets, explore the environment control plane, understand the chat streaming and channel gateway architecture, monitor agent execution including async handoffs and episodic memory, and script batch operations via the CLI. This journey covers the infrastructure and configuration layer that keeps the AI business operating system secure, observable, and performant.
 
 ## Prerequisites
 
-- Stagent cloned from the repository and dependencies installed (`npm install`)
+- ainative cloned from the repository and dependencies installed (`npm install`)
 - Node.js 20+ and npm available on the system
 - An Anthropic API key (for API key auth) or Claude Max subscription (for OAuth)
 - Familiarity with terminal/CLI workflows and REST APIs
-- Basic understanding of Stagent concepts (see [Personal Use Guide](./personal-use.md))
+- Basic understanding of ainative concepts (see [Personal Use Guide](./personal-use.md))
 
 ## Journey Steps
 
@@ -66,7 +66,7 @@ Riley sets up Slack and Telegram as delivery channels for schedule notifications
 7. Test and enable Chat mode
 8. Add a **Webhook** channel for custom integrations (outbound only)
 
-> **Tip:** The channel gateway architecture is straightforward: for local development, Stagent includes a built-in poller that checks Slack (`conversations.history` API) and Telegram (`getUpdates` API) every 5 seconds. No public URL or webhook registration needed. The poller only polls channels with both Chat and Active toggles on. Channel conversations flow through the same chat engine as web conversations, including tool access and permission handling.
+> **Tip:** The channel gateway architecture is straightforward: for local development, ainative includes a built-in poller that checks Slack (`conversations.history` API) and Telegram (`getUpdates` API) every 5 seconds. No public URL or webhook registration needed. The poller only polls channels with both Chat and Active toggles on. Channel conversations flow through the same chat engine as web conversations, including tool access and permission handling.
 
 ### Step 4: Set Up Budget Guardrails
 
@@ -94,7 +94,7 @@ Riley sets up Slack and Telegram as delivery channels for schedule notifications
 ![Data management section in Settings](../screengrabs/settings-data.png)
 
 1. Scroll to **Data Management**
-2. Review database location (`~/.stagent/stagent.db`) and storage usage
+2. Review database location (`~/.ainative/ainative.db`) and storage usage
 3. Use **Clear Data** cautiously -- it removes all workspace content while preserving settings
 4. Use **Populate Sample Data** for demos or testing
 
@@ -105,7 +105,7 @@ Riley wants a point-in-time backup before running a risky migration or a destruc
 ![Settings snapshots card with create/restore/download controls](../screengrabs/settings-snapshots.png)
 
 1. Scroll to the **Snapshots** card inside **Data Management**
-2. Click **Create Snapshot** — Stagent copies the SQLite database (with WAL checkpoint) into a named, timestamped snapshot file stored alongside the live DB
+2. Click **Create Snapshot** — ainative copies the SQLite database (with WAL checkpoint) into a named, timestamped snapshot file stored alongside the live DB
 3. Give the snapshot a descriptive label ("before-v2-migration", "post-sample-seed") so future-you can find it
 4. To restore, pick a snapshot from the list and click **Restore** — the live DB is atomically swapped with the snapshot contents
 5. To archive off-host, click **Download** to get a `.sqlite` file you can stash in your backup system
@@ -225,7 +225,7 @@ Riley wants to know why some features show up on one runtime but not another. Th
 1. Open `src/lib/agents/runtime/catalog.ts` — each runtime adapter declares flags like `supportsSkillComposition`, `maxActiveSkills`, `hasNativeSkills`, `stagentInjectsSkills`, and `autoLoadsInstructions`
 2. The Chat Skills tab reads `supportsSkillComposition` to decide whether to enable multi-skill activation and "N of M active" reporting
 3. The SKILL.md injector reads `stagentInjectsSkills` to avoid duplicating context on runtimes (like Codex App Server and Claude Agent SDK) that load instructions natively
-4. When you wire a new feature that touches system prompts or skills, consult the matrix before deciding whether Stagent should inject something or trust the runtime to do so
+4. When you wire a new feature that touches system prompts or skills, consult the matrix before deciding whether ainative should inject something or trust the runtime to do so
 
 > **Tip:** The MCP task-tools boundary also validates the runtime ID now (runtime-validation-hardening). Malformed `runtimeId` values are rejected at the boundary with a clean error, rather than crashing the dispatcher.
 
@@ -239,7 +239,7 @@ Riley wants to know why some features show up on one runtime but not another. Th
 4. Three consecutive poll failures escalate to a persistent inbox notification (three-strike dedup prevents notification floods)
 5. The upgrade session uses the `upgrade-assistant` profile, which allowlists **AskUserQuestion** — the assistant can ask direct questions mid-merge without hitting a generic permission prompt
 
-> **Tip:** The Instance card also shows bootstrap status. In dev mode (indicated by `STAGENT_DEV_MODE=true` or the `.git/stagent-dev-mode` sentinel), auto-upgrade machinery is skipped to avoid interfering with contributor workflows.
+> **Tip:** The Instance card also shows bootstrap status. In dev mode (indicated by `STAGENT_DEV_MODE=true` or the `.git/ainative-dev-mode` sentinel), auto-upgrade machinery is skipped to avoid interfering with contributor workflows.
 
 ### Step 15: Verify Platform Health
 
@@ -258,7 +258,7 @@ Riley performs a final platform health check.
 9. **Schedules**: Verify active schedules show correct next-firing times and delivery channels
 10. **CLI**: Run `node dist/cli.js --help` to confirm the build is current
 
-> **Tip:** Run this checklist after any significant configuration change, Stagent version update, or Node.js upgrade.
+> **Tip:** Run this checklist after any significant configuration change, ainative version update, or Node.js upgrade.
 
 ## What's Next
 

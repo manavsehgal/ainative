@@ -14,15 +14,15 @@ dependencies:
 
 ## Description
 
-Enable stagent agents to interact with web browsers — navigating pages, clicking elements, reading content, taking screenshots, running Lighthouse audits, and inspecting network traffic. This is achieved by integrating two complementary MCP servers as tool sources: **Chrome DevTools MCP** (CDP-based, 29 tools) for debugging live Chrome sessions, and **Playwright MCP** (accessibility-snapshot-based, 50+ tools) for headless automation.
+Enable ainative agents to interact with web browsers — navigating pages, clicking elements, reading content, taking screenshots, running Lighthouse audits, and inspecting network traffic. This is achieved by integrating two complementary MCP servers as tool sources: **Chrome DevTools MCP** (CDP-based, 29 tools) for debugging live Chrome sessions, and **Playwright MCP** (accessibility-snapshot-based, 50+ tools) for headless automation.
 
-Stagent's architecture already supports MCP server passthrough in both the chat engine and task execution layer. This feature adds a settings-driven configuration layer that lets users enable one or both browser MCP servers, then merges them into the existing `query()` call alongside the stagent in-process MCP server. Browser tools become available to chat conversations and any task regardless of agent profile, with read-only tools auto-approved and mutation tools gated through the existing permission system.
+ainative's architecture already supports MCP server passthrough in both the chat engine and task execution layer. This feature adds a settings-driven configuration layer that lets users enable one or both browser MCP servers, then merges them into the existing `query()` call alongside the ainative in-process MCP server. Browser tools become available to chat conversations and any task regardless of agent profile, with read-only tools auto-approved and mutation tools gated through the existing permission system.
 
 The two servers serve complementary use cases. Chrome DevTools MCP connects to a running Chrome instance — ideal for debugging your own app, performance profiling, and network inspection. Playwright MCP launches its own headless browser — ideal for autonomous research, scraping, structured page analysis, and cross-browser testing. Users choose which to enable based on their workflow.
 
 ## User Story
 
-As a stagent user, I want my agents to browse the web and interact with live pages so that tasks like research, testing, auditing, and scraping can be fully automated without leaving the stagent interface.
+As a ainative user, I want my agents to browse the web and interact with live pages so that tasks like research, testing, auditing, and scraping can be fully automated without leaving the ainative interface.
 
 ## Technical Approach
 
@@ -44,7 +44,7 @@ As a stagent user, I want my agents to browse the web and interact with live pag
 
 ### Chat engine integration
 - In `src/lib/chat/engine.ts` before the `query()` call (~line 200):
-  - Call `getBrowserMcpServers()` and merge: `mcpServers: { stagent: stagentServer, ...browserServers }`
+  - Call `getBrowserMcpServers()` and merge: `mcpServers: { ainative: stagentServer, ...browserServers }`
   - Expand `allowedTools` to include `"mcp__chrome-devtools__*"` and/or `"mcp__playwright__*"` when enabled
 - Update `canUseTool` callback with browser tool permission tiers:
   - **Auto-allow (read-only):** `take_screenshot`, `take_snapshot`, `list_pages`, `list_console_messages`, `list_network_requests`, `get_console_message`, `get_network_request`, `browser_snapshot`, `browser_console_messages`, `browser_network_requests`, `browser_tabs`

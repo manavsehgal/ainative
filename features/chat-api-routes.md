@@ -11,7 +11,7 @@ dependencies: [chat-data-layer, chat-engine]
 
 ## Description
 
-REST API endpoints for chat operations: conversation CRUD and message sending with SSE streaming. Follows stagent's existing API patterns (Zod validation, NextResponse, proper status codes).
+REST API endpoints for chat operations: conversation CRUD and message sending with SSE streaming. Follows ainative's existing API patterns (Zod validation, NextResponse, proper status codes).
 
 The key innovation is the message-send endpoint which returns an SSE stream — unlike the existing log streaming that polls the DB at 500ms intervals, chat uses a `TransformStream` bridge that pipes SDK events directly to the SSE response for near-zero latency token delivery. Messages are persisted to DB as a side effect for reconnection recovery.
 

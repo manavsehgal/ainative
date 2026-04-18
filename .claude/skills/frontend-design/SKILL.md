@@ -14,7 +14,7 @@ When building within an existing project, read its design system first:
 - Check `src/components/ui/` for the project's shadcn/ui component library
 - Check `design-system/tokens.json` for forbidden patterns that must not appear in new code
 
-For Stagent: The "Calm Ops" design system uses opaque surfaces, border-centric elevation (elevation-0 through elevation-3), OKLCH hue ~250, Inter + JetBrains Mono, and minimal functional animations. Creative flourishes like glassmorphism, gradient meshes, noise textures, and grain overlays are explicitly forbidden. See `references/design-decisions.md` in the frontend-designer skill for the full decision catalog.
+For ainative: The "Calm Ops" design system uses opaque surfaces, border-centric elevation (elevation-0 through elevation-3), OKLCH hue ~250, Inter + JetBrains Mono, and minimal functional animations. Creative flourishes like glassmorphism, gradient meshes, noise textures, and grain overlays are explicitly forbidden. See `references/design-decisions.md` in the frontend-designer skill for the full decision catalog.
 
 The user provides frontend requirements: a component, page, application, or interface to build. They may include context about the purpose, audience, or technical constraints.
 

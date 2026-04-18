@@ -12,15 +12,15 @@ dependencies:
 
 ## Description
 
-Embed the `ai-native-notes/` screenshots and strategy content into Book chapters as "Author's Notes" callout blocks. These meta-content blocks show real screenshots of Stagent workflows that generated the chapter's content — the story of *how* the Book was built using Stagent. This is the "dogfooding proof" that makes the Book unique: inline evidence that Stagent built its own documentation.
+Embed the `ai-native-notes/` screenshots and strategy content into Book chapters as "Author's Notes" callout blocks. These meta-content blocks show real screenshots of ainative workflows that generated the chapter's content — the story of *how* the Book was built using ainative. This is the "dogfooding proof" that makes the Book unique: inline evidence that ainative built its own documentation.
 
 The 8 existing screenshots (workflow-progress, inbox-notifications, chat-querying, code-generation, etc.) become embedded proof points within relevant chapters, wrapped in a distinctive "Author's Notes" callout variant.
 
 ## User Story
 
-As a reader, I want to see real screenshots and behind-the-scenes notes from the Stagent team, so I believe the "built with Stagent" claim is genuine and not just marketing.
+As a reader, I want to see real screenshots and behind-the-scenes notes from the ainative team, so I believe the "built with ainative" claim is genuine and not just marketing.
 
-As a potential adopter evaluating Stagent, I want to see real workflow execution screenshots inline with the narrative, so I can visualize what the tool looks like in practice.
+As a potential adopter evaluating ainative, I want to see real workflow execution screenshots inline with the narrative, so I can visualize what the tool looks like in practice.
 
 ## Technical Approach
 

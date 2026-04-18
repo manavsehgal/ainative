@@ -14,7 +14,7 @@ dependencies:
 
 ## Description
 
-Tasks in Stagent have a nullable `workflowId` foreign key — they can exist independently (standalone tasks) or as children of a workflow. Currently, the project detail page queries all tasks by `projectId` without distinguishing between these two categories. Workflow-created tasks (which get `projectId` set in `engine.ts:745`) appear alongside standalone tasks, creating visual ambiguity and potential double-counting in status summaries.
+Tasks in ainative have a nullable `workflowId` foreign key — they can exist independently (standalone tasks) or as children of a workflow. Currently, the project detail page queries all tasks by `projectId` without distinguishing between these two categories. Workflow-created tasks (which get `projectId` set in `engine.ts:745`) appear alongside standalone tasks, creating visual ambiguity and potential double-counting in status summaries.
 
 Users see the same task listed in the project detail view and the workflow detail view without any visual distinction. There's no clear indication of which tasks are workflow-bound vs standalone, and status counts can be misleading when a multi-step workflow inflates the "in progress" count.
 

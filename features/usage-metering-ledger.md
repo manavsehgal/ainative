@@ -11,13 +11,13 @@ dependencies: [provider-runtime-abstraction, openai-codex-app-server, monitoring
 
 ## Description
 
-Stagent now runs governed activity across Claude and Codex, but usage accounting is still incidental. Some token usage appears inside provider-specific `agent_logs` payloads, some actions have no durable usage record at all, and there is no stable data model for answering basic operator questions such as "what did we spend today?", "which provider consumed the most tokens?", or "which workflow step caused the spike?".
+ainative now runs governed activity across Claude and Codex, but usage accounting is still incidental. Some token usage appears inside provider-specific `agent_logs` payloads, some actions have no durable usage record at all, and there is no stable data model for answering basic operator questions such as "what did we spend today?", "which provider consumed the most tokens?", or "which workflow step caused the spike?".
 
-This feature introduces a first-class usage ledger for all provider-calling activity. The ledger becomes the source of truth for cost and token accounting across task execution, task resume, workflow child tasks, scheduled firings, task-definition assist, and profile tests. It stores raw usage plus derived pricing so Stagent can build trustworthy dashboards, budget guardrails, and audit trails without scraping provider-shaped log blobs.
+This feature introduces a first-class usage ledger for all provider-calling activity. The ledger becomes the source of truth for cost and token accounting across task execution, task resume, workflow child tasks, scheduled firings, task-definition assist, and profile tests. It stores raw usage plus derived pricing so ainative can build trustworthy dashboards, budget guardrails, and audit trails without scraping provider-shaped log blobs.
 
 ## User Story
 
-As a Stagent operator, I want every Claude- or Codex-backed activity to produce a normalized usage record so that I can audit spend, compare provider usage, and build budget enforcement on top of durable data.
+As a ainative operator, I want every Claude- or Codex-backed activity to produce a normalized usage record so that I can audit spend, compare provider usage, and build budget enforcement on top of durable data.
 
 ## Technical Approach
 

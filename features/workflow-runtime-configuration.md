@@ -11,7 +11,7 @@ dependencies: [provider-runtime-abstraction, workflow-engine, smart-runtime-rout
 
 ## Description
 
-Stagent has 5 fully implemented runtime adapters (Claude SDK, OpenAI Codex, Anthropic Direct, OpenAI Direct, Ollama) but workflows can't specify which runtime to use — they all default to the system setting. Model IDs are scattered across 3 disconnected registries: `CHAT_MODELS` in the UI, hardcoded fallbacks in adapters (`"gpt-4.1"`, `"claude-sonnet-4-20250514"`), and the runtime catalog which carries zero model information. The chat agent hallucinates about available models because no tool exposes the runtime catalog.
+ainative has 5 fully implemented runtime adapters (Claude SDK, OpenAI Codex, Anthropic Direct, OpenAI Direct, Ollama) but workflows can't specify which runtime to use — they all default to the system setting. Model IDs are scattered across 3 disconnected registries: `CHAT_MODELS` in the UI, hardcoded fallbacks in adapters (`"gpt-4.1"`, `"claude-sonnet-4-20250514"`), and the runtime catalog which carries zero model information. The chat agent hallucinates about available models because no tool exposes the runtime catalog.
 
 This feature unifies the model catalog into `RuntimeCatalogEntry`, adds per-workflow runtime selection via a new `runtimeId` column, creates a `list_runtimes` chat tool, and tags settings with writability metadata to prevent chat hallucination.
 
@@ -32,7 +32,7 @@ As a workflow creator, I want to choose which AI provider runs my workflow and k
   3. System `routing.preference` setting (existing)
   4. `DEFAULT_AGENT_RUNTIME` (existing)
 - **New `list_runtimes` chat tool** in `src/lib/chat/tools/runtime-tools.ts` — calls `listRuntimeCatalog()` (exists at `catalog.ts:138-140`), returns runtimes with models and capabilities
-- **Register in tool collection**: add `runtimeTools` to `collectAllTools()` in `stagent-tools.ts`
+- **Register in tool collection**: add `runtimeTools` to `collectAllTools()` in `ainative-tools.ts`
 - **Tag settings writability**: in `get_settings` handler (`settings-tools.ts` ~line 77-141), add `writable: boolean` field to each returned key by checking against `WRITABLE_SETTINGS`
 - **Validate CHAT_MODELS**: at startup, verify each `CHAT_MODELS` entry exists in some runtime's `models.supported[]`, log warning on mismatch
 

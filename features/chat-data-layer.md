@@ -13,7 +13,7 @@ dependencies: [database-schema, provider-runtime-abstraction]
 
 Foundation tables and data access functions for the chat feature. Adds `conversations` and `chat_messages` tables to the database, with Drizzle schema definitions, bootstrap SQL for idempotent table creation, clear.ts integration for safe data reset, and a data access module with CRUD functions.
 
-This is the first feature in the chat initiative — everything else (engine, API, UI) depends on these tables existing. The design follows stagent's established patterns: Drizzle ORM schema in `schema.ts`, idempotent CREATE TABLE in `bootstrap.ts`, FK-safe deletion in `clear.ts`, and typed data access functions in `src/lib/data/`.
+This is the first feature in the chat initiative — everything else (engine, API, UI) depends on these tables existing. The design follows ainative's established patterns: Drizzle ORM schema in `schema.ts`, idempotent CREATE TABLE in `bootstrap.ts`, FK-safe deletion in `clear.ts`, and typed data access functions in `src/lib/data/`.
 
 ## User Story
 

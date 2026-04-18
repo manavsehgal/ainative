@@ -11,13 +11,13 @@ dependencies: [provider-runtime-abstraction, openai-codex-app-server, agent-prof
 
 ## Description
 
-Stagent's current profile system is intentionally Claude-native. Profiles are discovered from `.claude/skills`, store Claude-oriented tool policy and MCP configuration, and inject `SKILL.md` content directly into Claude task prompts. That works well today, but it does not automatically translate into a safe or equivalent experience on Codex.
+ainative's current profile system is intentionally Claude-native. Profiles are discovered from `.claude/skills`, store Claude-oriented tool policy and MCP configuration, and inject `SKILL.md` content directly into Claude task prompts. That works well today, but it does not automatically translate into a safe or equivalent experience on Codex.
 
 This feature makes profiles provider-aware without throwing away the current catalog. The goal is to preserve the value of reusable specialist profiles while explicitly modeling which runtimes each profile supports, which instructions/assets are provider-specific, and how the UI should behave when a user mixes an incompatible profile with a selected runtime.
 
 ## User Story
 
-As a Stagent user, I want profiles to declare which runtimes they support so that I can reuse specialist behavior across providers where appropriate and avoid silently broken combinations where profile packaging is provider-specific.
+As a ainative user, I want profiles to declare which runtimes they support so that I can reuse specialist behavior across providers where appropriate and avoid silently broken combinations where profile packaging is provider-specific.
 
 ## Technical Approach
 

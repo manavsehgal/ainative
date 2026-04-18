@@ -1,8 +1,8 @@
-# AI-Native Book Strategy: Building Stagent with Stagent
+# AI-Native Book Strategy: Building ainative with ainative
 
 ## Core Concept
 
-**Stagent is building itself using itself.** This ebook documents the journey of automating Stagent's critical business functions using AI agents, workflows, and autonomous loops. It's not just a guide—it's a living proof-of-concept that reads directly within the Stagent app.
+**ainative is building itself using itself.** This ebook documents the journey of automating ainative's critical business functions using AI agents, workflows, and autonomous loops. It's not just a guide—it's a living proof-of-concept that reads directly within the ainative app.
 
 The book serves three purposes:
 1. **Narrative**: Tell the story of how AI automation transformed each function
@@ -11,7 +11,7 @@ The book serves three purposes:
 
 ## The Premise
 
-Stagent is a *meta-tool*: it automates project management, task execution, document processing, and workflow orchestration. The ultimate proof of its capability is using it to automate *itself*.
+ainative is a *meta-tool*: it automates project management, task execution, document processing, and workflow orchestration. The ultimate proof of its capability is using it to automate *itself*.
 
 Each chapter follows a business function through its AI transformation:
 
@@ -38,11 +38,11 @@ Each chapter follows this structure:
 
 ### Problem → Solution → Implementation → Lessons
 
-**Problem**: The manual or semi-automated state (what Stagent looked like before this function was automated)
+**Problem**: The manual or semi-automated state (what ainative looked like before this function was automated)
 
 **Solution**: The AI-native approach (conceptual design, agent roles, workflow patterns)
 
-**Implementation**: Concrete code, config, and UI/UX from Stagent's actual codebase
+**Implementation**: Concrete code, config, and UI/UX from ainative's actual codebase
 - Agent profiles and prompts used
 - Workflow definitions and patterns
 - Database schema for persistence
@@ -94,7 +94,7 @@ The book repositions humans from task-doers to system architects:
 
 ### Reading Experience
 - **Progressive Disclosure**: Expand code blocks, config examples, and screenshots on demand
-- **Inline Demos**: Links to live workflows/tasks within the Stagent UI
+- **Inline Demos**: Links to live workflows/tasks within the ainative UI
 - **Runnable Examples**: "Try This" buttons that create tasks/workflows from book examples
 - **Margin Notes**: Future editions will include contextual agent insights
 
@@ -107,16 +107,16 @@ The book repositions humans from task-doers to system architects:
 ## Success Metrics
 
 1. **Narrative**: Book tells a coherent story from "manual → autonomous" in 3 functions
-2. **Technical Accuracy**: All code/config examples are live and current in Stagent's codebase
+2. **Technical Accuracy**: All code/config examples are live and current in ainative's codebase
 3. **Actionability**: Readers can copy patterns and adapt them to their domain within 30 minutes
-4. **Self-Proof**: Stagent's own functions are automated exactly as the book describes
-5. **Evergreen**: Updates to Stagent automatically refresh the book via dynamic content loading
+4. **Self-Proof**: ainative's own functions are automated exactly as the book describes
+5. **Evergreen**: Updates to ainative automatically refresh the book via dynamic content loading
 
 ## Development Roadmap
 
 ### Phase 1: Core (Chapters 1–3)
 - Document current state of project management, task execution, document processing
-- Extract real prompts and configs from Stagent's code
+- Extract real prompts and configs from ainative's code
 - Write narrative + tutorials for each function
 - Create inline examples and runnable tasks
 
@@ -136,15 +136,15 @@ The book repositions humans from task-doers to system architects:
 
 - **Narrative chapters**: Prose (~2,000–3,000 words each), first-person story of the function's transformation
 - **Technical sections**: Code blocks (TypeScript/SQL), architecture diagrams, config examples
-- **Case studies**: Real examples from Stagent's git history and execution logs
-- **Exercises**: "Build your own" tasks that users can attempt in their Stagent instance
+- **Case studies**: Real examples from ainative's git history and execution logs
+- **Exercises**: "Build your own" tasks that users can attempt in their ainative instance
 - **References**: Links to source files, API docs, database schema
 
 ## Guiding Principle
 
 > **The best documentation is an artifact that proves itself.**
 
-This book isn't *about* AI-native automation—it *is* the proof that Stagent's AI-native automation works. Every claim has a corresponding line of code, every pattern has a corresponding workflow execution log.
+This book isn't *about* AI-native automation—it *is* the proof that ainative's AI-native automation works. Every claim has a corresponding line of code, every pattern has a corresponding workflow execution log.
 
 ## External Research Integration
 
@@ -158,7 +158,7 @@ The book operates at the **implementation layer** — how to build AI-native org
 
 2. **Maintain practitioner tone.** Frame insights as engineering decisions, not predictions or warnings. Say "the trendlines have not stopped" rather than "AGI by 2027." Say "governance shifts from tool-level to reasoning-level" rather than "we must align superintelligence."
 
-3. **Connect to existing patterns.** Every addition must reference at least one existing chapter, case study, or Stagent feature. If an external insight doesn't map to something the reader has already encountered in the book, it doesn't belong.
+3. **Connect to existing patterns.** Every addition must reference at least one existing chapter, case study, or ainative feature. If an external insight doesn't map to something the reader has already encountered in the book, it doesn't belong.
 
 4. **Respect the grounding principle.** The book's credibility comes from every claim mapping to running code. External research that cannot be connected to implementation patterns should be referenced via pointer ("see Aschenbrenner's *Situational Awareness* for the macro trajectory") rather than absorbed into the narrative.
 
@@ -179,7 +179,7 @@ When integrating external research, **never**:
 - Include geopolitical competition framing (US vs China, national security)
 - Include civilizational-stakes rhetoric ("most important century," existential risk)
 - Discuss infrastructure economics (TSMC fabs, datacenter locations, CHIPS Act)
-- Add content that doesn't connect to at least one Stagent feature or case study
+- Add content that doesn't connect to at least one ainative feature or case study
 
 ### Tone Check
 

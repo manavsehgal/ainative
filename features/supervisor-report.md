@@ -14,7 +14,7 @@ mode: next-steps
 **Why:**
 - P1, post-mvp, `planned` with all dependencies met (`workflow-engine` and `scheduled-prompt-loops` are both `completed`).
 - The 2026-04-08 changelog explicitly locks track order: **"Workflow Step Delays first, Bulk Row Enrichment second."** That decision stands.
-- Thematic continuity with today's work — you just merged PR manavsehgal/stagent#6 and groomed `workflow-status-view-pattern-router`. Three workflow-layer touchpoints in a row compound your context.
+- Thematic continuity with today's work — you just merged PR manavsehgal/ainative#6 and groomed `workflow-status-view-pattern-router`. Three workflow-layer touchpoints in a row compound your context.
 - **Three-deep unblock chain:** `workflow-step-delays` → `bulk-row-enrichment` → `workflow-status-view-pattern-router` (your newly groomed spec lists `bulk-row-enrichment` as a dependency). Building delays first walks the chain toward the architectural cleanup you advocated for this morning.
 - The spec calls out reusable surface area already in place: the `"paused"` workflow status enum and the `PATCH /api/workflows/[id]` pause transition. Less new code than the spec originally implied.
 

@@ -90,7 +90,7 @@ per page load):
 - Lazy-fetch initial conversations via `fetch("/api/chat/conversations")`
 - Lazy-fetch default model via `fetch("/api/settings/chat")`
 - Lazy-fetch available models via `fetch("/api/chat/models")`
-- Restore `activeId` from `localStorage["stagent-active-chat"]`, then lazy-
+- Restore `activeId` from `localStorage["ainative-active-chat"]`, then lazy-
   fetch messages for it
 
 Because the provider lives in the root layout, these fetches run exactly once

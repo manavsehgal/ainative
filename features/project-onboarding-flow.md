@@ -11,13 +11,13 @@ dependencies: [environment-dashboard]
 
 ## Description
 
-The end-to-end onboarding experience that makes Stagent's environment features discoverable and easy to adopt. This includes auto-detection on project creation, "scan this folder" CTAs on existing projects, and progressive adoption prompts that guide users from visibility to sync to orchestration.
+The end-to-end onboarding experience that makes ainative's environment features discoverable and easy to adopt. This includes auto-detection on project creation, "scan this folder" CTAs on existing projects, and progressive adoption prompts that guide users from visibility to sync to orchestration.
 
 Rather than a separate wizard or modal, onboarding is woven into the existing project and dashboard flows — the live dashboard IS the onboarding experience. This feature adds the connective tissue: triggers, prompts, and guidance that make the environment features feel effortless.
 
 ## User Story
 
-As a new Stagent user who just pointed it at my existing Claude Code project, I want to immediately see what Stagent found in my environment — without navigating to a separate page or completing a setup wizard — so I can understand Stagent's value within seconds.
+As a new ainative user who just pointed it at my existing Claude Code project, I want to immediately see what ainative found in my environment — without navigating to a separate page or completing a setup wizard — so I can understand ainative's value within seconds.
 
 ## Technical Approach
 

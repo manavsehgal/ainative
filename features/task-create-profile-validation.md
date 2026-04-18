@@ -13,7 +13,7 @@ dependencies: [agent-integration, agent-profile-catalog]
 
 Close the validation gap in `create_task` — today it accepts any string as `agentProfile`, including values that are runtimes rather than profiles (e.g., `anthropic-direct`), so users can create tasks that are guaranteed to fail at execution time with no feedback at creation time.
 
-Bundled with the validation fix is a time-boxed investigation spike for a separate reported symptom: a task whose ID was returned by `create_task` later became unfindable via `get_task`. The original handoff attributed this to "the task record was deleted." A codebase audit found **no task deletion code anywhere in stagent** — `claude-agent.ts` persists failed tasks with `status: "failed"` and `failureReason` in every error path, and there is no GC/cleanup for tasks. The disappearance is almost certainly a scoping mismatch (the `STAGENT_DATA_DIR` env var used for isolation between domain clones, or the `projectId` filter on queries) rather than a data-loss bug. The spike must establish the real cause before we change any production code.
+Bundled with the validation fix is a time-boxed investigation spike for a separate reported symptom: a task whose ID was returned by `create_task` later became unfindable via `get_task`. The original handoff attributed this to "the task record was deleted." A codebase audit found **no task deletion code anywhere in ainative** — `claude-agent.ts` persists failed tasks with `status: "failed"` and `failureReason` in every error path, and there is no GC/cleanup for tasks. The disappearance is almost certainly a scoping mismatch (the `STAGENT_DATA_DIR` env var used for isolation between domain clones, or the `projectId` filter on queries) rather than a data-loss bug. The spike must establish the real cause before we change any production code.
 
 ## User Story
 
@@ -31,7 +31,7 @@ As an operator creating tasks via chat or MCP, I want invalid profile IDs reject
 
 Before touching any "preserve failed tasks" code, reproduce the original symptom and determine the real cause. Candidates:
 
-1. **Data-dir mismatch.** The creating context (e.g., a chat session in one domain clone) has `STAGENT_DATA_DIR=~/.stagent/wealth-mgr` while the querying context hits `~/.stagent`. See `MEMORY.md` → `shared-stagent-data-dir.md`.
+1. **Data-dir mismatch.** The creating context (e.g., a chat session in one domain clone) has `STAGENT_DATA_DIR=~/.ainative/wealth-mgr` while the querying context hits `~/.ainative`. See `MEMORY.md` → `shared-ainative-data-dir.md`.
 2. **Project scoping mismatch.** Task created under `projectId=A`, queried under `projectId=B`. `get_task` may filter by current project.
 3. **Transaction rollback.** A create-then-execute path that wraps both in a transaction and rolls back on execution failure.
 4. **Something else entirely** — the spike output is the data that tells us.
@@ -80,7 +80,7 @@ When `execute_task` is called with a task that has a validation error knowable s
 - `src/lib/chat/tools/task-tools.ts:91-96` — `create_task` Zod schema (target of validation change)
 - `src/lib/agents/profiles/registry.ts:143-170` — `getProfile` / `listProfiles`
 - `src/lib/agents/claude-agent.ts:300-309, 363-371, 731-740` — existing failed-state persistence paths
-- `MEMORY.md` → `shared-stagent-data-dir.md` — domain-clone isolation model, likely root cause of the disappearance symptom
+- `MEMORY.md` → `shared-ainative-data-dir.md` — domain-clone isolation model, likely root cause of the disappearance symptom
 - **Correction note:** The handoff's claim "the task record was deleted rather than being preserved with a `failed` status" is not supported by the codebase. No DELETE on tasks exists anywhere in `src/`. The groomed spec frames the fix as "add validation + investigate scoping mismatch" instead of "stop deleting tasks."
 - **Spike addendum — 2026-04-11**
 
@@ -102,9 +102,9 @@ When `execute_task` is called with a task that has a validation error knowable s
   - **Remediation in this feature:** `list_tasks` returns a sibling `note` field in its response envelope when `effectiveProjectId` is set and zero rows are returned, naming the active scope and suggesting `projectId: null` or `get_task <id>` as alternatives. No behavior change, only messaging.
 
   **Root cause 2 (probable secondary — infrastructure-level):** `STAGENT_DATA_DIR` per-process isolation.
-  - `src/lib/utils/stagent-paths.ts:4-6`: `getStagentDataDir()` reads `process.env.STAGENT_DATA_DIR || ~/.stagent`.
-  - `src/lib/db/index.ts:9-13`: the DB is opened from `join(dataDir, "stagent.db")` **once at module load**. The var is baked in per-process.
-  - Per `MEMORY.md → shared-stagent-data-dir.md`, the user runs domain clones (`stagent-wealth`, `stagent-growth`, `stagent-venture`) which set this var to different paths. A task created in one process is physically in a different SQLite file than a task queried from another process. This is architecturally intentional — the three domain clones isolate state so wealth/growth/venture do not leak into each other.
+  - `src/lib/utils/ainative-paths.ts:4-6`: `getAinativeDataDir()` reads `process.env.STAGENT_DATA_DIR || ~/.ainative`.
+  - `src/lib/db/index.ts:9-13`: the DB is opened from `join(dataDir, "ainative.db")` **once at module load**. The var is baked in per-process.
+  - Per `MEMORY.md → shared-ainative-data-dir.md`, the user runs domain clones (`ainative-wealth`, `ainative-growth`, `ainative-venture`) which set this var to different paths. A task created in one process is physically in a different SQLite file than a task queried from another process. This is architecturally intentional — the three domain clones isolate state so wealth/growth/venture do not leak into each other.
   - **Remediation in this feature: none.** Per the Excluded list, domain-clone isolation changes are out of scope. A follow-up feature (outside this batch) could add an operator-facing startup log echoing the active data dir, or a `get_stagent_info` health-check tool. Not in this commit.
 
   **Ruled out: transaction rollback.** Not a transaction; single insert. If the insert fails, the error surfaces immediately at `create_task` return time.

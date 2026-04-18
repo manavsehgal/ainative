@@ -12,7 +12,7 @@ dependencies: [marketplace-access-gate, app-runtime-bundle-foundation]
 ## Description
 
 The existing marketplace supports blueprints only. This feature extends it to
-full apps — the primary unit of distribution in Stagent's app ecosystem. An
+full apps — the primary unit of distribution in ainative's app ecosystem. An
 "Apps" tab is added alongside the existing "Blueprints" tab, with a card-grid
 listing page, a rich detail page per app, and an install confirmation dialog
 that clearly communicates what the app will create on the user's instance.
@@ -28,7 +28,7 @@ button that opens the confirmation dialog.
 
 ## User Story
 
-As a Stagent user, I want to browse available apps in a familiar card-grid
+As a ainative user, I want to browse available apps in a familiar card-grid
 marketplace, drill into a detail page to understand what an app installs,
 and confirm the install with a clear summary of permissions and artifacts —
 so I can confidently add new capabilities to my instance without surprises.

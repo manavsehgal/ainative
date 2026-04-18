@@ -14,7 +14,7 @@ Need a database that's zero-config, local-first, and fast for a developer tool. 
 
 ## Decision
 
-SQLite via better-sqlite3 (synchronous driver) with WAL (Write-Ahead Logging) mode enabled. Foreign keys enforced via PRAGMA. Database file stored at ~/.stagent/stagent.db. Drizzle ORM for typed queries.
+SQLite via better-sqlite3 (synchronous driver) with WAL (Write-Ahead Logging) mode enabled. Foreign keys enforced via PRAGMA. Database file stored at ~/.ainative/ainative.db. Drizzle ORM for typed queries.
 
 ## Consequences
 

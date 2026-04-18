@@ -16,7 +16,7 @@ lastGeneratedBy: "2026-04-05T00:00:00.000Z"
 
 A factory is not a single machine. It's a system of specialized stations connected by material flow. Each station does one thing well, and the conveyor belt between them ensures that work moves forward without human intervention at every step.
 
-Chamath Palihapitiya's Software Factory thesis identifies five stations. We use his framework as a lens throughout this book — though Stagent's implementation diverges in several ways, as we'll see. Let's walk through each station and how it maps to the architecture we'll build.
+Chamath Palihapitiya's Software Factory thesis identifies five stations. We use his framework as a lens throughout this book — though ainative's implementation diverges in several ways, as we'll see. Let's walk through each station and how it maps to the architecture we'll build.
 
 **The Refinery** is where raw intent becomes structured requirements. A founder says "we need better onboarding." A product manager writes "users are dropping off at step 3." A customer files a bug report. All of this is raw material — unstructured, ambiguous, incomplete. The Refinery's job is to process it: extract the actual requirement, identify the constraints, resolve ambiguities, and produce a structured specification that downstream stations can act on. In the old world, this was a product manager's full-time job. In the AI-native org, an agent does the first pass — analyzing customer feedback, cross-referencing with existing specs, drafting user stories — and the product manager reviews and refines.
 
@@ -28,7 +28,7 @@ Chamath Palihapitiya's Software Factory thesis identifies five stations. We use 
 
 **The Knowledge Graph** is the factory's memory. It stores everything: the codebase, the requirements, the design decisions, the test results, the customer feedback, the conversation history. Every station reads from it and writes to it. When the Refinery processes a new requirement, it checks the Knowledge Graph to see if something similar was built before. When the Foundry designs a component, it checks the Knowledge Graph for existing patterns. When the Validator finds a bug, it checks the Knowledge Graph for related issues.
 
-These five stations are not theoretical. They map directly to the architecture of Stagent — and to the emerging practice at every company profiled in this book. The labels differ, the implementation details vary, but the structure is consistent: intake, design, plan, execute, validate, remember.
+These five stations are not theoretical. They map directly to the architecture of ainative — and to the emerging practice at every company profiled in this book. The labels differ, the implementation details vary, but the structure is consistent: intake, design, plan, execute, validate, remember.
 
 ## The Protocol Layer
 
@@ -51,11 +51,11 @@ Together, MCP and A2A form the conveyor belt system of the AI-native factory. MC
 
 This is infrastructure that didn't exist two years ago. Its emergence is what makes the organizational transformation described in Chapter 1 practically achievable, not just theoretically appealing.
 
-## Stagent: The Factory Floor
+## ainative: The Factory Floor
 
 Let's make this concrete.
 
-Stagent is a working implementation of the AI-native factory. It's not a toy or a demo — it's an operational system with ten database tables, twenty-seven API domains, and a full execution engine for AI agents. We'll use it throughout this book as a reference implementation: when we describe a pattern, we'll show you the code. When we make a claim about how AI-native organizations work, we'll demonstrate it in a running system.
+ainative is a working implementation of the AI-native factory. It's not a toy or a demo — it's an operational system with ten database tables, twenty-seven API domains, and a full execution engine for AI agents. We'll use it throughout this book as a reference implementation: when we describe a pattern, we'll show you the code. When we make a claim about how AI-native organizations work, we'll demonstrate it in a running system.
 
 The architecture rests on five pillars:
 
@@ -63,7 +63,7 @@ The architecture rests on five pillars:
 
 **Workflows** define repeatable sequences of steps. A workflow might say: "First, analyze the codebase. Then, identify performance bottlenecks. Then, propose fixes. Then, implement the highest-priority fix. Then, run the test suite." Each step can be assigned to a different agent profile with different capabilities. Workflows are the factory's standard operating procedures — codified processes that ensure consistent quality regardless of which agent executes them.
 
-**Schedules** make workflows autonomous. A schedule says: "Run this workflow every morning at 9 AM" or "Run this workflow every time a new pull request is opened." Schedules transform Stagent from a tool you use into a system that works for you — continuously, without prompting, around the clock.
+**Schedules** make workflows autonomous. A schedule says: "Run this workflow every morning at 9 AM" or "Run this workflow every time a new pull request is opened." Schedules transform ainative from a tool you use into a system that works for you — continuously, without prompting, around the clock.
 
 **Profiles** define agent behavior. A code-reviewer profile approaches tasks differently than a researcher profile or a document-writer profile. Profiles capture the "skill" part of the factory metaphor — they encode expertise into reusable configurations that any agent can adopt.
 
@@ -74,7 +74,7 @@ These five pillars correspond to the five factory stations, though the mapping i
 Here's what it looks like in practice:
 
 ```typescript
-// Building with Stagent: Your first automated project
+// Building with ainative: Your first automated project
 const project = await fetch("/api/projects", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
@@ -114,7 +114,7 @@ This is the factory floor in miniature. The project is the work order. The profi
 
 ## The Landscape
 
-Stagent is one implementation of a pattern that's emerging across the industry. Before we dive deeper into its architecture, let's survey the landscape — because the best evidence that a thesis is correct is the number of independent teams arriving at the same conclusion.
+ainative is one implementation of a pattern that's emerging across the industry. Before we dive deeper into its architecture, let's survey the landscape — because the best evidence that a thesis is correct is the number of independent teams arriving at the same conclusion.
 
 **Stripe** built an internal system called Minions that generates over 1,300 pull requests per week. Not toy PRs — production code that ships to the platform processing billions of dollars in payments. The agents handle migrations, dependency updates, test improvements, and feature implementation. Human engineers review and approve, but the agents do the bulk of the production work.
 
@@ -159,7 +159,7 @@ This book is organized as a journey from thesis to practice.
 
 **Part 1: The Thesis** — the two chapters you're reading now — establishes why AI-native organizations are emerging and what their architecture looks like. We've told the story of organizational design from Roman legions to AI agents. We've mapped the factory metaphor to concrete architecture. We've surveyed the landscape of companies already operating this way. If you're a leader trying to understand why this matters, Part 1 gives you the strategic frame.
 
-**Part 2: The Factory Floor** — Chapters 3 through 5 — takes you inside Stagent. We'll build projects, execute tasks, process documents, and orchestrate workflows. These are hands-on chapters with running code. If you're a builder who wants to understand the implementation, Part 2 is where you'll spend the most time. You'll see how project management becomes programmable, how task execution works with fire-and-forget patterns and real-time log streaming, and how document processing turns unstructured files into agent-readable context.
+**Part 2: The Factory Floor** — Chapters 3 through 5 — takes you inside ainative. We'll build projects, execute tasks, process documents, and orchestrate workflows. These are hands-on chapters with running code. If you're a builder who wants to understand the implementation, Part 2 is where you'll spend the most time. You'll see how project management becomes programmable, how task execution works with fire-and-forget patterns and real-time log streaming, and how document processing turns unstructured files into agent-readable context.
 
 **Part 3: The Intelligence Layer** — Chapters 6 through 8 — goes deeper into what makes agents genuinely intelligent rather than merely automated. Workflow orchestration composes multi-step processes from simple building blocks. Scheduled intelligence makes the factory run without human prompting. Multi-agent coordination lets specialized agents collaborate on complex tasks. This is where automation becomes autonomy — where the factory stops needing a human at the control panel for every production run.
 
@@ -167,7 +167,7 @@ This book is organized as a journey from thesis to practice.
 
 The factory metaphor is the through-line. In Part 2, we build individual stations. In Part 3, we connect them with conveyor belts and automation. In Part 4, we step back and look at the whole factory — the humans who run it, the agents who work in it, and the products that come out the other end.
 
-A word about the code examples. Every code sample in this book runs against a real Stagent instance. We've chosen TypeScript and REST APIs because they're accessible to the widest audience, but the patterns are language-agnostic. If you're building in Python, Go, or Rust, the architecture translates directly. The five pillars — projects, workflows, schedules, profiles, permissions — are organizational concepts, not implementation details.
+A word about the code examples. Every code sample in this book runs against a real ainative instance. We've chosen TypeScript and REST APIs because they're accessible to the widest audience, but the patterns are language-agnostic. If you're building in Python, Go, or Rust, the architecture translates directly. The five pillars — projects, workflows, schedules, profiles, permissions — are organizational concepts, not implementation details.
 
 We've also included case studies from real companies throughout every chapter. These aren't hypothetical scenarios — they're drawn from published interviews, conference talks, and public documentation from companies that are building AI-native organizations right now. The thesis of this book is not that AI-native organizations *could* exist. It's that they already do, and the patterns they've discovered are consistent enough to codify.
 

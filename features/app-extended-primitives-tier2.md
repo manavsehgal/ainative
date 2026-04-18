@@ -193,7 +193,7 @@ handlers:
 - **`bootstrapChatTools(appId, chatTools, projectId)`** — For each chat tool
   definition, register it using the `defineTool()` pattern from
   `src/lib/chat/tool-registry.ts`. Tools marked `projectScoped: true` are
-  only returned by `collectAllTools()` (in `src/lib/chat/stagent-tools.ts`)
+  only returned by `collectAllTools()` (in `src/lib/chat/ainative-tools.ts`)
   when the active project matches the app's project. Permission-gated tools
   require explicit user approval on each call.
 
@@ -332,7 +332,7 @@ export interface AppResourceMap {
   - `src/lib/agents/memory/retrieval.ts` — memory retrieval with confidence
   - `src/lib/agents/memory/decay.ts` — confidence decay over time
   - `src/lib/chat/tool-registry.ts` — `defineTool()` pattern
-  - `src/lib/chat/stagent-tools.ts` — `collectAllTools()` aggregation
+  - `src/lib/chat/ainative-tools.ts` — `collectAllTools()` aggregation
   - `src/lib/workflows/engine.ts` — DAG workflow execution
   - `src/lib/workflows/types.ts` — workflow type definitions
 - Files to create:

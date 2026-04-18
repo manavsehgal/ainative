@@ -3,7 +3,7 @@ title: OpenAI Codex App Server Runtime
 status: completed
 priority: P1
 milestone: post-mvp
-source: ideas/mvp-vision.md, ideas/tech-stack-stagent.md
+source: ideas/mvp-vision.md, ideas/tech-stack-ainative.md
 dependencies: [provider-runtime-abstraction]
 ---
 
@@ -11,24 +11,24 @@ dependencies: [provider-runtime-abstraction]
 
 ## Description
 
-Add OpenAI as Stagent's second governed execution runtime by integrating with Codex App Server. The intent is to support the same operational surface Stagent already has for Claude: project-scoped execution, inbox approvals, monitoring, workflow child tasks, and schedule-driven runs. This is a runtime integration feature, not a generic routing experiment.
+Add OpenAI as ainative's second governed execution runtime by integrating with Codex App Server. The intent is to support the same operational surface ainative already has for Claude: project-scoped execution, inbox approvals, monitoring, workflow child tasks, and schedule-driven runs. This is a runtime integration feature, not a generic routing experiment.
 
-Codex App Server is the preferred OpenAI path because it exposes lifecycle and approval semantics that fit Stagent's governance model better than a thin SDK-only integration. Stagent should treat the app server as the OpenAI execution backend and map its thread/run lifecycle into the app's existing tasks, notifications, and logs.
+Codex App Server is the preferred OpenAI path because it exposes lifecycle and approval semantics that fit ainative's governance model better than a thin SDK-only integration. ainative should treat the app server as the OpenAI execution backend and map its thread/run lifecycle into the app's existing tasks, notifications, and logs.
 
 ## User Story
 
-As a team using Stagent, I want to run tasks through OpenAI Codex in the same governed workspace I already use for Claude so that provider choice does not force me onto a separate tool or a separate supervision model.
+As a team using ainative, I want to run tasks through OpenAI Codex in the same governed workspace I already use for Claude so that provider choice does not force me onto a separate tool or a separate supervision model.
 
 ## Technical Approach
 
 - Implement an `openai-codex-app-server` runtime adapter behind the provider runtime abstraction.
-- Map Stagent task execution to Codex thread/run semantics:
+- Map ainative task execution to Codex thread/run semantics:
   - start task -> create thread/run
   - resume task -> continue or resume the thread
   - cancel task -> terminate the active run
-- Normalize Codex App Server events into Stagent's runtime event model, then persist them into `agent_logs` and task state using the same tables used by Claude-backed tasks.
+- Normalize Codex App Server events into ainative's runtime event model, then persist them into `agent_logs` and task state using the same tables used by Claude-backed tasks.
 - Route approval requests and user questions from Codex runs into the existing `notifications` + Inbox response flow. The runtime adapter should translate inbox responses back into the app server's continuation mechanism.
-- Preserve Stagent execution context:
+- Preserve ainative execution context:
   - project working directory
   - task description + document context
   - selected profile/provider instructions when compatible
@@ -40,7 +40,7 @@ As a team using Stagent, I want to run tasks through OpenAI Codex in the same go
 ## Acceptance Criteria
 
 - [x] `openai-codex-app-server` is a registered runtime option that can be assigned to tasks
-- [x] A Codex-backed task can execute from Stagent and update task status, result, and `agent_logs` through the shared runtime pipeline
+- [x] A Codex-backed task can execute from ainative and update task status, result, and `agent_logs` through the shared runtime pipeline
 - [x] Approval requests or agent questions from Codex runs appear in the Inbox and user responses continue the run
 - [x] Interrupted or failed Codex runs can be resumed when the runtime reports resume support
 - [x] Workflow child tasks and scheduled firings can target the Codex runtime through the shared runtime layer
@@ -76,7 +76,7 @@ As a team using Stagent, I want to run tasks through OpenAI Codex in the same go
 - Bare `@openai/codex-sdk` integration as the primary path
 - Automatic provider fallback or price-aware routing
 - Feature parity guarantees for every existing Claude profile
-- Full hosted container management inside Stagent
+- Full hosted container management inside ainative
 
 ## References
 

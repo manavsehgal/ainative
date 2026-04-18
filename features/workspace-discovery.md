@@ -11,7 +11,7 @@ dependencies: [environment-scanner, environment-cache]
 
 ## Description
 
-A project discovery engine that walks a parent directory to find child folders containing `.claude/` or `.codex/` configuration markers. This powers the "Import from workspace" flow where users can onboard multiple projects into Stagent at once by pointing to their development directory (e.g., `~/Developer/`).
+A project discovery engine that walks a parent directory to find child folders containing `.claude/` or `.codex/` configuration markers. This powers the "Import from workspace" flow where users can onboard multiple projects into ainative at once by pointing to their development directory (e.g., `~/Developer/`).
 
 The discovery engine is lightweight by design — it uses stat checks only, never reads file content. It reports artifact hints (skill count, MCP server count, instruction presence) so the UI can show richness indicators before the user commits to a full environment scan.
 
@@ -19,7 +19,7 @@ Paired with the import pipeline (`src/lib/import/`), discovered projects can be 
 
 ## User Story
 
-As a developer with multiple Claude/Codex-configured projects, I want to discover all my projects automatically so that I can onboard them into Stagent without manually adding each one.
+As a developer with multiple Claude/Codex-configured projects, I want to discover all my projects automatically so that I can onboard them into ainative without manually adding each one.
 
 ## Technical Approach
 

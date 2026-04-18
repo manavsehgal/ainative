@@ -3,7 +3,7 @@ title: Multi-Agent Smart Routing
 status: completed
 priority: P3
 milestone: post-mvp
-source: ideas/mvp-vision.md, ideas/stagent-vision.md
+source: ideas/mvp-vision.md, ideas/ainative-vision.md
 dependencies: [agent-integration]
 ---
 
@@ -19,7 +19,7 @@ This replaces the earlier Codex MCP / multi-provider routing design. Multi-provi
 
 ## User Story
 
-As a user, I want Stagent to automatically select the right agent profile for each task — so a code review task gets a thorough, security-focused agent, a research task gets a web-searching explorer, and a document task gets a structured writer — without me configuring each one manually.
+As a user, I want ainative to automatically select the right agent profile for each task — so a code review task gets a thorough, security-focused agent, a research task gets a web-searching explorer, and a document task gets a structured writer — without me configuring each one manually.
 
 ## Technical Approach
 
@@ -92,6 +92,6 @@ Create `src/lib/agents/profiles/` directory:
 ## References
 
 - Source: `ideas/mvp-vision.md` — Future Extensibility section
-- Source: `ideas/stagent-vision.md` — smart routing concept
+- Source: `ideas/ainative-vision.md` — smart routing concept
 - Related features: `agent-integration` (provides execution infrastructure), `workflow-engine` (step-level profile support)
 - Architecture: Profile injection at `claude-agent.ts` lines 155-175; router expansion at `router.ts`

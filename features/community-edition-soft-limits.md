@@ -9,7 +9,7 @@ dependencies:
 
 # Community Edition Soft Limits
 
-> **Superseded by `community-edition-simplification` (2026-04-13).** This feature shipped but was later fully reverted when Stagent pivoted to a 100% free Community Edition with no tiers, billing, or cloud dependency. Kept as historical record.
+> **Superseded by `community-edition-simplification` (2026-04-13).** This feature shipped but was later fully reverted when ainative pivoted to a 100% free Community Edition with no tiers, billing, or cloud dependency. Kept as historical record.
 
 ## Description
 
@@ -26,7 +26,7 @@ Paid tiers get progressively higher limits: Operator (500 memories, 100 versions
 
 ## User Story
 
-As a Community tier user, I want to use Stagent for free with reasonable limits so that I can evaluate the product fully before deciding to upgrade — and when I hit a limit, I want a clear explanation of what happened and how to unlock more capacity.
+As a Community tier user, I want to use ainative for free with reasonable limits so that I can evaluate the product fully before deciding to upgrade — and when I hit a limit, I want a clear explanation of what happened and how to unlock more capacity.
 
 ## Technical Approach
 

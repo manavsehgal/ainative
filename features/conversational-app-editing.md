@@ -400,5 +400,5 @@ feature — the actual submission flow is part of `app-forking-remix`.
   - `src/lib/apps/types.ts` — add `modifiedVersion`, `changeLog` fields
   - `src/lib/db/schema.ts` — add `modifiedVersion`, `lastModifiedAt`,
     `lastModifiedReason` columns to `app_instances`
-  - `src/lib/chat/stagent-tools.ts` — register new tool
+  - `src/lib/chat/ainative-tools.ts` — register new tool
   - `src/lib/chat/tool-catalog.ts` — add to "Apps" group

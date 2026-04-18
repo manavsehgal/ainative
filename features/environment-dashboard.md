@@ -11,13 +11,13 @@ dependencies: [environment-cache]
 
 ## Description
 
-The `/environment` route — a live dashboard that instantly shows all discovered Claude Code and Codex artifacts as interactive cards when you point Stagent at a project folder. This is the "aha moment" of the onboarding experience: the user sees their entire CLI environment laid out visually for the first time.
+The `/environment` route — a live dashboard that instantly shows all discovered Claude Code and Codex artifacts as interactive cards when you point ainative at a project folder. This is the "aha moment" of the onboarding experience: the user sees their entire CLI environment laid out visually for the first time.
 
 The dashboard adapts to the detected persona (Claude Code only, Codex only, or both), provides category filtering (skills, hooks, MCP servers, permissions, etc.), and opens detail sheets for any artifact. It follows the Calm Ops design system with the established PageShell, card grid, and Sheet overlay patterns.
 
 ## User Story
 
-As a Stagent user who has been using Claude Code and/or Codex from the CLI, I want to see all my CLI configurations — skills, plugins, hooks, MCP servers, permissions, instructions, and memory — displayed as an interactive visual dashboard, so I can understand and manage my environment holistically rather than navigating scattered config files.
+As a ainative user who has been using Claude Code and/or Codex from the CLI, I want to see all my CLI configurations — skills, plugins, hooks, MCP servers, permissions, instructions, and memory — displayed as an interactive visual dashboard, so I can understand and manage my environment holistically rather than navigating scattered config files.
 
 ## Technical Approach
 

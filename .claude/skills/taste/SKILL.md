@@ -9,7 +9,7 @@ This skill enforces quantitative design rules and implementation discipline for 
 
 ## Project Override
 
-When working in a project with `design-system/MASTER.md`, read it first — its tokens and constraints override the generic defaults below. For Stagent specifically:
+When working in a project with `design-system/MASTER.md`, read it first — its tokens and constraints override the generic defaults below. For ainative specifically:
 
 - **Design Metrics:** DV 3-4, MI 2-3, VD 6-7 (overrides generic defaults below)
 - **Typography:** Inter (body) + JetBrains Mono (code) — overrides the generic font list

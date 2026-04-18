@@ -11,7 +11,7 @@ dependencies: [database-schema, app-shell, project-management]
 
 ## Description
 
-The primary interface of Stagent. A kanban board where tasks move through columns representing agent execution states: Planned → Queued → Running → Completed / Failed. Each task card shows the assigned agent, progress indicators, and quick actions (cancel, retry).
+The primary interface of ainative. A kanban board where tasks move through columns representing agent execution states: Planned → Queued → Running → Completed / Failed. Each task card shows the assigned agent, progress indicators, and quick actions (cancel, retry).
 
 This maps directly to the universal workflow primitive: Work Unit → State Machine → Transitions → Ownership → Observability. The board is the user's main way of seeing what their AI agents are doing.
 

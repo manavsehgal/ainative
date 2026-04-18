@@ -1,6 +1,6 @@
 ---
 title: "Feature: Task Execution Turn Count Observability"
-audience: stagent-base
+audience: ainative-base
 status: proposed
 source_branch: wealth-mgr
 handoff_reason: Turn count metrics are only visible on schedule aggregate stats, not on individual tasks. The metric's unit of measurement is also undocumented, making it impossible to diagnose performance issues or validate prompt optimizations.

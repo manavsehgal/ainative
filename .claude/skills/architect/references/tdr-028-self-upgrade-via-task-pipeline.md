@@ -10,9 +10,9 @@ category: agent-system
 
 ## Context
 
-Stagent is a self-modifying dev environment: every git-clone user customizes their checkout via stagent chat itself. When upstream stagent has new commits, users need a safe, guided way to `git fetch / git merge main` into their instance branch and resolve any conflicts interactively. The question during feature design was: *should git operations (fetch, merge, conflict resolution, abort) run as chat tools or as a task?*
+ainative is a self-modifying dev environment: every git-clone user customizes their checkout via ainative chat itself. When upstream ainative has new commits, users need a safe, guided way to `git fetch / git merge main` into their instance branch and resolve any conflicts interactively. The question during feature design was: *should git operations (fetch, merge, conflict resolution, abort) run as chat tools or as a task?*
 
-Chat tools are deliberately DB-only per TDR-024 — `settings-tools.ts` and its siblings only read and write stagent data through a typed tool registry with per-key allowlists. Adding shell or git execution to the chat surface would cross a trust boundary the chat engine is explicitly designed to preserve: a compromised or buggy chat prompt could then run arbitrary shell commands against the user's working tree.
+Chat tools are deliberately DB-only per TDR-024 — `settings-tools.ts` and its siblings only read and write ainative data through a typed tool registry with per-key allowlists. Adding shell or git execution to the chat surface would cross a trust boundary the chat engine is explicitly designed to preserve: a compromised or buggy chat prompt could then run arbitrary shell commands against the user's working tree.
 
 Meanwhile, the task execution pipeline (claude-agent.ts, execution-manager.ts, canUseTool approval flow) already has:
 - `Bash` tool support with per-command allowlists on agent profiles

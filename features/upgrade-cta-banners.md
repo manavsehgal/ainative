@@ -11,7 +11,7 @@ dependencies:
 
 # Upgrade CTA Banners
 
-> **Superseded by `community-edition-simplification` (2026-04-13).** This feature shipped but was later fully reverted when Stagent pivoted to a 100% free Community Edition with no tiers, billing, or cloud dependency. Kept as historical record.
+> **Superseded by `community-edition-simplification` (2026-04-13).** This feature shipped but was later fully reverted when ainative pivoted to a 100% free Community Edition with no tiers, billing, or cloud dependency. Kept as historical record.
 
 ## Description
 
@@ -206,14 +206,14 @@ const SNOOZE_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days
 export function useSnoozedBanners() {
   const [snoozed, setSnoozed] = useState<Record<string, number>>(() => {
     if (typeof window === 'undefined') return {};
-    const stored = localStorage.getItem('stagent:snoozed-banners');
+    const stored = localStorage.getItem('ainative:snoozed-banners');
     return stored ? JSON.parse(stored) : {};
   });
 
   function snooze(limitType: string) {
     const updated = { ...snoozed, [limitType]: Date.now() + SNOOZE_DURATION };
     setSnoozed(updated);
-    localStorage.setItem('stagent:snoozed-banners', JSON.stringify(updated));
+    localStorage.setItem('ainative:snoozed-banners', JSON.stringify(updated));
   }
 
   function isSnoozed(limitType: string): boolean {
@@ -223,7 +223,7 @@ export function useSnoozedBanners() {
       // Expired snooze — clean up
       const { [limitType]: _, ...rest } = snoozed;
       setSnoozed(rest);
-      localStorage.setItem('stagent:snoozed-banners', JSON.stringify(rest));
+      localStorage.setItem('ainative:snoozed-banners', JSON.stringify(rest));
       return false;
     }
     return true;

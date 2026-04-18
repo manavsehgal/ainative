@@ -12,11 +12,11 @@ dependencies: [agent-profile-catalog, skill-portfolio, environment-scanner]
 
 ## Description
 
-Repo-level skill import that lets users point Stagent at an entire GitHub repository (such as `https://github.com/garrytan/gstack`) and batch-import all discoverable skills as Stagent agent profiles. This extends the existing single-file import at `POST /api/profiles/import` into a multi-step wizard that handles repo scanning, format adaptation (for repos that use SKILL.md-only without `profile.yaml`), deduplication against all existing profiles, source attribution, and ongoing update checking.
+Repo-level skill import that lets users point ainative at an entire GitHub repository (such as `https://github.com/garrytan/gstack`) and batch-import all discoverable skills as ainative agent profiles. This extends the existing single-file import at `POST /api/profiles/import` into a multi-step wizard that handles repo scanning, format adaptation (for repos that use SKILL.md-only without `profile.yaml`), deduplication against all existing profiles, source attribution, and ongoing update checking.
 
 Three core layers:
 1. **Repo scanner** — discovers all importable skills in a GitHub repo regardless of directory convention
-2. **Format adapter** — converts non-Stagent skill formats (like gstack's SKILL.md-with-frontmatter) into valid `profile.yaml` + `SKILL.md` pairs
+2. **Format adapter** — converts non-ainative skill formats (like gstack's SKILL.md-with-frontmatter) into valid `profile.yaml` + `SKILL.md` pairs
 3. **Import wizard UI** — four-step guided flow for selecting, previewing, deduplicating, and confirming batch imports
 
 ### Adjacency with Discovered Skills
@@ -29,9 +29,9 @@ Imported profiles land in `~/.claude/skills/{id}/` — the same directory the en
 
 ## User Story
 
-As a power user who has found a GitHub repository full of useful skills (like gstack with 28+ skills), I want to paste the repo URL into Stagent and batch-import selected skills as agent profiles, so I can immediately use community-built skills without manually converting each one.
+As a power user who has found a GitHub repository full of useful skills (like gstack with 28+ skills), I want to paste the repo URL into ainative and batch-import selected skills as agent profiles, so I can immediately use community-built skills without manually converting each one.
 
-As a user who has already accumulated profiles from multiple sources, I want Stagent to detect duplicates and near-matches during import, so I do not end up with conflicting or redundant profiles.
+As a user who has already accumulated profiles from multiple sources, I want ainative to detect duplicates and near-matches during import, so I do not end up with conflicting or redundant profiles.
 
 As a user who imported skills from an actively maintained repo, I want to check for updates and selectively pull changes, so my imported profiles stay current without losing local customizations.
 
@@ -51,7 +51,7 @@ const importMetaSchema = z.object({
   commitSha: z.string(),              // SHA at import time
   contentHash: z.string(),            // SHA-256 of SKILL.md at import time
   importedAt: z.string().datetime(),  // ISO timestamp
-  sourceFormat: z.enum(["stagent", "skillmd-only", "unknown"]),
+  sourceFormat: z.enum(["ainative", "skillmd-only", "unknown"]),
 }).optional();
 ```
 
@@ -95,7 +95,7 @@ interface RepoScanResult {
 interface DiscoveredSkill {
   name: string;
   path: string;                    // "skills/qa"
-  format: "stagent" | "skillmd-only" | "unknown";
+  format: "ainative" | "skillmd-only" | "unknown";
   hasProfileYaml: boolean;
   hasSkillMd: boolean;
   frontmatter: Record<string, string>;
@@ -107,7 +107,7 @@ interface DiscoveredSkill {
 **Discovery strategy:**
 1. Single call to GitHub Trees API (`GET /repos/{owner}/{repo}/git/trees/{branch}?recursive=1`) to get the full file tree
 2. Find all directories containing `SKILL.md` files
-3. For each: check if `profile.yaml` exists alongside → classify as `"stagent"` or `"skillmd-only"`
+3. For each: check if `profile.yaml` exists alongside → classify as `"ainative"` or `"skillmd-only"`
 4. Search paths: `skills/*/SKILL.md`, `.claude/skills/*/SKILL.md`, root-level `*/SKILL.md`, any nested pattern — greedy discovery
 
 **`src/lib/import/github-api.ts`** — low-level helpers:
@@ -120,7 +120,7 @@ Rate limiting: single Trees API call for discovery, batch-fetch only selected sk
 
 ### 3. Format Adapter
 
-**`src/lib/import/format-adapter.ts`** — converts non-Stagent formats into valid `ProfileConfig` + `SKILL.md` pairs.
+**`src/lib/import/format-adapter.ts`** — converts non-ainative formats into valid `ProfileConfig` + `SKILL.md` pairs.
 
 **gstack-style mapping rules:**
 | SKILL.md frontmatter | → profile.yaml field |
@@ -183,7 +183,7 @@ New directory: `src/app/api/profiles/import-repo/`
 
 **Step 2 — Select Skills**
 - Scrollable checkbox list of discovered skills
-- Each row: skill name, format badge ("Stagent" / "SKILL.md only"), description preview
+- Each row: skill name, format badge ("ainative" / "SKILL.md only"), description preview
 - "Select All" / "Deselect All"
 - Grouped by directory path
 
@@ -235,8 +235,8 @@ Imported profiles land in `~/.claude/skills/` so the environment scanner picks t
 
 ## Acceptance Criteria
 
-- [ ] User can paste a GitHub repo URL and Stagent scans it, discovering all SKILL.md-bearing directories
-- [ ] Repos with `profile.yaml` (Stagent-native) are imported directly
+- [ ] User can paste a GitHub repo URL and ainative scans it, discovering all SKILL.md-bearing directories
+- [ ] Repos with `profile.yaml` (ainative-native) are imported directly
 - [ ] Repos without `profile.yaml` (like gstack) have `profile.yaml` auto-generated from SKILL.md frontmatter
 - [ ] Import wizard shows four steps: URL entry → skill selection → preview/dedup → confirm
 - [ ] Dedup engine detects exact matches (same ID or name) and near-matches (content similarity > 60%)
@@ -256,7 +256,7 @@ Imported profiles land in `~/.claude/skills/` so the environment scanner picks t
 **Included:**
 - GitHub public repo scanning via API (no git clone)
 - gstack-format SKILL.md adaptation (frontmatter mapping)
-- Stagent-native `profile.yaml` direct import
+- ainative-native `profile.yaml` direct import
 - Four-step import wizard UI
 - Dedup against all profile sources (built-in, custom, discovered, imported)
 - Source attribution and `importMeta` tracking

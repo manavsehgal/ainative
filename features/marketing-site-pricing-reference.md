@@ -1,18 +1,18 @@
 # Marketing Site Pricing Page — Implementation Reference
 
-This file documents what needs to be implemented in the external `stagent.github.io` repository.
-The main Stagent codebase provides the constants; this page consumes them.
+This file documents what needs to be implemented in the external `ainative.github.io` repository.
+The main ainative codebase provides the constants; this page consumes them.
 
 ## Pricing Tiers
 
 | Tier | Monthly | Annual | Stripe Payment Link |
 |------|---------|--------|---------------------|
 | Community | Free | Free | N/A |
-| Solo | $19 | $190 ($15.83/mo) | `https://buy.stagent.io/SOLO_LINK` |
-| Operator | $49 | $490 ($40.83/mo) | `https://buy.stagent.io/OPERATOR_LINK` |
-| Scale | $99 | $990 ($82.50/mo) | `https://buy.stagent.io/SCALE_LINK` |
+| Solo | $19 | $190 ($15.83/mo) | `https://buy.ainative.io/SOLO_LINK` |
+| Operator | $49 | $490 ($40.83/mo) | `https://buy.ainative.io/OPERATOR_LINK` |
+| Scale | $99 | $990 ($82.50/mo) | `https://buy.ainative.io/SCALE_LINK` |
 
-## Files to Modify in stagent.github.io
+## Files to Modify in ainative.github.io
 
 1. **`src/components/sections/Pricing.astro`** — Full rewrite with 4-tier cards, monthly/annual toggle
 2. **`src/components/sections/Hero.astro`** — Reframe email form as "State of AI Agents report"
@@ -23,7 +23,7 @@ The main Stagent codebase provides the constants; this page consumes them.
 ## Design Notes
 
 - Operator tier highlighted with "Most Popular" badge
-- Community tier shows `npx stagent` command block
+- Community tier shows `npx ainative` command block
 - Annual toggle shows "Save ~20%" label
 - Marketplace creator pitch replaces Advisory Services section
 - FAQ accordion below marketplace pitch (6 items)

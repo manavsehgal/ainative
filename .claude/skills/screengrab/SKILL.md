@@ -635,7 +635,7 @@ Fill fields based on label context:
 | Personal | "Side Project Tracker" | "Refactor auth module" | Solo dev productivity |
 | Work | "Q2 Marketing Campaign" | "Review brand guidelines" | Team collaboration |
 | Power User | "ML Pipeline Orchestrator" | "Train model v3.2" | Complex automation |
-| Developer | "Stagent Plugin Dev" | "Add custom tool integration" | API/CLI/extension |
+| Developer | "ainative Plugin Dev" | "Add custom tool integration" | API/CLI/extension |
 
 Rotate through personas across different forms so screenshots show varied, realistic data.
 
@@ -711,7 +711,7 @@ After the AI Assist flow in Phase 5f½ completes (or if AI Assist was skipped), 
          assignedAgent: "claude"
        }
      };
-     sessionStorage.setItem("stagent:workflow-from-assist", JSON.stringify(state));
+     sessionStorage.setItem("ainative:workflow-from-assist", JSON.stringify(state));
      return "seeded";
    }
    ```

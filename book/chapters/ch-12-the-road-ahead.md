@@ -10,9 +10,9 @@ relatedDocs: ["workflows", "profiles", "schedules"]
 
 ## Patterns We Have Observed
 
-Throughout this book we have examined six case studies, each from a company building AI-native systems in production. Each revealed a pattern. Each pattern maps to something Stagent does today and something it will do tomorrow. The following table is the distillation of everything we have learned.
+Throughout this book we have examined six case studies, each from a company building AI-native systems in production. Each revealed a pattern. Each pattern maps to something ainative does today and something it will do tomorrow. The following table is the distillation of everything we have learned.
 
-| Pattern (Source) | Current in Stagent | Future Direction |
+| Pattern (Source) | Current in ainative | Future Direction |
 |---|---|---|
 | Devbox isolation (Stripe) | Working directory per project | Sandbox execution with snapshot/restore |
 | Background agents (Ramp) | Fire-and-forget tasks | Persistent sessions surviving browser close |
@@ -27,7 +27,7 @@ Throughout this book we have examined six case studies, each from a company buil
 | Digital twin (Viven.ai) | Dashboard analytics | Organization-wide simulation |
 | Self-evolving code (ICLR RSI) | Self-updating book | Agents improving own profiles |
 
-Every row follows the same shape: someone in the real world built something that works, Stagent has a foundation that maps to it, and the gap between foundation and full implementation is a matter of engineering, not invention. The patterns are proven. The question is execution.
+Every row follows the same shape: someone in the real world built something that works, ainative has a foundation that maps to it, and the gap between foundation and full implementation is a matter of engineering, not invention. The patterns are proven. The question is execution.
 
 > [!case-study]
 > **Stripe Minions** -- Over a thousand pull requests merged per week at Stripe are completely minion-produced. Human-reviewed, but containing no human-written code. Each minion runs in a sandboxed Devbox with the full development environment, from Slack message to merged PR with no interaction in between.
@@ -53,7 +53,7 @@ The most provocative idea in the case studies is not any specific pattern. It is
 
 Dorsey put it directly: "When the intelligence layer tries to compose a solution and can't because the capability doesn't exist, that failure signal is the future roadmap. The traditional roadmap, where product managers hypothesize about what to build next, is any company's ultimate limiting factor."
 
-We have experienced this firsthand with Stagent. The book pipeline described in Chapter 11 was not on a roadmap. It emerged because we needed to generate documentation and realized the existing skills -- capture, screengrab, doc-generator -- could compose into a pipeline that produced chapters. The workflow engine was not built for book generation. It was built for task orchestration. But when we pointed it at a different problem, it worked because the capabilities were composable.
+We have experienced this firsthand with ainative. The book pipeline described in Chapter 11 was not on a roadmap. It emerged because we needed to generate documentation and realized the existing skills -- capture, screengrab, doc-generator -- could compose into a pipeline that produced chapters. The workflow engine was not built for book generation. It was built for task orchestration. But when we pointed it at a different problem, it worked because the capabilities were composable.
 
 The features we did not plan but discovered we needed:
 
@@ -96,18 +96,18 @@ The reason the patterns matter is precisely because they are durable. The govern
 
 We have used a factory metaphor throughout this book, borrowed from Chamath Palihapitiya's 8090 and from the Industrial Revolution itself. The factory metaphor works because it captures a real structural insight: the shift from craftsman workshops (one person, one task, one room) to coordinated production systems (specialized stations, institutional memory, repeatable processes).
 
-But the factory is not Stagent-specific. The stations we have described -- the Refinery (requirements distillation), the Foundry (architectural blueprints), the Arena (competitive evaluation), the Assembly Line (repeatable workflows), the Knowledge Graph (institutional memory) -- are universal patterns that appear in every case study we examined.
+But the factory is not ainative-specific. The stations we have described -- the Refinery (requirements distillation), the Foundry (architectural blueprints), the Arena (competitive evaluation), the Assembly Line (repeatable workflows), the Knowledge Graph (institutional memory) -- are universal patterns that appear in every case study we examined.
 
 Stripe built their factory with Minions and Devbox. Ramp built theirs with Inspect and Modal sandboxes. Karpathy built his with autoresearch and a single GPU. Gas Town is an entire factory metaphor made literal, with a Mayor, Polecats, a Refinery, and Convoys. Block is building theirs with a company world model and an intelligence layer that composes atomic capabilities.
 
-Stagent is one implementation. The reader's is next.
+ainative is one implementation. The reader's is next.
 
 The raw materials are available to everyone. Foundation models are accessible through APIs. Agent frameworks are open source. MCP provides a standard protocol for tool integration. A2A is emerging for cross-system orchestration. The database patterns, workflow engines, and scheduling infrastructure we described in Chapters 4-5 are engineering, not research.
 
 What differs between implementations is the world model. Block's world model is the economic graph: millions of merchants and consumers, both sides of every transaction. Harvey's world model is legal practice: matters, documents, research, regulatory constraints. Your world model is whatever your organization uniquely understands -- the domain knowledge, customer patterns, operational insights, and institutional memory that make your business yours.
 
 ```typescript
-// Building with Stagent: The starting point for any factory
+// Building with ainative: The starting point for any factory
 // Three things you need: capabilities, a world model, and an intelligence layer
 
 // 1. Define your capabilities (agent profiles)
@@ -133,7 +133,7 @@ Two thousand years of organizational design optimized for one constraint: humans
 
 The hierarchy is not going away. Humans still make the decisions that matter: ethical calls, novel situations, high-stakes moments where the cost of being wrong is existential. Block calls these people "the edge" -- where the intelligence makes contact with reality. The world model gives every person at the edge the context they need to act without waiting for information to travel up and down a chain of command.
 
-We started this book with a premise: Stagent is a meta-tool that automates project management, task execution, document processing, and workflow orchestration. The ultimate proof of its capability is using it to automate itself. Eleven chapters later, we hope we have delivered on that premise. The book was assembled by the pipeline it describes. The code examples call the APIs they document. The case studies were captured by the same skills that process any other input.
+We started this book with a premise: ainative is a meta-tool that automates project management, task execution, document processing, and workflow orchestration. The ultimate proof of its capability is using it to automate itself. Eleven chapters later, we hope we have delivered on that premise. The book was assembled by the pipeline it describes. The code examples call the APIs they document. The case studies were captured by the same skills that process any other input.
 
 But this book is not the point. The point is what you build next.
 

@@ -11,7 +11,7 @@ dependencies: [app-shell, inbox-notifications, tool-permission-persistence]
 
 ## Description
 
-Stagent's current human-in-the-loop model is inbox-first: permission requests are persisted correctly, the unread badge increments, and the user can respond once they navigate into `/inbox`. In live workflow supervision, that is not sufficient. A user watching a task or workflow run can miss a newly blocked permission because the unread badge changes in peripheral chrome while the active route remains visually unchanged.
+ainative's current human-in-the-loop model is inbox-first: permission requests are persisted correctly, the unread badge increments, and the user can respond once they navigate into `/inbox`. In live workflow supervision, that is not sufficient. A user watching a task or workflow run can miss a newly blocked permission because the unread badge changes in peripheral chrome while the active route remains visually unchanged.
 
 This feature adds an in-app approval toast that appears above the current route, lets the user approve or deny directly in that surface, and preserves the Inbox as the durable audit log. The primary goal is not "more notifications." The goal is to keep the user in the current supervision context while still making permission requests impossible to miss.
 

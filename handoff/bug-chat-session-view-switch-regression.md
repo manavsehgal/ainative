@@ -1,6 +1,6 @@
 ---
 title: Chat session lost when switching sidebar views mid-stream
-audience: stagent-base
+audience: ainative-base
 status: proposed
 source_branch: main
 handoff_reason: Primary chat regression — reproducible across all runtimes — client-side architecture bug, not a runtime/model issue.
@@ -39,7 +39,7 @@ observable for "the last few releases — maybe longer than the last couple of d
 
 ## Why this belongs in base
 
-The affected code paths are all in base Stagent:
+The affected code paths are all in base ainative:
 
 - `src/components/chat/chat-shell.tsx` — component holding all chat state
 - `src/app/layout.tsx` — root layout where provider should be hoisted

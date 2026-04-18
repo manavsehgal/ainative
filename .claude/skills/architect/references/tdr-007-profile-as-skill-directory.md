@@ -14,14 +14,14 @@ Agent profiles need system prompts, tool policies, and behavioral configuration.
 
 ## Decision
 
-Each agent profile IS a Claude Code skill directory. Builtins ship at src/lib/agents/profiles/builtins/ and are distributed to ~/.claude/skills/ on first run. Profile configuration comes from profile.yaml (Stagent-specific: tools, MCP, policies, tests) and SKILL.md (system prompt source). The registry uses lazy loading with mtime-based cache invalidation to detect user edits.
+Each agent profile IS a Claude Code skill directory. Builtins ship at src/lib/agents/profiles/builtins/ and are distributed to ~/.claude/skills/ on first run. Profile configuration comes from profile.yaml (ainative-specific: tools, MCP, policies, tests) and SKILL.md (system prompt source). The registry uses lazy loading with mtime-based cache invalidation to detect user edits.
 
 ## Consequences
 
 - Users customize profiles by editing files in ~/.claude/skills/ — no UI needed for advanced customization.
-- Same profiles work in both Stagent UI and Claude Code CLI.
+- Same profiles work in both ainative UI and Claude Code CLI.
 - Builtins never overwrite user edits (idempotent distribution).
-- SKILL.md content doubles as both Claude Code skill and Stagent system prompt.
+- SKILL.md content doubles as both Claude Code skill and ainative system prompt.
 
 ## Alternatives Considered
 

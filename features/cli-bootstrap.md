@@ -3,7 +3,7 @@ title: Desktop Sidecar Bootstrap
 status: completed
 priority: P0
 milestone: mvp
-source: ideas/tech-stack-stagent.md, ideas/npx-web-app.md
+source: ideas/tech-stack-ainative.md, ideas/npx-web-app.md
 dependencies: []
 ---
 
@@ -13,19 +13,19 @@ dependencies: []
 
 The internal sidecar bootstrap that powers the desktop app. This is the runtime bridge between the Tauri shell and the localhost-hosted Next.js application — a thin Commander-based helper that bootstraps the full app with zero manual server setup.
 
-The sidecar handles the complete startup sequence: creating the `~/.stagent/` data directory, running database migrations, finding an available port, working around dependency hoisting, spawning the Next.js dev server with Turbopack, and handling graceful shutdown by forwarding signals to the child process.
+The sidecar handles the complete startup sequence: creating the `~/.ainative/` data directory, running database migrations, finding an available port, working around dependency hoisting, spawning the Next.js dev server with Turbopack, and handling graceful shutdown by forwarding signals to the child process.
 
 This feature is no longer a user-facing distribution path. It is still critical because every desktop launch depends on it being robust, idempotent, and fast.
 
 ## User Story
 
-As a desktop user, I want the Stagent app shell to boot its local sidecar automatically so that the native app opens into a working workspace without a separate server startup step.
+As a desktop user, I want the ainative app shell to boot its local sidecar automatically so that the native app opens into a working workspace without a separate server startup step.
 
 ## Technical Approach
 
 - **CLI framework**: Commander for argument parsing (`--port`, `--reset`, `--version`, `--help`)
 - **Build tool**: tsup to bundle `bin/cli.ts` → `dist/cli.js` as a single ESM file with shebang
-- **Data directory**: `~/.stagent/` with subdirectories for `logs/` and `sessions/`, created with `mkdirSync({ recursive: true })`
+- **Data directory**: `~/.ainative/` with subdirectories for `logs/` and `sessions/`, created with `mkdirSync({ recursive: true })`
 - **Database init**: Open SQLite with better-sqlite3, enable WAL mode and foreign keys, run Drizzle migrations, then close the connection (CLI only bootstraps — the app opens its own connection)
 - **Port allocation**: Try port 3000, increment on conflict using `net.createServer()` probe
 - **Dependency hoisting workaround**: Detect if `next` is missing from local `node_modules/`, walk up the tree to find hoisted root, copy `src/`, `public/`, and config files there
@@ -37,7 +37,7 @@ As a desktop user, I want the Stagent app shell to boot its local sidecar automa
 
 ```json
 {
-  "name": "stagent",
+  "name": "ainative",
   "type": "module",
   "engines": { "node": ">=20.0.0" },
   "scripts": {
@@ -79,5 +79,5 @@ As a desktop user, I want the Stagent app shell to boot its local sidecar automa
 
 ## References
 
-- Source: `ideas/tech-stack-stagent.md` — CLI Entry Point section
+- Source: `ideas/tech-stack-ainative.md` — CLI Entry Point section
 - Related features: `database-schema` (provides migration files), `app-shell` (the Next.js app this CLI spawns)

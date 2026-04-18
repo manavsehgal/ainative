@@ -20,7 +20,7 @@ The current `tool-permission-persistence` feature requires users to encounter ea
 
 ## User Story
 
-As a new Stagent user, I want to enable a "read-only tools" preset so that my first agent task doesn't interrupt me with 5+ permission prompts for safe operations I'd always approve.
+As a new ainative user, I want to enable a "read-only tools" preset so that my first agent task doesn't interrupt me with 5+ permission prompts for safe operations I'd always approve.
 
 As a power user, I want to switch between permission profiles (e.g., "git-safe" for development, "full-auto" for trusted workflows) without managing individual tool permissions.
 

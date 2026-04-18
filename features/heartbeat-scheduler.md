@@ -3,7 +3,7 @@ title: Heartbeat Scheduler
 status: completed
 priority: P0
 milestone: post-mvp
-source: ideas/vision/Stagent-OpenClaw-Companion-Research-Report.md
+source: ideas/vision/ainative-OpenClaw-Companion-Research-Report.md
 dependencies: [scheduled-prompt-loops]
 ---
 
@@ -11,11 +11,11 @@ dependencies: [scheduled-prompt-loops]
 
 ## Description
 
-Add a proactive intelligence mode to Stagent's scheduler where agents periodically evaluate a checklist and decide whether action is needed — suppressing no-op runs and only executing when the checklist warrants it. This transforms agents from reactive (wait for user commands) to proactive (monitor and act on business signals).
+Add a proactive intelligence mode to ainative's scheduler where agents periodically evaluate a checklist and decide whether action is needed — suppressing no-op runs and only executing when the checklist warrants it. This transforms agents from reactive (wait for user commands) to proactive (monitor and act on business signals).
 
 The existing `scheduled-prompt-loops` feature provides clock-driven scheduling: fire at time X, execute prompt Y. The heartbeat scheduler adds intelligence-driven scheduling: fire at time X, evaluate checklist Z, act only if something needs attention. The key difference is agent autonomy in determining whether to act, which enables the "agents that run your business" positioning.
 
-Inspired by OpenClaw's heartbeat system (30-minute default, HEARTBEAT.md checklist, HEARTBEAT_OK suppression) but implemented within Stagent's governed architecture — cost controls, approval gates, and visibility on the Kanban board.
+Inspired by OpenClaw's heartbeat system (30-minute default, HEARTBEAT.md checklist, HEARTBEAT_OK suppression) but implemented within ainative's governed architecture — cost controls, approval gates, and visibility on the Kanban board.
 
 ## User Story
 
@@ -105,7 +105,7 @@ Extend the existing schedule creation form (`src/components/schedules/`):
 ### Notification Delivery
 
 Heartbeat results that require attention are delivered to:
-1. Stagent's notification inbox (existing) — always
+1. ainative's notification inbox (existing) — always
 2. Multi-channel delivery targets (Slack, Telegram) — when `multi-channel-delivery` feature ships
 
 ## Acceptance Criteria
@@ -143,7 +143,7 @@ Heartbeat results that require attention are delivered to:
 
 ## References
 
-- Source: `ideas/vision/Stagent-OpenClaw-Companion-Research-Report.md` — Section 3.2 (Heartbeat Scheduler for Proactive Agent Execution)
+- Source: `ideas/vision/ainative-OpenClaw-Companion-Research-Report.md` — Section 3.2 (Heartbeat Scheduler for Proactive Agent Execution)
 - Existing scheduler: `src/lib/schedules/scheduler.ts` (poll loop, fire logic)
 - Existing scheduler UI: `src/components/schedules/` (4 components)
 - Schedule DB table: `src/lib/db/schema.ts` (schedules definition)

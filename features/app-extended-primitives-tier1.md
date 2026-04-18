@@ -209,7 +209,7 @@ existing table/schedule provisioning:
 
 - **`bootstrapDocuments(appId, documents, projectId)`** — For each document
   template, create a document pool entry via `src/lib/data/documents.ts`.
-  If `seedFiles` are present, write them to `~/.stagent/uploads/{appId}/`.
+  If `seedFiles` are present, write them to `~/.ainative/uploads/{appId}/`.
   Store created document IDs in `resourceMap.documents`.
 
 - **`bootstrapNotifications(appId, notifications)`** — Register notification

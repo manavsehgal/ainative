@@ -11,7 +11,7 @@ dependencies: [database-schema, task-board]
 
 ## Description
 
-The core integration with Claude Code via the Agent SDK (`@anthropic-ai/claude-agent-sdk`). This is what makes Stagent more than a task board — it actually executes tasks by delegating them to Claude Code running as a library.
+The core integration with Claude Code via the Agent SDK (`@anthropic-ai/claude-agent-sdk`). This is what makes ainative more than a task board — it actually executes tasks by delegating them to Claude Code running as a library.
 
 When a user queues a task, this feature picks it up, creates an Agent SDK session, executes the task with appropriate tools and permissions, streams progress to the agent_logs table, and updates the task status on completion or failure. It implements the human-in-the-loop pattern by routing `canUseTool` callbacks and `AskUserQuestion` events to the notification system.
 
@@ -28,7 +28,7 @@ As a user, I want to assign a task to an AI agent and have it actually execute, 
 
 ### SDK Feature → UX Mapping
 
-| Stagent UX | Agent SDK Feature |
+| ainative UX | Agent SDK Feature |
 |---|---|
 | Task execution | `query()` with `allowedTools` |
 | Permission requests → Inbox | `canUseTool` callback → notification |
@@ -98,7 +98,7 @@ export function getAgent(agentType: string) {
 
 - Store `sessionId` in the tasks table for resume capability
 - Use `resume: sessionId` when retrying or continuing a task
-- Sessions stored in `~/.stagent/sessions/`
+- Sessions stored in `~/.ainative/sessions/`
 
 ## Acceptance Criteria
 

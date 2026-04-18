@@ -17,7 +17,7 @@ The sync engine handles format translation between tools — SKILL.md (Claude) �
 
 ## User Story
 
-As a Stagent user with both Claude Code and Codex, I want to sync a skill that exists only in Claude Code over to Codex — and vice versa — with a preview of what will change and the ability to rollback, so I can maintain consistent configurations across my tools without manual file copying and format translation.
+As a ainative user with both Claude Code and Codex, I want to sync a skill that exists only in Claude Code over to Codex — and vice versa — with a preview of what will change and the ability to rollback, so I can maintain consistent configurations across my tools without manual file copying and format translation.
 
 ## Technical Approach
 
@@ -34,7 +34,7 @@ Each sync operation has: source artifact, target tool, target path, and operatio
 
 - **`src/lib/environment/sync/skill-sync.ts`** — Translates between Claude Code SKILL.md format (YAML frontmatter + markdown body) and Codex skill format (plain markdown, possibly different directory structure). Preserves metadata where possible.
 - **`src/lib/environment/sync/mcp-sync.ts`** — Translates MCP server definitions between `.mcp.json` (JSON with command/args/env) and `config.toml` [mcp_servers.name] section (TOML). Handles nested args arrays, env var mappings.
-- **`src/lib/environment/sync/instruction-sync.ts`** — Handles CLAUDE.md ↔ AGENTS.md content merging. Appends tool-specific sections, preserves existing content, marks Stagent-managed blocks with comment markers.
+- **`src/lib/environment/sync/instruction-sync.ts`** — Handles CLAUDE.md ↔ AGENTS.md content merging. Appends tool-specific sections, preserves existing content, marks ainative-managed blocks with comment markers.
 - **`src/lib/environment/sync/permission-sync.ts`** — Maps Claude Code permission allow rules to Codex trust level concepts. This is informational/advisory since the permission models differ fundamentally.
 - **`src/lib/environment/sync/hook-sync.ts`** — Exports hook definitions. Translates between Claude Code settings.json hook format and Codex rules format where possible.
 

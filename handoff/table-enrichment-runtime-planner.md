@@ -1,6 +1,6 @@
 ---
 title: Table Enrichment Runtime Planner
-audience: stagent-base
+audience: ainative-base
 status: proposed
 source_branch: growth-mgr
 handoff_reason: Promote enrichment from a growth-specific flow into a generic Table primitive.
@@ -10,20 +10,20 @@ handoff_reason: Promote enrichment from a growth-specific flow into a generic Ta
 
 ## Summary
 
-Promote enrichment into a first-class Stagent Table capability:
+Promote enrichment into a first-class ainative Table capability:
 
 - plan once per enrichment job
 - execute one agent flow per row
 - choose the lowest-cost prompt/step strategy that fits the target column
 - support both simple single-step lookups and multi-step row pipelines
 
-This should live in base Stagent, not in Growth-specific code.
+This should live in base ainative, not in Growth-specific code.
 
 ## Why this belongs in base
 
 The core primitive is not "enrich contacts". The primitive is:
 
-> enrich missing or derived values in any Stagent table column by running an agent against each row with typed writeback semantics
+> enrich missing or derived values in any ainative table column by running an agent against each row with typed writeback semantics
 
 That applies to:
 

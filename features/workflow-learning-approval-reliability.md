@@ -14,7 +14,7 @@ dependencies:
 
 ## Description
 
-Stagent already batches learned-context proposals at the workflow level, but the current runtime still leaks individual proposal notifications when child-task pattern extraction finishes after the workflow learning session has already closed. Table enrichment makes this obvious because one workflow can fan out over many rows, but the failure mode belongs to the shared workflow-learning pipeline rather than the enrichment planner itself.
+ainative already batches learned-context proposals at the workflow level, but the current runtime still leaks individual proposal notifications when child-task pattern extraction finishes after the workflow learning session has already closed. Table enrichment makes this obvious because one workflow can fan out over many rows, but the failure mode belongs to the shared workflow-learning pipeline rather than the enrichment planner itself.
 
 The Inbox also treats responded learning notifications as still-active items. After an operator approves or rejects a context proposal, the underlying notification row is updated, but the default Inbox list continues to render it. That makes the approval queue look stale and undermines trust in the review flow.
 

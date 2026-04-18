@@ -19,9 +19,9 @@ The system uses the Playbook's existing stage-aware CTA logic (`new â†’ early â†
 
 ## User Story
 
-As a new Stagent user, I want a guided reading path that starts with the basics and skips advanced content, so I don't feel overwhelmed by the full 9-chapter book.
+As a new ainative user, I want a guided reading path that starts with the basics and skips advanced content, so I don't feel overwhelmed by the full 9-chapter book.
 
-As a developer evaluating Stagent, I want a path that surfaces code examples, agent configurations, and architecture deep-dives, so I can assess the technical depth quickly.
+As a developer evaluating ainative, I want a path that surfaces code examples, agent configurations, and architecture deep-dives, so I can assess the technical depth quickly.
 
 As a returning user, I want the Book to adapt its recommendations based on what I've already used, so I see fresh, relevant content each time.
 

@@ -14,13 +14,13 @@ dependencies: [chat-input-composer, chat-engine, command-palette-enhancement]
 Add inline autocomplete to the chat prompt box that activates on two trigger characters:
 
 - **"/" commands** — surface tools and actions (create task, navigate, execute workflow) directly from the chat input. Typing `/` at the start of the input opens a popover with grouped commands that filter as the user types.
-- **"@" mentions** — reference Stagent primitives (projects, tasks, workflows, documents, profiles, schedules) inline. Typing `@` after whitespace opens a popover with fuzzy-searchable entity results. Selected mentions inject Tier 3 context into the chat engine so the model receives full entity details.
+- **"@" mentions** — reference ainative primitives (projects, tasks, workflows, documents, profiles, schedules) inline. Typing `@` after whitespace opens a popover with fuzzy-searchable entity results. Selected mentions inject Tier 3 context into the chat engine so the model receives full entity details.
 
 Both popover UIs reuse the existing `cmdk` (Command) primitives from `src/components/ui/command.tsx` — the same fuzzy matching, keyboard navigation, and grouped item rendering used by the `Cmd+K` command palette. The key difference: instead of a modal dialog, items render in a Popover anchored above the textarea at the caret position.
 
 ## User Story
 
-As a Stagent user, I want to type `/` to quickly access tools and actions, and `@` to reference specific entities, so that I can compose rich, context-aware prompts without leaving the chat input.
+As a ainative user, I want to type `/` to quickly access tools and actions, and `@` to reference specific entities, so that I can compose rich, context-aware prompts without leaving the chat input.
 
 ## Technical Approach
 
@@ -104,7 +104,7 @@ Plain text `@type:Name` in the textarea (not contentEditable chips). The textare
 - ContentEditable rich text editor / styled mention chips (plain text only)
 - File attachment via `/upload` command (future feature)
 - Multi-line command templates with structured forms
-- Mention notifications to other users (Stagent is single-user)
+- Mention notifications to other users (ainative is single-user)
 - Custom command registration by users
 - `#` channel/tag syntax
 

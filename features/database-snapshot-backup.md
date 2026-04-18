@@ -11,23 +11,23 @@ dependencies: []
 
 ## Description
 
-Full-state snapshot system for stagent. Creates atomic copies of the SQLite database using better-sqlite3's `.backup()` API (WAL-safe) and tarballs all `~/.stagent/` file directories into a single restorable archive. Supports three modes: auto-backup on user-configurable intervals, user-initiated manual snapshots with optional labels, and full-state restore from any snapshot.
+Full-state snapshot system for ainative. Creates atomic copies of the SQLite database using better-sqlite3's `.backup()` API (WAL-safe) and tarballs all `~/.ainative/` file directories into a single restorable archive. Supports three modes: auto-backup on user-configurable intervals, user-initiated manual snapshots with optional labels, and full-state restore from any snapshot.
 
 Retention is enforced automatically with two configurable dimensions: keep last N snapshots and keep last N weeks of snapshots. Both are checked after every snapshot creation — whichever limit triggers first causes older snapshots to be purged.
 
 ## User Story
 
-As a stagent user, I want automatic periodic backups so my data is protected without manual effort.
+As a ainative user, I want automatic periodic backups so my data is protected without manual effort.
 
-As a stagent user, I want to create a named snapshot before risky operations so I can roll back if something goes wrong.
+As a ainative user, I want to create a named snapshot before risky operations so I can roll back if something goes wrong.
 
-As a stagent user, I want to restore my entire stagent state from a previous snapshot with one click.
+As a ainative user, I want to restore my entire ainative state from a previous snapshot with one click.
 
-As a stagent user, I want to configure how many snapshots to keep and how old they can be, so disk usage stays manageable.
+As a ainative user, I want to configure how many snapshots to keep and how old they can be, so disk usage stays manageable.
 
 ## Technical Approach
 
-- **Snapshot storage**: `~/.stagent/snapshots/{timestamp}_{label}/` containing `snapshot.db`, `files.tar.gz`, `manifest.json`
+- **Snapshot storage**: `~/.ainative/snapshots/{timestamp}_{label}/` containing `snapshot.db`, `files.tar.gz`, `manifest.json`
 - **DB backup**: `better-sqlite3` `.backup()` API for atomic WAL-safe copy. Raw `sqlite` handle exported from `src/lib/db/index.ts`
 - **File archival**: `tar` npm package creates gzipped tarball of uploads, screenshots, outputs, sessions, documents, logs
 - **Metadata**: `snapshots` table tracks id, label, type, status, sizes, file path, created timestamp
@@ -42,7 +42,7 @@ As a stagent user, I want to configure how many snapshots to keep and how old th
 
 - [x] Manual snapshot creates an atomic SQLite backup + tarball of all file dirs
 - [x] Manual snapshot accepts an optional user-provided label
-- [x] Snapshot stored at `~/.stagent/snapshots/{timestamp}_{label}/` with `snapshot.db`, `files.tar.gz`, `manifest.json`
+- [x] Snapshot stored at `~/.ainative/snapshots/{timestamp}_{label}/` with `snapshot.db`, `files.tar.gz`, `manifest.json`
 - [x] Manifest records: version, timestamp, included directories, file count per dir, total size
 - [x] Auto-backup can be enabled/disabled via settings toggle
 - [x] Auto-backup interval is configurable (e.g., "6h", "1d", "1w") using existing interval-parser
@@ -70,7 +70,7 @@ As a stagent user, I want to configure how many snapshots to keep and how old th
 
 **Included:**
 - Full SQLite database backup via `.backup()` API
-- All `~/.stagent/` file directories (uploads, screenshots, outputs, sessions, documents, logs)
+- All `~/.ainative/` file directories (uploads, screenshots, outputs, sessions, documents, logs)
 - Auto-backup on configurable intervals with retention policies
 - Manual snapshots with optional labels
 - Full-replace restore with pre-restore safety snapshot

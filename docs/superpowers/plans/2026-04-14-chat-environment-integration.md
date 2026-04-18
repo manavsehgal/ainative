@@ -1264,7 +1264,7 @@ import { browserLocalStore, activeDismissedIds } from "@/lib/chat/dismissals";
 // ...
 const recentUserMessages = useRecentUserMessages(conversationId, 20); // new hook (Task 10)
 const dismissedIds = activeDismissedIds(
-  browserLocalStore("stagent.chat.dismissed-suggestions"),
+  browserLocalStore("ainative.chat.dismissed-suggestions"),
   conversationId ?? ""
 );
 const recommended = computeRecommendation(
@@ -1430,7 +1430,7 @@ In `chat-command-popover.tsx`:
 import { browserLocalStore, saveDismissal } from "@/lib/chat/dismissals";
 // ...
 const dismissStore = useMemo(
-  () => browserLocalStore("stagent.chat.dismissed-suggestions"),
+  () => browserLocalStore("ainative.chat.dismissed-suggestions"),
   []
 );
 

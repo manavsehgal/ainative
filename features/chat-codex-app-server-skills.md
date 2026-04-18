@@ -11,15 +11,15 @@ dependencies: [chat-claude-sdk-skills, codex-chat-engine, openai-codex-app-serve
 
 ## Description
 
-When a user picks a Codex model (GPT-5.4-mini, Codex 5.3, GPT-5.4), chat routes through `src/lib/chat/codex-engine.ts`, which talks to the Codex App Server over JSON-RPC. The App Server supports native skill invocation via `turn/start` with skill parameters and reads `AGENTS.md` automatically — but `codex-engine.ts` neither passes the skill parameters nor surfaces the App Server's skill metadata events to the chat UI. It also does not discover skills from `.agents/skills/` (Codex's convention) or `.claude/skills/` even though Stagent's environment scanner already walks both directories.
+When a user picks a Codex model (GPT-5.4-mini, Codex 5.3, GPT-5.4), chat routes through `src/lib/chat/codex-engine.ts`, which talks to the Codex App Server over JSON-RPC. The App Server supports native skill invocation via `turn/start` with skill parameters and reads `AGENTS.md` automatically — but `codex-engine.ts` neither passes the skill parameters nor surfaces the App Server's skill metadata events to the chat UI. It also does not discover skills from `.agents/skills/` (Codex's convention) or `.claude/skills/` even though ainative's environment scanner already walks both directories.
 
-This feature brings the Codex runtime to parity with the Claude runtime's skill behavior established in `chat-claude-sdk-skills`. The UX is uniform across runtimes: the same `/skill-name` syntax, the same popover entries, the same `list_profiles` contract. The implementation is runtime-specific — App Server native skill invocation, plus Stagent's existing bidirectional sync engine to keep `.claude/skills/` and `.agents/skills/` content in step so a skill authored once works on both runtimes.
+This feature brings the Codex runtime to parity with the Claude runtime's skill behavior established in `chat-claude-sdk-skills`. The UX is uniform across runtimes: the same `/skill-name` syntax, the same popover entries, the same `list_profiles` contract. The implementation is runtime-specific — App Server native skill invocation, plus ainative's existing bidirectional sync engine to keep `.claude/skills/` and `.agents/skills/` content in step so a skill authored once works on both runtimes.
 
 Because Phase 1 rollout is sequential (Q1), this ships after Phase 1a's UX pattern is proven. That lets the Codex implementation match the Claude `list_profiles` contract exactly and reuse the popover entries verbatim.
 
 ## User Story
 
-As a user on a Codex/GPT model in Stagent chat, I want the same skills, AGENTS.md context, and filesystem awareness I'd get if I were running Codex CLI, so my choice of model doesn't strand me from the project's skill library.
+As a user on a Codex/GPT model in ainative chat, I want the same skills, AGENTS.md context, and filesystem awareness I'd get if I were running Codex CLI, so my choice of model doesn't strand me from the project's skill library.
 
 ## Technical Approach
 
@@ -50,15 +50,15 @@ await appServer.turnStart({
 
 ### 3. Stream event handling
 
-The App Server emits skill-related events during a turn (skill invoked, skill output, skill completed). Extend the JSON-RPC stream reader in `codex-engine.ts` to translate these into Stagent's chat event shape so the UI renders them identically to Claude's Skill tool events (chip with skill name, expandable output).
+The App Server emits skill-related events during a turn (skill invoked, skill output, skill completed). Extend the JSON-RPC stream reader in `codex-engine.ts` to translate these into ainative's chat event shape so the UI renders them identically to Claude's Skill tool events (chip with skill name, expandable output).
 
 ### 4. AGENTS.md auto-load
 
-The App Server reads `AGENTS.md` from cwd upward automatically. Verify this works from Stagent's cwd (active project's `workingDirectory`, else launch cwd, per Q4). Adjust `cwd` on the App Server connection if needed. No Stagent-side file injection required.
+The App Server reads `AGENTS.md` from cwd upward automatically. Verify this works from ainative's cwd (active project's `workingDirectory`, else launch cwd, per Q4). Adjust `cwd` on the App Server connection if needed. No ainative-side file injection required.
 
 ### 5. Cross-runtime skill sync
 
-Stagent's existing `environment-sync-engine` already handles `.claude/skills/` ↔ `.agents/skills/` bidirectional sync. Ensure the sync fires on chat session start if the environment cache is stale (>5 min) so a Claude-authored skill immediately reaches a Codex session.
+ainative's existing `environment-sync-engine` already handles `.claude/skills/` ↔ `.agents/skills/` bidirectional sync. Ensure the sync fires on chat session start if the environment cache is stale (>5 min) so a Claude-authored skill immediately reaches a Codex session.
 
 ### 6. Cross-runtime compatibility filter (Q8a)
 
@@ -84,7 +84,7 @@ Real-environment smoke test: same `.claude/skills/test-skill/SKILL.md` used in P
 **Included:**
 - `turn/start` skill parameter wiring in `codex-engine.ts`
 - Skill metadata discovery via environment scanner for `.agents/skills/`
-- App Server skill event translation into Stagent chat events
+- App Server skill event translation into ainative chat events
 - AGENTS.md auto-load verification (no re-implementation — App Server does this)
 - Q8a compatibility filtering (hide skills whose required tools aren't available)
 
@@ -109,12 +109,12 @@ The original spec called for wiring `turn/start` skill parameters into `sendCode
 2. **`AGENTS.md` auto-load is already declared** in the runtime capability matrix (`catalog.ts:130 → autoLoadsInstructions: "AGENTS.md"`) and happens automatically based on `cwd`.
 3. **`cwd` plumbing was already correct** — `codex-engine.ts:104-105` overrides `workspace.cwd` with the project's `workingDirectory`; that value flows into `auth.connect(workspace.cwd)` (line 176) and every subsequent App Server call (lines 304, 311, 340).
 
-The actual gap was on the *Stagent* side: my `chat-ollama-native-skills` feature unconditionally injected SKILL.md into Tier 0 of the system prompt regardless of runtime, duplicating context on Codex (and Claude) where the runtime's native skill discovery already loads the same content.
+The actual gap was on the *ainative* side: my `chat-ollama-native-skills` feature unconditionally injected SKILL.md into Tier 0 of the system prompt regardless of runtime, duplicating context on Codex (and Claude) where the runtime's native skill discovery already loads the same content.
 
 ### Files shipped (this feature)
 
 - `src/lib/chat/context-builder.ts` — `buildActiveSkill` now reads the conversation's `runtimeId`, looks up `getRuntimeFeatures(runtimeId).stagentInjectsSkills`, and **suppresses** Tier 0 injection when the flag is `false`. The runtime capability matrix already encoded this decision; we just needed to consult it. Behavior:
-  - `ollama` → injects (no native path; Stagent must inject)
+  - `ollama` → injects (no native path; ainative must inject)
   - `claude-code`, `openai-codex-app-server`, `*-direct` → suppressed (runtime handles native discovery from `.claude/skills/` or `.agents/skills/`)
   - Unknown runtime → falls through and injects (safer default than silently dropping)
 - `src/lib/chat/__tests__/active-skill-injection.test.ts` — extended with 4 new tests covering each runtime branch (Claude suppressed, Codex suppressed, Ollama injected, unknown→inject). 8/8 file tests pass; 173/173 chat tests overall.
@@ -123,7 +123,7 @@ The actual gap was on the *Stagent* side: my `chat-ollama-native-skills` feature
 
 - **Q8a runtime-compatibility filter on `list_skills`** — skills don't currently declare `requiredTools`. Adding a parameter that does nothing on every existing skill is YAGNI; revisit when `requiredTools` lands in the skill metadata schema.
 - **App Server skill event translation into chat events** — the App Server already emits skill-related events as part of its standard tool stream; today those render as generic tool chips, which is sufficient. Specialized skill-chip rendering would be UX polish; defer to `chat-environment-integration` or a dedicated UX feature.
-- **Stagent-driven `turn/start` skill parameter wiring** — the protocol doesn't support it. Reframed as "trust Codex's native discovery + suppress Stagent's duplicate injection".
+- **ainative-driven `turn/start` skill parameter wiring** — the protocol doesn't support it. Reframed as "trust Codex's native discovery + suppress ainative's duplicate injection".
 
 ## Verification run — 2026-04-14
 

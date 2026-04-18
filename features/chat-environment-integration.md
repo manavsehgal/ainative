@@ -11,9 +11,9 @@ dependencies: [chat-command-namespace-refactor, environment-dashboard, environme
 
 ## Description
 
-Stagent's environment scanner builds a rich metadata layer over filesystem artifacts: skill health scores (last updated, usage, sync state), profile linkage (which skill is registered as which AgentProfile), cross-tool sync status (`.claude/skills/` ↔ `.agents/skills/`), and per-scope indicators (project vs user). None of this reaches the chat UI today. When `chat-command-namespace-refactor` lands, the Skills tab will render bare names and descriptions even though the environment dashboard already computes this enrichment.
+ainative's environment scanner builds a rich metadata layer over filesystem artifacts: skill health scores (last updated, usage, sync state), profile linkage (which skill is registered as which AgentProfile), cross-tool sync status (`.claude/skills/` ↔ `.agents/skills/`), and per-scope indicators (project vs user). None of this reaches the chat UI today. When `chat-command-namespace-refactor` lands, the Skills tab will render bare names and descriptions even though the environment dashboard already computes this enrichment.
 
-This feature threads environment metadata into the chat skills popover and adds proactive nudges: an auto-rescan when a chat session opens on a stale environment cache (>5 min), and profile suggestions in chat when a user's current task matches a registered skill ("You might benefit from activating the `code-reviewer` skill"). The SDK's native skill discovery stays unchanged — Stagent's environment layer **augments, does not replace** it (DD-CE-004). Best of both: SDK executes, Stagent presents.
+This feature threads environment metadata into the chat skills popover and adds proactive nudges: an auto-rescan when a chat session opens on a stale environment cache (>5 min), and profile suggestions in chat when a user's current task matches a registered skill ("You might benefit from activating the `code-reviewer` skill"). The SDK's native skill discovery stays unchanged — ainative's environment layer **augments, does not replace** it (DD-CE-004). Best of both: SDK executes, ainative presents.
 
 ## User Story
 
@@ -23,7 +23,7 @@ As a user browsing the Skills tab in chat, I want to see which skills are health
 
 ### 1. Expose environment reads as chat tools
 
-Add Stagent MCP tools (extending those in `chat-ollama-native-skills` where applicable):
+Add ainative MCP tools (extending those in `chat-ollama-native-skills` where applicable):
 
 - `list_skills(runtime?)` — enrich each row with `healthScore`, `linkedProfileId`, `syncStatus`, `scope` ("project" | "user")
 - `get_skill(id)` — full SKILL.md plus the same metadata
@@ -70,7 +70,7 @@ Environment metadata is already cached in the DB (5-min TTL per `environment-cac
 - [ ] Dismissed suggestions are not re-shown in the same conversation for 7 days
 - [ ] Sync status chip click-through deep-links to the environment dashboard
 - [ ] No filesystem I/O on popover open — all metadata served from cache
-- [ ] SDK's native skill discovery remains the execution path (DD-CE-004); Stagent only enriches presentation
+- [ ] SDK's native skill discovery remains the execution path (DD-CE-004); ainative only enriches presentation
 
 ## Scope Boundaries
 

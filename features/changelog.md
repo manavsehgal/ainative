@@ -4,15 +4,15 @@
 
 ### Completed — npm-package-ownership-migration
 
-Metadata-only patch migrating the npm publisher account from `navamio` to `manavsehgal`. Completes the identity migration started with the GitHub repo rename (`navam-io/stagent` → `manavsehgal/stagent`, 2026-04-17). No runtime code changes — `npm install stagent@latest` and `npx stagent` continue to work unchanged.
+Metadata-only patch migrating the npm publisher account from `navamio` to `manavsehgal`. Completes the identity migration started with the GitHub repo rename (`navam-io/ainative` → `manavsehgal/ainative`, 2026-04-17). No runtime code changes — `npm install ainative@latest` and `npx ainative` continue to work unchanged.
 
 - Registry ownership: `manavsehgal` invited as maintainer via npm web UI; `navamio` removed after `0.11.1` publish verified clean.
-- Published `stagent@0.11.1` from the `manavsehgal` account — first tarball where the `_npmUser` / "published by" field names the new maintainer.
+- Published `ainative@0.11.1` from the `manavsehgal` account — first tarball where the `_npmUser` / "published by" field names the new maintainer.
 - Manifest: `repository.url` + `bugs.url` already corrected during the GitHub migration; `0.11.1` is the first npm release carrying the corrected URLs.
 - Historical versions `<0.11.1` deprecated with an upgrade notice so pinned installs nudge users toward `latest`.
 - Local `~/.npmrc` stale `navamio` `_authToken` revoked after the owner transfer.
 
-**Verification:** `npm view stagent@0.11.1 _npmUser.name` → `manavsehgal`; `npm owner ls stagent` → `manavsehgal` only; `npm view stagent@0.10.0 deprecated` → upgrade notice present; scratch-dir `npx stagent@latest --help` runs clean.
+**Verification:** `npm view ainative@0.11.1 _npmUser.name` → `manavsehgal`; `npm owner ls ainative` → `manavsehgal` only; `npm view ainative@0.10.0 deprecated` → upgrade notice present; scratch-dir `npx ainative@latest --help` runs clean.
 
 ## 2026-04-15
 
@@ -93,7 +93,7 @@ Real-browser use of Phase 1 + Phase 2 features surfaced 9 observations. Two beca
 
 Other observations captured in the log but not promoted to specs: skill-composition needs no DB fix (Phase 2 correctness holds), `@` popover triggering is fragile under programmatic automation (affects future e2e harness design), discoverability of `#key:value` syntax is low (candidate for a later `chat-filter-hint` spec).
 
-**New skill:** `.claude/skills/ainative-app/SKILL.md` — scaffolds Stagent-native apps by composing shipped primitives (profiles, blueprints, tables, schedules) via YAML manifest. Zero TypeScript required. Emits per-primitive artifacts into the registries that already load them (`.claude/skills/<app>--<profile>/`, `~/.stagent/blueprints/<app>--<blueprint>.yaml`) plus a forward-compatible app manifest at `.claude/apps/<app>/manifest.yaml` for when the deferred `.sap` format lands. Skill is discoverable via the Skill tool registry.
+**New skill:** `.claude/skills/ainative-app/SKILL.md` — scaffolds ainative-native apps by composing shipped primitives (profiles, blueprints, tables, schedules) via YAML manifest. Zero TypeScript required. Emits per-primitive artifacts into the registries that already load them (`.claude/skills/<app>--<profile>/`, `~/.ainative/blueprints/<app>--<blueprint>.yaml`) plus a forward-compatible app manifest at `.claude/apps/<app>/manifest.yaml` for when the deferred `.sap` format lands. Skill is discoverable via the Skill tool registry.
 
 **Recommended Phase 3:** bundle `chat-composition-ui-v1` + `saved-search-polish-v1` for a ~1-session tight-scope PR. `chat-conversation-branches` (largest remaining `chat-advanced-ux` sub-spec) stays deferred; current evidence points to polishing the shipped features before building the largest unshipped one.
 
@@ -217,7 +217,7 @@ Next up: [chat-conversation-templates](chat-conversation-templates.md).
 
 ### Completed — dynamic-slash-commands (P2)
 
-Project skills discovered via `auto-environment-scan` + exposed through `/api/profiles?scope=project` now appear as a dynamic **Skills** group in the chat `/` popover alongside Stagent's built-in tool groups. `tool-catalog.ts` gained a `Skills` entry in the `ToolGroup` union (Sparkles icon, ordered after `Profiles`) and a new `getToolCatalogWithSkills(opts)` builder that concatenates project-scoped entries onto the static catalog only when `projectProfiles` is non-empty — the base catalog path is byte-identical when no project is active, so the static-cache semantics of `getToolCatalog()` are preserved.
+Project skills discovered via `auto-environment-scan` + exposed through `/api/profiles?scope=project` now appear as a dynamic **Skills** group in the chat `/` popover alongside ainative's built-in tool groups. `tool-catalog.ts` gained a `Skills` entry in the `ToolGroup` union (Sparkles icon, ordered after `Profiles`) and a new `getToolCatalogWithSkills(opts)` builder that concatenates project-scoped entries onto the static catalog only when `projectProfiles` is non-empty — the base catalog path is byte-identical when no project is active, so the static-cache semantics of `getToolCatalog()` are preserved.
 
 Client wiring is a single new hook (`src/hooks/use-project-skills.ts`) that fetches on `projectId` change with AbortController cleanup, threaded through `chat-input.tsx:265` → `chat-command-popover.tsx:233`. Selection inserts template text `Use the {skill-name} profile: ` into the input, relying on the chat engine's existing profile-routing path — zero schema changes, no new conversation-level `profileId` column. cmdk filtering over name + description works automatically; the group is elided from the popover when the active project has no skills.
 
@@ -237,7 +237,7 @@ Architecture is strictly read-only over the existing scanner. `listSkillsEnriche
 
 **Breaking UX change** (accepted per spec Q7 — alpha product, no deprecation shim). The `/` popover is now tabbed (Actions / Skills / Tools / Entities) instead of a single grouped list. Eight new session commands (`/clear`, `/compact`, `/export`, `/help`, `/settings`, `/new-task`, `/new-workflow`, `/new-schedule`) live under a new `Session` group that surfaces first in the Actions tab. A runtime-aware capability banner renders below the chat input on runtimes that lack filesystem + Bash tools (Ollama, Anthropic-direct, OpenAI-direct) and stays silent on Claude + Codex App Server. The ⌘K palette gained Skills and Files groups (files with 200ms debounced search against `/api/chat/files/search`). New keyboard bindings: `⌘L` / `⌘⇧L` to clear, `⌘/` to focus the input and open the slash menu.
 
-Architecture: a single-rooted cmdk `<Command>` wraps both tabbed-slash and mention modes so focus/selection state never flickers on tab switch. The partition is a pure function over the existing `ToolCatalogEntry[]`, with `GROUP_TO_TAB` exhaustively typed via `satisfies Record<ToolGroup, CommandTabId>` so any future `ToolGroup` added without a tab assignment fails to compile. Session commands dispatch `stagent.chat.{clear,compact,export,help}` CustomEvents from `chat-input.tsx`; the session provider listens and routes them (`/clear` → `createConversation()`, `/export` → new `POST /api/chat/export` endpoint that writes inline markdown to `~/.stagent/uploads/chat-exports/` and inserts a documents row, `/help` → `HelpDialog`, `/compact` → toast stub). Per-user tab persistence via `localStorage`; per-session banner dismissal via `sessionStorage`, keyed on `runtimeId`.
+Architecture: a single-rooted cmdk `<Command>` wraps both tabbed-slash and mention modes so focus/selection state never flickers on tab switch. The partition is a pure function over the existing `ToolCatalogEntry[]`, with `GROUP_TO_TAB` exhaustively typed via `satisfies Record<ToolGroup, CommandTabId>` so any future `ToolGroup` added without a tab assignment fails to compile. Session commands dispatch `ainative.chat.{clear,compact,export,help}` CustomEvents from `chat-input.tsx`; the session provider listens and routes them (`/clear` → `createConversation()`, `/export` → new `POST /api/chat/export` endpoint that writes inline markdown to `~/.ainative/uploads/chat-exports/` and inserts a documents row, `/help` → `HelpDialog`, `/compact` → toast stub). Per-user tab persistence via `localStorage`; per-session banner dismissal via `sessionStorage`, keyed on `runtimeId`.
 
 Frontend-designer sign-off recorded in the feature spec. 3 design-review findings addressed (MI=2 motion trim, focus-visible ring on banner dismiss, dialog padding redundancy).
 
@@ -254,27 +254,27 @@ Deferred:
 
 Closed out as a **scope-adjusted** feature. The original spec called for wiring `turn/start` skill parameters into `sendCodexMessage()`, but a closer read of the App Server reference (`.claude/reference/developers-openai-com-codex-sdk/app-server.md` + `skills.md`) confirmed that the protocol has no such parameters — what the spec described is Codex's *natural* behavior when the App Server's `cwd` is set correctly. `cwd` plumbing already worked (`codex-engine.ts:104-105` overrides `workspace.cwd` with the project's `workingDirectory` before any App Server call).
 
-The actual gap was on the *Stagent* side: `chat-ollama-native-skills` injected SKILL.md into Tier 0 unconditionally, duplicating context on Codex (and Claude) where the runtime's native skill discovery already loads the same content from `.agents/skills/` or `.claude/skills/`.
+The actual gap was on the *ainative* side: `chat-ollama-native-skills` injected SKILL.md into Tier 0 unconditionally, duplicating context on Codex (and Claude) where the runtime's native skill discovery already loads the same content from `.agents/skills/` or `.claude/skills/`.
 
 Changes:
 - `src/lib/chat/context-builder.ts` — `buildActiveSkill` now reads the conversation's `runtimeId`, looks up `getRuntimeFeatures(runtimeId).stagentInjectsSkills`, and **suppresses** Tier 0 injection when the flag is `false`. Behavior:
-  - `ollama` → injects (no native path; Stagent must inject)
+  - `ollama` → injects (no native path; ainative must inject)
   - `claude-code`, `openai-codex-app-server`, `*-direct` → suppressed (native discovery handles it)
   - Unknown runtime → falls through and injects (safer default than silently dropping)
 - `src/lib/chat/__tests__/active-skill-injection.test.ts` — extended with 4 runtime-flag tests. 8/8 file tests pass; 173/173 chat tests overall.
 
 Browser-verified end-to-end via Claude in Chrome as an **A/B comparison across the code change**: the same conversation with `.claude/skills/technical-writer` activated. Before the fix, the model quoted `## Active Skill: technical-writer` from its system prompt verbatim. After the fix, on the very next turn (same conv, same activation), the model responded `ABSENT` and noted *"The injection that was visible in my previous response is gone — likely due to a code change you made"*. Highest-confidence smoke result possible: same model as oracle, observing the diff between two turns.
 
-Deferred: Q8a runtime-compatibility `requiredTools` filter on `list_skills` (skills don't declare requiredTools today — YAGNI); App Server skill-event chip rendering (events flow through generic tool path today, sufficient for v1); Stagent-side `turn/start` skill wiring (protocol doesn't support it — reframed as "trust native Codex discovery").
+Deferred: Q8a runtime-compatibility `requiredTools` filter on `list_skills` (skills don't declare requiredTools today — YAGNI); App Server skill-event chip rendering (events flow through generic tool path today, sufficient for v1); ainative-side `turn/start` skill wiring (protocol doesn't support it — reframed as "trust native Codex discovery").
 
 ### Completed — chat-ollama-native-skills (P2)
 
-Stagent-managed conversation-scoped skill activation, runtime-agnostic by design but motivated by Ollama (which has no SDK-native skill support). When a skill is bound to a conversation via the new `activate_skill` MCP tool, its SKILL.md is injected into Tier 0 of the system prompt on every subsequent turn until `deactivate_skill` clears it. Same machinery works on Claude / Codex as a programmatic skill-activation path alongside their native handling.
+ainative-managed conversation-scoped skill activation, runtime-agnostic by design but motivated by Ollama (which has no SDK-native skill support). When a skill is bound to a conversation via the new `activate_skill` MCP tool, its SKILL.md is injected into Tier 0 of the system prompt on every subsequent turn until `deactivate_skill` clears it. Same machinery works on Claude / Codex as a programmatic skill-activation path alongside their native handling.
 
 Changes:
 - DB: `conversations.active_skill_id TEXT` column. Added to both the `CREATE TABLE` (fresh DBs) and via `addColumnIfMissing` (existing DBs). Drizzle schema updated. The CREATE-table addition was needed because `addColumnIfMissing` runs before the table CREATE in `bootstrap.ts`, so on fresh DBs the ALTER fails silently — caught by failing tests on a fresh temp DB.
 - Discovery: `src/lib/environment/list-skills.ts` filters scanner artifacts by `category === "skill"` and resolves the SKILL.md inside each skill directory (probing `SKILL.md` → `skill.md` → first `*.md`).
-- 4 MCP tools in `src/lib/chat/tools/skill-tools.ts` (`list_skills`, `get_skill`, `activate_skill`, `deactivate_skill`) registered in `stagent-tools.ts` and the popover catalog under "Skills". Single-active-skill enforced server-side; activate validates skill + conversation exist before writing.
+- 4 MCP tools in `src/lib/chat/tools/skill-tools.ts` (`list_skills`, `get_skill`, `activate_skill`, `deactivate_skill`) registered in `ainative-tools.ts` and the popover catalog under "Skills". Single-active-skill enforced server-side; activate validates skill + conversation exist before writing.
 - Tier 0 injection: `context-builder.ts` `buildActiveSkill` helper reads the bound id and appends SKILL.md under `## Active Skill: <name>` between Tier 0 and Tier 3. ~4000 token cap. Dynamic import keeps the scanner off the hot path for conversations without an active skill.
 
 Tests: 11 skill-tool unit tests + 4 Tier 0 injection tests. **171/171 chat tests green** including the existing finalize-safety-net + reconcile suites that touch the conversations table.
@@ -313,7 +313,7 @@ Empirical separation on the test corpus: variants score 0.60–0.68, duplicates 
 
 ### Completed — chat-settings-tool (P1)
 
-Closed out the `set_settings` chat tool — allowing users to update safe Stagent settings via natural-language prompts with user-approval gating. The runtime implementation had shipped earlier (tool definition, allowlist, validators, permission-gating, catalog entry) but the spec was never flipped and no tests guarded the security-critical allowlist.
+Closed out the `set_settings` chat tool — allowing users to update safe ainative settings via natural-language prompts with user-approval gating. The runtime implementation had shipped earlier (tool definition, allowlist, validators, permission-gating, catalog entry) but the spec was never flipped and no tests guarded the security-critical allowlist.
 
 Changes:
 - `src/lib/chat/tools/__tests__/settings-tools.test.ts` (new, 31 tests) — positive path, unknown-key rejection, **parameterized secret-exclusion guardrail** (11 forbidden keys: `auth.apiKey`, `auth.method`, `permissions.allow`, `usage.budgetPolicy`, `browser.*Config`, etc.), per-key validation coverage (integer bounds, enums, bool, step alignment, empty-string, float ranges).
@@ -336,7 +336,7 @@ Verification: developer ran the plan's manual smoke sequence on both Claude (`so
 
 Closed two directions of status drift left behind by the 2026-04-13 Community Edition pivot.
 
-**PLG Monetization — flipped 13 specs `planned` → `completed` with supersession banner.** These features shipped earlier in the project but their individual spec frontmatter was never updated, while the roadmap rows correctly showed `completed`. All 13 were subsequently reverted by `community-edition-simplification` on 2026-04-13. Each spec now carries a blockquote banner at the top: "Superseded by `community-edition-simplification` (2026-04-13). This feature shipped but was later fully reverted when Stagent pivoted to a 100% free Community Edition…". Files: `stripe-billing-integration`, `community-edition-soft-limits`, `subscription-management-ui`, `upgrade-cta-banners`, `outcome-analytics-dashboard`, `parallel-workflow-limit`, `cloud-sync`, `license-activation-flow`, `edition-readme-update`, `first-run-onboarding`, `marketing-site-pricing-page`, `transactional-email-flows`, `upgrade-conversion-instrumentation`.
+**PLG Monetization — flipped 13 specs `planned` → `completed` with supersession banner.** These features shipped earlier in the project but their individual spec frontmatter was never updated, while the roadmap rows correctly showed `completed`. All 13 were subsequently reverted by `community-edition-simplification` on 2026-04-13. Each spec now carries a blockquote banner at the top: "Superseded by `community-edition-simplification` (2026-04-13). This feature shipped but was later fully reverted when ainative pivoted to a 100% free Community Edition…". Files: `stripe-billing-integration`, `community-edition-soft-limits`, `subscription-management-ui`, `upgrade-cta-banners`, `outcome-analytics-dashboard`, `parallel-workflow-limit`, `cloud-sync`, `license-activation-flow`, `edition-readme-update`, `first-run-onboarding`, `marketing-site-pricing-page`, `transactional-email-flows`, `upgrade-conversion-instrumentation`.
 
 **Marketplace / apps-distribution vision — flipped 17 specs `planned` → `deferred` with banner.** The entire apps/marketplace product vision has no active plan after the CE pivot; specs are preserved as backlog. Each spec now carries: "Deferred 2026-04-14. Part of the marketplace / apps-distribution vision, which has no active plan after the pivot to 100% free Community Edition…". Files: `creator-portal`, `curated-collections`, `visual-app-studio`, `conversational-app-editing`, `app-forking-remix`, `app-remix`, `app-mcp-server-wiring`, `app-single-file-format`, `app-budget-policies`, `app-distribution-channels`, `app-conflict-resolution`, `app-updates-dependencies`, `app-embeddable-install-widget`, `app-extended-primitives-tier2`, `marketplace-local-first-discovery`, `marketplace-reviews`, `my-apps-lifecycle`. Roadmap rows updated to match.
 
@@ -346,7 +346,7 @@ No code changes. Spec-hygiene only. Open-feature count drops from 66 → 49 (49 
 
 ### Completed — community-edition-simplification (P0), remove-supabase-dependencies (P0), remove-anonymous-telemetry (P0)
 
-Stagent collapses to a single free Community Edition. The full PLG Monetization stack (license manager, 4-tier system, Stripe billing, feature gating, resource limits, cloud license validation) is removed along with all Supabase cloud dependencies and the vestigial anonymous telemetry toggle. Analytics is ungated for all users; memories/schedules/parallel workflows have no artificial limits; history retention is a fixed 365 days; the app runs fully offline with no external service required.
+ainative collapses to a single free Community Edition. The full PLG Monetization stack (license manager, 4-tier system, Stripe billing, feature gating, resource limits, cloud license validation) is removed along with all Supabase cloud dependencies and the vestigial anonymous telemetry toggle. Analytics is ungated for all users; memories/schedules/parallel workflows have no artificial limits; history retention is a fixed 365 days; the app runs fully offline with no external service required.
 
 Shipped in three sequential commits on the same day:
 - `0436803` — `community-edition-simplification`: removed license manager, 8 license lib files, 4 license API routes, 6 gate UI components, 5 Supabase billing edge functions (validate-license, create-checkout-session, create-portal-session, stripe-webhook, conversion-ingest), license DB table, and all tier-check call sites across API routes and core modules. Also removed App Catalog and Blueprint Marketplace in the same pass. 97 files changed, ~6,800 lines deleted.
@@ -366,7 +366,7 @@ Key changes:
 - `handleToolPermission` gains a Layer 1.75 (SDK filesystem + `Skill` auto-allow). Profile `autoDeny` still wins via Layer 1 precedence.
 - Both `executeClaudeTask` and `resumeClaudeTask` pass `settingSources` + merged allowed-tools, capability-gated on `getFeaturesForModel(...).hasNativeSkills`. Profile allowedTools wins when explicit; `CLAUDE_SDK_ALLOWED_TOOLS` is the fallback. Empty-allowlist edge case tightened (`length > 0` required).
 - Parity regression test splits `claude-agent.ts` source on `export async function resumeClaudeTask` so execute and resume `query()` blocks are unambiguously attributed.
-- Pre-existing `A-stagent-3` test updated to lock in the new allowedTools contract (Phase 1a list now ships by default when no profile allowlist is set).
+- Pre-existing `A-ainative-3` test updated to lock in the new allowedTools contract (Phase 1a list now ships by default when no profile allowlist is set).
 
 Scope pushback documented: the spec's §3 (shared Tier 0 partition helper) was deferred — chat's system prompt embeds conversation history, task's embeds document/table/output context, making a shared helper speculative abstraction.
 
@@ -378,11 +378,11 @@ Unblocks: — (the P1 Claude-runtime skill story is now complete; remaining Chat
 
 ### Completed — chat-claude-sdk-skills (P0)
 
-Flipped Stagent chat on the `claude-code` runtime from "isolation mode" to "SDK-native." Two small changes to `src/lib/chat/engine.ts` do the heavy lifting: `settingSources: ["user", "project"]` activates the SDK's CLAUDE.md + `.claude/skills/` + `~/.claude/skills/` auto-loading, and adding Skill, Read, Grep, Glob, Edit, Write, Bash, TodoWrite to `allowedTools` exposes the full filesystem tool suite. A read-only auto-allow branch in the existing `canUseTool` closure silences permission prompts for Read/Grep/Glob (mirroring the browser/exa pattern). Edit/Write/Bash/TodoWrite route through the pre-existing side-channel permission bridge automatically — no new plumbing. `Task` subagent tool intentionally excluded; Stagent task primitives replace it.
+Flipped ainative chat on the `claude-code` runtime from "isolation mode" to "SDK-native." Two small changes to `src/lib/chat/engine.ts` do the heavy lifting: `settingSources: ["user", "project"]` activates the SDK's CLAUDE.md + `.claude/skills/` + `~/.claude/skills/` auto-loading, and adding Skill, Read, Grep, Glob, Edit, Write, Bash, TodoWrite to `allowedTools` exposes the full filesystem tool suite. A read-only auto-allow branch in the existing `canUseTool` closure silences permission prompts for Read/Grep/Glob (mirroring the browser/exa pattern). Edit/Write/Bash/TodoWrite route through the pre-existing side-channel permission bridge automatically — no new plumbing. `Task` subagent tool intentionally excluded; ainative task primitives replace it.
 
-Tier 0 / CLAUDE.md partition audit (DD-CE-002): documented as a doc comment on `STAGENT_SYSTEM_PROMPT`. Finding: zero content migration needed — Tier 0 is already Stagent-identity scoped for this codebase. Regression guard: future contributors adding project-specific rules to `system-prompt.ts` should be caught in code review against the rubric.
+Tier 0 / CLAUDE.md partition audit (DD-CE-002): documented as a doc comment on `STAGENT_SYSTEM_PROMPT`. Finding: zero content migration needed — Tier 0 is already ainative-identity scoped for this codebase. Regression guard: future contributors adding project-specific rules to `system-prompt.ts` should be caught in code review against the rubric.
 
-`list_profiles` chat tool now fuses registry profiles with SDK-discovered filesystem skills via new `listFusedProfiles(projectDir)` helper (at `src/lib/agents/profiles/list-fused-profiles.ts`). Dedupes by id — registry wins on collision. Malformed SKILL.md frontmatter logs-then-skips. `getListProfilesTool(projectDir)` factory threads project working directory through the chat tool-assembly stack (helpers.ts `ToolContext`, stagent-tools.ts factory signatures, engine.ts call site).
+`list_profiles` chat tool now fuses registry profiles with SDK-discovered filesystem skills via new `listFusedProfiles(projectDir)` helper (at `src/lib/agents/profiles/list-fused-profiles.ts`). Dedupes by id — registry wins on collision. Malformed SKILL.md frontmatter logs-then-skips. `getListProfilesTool(projectDir)` factory threads project working directory through the chat tool-assembly stack (helpers.ts `ToolContext`, ainative-tools.ts factory signatures, engine.ts call site).
 
 Regression guards: hooks-excluded test greps engine.ts source for a `hooks:` key. Auto-allow policy exercised by 11 unit tests covering Read/Grep/Glob auto-allow, Edit/Bash non-auto-allow, Skill auto-allow, and Task absence. TDR-032 smoke test on live dev server (claude-in-chrome MCP, Opus model): skill invocation reached LLM, CLAUDE.md content auto-loaded, Grep ran without permission prompt, no ReferenceError.
 
@@ -402,12 +402,12 @@ Unblocks: `chat-claude-sdk-skills` (P0 critical path), `chat-codex-app-server-sk
 
 Extracted 10 new features from `ideas/chat-context-experience.md` (brainstorm with contributions from `/architect`, `/product-manager`, `/frontend-designer`). Consulted `/product-manager` for template authoring, with architect/frontend-designer guidance sourced from §11 of the ideas doc (inline contributions).
 
-Goal: bring Stagent chat to CLI parity for skills, CLAUDE.md/AGENTS.md auto-loading, filesystem tools, and command UX — uniformly across three runtimes (Claude Agent SDK, Codex App Server, Ollama HTTP) — while preserving Stagent's differentiation layer (permission bridge, persistent conversations, Stagent primitives, rich tool result UI).
+Goal: bring ainative chat to CLI parity for skills, CLAUDE.md/AGENTS.md auto-loading, filesystem tools, and command UX — uniformly across three runtimes (Claude Agent SDK, Codex App Server, Ollama HTTP) — while preserving ainative's differentiation layer (permission bridge, persistent conversations, ainative primitives, rich tool result UI).
 
 **Phase 1 — Runtime-native skill integration (sequential rollout per Q1):**
 - `chat-claude-sdk-skills` (P0) — `settingSources` + `Skill` tool + filesystem tools on `claude-code` runtime. Includes DD-CE-002 (Tier 0 / CLAUDE.md partition). Critical path.
 - `chat-codex-app-server-skills` (P1) — `turn/start` skill parameters on `openai-codex-app-server` runtime. Depends on 1a's UX contract.
-- `chat-ollama-native-skills` (P2) — Stagent-native `activate_skill` MCP tools + context injection for Ollama (no SDK support). Depends on 1a.
+- `chat-ollama-native-skills` (P2) — ainative-native `activate_skill` MCP tools + context injection for Ollama (no SDK support). Depends on 1a.
 
 **Cross-cutting infrastructure:**
 - `runtime-capability-matrix` (P1) — first-class capability flags on `src/lib/agents/runtime/catalog.ts`; hard prerequisite for skill/tool/hint filtering across runtimes (architect drift concern, §11).
@@ -422,9 +422,9 @@ Goal: bring Stagent chat to CLI parity for skills, CLAUDE.md/AGENTS.md auto-load
 
 Key design decisions locked during grooming:
 - **Uniform UX, per-runtime implementation** — same `/skill-name` syntax across runtimes, implementation differs per SDK capability.
-- **Option B partition** — Stagent Tier 0 covers identity/tools; SDK-loaded CLAUDE.md covers project conventions.
+- **Option B partition** — ainative Tier 0 covers identity/tools; SDK-loaded CLAUDE.md covers project conventions.
 - **Filesystem hooks excluded** (Q2) from scope.
-- **Bash included** with Stagent permission bridge (Q3).
+- **Bash included** with ainative permission bridge (Q3).
 - **Q8a filter** — hide skills whose required tools are unavailable on the active runtime (not badge, not rewrite).
 - **Q9a** — capability-hint banner below input for reduced-capability runtimes (e.g., Ollama).
 
@@ -482,7 +482,7 @@ Brainstormed and decomposed the full App Marketplace feature surface across 7 ar
 
 Key decisions locked during brainstorm:
 - All three authoring tiers (developer TS, power user YAML/MD, end user chat) — one grammar, plural serializations
-- Apps contain MCP servers (Stagent-native, cross-platform tool exposure)
+- Apps contain MCP servers (ainative-native, cross-platform tool exposure)
 - Trust ceiling: declarative + MCP protocol (no sandboxed JS execution)
 - Trust → execution tier mapping: community=Tier A (declarative), verified=Tier A+B (MCP/channels/tools), official=full access
 
@@ -497,7 +497,7 @@ Built the data sanitization pipeline for generating safe, synthetic seed data fr
 - **Seed generator** (`seed-generator.ts`): orchestrates sanitization pipeline, runs PII scan, outputs CSV files with proper escaping
 - **Zod validation** for `seedData` manifest section
 - 28 tests: all 7 sanitizers, PII detection (10 patterns), full pipeline, CSV round-trip with escaping
-- CLI command (`stagent app seed`) deferred to `app-cli-tools`
+- CLI command (`ainative app seed`) deferred to `app-cli-tools`
 
 873 tests pass, `tsc --noEmit` clean. Unblocks app-cli-tools and promote-conversation-to-app.
 
@@ -516,7 +516,7 @@ All 5 new fields are optional on AppBundle (backward compatible). Both builtin a
 
 ### Completed — app-package-format (P1)
 
-Implemented the `.sap` (Stagent App Package) YAML-based directory format — the portable, distributable representation of an AppBundle. Key deliverables:
+Implemented the `.sap` (ainative App Package) YAML-based directory format — the portable, distributable representation of an AppBundle. Key deliverables:
 - `SapManifest` type with YAML-specific fields (author, license, platform compat, marketplace metadata, sidebar, provides, dependencies)
 - `sapManifestSchema` Zod validation with clear error messages
 - `sapToBundle()` — parses a `.sap` directory into a typed AppBundle with namespace-prefixed artifact IDs
@@ -572,7 +572,7 @@ Closed the profile validation gap at `create_task` and `update_task` — both pr
 
 `execute_task` now runs a synchronous stale-profile check on the stored `task.agentProfile` before queuing, surfacing the error in the immediate chat-tool response instead of letting it fail later at runtime. This catches tasks created before this fix with invalid profiles. `list_tasks` now returns a sibling `note` field on empty-result-with-active-filter responses (happy path unchanged — still returns a raw array), addressing the most probable UX-level root cause of the original "task disappears after creation" symptom that a spike investigation traced to silent `ctx.projectId` scoping.
 
-**Spike conclusion:** The original handoff's "task was deleted" framing was false — no `db.delete(tasks)` exists anywhere in `src/`, and every failure path in `claude-agent.ts` (`:130, :418-420, :745-748, :809-811`) preserves the row with `status: "failed"` and a `failureReason`. Real root causes are (1) `list_tasks` silent project-scoping by `ctx.projectId` (fixed in this feature via the empty-result note) and (2) `STAGENT_DATA_DIR` per-process domain-clone isolation (intentional per `MEMORY.md → shared-stagent-data-dir.md`, remediation deferred — a follow-up feature could add operator-facing data-dir discoverability via a startup log or health-check tool).
+**Spike conclusion:** The original handoff's "task was deleted" framing was false — no `db.delete(tasks)` exists anywhere in `src/`, and every failure path in `claude-agent.ts` (`:130, :418-420, :745-748, :809-811`) preserves the row with `status: "failed"` and a `failureReason`. Real root causes are (1) `list_tasks` silent project-scoping by `ctx.projectId` (fixed in this feature via the empty-result note) and (2) `STAGENT_DATA_DIR` per-process domain-clone isolation (intentional per `MEMORY.md → shared-ainative-data-dir.md`, remediation deferred — a follow-up feature could add operator-facing data-dir discoverability via a startup log or health-check tool).
 
 **Commits:**
 - `542d02f` — `docs(plan): add implementation plan for task-create-profile-validation`
@@ -604,21 +604,21 @@ A fix-up commit (`649db6d`) added `maxTurnsSetAt` writes alongside every `maxTur
 - `npx vitest run src/lib/chat/tools/__tests__/schedule-tools.test.ts` → 20/20 passing (6 create validation + 4 update validation + 4 create persistence + 6 update persistence, including three-state contract for `maxTurnsSetAt`)
 - Adjacent `src/lib/chat/tools/__tests__/` suite → 31/31 green
 - `npx tsc --noEmit` → exit 0
-- No smoke test required — `schedule-tools.ts` has no runtime-registry adjacency (pure Zod schema + drizzle insert/update, no `@/lib/chat/stagent-tools` or `claude-agent.ts` imports). Per TDR-032 smoke-test budget policy, unit tests are sufficient.
+- No smoke test required — `schedule-tools.ts` has no runtime-registry adjacency (pure Zod schema + drizzle insert/update, no `@/lib/chat/ainative-tools` or `claude-agent.ts` imports). Per TDR-032 smoke-test budget policy, unit tests are sufficient.
 
 ### Completed — task-runtime-ainative-mcp-injection (P0)
 
-Wired the in-process stagent MCP server into `executeClaudeTask` and `resumeClaudeTask` in `src/lib/agents/claude-agent.ts` via two shared private helpers (`withStagentMcpServer`, `withStagentAllowedTools`) so future runtime entry points cannot drift apart. `mcp__stagent__*` is conditionally prepended to `allowedTools` only when the profile has an explicit allowlist, preserving `claude_code` preset defaults otherwise. The per-profile `canUseToolPolicy` + `handleToolPermission` model is untouched — it was already the correct design for task execution.
+Wired the in-process ainative MCP server into `executeClaudeTask` and `resumeClaudeTask` in `src/lib/agents/claude-agent.ts` via two shared private helpers (`withStagentMcpServer`, `withStagentAllowedTools`) so future runtime entry points cannot drift apart. `mcp__stagent__*` is conditionally prepended to `allowedTools` only when the profile has an explicit allowlist, preserving `claude_code` preset defaults otherwise. The per-profile `canUseToolPolicy` + `handleToolPermission` model is untouched — it was already the correct design for task execution.
 
-A code-quality follow-up (commit `ddd58fd`) switched from the deprecated `createStagentMcpServer` wrapper to `createToolServer(projectId).asMcpServer()` directly. A second follow-up (commit `2b5ae42`) broke a module-load cycle that the initial static import introduced — `claude-agent.ts` → `stagent-tools.ts` → `chat/tools/*` → `@/lib/agents/runtime/catalog` → `claudeRuntimeAdapter` (mid-evaluation). The fix uses a lazy `await import()` inside the helper body, deferring the stagent-tools load to call time. Caught only by end-to-end smoke — unit tests mock `@/lib/chat/stagent-tools` so the real cycle never evaluates. Lesson captured in the spec's References section.
+A code-quality follow-up (commit `ddd58fd`) switched from the deprecated `createStagentMcpServer` wrapper to `createToolServer(projectId).asMcpServer()` directly. A second follow-up (commit `2b5ae42`) broke a module-load cycle that the initial static import introduced — `claude-agent.ts` → `ainative-tools.ts` → `chat/tools/*` → `@/lib/agents/runtime/catalog` → `claudeRuntimeAdapter` (mid-evaluation). The fix uses a lazy `await import()` inside the helper body, deferring the ainative-tools load to call time. Caught only by end-to-end smoke — unit tests mock `@/lib/chat/ainative-tools` so the real cycle never evaluates. Lesson captured in the spec's References section.
 
 **Verification run:**
-- `npx vitest run src/lib/agents/__tests__/claude-agent.test.ts` → 34/34 passing (5 new A-stagent-1/2/3 + R-stagent-1/2 tests)
+- `npx vitest run src/lib/agents/__tests__/claude-agent.test.ts` → 34/34 passing (5 new A-ainative-1/2/3 + R-ainative-1/2 tests)
 - `npx tsc --noEmit` → exit 0
-- End-to-end smoke against dev server on `:3010` (clean stagent.db) — task `1d2bdb99-…` created, executed on `claude-code` runtime, agent successfully located and invoked `mcp__stagent__list_tables`, permission gate fired expected approval notification, no "missing stagent tools" error
+- End-to-end smoke against dev server on `:3010` (clean ainative.db) — task `1d2bdb99-…` created, executed on `claude-code` runtime, agent successfully located and invoked `mcp__stagent__list_tables`, permission gate fired expected approval notification, no "missing ainative tools" error
 
 **Follow-ups queued** (separate plan):
-- TDR-NNN: Runtime entry points must consistently inject the in-process stagent MCP server (via `/architect`)
+- TDR-NNN: Runtime entry points must consistently inject the in-process ainative MCP server (via `/architect`)
 - Dedupe the duplicate `withStagentAllowedTools(…)` call at both conditional-spread sites
 - Add a smoke-test budget policy for plans that touch runtime-registry-adjacent modules, since unit tests that mock those modules structurally cannot catch module-load cycles
 
@@ -626,7 +626,7 @@ A code-quality follow-up (commit `ddd58fd`) switched from the deprecated `create
 
 Groomed four handoff docs from `handoff/` into feature specs under the Platform Hardening milestone. Two are bug fixes on the scheduled/task execution path, two are observability and control features uncovered while operating those schedules. Code paths were verified against the live codebase via an Explore pass before specs were written; one handoff's root-cause theory ("task was deleted") was corrected — the codebase has no task deletion code anywhere, so the groomed spec frames the work as "add validation + investigate scoping mismatch" rather than "stop deleting tasks."
 
-- **`task-runtime-ainative-mcp-injection`** (P0) — wires `createStagentMcpServer` into `executeClaudeTask` and `resumeClaudeTask` in `src/lib/agents/claude-agent.ts` and adds `mcp__stagent__*` to the `claude-code` runtime's `allowedTools`, matching the chat engine, `openai-direct`, and `anthropic-direct` runtimes. This is the root cause of schedule-fired agents silently reporting "No stagent table MCP tools are available in this session" in News Sentinel, Price Monitor, and Daily Briefing. A follow-up TDR under `agent-system` will codify "All runtime entry points must inject the in-process stagent MCP server consistently" so the gap cannot recur when a new runtime adapter is added.
+- **`task-runtime-ainative-mcp-injection`** (P0) — wires `createStagentMcpServer` into `executeClaudeTask` and `resumeClaudeTask` in `src/lib/agents/claude-agent.ts` and adds `mcp__stagent__*` to the `claude-code` runtime's `allowedTools`, matching the chat engine, `openai-direct`, and `anthropic-direct` runtimes. This is the root cause of schedule-fired agents silently reporting "No ainative table MCP tools are available in this session" in News Sentinel, Price Monitor, and Daily Briefing. A follow-up TDR under `agent-system` will codify "All runtime entry points must inject the in-process ainative MCP server consistently" so the gap cannot recur when a new runtime adapter is added.
 - **`task-create-profile-validation`** (P1) — rejects invalid `agentProfile` values at `create_task` (today, `anthropic-direct` — a runtime, not a profile — is accepted as if it were a profile). Also carries a time-boxed investigation spike for the reported "task disappears after creation" symptom; the codebase audit found no DELETE on tasks anywhere and traced the likely cause to data-dir (`STAGENT_DATA_DIR`) or `projectId` scoping mismatch between the creating and querying contexts.
 - **`schedule-maxturns-api-control`** (P2) — exposes the existing `schedules.maxTurns` column on `create_schedule` / `update_schedule` MCP input schemas in `src/lib/chat/tools/schedule-tools.ts`. The column, the scheduler plumbing, and the handoff from schedule to task firing already exist; only the Zod schemas are missing.
 - **`task-turn-observability`** (P2) — adds `turnCount` / `tokenCount` columns to the `tasks` table, surfaces them on `get_task` / `list_tasks`, and commits to a written definition of what the turn-count metric measures. Observed schedule turn counts of 700–2,900 far exceed any plausible "reasoning round" interpretation and currently mislead both users and AI assistants into wrong diagnoses. The spec requires the metric definition to be written down before any columns are added so the codebase doesn't persist a misnamed field.
@@ -664,10 +664,10 @@ Shipped the planner-backed follow-on to `bulk-row-enrichment` as three completed
 
 ### Completed — Codex ChatGPT auth, isolated session storage, and OpenAI subscription-state UX
 
-Codex App Server inside Stagent no longer requires an API key. OpenAI provider settings now support browser-based ChatGPT sign-in for the Codex runtime, while preserving the separate API-key path for OpenAI Direct.
+Codex App Server inside ainative no longer requires an API key. OpenAI provider settings now support browser-based ChatGPT sign-in for the Codex runtime, while preserving the separate API-key path for OpenAI Direct.
 
 - **`codex-chatgpt-authentication`** — shipped ChatGPT sign-in for Codex App Server using the app-server JSON-RPC auth surface. Settings can start login, poll completion, cancel in-flight login, sign out, test the connection, and reuse cached ChatGPT sessions for both task execution and chat conversations. Codex task assist, task execution, connection tests, and the Codex chat engine now branch on the configured OpenAI auth method instead of assuming API-key-only startup.
-- **`codex-auth-session-isolation`** — Stagent-managed Codex auth now runs under an isolated `CODEX_HOME` inside the Stagent data directory, with `cli_auth_credentials_store = "file"` enforced via a Stagent-owned `config.toml`. This prevents Stagent login/logout from mutating the operator's normal `~/.codex` session and strips ambient `OPENAI_API_KEY` from ChatGPT-authenticated launches so OAuth mode cannot silently fall back to API-key auth.
+- **`codex-auth-session-isolation`** — ainative-managed Codex auth now runs under an isolated `CODEX_HOME` inside the ainative data directory, with `cli_auth_credentials_store = "file"` enforced via a ainative-owned `config.toml`. This prevents ainative login/logout from mutating the operator's normal `~/.codex` session and strips ambient `OPENAI_API_KEY` from ChatGPT-authenticated launches so OAuth mode cannot silently fall back to API-key auth.
 - **`codex-subscription-governance`** — runtime setup now treats ChatGPT-authenticated Codex App Server as subscription-priced, surfaces ChatGPT account identity plus Codex rate-limit metadata in Settings, and shows dual-billing messaging when ChatGPT-backed Codex and API-key-backed OpenAI Direct are both configured at the same time.
 
 **Verification run:**
@@ -765,7 +765,7 @@ Shipped in the same session as grooming. Duplicate workflow creation in long cha
 
 ### Groomed — handoff/ bug reports into two Platform Hardening specs
 
-Two bug reports from a sibling stagent instance (written against a different `src/features/` / `src/db/` file layout) were validated against this repo's actual structure and groomed into feature specs under the Platform Hardening section of the roadmap.
+Two bug reports from a sibling ainative instance (written against a different `src/features/` / `src/db/` file layout) were validated against this repo's actual structure and groomed into feature specs under the Platform Hardening section of the roadmap.
 
 - **`workflow-create-dedup` (P1, planned)** — Direct port of the duplicate-workflow bug. Every claim validated: `workflows` table has no uniqueness constraint (`src/lib/db/schema.ts:71-93`), `create_workflow` tool performs zero dedup (`src/lib/chat/tools/workflow-tools.ts:70-208`), sliding-window context truncation at ~8K tokens is real (`src/lib/chat/context-builder.ts:60-80`), and a reusable 3-tier dedup pattern already exists for profile imports (`src/lib/import/dedup.ts`). Spec wires Option A (tool-level dedup reusing the existing pattern) + Option B (system prompt guardrail), extracts the shared keyword/Jaccard helpers into `src/lib/util/similarity.ts`, and rejects Options C/D/E (DB constraint too strict, session dedup fragile, cascade-delete already done at `src/app/api/workflows/[id]/route.ts:129-185`).
 
@@ -777,7 +777,7 @@ Source handoff docs remain in `handoff/` as archive — the spec `source:` front
 
 ### Completed — workflow-status-view-pattern-router (full refactor)
 
-Unlike the two ship-verifications earlier today (workflow-step-delays, bulk-row-enrichment), this was a real greenfield implementation of the TDR-031 contract that was groomed and architected this morning in response to PR manavsehgal/stagent#6. Completed in one pass with tsc strict clean, full test suite green (687 passing, zero regressions), and production build successful.
+Unlike the two ship-verifications earlier today (workflow-step-delays, bulk-row-enrichment), this was a real greenfield implementation of the TDR-031 contract that was groomed and architected this morning in response to PR manavsehgal/ainative#6. Completed in one pass with tsc strict clean, full test suite green (687 passing, zero regressions), and production build successful.
 
 **All 17 acceptance criteria met:**
 
@@ -815,7 +815,7 @@ Unlike the two ship-verifications earlier today (workflow-step-delays, bulk-row-
 
 - `npm test -- --run` → **687 passing, 11 skipped (e2e), 0 failures**. `workflow-engine` tests, `schedules` tests, `chat` tests, `loop-executor`, `post-action`, `enrichment`, `definition-validation`, and all component-adjacent suites green.
 - `npx tsc --noEmit` → **exit 0**. TypeScript strict compile clean across the full project.
-- `npm run build` → **"✓ Compiled successfully in 7.4s"** with 100/100 static pages generated. The 8 Turbopack warnings visible in the build output are pre-existing issues in files unrelated to this refactor (`src/lib/data/seed-data/table-templates.ts`, `src/lib/db/index.ts`, `src/lib/utils/stagent-paths.ts`) — they're Node.js module warnings on App Router boundaries, not new errors.
+- `npm run build` → **"✓ Compiled successfully in 7.4s"** with 100/100 static pages generated. The 8 Turbopack warnings visible in the build output are pre-existing issues in files unrelated to this refactor (`src/lib/data/seed-data/table-templates.ts`, `src/lib/db/index.ts`, `src/lib/utils/ainative-paths.ts`) — they're Node.js module warnings on App Router boundaries, not new errors.
 
 **Architecture payoff (TDR-031 made concrete):**
 
@@ -841,7 +841,7 @@ Unlike the two ship-verifications earlier today (workflow-step-delays, bulk-row-
 
 **Manual browser smoke:** deferred — tsc strict clean + full test suite + production build successful is strong enough evidence for this refactor. Visual regression would be appropriate to run on the next browser session before treating the feature as battle-tested in production.
 
-**Today's thread closed:** PR manavsehgal/stagent#6 → architect review → TDR-031 → feature spec → full implementation. Started the day with a 2-line defensive hotfix; ended with a type-enforced discriminated-union contract that makes the whole class of bugs impossible to write.
+**Today's thread closed:** PR manavsehgal/ainative#6 → architect review → TDR-031 → feature spec → full implementation. Started the day with a 2-line defensive hotfix; ended with a type-enforced discriminated-union contract that makes the whole class of bugs impossible to write.
 
 ### Completed — bulk-row-enrichment (ship verification)
 
@@ -911,11 +911,11 @@ Feature status flipped `planned` → `completed` after `/product-manager` ship-v
 
 ### Fixed — Workflow detail page crash on loop-pattern workflows
 
-Merged PR manavsehgal/stagent#6 (`fix/workflow-loop-status-crash`), opened the same day by Stagent Chat running in the `stagent-growth` instance. The workflow detail page crashed into the React error boundary for every loop-pattern workflow (the pattern used by table enrichment) because `completedStepOutputs` in `src/components/workflows/workflow-status-view.tsx:404-406` dereferenced `s.state.result` unconditionally — but the status API returns raw step definitions without a `.state` property for loop workflows. The PR adds optional chaining as a 2-line defensive guard. Shipped as an interim hotfix; the root-cause fix is tracked by the new `workflow-status-view-pattern-router` spec below.
+Merged PR manavsehgal/ainative#6 (`fix/workflow-loop-status-crash`), opened the same day by ainative Chat running in the `ainative-growth` instance. The workflow detail page crashed into the React error boundary for every loop-pattern workflow (the pattern used by table enrichment) because `completedStepOutputs` in `src/components/workflows/workflow-status-view.tsx:404-406` dereferenced `s.state.result` unconditionally — but the status API returns raw step definitions without a `.state` property for loop workflows. The PR adds optional chaining as a 2-line defensive guard. Shipped as an interim hotfix; the root-cause fix is tracked by the new `workflow-status-view-pattern-router` spec below.
 
 ### Groomed — Workflow Status View Pattern Router (1 feature)
 
-Created `features/workflow-status-view-pattern-router.md` (P2, post-mvp, planned) as the durable follow-up to PR manavsehgal/stagent#6. Scope: discriminated-union response type in `src/lib/workflows/types.ts`, type-annotated route handler at `src/app/api/workflows/[id]/status/route.ts`, refactor of the 895-line `workflow-status-view.tsx` god component into a thin router (<80 lines), two new pattern-specific subviews under `src/components/workflows/views/`, and a shared polling hook at `src/components/workflows/hooks/use-workflow-status.ts`. The final acceptance criterion **removes** the optional chaining PR #6 added — by that point the TypeScript compiler enforces the invariant via the discriminated union, so the defensive guard becomes obsolete. Also fixes a latent bug: loop workflows currently show an empty Full Output sheet because the UI never reads `loopState.iterations[].result` — the new loop subview wires this up.
+Created `features/workflow-status-view-pattern-router.md` (P2, post-mvp, planned) as the durable follow-up to PR manavsehgal/ainative#6. Scope: discriminated-union response type in `src/lib/workflows/types.ts`, type-annotated route handler at `src/app/api/workflows/[id]/status/route.ts`, refactor of the 895-line `workflow-status-view.tsx` god component into a thin router (<80 lines), two new pattern-specific subviews under `src/components/workflows/views/`, and a shared polling hook at `src/components/workflows/hooks/use-workflow-status.ts`. The final acceptance criterion **removes** the optional chaining PR #6 added — by that point the TypeScript compiler enforces the invariant via the discriminated union, so the defensive guard becomes obsolete. Also fixes a latent bug: loop workflows currently show an empty Full Output sheet because the UI never reads `loopState.iterations[].result` — the new loop subview wires this up.
 
 **Architect review:** `/architect` ran in Architecture Review mode on PR #6 (`features/architect-report.md` 2026-04-09). Verdict: accept the hotfix, treat it as interim, ship the router refactor in a separate PR. Classification: Medium blast radius (2 layers, 6-7 files). Regression risk matrix covers sequence/parallel/loop/swarm detail pages and polling behavior.
 
@@ -929,7 +929,7 @@ Created `features/workflow-status-view-pattern-router.md` (P2, post-mvp, planned
 
 ### Groomed — Growth-Enabling Primitives (2 features)
 
-Split `features/2026-04-08-stagent-core-growth-primitives-design.md` into two independent, implementable feature files. The source spec bundled two orthogonal capabilities identified while building the Growth module — both are general-purpose Stagent primitives, not Growth-specific, and they became cleaner when tracked separately.
+Split `features/2026-04-08-ainative-core-growth-primitives-design.md` into two independent, implementable feature files. The source spec bundled two orthogonal capabilities identified while building the Growth module — both are general-purpose ainative primitives, not Growth-specific, and they became cleaner when tracked separately.
 
 **New features (both P1, post-MVP, planned):**
 
@@ -967,11 +967,11 @@ Both feature specs include a new "Chat Context Exposure" section covering system
 
 User review caught two gaps in the initial grooming pass:
 
-**Gap 1 — Main dev repo safety:** if `instance-bootstrap` ships without gates, the canonical dev repo (`/Users/manavsehgal/Developer/stagent`) will have a pre-push hook installed and `branch.main.pushRemote=no_push` set on first `npm run dev` after merge, breaking contributor push workflow catastrophically.
+**Gap 1 — Main dev repo safety:** if `instance-bootstrap` ships without gates, the canonical dev repo (`/Users/manavsehgal/Developer/ainative`) will have a pre-push hook installed and `branch.main.pushRemote=no_push` set on first `npm run dev` after merge, breaking contributor push workflow catastrophically.
 
 Added **layered defense**:
 - Primary gate: `STAGENT_DEV_MODE=true` env var (per-developer, via `.env.local`)
-- Secondary gate: `.git/stagent-dev-mode` sentinel file (git-dir-scoped, never cloned, persists across `.env.local` churn)
+- Secondary gate: `.git/ainative-dev-mode` sentinel file (git-dir-scoped, never cloned, persists across `.env.local` churn)
 - Tertiary gate: **two-phase bootstrap with explicit consent for destructive ops** — Phase A (instanceId, local branch creation) runs without consent because it's fully non-destructive; Phase B (pre-push hook, pushRemote config) requires user consent via a first-boot notification with `[Enable guardrails] [Not now] [Never on this clone]` actions
 - Opt-in override: `STAGENT_INSTANCE_MODE=true` beats `STAGENT_DEV_MODE=true` so contributors can test the feature in the main repo
 - **Pre-ship checklist:** implementing PR MUST add `STAGENT_DEV_MODE=true` to main dev repo's `.env.local` AND document in `AGENTS.md` + `CLAUDE.md` before merge
@@ -1046,7 +1046,7 @@ Implemented all 4 features across 2 phases with expanded scope (per-step budget 
 
 **Schema changes:** 2 migrations (0022: tasks.max_budget_usd + workflows.runtime_id, 0023: workflow_execution_stats table)
 **New files:** 12 (cost-estimator, execution-stats, error-analysis, optimizer, runtime-tools, step-progress-bar, step-live-metrics, error-timeline, workflow-debug-panel, workflow-optimizer-panel, 2 API routes)
-**Modified files:** 12 (engine.ts, types.ts, schema.ts, catalog.ts, claude-agent.ts, anthropic-direct.ts, openai-direct.ts, settings-tools.ts, workflow-tools.ts, stagent-tools.ts, execute/route.ts, clear.ts)
+**Modified files:** 12 (engine.ts, types.ts, schema.ts, catalog.ts, claude-agent.ts, anthropic-direct.ts, openai-direct.ts, settings-tools.ts, workflow-tools.ts, ainative-tools.ts, execute/route.ts, clear.ts)
 
 ### Groomed — Workflow Intelligence Stack (4 features)
 
@@ -1095,13 +1095,13 @@ Comprehensive free→paid strategy brainstormed and groomed using `/product-mana
 **Growth Layer (6 features, P1-P3):**
 - `edition-readme-update` — Community vs Premium positioning in README (no code deps, Week 1)
 - `first-run-onboarding` — email capture + 6-milestone activation checklist
-- `marketing-site-pricing-page` — static /pricing on stagent.github.io
+- `marketing-site-pricing-page` — static /pricing on ainative.github.io
 - `transactional-email-flows` — 5 Resend email types via Edge Functions
 - `telemetry-foundation` — opt-in anonymized telemetry, default OFF, 5-min batch flush
 - `upgrade-conversion-instrumentation` — anonymous funnel tracking for A/B testing
 
 **Dual-entry payment model established:**
-- Marketing site (stagent.io) uses Stripe Payment Links — static URLs, no API calls
+- Marketing site (ainative.io) uses Stripe Payment Links — static URLs, no API calls
 - Product (/settings/subscription) uses Stripe Checkout Sessions via Supabase Edge Function
 - Both paths create same license row in Supabase, keyed by email
 - Primary activation: email-based auto-matching (pay → sign in with same email → done)
@@ -1110,7 +1110,7 @@ Comprehensive free→paid strategy brainstormed and groomed using `/product-mana
 - Updated 4 specs: stripe-billing-integration, license-activation-flow, marketing-site-pricing-page, subscription-management-ui
 
 **Marketing site spec rewritten for actual Astro 5 codebase:**
-- Discovered stagent.github.io is Astro 5 + React + Tailwind v4 (not plain HTML)
+- Discovered ainative.github.io is Astro 5 + React + Tailwind v4 (not plain HTML)
 - Existing Pricing.astro has outdated tiers (Pro $149, Team $499, Advisory Services)
 - Spec now targets exact files: Pricing.astro (rewrite), Hero.astro (copy refresh), PersonaLanes.astro (CTA alignment), CTAFooter.astro (copy refresh)
 - Advisory Services block replaced with Marketplace Creator Pitch (revenue math, 70/30 split)
@@ -1133,7 +1133,7 @@ Comprehensive free→paid strategy brainstormed and groomed using `/product-mana
 ## 2026-04-03
 
 ### Started
-- `database-snapshot-backup` (P1) — Full-state snapshot system: atomic SQLite .backup(), tarball of all ~/.stagent/ file dirs, auto-backup timer with cron intervals, user-configurable retention (max count + max age weeks), restore with pre-restore safety snapshot, Settings UI card. Brainstormed with /architect + /product-manager. 6 implementation phases.
+- `database-snapshot-backup` (P1) — Full-state snapshot system: atomic SQLite .backup(), tarball of all ~/.ainative/ file dirs, auto-backup timer with cron intervals, user-configurable retention (max count + max age weeks), restore with pre-restore safety snapshot, Settings UI card. Brainstormed with /architect + /product-manager. 6 implementation phases.
 
 ### Completed — Structured Data (Tables) Initiative (14 features, Sprints 38-43)
 
@@ -1220,7 +1220,7 @@ Full Airtable-like structured data system shipped in a single session. 52 new fi
 
 **Source documents:**
 - `ideas/vision/machine-builds-machine-claude-ext-rsrch.md` — Strategic intelligence briefing (market positioning, JTBD, competitive landscape)
-- `ideas/vision/Stagent-OpenClaw-Companion-Research-Report.md` — 9 OpenClaw capabilities to adopt
+- `ideas/vision/ainative-OpenClaw-Companion-Research-Report.md` — 9 OpenClaw capabilities to adopt
 
 **New feature specs created:**
 - `product-messaging-refresh` (P0) — Reposition all in-repo messaging from "Governed AI Agent Workspace" to "AI Business Operating System"; README, docs, playbook, CLI help, in-app welcome; new problem statement and use case docs
@@ -1277,7 +1277,7 @@ Full Airtable-like structured data system shipped in a single session. 52 new fi
 - Source: `/architect` review + `/product-manager` grooming + `/frontend-designer` UX analysis — cross-skill analysis of profiles and environment features
 - Created **Workspace Intelligence** initiative — 3 new features + 1 existing regrouped:
   - `auto-environment-scan` (P1) — automatic staleness-based environment scan on project context change; eliminates manual "Scan" button as primary interaction
-  - `project-scoped-profiles` (P1) — bridge project `.claude/skills/` to Stagent profiles, read in-place (not copied), supports SKILL.md-only skills with minimal profile generation
+  - `project-scoped-profiles` (P1) — bridge project `.claude/skills/` to ainative profiles, read in-place (not copied), supports SKILL.md-only skills with minimal profile generation
   - `dynamic-slash-commands` (P2) — dynamic "Skills" group in chat slash command popover, populated from active project's discovered skills
   - `workspace-context-awareness` (P1, existing) — moved from Platform section into Workspace Intelligence initiative
 - Added "Workspace Intelligence" section to roadmap with dependency chain
@@ -1338,7 +1338,7 @@ Full Airtable-like structured data system shipped in a single session. 52 new fi
   - `living-book-authors-notes` (P2) — embed ai-native-notes screenshots as collapsible "Author's Notes" callouts; new `authors-note` callout variant; dogfooding proof
   - `living-book-reading-paths` (P2) — 4 persona-based reading paths (Getting Started, Team Lead, Power User, Developer); stage-aware recommendation; path-scoped progress
   - `living-book-markdown-pipeline` (P2) — migrate content.ts to docs/book/*.md files; extend reader.ts for unified manifest; markdown-to-ContentBlock parser
-  - `living-book-self-updating` (P3) — planner-executor workflow that auto-regenerates stale chapters; human review gate; "Stagent writes its own Book" capstone
+  - `living-book-self-updating` (P3) — planner-executor workflow that auto-regenerates stale chapters; human review gate; "ainative writes its own Book" capstone
 - Added Living Book section to roadmap with dependency chain and sprints 25-28
 
 ## 2026-03-23
@@ -1355,7 +1355,7 @@ Full Airtable-like structured data system shipped in a single session. 52 new fi
 
 ### Completed
 - `chat-data-layer` (P0) — conversations + chat_messages tables, Drizzle schema, full CRUD data access with cursor-based pagination
-- `chat-engine` (P0) — progressive 5-tier context injection (~53K token budget), streaming response handling, entity detection, model discovery, permission bridge, Stagent CRUD tools (list/create/update/delete for projects, tasks, workflows), intent disambiguation, system prompt with workspace awareness
+- `chat-engine` (P0) — progressive 5-tier context injection (~53K token budget), streaming response handling, entity detection, model discovery, permission bridge, ainative CRUD tools (list/create/update/delete for projects, tasks, workflows), intent disambiguation, system prompt with workspace awareness
 - `chat-api-routes` (P0) — conversations CRUD, SSE message streaming with keepalive pings, model catalog endpoint, context-aware suggested prompts endpoint, permission/question response endpoint
 - `chat-ui-shell` (P1) — ChatShell layout with conversation list sidebar, responsive design, empty state hero with suggested prompt chips
 - `chat-message-rendering` (P1) — ReactMarkdown + GFM rendering, Quick Access navigation pills for entity deep-linking, permission request UI, question rendering with options
@@ -1367,7 +1367,7 @@ Full Airtable-like structured data system shipped in a single session. 52 new fi
 
 ### Groomed
 - Extracted 6 chat features from HOLD-mode brainstorming session
-- Chat as "conversational control plane" for all stagent primitives
+- Chat as "conversational control plane" for all ainative primitives
 - Non-agentic by default (maxTurns: 1, no tools) — Haiku 4.5 default for cost efficiency
 - Progressive 5-tier context injection (Tier 0: workspace → Tier 4: full documents, ~53K token budget)
 - Quick Access navigation pills in responses for entity deep-linking
@@ -1381,7 +1381,7 @@ Full Airtable-like structured data system shipped in a single session. 52 new fi
 
 ### Groomed
 - Extracted 11 environment onboarding features from brainstorming session (EXPAND mode)
-- Feature set makes Stagent a control plane for Claude Code and Codex CLI environments
+- Feature set makes ainative a control plane for Claude Code and Codex CLI environments
 - 3 personas: Claude Code only, Codex only, both tools in same project
 - Progressive adoption funnel: Visibility → Sync → Orchestration
 - Architecture: Scanner + Cache with git-based checkpoints and bidirectional sync
@@ -1524,7 +1524,7 @@ Full Airtable-like structured data system shipped in a single session. 52 new fi
 ### Previously Completed
 - `board-context-persistence` (P2, post-MVP) — Persist board state across sessions and navigation
   - Created generic `usePersistedState` hook for localStorage-backed state with SSR-safe hydration
-  - Project filter persists across page refreshes via `stagent-project-filter` localStorage key
+  - Project filter persists across page refreshes via `ainative-project-filter` localStorage key
   - New Task link passes selected project as `?project=` search param, pre-filling the create form
   - Added sort order dropdown (Priority, Newest first, Oldest first, Title A-Z) persisted to localStorage
 - `kanban-board-operations` (P2, post-MVP) — Shipped inline task editing, bulk operations, and card animations
@@ -1543,27 +1543,27 @@ Full Airtable-like structured data system shipped in a single session. 52 new fi
 ## 2026-03-14
 
 ### Removed
-- `tauri-desktop` — Distribution simplified to `npx stagent` (npm) and web app only. All Tauri desktop shell, macOS DMG generation, Apple signing scripts, desktop smoke tests, and related feature specs removed. CLI entry point (`bin/cli.ts`) and sidecar launch helpers retained for the npx path.
+- `tauri-desktop` — Distribution simplified to `npx ainative` (npm) and web app only. All Tauri desktop shell, macOS DMG generation, Apple signing scripts, desktop smoke tests, and related feature specs removed. CLI entry point (`bin/cli.ts`) and sidecar launch helpers retained for the npx path.
 
 ## 2026-03-13
 
 ### Ship Verification
 - `desktop-sidecar-boot-fix` (P0, MVP) — The bundle boot blocker is no longer the broken `next` shim
   - Replaced the sidecar's `node_modules/.bin/next` launch path with a direct `node_modules/next/dist/bin/next` invocation via the active Node binary, which avoids Tauri's symlink-flattened `.bin/` copies
-  - Added a post-bundle sync of `.next/node_modules` into `Stagent.app` so Next's generated hashed externals such as `better-sqlite3-*` remain resolvable inside the packaged app
+  - Added a post-bundle sync of `.next/node_modules` into `ainative.app` so Next's generated hashed externals such as `better-sqlite3-*` remain resolvable inside the packaged app
   - Verified the actual release bundle sidecar starts in production mode and returns HTTP `200` on localhost under a Finder-style minimal `PATH`
 
 ### Enhancement
 - `desktop-sidecar-boot-fix` (P0, MVP) — Hardened the desktop handoff and trimmed accidental bundle bloat
   - Stopped the internal CLI from re-running port discovery when the Tauri wrapper already passed an explicit localhost port, preventing the boot screen from polling a stale port while the sidecar listens on a different one
-  - Pruned non-runtime Next artifacts such as `.next/dev`, trace files, diagnostics, and caches from the finished `Stagent.app` bundle so desktop release size no longer inherits stale local dev output
+  - Pruned non-runtime Next artifacts such as `.next/dev`, trace files, diagnostics, and caches from the finished `ainative.app` bundle so desktop release size no longer inherits stale local dev output
   - Rebuilt the local desktop artifacts to verify the size drop: the bundled `.next/` payload fell to roughly `51MB`, and the smoke DMG compressed to roughly `260MB`
 
 ### Started
 - `desktop-sidecar-boot-fix` (P0, MVP) — Desktop app launches but hangs at boot screen. Five issues identified and four solved (DMG signing, node PATH, `_up_/` path mapping, shim PATH). Initial blocker for this slice: Tauri's resource bundling destroys `node_modules/.bin/` symlinks, breaking the `next` CLI shim's relative requires. Feature spec documents the full diagnosis log.
 
 ### Re-prioritized
-- **Distribution direction**: Stagent is now desktop-only in user-facing product positioning
+- **Distribution direction**: ainative is now desktop-only in user-facing product positioning
   - Removed npm / `npx` onboarding and publish wiring from the repo surface, while keeping the CLI build only as an internal sidecar dependency of the desktop app
   - Deferred `npm-publish-readiness` as an active product feature and updated the bootstrap spec so it describes the internal desktop sidecar rather than a public install command
   - Promoted GitHub-hosted desktop artifacts as the only documented end-user install channel
@@ -1587,7 +1587,7 @@ Full Airtable-like structured data system shipped in a single session. 52 new fi
 - **npm-publish-readiness** (P1, post-MVP): Acceptance criteria verified against the packaged CLI, published tarball shape, npm-facing README, and live registry publication
   - Confirmed package metadata now covers npm discovery and links, while the published tarball keeps runtime-required source/assets and excludes repo-only test files
   - Confirmed the CLI help path now documents `STAGENT_DATA_DIR`, startup flags, and runtime credential expectations for first-time npm users
-  - Verified with `npm run build:cli`, `npm pack --dry-run`, a passing `npm run smoke:npm` tarball launch, and successful publication of `stagent@0.1.1`
+  - Verified with `npm run build:cli`, `npm pack --dry-run`, a passing `npm run smoke:npm` tarball launch, and successful publication of `ainative@0.1.1`
 - **multi-agent-swarm** (P3, post-MVP): Acceptance criteria verified against the new swarm workflow pattern, retry flow, targeted tests, and a successful production build
   - Confirmed workflow authoring now supports a bounded `swarm` pattern with one mayor step, 2-5 worker steps, a refinery step, and configurable worker concurrency
   - Confirmed execution runs the mayor first, fans worker child tasks out through the existing workflow task path, blocks the refinery on failed workers, and persists grouped swarm progress in workflow state
@@ -1605,7 +1605,7 @@ Full Airtable-like structured data system shipped in a single session. 52 new fi
   - Verified with targeted Vitest coverage (`26` passing tests), a successful production build, and a browser check covering both unsupported and dual-runtime profile states
 
 ### Completed
-- **npm-publish-readiness** (P1, post-MVP): Shipped npm distribution hardening for `npx stagent`
+- **npm-publish-readiness** (P1, post-MVP): Shipped npm distribution hardening for `npx ainative`
   - Added publish-ready npm metadata, tarball trimming, and a packaged smoke-test workflow that validates the CLI from the actual npm tarball instead of the repo checkout
   - Updated CLI help and runtime path handling so packaged runs can document and honor `STAGENT_DATA_DIR`, `--port`, `--reset`, and `--no-open`
   - Refreshed the npm-facing README with current feature coverage, a release checklist, and packaged screenshots that render from the published tarball
@@ -1625,7 +1625,7 @@ Full Airtable-like structured data system shipped in a single session. 52 new fi
   - Fixed workflow failure persistence so failed workflow runs now store a top-level `failed` status instead of remaining `active` after a branch or synthesis error
   - Verified with targeted Vitest coverage (`31` passing tests across workflow and agent suites), a successful production build, and a live browser pass that created and executed a parallel workflow
 - **document-output-generation** (P3, post-MVP): Shipped managed capture for agent-generated files
-  - Fresh task runs now prepare `~/.stagent/outputs/{taskId}/`, inject that path into Claude and Codex prompts, and scan supported generated files after successful completion
+  - Fresh task runs now prepare `~/.ainative/outputs/{taskId}/`, inject that path into Claude and Codex prompts, and scan supported generated files after successful completion
   - Generated `.md`, `.json`, `.csv`, `.txt`, and `.html` files are archived as immutable output documents with `direction="output"` plus version numbers so reruns preserve prior outputs instead of overwriting document history
   - Task detail now separates input attachments from generated outputs, while the Document Manager exposes output files through the normal browser with direction and version visibility
   - Document preview/download flows now use a document-backed file route, and agent document context is restricted to input documents so generated outputs do not feed back into future prompt context
@@ -1642,7 +1642,7 @@ Full Airtable-like structured data system shipped in a single session. 52 new fi
 - **npm-publish-readiness** (P1, post-MVP): Added a bounded npm distribution hardening spec for the existing CLI bootstrap
   - Separates publish-readiness from the already-completed local CLI bootstrap so release work is scoped to tarball shape, package metadata, smoke testing, and onboarding docs
   - Targets the OpenVolo-style thin CLI plus source-shipped Next.js pattern already captured in `ideas/npx-web-app.md`
-  - Calls for `npm pack`-based validation so `npx stagent` is proven from the shipped tarball rather than assumed from repo-local execution
+  - Calls for `npm pack`-based validation so `npx ainative` is proven from the shipped tarball rather than assumed from repo-local execution
 - Updated roadmap: added `npm-publish-readiness` as a planned Platform feature
 - **ambient-approval-toast** (P1, post-MVP): Added an in-context approval surface spec for active supervision
   - Defines a shell-level permission toast that appears on any route, keeps Inbox as the durable record, and lets users approve or deny without switching context
@@ -1700,9 +1700,9 @@ Full Airtable-like structured data system shipped in a single session. 52 new fi
   - Permission handling is already durable, but the interaction is still context-breaking; the next improvement should reduce approval friction on already-shipped execution paths
 - **Workflow expansion direction**: Replaced the omnibus `parallel-workflows` placeholder with a narrower fork/join foundation
   - `parallel-research-fork-join` is now the next planned workflow-engine feature and moves up to P2 because it extends an already-shipped core surface
-  - Broader evaluator-style patterns stay deferred until Stagent proves parallel execution, join synthesis, and workflow-status visibility in a simpler slice
+  - Broader evaluator-style patterns stay deferred until ainative proves parallel execution, join synthesis, and workflow-status visibility in a simpler slice
 - **Cost & Usage direction**: Dropped ROI framing from the planned feature set
-  - Direct spend and token metering are product-truthful with the data Stagent already has access to
+  - Direct spend and token metering are product-truthful with the data ainative already has access to
   - ROI would require optional user-supplied business-value inputs and would dilute the first governance slice
 - **Roadmap order**: Introduced a dedicated Governance & Analytics track and moved cost governance ahead of further provider-portability follow-ons
   - Recommended build order is now usage metering first, budget guardrails second, and the dashboard third
@@ -1729,7 +1729,7 @@ Full Airtable-like structured data system shipped in a single session. 52 new fi
 ## 2026-03-11
 
 ### Completed
-- **openai-codex-app-server** (P1, post-MVP): OpenAI Codex App Server shipped as Stagent's second governed runtime
+- **openai-codex-app-server** (P1, post-MVP): OpenAI Codex App Server shipped as ainative's second governed runtime
   - Added an `openai-codex-app-server` adapter and a lightweight WebSocket app-server client under `src/lib/agents/runtime/`
   - Codex-backed tasks now execute, resume, cancel, and persist provider-labeled `agent_logs`, task results, and resumable thread IDs through the shared runtime layer
   - Codex approval requests and user-input prompts now route through Inbox notifications and continue the run from user responses
@@ -1771,10 +1771,10 @@ Full Airtable-like structured data system shipped in a single session. 52 new fi
   - Projects page composition needs stronger structure when project count is low
 - Updated roadmap: added `operational-surface-foundation` and `profile-surface-stability` as completed and `ui-density-refinement` as planned in UI Enhancement
 - **provider-runtime-abstraction** (P1, post-MVP): Introduced a bounded runtime-foundation spec for multi-provider support
-  - Separates Stagent orchestration from provider SDK specifics so tasks, workflows, schedules, task-definition AI, and profile smoke tests can run through a shared contract
+  - Separates ainative orchestration from provider SDK specifics so tasks, workflows, schedules, task-definition AI, and profile smoke tests can run through a shared contract
   - Preserves the existing Claude-first UX while making a second runtime additive rather than invasive
 - **openai-codex-app-server** (P1, post-MVP): Added a concrete OpenAI execution spec
-  - Recommends Codex App Server as the first OpenAI path because it maps more directly to Stagent's approval and monitoring model than a thin SDK-only integration
+  - Recommends Codex App Server as the first OpenAI path because it maps more directly to ainative's approval and monitoring model than a thin SDK-only integration
   - Frames the work as a governed execution runtime, not as generic provider routing
 - **cross-provider-profile-compatibility** (P2, post-MVP): Added a profile-portability follow-on
   - Captures the gap between today's `.claude/skills` profile model and a future provider-aware profile system
@@ -1791,7 +1791,7 @@ Full Airtable-like structured data system shipped in a single session. 52 new fi
 ### Ship Verification
 - **workflow-blueprints** (P3, post-MVP): 12/12 acceptance criteria verified — all code implemented and integrated
   - 8 built-in YAML blueprints across work (4) and personal (4) domains
-  - Blueprint registry loads from `src/lib/workflows/blueprints/builtins/` + `~/.stagent/blueprints/`
+  - Blueprint registry loads from `src/lib/workflows/blueprints/builtins/` + `~/.ainative/blueprints/`
   - Template engine with `{{variable}}` substitution and `{{#if}}` conditional blocks
   - Zod validation schema at `src/lib/validators/blueprint.ts`
   - Blueprint gallery at `/workflows/blueprints` with domain tabs, search, and preview
@@ -1872,7 +1872,7 @@ Full Airtable-like structured data system shipped in a single session. 52 new fi
 - **project-management**: Added `workingDirectory` field to projects
   - New `working_directory` column on projects table (schema + bootstrap DDL + validator)
   - Agent tasks (`executeClaudeTask`, `resumeClaudeTask`) resolve `cwd` from project's working directory
-  - Previously all tasks ran in Stagent's server directory; now they target the project's codebase
+  - Previously all tasks ran in ainative's server directory; now they target the project's codebase
   - Working directory input in both Create Project and Edit Project dialogs
   - Project card shows working directory path when set
   - Enables schedules/workflows to operate on external codebases via project association

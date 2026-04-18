@@ -3,7 +3,7 @@ title: Agent Episodic Memory
 status: completed
 priority: P1
 milestone: post-mvp
-source: ideas/vision/Stagent-OpenClaw-Companion-Research-Report.md
+source: ideas/vision/ainative-OpenClaw-Companion-Research-Report.md
 dependencies: [agent-self-improvement]
 ---
 
@@ -150,7 +150,7 @@ POST   /api/profiles/[id]/memories/bulk    -- Bulk archive/delete
 
 ## References
 
-- Source: `ideas/vision/Stagent-OpenClaw-Companion-Research-Report.md` — Section 3.5 (Agent Memory System)
+- Source: `ideas/vision/ainative-OpenClaw-Companion-Research-Report.md` — Section 3.5 (Agent Memory System)
 - Existing learned context: `src/lib/agents/learned-context.ts` (versioned proposal flow)
 - Existing schema: `src/lib/db/schema.ts` (learned_context table definition, lines 178-208)
 - Related features: agent-self-improvement (behavioral memory), heartbeat-scheduler (uses memory for smarter suppression), business-function-profiles (memory enables business agents to learn over time)

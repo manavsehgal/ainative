@@ -13,7 +13,7 @@ dependencies:
 
 ## Description
 
-Migrate Book chapter content from the hardcoded `content.ts` TypeScript module to file-based markdown with frontmatter, adopting the same manifest-driven architecture already proven by the Playbook system (`src/lib/docs/reader.ts`). This decouples content from code, enables non-developer content editing, and — critically — unlocks the ability for Stagent agents to auto-generate and update chapters via task execution.
+Migrate Book chapter content from the hardcoded `content.ts` TypeScript module to file-based markdown with frontmatter, adopting the same manifest-driven architecture already proven by the Playbook system (`src/lib/docs/reader.ts`). This decouples content from code, enables non-developer content editing, and — critically — unlocks the ability for ainative agents to auto-generate and update chapters via task execution.
 
 The Playbook's `reader.ts` + `manifest.json` system becomes the unified content backend for both the Book and the Playbook. Book chapters are stored as `docs/book/ch-{N}.md` files with frontmatter specifying part, order, reading time, and related Playbook docs.
 
@@ -21,7 +21,7 @@ The Playbook's `reader.ts` + `manifest.json` system becomes the unified content 
 
 As a content author, I want to edit Book chapters as markdown files, so I don't need to modify TypeScript code to update narrative content.
 
-As a Stagent power user, I want to create a workflow that regenerates a Book chapter when its corresponding feature ships a new update, so the Book stays current automatically.
+As a ainative power user, I want to create a workflow that regenerates a Book chapter when its corresponding feature ships a new update, so the Book stays current automatically.
 
 ## Technical Approach
 

@@ -49,7 +49,7 @@
 | 7 | `/export` API call fails | Disk full / 500 | Silent data loss risk | Surface error toast via existing toast system; keep conversation intact; offer retry |
 | 8 | `/clear` clicked during active stream | User confusion | Stream orphaned | Disable `/clear` while `isStreaming=true` with tooltip |
 | 9 | `⌘L` collides with browser "focus URL bar" (Chrome/FF) | Browser swallow | Shortcut dead | Also bind `⌘⇧L` as documented fallback |
-| 10 | `stagent.command-tab` localStorage value corrupt/stale enum | Hand-edit or version drift | Crash on tab render | Validate against enum allowlist; reset to `"Actions"` on mismatch |
+| 10 | `ainative.command-tab` localStorage value corrupt/stale enum | Hand-edit or version drift | Crash on tab render | Validate against enum allowlist; reset to `"Actions"` on mismatch |
 | 11 | Skills tab empty for project with no skills | New project | Empty tab feels broken | `EmptyState` with link to docs |
 | 12 | Banner wrongly shown on Claude/Codex | `runtimeId` lookup bug | Noise on full-capability runtimes | Unit test covers every `AgentRuntimeId → banner?` |
 | 13 | New `ToolGroup` added later not assigned to a tab | Future enum addition | Silent drop from all tabs | `satisfies Record<ToolGroup, TabId>` exhaustiveness guard |
@@ -181,7 +181,7 @@ export const COMMAND_TABS: CommandTab[] = [
 export const DEFAULT_COMMAND_TAB: CommandTabId = "actions";
 
 export const GROUP_TO_TAB = {
-  // Stagent actions / session primitives
+  // ainative actions / session primitives
   Tasks: "actions",
   Projects: "actions",
   Workflows: "actions",
@@ -294,7 +294,7 @@ const SESSION_ENTRIES: ToolCatalogEntry[] = [
   { name: "compact", description: "Summarize and compact conversation history", group: "Session", behavior: "execute_immediately" },
   { name: "export", description: "Save current conversation as a document", group: "Session", behavior: "execute_immediately" },
   { name: "help", description: "Show chat shortcuts and commands", group: "Session", behavior: "execute_immediately" },
-  { name: "settings", description: "Open Stagent settings", group: "Session", behavior: "execute_immediately" },
+  { name: "settings", description: "Open ainative settings", group: "Session", behavior: "execute_immediately" },
   { name: "new-task", description: "Create a new task", group: "Session", paramHint: "title" },
   { name: "new-workflow", description: "Create a new workflow", group: "Session", paramHint: "name" },
   { name: "new-schedule", description: "Create a new schedule", group: "Session", paramHint: "name, interval" },
@@ -375,7 +375,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useChatAutocomplete } from "../use-chat-autocomplete";
 
-const TAB_KEY = "stagent.command-tab";
+const TAB_KEY = "ainative.command-tab";
 
 describe("useChatAutocomplete — activeTab persistence", () => {
   beforeEach(() => {
@@ -436,7 +436,7 @@ import { isCommandTabId, DEFAULT_COMMAND_TAB, type CommandTabId } from "@/lib/ch
 Inside the hook body, add state + helpers:
 
 ```ts
-const TAB_STORAGE_KEY = "stagent.command-tab";
+const TAB_STORAGE_KEY = "ainative.command-tab";
 
 function readInitialTab(): CommandTabId {
   if (typeof window === "undefined") return DEFAULT_COMMAND_TAB;
@@ -769,11 +769,11 @@ describe("CapabilityBanner", () => {
     render(<CapabilityBanner runtimeId="ollama" />);
     fireEvent.click(screen.getByRole("button", { name: /dismiss/i }));
     expect(screen.queryByRole("status")).toBeNull();
-    expect(sessionStorage.getItem("stagent.capability-banner.dismissed.ollama")).toBe("1");
+    expect(sessionStorage.getItem("ainative.capability-banner.dismissed.ollama")).toBe("1");
   });
 
   it("stays dismissed on remount if sessionStorage flag set", () => {
-    sessionStorage.setItem("stagent.capability-banner.dismissed.ollama", "1");
+    sessionStorage.setItem("ainative.capability-banner.dismissed.ollama", "1");
     render(<CapabilityBanner runtimeId="ollama" />);
     expect(screen.queryByRole("status")).toBeNull();
   });
@@ -802,7 +802,7 @@ interface CapabilityBannerProps {
 }
 
 function dismissKey(runtimeId: string): string {
-  return `stagent.capability-banner.dismissed.${runtimeId}`;
+  return `ainative.capability-banner.dismissed.${runtimeId}`;
 }
 
 function readDismissed(runtimeId: string): boolean {
@@ -943,16 +943,16 @@ const executeSessionCommand = useCallback((name: string) => {
       fetch("/api/notifications/mark-all-read", { method: "PATCH" });
       return;
     case "clear":
-      window.dispatchEvent(new CustomEvent("stagent.chat.clear"));
+      window.dispatchEvent(new CustomEvent("ainative.chat.clear"));
       return;
     case "compact":
-      window.dispatchEvent(new CustomEvent("stagent.chat.compact"));
+      window.dispatchEvent(new CustomEvent("ainative.chat.compact"));
       return;
     case "export":
-      window.dispatchEvent(new CustomEvent("stagent.chat.export"));
+      window.dispatchEvent(new CustomEvent("ainative.chat.export"));
       return;
     case "help":
-      window.dispatchEvent(new CustomEvent("stagent.chat.help"));
+      window.dispatchEvent(new CustomEvent("ainative.chat.help"));
       return;
     case "settings":
       window.location.href = "/settings";
@@ -1016,7 +1016,7 @@ git commit -m "feat(chat): capability banner + session command dispatch + ⌘L �
 
 ---
 
-## Task 8: Parent chat page handles `stagent.chat.*` events
+## Task 8: Parent chat page handles `ainative.chat.*` events
 
 **Files:**
 - Modify: `src/app/chat/page.tsx` (or the parent that owns conversation state — grep first)
@@ -1063,16 +1063,16 @@ useEffect(() => {
   };
   const handleHelp = () => setHelpDialogOpen(true);
 
-  window.addEventListener("stagent.chat.clear", handleClear);
-  window.addEventListener("stagent.chat.compact", handleCompact);
-  window.addEventListener("stagent.chat.export", handleExport);
-  window.addEventListener("stagent.chat.help", handleHelp);
+  window.addEventListener("ainative.chat.clear", handleClear);
+  window.addEventListener("ainative.chat.compact", handleCompact);
+  window.addEventListener("ainative.chat.export", handleExport);
+  window.addEventListener("ainative.chat.help", handleHelp);
 
   return () => {
-    window.removeEventListener("stagent.chat.clear", handleClear);
-    window.removeEventListener("stagent.chat.compact", handleCompact);
-    window.removeEventListener("stagent.chat.export", handleExport);
-    window.removeEventListener("stagent.chat.help", handleHelp);
+    window.removeEventListener("ainative.chat.clear", handleClear);
+    window.removeEventListener("ainative.chat.compact", handleCompact);
+    window.removeEventListener("ainative.chat.export", handleExport);
+    window.removeEventListener("ainative.chat.help", handleHelp);
   };
 }, [messages, startNewConversation, compactConversation]);
 ```
@@ -1177,7 +1177,7 @@ Inside the component, read skills (projectId scope — use null/current):
 const { skills } = useProjectSkills(null);
 ```
 
-Add a `<CommandGroup heading="Skills">` rendering each skill with `<Sparkles>` icon. Clicking a skill closes the palette and dispatches a `CustomEvent("stagent.chat.activate-skill", { detail: { id: skill.id } })`.
+Add a `<CommandGroup heading="Skills">` rendering each skill with `<Sparkles>` icon. Clicking a skill closes the palette and dispatches a `CustomEvent("ainative.chat.activate-skill", { detail: { id: skill.id } })`.
 
 - [ ] **Step 3: Add Files group**
 
@@ -1189,7 +1189,7 @@ grep -rn "entity.*file\|FileCode" src/hooks src/app/api | head
 
 Identify the file-search API route; call it on-demand when the palette's input value matches a file-like pattern. Debounce with `useRef<number>` timeout (200ms) to avoid network thrash.
 
-Render matches as a `<CommandGroup heading="Files">` with `<FileCode>` icon. Selection closes palette and dispatches `CustomEvent("stagent.chat.insert-mention", { detail: { type: "file", path } })` — the chat input's mention logic in `use-chat-autocomplete.ts` listens for this (add listener in that hook).
+Render matches as a `<CommandGroup heading="Files">` with `<FileCode>` icon. Selection closes palette and dispatches `CustomEvent("ainative.chat.insert-mention", { detail: { type: "file", path } })` — the chat input's mention logic in `use-chat-autocomplete.ts` listens for this (add listener in that hook).
 
 - [ ] **Step 4: Add listener in `use-chat-autocomplete.ts`**
 
@@ -1199,8 +1199,8 @@ useEffect(() => {
     // Append `@path ` to textarea value and register mention
     // reuse existing handleSelect logic
   }
-  window.addEventListener("stagent.chat.insert-mention", handleInsertMention as EventListener);
-  return () => window.removeEventListener("stagent.chat.insert-mention", handleInsertMention as EventListener);
+  window.addEventListener("ainative.chat.insert-mention", handleInsertMention as EventListener);
+  return () => window.removeEventListener("ainative.chat.insert-mention", handleInsertMention as EventListener);
 }, []);
 ```
 
@@ -1387,4 +1387,4 @@ EOF
 
 - **Placeholder scan:** No TBDs. Exception: Task 8 Step 1 begins with a `grep` to locate the exact file — the step commits the caller to reading it and using the returned path. Acceptable scaffolding, not a placeholder, because Step 2 gives the exact code.
 
-- **Type consistency:** `CommandTabId`, `COMMAND_TABS`, `GROUP_TO_TAB`, `partitionCatalogByTab`, `isCommandTabId`, `DEFAULT_COMMAND_TAB` all exported from `command-tabs.ts` and consistently referenced in Tasks 3, 4, 5. `CapabilityBanner` prop `runtimeId: AgentRuntimeId` consistent across Tasks 6 and 7. Event names `stagent.chat.{clear,compact,export,help,activate-skill,insert-mention}` consistent between dispatcher (Task 7) and listeners (Task 8, 9).
+- **Type consistency:** `CommandTabId`, `COMMAND_TABS`, `GROUP_TO_TAB`, `partitionCatalogByTab`, `isCommandTabId`, `DEFAULT_COMMAND_TAB` all exported from `command-tabs.ts` and consistently referenced in Tasks 3, 4, 5. `CapabilityBanner` prop `runtimeId: AgentRuntimeId` consistent across Tasks 6 and 7. Event names `ainative.chat.{clear,compact,export,help,activate-skill,insert-mention}` consistent between dispatcher (Task 7) and listeners (Task 8, 9).

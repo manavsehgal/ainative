@@ -9,7 +9,7 @@
 
 Persist board filter/sort state across page refreshes and pass project context through navigation flows. Three capabilities:
 
-1. **Persist project filter across sessions** — Selected project saved to `localStorage` key `stagent-project-filter`, restored on mount via `usePersistedState` hook.
+1. **Persist project filter across sessions** — Selected project saved to `localStorage` key `ainative-project-filter`, restored on mount via `usePersistedState` hook.
 
 2. **Prefill project on New Task** — Active project filter passed as `?project=<id>` URL param when navigating to `/tasks/new`. `TaskCreatePanel` reads it and pre-selects the project.
 

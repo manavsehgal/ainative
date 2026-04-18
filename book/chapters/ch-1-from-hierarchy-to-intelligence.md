@@ -164,7 +164,7 @@ Now the constraint is changing. AI agents can route information, track status, d
 
 But "better solution" is easy to say and hard to build. The next chapter maps the abstract thesis to a concrete architecture. If the AI-native organization is a factory, what are the stations on the factory floor? What are the conveyor belts that move work between them? What does the control system look like?
 
-The rest of this book answers those questions. We'll build a working factory — Stagent — that demonstrates the patterns in running code. We'll study the companies that are already operating this way. And we'll confront the hard questions about what happens to the humans in this new world.
+The rest of this book answers those questions. We'll build a working factory — ainative — that demonstrates the patterns in running code. We'll study the companies that are already operating this way. And we'll confront the hard questions about what happens to the humans in this new world.
 
 The factory metaphor is deliberate. Factories didn't abolish human skill. They amplified it. The question isn't whether AI will transform how we organize work — that's already underway. The question is whether we'll build factories that elevate human judgment, or sweatshops that grind it down.
 

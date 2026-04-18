@@ -1,5 +1,5 @@
 ---
-title: Stagent App Package Format
+title: ainative App Package Format
 status: deferred
 priority: P1
 milestone: post-mvp
@@ -7,11 +7,11 @@ source: handoff/ainative-app-marketplace-spec.md
 dependencies: [marketplace-install-hardening]
 ---
 
-# Stagent App Package Format
+# ainative App Package Format
 
 ## Description
 
-Define the `.sap` (Stagent App Package) file format — the portable,
+Define the `.sap` (ainative App Package) file format — the portable,
 distributable representation of an `AppBundle`. Today, apps exist only as
 TypeScript objects in `builtins.ts`. This feature introduces a YAML-based
 directory structure that any developer or power user can author, validate,
@@ -31,9 +31,9 @@ table template IDs) is prefixed with `{app-id}--` or scoped under
 
 ## User Story
 
-As an app creator, I want to author a Stagent app as a folder of YAML and
+As an app creator, I want to author a ainative app as a folder of YAML and
 markdown files with a well-defined structure, so I can version-control it,
-validate it locally, and distribute it to other Stagent users without them
+validate it locally, and distribute it to other ainative users without them
 needing to understand TypeScript internals.
 
 ## Technical Approach
@@ -84,9 +84,9 @@ name: Wealth Manager
 version: 1.0.0
 description: Portfolio tracking and investment analysis
 author:
-  name: Stagent Team
-  email: apps@stagent.io
-  url: https://stagent.io
+  name: ainative Team
+  email: apps@ainative.io
+  url: https://ainative.io
 license: MIT
 
 platform:
@@ -197,7 +197,7 @@ const manifestYamlSchema = z.object({
 });
 ```
 
-Validation runs at two points: `stagent app validate` (CLI) and `sapToBundle()`
+Validation runs at two points: `ainative app validate` (CLI) and `sapToBundle()`
 (runtime). Errors include file path, line number (when possible), and
 actionable fix suggestions.
 
@@ -246,7 +246,7 @@ New file `src/lib/apps/sap-converter.ts` with two main functions:
 ### 6. Platform version compatibility
 
 The `platform.minVersion` and `platform.maxVersion` fields in manifest.yaml
-declare the range of Stagent versions the app supports. The install flow
+declare the range of ainative versions the app supports. The install flow
 reads the running platform version from `package.json` and rejects installs
 that fall outside the declared range using semver comparison.
 

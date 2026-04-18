@@ -1,8 +1,8 @@
 ---
 name: worktree-production
 description: >
-  Manage a production-like stagent instance running in a git worktree for dogfooding.
-  Use when the user mentions worktree setup, syncing worktrees with main, running stagent
+  Manage a production-like ainative instance running in a git worktree for dogfooding.
+  Use when the user mentions worktree setup, syncing worktrees with main, running ainative
   in production mode, dogfooding, isolated DB for worktrees, worktree environment setup,
   migration sequencing from feature branches, or seeding a worktree instance. Also triggers
   on "worktree production", "dogfood", "sync worktree", "worktree setup", "production instance",
@@ -11,18 +11,18 @@ description: >
 
 # Worktree Production
 
-Run a production-like stagent instance in a git worktree while developing on main. This enables **dogfooding** — using stagent to build stagent.
+Run a production-like ainative instance in a git worktree while developing on main. This enables **dogfooding** — using ainative to build ainative.
 
 ## Architecture
 
 ```
-~/Developer/stagent/                    ← main (development)
+~/Developer/ainative/                    ← main (development)
   └── .git/worktrees/                   ← git tracks worktrees here
-~/Developer/stagent-worktrees/<name>/   ← worktree (dogfooding)
+~/Developer/ainative-worktrees/<name>/   ← worktree (dogfooding)
   └── .git (file, points back to main)
 
-~/.stagent/                             ← main instance data (default)
-~/.stagent-dogfood/                     ← worktree instance data (isolated)
+~/.ainative/                             ← main instance data (default)
+~/.ainative-dogfood/                     ← worktree instance data (isolated)
 ```
 
 Git worktrees share one object store (commits, history) but each checkout gets its own working tree. `node_modules/`, `.next/`, `.env.local` are gitignored — each instance needs its own.
@@ -51,7 +51,7 @@ Create and configure a new dogfooding worktree.
 1. **Pre-flight: commit or stash uncommitted changes on main.**
    `git worktree add` snapshots from the last **commit**, not the working directory. If main has unstaged changes, the worktree will get stale code — and cross-file dependencies (e.g., a new export in module A imported by module B) will break at build time.
    ```bash
-   cd ~/Developer/stagent
+   cd ~/Developer/ainative
    git status -s                # anything modified?
    # If yes: commit or stash before proceeding
    git add <files> && git commit -m "..." # or: git stash
@@ -59,19 +59,19 @@ Create and configure a new dogfooding worktree.
 
 2. Create the worktree (if it doesn't exist):
    ```bash
-   git worktree add ../stagent-worktrees/<name> -b <branch-name>
+   git worktree add ../ainative-worktrees/<name> -b <branch-name>
    ```
 
 3. Create `.env.local` in the worktree:
    ```env
-   STAGENT_DATA_DIR=~/.stagent-dogfood
+   STAGENT_DATA_DIR=~/.ainative-dogfood
    PORT=3100
    ANTHROPIC_API_KEY=<copy from main's .env.local>
    ```
 
 4. Install dependencies:
    ```bash
-   cd ~/Developer/stagent-worktrees/<name>
+   cd ~/Developer/ainative-worktrees/<name>
    npm install
    ```
 
@@ -85,7 +85,7 @@ Create and configure a new dogfooding worktree.
 
 **Alternative: use CLI with --data-dir flag:**
 ```bash
-node dist/cli.js --data-dir ~/.stagent-dogfood --port 3100
+node dist/cli.js --data-dir ~/.ainative-dogfood --port 3100
 ```
 
 ### 2. Sync Mode
@@ -94,7 +94,7 @@ Pull latest changes from main into the dogfooding worktree.
 
 **One-command sync:**
 ```bash
-cd ~/Developer/stagent-worktrees/<name>
+cd ~/Developer/ainative-worktrees/<name>
 npm run sync-worktree
 ```
 
@@ -126,7 +126,7 @@ curl -X POST http://localhost:3100/api/data/seed
 **Reset + re-seed** (nuclear option):
 ```bash
 # Stop the server first, then:
-node dist/cli.js --data-dir ~/.stagent-dogfood --reset --port 3100
+node dist/cli.js --data-dir ~/.ainative-dogfood --reset --port 3100
 # After restart, seed via API or UI
 ```
 
@@ -164,7 +164,7 @@ Found a problem while using the worktree instance
         │
         ├─ Is it a 2-minute fix?
         │   ├─ Yes → Fix on main directly, then sync
-        │   └─ No  → New worktree: git worktree add ../stagent-worktrees/fix-<thing> -b fix/<thing> main
+        │   └─ No  → New worktree: git worktree add ../ainative-worktrees/fix-<thing> -b fix/<thing> main
         │
         └─ Does it touch the same files as worktree work?
             ├─ Yes → Expect rebase conflicts after fix merges to main
@@ -203,9 +203,9 @@ When running Claude Code in the main directory:
 
 | Resource | Main (default) | Worktree |
 |----------|---------------|----------|
-| Database | `~/.stagent/stagent.db` | `~/.stagent-dogfood/stagent.db` |
-| Uploads | `~/.stagent/uploads/` | `~/.stagent-dogfood/uploads/` |
-| Blueprints | `~/.stagent/blueprints/` | `~/.stagent-dogfood/blueprints/` |
+| Database | `~/.ainative/ainative.db` | `~/.ainative-dogfood/ainative.db` |
+| Uploads | `~/.ainative/uploads/` | `~/.ainative-dogfood/uploads/` |
+| Blueprints | `~/.ainative/blueprints/` | `~/.ainative-dogfood/blueprints/` |
 | Port | 3000 | 3100 |
 | node_modules | Own copy | Own copy |
 | .next cache | Own copy | Own copy |

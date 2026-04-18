@@ -12,7 +12,7 @@ dependencies: [app-package-format, app-extended-primitives-tier1]
 ## Description
 
 The `/build-app` slash command enables non-technical users to create fully
-functional Stagent apps through guided multi-turn chat conversation. The agent
+functional ainative apps through guided multi-turn chat conversation. The agent
 walks the user through a structured discovery flow — purpose, target users,
 data model, automation needs, agent profile, and UI pages — then synthesizes
 an `AppBundle`, presents it for review, and installs it on acceptance.
@@ -28,7 +28,7 @@ Two new chat tools power this feature:
 2. **`createAppBundle(manifest, tables, schedules, profiles, pages)`** —
    validates all inputs against the AppBundle schema, synthesizes the bundle,
    calls `service.ts installApp()` + `bootstrapApp()`, and saves the resulting
-   `.sap` directory to `~/.stagent/apps/{app-id}/` for later export or
+   `.sap` directory to `~/.ainative/apps/{app-id}/` for later export or
    sharing.
 
 `createAppBundle` is permission-gated: it requires explicit user approval
@@ -58,7 +58,7 @@ summary and asks for confirmation before calling `createAppBundle`.
 ## User Story
 
 As a non-technical user, I want to describe what I need in chat and have
-Stagent build me a working app in 5 minutes, so that I can go from idea to
+ainative build me a working app in 5 minutes, so that I can go from idea to
 functional tool without writing code or understanding YAML schemas.
 
 ## Technical Approach
@@ -130,7 +130,7 @@ export const createAppBundleTool = defineTool({
 
 Register both tools in the chat tool system:
 
-- **`src/lib/chat/stagent-tools.ts`** — import `app-tools.ts` and add both
+- **`src/lib/chat/ainative-tools.ts`** — import `app-tools.ts` and add both
   tools to `collectAllTools()`.
 - **`src/lib/chat/tool-catalog.ts`** — add entries to `TOOL_CATALOG` under a
   new `"Apps"` group with appropriate descriptions and permission levels.
@@ -151,10 +151,10 @@ The `createAppBundle` handler calls a `synthesizeBundle()` function that:
 ### 5. SAP directory persistence
 
 After successful install, write the bundle as a `.sap` directory under
-`~/.stagent/apps/{app-id}/`:
+`~/.ainative/apps/{app-id}/`:
 
 ```
-~/.stagent/apps/{app-id}/
+~/.ainative/apps/{app-id}/
   manifest.yaml
   tables/
     {table-name}.yaml
@@ -194,7 +194,7 @@ agent to follow the 6-step discovery flow. The prompt includes:
       registered.
 - [ ] `createAppBundle` requires explicit user approval before execution.
 - [ ] Installed app is persisted as `.sap` directory under
-      `~/.stagent/apps/{app-id}/`.
+      `~/.ainative/apps/{app-id}/`.
 - [ ] Both tools appear in `TOOL_CATALOG` under the "Apps" group.
 - [ ] Agent follows guided flow and presents structured summary before
       install.
@@ -205,7 +205,7 @@ agent to follow the 6-step discovery flow. The prompt includes:
 **Included:**
 - `introspectProject` and `createAppBundle` chat tools
 - Project introspection service (`src/lib/apps/introspector.ts`)
-- Chat tool registration in `stagent-tools.ts` and `tool-catalog.ts`
+- Chat tool registration in `ainative-tools.ts` and `tool-catalog.ts`
 - Guided conversation system prompt for `/build-app`
 - SAP directory persistence for created apps
 - Permission gate on `createAppBundle`
@@ -216,7 +216,7 @@ agent to follow the 6-step discovery flow. The prompt includes:
 - Promoting existing conversations to apps (separate: `promote-conversation-to-app`)
 - Visual studio editor (separate: `visual-app-studio`)
 - App remixing / forking (separate: `app-remix`)
-- CLI `stagent app` subcommands (separate: `app-cli-tools`)
+- CLI `ainative app` subcommands (separate: `app-cli-tools`)
 
 ## References
 
@@ -228,6 +228,6 @@ agent to follow the 6-step discovery flow. The prompt includes:
   - `src/lib/apps/introspector.ts` — project fingerprint extraction
   - `src/lib/chat/tools/app-tools.ts` — chat tool definitions
 - Files to modify:
-  - `src/lib/chat/stagent-tools.ts` — register new tools in `collectAllTools()`
+  - `src/lib/chat/ainative-tools.ts` — register new tools in `collectAllTools()`
   - `src/lib/chat/tool-catalog.ts` — add "Apps" group to `TOOL_CATALOG`
   - `src/lib/apps/service.ts` — add `saveSapDirectory()` helper

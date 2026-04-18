@@ -1,14 +1,14 @@
-# Stagent Project Memory
+# ainative Project Memory
 
 This file captures evolving project facts, decisions, and recurring gotchas that are useful across sessions for both Codex and Claude Code.
 
 ## Current State
 
-- Core Stagent app is on Next.js 16, React 19, TypeScript, Tailwind v4, shadcn/ui, and SQLite via Drizzle.
+- Core ainative app is on Next.js 16, React 19, TypeScript, Tailwind v4, shadcn/ui, and SQLite via Drizzle.
 - Main product surfaces are Home, Costs, Dashboard, Documents, Inbox, Monitor, Profiles, Projects, Schedules, Settings, Tasks, and Workflows.
 - `features/`, `ideas/`, and `wireframes/` are intentionally local planning artifacts and remain gitignored.
 - `.claude/` is also gitignored; it is useful for Claude workflows and as source material for Codex skill ports.
-- Distribution is `npx stagent` (npm) and web app only — no desktop shell.
+- Distribution is `npx ainative` (npm) and web app only — no desktop shell.
 - Provider runtime abstraction is now in place under `src/lib/agents/runtime/`, with Claude and OpenAI Codex App Server registered as runtime adapters and shared runtime services handling task assist, scheduler/workflow launches, inbox approvals, and settings health checks.
 
 ## Design System
@@ -55,10 +55,10 @@ This file captures evolving project facts, decisions, and recurring gotchas that
 - Raw Drizzle `sql` interpolation for column references is easy to misuse; prefer typed query builder patterns.
 - Tailwind v4 utility layers can beat naive custom selectors; increased specificity may be required when overriding `data-slot` components.
 - New sheet or dialog bodies often need explicit inner padding; do not assume Radix/shadcn body spacing exists by default.
-- **All stagent clones on a machine share `~/.stagent/stagent.db`** (see `src/lib/utils/stagent-paths.ts`) unless `STAGENT_DATA_DIR` is set in `.env.local`. Any clone used for license/tier experiments — e.g. the wealth-manager evaluation branch at `/Users/manavsehgal/Developer/stagent-wealth` (isolated to `~/.stagent-wealth/`) — MUST override `STAGENT_DATA_DIR` or its `licenseManager.activate()` writes (and any other DB mutations) will leak into every other clone. Symptom: main repo's Settings page shows `scale` instead of `community` after the wealth clone runs.
+- **All ainative clones on a machine share `~/.ainative/ainative.db`** (see `src/lib/utils/ainative-paths.ts`) unless `STAGENT_DATA_DIR` is set in `.env.local`. Any clone used for license/tier experiments — e.g. the wealth-manager evaluation branch at `/Users/manavsehgal/Developer/ainative-wealth` (isolated to `~/.ainative-wealth/`) — MUST override `STAGENT_DATA_DIR` or its `licenseManager.activate()` writes (and any other DB mutations) will leak into every other clone. Symptom: main repo's Settings page shows `scale` instead of `community` after the wealth clone runs.
 - **`addColumnIfMissing` runs BEFORE the table CREATE in `src/lib/db/bootstrap.ts`.** Adding a new column via ALTER alone fails silently on fresh DBs (the test temp dir, a brand-new install) because the table doesn't exist yet at the ALTER's call site. Fix: add the column to BOTH the `CREATE TABLE IF NOT EXISTS` statement (covers fresh DBs) AND the `addColumnIfMissing` call (covers existing DBs). The ALTER's silent error swallow (`if (!msg.includes("duplicate column"))`) means the failure will only show as downstream `SqliteError: table X has no column named Y` from Drizzle inserts. Caught in the `chat-ollama-native-skills` PR.
 - **Spec frontmatter `status: planned` is unreliable.** Two of three Wave 1 features (`chat-session-persistence-provider`, `chat-settings-tool`) were code-shipped with `status: planned` in the spec. ALWAYS grep for the spec's referenced files / functions / DB columns BEFORE treating a planned feature as greenfield. If the artifacts already exist, the work shifts from "build" to "verify + close out", which is much faster.
-- **Features that touch system-prompt construction need cross-runtime consideration upfront.** Initial `chat-ollama-native-skills` injected SKILL.md unconditionally, duplicating context on Codex/Claude where the SDK already loads it natively. The `runtime-capability-matrix` (`hasNativeSkills`, `stagentInjectsSkills`, `autoLoadsInstructions`) is the source of truth for "should Stagent do X or trust the runtime to do X". Consult it in any Tier 0 / system-prompt code path.
+- **Features that touch system-prompt construction need cross-runtime consideration upfront.** Initial `chat-ollama-native-skills` injected SKILL.md unconditionally, duplicating context on Codex/Claude where the SDK already loads it natively. The `runtime-capability-matrix` (`hasNativeSkills`, `stagentInjectsSkills`, `autoLoadsInstructions`) is the source of truth for "should ainative do X or trust the runtime to do X". Consult it in any Tier 0 / system-prompt code path.
 
 ## Test & Smoke Discipline
 
@@ -76,7 +76,7 @@ Lessons worth keeping after the chat-ollama / chat-codex skill wave:
 
 - Browser evaluation has been done successfully in local Chrome and via headless Chrome screenshots.
 - Playwright is available as a Codex skill, but local environment quirks may still require Chrome fallback at times.
-- The Codex skill set now includes Stagent-specific ports of:
+- The Codex skill set now includes ainative-specific ports of:
   - `product-manager`
   - `quality-manager`
   - `supervisor`
@@ -92,8 +92,8 @@ Lessons worth keeping after the chat-ollama / chat-codex skill wave:
   - Anthropic's "Building Effective Agents"
   - OpenAI Codex SDK / App Server docs
   - Claude Agent SDK docs
-- `.claude/skills/` contains Claude-first source material for shared project workflows. The overlapping Stagent-specific skills also exist under `~/.codex/skills/`, but the Codex versions are adapted for Codex tooling and should not be expected to stay byte-identical to the Claude copies.
-- Verified Codex-installed Stagent workflow ports currently include:
+- `.claude/skills/` contains Claude-first source material for shared project workflows. The overlapping ainative-specific skills also exist under `~/.codex/skills/`, but the Codex versions are adapted for Codex tooling and should not be expected to stay byte-identical to the Claude copies.
+- Verified Codex-installed ainative workflow ports currently include:
   - `architect`
   - `book-updater`
   - `brainstorming`
@@ -115,7 +115,7 @@ Lessons worth keeping after the chat-ollama / chat-codex skill wave:
   - `worktree-production`
   - `writing-plans`
   - `xlsx`
-- Claude-local skill files remain the detailed source material for the Stagent-specific ports above. The Codex versions intentionally stay concise and point back to `.claude/skills/...` when deeper workflow detail is needed.
+- Claude-local skill files remain the detailed source material for the ainative-specific ports above. The Codex versions intentionally stay concise and point back to `.claude/skills/...` when deeper workflow detail is needed.
 - Some Claude skill names are covered by existing Codex or system skills rather than separate project ports:
   - `skill-creator` -> Codex system `skill-creator`
   - `docx` -> Codex `doc` workflow plus the local compatibility shim

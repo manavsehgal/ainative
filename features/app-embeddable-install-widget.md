@@ -13,21 +13,21 @@ dependencies: [marketplace-app-listing]
 
 ## Description
 
-App creators and bloggers need a way to link directly to Stagent app installs
-from external websites. This feature provides "Install on Stagent" badges and
+App creators and bloggers need a way to link directly to ainative app installs
+from external websites. This feature provides "Install on ainative" badges and
 buttons that can be embedded in READMEs, blog posts, documentation sites, and
 landing pages — similar to "Deploy to Heroku" or "Open in Colab" badges.
 
-The widget links to a deep URL that opens the Stagent marketplace install flow
+The widget links to a deep URL that opens the ainative marketplace install flow
 directly for the specified app, skipping the browse/search step.
 
 ## User Story
 
-As an app creator, I want to embed an "Install on Stagent" badge on my GitHub
+As an app creator, I want to embed an "Install on ainative" badge on my GitHub
 README and blog, so users can install my app with one click without having to
 search the marketplace.
 
-As a Stagent user, I want to click an install badge on a blog post and land
+As a ainative user, I want to click an install badge on a blog post and land
 directly on the app's install confirmation dialog, so I can evaluate and
 install the app without friction.
 
@@ -39,25 +39,25 @@ Two URL patterns for maximum compatibility:
 
 **Web URL (primary):**
 ```
-https://stagent.io/install/{app-id}
+https://ainative.io/install/{app-id}
 ```
 - Works everywhere (browsers, GitHub READMEs, email)
 - Redirects to `/marketplace/apps/{app-id}?action=install` on the user's
-  local Stagent instance
-- If Stagent is not running locally, shows a landing page with download
+  local ainative instance
+- If ainative is not running locally, shows a landing page with download
   instructions
 
 **Custom protocol (future):**
 ```
-stagent://install/{app-id}
+ainative://install/{app-id}
 ```
-- Registered via Electron or system URL handler (when Stagent ships as
+- Registered via Electron or system URL handler (when ainative ships as
   desktop app)
-- Opens Stagent directly and triggers install flow
+- Opens ainative directly and triggers install flow
 - Fallback to web URL if protocol handler not registered
 
 V1 implements the web URL only. The custom protocol is a future enhancement
-when Stagent ships as a packaged desktop application.
+when ainative ships as a packaged desktop application.
 
 ### 2. Install Landing Route
 
@@ -77,25 +77,25 @@ Four badge styles, each available in dark and light themes:
 **Standard badge:**
 ```
 ┌──────────────────────────┐
-│  ⬇ Install on Stagent    │
+│  ⬇ Install on ainative    │
 └──────────────────────────┘
 ```
 
 **Badge with install count:**
 ```
 ┌──────────────────────────────────┐
-│  ⬇ Install on Stagent  |  1.2k  │
+│  ⬇ Install on ainative  |  1.2k  │
 └──────────────────────────────────┘
 ```
 
 **Minimal badge (for inline use):**
 ```
-[Install on Stagent]
+[Install on ainative]
 ```
 
 **Shield.io compatible:**
 ```
-https://img.shields.io/badge/Install%20on-Stagent-blue?logo=data:...
+https://img.shields.io/badge/Install%20on-ainative-blue?logo=data:...
 ```
 
 Badges are SVG for crisp rendering at any size. The install count variant
@@ -123,13 +123,13 @@ Embed this badge on your website:
 [Preview of badge]
 
 HTML:
-<a href="https://stagent.io/install/wealth-manager">
-  <img src="https://stagent.io/api/badges/wealth-manager"
-       alt="Install on Stagent" height="32" />
+<a href="https://ainative.io/install/wealth-manager">
+  <img src="https://ainative.io/api/badges/wealth-manager"
+       alt="Install on ainative" height="32" />
 </a>
 
 Markdown:
-[![Install on Stagent](https://stagent.io/api/badges/wealth-manager)](https://stagent.io/install/wealth-manager)
+[![Install on ainative](https://ainative.io/api/badges/wealth-manager)](https://ainative.io/install/wealth-manager)
 
 Theme: [Dark] [Light]
 Style: [Standard] [With Count] [Minimal]
@@ -167,7 +167,7 @@ Badge impressions and click-throughs tracked for creator analytics:
 - Basic impression analytics
 
 **Excluded:**
-- Custom protocol handler (`stagent://`) — requires desktop app packaging
+- Custom protocol handler (`ainative://`) — requires desktop app packaging
 - JavaScript embed widget (iframe-based) — future enhancement
 - QR code generation for badges
 - A/B testing badge variants

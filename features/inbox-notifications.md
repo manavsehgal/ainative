@@ -11,7 +11,7 @@ dependencies: [database-schema, app-shell, agent-integration]
 
 ## Description
 
-The agent-to-human communication hub, styled like an email inbox. This is where users see permission requests, task completions, failures, and agent messages. It provides the human-in-the-loop interface that makes Stagent a supervisor tool rather than a fire-and-forget launcher.
+The agent-to-human communication hub, styled like an email inbox. This is where users see permission requests, task completions, failures, and agent messages. It provides the human-in-the-loop interface that makes ainative a supervisor tool rather than a fire-and-forget launcher.
 
 The inbox surfaces four types of notifications from the Agent SDK integration: permission requests (from `canUseTool`), task completions (with output summaries), task failures (with error context and retry options), and agent messages/questions (from `AskUserQuestion`).
 

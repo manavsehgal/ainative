@@ -45,7 +45,7 @@ like, before confirming the export.
 
 ## User Story
 
-As a user who's been doing weekly sales reviews in chat, I want Stagent to
+As a user who's been doing weekly sales reviews in chat, I want ainative to
 notice this pattern and offer to package it as a reusable app I can share,
 so that my team can benefit from the same workflow without recreating it
 from scratch.
@@ -105,7 +105,7 @@ export const exportAppBundleTool = defineTool({
       tables: sanitizedBundle.tables.length,
       schedules: sanitizedBundle.schedules.length,
       seedRows: options.seedDataRows,
-      savedTo: `~/.stagent/apps/${sanitizedBundle.manifest.id}/`,
+      savedTo: `~/.ainative/apps/${sanitizedBundle.manifest.id}/`,
     };
   },
 });
@@ -219,7 +219,7 @@ confirming.
       schedules, profiles, and sample synthetic data.
 - [ ] User can modify export options before confirming.
 - [ ] Exported bundle is saved as `.sap` directory under
-      `~/.stagent/apps/{app-id}/`.
+      `~/.ainative/apps/{app-id}/`.
 - [ ] Exported bundle can be installed on a fresh project via
       `installApp()` and produces a working app.
 - [ ] `npm test` passes; `npx tsc --noEmit` clean.
@@ -253,5 +253,5 @@ confirming.
   - `src/lib/apps/pii-stripper.ts` — LLM-based synthetic data generation
 - Files to modify:
   - `src/lib/chat/tools/app-tools.ts` — add `exportAppBundle` tool
-  - `src/lib/chat/stagent-tools.ts` — register new tool
+  - `src/lib/chat/ainative-tools.ts` — register new tool
   - `src/lib/chat/tool-catalog.ts` — add to "Apps" group

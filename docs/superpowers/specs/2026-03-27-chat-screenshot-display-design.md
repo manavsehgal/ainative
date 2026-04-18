@@ -32,7 +32,7 @@ When the agent uses browser MCP tools (Chrome DevTools or Playwright) during cha
    └─ mcp__playwright__browser_take_screenshot
 5. NEW → persistScreenshot(base64, metadata)
    ├─ Decode base64 → Buffer
-   ├─ Write ~/.stagent/screenshots/{uuid}.png (original)
+   ├─ Write ~/.ainative/screenshots/{uuid}.png (original)
    ├─ Generate thumbnail → {uuid}_thumb.png (800px wide, sharp)
    └─ INSERT into documents table (source="screenshot")
 6. NEW → Yield SSE: { type: "screenshot", documentId, thumbnailUrl, ... }
@@ -120,13 +120,13 @@ persistScreenshot(base64: string, opts: {
 ```
 
 **Behavior:**
-1. Ensure `~/.stagent/screenshots/` directory exists (`mkdirSync` with `recursive: true` on first call)
+1. Ensure `~/.ainative/screenshots/` directory exists (`mkdirSync` with `recursive: true` on first call)
 2. Validate base64 length (reject > 20MB)
 3. Decode to Buffer
 4. Extract dimensions via `image-size`
-5. Write original to `~/.stagent/screenshots/{uuid}.png`
+5. Write original to `~/.ainative/screenshots/{uuid}.png`
 5. Generate 800px-wide thumbnail via `sharp` (optional dep with fallback)
-6. Write thumbnail to `~/.stagent/screenshots/{uuid}_thumb.png`
+6. Write thumbnail to `~/.ainative/screenshots/{uuid}_thumb.png`
 7. Insert document record with `source: "screenshot"`, `direction: "output"`, `category: "screenshot"`
 8. Return `{ documentId, thumbnailUrl, originalUrl, width, height }` or `null` on failure
 
@@ -284,14 +284,14 @@ Add `"screenshot"` to `eventColors` map with primary color.
 - `src/components/chat/chat-message.tsx` — render ScreenshotGallery from metadata.attachments
 - `src/components/chat/chat-shell.tsx` — handle screenshot SSE event type
 - `src/components/monitoring/log-entry.tsx` — render screenshot log events with thumbnail
-- `src/lib/data/clear.ts` — add `~/.stagent/screenshots/` filesystem cleanup (no new table, only columns added)
+- `src/lib/data/clear.ts` — add `~/.ainative/screenshots/` filesystem cleanup (no new table, only columns added)
 - `package.json` — add sharp dependency
 
 ## Verification Plan
 
 1. **Unit tests:** `persist.test.ts` — mock fs/sharp, test base64 decode, thumbnail generation, DB insert, error paths, size rejection
 2. **Integration test:** Start dev server, open chat, enable Chrome DevTools MCP, send prompt that triggers `take_screenshot`, verify:
-   - Screenshot file exists at `~/.stagent/screenshots/`
+   - Screenshot file exists at `~/.ainative/screenshots/`
    - Thumbnail file exists alongside original
    - Document record in DB with `source: "screenshot"`
    - SSE event received by frontend

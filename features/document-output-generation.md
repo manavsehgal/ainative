@@ -22,7 +22,7 @@ As a user, I want to see all files my agents generate as task outputs, organized
 
 ### Output Directory Convention
 
-- Each task gets an output directory: `~/.stagent/outputs/{taskId}/`
+- Each task gets an output directory: `~/.ainative/outputs/{taskId}/`
 - Agent prompt includes the output directory path
 - Agent writes files to the directory using standard file operations
 
@@ -53,7 +53,7 @@ As a user, I want to see all files my agents generate as task outputs, organized
 
 ## Acceptance Criteria
 
-- [x] Agent prompt includes output directory path (`~/.stagent/outputs/{taskId}/`)
+- [x] Agent prompt includes output directory path (`~/.ainative/outputs/{taskId}/`)
 - [x] After task completion, output directory is scanned for generated files
 - [x] Output files registered as documents with `direction="output"`
 - [x] Task detail shows output documents separately from input attachments

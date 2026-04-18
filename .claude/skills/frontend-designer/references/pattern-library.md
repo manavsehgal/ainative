@@ -8,7 +8,7 @@ Reference catalog of interaction patterns organized by task type.
 - **List with expandable detail** — For sequential review workflows
 - **Dashboard with key metrics** — For monitoring and status overview
 
-**Stagent patterns:** DataTable component for tabular data, PageShell with DetailPane for master-detail, StatusChip for status rendering, bento grid for detail views.
+**ainative patterns:** DataTable component for tabular data, PageShell with DetailPane for master-detail, StatusChip for status rendering, bento grid for detail views.
 
 ## Data Input
 - **Inline editing** — For frequent, small edits (click-to-edit)
@@ -16,7 +16,7 @@ Reference catalog of interaction patterns organized by task type.
 - **Wizard / stepper** — For complex, multi-stage input
 - **Command palette** — For keyboard-first power users
 
-**Stagent patterns:** FormSectionCard with bento grid layouts, Slider for continuous values, TagInput for tag management, CommandPalette for global navigation.
+**ainative patterns:** FormSectionCard with bento grid layouts, Slider for continuous values, TagInput for tag management, CommandPalette for global navigation.
 
 ## Navigation
 - **Sidebar + content** — For deep hierarchies with frequent switching
@@ -24,7 +24,7 @@ Reference catalog of interaction patterns organized by task type.
 - **Breadcrumb trail** — For deep, linear hierarchies
 - **Search-first** — For large, flat content collections
 
-**Stagent patterns:** AppSidebar with 3 groups (Work / Manage / Configure), collapsible icon mode, PageShell back navigation.
+**ainative patterns:** AppSidebar with 3 groups (Work / Manage / Configure), collapsible icon mode, PageShell back navigation.
 
 ## Feedback
 - **Toast notification** — For non-blocking success/info messages
@@ -32,4 +32,4 @@ Reference catalog of interaction patterns organized by task type.
 - **Progress indicator** — For multi-step or long-running operations
 - **Optimistic update** — For low-risk actions where speed matters
 
-**Stagent patterns:** Notifications table with expandable bodies and click-through navigation, SSE log streaming for real-time feedback, skeleton loaders for loading states.
+**ainative patterns:** Notifications table with expandable bodies and click-through navigation, SSE log streaming for real-time feedback, skeleton loaders for loading states.

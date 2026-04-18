@@ -13,7 +13,7 @@ dependencies: [marketplace-app-publishing, app-remix]
 
 ## Description
 
-Remixing is the social engine of the Stagent marketplace. Every installed app
+Remixing is the social engine of the ainative marketplace. Every installed app
 and every marketplace listing gets a "Remix" button that deep-copies the app
 bundle, assigns a new ID with lineage tracking, and gives the remixer a private
 draft to customize. This turns every published app into a starting point —
@@ -25,7 +25,7 @@ improvements back to the original creator via a structured diff flow.
 
 ## User Story
 
-As a Stagent user, I want to remix any installed or marketplace app into my
+As a ainative user, I want to remix any installed or marketplace app into my
 own private copy that I can customize, so I don't have to build from scratch
 when an existing app is 80% of what I need.
 

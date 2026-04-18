@@ -18,7 +18,7 @@ An automated API-level E2E test suite that exercises task execution, workflow pa
 
 ## Problem
 
-Stagent's current E2E testing is entirely manual — a human drives Chrome, creates tasks, executes them, and visually verifies results (see `output/done-agent-e2e-test-report.md`). This produced a solid 10/10 pass rate but:
+ainative's current E2E testing is entirely manual — a human drives Chrome, creates tasks, executes them, and visually verifies results (see `output/done-agent-e2e-test-report.md`). This produced a solid 10/10 pass rate but:
 
 1. **Not repeatable**: Each test run requires ~30 minutes of human attention
 2. **Not in CI**: No automated regression detection — regressions are only caught when someone manually re-runs the full suite
@@ -33,7 +33,7 @@ As a developer shipping changes to the runtime or workflow engine, I want to run
 
 ### Test Architecture
 
-API-level tests that call Stagent's HTTP endpoints directly (no browser automation). Tests use a dedicated test project and sandbox directory, similar to the manual E2E report setup.
+API-level tests that call ainative's HTTP endpoints directly (no browser automation). Tests use a dedicated test project and sandbox directory, similar to the manual E2E report setup.
 
 ### Test Matrix
 
@@ -134,7 +134,7 @@ const CODEX_AVAILABLE = await checkRuntime('codex');
 ## References
 
 - **Origin**: [Agent E2E Test Report](../output/done-agent-e2e-test-report.md) Recommendations #3 and #4
-- **Rec 3**: "This manual browser test should be automated using the Stagent API directly for CI/CD"
+- **Rec 3**: "This manual browser test should be automated using the ainative API directly for CI/CD"
 - **Rec 4**: "Run sequence/parallel/blueprint tests on Codex runtime for cross-runtime workflow coverage" (folded into this feature)
 - **Existing tests**: `src/**/__tests__/` — 30+ unit/component tests via Vitest
 - **Test conventions**: `__tests__/` subdirectories adjacent to source, Vitest runner

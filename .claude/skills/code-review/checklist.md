@@ -1,4 +1,4 @@
-# Code Review Checklist — Stagent
+# Code Review Checklist — ainative
 
 This checklist is loaded by the code-review skill at review time. Maintain it independently of the skill logic. Add project-specific items as the codebase evolves.
 
@@ -24,7 +24,7 @@ This checklist is loaded by the code-review skill at review time. Maintain it in
 
 ### Security
 - [ ] API routes check authorization (no open mutation endpoints)
-- [ ] File upload paths are sanitized (no path traversal via `~/.stagent/uploads/`)
+- [ ] File upload paths are sanitized (no path traversal via `~/.ainative/uploads/`)
 - [ ] Environment variables (ANTHROPIC_API_KEY) are not exposed to client bundles
 - [ ] No raw HTML injection with unsanitized LLM output (use safe rendering methods)
 
@@ -32,7 +32,7 @@ This checklist is loaded by the code-review skill at review time. Maintain it in
 
 ## Pass 2 — Informational (non-blocking)
 
-### Stagent-Specific Patterns
+### ainative-Specific Patterns
 - [ ] SheetContent body has `px-6 pb-6` padding (recurring issue — see MEMORY.md)
 - [ ] Badge variants use status-colors.ts mappings, not hardcoded Tailwind colors
 - [ ] New tables have bootstrap CREATE in db/index.ts (not just migration SQL)

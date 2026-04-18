@@ -11,7 +11,7 @@ dependencies: [app-runtime-bundle-foundation]
 
 ## Description
 
-When a user creates an app bundle via the `export_app_bundle` chat tool, the bundle is saved to `~/.stagent/apps/<app-id>/` on disk but never inserted into the `app_instances` database table. Since the sidebar only renders apps that have a DB record with `status: "ready"`, the exported app never appears — even though the bundle files exist on disk.
+When a user creates an app bundle via the `export_app_bundle` chat tool, the bundle is saved to `~/.ainative/apps/<app-id>/` on disk but never inserted into the `app_instances` database table. Since the sidebar only renders apps that have a DB record with `status: "ready"`, the exported app never appears — even though the bundle files exist on disk.
 
 Built-in apps (Wealth, Growth) work correctly because they go through `installApp()` which inserts the DB record. Exported apps skip this step entirely.
 

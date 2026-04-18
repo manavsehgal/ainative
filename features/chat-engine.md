@@ -11,7 +11,7 @@ dependencies: [chat-data-layer, provider-runtime-abstraction, multi-agent-routin
 
 ## Description
 
-Server-side orchestration layer that builds progressive context from stagent primitives, invokes the appropriate runtime SDK (Claude or Codex), normalizes streaming events, persists messages, detects entity references for quick access links, and generates context-aware suggested prompts.
+Server-side orchestration layer that builds progressive context from ainative primitives, invokes the appropriate runtime SDK (Claude or Codex), normalizes streaming events, persists messages, detects entity references for quick access links, and generates context-aware suggested prompts.
 
 This is the brain of the chat feature. It abstracts over both runtimes behind a unified `ChatStreamEvent` interface, manages token budgets across 5 context tiers, and provides the entity detection that powers the Quick Access navigation pills in the UI.
 
@@ -19,7 +19,7 @@ The engine uses a non-agentic pattern by default (single-turn completions, no to
 
 ## User Story
 
-As a user chatting with Stagent, I want responses that understand my projects, tasks, and documents so that I get contextually relevant answers without having to explain my setup.
+As a user chatting with ainative, I want responses that understand my projects, tasks, and documents so that I get contextually relevant answers without having to explain my setup.
 
 ## Technical Approach
 
@@ -42,7 +42,7 @@ As a user chatting with Stagent, I want responses that understand my projects, t
 - Total budget ceiling: ~53K input tokens
 
 ### Entity Detector (`src/lib/chat/entity-detector.ts`)
-- Scans assistant response text for references to stagent primitives
+- Scans assistant response text for references to ainative primitives
 - Returns `QuickAccessLink[]`: `{type, id, label, href}` for project/task/workflow/document/schedule
 - Detection strategy: regex patterns + DB lookup
   - Match task/project/workflow names against an in-memory entity index

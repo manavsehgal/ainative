@@ -22,7 +22,7 @@ Three gaps compound the issue:
 
 ## User Story
 
-As a user chatting with Stagent, I want to create and execute tasks with specific runtimes and agent profiles through the chat interface — and if I (or the system) provide an invalid runtime ID, I want a clear error message rather than a page crash.
+As a user chatting with ainative, I want to create and execute tasks with specific runtimes and agent profiles through the chat interface — and if I (or the system) provide an invalid runtime ID, I want a clear error message rather than a page crash.
 
 ## Acceptance Criteria
 

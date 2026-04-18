@@ -11,13 +11,13 @@ dependencies: []
 
 ## Description
 
-Remove all subscription tiering, licensing, Stripe billing, and feature gating from the stagent app. The product becomes a single free "Community Edition" where every feature is unlocked with no artificial limits. This eliminates the license manager singleton, tier checks in API routes, billing UI, gate overlays, limit enforcement, Stripe integration, and cloud license validation.
+Remove all subscription tiering, licensing, Stripe billing, and feature gating from the ainative app. The product becomes a single free "Community Edition" where every feature is unlocked with no artificial limits. This eliminates the license manager singleton, tier checks in API routes, billing UI, gate overlays, limit enforcement, Stripe integration, and cloud license validation.
 
 The simplification makes the codebase lighter, the UX cleaner, and removes a monetization layer that adds complexity without serving the current product goals. Subscription can be reimagined later if needed.
 
 ## User Story
 
-As a stagent user, I want all features to be available without subscription gates or resource limits so that I can use the full product without friction.
+As a ainative user, I want all features to be available without subscription gates or resource limits so that I can use the full product without friction.
 
 ## Technical Approach
 

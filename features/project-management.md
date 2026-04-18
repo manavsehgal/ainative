@@ -66,5 +66,5 @@ As a user, I want to create and manage projects so that I can organize my AI age
 ## References
 
 - Source: `ideas/mvp-vision.md` — Project & Task Definition section
-- Source: `ideas/tech-stack-stagent.md` — Schema Design (projects table)
+- Source: `ideas/tech-stack-ainative.md` — Schema Design (projects table)
 - Related features: `task-board` (tasks belong to projects), `database-schema` (provides the table)

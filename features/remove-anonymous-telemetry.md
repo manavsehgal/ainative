@@ -19,7 +19,7 @@ The Analytics dashboard (agent performance and ROI insights) and the usage ledge
 
 ## User Story
 
-As a stagent user, I want confidence that no usage data is collected or shared so that I can trust the 100% data privacy promise.
+As a ainative user, I want confidence that no usage data is collected or shared so that I can trust the 100% data privacy promise.
 
 ## Technical Approach
 

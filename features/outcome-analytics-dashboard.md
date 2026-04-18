@@ -9,13 +9,13 @@ dependencies:
 
 # Outcome Analytics Dashboard
 
-> **Superseded by `community-edition-simplification` (2026-04-13).** This feature shipped but was later fully reverted when Stagent pivoted to a 100% free Community Edition with no tiers, billing, or cloud dependency. Kept as historical record.
+> **Superseded by `community-edition-simplification` (2026-04-13).** This feature shipped but was later fully reverted when ainative pivoted to a 100% free Community Edition with no tiers, billing, or cloud dependency. Kept as historical record.
 
 ## Description
 
 A new `/analytics` route that transforms raw execution data from the existing `usage_ledger` and `tasks` tables into actionable ROI insights — tasks completed, hours saved, value generated, success rates by profile, cost-per-outcome trends, and a profile leaderboard. This is an Operator+ tier feature; Community users see the page content behind a content-fade gate with a centered lock card overlay.
 
-The dashboard requires zero new data collection. Every metric is derived from data Stagent already captures: task status, execution duration, agent profile, and cost entries in the usage ledger. The ROI calculator uses a configurable hourly rate (stored in localStorage) to translate agent hours into dollar value.
+The dashboard requires zero new data collection. Every metric is derived from data ainative already captures: task status, execution duration, agent profile, and cost entries in the usage ledger. The ROI calculator uses a configurable hourly rate (stored in localStorage) to translate agent hours into dollar value.
 
 ## User Story
 
@@ -232,7 +232,7 @@ Interactive section at the bottom:
 </FormSectionCard>
 ```
 
-Hourly rate persisted in localStorage (`stagent:hourly-rate`, default: 50).
+Hourly rate persisted in localStorage (`ainative:hourly-rate`, default: 50).
 
 ### Query Helpers
 

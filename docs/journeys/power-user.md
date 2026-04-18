@@ -11,13 +11,13 @@ lastUpdated: "2026-04-16"
 
 # Power User Guide
 
-Meet Sam, a DevOps engineer who automates everything that can be automated. Sam has already completed the Personal Use Guide and runs Stagent daily as an AI business operating system. Now Sam is ready to go deeper: specialized agent profiles, multi-step workflow pipelines, NLP-driven scheduling, Ollama local models, episodic memory, bulk operations, and real-time monitoring. This guide covers the advanced automation layer that puts entire business processes on autopilot.
+Meet Sam, a DevOps engineer who automates everything that can be automated. Sam has already completed the Personal Use Guide and runs ainative daily as an AI business operating system. Now Sam is ready to go deeper: specialized agent profiles, multi-step workflow pipelines, NLP-driven scheduling, Ollama local models, episodic memory, bulk operations, and real-time monitoring. This guide covers the advanced automation layer that puts entire business processes on autopilot.
 
 ## Prerequisites
 
-- Stagent installed and running locally (`npm run dev`)
+- ainative installed and running locally (`npm run dev`)
 - An Anthropic API key configured in `.env.local`
-- Familiarity with basic Stagent concepts (see [Personal Use Guide](./personal-use.md))
+- Familiarity with basic ainative concepts (see [Personal Use Guide](./personal-use.md))
 - At least one project with several completed tasks (agents learn from past context)
 
 ## Journey Steps
@@ -124,7 +124,7 @@ Sam customizes a workflow for a "Deploy & Verify" pipeline with specialized prof
 
 ### Step 9: Add Formula Columns and Charts to Tables
 
-Sam tracks deployment metrics in a table and wants computed columns and visual dashboards without leaving Stagent.
+Sam tracks deployment metrics in a table and wants computed columns and visual dashboards without leaving ainative.
 
 ![Tables detail view with charts tab showing data visualizations](../screengrabs/tables-detail-charts.png)
 

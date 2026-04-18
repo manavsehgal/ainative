@@ -19,7 +19,7 @@ A third trigger character (`#`) joins `/` (commands) and `@` (entities) in the c
 - `@task: #priority:high` — only high-priority tasks
 - `/skills #scope:project` — Skills tab, only project-scoped skills
 
-The filter parser is shared infrastructure: list pages (`/tasks`, `/projects`, `/workflows`) should be able to consume the same `#key:value` syntax via URL query or a FilterBar input. That shared reach is what upgrades this from "chat sugar" to "Stagent-wide filter language."
+The filter parser is shared infrastructure: list pages (`/tasks`, `/projects`, `/workflows`) should be able to consume the same `#key:value` syntax via URL query or a FilterBar input. That shared reach is what upgrades this from "chat sugar" to "ainative-wide filter language."
 
 ## User Story
 

@@ -14,7 +14,7 @@ source: ideas/ai-native-book-strategy.md
 
 ## Description
 
-Agents currently have read-only access to documents (`list_documents`, `get_document`), creating a gap in the autonomy loop: agents can generate task outputs but cannot persist them as documents without user UI interaction. This feature extends Stagent's agent tools to include document mutations (`upload_document`, `update_document`, `delete_document`), enabling agents to manage documents independently. The implementation reuses the existing permission system and adds new API routes that respect task/project context and cascade-delete safety.
+Agents currently have read-only access to documents (`list_documents`, `get_document`), creating a gap in the autonomy loop: agents can generate task outputs but cannot persist them as documents without user UI interaction. This feature extends ainative's agent tools to include document mutations (`upload_document`, `update_document`, `delete_document`), enabling agents to manage documents independently. The implementation reuses the existing permission system and adds new API routes that respect task/project context and cascade-delete safety.
 
 ## User Story
 
@@ -24,7 +24,7 @@ As a user, I want my agents to create documents autonomously while respecting pe
 
 ## Technical Approach
 
-### Three New Stagent Tools
+### Three New ainative Tools
 
 #### 1. `upload_document`
 Creates a document from a file on the agent's filesystem.
@@ -47,7 +47,7 @@ Creates a document from a file on the agent's filesystem.
 
 **Behavior:**
 - Validates file exists and is readable
-- Copies file to `~/.stagent/uploads/` (or references existing copy)
+- Copies file to `~/.ainative/uploads/` (or references existing copy)
 - Creates database record in `documents` table with `direction`, `taskId`, `projectId`
 - Triggers async preprocessing (text extraction, format detection)
 - Emits notification if associated task/project specified
@@ -96,7 +96,7 @@ PATCH and DELETE already exist at `src/app/api/documents/[id]/route.ts` — they
 
 ### Tool Registration (MCP Server Pattern)
 
-Tools are defined in `src/lib/chat/tools/document-tools.ts` as functions returning `tool()` arrays from `@anthropic-ai/claude-agent-sdk`, assembled into the Stagent MCP server via `src/lib/chat/stagent-tools.ts`. The existing `document-tools.ts` already has `list_documents` and `get_document` — extend it with the three new mutation tools.
+Tools are defined in `src/lib/chat/tools/document-tools.ts` as functions returning `tool()` arrays from `@anthropic-ai/claude-agent-sdk`, assembled into the ainative MCP server via `src/lib/chat/ainative-tools.ts`. The existing `document-tools.ts` already has `list_documents` and `get_document` — extend it with the three new mutation tools.
 
 Each tool definition includes a description string that Claude uses to decide when to invoke the tool, input schema via Zod, and an async handler function.
 
@@ -143,7 +143,7 @@ Audit log entry: agent ID, tool, documentId, result, timestamp — via existing 
 | `src/lib/chat/engine.ts` | Add 3 tool names to `PERMISSION_GATED_TOOLS` set (line 199) |
 | `src/app/api/documents/route.ts` | Add POST handler for server-side file upload |
 | `src/app/api/documents/[id]/route.ts` | Extend PATCH (metadata merge, reprocess) + DELETE (cascade check) |
-| `src/lib/chat/stagent-tools.ts` | Reference — assembles tool arrays into MCP server |
+| `src/lib/chat/ainative-tools.ts` | Reference — assembles tool arrays into MCP server |
 | `src/lib/documents/output-scanner.ts` | Reference — complementary auto-scan path for output documents |
 
 ## Acceptance Criteria
@@ -153,7 +153,7 @@ Audit log entry: agent ID, tool, documentId, result, timestamp — via existing 
 - [ ] `delete_document` tool requires explicit cascadeDelete flag if document linked to tasks
 - [ ] All document mutations gated via `PERMISSION_GATED_TOOLS` in `engine.ts`
 - [ ] Agents can "Always Allow" via `mcp__stagent__upload_document` pattern in settings
-- [ ] API validates file exists, copies to `~/.stagent/uploads/`, creates DB record
+- [ ] API validates file exists, copies to `~/.ainative/uploads/`, creates DB record
 - [ ] Async preprocessing triggered (reuse `processDocument` from document-preprocessing)
 - [ ] All mutations audited in `agent_logs` with agent ID, timestamp, document ID
 - [ ] Task detail view shows output documents separately from input attachments (reuses `document-output-generation`)
@@ -163,7 +163,7 @@ Audit log entry: agent ID, tool, documentId, result, timestamp — via existing 
 ## Scope Boundaries
 
 **Included:**
-- Three new Stagent tools (upload, update, delete)
+- Three new ainative tools (upload, update, delete)
 - API routes with permission guards and cascade-delete safety
 - Task/project context validation
 - Audit logging in agent_logs
@@ -175,7 +175,7 @@ Audit log entry: agent ID, tool, documentId, result, timestamp — via existing 
 - Collaboration locks during agent editing
 - Webhooks triggered by document mutations
 - Binary output formats (images, PDFs) — same scope as `document-preprocessing`
-- S3/cloud storage — uses local `~/.stagent/uploads/` only
+- S3/cloud storage — uses local `~/.ainative/uploads/` only
 
 ## References
 

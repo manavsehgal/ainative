@@ -11,13 +11,13 @@ dependencies: [provider-runtime-abstraction, usage-metering-ledger, spend-budget
 
 ## Description
 
-A systematic audit of Claude Agent SDK and Codex App Server usage (2026-03-15) identified 13 findings where Stagent's runtime adapters underutilized available SDK capabilities. This feature tracks the code changes that addressed the highest-impact findings — improving cost tracking accuracy, execution safety, prompt quality, and code maintainability.
+A systematic audit of Claude Agent SDK and Codex App Server usage (2026-03-15) identified 13 findings where ainative's runtime adapters underutilized available SDK capabilities. This feature tracks the code changes that addressed the highest-impact findings — improving cost tracking accuracy, execution safety, prompt quality, and code maintainability.
 
 The audit compared each `query()` call site against the latest SDK reference documentation and surfaced gaps in system prompt handling, budget enforcement, pricing coverage, turn limits, and prompt construction hygiene.
 
 ## User Story
 
-As a Stagent operator, I want the agent runtime layer to use SDK capabilities correctly so that cost tracking is accurate, execution has safety bounds, and prompt construction follows SDK best practices.
+As a ainative operator, I want the agent runtime layer to use SDK capabilities correctly so that cost tracking is accurate, execution has safety bounds, and prompt construction follows SDK best practices.
 
 ## Audit Findings — Implemented
 

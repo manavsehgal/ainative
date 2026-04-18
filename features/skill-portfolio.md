@@ -13,7 +13,7 @@ dependencies: [environment-cache]
 
 Unified skill catalog that aggregates every skill across all projects and tools into a single searchable, filterable portfolio. Skills are the atomic unit of AI capability in Claude Code and Codex — but today they're scattered across `~/.claude/skills/`, `~/.codex/skills/`, project `.claude/skills/`, vendor imports, and plugins. The portfolio brings them all together.
 
-Key capabilities: drift detection (same skill diverged between tools or projects), usage analytics (tied to Stagent's usage_ledger), install/uninstall across projects, and side-by-side skill diffs.
+Key capabilities: drift detection (same skill diverged between tools or projects), usage analytics (tied to ainative's usage_ledger), install/uninstall across projects, and side-by-side skill diffs.
 
 ## User Story
 

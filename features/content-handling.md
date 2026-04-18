@@ -17,18 +17,18 @@ This feature adds content attachment to task creation and output rendering to ta
 
 ## User Story
 
-As a user, I want to attach files and URLs to tasks and preview agent outputs directly in Stagent, so that I can work with rich content without switching to external tools.
+As a user, I want to attach files and URLs to tasks and preview agent outputs directly in ainative, so that I can work with rich content without switching to external tools.
 
 ## Technical Approach
 
-- **Input**: File upload component in the task create dialog — stores files in `~/.stagent/uploads/`
+- **Input**: File upload component in the task create dialog — stores files in `~/.ainative/uploads/`
 - **Output**: Agent results stored in `tasks.result` as JSON with content type metadata
 - **Preview**: Render previews based on content type:
   - Text/Markdown: rendered inline with `@tailwindcss/typography`
   - Code: syntax-highlighted code block
   - Images: inline preview with download link
   - Other files: download link with file metadata
-- **Storage**: Local filesystem at `~/.stagent/uploads/` and `~/.stagent/outputs/`
+- **Storage**: Local filesystem at `~/.ainative/uploads/` and `~/.ainative/outputs/`
 
 ### Components
 
@@ -45,7 +45,7 @@ As a user, I want to attach files and URLs to tasks and preview agent outputs di
 ## Acceptance Criteria
 
 - [ ] Users can attach files to tasks during creation
-- [ ] Attached files are stored in `~/.stagent/uploads/` and linked to the task
+- [ ] Attached files are stored in `~/.ainative/uploads/` and linked to the task
 - [ ] Task detail view shows attached files with appropriate previews
 - [ ] Agent outputs (text, code, files) are rendered with type-aware previews
 - [ ] Users can download output files directly from the task view
@@ -61,7 +61,7 @@ As a user, I want to attach files and URLs to tasks and preview agent outputs di
 
 **Included:**
 - File upload on task creation
-- Local file storage (`~/.stagent/uploads/`, `~/.stagent/outputs/`)
+- Local file storage (`~/.ainative/uploads/`, `~/.ainative/outputs/`)
 - Type-aware content preview (text, markdown, code, images)
 - Download capability for outputs
 - File reference in task data

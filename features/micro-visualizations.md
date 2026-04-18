@@ -11,7 +11,7 @@ dependencies: [homepage-dashboard, monitoring-dashboard, project-management]
 
 ## Description
 
-Add subtle sparkline charts and micro-visualizations across the Stagent homepage and secondary pages to enhance glanceability. These are small, embedded data graphics — 7-day trend sparklines in stats cards, hourly activity bar charts, completion donut rings, and status distribution bars — that supplement existing numeric values without adding clutter.
+Add subtle sparkline charts and micro-visualizations across the ainative homepage and secondary pages to enhance glanceability. These are small, embedded data graphics — 7-day trend sparklines in stats cards, hourly activity bar charts, completion donut rings, and status distribution bars — that supplement existing numeric values without adding clutter.
 
 All visualizations are pure SVG (no charting library), use existing OKLCH chart color tokens, and render in Server Components where possible. They are decorative enhancements to existing data — every visualization supplements a text value, never replaces it.
 

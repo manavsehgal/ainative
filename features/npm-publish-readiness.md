@@ -11,13 +11,13 @@ dependencies: [cli-bootstrap, database-schema, app-shell]
 
 ## Description
 
-This feature is no longer on the active product path. Stagent is now positioned as a desktop application, so npm publication is treated as legacy work rather than the live distribution channel.
+This feature is no longer on the active product path. ainative is now positioned as a desktop application, so npm publication is treated as legacy work rather than the live distribution channel.
 
 The existing npm hardening work remains useful as historical context for the internal sidecar bootstrap, but the repository no longer treats a public npm package as a user-facing requirement.
 
 ## User Story
 
-As a maintainer, I want prior npm-distribution work documented as superseded so the product docs stop presenting registry install as the intended way to get Stagent.
+As a maintainer, I want prior npm-distribution work documented as superseded so the product docs stop presenting registry install as the intended way to get ainative.
 
 ## Technical Approach
 

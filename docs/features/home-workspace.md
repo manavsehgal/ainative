@@ -11,7 +11,7 @@ lastUpdated: "2026-03-31"
 
 # Home Workspace
 
-The Home Workspace is your command center when you open Stagent. It provides a real-time overview of agent activity, business tasks, and items that need your attention -- so you can triage your AI-powered operations at a glance. The persistent sidebar organizes all areas into four logical groups for quick navigation.
+The Home Workspace is your command center when you open ainative. It provides a real-time overview of agent activity, business tasks, and items that need your attention -- so you can triage your AI-powered operations at a glance. The persistent sidebar organizes all areas into four logical groups for quick navigation.
 
 ## Screenshots
 
@@ -33,7 +33,7 @@ Items requiring human action -- such as permission requests, failed tasks, stall
 A chronological feed of the latest events across your workspace: task completions, agent messages, workflow transitions, schedule firings, and document uploads. Gives you context on what happened while you were away.
 
 ### Sidebar Navigation
-The sidebar organizes Stagent into four groups:
+The sidebar organizes ainative into four groups:
 - **Work** -- Dashboard, Inbox, Chat, Projects, Workflows, Documents
 - **Manage** -- Monitor, Profiles, Schedules, Cost & Usage
 - **Learn** -- AI Native Book, User Guide
@@ -48,7 +48,7 @@ The sidebar footer shows the active workspace name and path, so you always know 
 ## How To
 
 ### Check What Needs Your Attention
-1. Open Stagent -- the home workspace loads by default at `/`.
+1. Open ainative -- the home workspace loads by default at `/`.
 2. Scan the stat cards for any tasks awaiting review.
 3. Scroll to the "Needs Attention" section for actionable items.
 4. Click any item to navigate directly to the relevant detail view.

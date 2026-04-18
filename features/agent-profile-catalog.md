@@ -11,11 +11,11 @@ dependencies: [multi-agent-routing]
 
 ## Description
 
-Comprehensive library of 13 domain-specific agent profiles that extend the 4 starter profiles from multi-agent-routing. Each profile is a **Claude Code skill directory** with a Stagent sidecar — making profiles portable across the CC ecosystem while carrying Stagent-specific configuration for tools, MCP servers, hooks, and behavioral testing.
+Comprehensive library of 13 domain-specific agent profiles that extend the 4 starter profiles from multi-agent-routing. Each profile is a **Claude Code skill directory** with a ainative sidecar — making profiles portable across the CC ecosystem while carrying ainative-specific configuration for tools, MCP servers, hooks, and behavioral testing.
 
 ### Key Design Decision: Skill-First with Sidecar
 
-Profiles ARE Claude Code skills — **SKILL.md is the source of truth** for system prompt and behavioral instructions. Stagent-specific config lives in a `profile.yaml` sidecar alongside the SKILL.md. Any Claude Code skill can become a Stagent agent profile by adding a `profile.yaml`.
+Profiles ARE Claude Code skills — **SKILL.md is the source of truth** for system prompt and behavioral instructions. ainative-specific config lives in a `profile.yaml` sidecar alongside the SKILL.md. Any Claude Code skill can become a ainative agent profile by adding a `profile.yaml`.
 
 ## User Story
 
@@ -32,7 +32,7 @@ Each profile is a Claude Code skill directory:
 ```
 .claude/skills/<profile-id>/
   SKILL.md              # System prompt + behavioral instructions (CC-native)
-  profile.yaml          # Stagent sidecar: metadata, tools, MCP, hooks, tags, tests
+  profile.yaml          # ainative sidecar: metadata, tools, MCP, hooks, tags, tests
 ```
 
 - **Built-in profiles**: Ship as 13 skill directories in `.claude/skills/` (or bundled in `src/lib/agents/profiles/` and symlinked/copied on install)
@@ -60,7 +60,7 @@ For each finding, report:
 - **Fix**: How to fix it
 ```
 
-### profile.yaml Format (Stagent Sidecar)
+### profile.yaml Format (ainative Sidecar)
 
 ```yaml
 id: code-reviewer
@@ -89,8 +89,8 @@ maxTurns: 20
 outputFormat: structured-findings
 
 # Sharing metadata
-author: stagent
-source: https://github.com/stagent/profiles
+author: ainative
+source: https://github.com/ainative/profiles
 
 # Behavioral smoke tests
 tests:
@@ -177,23 +177,23 @@ Each profile.yaml includes a `tests:` section with sample task descriptions and 
 - Iterates each profile's `tests[]`, executes the task description against the profile
 - Validates response contains expected keywords
 - Reports pass/fail per test case
-- Can run as CLI command: `stagent test-profiles` or via API
+- Can run as CLI command: `ainative test-profiles` or via API
 
 ### Sharing (GitHub Import/Export)
 
 **Import flow**:
-- `POST /api/import { url, type: "profile" }` or CLI `stagent import <url>`
+- `POST /api/import { url, type: "profile" }` or CLI `ainative import <url>`
 - Supports: GitHub gist URL, repo URL (scans `.claude/skills/*/profile.yaml`), raw file URL
 - Fetches SKILL.md + profile.yaml → writes to `.claude/skills/<id>/`
 - Version comparison: newer SemVer wins, old version backed up to `.claude/skills/<id>/.backup/`
 
 **Export flow**:
-- CLI: `stagent export --profile <id>` → outputs the skill directory as a tarball or prints paths
+- CLI: `ainative export --profile <id>` → outputs the skill directory as a tarball or prints paths
 
 **Portability**:
-- Since profiles ARE CC skills, sharing works for both Stagent users and plain CC users
-- Non-Stagent CC users get the SKILL.md behavior (system prompt)
-- Stagent users also get the profile.yaml config (tools, MCP, hooks, tests)
+- Since profiles ARE CC skills, sharing works for both ainative users and plain CC users
+- Non-ainative CC users get the SKILL.md behavior (system prompt)
+- ainative users also get the profile.yaml config (tools, MCP, hooks, tests)
 
 ### UI Components
 

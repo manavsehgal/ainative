@@ -3,7 +3,7 @@ title: Ollama Runtime Provider
 status: completed
 priority: P2
 milestone: post-mvp
-source: ideas/vision/Stagent-OpenClaw-Companion-Research-Report.md
+source: ideas/vision/ainative-OpenClaw-Companion-Research-Report.md
 dependencies: [provider-runtime-abstraction]
 ---
 
@@ -11,9 +11,9 @@ dependencies: [provider-runtime-abstraction]
 
 ## Description
 
-Add Ollama as a fifth runtime adapter in Stagent's multi-provider architecture, enabling local model execution for privacy-sensitive operations and cost optimization. Ollama runs models locally (Llama, Mistral, Gemma, Phi, etc.) with zero API costs and full data privacy — no tokens leave the machine.
+Add Ollama as a fifth runtime adapter in ainative's multi-provider architecture, enabling local model execution for privacy-sensitive operations and cost optimization. Ollama runs models locally (Llama, Mistral, Gemma, Phi, etc.) with zero API costs and full data privacy — no tokens leave the machine.
 
-This aligns with Stagent's local-first philosophy and serves two key personas: cost-conscious solo founders who can't afford Claude Opus for every heartbeat check, and users handling sensitive data (financial records, customer PII, legal documents) who need inference without cloud API calls.
+This aligns with ainative's local-first philosophy and serves two key personas: cost-conscious solo founders who can't afford Claude Opus for every heartbeat check, and users handling sensitive data (financial records, customer PII, legal documents) who need inference without cloud API calls.
 
 The adapter follows the established `AgentRuntimeAdapter` interface pattern from `provider-runtime-abstraction`, integrating with the existing runtime catalog, cost metering ledger, and smart runtime router.
 
@@ -40,7 +40,7 @@ interface OllamaAdapterConfig {
 
 **Agentic loop implementation:**
 1. **Chat completion**: Use Ollama's `/api/chat` endpoint with streaming
-2. **Tool use**: Ollama supports function calling for compatible models (Llama 3.1+, Mistral, etc.). Map Stagent's tool definitions to Ollama's tool format.
+2. **Tool use**: Ollama supports function calling for compatible models (Llama 3.1+, Mistral, etc.). Map ainative's tool definitions to Ollama's tool format.
 3. **Multi-turn**: Maintain conversation history in the adapter, sending full message history on each turn
 4. **Stop conditions**: Max turns, explicit stop, tool approval gate (same as other adapters)
 5. **Streaming**: SSE streaming via Ollama's streaming response mode
@@ -154,7 +154,7 @@ Add "Ollama" section to the runtime configuration in Settings:
 
 ## References
 
-- Source: `ideas/vision/Stagent-OpenClaw-Companion-Research-Report.md` — Section 3.7 (Broader LLM Provider Support)
+- Source: `ideas/vision/ainative-OpenClaw-Companion-Research-Report.md` — Section 3.7 (Broader LLM Provider Support)
 - Existing runtime catalog: `src/lib/agents/runtime/catalog.ts`
 - Existing adapter pattern: `src/lib/agents/runtime/anthropic-direct.ts` (reference implementation)
 - Existing smart router: `src/lib/agents/router.ts`

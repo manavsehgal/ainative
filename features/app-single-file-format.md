@@ -15,10 +15,10 @@ dependencies: [app-package-format]
 
 The `.sap` directory format is powerful but heavy for simple apps. This
 feature introduces a single-file `app.md` format that encodes an entire
-Stagent app in one markdown file — frontmatter for the manifest, fenced
+ainative app in one markdown file — frontmatter for the manifest, fenced
 code blocks for each primitive (tables, schedules, profiles, pages). The
 file is copy-pasteable via GitHub Gist, shareable in chat, and installable
-directly with `stagent app install ./my-app.md`.
+directly with `ainative app install ./my-app.md`.
 
 This targets power users and hobbyists who want to create and share simple
 apps without managing a directory of YAML files. The single-file format
@@ -32,7 +32,7 @@ GitHub, in any markdown viewer, and in documentation.
 
 ## User Story
 
-As a power user, I want to create a simple Stagent app in a single markdown
+As a power user, I want to create a simple ainative app in a single markdown
 file that I can share via Gist or paste in a README, so that anyone can
 install it with one command without downloading a package.
 
@@ -283,7 +283,7 @@ export function bundleToMd(bundle: AppBundle): string {
 
 ### 5. Install support
 
-`stagent app install ./my-app.md` detects the `.md` extension and routes
+`ainative app install ./my-app.md` detects the `.md` extension and routes
 to the single-file handler:
 
 ```ts
@@ -304,7 +304,7 @@ Since GitHub Gist URLs serve raw content at `https://gist.githubusercontent.com/
 the install command can accept Gist URLs directly:
 
 ```
-stagent app install https://gist.githubusercontent.com/user/abc123/raw/my-app.md
+ainative app install https://gist.githubusercontent.com/user/abc123/raw/my-app.md
 ```
 
 The URL handler fetches the raw content, detects the `.md` extension, and
@@ -320,8 +320,8 @@ routes to `mdToBundle()`.
 - [ ] Both `` ``` `` and `~~~` fence syntaxes are supported.
 - [ ] Fenced blocks without recognized types are ignored (future-proofing).
 - [ ] Prose content outside fenced blocks is preserved as README text.
-- [ ] `stagent app install ./my-app.md` installs from a local file.
-- [ ] The rendered markdown is human-readable on GitHub without Stagent
+- [ ] `ainative app install ./my-app.md` installs from a local file.
+- [ ] The rendered markdown is human-readable on GitHub without ainative
       (tables of columns, schedule descriptions, profile text).
 - [ ] Validation errors include line numbers pointing to the problematic
       block in the source file.

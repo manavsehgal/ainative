@@ -13,7 +13,7 @@ dependencies: [environment-cache]
 
 Fleet management view showing a matrix of all onboarded projects and their environment artifacts. Answers questions like "Which of my projects have the code-review skill?", "Show all projects using Playwright MCP", "Which projects are missing AGENTS.md?", and enables side-by-side artifact diffs between projects.
 
-This is the aerial view that no CLI tool can provide — it requires a persistent data layer spanning multiple projects, which is exactly what Stagent's scan cache provides.
+This is the aerial view that no CLI tool can provide — it requires a persistent data layer spanning multiple projects, which is exactly what ainative's scan cache provides.
 
 ## User Story
 
@@ -47,7 +47,7 @@ All queries hit the `environment_artifacts` table joined with `environment_scans
 
 ```
               Skills  Hooks  MCP  Perms  Instructions  Health
-stagent         20     4     3    152    ██████████     82
+ainative         20     4     3    152    ██████████     82
 auth-service     5     0     1     12    █████░░░░░     45
 frontend         8     2     2     34    ██████░░░░     61
 data-pipeline    3     1     0      0    ░░░░░░░░░░     28

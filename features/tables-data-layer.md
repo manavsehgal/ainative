@@ -13,7 +13,7 @@ dependencies: []
 
 Foundation schema and CRUD operations for user-defined structured tables. Introduces 12 new database tables using the hybrid JSON rows pattern — fixed Drizzle schema for metadata, JSON TEXT columns for flexible row data. This is the bedrock that all other Tables features build on.
 
-The design stores column definitions as a JSON schema array in the `user_tables` table, and each row as a JSON object in `user_table_rows.data`. SQLite's `json_extract()` enables filtering and sorting on any column without dynamic DDL. This fits Stagent's existing bootstrap pattern (idempotent CREATE TABLE IF NOT EXISTS) and Drizzle ORM query model.
+The design stores column definitions as a JSON schema array in the `user_tables` table, and each row as a JSON object in `user_table_rows.data`. SQLite's `json_extract()` enables filtering and sorting on any column without dynamic DDL. This fits ainative's existing bootstrap pattern (idempotent CREATE TABLE IF NOT EXISTS) and Drizzle ORM query model.
 
 ## User Story
 
@@ -40,7 +40,7 @@ As a developer building Tables features, I need a robust data layer with typed s
 - `workflow_table_inputs` — links tables to workflow steps
 - `schedule_table_inputs` — links tables to schedules
 
-All tables use TEXT UUIDs as PKs, INTEGER timestamps, and TEXT for JSON columns — consistent with Stagent's existing 29 tables.
+All tables use TEXT UUIDs as PKs, INTEGER timestamps, and TEXT for JSON columns — consistent with ainative's existing 29 tables.
 
 ### Column Schema Format
 

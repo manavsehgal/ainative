@@ -5,7 +5,7 @@
 
 ## Context
 
-Stagent runs chat and scheduled tasks in the same Node process, on the same event loop. The 2026-04-08 incident showed this is a critical architectural constraint: when 5 schedules saturated the event loop, a user's chat SSE stream was starved and dropped mid-stream.
+ainative runs chat and scheduled tasks in the same Node process, on the same event loop. The 2026-04-08 incident showed this is a critical architectural constraint: when 5 schedules saturated the event loop, a user's chat SSE stream was starved and dropped mid-stream.
 
 ## Decision
 

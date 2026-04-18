@@ -3,7 +3,7 @@ title: Bootstrap `local` branch as tracking shim, not divergent worktree branch
 status: completed
 priority: P2
 milestone: post-mvp
-source: memory/ensureLocalBranch-checkout-bug.md + 2026-04-17 stagent-wealth incident (this session)
+source: memory/ensureLocalBranch-checkout-bug.md + 2026-04-17 ainative-wealth incident (this session)
 dependencies: [instance-bootstrap, upgrade-detection]
 ---
 
@@ -15,15 +15,15 @@ dependencies: [instance-bootstrap, upgrade-detection]
 
 1. **`-b` switches HEAD onto the new branch.** Whatever branch the user was on is silently abandoned. Domain-clone setups (`PRIVATE-INSTANCES.md` §1.7) explicitly rename `local` → `<domain>-mgr` and expect to stay on `<domain>-mgr` across reboots. Without a workaround, the very next `npm run dev` recreates `local` and yanks HEAD off the domain branch. The current workaround — codified in `PRIVATE-INSTANCES.md` and applied to wealth/venture/growth on 2026-04-07 — is to leave a "dead `local` shim" branch at the same SHA as `<domain>-mgr` so `branchExists("local") === true` and `ensureLocalBranch()` no-ops.
 
-2. **`local` is created at "current HEAD," not as a tracking ref for `origin/main`.** This decision was deliberate (the spec says "create `local` at current HEAD," see [features/instance-bootstrap.md:44](instance-bootstrap.md:44)) and is correct for the *single-clone* case, where `local` IS the working branch. But for the *domain-clone* case, after the §1.7 rename, the dead `local` shim never advances. Worse, when an upstream history rewrite happens — as occurred 2026-04-17 when `manavsehgal/stagent` was migrated from `navam-io/stagent` with full history rewrite — the orphaned `main` ref accumulates 500+ commits of divergence with `origin/main` because nothing in bootstrap ever tries to fast-forward it.
+2. **`local` is created at "current HEAD," not as a tracking ref for `origin/main`.** This decision was deliberate (the spec says "create `local` at current HEAD," see [features/instance-bootstrap.md:44](instance-bootstrap.md:44)) and is correct for the *single-clone* case, where `local` IS the working branch. But for the *domain-clone* case, after the §1.7 rename, the dead `local` shim never advances. Worse, when an upstream history rewrite happens — as occurred 2026-04-17 when `manavsehgal/ainative` was migrated from `navam-io/ainative` with full history rewrite — the orphaned `main` ref accumulates 500+ commits of divergence with `origin/main` because nothing in bootstrap ever tries to fast-forward it.
 
-The downstream symptom landed today in stagent-wealth: the upgrade-detection sidebar badge read **"570 updates"** even immediately after a successful `git merge origin/main` into `wealth-mgr`. The poller computes its count as `git rev-list --count main..origin/main` ([src/lib/instance/git-ops.ts:75-83](../src/lib/instance/git-ops.ts:75)), and local `main` was frozen at the pre-migration HEAD `6f9b3af1` (566 commits unique to it, 570 commits behind upstream — fully orphaned by the history rewrite). Manual `git update-ref refs/heads/main refs/remotes/origin/main` cleared the badge instantly.
+The downstream symptom landed today in ainative-wealth: the upgrade-detection sidebar badge read **"570 updates"** even immediately after a successful `git merge origin/main` into `wealth-mgr`. The poller computes its count as `git rev-list --count main..origin/main` ([src/lib/instance/git-ops.ts:75-83](../src/lib/instance/git-ops.ts:75)), and local `main` was frozen at the pre-migration HEAD `6f9b3af1` (566 commits unique to it, 570 commits behind upstream — fully orphaned by the history rewrite). Manual `git update-ref refs/heads/main refs/remotes/origin/main` cleared the badge instantly.
 
 This spec proposes treating `local` (and, by extension, `main` on domain clones) as **tracking shims that bootstrap re-points each boot**, not as branches that hold history. The new contract: bootstrap is responsible for keeping the shims aligned with their tracked refs; the user is responsible only for the working branch.
 
 ## User Story
 
-As a stagent power user running a domain clone (wealth-mgr / venture-mgr / growth-mgr), I want the upgrade-detection badge in my sidebar to reflect the genuine commits-behind count between my working branch and upstream, so that after a successful merge it reads zero — without me having to remember to also force-update some shim ref that nobody told me existed.
+As a ainative power user running a domain clone (wealth-mgr / venture-mgr / growth-mgr), I want the upgrade-detection badge in my sidebar to reflect the genuine commits-behind count between my working branch and upstream, so that after a successful merge it reads zero — without me having to remember to also force-update some shim ref that nobody told me existed.
 
 ## Technical Approach
 
@@ -133,7 +133,7 @@ No data migration. The behavior change is purely in bootstrap; no settings schem
 
 **Existing private instances** (the three flagged in `memory/ensureLocalBranch-checkout-bug.md` line 24): keep their dead `local` shim as-is. With the new code, the shim becomes redundant but harmless. After the first boot under the new code, both `local` AND `main` will be re-pointed to `origin/main` automatically.
 
-**`PRIVATE-INSTANCES.md` §1.7** — drop the `git branch local <domain>-mgr` line from new-clone instructions once this ships. Add a note that the line is no longer required for stagent versions ≥ X.Y.Z. Don't ask existing users to delete their shim — leave it as a no-op.
+**`PRIVATE-INSTANCES.md` §1.7** — drop the `git branch local <domain>-mgr` line from new-clone instructions once this ships. Add a note that the line is no longer required for ainative versions ≥ X.Y.Z. Don't ask existing users to delete their shim — leave it as a no-op.
 
 ## Out of Scope
 
@@ -143,13 +143,13 @@ No data migration. The behavior change is purely in bootstrap; no settings schem
 
 ## Adjacent risk worth a follow-up spec
 
-Bootstrap has no opinion about the **URL** behind the `origin` remote — it only names the remote. Users who cloned before the 2026-04-17 `navam-io/stagent` → `manavsehgal/stagent` rename still have `origin` pointing at the old URL. GitHub currently redirects, so `git fetch origin main` works transparently — but the redirect is an opaque safety net that can be revoked. A one-shot bootstrap step `ensureOriginCanonical()` could read `git remote get-url origin`, compare it against an allowlist of known-good upstream URLs, and emit a notification ("Your `origin` remote points at the old `navam-io` URL. Update with `git remote set-url origin https://github.com/manavsehgal/stagent.git`?") if it doesn't match. **Not folded into this spec** — keep this one focused on the shim issue. File as its own feature when convenient.
+Bootstrap has no opinion about the **URL** behind the `origin` remote — it only names the remote. Users who cloned before the 2026-04-17 `navam-io/ainative` → `manavsehgal/ainative` rename still have `origin` pointing at the old URL. GitHub currently redirects, so `git fetch origin main` works transparently — but the redirect is an opaque safety net that can be revoked. A one-shot bootstrap step `ensureOriginCanonical()` could read `git remote get-url origin`, compare it against an allowlist of known-good upstream URLs, and emit a notification ("Your `origin` remote points at the old `navam-io` URL. Update with `git remote set-url origin https://github.com/manavsehgal/ainative.git`?") if it doesn't match. **Not folded into this spec** — keep this one focused on the shim issue. File as its own feature when convenient.
 
 ## Verification (post-merge, before declaring done)
 
 ```bash
 # In a domain clone with a stale main and stale local:
-cd ~/Developer/stagent-wealth
+cd ~/Developer/ainative-wealth
 git update-ref refs/heads/main 6f9b3af1   # simulate the orphaned state
 git update-ref refs/heads/local 6f9b3af1
 git rev-list --count main..origin/main    # expect non-zero (e.g. 570)
@@ -168,12 +168,12 @@ Open the app, verify the sidebar upgrade badge clears (or hit `POST /api/instanc
 
 ## Verification run — 2026-04-17
 
-Smoke against stagent-wealth (production-mode bootstrap, no dev-mode gates):
+Smoke against ainative-wealth (production-mode bootstrap, no dev-mode gates):
 
-1. **Pre-flight:** stagent-wealth on `wealth-mgr`, `main` and `origin/main` both at `a7957e11` after the morning's manual `git update-ref` fix.
+1. **Pre-flight:** ainative-wealth on `wealth-mgr`, `main` and `origin/main` both at `a7957e11` after the morning's manual `git update-ref` fix.
 2. **Repro:** `git update-ref refs/heads/main 6f9b3af1` — re-orphaned main to the pre-migration history SHA. Verified `git rev-list --count main..origin/main == 570` and `origin/main..main == 566` (exact reproduction of the morning's "500+ updates" badge state).
-3. **Apply worktree changes:** tarred `bootstrap.ts` / `git-ops.ts` / `types.ts` from the `loving-buck-fb4fec` worktree into stagent-wealth.
-4. **Boot:** `PORT=3010 npm run dev`. Instrumentation-node.ts → `ensureInstance()` ran normally (dev-mode gates off on stagent-wealth).
+3. **Apply worktree changes:** tarred `bootstrap.ts` / `git-ops.ts` / `types.ts` from the `loving-buck-fb4fec` worktree into ainative-wealth.
+4. **Boot:** `PORT=3010 npm run dev`. Instrumentation-node.ts → `ensureInstance()` ran normally (dev-mode gates off on ainative-wealth).
 5. **Post-boot git state:**
    - `git rev-parse main` → `a7957e11...` (re-aligned by `ensureMainShim` from the orphan `6f9b3af1`)
    - `git branch --show-current` → `wealth-mgr` (HEAD did not move)
@@ -192,6 +192,6 @@ Smoke against stagent-wealth (production-mode bootstrap, no dev-mode gates):
    ```
    The `commitsBehind: 1` is the genuine new upstream release — the 570-orphan is gone.
 7. **No startup errors** in dev-server output: no `ReferenceError`, no `Cannot access ... before initialization`, no bootstrap throws.
-8. **Cleanup:** `git checkout HEAD -- src/lib/instance/{bootstrap,git-ops,types}.ts` restored stagent-wealth to its committed state. Dev server stopped. `main` was left at the shim-aligned SHA (the new contract — main is a tracking shim, bootstrap owns it).
+8. **Cleanup:** `git checkout HEAD -- src/lib/instance/{bootstrap,git-ops,types}.ts` restored ainative-wealth to its committed state. Dev server stopped. `main` was left at the shim-aligned SHA (the new contract — main is a tracking shim, bootstrap owns it).
 
 Fix verified end-to-end. Shim auto-heals a 500+-commit orphaned `main` within one boot cycle, with zero user intervention and zero HEAD movement.

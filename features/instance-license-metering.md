@@ -11,7 +11,7 @@ dependencies: [instance-bootstrap, local-license-manager, license-activation-flo
 
 ## Description
 
-When a user runs multiple stagent clones on the same machine (e.g., domain-focused private instances for wealth management, investor relations, growth/sales), we need a licensing model that doesn't punish the legitimate power user but also doesn't allow unlimited sharing of a single paid seat. This feature implements a **hybrid metering model**: local tier features work in any number of clones without gating, while cloud-side features (cloud sync, marketplace, telemetry) meter seats per paid tier using a stable `(email, machineFingerprint, instanceId)` tuple.
+When a user runs multiple ainative clones on the same machine (e.g., domain-focused private instances for wealth management, investor relations, growth/sales), we need a licensing model that doesn't punish the legitimate power user but also doesn't allow unlimited sharing of a single paid seat. This feature implements a **hybrid metering model**: local tier features work in any number of clones without gating, while cloud-side features (cloud sync, marketplace, telemetry) meter seats per paid tier using a stable `(email, machineFingerprint, instanceId)` tuple.
 
 The rationale is architectural and commercial. Architecturally, the license row is already per-`STAGENT_DATA_DIR`, so local gating is a no-op — every clone already reads its own row. Commercially, strict per-instance activation would create friction exactly where power users want freedom, while unlimited replication has no upsell path. Hybrid is the middle ground: local replication is free, cloud integrations are metered.
 
@@ -19,7 +19,7 @@ This feature extends `LicenseManager` to send the `(email, machineFingerprint, i
 
 ## User Story
 
-As a paying stagent user on the Scale tier running three domain-focused private instances on my Mac, I want all three instances to work fully with local features (tasks, workflows, documents, agents) without any gating, and I want the cloud features I'm paying for (sync, marketplace) to recognize all three as legitimate uses of my single paid seat, so that I get the full power of stagent for my personal use without needing to buy three seats.
+As a paying ainative user on the Scale tier running three domain-focused private instances on my Mac, I want all three instances to work fully with local features (tasks, workflows, documents, agents) without any gating, and I want the cloud features I'm paying for (sync, marketplace) to recognize all three as legitimate uses of my single paid seat, so that I get the full power of ainative for my personal use without needing to buy three seats.
 
 ## Technical Approach
 

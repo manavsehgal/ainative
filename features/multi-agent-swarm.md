@@ -13,9 +13,9 @@ dependencies:
 
 ## Description
 
-Multi-Agent Swarm is the first bounded slice of Gas Town-inspired orchestration inside Stagent's existing workflow system. Instead of introducing a new graph runtime or mailbox subsystem, it adds one explicit swarm pattern with three fixed roles: a mayor step that plans the work, a pool of worker steps that run in parallel, and a refinery step that merges the successful worker outputs into one final result.
+Multi-Agent Swarm is the first bounded slice of Gas Town-inspired orchestration inside ainative's existing workflow system. Instead of introducing a new graph runtime or mailbox subsystem, it adds one explicit swarm pattern with three fixed roles: a mayor step that plans the work, a pool of worker steps that run in parallel, and a refinery step that merges the successful worker outputs into one final result.
 
-This slice is intentionally narrow. It proves that Stagent can expose swarm-style orchestration through the current workflow editor, child-task execution path, monitoring model, and human-facing status UI before taking on dynamic worker generation, mailbox coordination, or more autonomous re-planning.
+This slice is intentionally narrow. It proves that ainative can expose swarm-style orchestration through the current workflow editor, child-task execution path, monitoring model, and human-facing status UI before taking on dynamic worker generation, mailbox coordination, or more autonomous re-planning.
 
 ## User Story
 

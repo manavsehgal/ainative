@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Rewrite every `stagent` reference in this repo to `ainative`, migrate existing user data in place, and publish `ainative@0.12.0` to npm — all in one PR on `main`.
+**Goal:** Rewrite every `ainative` reference in this repo to `ainative`, migrate existing user data in place, and publish `ainative@0.12.0` to npm — all in one PR on `main`.
 
 **Architecture:** Seven sequential phases, each ending with a verification checkpoint. Phase 1 builds the user-data migration safety net (dir rename, DB rename, SQL migrations, sentinel, keychain). Phases 2–4 rewrite identifiers (code → strings → filenames). Phase 5 sweeps docs. Phase 6 rewrites book prose in two commits. Phase 7 flips `package.json` and regens the lockfile.
 
@@ -24,9 +24,9 @@ Files created (new):
 - `src/__tests__/migration-smoke.test.ts`
 
 Files deleted (old):
-- `src/lib/utils/stagent-paths.ts` (replaced by `ainative-paths.ts`)
-- `src/lib/chat/stagent-tools.ts` (renamed to `ainative-tools.ts`)
-- Historical `*stagent*.md` filenames (renamed via `git mv`)
+- `src/lib/utils/ainative-paths.ts` (replaced by `ainative-paths.ts`)
+- `src/lib/chat/ainative-tools.ts` (renamed to `ainative-tools.ts`)
+- Historical `*ainative*.md` filenames (renamed via `git mv`)
 - `public/ainative-s-64.png` / `public/ainative-s-128.png` (renamed)
 - `.claude/skills/ainative-app/` directory (renamed to `ainative-app/`)
 
@@ -38,7 +38,7 @@ Files heavily modified (contents rewritten, path unchanged):
 - `src/lib/validators/profile.ts` (+ tests)
 - `src/lib/agents/claude-agent.ts` (MCP server key + allowed-tools prefix)
 - `src/lib/agents/runtime/openai-codex.ts`, `src/lib/chat/codex-engine.ts` (keychain serviceName)
-- Every `.ts`/`.tsx` in `src/` with a `stagent`/`Stagent` identifier (~30 files)
+- Every `.ts`/`.tsx` in `src/` with a `ainative`/`ainative` identifier (~30 files)
 - Every `.md` in `docs/`, `handoff/`, `features/`, `book/`, `ai-native-notes/` (~100 files)
 - `.env.local` (project-local)
 
@@ -49,8 +49,8 @@ Files heavily modified (contents rewritten, path unchanged):
 - [ ] **Back up the user data directory**
 
 ```bash
-cp -r ~/.stagent ~/.stagent.bak-pre-rename-2026-04-17
-du -sh ~/.stagent.bak-pre-rename-2026-04-17
+cp -r ~/.ainative ~/.ainative.bak-pre-rename-2026-04-17
+du -sh ~/.ainative.bak-pre-rename-2026-04-17
 ```
 
 Expected: ~688 MB. This backup is the rollback path for user data. Do NOT skip.
@@ -58,7 +58,7 @@ Expected: ~688 MB. This backup is the rollback path for user data. Do NOT skip.
 - [ ] **Confirm clean worktree on the rename branch**
 
 ```bash
-cd /Users/manavsehgal/Developer/stagent/.claude/worktrees/focused-tharp-abc3c7
+cd /Users/manavsehgal/Developer/ainative/.claude/worktrees/focused-tharp-abc3c7
 git status
 git branch --show-current
 ```
@@ -68,7 +68,7 @@ Expected: clean status, branch `claude/focused-tharp-abc3c7`.
 - [ ] **Record baseline grep count**
 
 ```bash
-rg -ci stagent . 2>/dev/null | awk -F: '{s+=$2} END {print "baseline stagent matches:", s}'
+rg -ci ainative . 2>/dev/null | awk -F: '{s+=$2} END {print "baseline ainative matches:", s}'
 ```
 
 Record this number. Verification will drive it to zero (minus allowed exceptions).
@@ -81,13 +81,13 @@ Record this number. Verification will drive it to zero (minus allowed exceptions
 
 **Checkpoint:** `npm test -- migrate-to-ainative` green; `npm run dev` still boots.
 
-### Task 1: Add `getAinativeDataDir` alongside `getStagentDataDir`
+### Task 1: Add `getAinativeDataDir` alongside `getAinativeDataDir`
 
 **Files:** Create `src/lib/utils/ainative-paths.ts`.
 
 - [ ] **Step 1: Create the new paths module**
 
-Create `src/lib/utils/ainative-paths.ts` with all accessors mirroring `stagent-paths.ts`:
+Create `src/lib/utils/ainative-paths.ts` with all accessors mirroring `ainative-paths.ts`:
 
 ```ts
 import { homedir } from "os";
@@ -156,7 +156,7 @@ Note: `getAinativeDataDir()` checks `AINATIVE_DATA_DIR` first, falls back to `ST
 
 ```bash
 git add src/lib/utils/ainative-paths.ts
-git commit -m "feat(paths): add ainative-paths module alongside stagent-paths"
+git commit -m "feat(paths): add ainative-paths module alongside ainative-paths"
 ```
 
 ---
@@ -194,8 +194,8 @@ describe("migrateFromStagent", () => {
     rmSync(tempHome, { recursive: true, force: true });
   });
 
-  it("renames ~/.stagent/ to ~/.ainative/ when only old dir exists", async () => {
-    const oldDir = join(tempHome, ".stagent");
+  it("renames ~/.ainative/ to ~/.ainative/ when only old dir exists", async () => {
+    const oldDir = join(tempHome, ".ainative");
     const newDir = join(tempHome, ".ainative");
     mkdirSync(oldDir, { recursive: true });
     writeFileSync(join(oldDir, "marker.txt"), "hello");
@@ -209,7 +209,7 @@ describe("migrateFromStagent", () => {
   });
 
   it("is idempotent — second call is a no-op", async () => {
-    const oldDir = join(tempHome, ".stagent");
+    const oldDir = join(tempHome, ".ainative");
     mkdirSync(oldDir, { recursive: true });
     writeFileSync(join(oldDir, "marker.txt"), "hello");
 
@@ -219,12 +219,12 @@ describe("migrateFromStagent", () => {
     expect(secondReport.dirMigrated).toBe(false);
   });
 
-  it("renames stagent.db, stagent.db-shm, stagent.db-wal inside moved dir", async () => {
-    const oldDir = join(tempHome, ".stagent");
+  it("renames ainative.db, ainative.db-shm, ainative.db-wal inside moved dir", async () => {
+    const oldDir = join(tempHome, ".ainative");
     mkdirSync(oldDir, { recursive: true });
-    writeFileSync(join(oldDir, "stagent.db"), "db");
-    writeFileSync(join(oldDir, "stagent.db-shm"), "shm");
-    writeFileSync(join(oldDir, "stagent.db-wal"), "wal");
+    writeFileSync(join(oldDir, "ainative.db"), "db");
+    writeFileSync(join(oldDir, "ainative.db-shm"), "shm");
+    writeFileSync(join(oldDir, "ainative.db-wal"), "wal");
 
     const report = await migrateFromStagent({ home: tempHome });
 
@@ -236,9 +236,9 @@ describe("migrateFromStagent", () => {
   });
 
   it("rewrites mcp__stagent__ prefix in agent_profiles.allowed_tools", async () => {
-    const oldDir = join(tempHome, ".stagent");
+    const oldDir = join(tempHome, ".ainative");
     mkdirSync(oldDir, { recursive: true });
-    const dbPath = join(oldDir, "stagent.db");
+    const dbPath = join(oldDir, "ainative.db");
     const db = new Database(dbPath);
     db.exec(`CREATE TABLE agent_profiles (id TEXT PRIMARY KEY, allowed_tools TEXT)`);
     db.prepare("INSERT INTO agent_profiles VALUES (?, ?)").run(
@@ -257,15 +257,15 @@ describe("migrateFromStagent", () => {
     expect(row.allowed_tools).not.toContain("mcp__stagent__");
   });
 
-  it("rewrites sourceFormat stagent → ainative in import_meta", async () => {
-    const oldDir = join(tempHome, ".stagent");
+  it("rewrites sourceFormat ainative → ainative in import_meta", async () => {
+    const oldDir = join(tempHome, ".ainative");
     mkdirSync(oldDir, { recursive: true });
-    const dbPath = join(oldDir, "stagent.db");
+    const dbPath = join(oldDir, "ainative.db");
     const db = new Database(dbPath);
     db.exec(`CREATE TABLE agent_profiles (id TEXT PRIMARY KEY, import_meta TEXT)`);
     db.prepare("INSERT INTO agent_profiles VALUES (?, ?)").run(
       "test",
-      JSON.stringify({ sourceFormat: "stagent" }),
+      JSON.stringify({ sourceFormat: "ainative" }),
     );
     db.close();
 
@@ -346,7 +346,7 @@ export interface MigrationOptions {
 }
 
 /**
- * Idempotent migration from ~/.stagent/ to ~/.ainative/. Safe to call on every boot.
+ * Idempotent migration from ~/.ainative/ to ~/.ainative/. Safe to call on every boot.
  * Never throws. Errors are collected in report.errors.
  */
 export async function migrateFromStagent(
@@ -364,7 +364,7 @@ export async function migrateFromStagent(
     errors: [],
   };
 
-  const oldDir = join(home, ".stagent");
+  const oldDir = join(home, ".ainative");
   const newDir = join(home, ".ainative");
 
   // Step 1: rename directory if needed
@@ -395,7 +395,7 @@ export async function migrateFromStagent(
   // Step 2: rename DB files inside the new dir
   if (existsSync(newDir)) {
     for (const suffix of ["", "-shm", "-wal"]) {
-      const oldName = join(newDir, `stagent.db${suffix}`);
+      const oldName = join(newDir, `ainative.db${suffix}`);
       const newName = join(newDir, `ainative.db${suffix}`);
       if (existsSync(oldName) && !existsSync(newName)) {
         try {
@@ -422,7 +422,7 @@ export async function migrateFromStagent(
             .prepare("UPDATE agent_profiles SET allowed_tools = REPLACE(allowed_tools, 'mcp__stagent__', 'mcp__ainative__') WHERE allowed_tools LIKE '%mcp__stagent__%'")
             .run();
           const r2 = db
-            .prepare(`UPDATE agent_profiles SET import_meta = REPLACE(import_meta, '"sourceFormat":"stagent"', '"sourceFormat":"ainative"') WHERE import_meta LIKE '%"sourceFormat":"stagent"%'`)
+            .prepare(`UPDATE agent_profiles SET import_meta = REPLACE(import_meta, '"sourceFormat":"ainative"', '"sourceFormat":"ainative"') WHERE import_meta LIKE '%"sourceFormat":"ainative"%'`)
             .run();
           report.sqlRowsUpdated = r1.changes + r2.changes;
           if (report.sqlRowsUpdated > 0) {
@@ -439,7 +439,7 @@ export async function migrateFromStagent(
 
   // Step 4: sentinel file rename
   if (existsSync(gitDir)) {
-    const oldSentinel = join(gitDir, "stagent-dev-mode");
+    const oldSentinel = join(gitDir, "ainative-dev-mode");
     const newSentinel = join(gitDir, "ainative-dev-mode");
     if (existsSync(oldSentinel) && !existsSync(newSentinel)) {
       try {
@@ -457,7 +457,7 @@ export async function migrateFromStagent(
   if (process.platform === "darwin") {
     try {
       const { migrateKeychainService } = await import("./keychain-migrate");
-      report.keychainMigrated = await migrateKeychainService("stagent", "ainative", log);
+      report.keychainMigrated = await migrateKeychainService("ainative", "ainative", log);
     } catch (err) {
       report.errors.push(`keychain migration failed: ${String(err)}`);
     }
@@ -686,14 +686,14 @@ import { tmpdir } from "node:os";
 import { migrateFromStagent } from "@/lib/utils/migrate-to-ainative";
 
 describe("migration smoke", () => {
-  it("migrates a realistic stagent dir in one call", async () => {
+  it("migrates a realistic ainative dir in one call", async () => {
     const home = mkdtempSync(join(tmpdir(), "ainative-smoke-"));
     try {
-      const oldDir = join(home, ".stagent");
+      const oldDir = join(home, ".ainative");
       mkdirSync(oldDir, { recursive: true });
       mkdirSync(join(oldDir, "uploads"), { recursive: true });
       mkdirSync(join(oldDir, "screenshots"), { recursive: true });
-      writeFileSync(join(oldDir, "stagent.db"), "");
+      writeFileSync(join(oldDir, "ainative.db"), "");
 
       const report = await migrateFromStagent({ home });
 
@@ -722,21 +722,21 @@ Expected: all PASS.
 
 ```bash
 npm run build:cli
-# Simulate: restore a stagent-named copy, delete ainative if present
+# Simulate: restore a ainative-named copy, delete ainative if present
 mv ~/.ainative ~/.ainative.hold-phase1 2>/dev/null || true
-cp -r ~/.stagent.bak-pre-rename-2026-04-17 ~/.stagent
+cp -r ~/.ainative.bak-pre-rename-2026-04-17 ~/.ainative
 npm run dev
 ```
 
 Wait for `Ready in X seconds`. Verify:
-- Console logs `[migrate] renamed /Users/.../.stagent -> /Users/.../.ainative`.
+- Console logs `[migrate] renamed /Users/.../.ainative -> /Users/.../.ainative`.
 - Dashboard at `http://localhost:3000` loads and shows existing data.
 
 Stop the dev server. Restore state:
 
 ```bash
 pkill -f "next dev --turbopack$" 2>/dev/null || true
-mv ~/.ainative ~/.stagent      # back to stagent-named for rest of Phase 1 work
+mv ~/.ainative ~/.ainative      # back to ainative-named for rest of Phase 1 work
 rm -rf ~/.ainative.hold-phase1 2>/dev/null || true
 ```
 
@@ -754,29 +754,29 @@ smoke test covering the realistic dir + db rename case."
 
 ## Phase 2: Identifier Rewrite — Code
 
-**Goal:** Rename TypeScript identifiers containing `stagent`/`Stagent` to `ainative`. Remove transitional `getStagent*` exports.
+**Goal:** Rename TypeScript identifiers containing `ainative`/`ainative` to `ainative`. Remove transitional `getStagent*` exports.
 
 **Checkpoint:** `npx tsc --noEmit` green; `npm test` green.
 
 ### Task 6: Rename type names
 
-**Files:** every `.ts`/`.tsx` with `Stagent`-prefixed types.
+**Files:** every `.ts`/`.tsx` with `ainative`-prefixed types.
 
-- [ ] **Step 1: List all Stagent-prefixed types/interfaces/classes**
+- [ ] **Step 1: List all ainative-prefixed types/interfaces/classes**
 
 ```bash
-rg -n --pcre2 '(class|interface|type|enum)\s+Stagent\w+' src/ --type=ts --type=tsx
+rg -n --pcre2 '(class|interface|type|enum)\s+ainative\w+' src/ --type=ts --type=tsx
 ```
 
 Record every hit. Typical names: `StagentConfig`, `StagentPaths`, `StagentToolServer`, etc.
 
 - [ ] **Step 2: For each type found, rename using sd**
 
-For each `Stagent<Name>` found, run:
+For each `ainative<Name>` found, run:
 
 ```bash
 TYPE=StagentConfig
-NEW=${TYPE/Stagent/Ainative}
+NEW=${TYPE/ainative/Ainative}
 for f in $(rg -l "\\b${TYPE}\\b" src/); do
   sd "\\b${TYPE}\\b" "${NEW}" "$f"
 done
@@ -796,24 +796,24 @@ Expected: zero errors.
 
 ```bash
 git add -A
-git commit -m "refactor(types): rename Stagent* type/interface/class names to Ainative*"
+git commit -m "refactor(types): rename ainative* type/interface/class names to Ainative*"
 ```
 
 ---
 
 ### Task 7: Rename `getStagent*` functions and remove old module
 
-**Files:** every `.ts`/`.tsx` using `getStagent*`; delete `src/lib/utils/stagent-paths.ts`; update `src/lib/utils/ainative-paths.ts` to remove `STAGENT_DATA_DIR` fallback.
+**Files:** every `.ts`/`.tsx` using `getStagent*`; delete `src/lib/utils/ainative-paths.ts`; update `src/lib/utils/ainative-paths.ts` to remove `STAGENT_DATA_DIR` fallback.
 
 - [ ] **Step 1: Rename every `getStagent*` call site**
 
 ```bash
-for fn in getStagentDataDir getStagentDbPath getStagentUploadsDir getStagentBlueprintsDir \
-         getStagentScreenshotsDir getStagentSnapshotsDir getStagentOutputsDir \
-         getStagentSessionsDir getStagentLogsDir getStagentDocumentsDir \
-         getStagentCodexDir getStagentCodexConfigPath getStagentCodexAuthPath \
-         getStagentProfilesDir; do
-  new_fn="${fn/Stagent/Ainative}"
+for fn in getAinativeDataDir getAinativeDbPath getAinativeUploadsDir getAinativeBlueprintsDir \
+         getAinativeScreenshotsDir getAinativeSnapshotsDir getAinativeOutputsDir \
+         getAinativeSessionsDir getAinativeLogsDir getAinativeDocumentsDir \
+         getAinativeCodexDir getAinativeCodexConfigPath getAinativeCodexAuthPath \
+         getAinativeProfilesDir; do
+  new_fn="${fn/ainative/Ainative}"
   for f in $(rg -l "\\b${fn}\\b" src/ 2>/dev/null); do
     sd "\\b${fn}\\b" "${new_fn}" "$f"
   done
@@ -823,15 +823,15 @@ done
 - [ ] **Step 2: Update imports**
 
 ```bash
-for f in $(rg -l 'stagent-paths' src/); do
-  sd 'stagent-paths' 'ainative-paths' "$f"
+for f in $(rg -l 'ainative-paths' src/); do
+  sd 'ainative-paths' 'ainative-paths' "$f"
 done
 ```
 
 - [ ] **Step 3: Delete the old module**
 
 ```bash
-rm src/lib/utils/stagent-paths.ts
+rm src/lib/utils/ainative-paths.ts
 ```
 
 - [ ] **Step 4: Remove `STAGENT_DATA_DIR` fallback from `ainative-paths.ts`**
@@ -856,19 +856,19 @@ Expected: green.
 
 ```bash
 git add -A
-git commit -m "refactor(paths): cut all call sites to getAinative* and delete stagent-paths.ts"
+git commit -m "refactor(paths): cut all call sites to getAinative* and delete ainative-paths.ts"
 ```
 
 ---
 
-### Task 8: Rename remaining `Stagent`/`stagent` identifiers
+### Task 8: Rename remaining `ainative`/`ainative` identifiers
 
-**Files:** remaining `.ts`/`.tsx` with camelCase `stagent*` or PascalCase `Stagent*` identifiers that are NOT types (those were done in Task 6).
+**Files:** remaining `.ts`/`.tsx` with camelCase `ainative*` or PascalCase `ainative*` identifiers that are NOT types (those were done in Task 6).
 
 - [ ] **Step 1: List remaining identifiers**
 
 ```bash
-rg -n --pcre2 '\b(with|create|make|handle|ensure|is|has)Stagent\w+|\bstagent[A-Z]\w*' src/ --type=ts --type=tsx
+rg -n --pcre2 '\b(with|create|make|handle|ensure|is|has)ainative\w+|\bstagent[A-Z]\w*' src/ --type=ts --type=tsx
 ```
 
 Typical hits: `withStagentMcpServer`, `withStagentAllowedTools`, `stagentServer` variable.
@@ -879,7 +879,7 @@ For each identifier `stagentX` / `withStagentX`:
 
 ```bash
 IDENT=withStagentMcpServer
-NEW=${IDENT/Stagent/Ainative}
+NEW=${IDENT/ainative/Ainative}
 for f in $(rg -l "\\b${IDENT}\\b" src/); do
   sd "\\b${IDENT}\\b" "${NEW}" "$f"
 done
@@ -890,7 +890,7 @@ done
 ```bash
 npx tsc --noEmit && npm test
 git add -A
-git commit -m "refactor: rename remaining stagent identifiers to ainative"
+git commit -m "refactor: rename remaining ainative identifiers to ainative"
 ```
 
 ---
@@ -951,10 +951,10 @@ git commit -m "refactor(env): rename STAGENT_* env vars to AINATIVE_* (clean bre
 ### Task 10: Rewrite string literals
 
 **Files:**
-- `src/lib/chat/stagent-tools.ts` (MCP server name) — file itself renamed in Phase 4.
+- `src/lib/chat/ainative-tools.ts` (MCP server name) — file itself renamed in Phase 4.
 - `src/lib/agents/claude-agent.ts` (MCP server key in mergedMcpServers; tool-prefix pattern).
 - `src/lib/agents/runtime/openai-codex.ts`, `src/lib/chat/codex-engine.ts` (keychain serviceName).
-- `src/lib/channels/webhook-adapter.ts`, `telegram-adapter.ts`, `slack-adapter.ts` (source: "stagent").
+- `src/lib/channels/webhook-adapter.ts`, `telegram-adapter.ts`, `slack-adapter.ts` (source: "ainative").
 - `src/lib/validators/profile.ts` (sourceFormat enum + transform).
 - `src/lib/import/repo-scanner.ts`, `format-adapter.ts` (sourceFormat literal).
 - `src/components/profiles/profile-detail-view.tsx`, `repo-import-wizard.tsx` (UI labels).
@@ -962,7 +962,7 @@ git commit -m "refactor(env): rename STAGENT_* env vars to AINATIVE_* (clean bre
 - [ ] **Step 1: MCP server name literal**
 
 ```bash
-sd 'name: "stagent"' 'name: "ainative"' src/lib/chat/stagent-tools.ts
+sd 'name: "ainative"' 'name: "ainative"' src/lib/chat/ainative-tools.ts
 ```
 
 - [ ] **Step 2: MCP server registration key in claude-agent.ts**
@@ -971,7 +971,7 @@ Open `src/lib/agents/claude-agent.ts`, find line ~82:
 
 ```ts
 // BEFORE
-stagent: ainativeServer,  // (variable name already renamed in Phase 2)
+ainative: ainativeServer,  // (variable name already renamed in Phase 2)
 
 // AFTER
 ainative: ainativeServer,
@@ -981,10 +981,10 @@ Apply manually or:
 
 ```bash
 # Only target this specific line's prefix
-sd '(\s{4})stagent: ainativeServer' '$1ainative: ainativeServer' src/lib/agents/claude-agent.ts
+sd '(\s{4})ainative: ainativeServer' '$1ainative: ainativeServer' src/lib/agents/claude-agent.ts
 ```
 
-Verify no stray `stagent:` key remains in MCP server-map literals.
+Verify no stray `ainative:` key remains in MCP server-map literals.
 
 - [ ] **Step 3: Tool-name prefix**
 
@@ -1000,16 +1000,16 @@ Expected: zero matches.
 - [ ] **Step 4: Keychain serviceName**
 
 ```bash
-for f in $(rg -l 'serviceName: "stagent"' src/); do
-  sd 'serviceName: "stagent"' 'serviceName: "ainative"' "$f"
+for f in $(rg -l 'serviceName: "ainative"' src/); do
+  sd 'serviceName: "ainative"' 'serviceName: "ainative"' "$f"
 done
 ```
 
 - [ ] **Step 5: Channel adapter source**
 
 ```bash
-for f in $(rg -l 'source: "stagent"' src/); do
-  sd 'source: "stagent"' 'source: "ainative"' "$f"
+for f in $(rg -l 'source: "ainative"' src/); do
+  sd 'source: "ainative"' 'source: "ainative"' "$f"
 done
 ```
 
@@ -1018,15 +1018,15 @@ done
 Open `src/lib/validators/profile.ts`. Find:
 
 ```ts
-sourceFormat: z.enum(["stagent", "skillmd-only", "unknown"]),
+sourceFormat: z.enum(["ainative", "skillmd-only", "unknown"]),
 ```
 
 Replace with:
 
 ```ts
 sourceFormat: z
-  .enum(["ainative", "stagent", "skillmd-only", "unknown"])
-  .transform((x) => (x === "stagent" ? "ainative" : x)),
+  .enum(["ainative", "ainative", "skillmd-only", "unknown"])
+  .transform((x) => (x === "ainative" ? "ainative" : x)),
 ```
 
 If there's a `SourceFormat` type alias in the same file, update it:
@@ -1038,34 +1038,34 @@ export type SourceFormat = "ainative" | "skillmd-only" | "unknown";
 - [ ] **Step 7: Rewrite `sourceFormat` in importer + UI**
 
 ```bash
-for f in $(rg -l 'sourceFormat: "stagent"' src/); do
-  sd 'sourceFormat: "stagent"' 'sourceFormat: "ainative"' "$f"
+for f in $(rg -l 'sourceFormat: "ainative"' src/); do
+  sd 'sourceFormat: "ainative"' 'sourceFormat: "ainative"' "$f"
 done
-for f in $(rg -l '"stagent" \| "skillmd-only" \| "unknown"' src/); do
-  sd '"stagent" \| "skillmd-only" \| "unknown"' '"ainative" | "skillmd-only" | "unknown"' "$f"
+for f in $(rg -l '"ainative" \| "skillmd-only" \| "unknown"' src/); do
+  sd '"ainative" \| "skillmd-only" \| "unknown"' '"ainative" | "skillmd-only" | "unknown"' "$f"
 done
 ```
 
 Manual edits:
-- `src/components/profiles/profile-detail-view.tsx`: `"Stagent native"` → `"ainative native"`, `sourceFormat === "stagent"` → `sourceFormat === "ainative"`.
-- `src/components/profiles/repo-import-wizard.tsx`: `skill.format === "stagent" ? "Stagent" : "SKILL.md"` → `skill.format === "ainative" ? "ainative" : "SKILL.md"`.
+- `src/components/profiles/profile-detail-view.tsx`: `"ainative native"` → `"ainative native"`, `sourceFormat === "ainative"` → `sourceFormat === "ainative"`.
+- `src/components/profiles/repo-import-wizard.tsx`: `skill.format === "ainative" ? "ainative" : "SKILL.md"` → `skill.format === "ainative" ? "ainative" : "SKILL.md"`.
 
 ```bash
-sd '"Stagent native"' '"ainative native"' src/components/profiles/profile-detail-view.tsx
-sd 'sourceFormat === "stagent"' 'sourceFormat === "ainative"' src/components/profiles/profile-detail-view.tsx
-sd 'skill\.format === "stagent" \? "Stagent"' 'skill.format === "ainative" ? "ainative"' src/components/profiles/repo-import-wizard.tsx
-sd 'format === "stagent"' 'format === "ainative"' src/components/profiles/repo-import-wizard.tsx
+sd '"ainative native"' '"ainative native"' src/components/profiles/profile-detail-view.tsx
+sd 'sourceFormat === "ainative"' 'sourceFormat === "ainative"' src/components/profiles/profile-detail-view.tsx
+sd 'skill\.format === "ainative" \? "ainative"' 'skill.format === "ainative" ? "ainative"' src/components/profiles/repo-import-wizard.tsx
+sd 'format === "ainative"' 'format === "ainative"' src/components/profiles/repo-import-wizard.tsx
 ```
 
 - [ ] **Step 8: Update validator test**
 
-Open `src/lib/validators/__tests__/profile.test.ts`. Find `author: "stagent"` and change to `author: "ainative"`. Add a new test asserting the alias works:
+Open `src/lib/validators/__tests__/profile.test.ts`. Find `author: "ainative"` and change to `author: "ainative"`. Add a new test asserting the alias works:
 
 ```ts
-it("accepts legacy sourceFormat 'stagent' and normalizes to 'ainative'", () => {
+it("accepts legacy sourceFormat 'ainative' and normalizes to 'ainative'", () => {
   const input = {
     // ... minimum valid profile fields, copy from neighboring tests ...
-    importMeta: { sourceFormat: "stagent", author: "x" },
+    importMeta: { sourceFormat: "ainative", author: "x" },
   };
   const result = profileSchema.parse(input);
   expect(result.importMeta.sourceFormat).toBe("ainative");
@@ -1084,12 +1084,12 @@ Expected: green.
 
 ```bash
 git add -A
-git commit -m "refactor(strings): rewrite stagent string literals to ainative
+git commit -m "refactor(strings): rewrite ainative string literals to ainative
 
 - MCP server name + key + tool prefix (mcp__stagent__* → mcp__ainative__*)
 - Keychain serviceName
 - Channel adapter source field
-- sourceFormat Zod enum with legacy-stagent alias (normalized on read)
+- sourceFormat Zod enum with legacy-ainative alias (normalized on read)
 - UI labels in profile views"
 ```
 
@@ -1097,31 +1097,31 @@ git commit -m "refactor(strings): rewrite stagent string literals to ainative
 
 ### Task 11: Rewrite CLI splash / banner / log prefixes
 
-**Files:** `bin/cli.ts`; files with `[stagent]` or `[Stagent]` log prefixes.
+**Files:** `bin/cli.ts`; files with `[ainative]` or `[ainative]` log prefixes.
 
 - [ ] **Step 1: Find log prefixes**
 
 ```bash
-rg -n '\[stagent\]|\[Stagent\]' src/ bin/
+rg -n '\[ainative\]|\[ainative\]' src/ bin/
 ```
 
 - [ ] **Step 2: Rewrite**
 
 ```bash
-for f in $(rg -l '\[stagent\]' src/ bin/); do
-  sd '\[stagent\]' '[ainative]' "$f"
+for f in $(rg -l '\[ainative\]' src/ bin/); do
+  sd '\[ainative\]' '[ainative]' "$f"
 done
-for f in $(rg -l '\[Stagent\]' src/ bin/); do
-  sd '\[Stagent\]' '[ainative]' "$f"
+for f in $(rg -l '\[ainative\]' src/ bin/); do
+  sd '\[ainative\]' '[ainative]' "$f"
 done
 ```
 
 - [ ] **Step 3: Rewrite splash/help in `bin/cli.ts`**
 
 Open `bin/cli.ts` and scan for banner/welcome/help strings. Rewrite per handoff:
-- `"Stagent v..."` → `"ainative v..."`
-- `"Welcome to Stagent"` → `"Welcome to ainative"`
-- `"Stagent is the AI Business Operating System"` → `"ainative — companion software for the AI Native Business book"`
+- `"ainative v..."` → `"ainative v..."`
+- `"Welcome to ainative"` → `"Welcome to ainative"`
+- `"ainative is the AI Business Operating System"` → `"ainative — companion software for the AI Native Business book"`
 
 - [ ] **Step 4: Verify**
 
@@ -1130,7 +1130,7 @@ npm run build:cli
 node dist/cli.js --help | head -20
 ```
 
-Expected: help text shows `ainative`, no `Stagent`.
+Expected: help text shows `ainative`, no `ainative`.
 
 - [ ] **Step 5: Commit**
 
@@ -1179,7 +1179,7 @@ npm pack
 node dist/cli.js --help
 ```
 
-Expected: help text fully branded `ainative`. `package.json` still says `stagent@0.11.2` at this phase, so the tarball is `stagent-0.11.2.tgz` — don't confuse yourself, this just verifies the build.
+Expected: help text fully branded `ainative`. `package.json` still says `ainative@0.11.2` at this phase, so the tarball is `ainative-0.11.2.tgz` — don't confuse yourself, this just verifies the build.
 
 - [ ] **Step 5: Commit (checkpoint only if any fixes made)**
 
@@ -1189,20 +1189,20 @@ If no fixes needed, no commit. If fixes were required, commit them with a clear 
 
 ## Phase 4: Filename Renames
 
-**Goal:** `git mv` every `stagent`-bearing filename. Rename commits separate from content rewrites so `git log --follow` stays clean.
+**Goal:** `git mv` every `ainative`-bearing filename. Rename commits separate from content rewrites so `git log --follow` stays clean.
 
-**Checkpoint:** `git ls-files | grep -i stagent` returns zero.
+**Checkpoint:** `git ls-files | grep -i ainative` returns zero.
 
 ### Task 13: Rename code filenames
 
-**Files:** `src/lib/chat/stagent-tools.ts` → `ainative-tools.ts`.
+**Files:** `src/lib/chat/ainative-tools.ts` → `ainative-tools.ts`.
 
 - [ ] **Step 1: Rename**
 
 ```bash
-git mv src/lib/chat/stagent-tools.ts src/lib/chat/ainative-tools.ts
-for f in $(rg -l 'stagent-tools' src/); do
-  sd 'stagent-tools' 'ainative-tools' "$f"
+git mv src/lib/chat/ainative-tools.ts src/lib/chat/ainative-tools.ts
+for f in $(rg -l 'ainative-tools' src/); do
+  sd 'ainative-tools' 'ainative-tools' "$f"
 done
 ```
 
@@ -1211,14 +1211,14 @@ done
 ```bash
 npx tsc --noEmit && npm test
 git add -A
-git commit -m "refactor(files): rename stagent-tools.ts → ainative-tools.ts"
+git commit -m "refactor(files): rename ainative-tools.ts → ainative-tools.ts"
 ```
 
 ---
 
 ### Task 14: Rename public assets
 
-**Files:** `public/ainative-s-*.png`; any SVG with `stagent` in filename or content.
+**Files:** `public/ainative-s-*.png`; any SVG with `ainative` in filename or content.
 
 - [ ] **Step 1: Rename PNGs**
 
@@ -1238,16 +1238,16 @@ done
 - [ ] **Step 3: Check SVGs**
 
 ```bash
-ls public/readme/ | grep -i stagent
-rg -l -i stagent public/readme/
+ls public/readme/ | grep -i ainative
+rg -l -i ainative public/readme/
 ```
 
-For each SVG with stagent in filename, `git mv`. For SVG contents with stagent text, open and edit.
+For each SVG with ainative in filename, `git mv`. For SVG contents with ainative text, open and edit.
 
 - [ ] **Step 4: Verify + commit**
 
 ```bash
-git ls-files public/ | grep -i stagent
+git ls-files public/ | grep -i ainative
 ```
 
 Expected: zero.
@@ -1261,19 +1261,19 @@ git commit -m "refactor(assets): rename ainative-s-*.png and SVG contents"
 
 ### Task 15: Rename historical markdown filenames
 
-**Files:** every `*stagent*.md` under tracked folders.
+**Files:** every `*ainative*.md` under tracked folders.
 
 - [ ] **Step 1: List**
 
 ```bash
-git ls-files | grep -i 'stagent' | grep '\.md$'
+git ls-files | grep -i 'ainative' | grep '\.md$'
 ```
 
 - [ ] **Step 2: Batch rename**
 
 ```bash
-git ls-files | grep -i 'stagent' | grep '\.md$' | while read oldpath; do
-  newpath=$(echo "$oldpath" | sed 's/stagent/ainative/g; s/Stagent/ainative/g')
+git ls-files | grep -i 'ainative' | grep '\.md$' | while read oldpath; do
+  newpath=$(echo "$oldpath" | sed 's/ainative/ainative/g; s/ainative/ainative/g')
   if [ "$oldpath" != "$newpath" ]; then
     git mv "$oldpath" "$newpath"
   fi
@@ -1298,14 +1298,14 @@ done
 - [ ] **Step 4: Verify + commit**
 
 ```bash
-git ls-files | grep -i stagent | grep '\.md$'
+git ls-files | grep -i ainative | grep '\.md$'
 ```
 
 Expected: zero.
 
 ```bash
 git add -A
-git commit -m "refactor(docs): rename historical stagent markdown filenames
+git commit -m "refactor(docs): rename historical ainative markdown filenames
 
 Includes handoff/, features/, docs/superpowers/plans/, and TDR references.
 Contents rewritten in prior phases; this commit is pure rename."
@@ -1352,10 +1352,10 @@ git commit -m "refactor(skills): rename ainative-app skill to ainative-app"
 
 ### Task 17: Phase 4 final verification
 
-- [ ] **Step 1: Zero stagent in tracked filenames**
+- [ ] **Step 1: Zero ainative in tracked filenames**
 
 ```bash
-git ls-files | grep -i stagent
+git ls-files | grep -i ainative
 ```
 
 Expected: zero.
@@ -1376,14 +1376,14 @@ No commit — this is a checkpoint.
 
 **Goal:** Rewrite reader-facing documentation.
 
-**Checkpoint:** `rg -i stagent README.md CHANGELOG.md AGENTS.md CLAUDE.md FLOW.md MEMORY.md docs/ .claude/skills/` returns zero (outside CHANGELOG provenance heading).
+**Checkpoint:** `rg -i ainative README.md CHANGELOG.md AGENTS.md CLAUDE.md FLOW.md MEMORY.md docs/ .claude/skills/` returns zero (outside CHANGELOG provenance heading).
 
 ### Task 18: Rewrite README.md
 
 - [ ] **Step 1: Backup for reference**
 
 ```bash
-cp README.md /tmp/README.stagent.backup.md
+cp README.md /tmp/README.ainative.backup.md
 ```
 
 - [ ] **Step 2: Mechanical pass**
@@ -1407,13 +1407,13 @@ Keep remaining sections intact (with mechanical rewrites already applied).
 - [ ] **Step 4: Update GitHub raw image URLs**
 
 ```bash
-sd 'manavsehgal/stagent/' 'manavsehgal/ainative/' README.md
+sd 'manavsehgal/ainative/' 'manavsehgal/ainative/' README.md
 ```
 
 - [ ] **Step 5: Verify + commit**
 
 ```bash
-rg -i stagent README.md
+rg -i ainative README.md
 ```
 
 Expected: zero.
@@ -1423,7 +1423,7 @@ git add README.md
 git commit -m "docs(readme): rewrite for ainative positioning per handoff §4
 
 Top-of-file reframes as book companion. GitHub raw URLs updated to
-new repo slug. Mechanical Stagent → ainative elsewhere."
+new repo slug. Mechanical ainative → ainative elsewhere."
 ```
 
 ---
@@ -1442,17 +1442,17 @@ sd '\bstagent\b' 'ainative' CHANGELOG.md
 Open `CHANGELOG.md`. After the top `# Changelog` heading, insert:
 
 ```markdown
-## Renamed from stagent
+## Renamed from ainative
 
-This project was formerly published as `stagent` on npm and hosted at `github.com/manavsehgal/stagent`. As of 2026-04-17 it is `ainative`. The old GitHub URL redirects permanently; `stagent` on npm is deprecated with an upgrade pointer.
+This project was formerly published as `ainative` on npm and hosted at `github.com/manavsehgal/ainative`. As of 2026-04-17 it is `ainative`. The old GitHub URL redirects permanently; `ainative` on npm is deprecated with an upgrade pointer.
 
 ## [0.12.0] — 2026-04-17
 
 ### Changed — BREAKING
-- **Package renamed** from `stagent` to `ainative`. Install with `npm i ainative` or run `npx ainative`. The `stagent` npm package is deprecated.
-- **User data directory** auto-migrates from `~/.stagent/` to `~/.ainative/` on first boot. Database file renamed (`stagent.db` → `ainative.db`), and in-place SQL migrations rewrite `mcp__stagent__*` tool prefixes and `sourceFormat: "stagent"` enum values in `agent_profiles`.
+- **Package renamed** from `ainative` to `ainative`. Install with `npm i ainative` or run `npx ainative`. The `ainative` npm package is deprecated.
+- **User data directory** auto-migrates from `~/.ainative/` to `~/.ainative/` on first boot. Database file renamed (`ainative.db` → `ainative.db`), and in-place SQL migrations rewrite `mcp__stagent__*` tool prefixes and `sourceFormat: "ainative"` enum values in `agent_profiles`.
 - **Environment variables renamed** to `AINATIVE_DATA_DIR`, `AINATIVE_DEV_MODE`, `AINATIVE_INSTANCE_MODE`. Clean break, no fallback.
-- **macOS Keychain service** renamed from `stagent` to `ainative`. The migration pass copies existing entries best-effort; re-auth may be needed on failure.
+- **macOS Keychain service** renamed from `ainative` to `ainative`. The migration pass copies existing entries best-effort; re-auth may be needed on failure.
 - **GitHub repo renamed** to `manavsehgal/ainative`. Old URL redirects permanently.
 
 ### Unchanged
@@ -1471,7 +1471,7 @@ Expected: matches only inside the provenance heading/paragraph (allowed).
 
 ```bash
 git add CHANGELOG.md
-git commit -m "docs(changelog): add 0.12.0 entry + 'Renamed from stagent' provenance heading"
+git commit -m "docs(changelog): add 0.12.0 entry + 'Renamed from ainative' provenance heading"
 ```
 
 ---
@@ -1504,7 +1504,7 @@ Open each file. Flag any sentence-start `ainative` that reads awkwardly; adjust 
 - [ ] **Step 4: Verify + commit**
 
 ```bash
-rg -i stagent AGENTS.md CLAUDE.md FLOW.md MEMORY.md
+rg -i ainative AGENTS.md CLAUDE.md FLOW.md MEMORY.md
 ```
 
 Expected: zero.
@@ -1521,8 +1521,8 @@ git commit -m "docs: rewrite root-level MD files for ainative"
 - [ ] **Step 1: List and rewrite**
 
 ```bash
-rg -l -i stagent docs/
-for f in $(rg -l -i stagent docs/); do
+rg -l -i ainative docs/
+for f in $(rg -l -i ainative docs/); do
   sd '\bStagent\b' 'ainative' "$f"
   sd '\bstagent\b' 'ainative' "$f"
 done
@@ -1531,9 +1531,9 @@ done
 - [ ] **Step 2: Verify + commit**
 
 ```bash
-rg -i stagent docs/
+rg -i ainative docs/
 git add docs/
-git commit -m "docs: sweep docs/ for stagent references"
+git commit -m "docs: sweep docs/ for ainative references"
 ```
 
 ---
@@ -1543,8 +1543,8 @@ git commit -m "docs: sweep docs/ for stagent references"
 - [ ] **Step 1: Rewrite**
 
 ```bash
-rg -l -i stagent .claude/skills/
-for f in $(rg -l -i stagent .claude/skills/); do
+rg -l -i ainative .claude/skills/
+for f in $(rg -l -i ainative .claude/skills/); do
   sd '\bStagent\b' 'ainative' "$f"
   sd '\bstagent\b' 'ainative' "$f"
 done
@@ -1553,9 +1553,9 @@ done
 - [ ] **Step 2: Verify + commit**
 
 ```bash
-rg -i stagent .claude/skills/
+rg -i ainative .claude/skills/
 git add .claude/
-git commit -m "docs(skills): sweep .claude/skills/ for stagent"
+git commit -m "docs(skills): sweep .claude/skills/ for ainative"
 ```
 
 ---
@@ -1565,7 +1565,7 @@ git commit -m "docs(skills): sweep .claude/skills/ for stagent"
 - [ ] **Step 1: Rewrite**
 
 ```bash
-for f in $(rg -l -i stagent features/ handoff/); do
+for f in $(rg -l -i ainative features/ handoff/); do
   sd '\bStagent\b' 'ainative' "$f"
   sd '\bstagent\b' 'ainative' "$f"
 done
@@ -1574,9 +1574,9 @@ done
 - [ ] **Step 2: Verify + commit**
 
 ```bash
-rg -i stagent features/ handoff/
+rg -i ainative features/ handoff/
 git add features/ handoff/
-git commit -m "docs: sweep features/ and handoff/ for stagent"
+git commit -m "docs: sweep features/ and handoff/ for ainative"
 ```
 
 ---
@@ -1585,7 +1585,7 @@ git commit -m "docs: sweep features/ and handoff/ for stagent"
 
 **Goal:** Rewrite 14 chapters + `ai-native-notes/` prose in two commits.
 
-**Checkpoint:** `rg -i stagent book/ ai-native-notes/` returns zero; prose reads cleanly.
+**Checkpoint:** `rg -i ainative book/ ai-native-notes/` returns zero; prose reads cleanly.
 
 ### Task 24: Mechanical rewrite
 
@@ -1596,7 +1596,7 @@ for f in book/chapters/ch-*.md; do
   sd '\bStagent\b' 'ainative' "$f"
   sd '\bstagent\b' 'ainative' "$f"
 done
-for f in $(rg -l -i stagent ai-native-notes/); do
+for f in $(rg -l -i ainative ai-native-notes/); do
   sd '\bStagent\b' 'ainative' "$f"
   sd '\bstagent\b' 'ainative' "$f"
 done
@@ -1605,9 +1605,9 @@ done
 - [ ] **Step 2: Verify + commit (first of two)**
 
 ```bash
-rg -i stagent book/ ai-native-notes/
+rg -i ainative book/ ai-native-notes/
 git add book/ ai-native-notes/
-git commit -m "docs(book): mechanical stagent → ainative across 14 chapters + notes
+git commit -m "docs(book): mechanical ainative → ainative across 14 chapters + notes
 
 First of two commits. Proofreading pass follows."
 ```
@@ -1628,7 +1628,7 @@ Make targeted edits only — style/grammar, no substantive content drift.
 - [ ] **Step 2: Verify + commit**
 
 ```bash
-rg -i stagent book/ ai-native-notes/
+rg -i ainative book/ ai-native-notes/
 git add book/ ai-native-notes/
 git commit -m "docs(book): proofreading pass for readability
 
@@ -1702,13 +1702,13 @@ name, version, description, homepage, repository, bugs, bin, files[], keywords."
 - [ ] **Step 1: Update tgz pattern**
 
 ```bash
-sd 'stagent-\*\.tgz' 'ainative-*.tgz' .gitignore
+sd 'ainative-\*\.tgz' 'ainative-*.tgz' .gitignore
 ```
 
 - [ ] **Step 2: Verify + commit**
 
 ```bash
-rg stagent .gitignore
+rg ainative .gitignore
 git add .gitignore
 git commit -m "chore(gitignore): update tgz pattern to ainative-*.tgz"
 ```
@@ -1728,7 +1728,7 @@ npm install
 
 ```bash
 node -e "console.log(JSON.parse(require('fs').readFileSync('package-lock.json', 'utf8')).name)"
-rg '"stagent"' package-lock.json | head
+rg '"ainative"' package-lock.json | head
 git add package-lock.json
 git commit -m "chore(lockfile): regenerate package-lock.json for ainative@0.12.0"
 ```
@@ -1739,20 +1739,20 @@ git commit -m "chore(lockfile): regenerate package-lock.json for ainative@0.12.0
 
 ### Task 29: Full verification pass
 
-- [ ] **Step 1: Zero stagent in tracked content**
+- [ ] **Step 1: Zero ainative in tracked content**
 
 ```bash
-rg -i stagent . \
+rg -i ainative . \
   --glob '!node_modules' --glob '!.git' --glob '!package-lock.json' \
   --glob '!*.bak-*'
 ```
 
 Expected: matches only inside `CHANGELOG.md` provenance heading/paragraph.
 
-- [ ] **Step 2: Zero stagent in filenames**
+- [ ] **Step 2: Zero ainative in filenames**
 
 ```bash
-git ls-files | grep -i stagent
+git ls-files | grep -i ainative
 ```
 
 Expected: zero.
@@ -1789,7 +1789,7 @@ Expected: `ainative-0.12.0.tgz` in cwd.
 
 ```bash
 node dist/cli.js --help | head -20
-rg -i stagent dist/
+rg -i ainative dist/
 ```
 
 Expected: help text shows `ainative`; `rg` returns zero.
@@ -1798,7 +1798,7 @@ Expected: help text shows `ainative`; `rg` returns zero.
 
 ```bash
 mv ~/.ainative ~/.ainative.hold-verify
-cp -r ~/.stagent.bak-pre-rename-2026-04-17 ~/.stagent
+cp -r ~/.ainative.bak-pre-rename-2026-04-17 ~/.ainative
 npm run dev
 ```
 
@@ -1816,7 +1816,7 @@ mv ~/.ainative.hold-verify ~/.ainative
 npm publish --dry-run
 ```
 
-Inspect: `name: ainative`, `version: 0.12.0`, no `stagent` in any field.
+Inspect: `name: ainative`, `version: 0.12.0`, no `ainative` in any field.
 
 ---
 
@@ -1824,16 +1824,16 @@ Inspect: `name: ainative`, `version: 0.12.0`, no `stagent` in any field.
 
 Reference checklist, for the release operator:
 
-1. Land this PR on `main` in `manavsehgal/stagent` (soon to be `manavsehgal/ainative`).
+1. Land this PR on `main` in `manavsehgal/ainative` (soon to be `manavsehgal/ainative`).
 2. Tag `v0.12.0`, push tags.
 3. Coordinate with website-repo session — land their PR on `main`.
-4. Rename `manavsehgal/stagent` → `manavsehgal/ainative` (GitHub UI).
-5. Rename website repo `stagent.github.io` → `ainative-business.github.io`.
+4. Rename `manavsehgal/ainative` → `manavsehgal/ainative` (GitHub UI).
+5. Rename website repo `ainative.github.io` → `ainative-business.github.io`.
 6. Update CNAME / DNS (website session owns).
 7. Update local remote: `git remote set-url origin git@github.com:manavsehgal/ainative.git`.
 8. `npm publish` for `ainative@0.12.0`.
-9. `npm deprecate "stagent@*" "Renamed to ainative. Install with: npm i ainative"`.
-10. Create `stagent-io-redirect` repo (website session owns).
+9. `npm deprecate "ainative@*" "Renamed to ainative. Install with: npm i ainative"`.
+10. Create `ainative-io-redirect` repo (website session owns).
 11. Verify `ainative.business` live; verify `npx ainative` from a clean machine.
 
 ---
@@ -1844,7 +1844,7 @@ Reference checklist, for the release operator:
 |---------------|--------|
 | Pre-commit build/test fails | `git reset --hard origin/main`; re-plan |
 | Phase 1 migration test fails | Fix migration; don't proceed to Phase 2 |
-| User data-dir migration corrupts locally | `rm -rf ~/.ainative && mv ~/.stagent.bak-pre-rename-2026-04-17 ~/.stagent` |
+| User data-dir migration corrupts locally | `rm -rf ~/.ainative && mv ~/.ainative.bak-pre-rename-2026-04-17 ~/.ainative` |
 | `npm publish` fails | Fix, retry; no downstream effect |
 | Publish OK, GitHub rename fails | Leave publish; retry rename. If blocked 72hr+, `npm unpublish` |
 | Post-publish regression | `npm deprecate ainative@0.12.0 "Rolled back"` within 72hr, ship 0.12.1 |

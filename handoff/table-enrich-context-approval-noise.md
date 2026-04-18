@@ -1,6 +1,6 @@
 ---
 title: Table Enrich Context Approval Noise
-audience: stagent-base
+audience: ainative-base
 status: proposed
 source_branch: growth-mgr
 handoff_reason: Fix shared workflow learning and inbox notification behavior in the main repo.
@@ -12,7 +12,7 @@ handoff_reason: Fix shared workflow learning and inbox notification behavior in 
 
 When `Table > Enrich` runs, operators can get 10+ separate approval requests for context learning proposals instead of one workflow-level batch review. After approving those proposals, the notification can remain visible in the Inbox instead of disappearing immediately.
 
-This is not Growth-specific. The bug lives in shared runtime, workflow-learning, and notification UI code that belongs in base Stagent.
+This is not Growth-specific. The bug lives in shared runtime, workflow-learning, and notification UI code that belongs in base ainative.
 
 ## User-facing symptoms
 

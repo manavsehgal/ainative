@@ -100,7 +100,7 @@ All three patterns implemented (Sequence, Planner→Executor, Checkpoint). JSON 
 - **Missing modify-before-accept**: Users can Accept or Dismiss suggestions but cannot edit them in-place before applying
 
 ### Rich Content Handling — 5/7 (2 GAPS)
-- **File upload**: Working (stored in `~/.stagent/uploads/`)
+- **File upload**: Working (stored in `~/.ainative/uploads/`)
 - **Agent output rendering**: Working (`detectContentType()` + `<ContentPreview>`)
 - **File download**: Working (`downloadAsFile()` Blob URL + `/api/uploads/[id]` with Content-Disposition)
 - **File previews in task detail**: Not implemented (metadata not persisted to tasks table)

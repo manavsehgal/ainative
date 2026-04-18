@@ -16,7 +16,7 @@ dependencies: [instance-bootstrap, scheduled-prompt-loops]
 
 ## Description
 
-Stagent clones diverge from `origin/main` as users customize them via chat. Without visibility into upstream progress, users miss upstream bug fixes and new features. This feature adds background polling that runs `git fetch origin main` every hour, compares `origin/main` HEAD to the local `main` HEAD, and surfaces an "Upgrade Available" badge in the sidebar when commits are pending.
+ainative clones diverge from `origin/main` as users customize them via chat. Without visibility into upstream progress, users miss upstream bug fixes and new features. This feature adds background polling that runs `git fetch origin main` every hour, compares `origin/main` HEAD to the local `main` HEAD, and surfaces an "Upgrade Available" badge in the sidebar when commits are pending.
 
 The polling uses the existing scheduler engine (registered as a scheduled task via the same NLP parser behind user-facing schedules) — no new polling infrastructure. It uses `git fetch` locally rather than the GitHub REST API, sidestepping rate limits and authentication entirely. Poll results are cached in `settings.instance.upgrade` (JSON-in-TEXT), and the sidebar badge is a Server Component that reads that state directly per TDR-004.
 
@@ -24,12 +24,12 @@ This is the detection half of the self-upgrade flow. The actual upgrade session 
 
 ## User Story
 
-As a stagent end user with a customized clone, I want to see a subtle but clear indicator in the UI when upstream stagent has new commits I could pull in, so that I can decide when to upgrade without having to manually check the GitHub repo.
+As a ainative end user with a customized clone, I want to see a subtle but clear indicator in the UI when upstream ainative has new commits I could pull in, so that I can decide when to upgrade without having to manually check the GitHub repo.
 
 ## Technical Approach
 
 **Polling handler:** new internal endpoint `POST /api/instance/upgrade/check` that:
-1. Acquires an advisory lock (`.git/.stagent-upgrade-check.lock` with 5-minute TTL) to prevent concurrent runs
+1. Acquires an advisory lock (`.git/.ainative-upgrade-check.lock` with 5-minute TTL) to prevent concurrent runs
 2. Runs `git fetch origin main` via the `git-ops.ts` wrapper from `instance-bootstrap`
 3. Gets `origin/main` SHA via `git rev-parse origin/main` and local `main` SHA via `git rev-parse main`
 4. Counts commits behind: `git rev-list --count main..origin/main`
@@ -57,7 +57,7 @@ As a stagent end user with a customized clone, I want to see a subtle but clear 
 
 *Contributed by `/frontend-designer` UX Recommendation mode, 2026-04-07. Full rationale in UX session transcript — key specs below.*
 
-**Persona:** Stagent user who customizes via chat; technical but not a git expert; values not losing their work above all else.
+**Persona:** ainative user who customizes via chat; technical but not a git expert; values not losing their work above all else.
 
 **Emotional arc:** Badge = inviting, not alarming. Copy is load-bearing.
 
@@ -111,8 +111,8 @@ As a stagent end user with a customized clone, I want to see a subtle but clear 
 - [ ] Badge state changes do not steal focus; parent region has `aria-live="polite"`
 - [ ] Copy matches UX Specification exactly ("N upstream commits ready to merge", "Check now", etc.)
 - [ ] Design metrics verified via `/taste`: DV=3, MI=3, VD=6
-- [ ] **Single-clone user test:** verified to work on a clone with `STAGENT_DATA_DIR` unset (default `~/.stagent`) — badge appears, poller runs, no behavioral difference from private-instance case
-- [ ] **Dev-mode skip test:** scheduled polling task is NOT registered when `STAGENT_DEV_MODE=true` or `.git/stagent-dev-mode` sentinel is present — verified by checking the `schedules` table after first boot in dev mode
+- [ ] **Single-clone user test:** verified to work on a clone with `STAGENT_DATA_DIR` unset (default `~/.ainative`) — badge appears, poller runs, no behavioral difference from private-instance case
+- [ ] **Dev-mode skip test:** scheduled polling task is NOT registered when `STAGENT_DEV_MODE=true` or `.git/ainative-dev-mode` sentinel is present — verified by checking the `schedules` table after first boot in dev mode
 - [ ] Badge component renders correctly when `settings.instance` is missing entirely (dev mode case) — returns null, logs no errors
 
 ## Scope Boundaries

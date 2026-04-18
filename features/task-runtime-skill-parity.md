@@ -30,7 +30,7 @@ query({
   prompt,
   options: {
     model, maxTurns, cwd, env,
-    mcpServers: { stagent: stagentServer, ... },
+    mcpServers: { ainative: stagentServer, ... },
     allowedTools: [
       "mcp__stagent__*",
       // ...existing browser/external patterns
@@ -55,7 +55,7 @@ Import the partitioned Tier 0 from the shared context builder (the partition fro
 
 ### 4. Permission bridge
 
-Task execution already has a permission bridge for Stagent MCP tools. Extend it to cover the newly allowed filesystem tools and Bash. The notification/permission UI (`ambient-approval-toast`) already handles the pattern — just ensure the new tool names reach it.
+Task execution already has a permission bridge for ainative MCP tools. Extend it to cover the newly allowed filesystem tools and Bash. The notification/permission UI (`ambient-approval-toast`) already handles the pattern — just ensure the new tool names reach it.
 
 ### 5. Hooks excluded
 

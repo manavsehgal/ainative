@@ -63,7 +63,7 @@ Every chapter follows this skeleton. Sections may be named differently but the r
    - Mix narrative prose with code examples
    - Case studies woven into the argument (not appended as sidebars)
 
-3. **Stagent Today**
+3. **ainative Today**
    - Inventory of what currently exists in the codebase
    - References specific files: `src/lib/agents/execution-manager.ts`, etc.
    - Grounded in real implementation, not aspirational claims
@@ -84,7 +84,7 @@ The markdown uses these block types:
 > **Company** — "Quote" — Source, Date.
 
 ```typescript                            (code example — TypeScript only)
-// Building with Stagent: description
+// Building with ainative: description
 const result = await fetch("/api/...");
 ```
 
@@ -136,14 +136,14 @@ Used for techniques and methodologies.
 
 ### TypeScript Only
 
-All code examples use TypeScript. The book is about Stagent, which is TypeScript.
+All code examples use TypeScript. The book is about ainative, which is TypeScript.
 
 ### Realistic API Patterns
 
-Code examples demonstrate real Stagent API usage:
+Code examples demonstrate real ainative API usage:
 
 ```typescript
-// Building with Stagent: [descriptive label]
+// Building with ainative: [descriptive label]
 const task = await fetch("/api/tasks", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
@@ -159,7 +159,7 @@ const task = await fetch("/api/tasks", {
 
 ### Code Example Rules
 
-- **Comment the first line** with `// Building with Stagent: [what this demonstrates]`
+- **Comment the first line** with `// Building with ainative: [what this demonstrates]`
 - **Use realistic data** — UUIDs, timestamps, project names
 - **Comment non-obvious lines** but not every line
 - **Show the happy path** — error handling only when it's the teaching point
@@ -178,7 +178,7 @@ The book operates at the **implementation layer**. External sources often operat
 
 2. **Maintain practitioner tone.** Frame as engineering decisions, not predictions or warnings. Say "the trendlines have not stopped" — not "AGI by 2027."
 
-3. **Connect to existing patterns.** Every addition must reference at least one chapter, case study, or Stagent feature.
+3. **Connect to existing patterns.** Every addition must reference at least one chapter, case study, or ainative feature.
 
 4. **Respect the grounding principle.** The book's credibility comes from every claim mapping to running code. External research that cannot be connected to implementation patterns gets a pointer reference ("see X for the macro trajectory"), not narrative absorption.
 
@@ -201,7 +201,7 @@ The book operates at the **implementation layer**. External sources often operat
 ## Copyright and Fair Use
 
 ### License
-The entire Stagent repository, including book content, is licensed under **Apache 2.0** (Copyright 2025, Manav Sehgal).
+The entire ainative repository, including book content, is licensed under **Apache 2.0** (Copyright 2025, Manav Sehgal).
 
 ### Fair Use of External Sources
 - **Case studies** draw from publicly available blog posts, essays, and conference talks
@@ -216,7 +216,7 @@ The entire Stagent repository, including book content, is licensed under **Apach
 - For recurring case studies (Stripe appears in 7 chapters), the first mention in each chapter includes full attribution; subsequent mentions in the same chapter can use shorthand
 
 ### Code Examples
-- All TypeScript examples demonstrate Stagent's own API
+- All TypeScript examples demonstrate ainative's own API
 - No third-party code is reproduced
 - API patterns are original implementations
 
@@ -236,7 +236,7 @@ The entire Stagent repository, including book content, is licensed under **Apach
 ### Stance
 - **Show, don't tell**: every claim backed by code, case study, or data
 - **Practitioner-focused**: "here is what works" over "here is what might work"
-- **Honest about limitations**: "Stagent Today" sections state exactly what exists vs. what's planned
+- **Honest about limitations**: "ainative Today" sections state exactly what exists vs. what's planned
 - **No hype**: let the case study numbers speak (1,300 PRs/week, $297 for $50K contract)
 
 ### Formatting

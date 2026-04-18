@@ -20,7 +20,7 @@ UX strategist that bridges product requirements to design execution. Answers the
 
 ## Project Context
 
-This skill is grounded in Stagent's **Calm Ops** design system — an opaque-surface, border-centric, OKLCH-based design language inspired by Linear, Stripe, and GitHub Primer.
+This skill is grounded in ainative's **Calm Ops** design system — an opaque-surface, border-centric, OKLCH-based design language inspired by Linear, Stripe, and GitHub Primer.
 
 ### Data Sources (read before any mode)
 
@@ -155,11 +155,11 @@ When a user has a feature or product goal, produce interface strategy before han
 
 ### Product Context Coordination Table
 
-See `references/ux-context-table.md` for the full product context → design metric calibration table (25 product contexts with DV/MI/VD recommendations). **Stagent's target range:** DV 3-4, MI 2-3, VD 6-7.
+See `references/ux-context-table.md` for the full product context → design metric calibration table (25 product contexts with DV/MI/VD recommendations). **ainative's target range:** DV 3-4, MI 2-3, VD 6-7.
 
 ### Font Pairing Quick-Reference
 
-See `references/font-pairings.md` for 15 curated Google Fonts pairings by industry. **Stagent uses:** Inter (body) + JetBrains Mono (code) per DD-006.
+See `references/font-pairings.md` for 15 curated Google Fonts pairings by industry. **ainative uses:** Inter (body) + JetBrains Mono (code) per DD-006.
 
 ### Recommendation Output Format
 
@@ -268,7 +268,7 @@ Define detailed interaction behavior for complex components:
 
 ### Chart Type Guidance
 
-See `references/chart-guidance.md` for chart type selection by data pattern (11 chart types with library recommendations). **Stagent note:** The project uses custom SVG chart components (Sparkline, DonutRing, MiniBar) in `src/components/charts/` — prefer these over external libraries.
+See `references/chart-guidance.md` for chart type selection by data pattern (11 chart types with library recommendations). **ainative note:** The project uses custom SVG chart components (Sparkline, DonutRing, MiniBar) in `src/components/charts/` — prefer these over external libraries.
 
 ---
 
@@ -420,7 +420,7 @@ After presenting mode output, run:
 
 ## Pattern Library
 
-See `references/pattern-library.md` for the full interaction pattern catalog (Data Display, Data Input, Navigation, Feedback) with Stagent-specific component mappings (PageShell, DataTable, StatusChip, FilterBar, CommandPalette, FormSectionCard).
+See `references/pattern-library.md` for the full interaction pattern catalog (Data Display, Data Input, Navigation, Feedback) with ainative-specific component mappings (PageShell, DataTable, StatusChip, FilterBar, CommandPalette, FormSectionCard).
 
 ---
 

@@ -19,7 +19,7 @@ This feature closes that gap with a bounded profile-specific refinement. It keep
 
 ## User Story
 
-As a Stagent operator browsing or inspecting agent profiles, I want the profile surfaces to feel stable and crisp while I scroll so that the page reads like an operational catalog instead of a blur-heavy showcase.
+As a ainative operator browsing or inspecting agent profiles, I want the profile surfaces to feel stable and crisp while I scroll so that the page reads like an operational catalog instead of a blur-heavy showcase.
 
 ## Technical Approach
 

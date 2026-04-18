@@ -11,15 +11,15 @@ dependencies: [community-edition-simplification]
 
 ## Description
 
-Remove all Supabase integration from the stagent app: cloud sync (encrypted backup/restore via Supabase Storage), cloud account sign-in (magic link auth), telemetry ingestion to Supabase edge functions, conversion tracking, email sending, and the `@supabase/supabase-js` npm package.
+Remove all Supabase integration from the ainative app: cloud sync (encrypted backup/restore via Supabase Storage), cloud account sign-in (magic link auth), telemetry ingestion to Supabase edge functions, conversion tracking, email sending, and the `@supabase/supabase-js` npm package.
 
 The app already has local DatabaseSnapshotsSection for backups, making cloud sync redundant for the community edition. Telemetry becomes local-only (the usage ledger in SQLite remains — just the cloud flush is removed).
 
-The only Supabase artifact that stays is `supabase/functions/waitlist-signup/` — it serves the stagent marketing website and is outside the app's scope.
+The only Supabase artifact that stays is `supabase/functions/waitlist-signup/` — it serves the ainative marketing website and is outside the app's scope.
 
 ## User Story
 
-As a stagent user, I want the app to run fully offline without any cloud service dependencies so that I have complete control over my data and no external service is required.
+As a ainative user, I want the app to run fully offline without any cloud service dependencies so that I have complete control over my data and no external service is required.
 
 ## Technical Approach
 

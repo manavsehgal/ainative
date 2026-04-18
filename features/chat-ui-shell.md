@@ -17,7 +17,7 @@ Unlike other pages that use PageShell with title/description/filters, the chat p
 
 ## User Story
 
-As a user, I want a dedicated chat page in the Work section where I can start conversations, browse history, and interact with an AI assistant that knows my stagent setup.
+As a user, I want a dedicated chat page in the Work section where I can start conversations, browse history, and interact with an AI assistant that knows my ainative setup.
 
 ## Technical Approach
 

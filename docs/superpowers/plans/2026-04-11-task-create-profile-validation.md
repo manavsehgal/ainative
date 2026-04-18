@@ -30,7 +30,7 @@ Verified by reading the current codebase, not trusting the spec's line numbers b
 | Runtime IDs (for negative test) | `src/lib/agents/runtime/catalog.ts` → `SUPPORTED_AGENT_RUNTIMES` | Includes `"anthropic-direct"` — which is the exact value the handoff documented as the historic bug trigger. |
 | No task deletion anywhere in `src/` | verified by grep | `grep -r "delete(tasks)" src/` → 0 results. Every failure path in `claude-agent.ts` (lines 130, 418-420, 745-748, 809-811) preserves the row with `status: "failed"` and a `failureReason`. |
 | Every runtime reads `task.agentProfile ?? "general"` | `claude-agent.ts:521`, `openai-direct.ts:199`, `openai-codex.ts:143`, `ollama-adapter.ts:169`, `anthropic-direct.ts:272` | The `?? "general"` fallback only triggers when `task.agentProfile` is `null`. A non-null invalid string (`"anthropic-direct"`) passes through and fails at runtime, not at queue time — which is the exact gap AC #5 targets. |
-| `STAGENT_DATA_DIR` per-process isolation | `src/lib/utils/stagent-paths.ts:4-6`, `src/lib/db/index.ts:9-18` | `getStagentDataDir()` reads `process.env.STAGENT_DATA_DIR` once at module load. Different processes (main vs. domain clones) hit different SQLite files. Per `MEMORY.md → shared-stagent-data-dir.md`, this is intentional — fix is operator-facing messaging, not a scoping change. Out of scope for this feature. |
+| `STAGENT_DATA_DIR` per-process isolation | `src/lib/utils/ainative-paths.ts:4-6`, `src/lib/db/index.ts:9-18` | `getAinativeDataDir()` reads `process.env.STAGENT_DATA_DIR` once at module load. Different processes (main vs. domain clones) hit different SQLite files. Per `MEMORY.md → shared-ainative-data-dir.md`, this is intentional — fix is operator-facing messaging, not a scoping change. Out of scope for this feature. |
 | Test file `task-tools.test.ts` does NOT yet exist | `ls src/lib/chat/tools/__tests__/` | Current contents: `enrich-table-tool.test.ts`, `schedule-tools.test.ts` (shipped in Task 2), `workflow-tools-dedup.test.ts`. We create a fresh `task-tools.test.ts`. |
 
 ## NOT in scope
@@ -117,9 +117,9 @@ Replace that single line with the full addendum below. Do not remove any other l
   - **Remediation in this feature:** `list_tasks` returns a sibling `note` field in its response envelope when `effectiveProjectId` is set and zero rows are returned, naming the active scope and suggesting `projectId: null` or `get_task <id>` as alternatives. No behavior change, only messaging.
 
   **Root cause 2 (probable secondary — infrastructure-level):** `STAGENT_DATA_DIR` per-process isolation.
-  - `src/lib/utils/stagent-paths.ts:4-6`: `getStagentDataDir()` reads `process.env.STAGENT_DATA_DIR || ~/.stagent`.
-  - `src/lib/db/index.ts:9-13`: the DB is opened from `join(dataDir, "stagent.db")` **once at module load**. The var is baked in per-process.
-  - Per `MEMORY.md → shared-stagent-data-dir.md`, the user runs domain clones (`stagent-wealth`, `stagent-growth`, `stagent-venture`) which set this var to different paths. A task created in one process is physically in a different SQLite file than a task queried from another process. This is architecturally intentional — the three domain clones isolate state so wealth/growth/venture do not leak into each other.
+  - `src/lib/utils/ainative-paths.ts:4-6`: `getAinativeDataDir()` reads `process.env.STAGENT_DATA_DIR || ~/.ainative`.
+  - `src/lib/db/index.ts:9-13`: the DB is opened from `join(dataDir, "ainative.db")` **once at module load**. The var is baked in per-process.
+  - Per `MEMORY.md → shared-ainative-data-dir.md`, the user runs domain clones (`ainative-wealth`, `ainative-growth`, `ainative-venture`) which set this var to different paths. A task created in one process is physically in a different SQLite file than a task queried from another process. This is architecturally intentional — the three domain clones isolate state so wealth/growth/venture do not leak into each other.
   - **Remediation in this feature: none.** Per the Excluded list, domain-clone isolation changes are out of scope. A follow-up feature (outside this batch) could add an operator-facing startup log echoing the active data dir, or a `get_stagent_info` health-check tool. Not in this commit.
 
   **Ruled out: transaction rollback.** Not a transaction; single insert. If the insert fails, the error surfaces immediately at `create_task` return time.
@@ -150,7 +150,7 @@ created under project A is hidden when the user asks "list my tasks"
 under project B — still findable by get_task <id> but perceived as
 disappeared. Secondary: STAGENT_DATA_DIR per-process isolation means
 different domain-clone processes hit different SQLite files; this is
-intentional (MEMORY.md → shared-stagent-data-dir) and out of scope
+intentional (MEMORY.md → shared-ainative-data-dir) and out of scope
 for this feature.
 
 Remediation in this feature is the list_tasks empty-result note
@@ -789,7 +789,7 @@ Closed the profile validation gap at `create_task` and `update_task` — both pr
 
 `execute_task` now runs a synchronous stale-profile check on the stored `task.agentProfile` before queuing, surfacing the error in the immediate chat-tool response instead of letting it fail later at runtime. `list_tasks` now returns a sibling `note` field on empty-result-with-active-filter responses, addressing the most probable UX-level root cause of the original "task disappears after creation" symptom the spike addendum documented.
 
-**Spike conclusion:** The original handoff's "task was deleted" framing was false — no `db.delete(tasks)` exists anywhere in `src/`, and every failure path in `claude-agent.ts` preserves the row with `status: "failed"` and a `failureReason`. Real root causes are (1) `list_tasks` silent project-scoping by `ctx.projectId` (fixed in this feature via the empty-result note) and (2) `STAGENT_DATA_DIR` per-process domain-clone isolation (intentional per `MEMORY.md → shared-stagent-data-dir.md`, remediation deferred to a separate feature).
+**Spike conclusion:** The original handoff's "task was deleted" framing was false — no `db.delete(tasks)` exists anywhere in `src/`, and every failure path in `claude-agent.ts` preserves the row with `status: "failed"` and a `failureReason`. Real root causes are (1) `list_tasks` silent project-scoping by `ctx.projectId` (fixed in this feature via the empty-result note) and (2) `STAGENT_DATA_DIR` per-process domain-clone isolation (intentional per `MEMORY.md → shared-ainative-data-dir.md`, remediation deferred to a separate feature).
 
 **Commits:**
 - `<SHA-task1>` — `docs(features): add spike addendum for task disappearance symptom`

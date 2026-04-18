@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add an idempotent first-boot installer that establishes branch discipline (creates a `local` branch, installs a consent-gated pre-push hook) for every git-clone user of stagent, without breaking the canonical dev repo.
+**Goal:** Add an idempotent first-boot installer that establishes branch discipline (creates a `local` branch, installs a consent-gated pre-push hook) for every git-clone user of ainative, without breaking the canonical dev repo.
 
-**Architecture:** New `src/lib/instance/` module with 5 files (types, detect, git-ops, settings, bootstrap). Two-phase execution: Phase A (non-destructive — instanceId generation + local branch creation) runs on every first boot; Phase B (pre-push hook + pushRemote config) requires explicit user consent via a first-boot notification. Layered dev-mode gates (`STAGENT_DEV_MODE` env var, `.git/stagent-dev-mode` sentinel, `STAGENT_INSTANCE_MODE` override) short-circuit the entire module in the canonical dev repo. Integrated into `src/instrumentation.ts` before scheduler startup.
+**Architecture:** New `src/lib/instance/` module with 5 files (types, detect, git-ops, settings, bootstrap). Two-phase execution: Phase A (non-destructive — instanceId generation + local branch creation) runs on every first boot; Phase B (pre-push hook + pushRemote config) requires explicit user consent via a first-boot notification. Layered dev-mode gates (`STAGENT_DEV_MODE` env var, `.git/ainative-dev-mode` sentinel, `STAGENT_INSTANCE_MODE` override) short-circuit the entire module in the canonical dev repo. Integrated into `src/instrumentation.ts` before scheduler startup.
 
 **Tech Stack:** TypeScript, Node `execFileSync` (argv arrays, no shell), better-sqlite3 settings table, Drizzle ORM, vitest, Next.js `register()` instrumentation hook.
 
@@ -27,12 +27,12 @@
 
 Reusable code and patterns confirmed during scope challenge:
 
-- **`src/lib/utils/stagent-paths.ts:4`** — `getStagentDataDir()` provides the `STAGENT_DATA_DIR || ~/.stagent` fallback. Private-instance detection is a single comparison against `join(homedir(), ".stagent")`.
+- **`src/lib/utils/ainative-paths.ts:4`** — `getAinativeDataDir()` provides the `STAGENT_DATA_DIR || ~/.ainative` fallback. Private-instance detection is a single comparison against `join(homedir(), ".ainative")`.
 - **`src/lib/settings/helpers.ts`** — `getSettingSync(key)` and `setSetting(key, value)` are the canonical read/write helpers for the `settings` key-value table. Synchronous is safe (better-sqlite3).
 - **`src/lib/db/schema.ts:284`** — `settings` table (`key` PK, `value` TEXT, `updatedAt` epoch). No schema changes needed; this plan stores JSON-in-TEXT per TDR-011.
 - **`src/instrumentation.ts:1-30`** — Next.js `register()` hook with dynamic imports inside a `try/catch`. Pattern: import module, call startup function, log error but don't crash. The new `ensureInstance()` call follows the same shape.
 - **`src/lib/notifications/actionable.ts:12-17`** — Notification actions model with `ApprovalActionId` union type. The consent prompt follows this pattern with custom action IDs.
-- **`bin/sync-worktree.sh:8-19`** — Worktree detection via `git rev-parse --git-common-dir` vs `--git-dir`. Port the logic into `detect.ts` so the module correctly handles stagent worktree setups.
+- **`bin/sync-worktree.sh:8-19`** — Worktree detection via `git rev-parse --git-common-dir` vs `--git-dir`. Port the logic into `detect.ts` so the module correctly handles ainative worktree setups.
 - **`src/lib/settings/__tests__/budget-guardrails.test.ts:1-29`** — Reference vitest pattern: `mkdtempSync` for temp dirs, `vi.stubEnv("STAGENT_DATA_DIR", tempDir)` for isolation, `vi.resetModules()` between test cases, dynamic imports for modules that read env at load time.
 - **`better-sqlite3` API** — All DB operations are synchronous; no need for async/await in `settings.ts`.
 - **`node:child_process` `execFileSync`** — Accepts `(file, args[])` with strict argv separation; does NOT invoke a shell. This is the only safe git invocation pattern for this module.
@@ -44,7 +44,7 @@ Reusable code and patterns confirmed during scope challenge:
 | `execFileSync("git", ...)` throws | Git not installed, corrupt repo, rebase in progress | `ensureInstance()` aborts this step | Catch in the specific `ensureX()` function, log to console, return failure for that step, continue with other steps. Bootstrap never crashes the app. |
 | `writeFileSync` to `.git/hooks/pre-push` fails | Read-only FS, permission denied | Hook not installed | Log warning, mark guardrails as `installation_failed` in settings, continue boot |
 | `settings.instance` JSON parse fails | DB corruption, concurrent write collision | Config read returns `null`, bootstrap re-generates | Wrap JSON.parse in try/catch; on failure, treat as missing config and re-run `ensureInstanceConfig()` |
-| Pre-existing non-stagent pre-push hook | User has their own hook | Our install would overwrite it | Backup to `pre-push.stagent-backup` before writing ours; log warning |
+| Pre-existing non-ainative pre-push hook | User has their own hook | Our install would overwrite it | Backup to `pre-push.ainative-backup` before writing ours; log warning |
 | `.git/rebase-merge` present | User mid-rebase during `npm run dev` | Any git op might fail | `ensureLocalBranch()` detects the directory, skips branch creation, logs warning. User finishes rebase, next boot runs normally. |
 | User sets `STAGENT_DEV_MODE=true` in production env by mistake | Env var leak from shell config | All guardrails disabled on a real instance | Non-issue — dev mode gate is opt-out; worst case user runs without guardrails until they remove the flag. Documented as safe. |
 | Both dev-mode gates fail simultaneously on main dev repo | Contributor forgets env var AND sentinel is missing | Bootstrap runs in dev repo → creates `local` branch AND emits consent notification | Non-destructive Phase A is safe; Phase B is consent-gated so nothing breaks. User declines consent, manually deletes `local` branch if desired. |
@@ -180,7 +180,7 @@ let tempDir: string;
 let gitDir: string;
 
 beforeEach(() => {
-  tempDir = mkdtempSync(join(tmpdir(), "stagent-detect-"));
+  tempDir = mkdtempSync(join(tmpdir(), "ainative-detect-"));
   gitDir = join(tempDir, ".git");
   mkdirSync(gitDir, { recursive: true });
   vi.resetModules();
@@ -203,8 +203,8 @@ describe("isDevMode", () => {
     expect(isDevMode(tempDir)).toBe(true);
   });
 
-  it("returns true when .git/stagent-dev-mode sentinel file exists", async () => {
-    writeFileSync(join(gitDir, "stagent-dev-mode"), "");
+  it("returns true when .git/ainative-dev-mode sentinel file exists", async () => {
+    writeFileSync(join(gitDir, "ainative-dev-mode"), "");
     const { isDevMode } = await loadDetect();
     expect(isDevMode(tempDir)).toBe(true);
   });
@@ -222,7 +222,7 @@ describe("isDevMode", () => {
   });
 
   it("returns false when STAGENT_INSTANCE_MODE=true overrides sentinel gate", async () => {
-    writeFileSync(join(gitDir, "stagent-dev-mode"), "");
+    writeFileSync(join(gitDir, "ainative-dev-mode"), "");
     vi.stubEnv("STAGENT_INSTANCE_MODE", "true");
     const { isDevMode } = await loadDetect();
     expect(isDevMode(tempDir)).toBe(false);
@@ -248,14 +248,14 @@ describe("isPrivateInstance", () => {
     expect(isPrivateInstance()).toBe(false);
   });
 
-  it("returns false when STAGENT_DATA_DIR equals default ~/.stagent", async () => {
-    vi.stubEnv("STAGENT_DATA_DIR", join(homedir(), ".stagent"));
+  it("returns false when STAGENT_DATA_DIR equals default ~/.ainative", async () => {
+    vi.stubEnv("STAGENT_DATA_DIR", join(homedir(), ".ainative"));
     const { isPrivateInstance } = await loadDetect();
     expect(isPrivateInstance()).toBe(false);
   });
 
   it("returns true when STAGENT_DATA_DIR is a custom path", async () => {
-    vi.stubEnv("STAGENT_DATA_DIR", "/Users/manavsehgal/.stagent-wealth");
+    vi.stubEnv("STAGENT_DATA_DIR", "/Users/manavsehgal/.ainative-wealth");
     const { isPrivateInstance } = await loadDetect();
     expect(isPrivateInstance()).toBe(true);
   });
@@ -295,12 +295,12 @@ import { join } from "path";
 import { homedir } from "os";
 
 /**
- * Returns true if the current environment is the canonical stagent dev repo
+ * Returns true if the current environment is the canonical ainative dev repo
  * and should skip all instance bootstrap operations.
  *
  * Layered gates:
  * 1. STAGENT_DEV_MODE=true env var (primary, per-developer)
- * 2. .git/stagent-dev-mode sentinel file (secondary, git-dir-scoped)
+ * 2. .git/ainative-dev-mode sentinel file (secondary, git-dir-scoped)
  *
  * Override: STAGENT_INSTANCE_MODE=true forces bootstrap to run even in dev
  * mode, so contributors can test the feature in the main repo.
@@ -313,7 +313,7 @@ export function isDevMode(cwd: string = process.cwd()): boolean {
   if (process.env.STAGENT_DEV_MODE === "true") return true;
 
   // Gate 2: sentinel file inside .git (never cloned, never committed)
-  if (existsSync(join(cwd, ".git", "stagent-dev-mode"))) return true;
+  if (existsSync(join(cwd, ".git", "ainative-dev-mode"))) return true;
 
   return false;
 }
@@ -330,7 +330,7 @@ export function hasGitDir(cwd: string = process.cwd()): boolean {
 export function isPrivateInstance(): boolean {
   const override = process.env.STAGENT_DATA_DIR;
   if (!override) return false;
-  const defaultDir = join(homedir(), ".stagent");
+  const defaultDir = join(homedir(), ".ainative");
   return override !== defaultDir;
 }
 
@@ -384,7 +384,7 @@ function runGit(args: string[], cwd: string) {
 }
 
 beforeEach(() => {
-  tempDir = mkdtempSync(join(tmpdir(), "stagent-git-ops-"));
+  tempDir = mkdtempSync(join(tmpdir(), "ainative-git-ops-"));
   runGit(["init", "-b", "main"], tempDir);
   runGit(["config", "user.email", "test@example.com"], tempDir);
   runGit(["config", "user.name", "Test"], tempDir);
@@ -405,7 +405,7 @@ describe("RealGitOps", () => {
   });
 
   it("isGitRepo returns false outside a git repo", async () => {
-    const nonRepo = mkdtempSync(join(tmpdir(), "stagent-nogit-"));
+    const nonRepo = mkdtempSync(join(tmpdir(), "ainative-nogit-"));
     try {
       const { createGitOps } = await import("../git-ops");
       const ops = createGitOps(nonRepo);
@@ -572,7 +572,7 @@ import { tmpdir } from "os";
 let tempDir: string;
 
 beforeEach(() => {
-  tempDir = mkdtempSync(join(tmpdir(), "stagent-instance-settings-"));
+  tempDir = mkdtempSync(join(tmpdir(), "ainative-instance-settings-"));
   vi.resetModules();
   vi.stubEnv("STAGENT_DATA_DIR", tempDir);
 });
@@ -751,8 +751,8 @@ function initRepo(dir: string) {
 }
 
 beforeEach(() => {
-  tempDir = mkdtempSync(join(tmpdir(), "stagent-bootstrap-repo-"));
-  dataDir = mkdtempSync(join(tmpdir(), "stagent-bootstrap-data-"));
+  tempDir = mkdtempSync(join(tmpdir(), "ainative-bootstrap-repo-"));
+  dataDir = mkdtempSync(join(tmpdir(), "ainative-bootstrap-data-"));
   initRepo(tempDir);
   vi.resetModules();
   vi.unstubAllEnvs();
@@ -957,7 +957,7 @@ describe("ensurePrePushHook (Phase B)", () => {
     expect(secondMtime).toBe(firstMtime);
   });
 
-  it("backs up a pre-existing non-stagent hook before installing", async () => {
+  it("backs up a pre-existing non-ainative hook before installing", async () => {
     const customHook = "#!/bin/sh\necho custom hook\n";
     writeFileSync(join(tempDir, ".git", "hooks", "pre-push"), customHook);
     chmodSync(join(tempDir, ".git", "hooks", "pre-push"), 0o755);
@@ -966,7 +966,7 @@ describe("ensurePrePushHook (Phase B)", () => {
     const ops = createGitOps(tempDir);
     const result = ensurePrePushHook(ops);
     expect(result.status).toBe("ok");
-    const backupPath = join(tempDir, ".git", "hooks", "pre-push.stagent-backup");
+    const backupPath = join(tempDir, ".git", "hooks", "pre-push.ainative-backup");
     expect(existsSync(backupPath)).toBe(true);
     expect(readFileSync(backupPath, "utf-8")).toBe(customHook);
     // Ours is now installed
@@ -1019,7 +1019,7 @@ export const STAGENT_HOOK_VERSION = "1.0.0";
 /**
  * Pre-push hook template. Installed verbatim at .git/hooks/pre-push.
  *
- * Reads the blocked branch list from the stagent SQLite settings table
+ * Reads the blocked branch list from the ainative SQLite settings table
  * via a bounded sqlite3 invocation. The query is hardcoded — no user
  * input reaches the shell.
  *
@@ -1042,9 +1042,9 @@ if [ -z "$current_branch" ]; then
   exit 0
 fi
 
-# Read blocked branches from stagent settings (JSON array).
-data_dir="\${STAGENT_DATA_DIR:-$HOME/.stagent}"
-db_path="$data_dir/stagent.db"
+# Read blocked branches from ainative settings (JSON array).
+data_dir="\${STAGENT_DATA_DIR:-$HOME/.ainative}"
+db_path="$data_dir/ainative.db"
 if [ ! -f "$db_path" ] || ! command -v sqlite3 >/dev/null 2>&1; then
   exit 0
 fi
@@ -1056,8 +1056,8 @@ fi
 
 # Extract pushRemoteBlocked array entries without jq dependency
 if echo "$blocked_json" | grep -q "\\"$current_branch\\""; then
-  echo "stagent: refusing to push private instance branch '$current_branch' to origin." >&2
-  echo "stagent: set ALLOW_PRIVATE_PUSH=1 to override (not recommended)." >&2
+  echo "ainative: refusing to push private instance branch '$current_branch' to origin." >&2
+  echo "ainative: set ALLOW_PRIVATE_PUSH=1 to override (not recommended)." >&2
   exit 1
 fi
 
@@ -1078,7 +1078,7 @@ export function ensurePrePushHook(git: GitOps): EnsureStepResult {
       return { step: "pre-push-hook", status: "skipped", reason: "already_installed" };
     }
     if (existing.includes("STAGENT_HOOK_VERSION=")) {
-      // Older stagent version — overwrite without backup
+      // Older ainative version — overwrite without backup
       try {
         writeFileSync(hookPath, PRE_PUSH_HOOK_TEMPLATE, { mode: 0o755 });
         return { step: "pre-push-hook", status: "ok", reason: "upgraded" };
@@ -1092,7 +1092,7 @@ export function ensurePrePushHook(git: GitOps): EnsureStepResult {
     }
     // Foreign hook — back it up
     try {
-      renameSync(hookPath, `${hookPath}.stagent-backup`);
+      renameSync(hookPath, `${hookPath}.ainative-backup`);
     } catch (err) {
       return {
         step: "pre-push-hook",
@@ -1309,7 +1309,7 @@ describe("ensureInstance orchestrator", () => {
   });
 
   it("returns skipped with dev_mode_sentinel when sentinel file exists", async () => {
-    writeFileSync(join(tempDir, ".git", "stagent-dev-mode"), "");
+    writeFileSync(join(tempDir, ".git", "ainative-dev-mode"), "");
     const { ensureInstance } = await import("../bootstrap");
     const result = ensureInstance(tempDir);
     expect(result.skipped).toBe("dev_mode_sentinel");
@@ -1317,7 +1317,7 @@ describe("ensureInstance orchestrator", () => {
   });
 
   it("returns skipped with no_git when .git directory is absent", async () => {
-    const noGitDir = mkdtempSync(join(tmpdir(), "stagent-nogit-"));
+    const noGitDir = mkdtempSync(join(tmpdir(), "ainative-nogit-"));
     try {
       const { ensureInstance } = await import("../bootstrap");
       const result = ensureInstance(noGitDir);
@@ -1605,9 +1605,9 @@ git commit -m "feat(instance): wire ensureInstance into instrumentation hook"
 Run these commands and verify expected output:
 
 ```bash
-cd /Users/manavsehgal/Developer/stagent
+cd /Users/manavsehgal/Developer/ainative
 grep "STAGENT_DEV_MODE=true" .env.local && echo "env gate: OK"
-ls .git/stagent-dev-mode && echo "sentinel gate: OK"
+ls .git/ainative-dev-mode && echo "sentinel gate: OK"
 ```
 
 Expected: both `env gate: OK` and `sentinel gate: OK` printed.
@@ -1615,9 +1615,9 @@ Expected: both `env gate: OK` and `sentinel gate: OK` printed.
 - [ ] **Step 2: Record current git state**
 
 ```bash
-git branch | grep -E "^\*" > /tmp/stagent-pre-branch.txt
-git config --get branch.main.pushRemote > /tmp/stagent-pre-pushremote.txt 2>/dev/null || echo "(not set)" > /tmp/stagent-pre-pushremote.txt
-ls .git/hooks/pre-push > /tmp/stagent-pre-hook.txt 2>/dev/null || echo "(missing)" > /tmp/stagent-pre-hook.txt
+git branch | grep -E "^\*" > /tmp/ainative-pre-branch.txt
+git config --get branch.main.pushRemote > /tmp/ainative-pre-pushremote.txt 2>/dev/null || echo "(not set)" > /tmp/ainative-pre-pushremote.txt
+ls .git/hooks/pre-push > /tmp/ainative-pre-hook.txt 2>/dev/null || echo "(missing)" > /tmp/ainative-pre-hook.txt
 ```
 
 - [ ] **Step 3: Start dev server once, let it boot, then stop**
@@ -1635,13 +1635,13 @@ Expected: dev server starts, console shows `[instance] bootstrap skipped: dev_mo
 - [ ] **Step 4: Confirm git state is unchanged**
 
 ```bash
-git branch | grep -E "^\*" > /tmp/stagent-post-branch.txt
-git config --get branch.main.pushRemote > /tmp/stagent-post-pushremote.txt 2>/dev/null || echo "(not set)" > /tmp/stagent-post-pushremote.txt
-ls .git/hooks/pre-push > /tmp/stagent-post-hook.txt 2>/dev/null || echo "(missing)" > /tmp/stagent-post-hook.txt
+git branch | grep -E "^\*" > /tmp/ainative-post-branch.txt
+git config --get branch.main.pushRemote > /tmp/ainative-post-pushremote.txt 2>/dev/null || echo "(not set)" > /tmp/ainative-post-pushremote.txt
+ls .git/hooks/pre-push > /tmp/ainative-post-hook.txt 2>/dev/null || echo "(missing)" > /tmp/ainative-post-hook.txt
 
-diff /tmp/stagent-pre-branch.txt /tmp/stagent-post-branch.txt && echo "branch: UNCHANGED"
-diff /tmp/stagent-pre-pushremote.txt /tmp/stagent-post-pushremote.txt && echo "pushRemote: UNCHANGED"
-diff /tmp/stagent-pre-hook.txt /tmp/stagent-post-hook.txt && echo "pre-push hook: UNCHANGED"
+diff /tmp/ainative-pre-branch.txt /tmp/ainative-post-branch.txt && echo "branch: UNCHANGED"
+diff /tmp/ainative-pre-pushremote.txt /tmp/ainative-post-pushremote.txt && echo "pushRemote: UNCHANGED"
+diff /tmp/ainative-pre-hook.txt /tmp/ainative-post-hook.txt && echo "pre-push hook: UNCHANGED"
 ```
 
 Expected: all three `UNCHANGED` messages printed. No new branches, no pushRemote set, no hook installed.
@@ -1649,7 +1649,7 @@ Expected: all three `UNCHANGED` messages printed. No new branches, no pushRemote
 - [ ] **Step 5: Clean up and commit final checkpoint**
 
 ```bash
-rm /tmp/stagent-pre-* /tmp/stagent-post-*
+rm /tmp/ainative-pre-* /tmp/ainative-post-*
 git add -A
 git status   # should show nothing unexpected
 ```

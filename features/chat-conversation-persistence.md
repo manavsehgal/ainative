@@ -21,7 +21,7 @@ This feature addresses both gaps: persist the active conversation across navigat
 
 ## User Stories
 
-As a user, I want to navigate between views without losing my active conversation, so I can multitask across Stagent without losing context.
+As a user, I want to navigate between views without losing my active conversation, so I can multitask across ainative without losing context.
 
 As a user, I want to see when background tasks spawned from my chat are still running, so I know work is happening even when I switch to other views and return.
 
@@ -31,7 +31,7 @@ As a user, I want to see when background tasks spawned from my chat are still ru
 
 **URL search param (primary):** When a conversation is selected, update the URL to `/chat?c=<conversationId>` via `router.replace()` (no navigation, just URL update). The Server Component in `page.tsx` reads `searchParams.c` and passes it as `initialActiveId` to `ChatShell`.
 
-**localStorage fallback:** Reuse `usePersistedState` hook from `src/hooks/use-persisted-state.ts` (same pattern as `board-context-persistence`). Key: `stagent-active-chat`. On mount, resolution priority: URL param > localStorage > null (empty state).
+**localStorage fallback:** Reuse `usePersistedState` hook from `src/hooks/use-persisted-state.ts` (same pattern as `board-context-persistence`). Key: `ainative-active-chat`. On mount, resolution priority: URL param > localStorage > null (empty state).
 
 **Graceful fallback:** If the persisted conversation ID no longer exists in the database (deleted or archived), fall back to null (empty state) instead of showing an error. The conversation list already handles this — just clear the stale ID.
 

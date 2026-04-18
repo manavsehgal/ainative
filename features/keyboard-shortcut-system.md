@@ -17,7 +17,7 @@ This is the underlying infrastructure that powers the command palette (Cmd+K), n
 
 ## User Story
 
-As a power user, I want consistent keyboard shortcuts across all surfaces so that I can navigate and operate Stagent without touching the mouse.
+As a power user, I want consistent keyboard shortcuts across all surfaces so that I can navigate and operate ainative without touching the mouse.
 
 ## Technical Approach
 

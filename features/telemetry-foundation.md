@@ -27,7 +27,7 @@ As the product team, we want aggregate usage data to understand which agent prof
 
 **`src/components/settings/telemetry-section.tsx`**:
 - Toggle switch: "Share anonymous usage data"
-- Value framing text: "Help improve Stagent and get personalized benchmarks in the quarterly State of AI Agents report"
+- Value framing text: "Help improve ainative and get personalized benchmarks in the quarterly State of AI Agents report"
 - Persists to settings table: `key = 'telemetry_opt_in'`, `value = 'true' | 'false'`
 - Default: OFF (opt-in, not opt-out)
 

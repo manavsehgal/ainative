@@ -17,7 +17,7 @@ This feature adds `suggestRuntime()` alongside the existing `classifyTaskProfile
 
 ## User Story
 
-As a Stagent user with multiple runtimes configured, I want the system to automatically select the best runtime for each task so that I get optimal cost, latency, and capability matching without manually choosing every time.
+As a ainative user with multiple runtimes configured, I want the system to automatically select the best runtime for each task so that I get optimal cost, latency, and capability matching without manually choosing every time.
 
 ## Technical Approach
 

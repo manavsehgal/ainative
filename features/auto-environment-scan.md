@@ -13,13 +13,13 @@ dependencies: [environment-scanner, environment-cache]
 
 The environment scanner currently requires manual activation — users must click "Scan" on a project page or the environment dashboard. This creates friction: new projects appear "empty" until the user remembers to scan, and chat conversations lack workspace context because no scan has run.
 
-This feature makes environment scanning automatic. When a project with a `workingDirectory` is accessed — via its project page, a chat conversation, or task execution — Stagent checks whether the last scan is stale (>5 minutes old or missing) and triggers a fresh scan inline. The scan takes 10-50ms, so it runs synchronously without perceptible delay.
+This feature makes environment scanning automatic. When a project with a `workingDirectory` is accessed — via its project page, a chat conversation, or task execution — ainative checks whether the last scan is stale (>5 minutes old or missing) and triggers a fresh scan inline. The scan takes 10-50ms, so it runs synchronously without perceptible delay.
 
 The manual "Scan" button remains as a force-refresh option, but the default experience is zero-config: open a project, see its environment.
 
 ## User Story
 
-As a Stagent user, I want my project's environment to be scanned automatically when I open it or start a chat, so I never have to remember to click "Scan" and always see up-to-date workspace context.
+As a ainative user, I want my project's environment to be scanned automatically when I open it or start a chat, so I never have to remember to click "Scan" and always see up-to-date workspace context.
 
 ## Technical Approach
 

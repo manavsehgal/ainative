@@ -11,13 +11,13 @@ dependencies: [chat-command-mentions, chat-claude-sdk-skills, workspace-context-
 
 ## Description
 
-Claude Code and Codex CLI users rely heavily on `@file:path/to/code.ts`-style file references — a fast way to pin specific files into the model's context without reading them manually first. Stagent chat's `@` popover today supports seven Stagent entity types (projects, tasks, workflows, documents, profiles, schedules, tables) but not filesystem paths. CLI refugees repeatedly reach for `@src/` and find nothing.
+Claude Code and Codex CLI users rely heavily on `@file:path/to/code.ts`-style file references — a fast way to pin specific files into the model's context without reading them manually first. ainative chat's `@` popover today supports seven ainative entity types (projects, tasks, workflows, documents, profiles, schedules, tables) but not filesystem paths. CLI refugees repeatedly reach for `@src/` and find nothing.
 
 This feature extends the `@` typeahead to include files under the active project's working directory. It respects `.gitignore` so build artifacts don't pollute suggestions, and it uses tiered expansion (per Q6 resolution): files under 8 KB inline into Tier 3 context, larger files stay as references that the agent can read via the `Read` tool (which now exists on Claude thanks to Phase 1a). The result: CLI muscle memory works, and context budget stays controlled.
 
 ## User Story
 
-As a developer chatting with Stagent about a specific file, I want to type `@src/lib/db/schema.ts` and have that file inlined (or referenced) in the model's context without hand-copying, so I get CLI-parity file references in the web UI.
+As a developer chatting with ainative about a specific file, I want to type `@src/lib/db/schema.ts` and have that file inlined (or referenced) in the model's context without hand-copying, so I get CLI-parity file references in the web UI.
 
 ## Technical Approach
 

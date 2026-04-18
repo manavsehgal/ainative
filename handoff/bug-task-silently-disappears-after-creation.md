@@ -1,6 +1,6 @@
 ---
 title: "Bug: Task Disappears After Creation — No Trace in API"
-audience: stagent-base
+audience: ainative-base
 status: proposed
 source_branch: wealth-mgr
 handoff_reason: A task was created and returned a valid ID, but subsequently became unfindable via get_task or list_tasks. No error was surfaced at creation time. This suggests either silent garbage collection, a failed execution that deletes the record, or a creation race condition.

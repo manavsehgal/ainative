@@ -14,7 +14,7 @@ dependencies:
 
 ## Overview
 
-Ensure Stagent meets WCAG 2.1 AA standards across all interactive components. This spec tracks accessibility gaps identified during the MVP design review.
+Ensure ainative meets WCAG 2.1 AA standards across all interactive components. This spec tracks accessibility gaps identified during the MVP design review.
 
 ## A1: ARIA Live Regions for Dynamic Content (Completed)
 

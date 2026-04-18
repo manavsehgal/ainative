@@ -15,7 +15,7 @@ dependencies:
 
 Time-based scheduling for agent tasks — run prompts on a recurring cron schedule, set one-time delayed executions, or poll for status changes at intervals. Inspired by Claude Code's `/loop` command and cron scheduling system.
 
-Users define a prompt, pick an interval (or cron expression), and Stagent executes the agent task on schedule. Each firing creates a child task, building a history of results. Schedules persist in the database (unlike Claude Code's session-scoped approach) so they survive server restarts.
+Users define a prompt, pick an interval (or cron expression), and ainative executes the agent task on schedule. Each firing creates a child task, building a history of results. Schedules persist in the database (unlike Claude Code's session-scoped approach) so they survive server restarts.
 
 This complements the existing autonomous-loop-execution feature: loops iterate on agent output (stop conditions, refinement), while scheduled prompts iterate on wall-clock time (cron, intervals, one-shot delays).
 

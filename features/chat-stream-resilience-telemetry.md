@@ -11,7 +11,7 @@ dependencies: [chat-engine, chat-api-routes]
 
 ## Description
 
-A sibling stagent instance reported mid-stream chat cutoffs — conversations randomly refreshing during streaming, losing the in-progress assistant message. The sibling team attributed the symptom to Next.js dev-mode HMR remounting the chat component and abandoning the SSE reader. Before grooming that fix forward, we validated the root cause against this repo and found most of the proposed mitigations **already exist here**:
+A sibling ainative instance reported mid-stream chat cutoffs — conversations randomly refreshing during streaming, losing the in-progress assistant message. The sibling team attributed the symptom to Next.js dev-mode HMR remounting the chat component and abandoning the SSE reader. Before grooming that fix forward, we validated the root cause against this repo and found most of the proposed mitigations **already exist here**:
 
 | Mitigation | Location in this repo |
 |---|---|

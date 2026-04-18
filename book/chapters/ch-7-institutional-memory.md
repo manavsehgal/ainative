@@ -27,7 +27,7 @@ The AI agent memory market tells us we are not alone in recognizing this gap. Va
 
 ## Two Types of Memory
 
-Not all memories are created equal. Through building Stagent's self-improvement system (Chapter 6), we discovered a natural division that mirrors how human institutions actually preserve knowledge. We call them **learned context** and **episodic memory**, and they operate at fundamentally different timescales with different trust characteristics.
+Not all memories are created equal. Through building ainative's self-improvement system (Chapter 6), we discovered a natural division that mirrors how human institutions actually preserve knowledge. We call them **learned context** and **episodic memory**, and they operate at fundamentally different timescales with different trust characteristics.
 
 **Learned context** captures behavioral patterns -- the recurring lessons that shape how an agent approaches work. "Always run the type-checker before deploying." "This project uses barrel files for module exports." "The team prefers explicit error messages over generic ones." These patterns carry a **confidence score** that rises with repeated validation and decays with time. A pattern observed once with good results starts at 0.6 confidence. If it is validated across five more task executions, it climbs toward 0.95. If it goes unused for weeks, it drifts back down. This is not arbitrary -- it mirrors how human expertise works. Lessons reinforced by practice become instinct. Lessons gathered once and never revisited fade.
 
@@ -88,18 +88,18 @@ The convergence of these approaches -- Karpathy's self-updating specifications, 
 
 ## The Accuracy-Efficiency Tradeoff
 
-Every memory system faces a fundamental tension: more context means better decisions but slower execution and higher costs. This is not a theoretical concern. At Stagent's scale, where agents might execute dozens of tasks per day across multiple projects, the choice between injecting 500 tokens of highly relevant context and 8,000 tokens of comprehensive context has real cost and latency implications.
+Every memory system faces a fundamental tension: more context means better decisions but slower execution and higher costs. This is not a theoretical concern. At ainative's scale, where agents might execute dozens of tasks per day across multiple projects, the choice between injecting 500 tokens of highly relevant context and 8,000 tokens of comprehensive context has real cost and latency implications.
 
 Our approach uses a tiered retrieval strategy. The first tier is **profile-scoped learned context** -- the accumulated behavioral patterns for the active agent profile. This is cheap to retrieve (a single indexed database query) and almost always relevant. The second tier is **project-scoped episodic memory** -- facts about the specific project the agent is working on. This requires a similarity search but is bounded by project scope. The third tier is **cross-project knowledge** -- patterns and facts from other projects that might be relevant. This is the most expensive retrieval and is only triggered when the first two tiers return insufficient context.
 
 The confidence score and relevance decay mechanisms serve as natural filters. Low-confidence patterns and old episodic facts are automatically deprioritized, keeping the context window focused on high-value knowledge. Over time, the system learns not just about projects but about its own retrieval accuracy -- if cross-project knowledge is rarely useful for a particular type of task, the system learns to skip that tier.
 
-## Stagent Today
+## ainative Today
 
-Stagent's current implementation focuses on the learned context system with the foundation for episodic memory in place. The `learned_context` table stores behavioral patterns with full versioning, confidence tracking, and human approval workflows.
+ainative's current implementation focuses on the learned context system with the foundation for episodic memory in place. The `learned_context` table stores behavioral patterns with full versioning, confidence tracking, and human approval workflows.
 
 ```typescript
-// Building with Stagent: Querying institutional memory
+// Building with ainative: Querying institutional memory
 const context = await fetch(
   `/api/context?projectId=proj-8f3a-4b2c&minConfidence=0.7`
 ).then(r => r.json());

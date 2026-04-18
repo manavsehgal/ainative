@@ -41,14 +41,14 @@ As a user, I want agents to automatically have access to files I attach to tasks
 --- Attached Documents ---
 
 [Document 1: report.pdf]
-Path: ~/.stagent/uploads/abc123-report.pdf
+Path: ~/.ainative/uploads/abc123-report.pdf
 Content:
 <document>
 ...extracted text...
 </document>
 
 [Document 2: screenshot.png]
-Path: ~/.stagent/uploads/def456-screenshot.png
+Path: ~/.ainative/uploads/def456-screenshot.png
 Type: image/png (use Read tool to view)
 
 --- End Attached Documents ---

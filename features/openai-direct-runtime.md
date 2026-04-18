@@ -11,13 +11,13 @@ dependencies: [provider-agnostic-tool-layer, provider-runtime-abstraction, cross
 
 ## Description
 
-Add `openai-direct` as a fourth runtime in Stagent's catalog. This runtime calls the OpenAI Responses API directly via the `openai` TypeScript SDK instead of spawning a Codex App Server subprocess. It provides sub-second first-token latency, access to server-side tools (web search, code interpreter, file search, image generation), and works anywhere with just an API key — no Codex binary required.
+Add `openai-direct` as a fourth runtime in ainative's catalog. This runtime calls the OpenAI Responses API directly via the `openai` TypeScript SDK instead of spawning a Codex App Server subprocess. It provides sub-second first-token latency, access to server-side tools (web search, code interpreter, file search, image generation), and works anywhere with just an API key — no Codex binary required.
 
 The existing `openai-codex-app-server` runtime remains fully supported. The `openai-direct` runtime is ideal for data analysis tasks (code interpreter), research (web search), document processing (file search), and creative tasks (image generation).
 
 ## User Story
 
-As a Stagent user, I want to run tasks via the OpenAI Responses API directly so that I can access code interpreter, file search, and image generation capabilities without needing the Codex CLI installed.
+As a ainative user, I want to run tasks via the OpenAI Responses API directly so that I can access code interpreter, file search, and image generation capabilities without needing the Codex CLI installed.
 
 ## Technical Approach
 
@@ -27,31 +27,31 @@ As a Stagent user, I want to run tasks via the OpenAI Responses API directly so 
 
 ### Responses API Integration
 
-The OpenAI Responses API supports a server-side agentic loop — the API can execute built-in tools internally without client round-trips. For Stagent's custom tools, the client-side loop pattern is used:
+The OpenAI Responses API supports a server-side agentic loop — the API can execute built-in tools internally without client round-trips. For ainative's custom tools, the client-side loop pattern is used:
 
-1. Call `responses.create()` with instructions, input, tools (Stagent tools as `function` type + built-in tools), and `stream: true`
-2. Process streaming events → map to Stagent SSE event types
+1. Call `responses.create()` with instructions, input, tools (ainative tools as `function` type + built-in tools), and `stream: true`
+2. Process streaming events → map to ainative SSE event types
 3. Check response output items:
    - `message` → extract text, emit as delta events
-   - `function_call` → execute Stagent tool handler after HITL check, send `function_call_output`
+   - `function_call` → execute ainative tool handler after HITL check, send `function_call_output`
    - Built-in tool results (web_search, code_interpreter) → emit as delta events (server-side execution, no client action needed)
 4. Use `previous_response_id` for session continuity
 5. Enforce turn limits and budget via usage tracking
 
 ### Built-in Server Tools
 
-| OpenAI Tool | Stagent Use Case | Configuration |
+| OpenAI Tool | ainative Use Case | Configuration |
 |-------------|-----------------|---------------|
 | `web_search_preview` | Research profile tasks | `{ type: "web_search_preview" }` |
 | `code_interpreter` | Data analysis, computation | `{ type: "code_interpreter" }` |
 | `file_search` | Document retrieval, RAG | `{ type: "file_search", vector_store_ids }` |
 | `image_generation` | Creative tasks | `{ type: "image_generation" }` |
 
-Server-side tools execute within the API — no client-side approval needed (the API handles them). Stagent logs their usage for monitoring.
+Server-side tools execute within the API — no client-side approval needed (the API handles them). ainative logs their usage for monitoring.
 
 ### Streaming Event Mapping
 
-| OpenAI SSE Event | Stagent Event |
+| OpenAI SSE Event | ainative Event |
 |------------------|---------------|
 | `response.created` | `{ type: "status", phase: "running" }` |
 | `response.output_item.added` (message) | Begin new content block |
@@ -71,7 +71,7 @@ Server-side tools execute within the API — no client-side approval needed (the
   capabilities: {
     resume: true,         // previous_response_id
     cancel: true,         // AbortController
-    approvals: true,      // HITL for Stagent tools (not server-side tools)
+    approvals: true,      // HITL for ainative tools (not server-side tools)
     mcpServers: true,     // Responses API MCP support (Beta)
     profileTests: true,
     taskAssist: true,
@@ -93,14 +93,14 @@ Server-side tools execute within the API — no client-side approval needed (the
 
 ### Auth
 
-- Uses `OPENAI_API_KEY` from Stagent settings (existing `getAuthEnv()` pattern)
+- Uses `OPENAI_API_KEY` from ainative settings (existing `getAuthEnv()` pattern)
 - `testConnection()` calls `GET /v1/models` to validate the key
 
 ## Acceptance Criteria
 
 - [ ] `openai-direct` appears in the runtime catalog and settings UI runtime dropdown
 - [ ] Tasks execute successfully via OpenAI Responses API with streaming output
-- [ ] Stagent custom tools work — function calls dispatched to tool handlers with HITL approval
+- [ ] ainative custom tools work — function calls dispatched to tool handlers with HITL approval
 - [ ] Server-side built-in tools work — web_search, code_interpreter results streamed back
 - [ ] Session resume works via `previous_response_id`
 - [ ] Task cancellation works via AbortController

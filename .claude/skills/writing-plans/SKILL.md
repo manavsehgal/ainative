@@ -39,9 +39,9 @@ If the plan's "What already exists" or "Files touched" list mentions **any** of 
 - `src/lib/agents/runtime/catalog.ts` / `index.ts`
 - `src/lib/workflows/engine.ts`
 - `src/lib/workflows/loop-executor.ts`
-- Any module that statically imports `@/lib/chat/stagent-tools` or `@/lib/chat/tools/*`
+- Any module that statically imports `@/lib/chat/ainative-tools` or `@/lib/chat/tools/*`
 
-**Why:** These modules sit in a tight import cycle with the runtime registry. A static import from any of them into `@/lib/chat/stagent-tools` triggers `ReferenceError: Cannot access 'claudeRuntimeAdapter' before initialization` at Next.js request time. **Unit tests that `vi.mock("@/lib/chat/stagent-tools", ...)` structurally cannot catch this cycle** — the real module is replaced by the test harness and the cycle is never evaluated.
+**Why:** These modules sit in a tight import cycle with the runtime registry. A static import from any of them into `@/lib/chat/ainative-tools` triggers `ReferenceError: Cannot access 'claudeRuntimeAdapter' before initialization` at Next.js request time. **Unit tests that `vi.mock("@/lib/chat/ainative-tools", ...)` structurally cannot catch this cycle** — the real module is replaced by the test harness and the cycle is never evaluated.
 
 **What the smoke-test step must do:**
 1. Start `npm run dev` on a free port (`PORT=3010 npm run dev` avoids colliding with parallel instances).
@@ -53,4 +53,4 @@ If the plan's "What already exists" or "Files touched" list mentions **any** of 
 - A dedicated task (not just a bullet) for the smoke step, with start/stop dev-server instructions and the exact prompt to trigger.
 - A note in the Error & Rescue Registry that explicitly lists "module-load cycle via chat-tools import" as a failure mode, with the dynamic-`await import()` pattern as the recovery.
 
-**Reference:** TDR-032 and the verification run in `features/task-runtime-stagent-mcp-injection.md`. Precedent: commits `092f925` → `2b5ae42` — the feature shipped with 34/34 passing unit tests and 0 TypeScript errors, yet crashed at the first real task execution because of a cycle introduced by a static import. Only the smoke test caught it.
+**Reference:** TDR-032 and the verification run in `features/task-runtime-ainative-mcp-injection.md`. Precedent: commits `092f925` → `2b5ae42` — the feature shipped with 34/34 passing unit tests and 0 TypeScript errors, yet crashed at the first real task execution because of a cycle introduced by a static import. Only the smoke test caught it.

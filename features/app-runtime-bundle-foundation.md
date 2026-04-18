@@ -11,7 +11,7 @@ dependencies: [database-schema]
 
 ## Description
 
-This feature established the core runtime infrastructure for the Stagent app
+This feature established the core runtime infrastructure for the ainative app
 marketplace. Shipped in commit `56e2839`, it introduced the `app_instances`
 database table, a builtin app registry with two reference apps (wealth-manager
 and growth-module), a full install/bootstrap/enable/disable/uninstall lifecycle
@@ -37,7 +37,7 @@ groundwork for the marketplace trust ladder and distribution channels.
 
 ## User Story
 
-As a Stagent user, I want to browse a marketplace of pre-built apps, install
+As a ainative user, I want to browse a marketplace of pre-built apps, install
 them with one click, and have them appear in my sidebar as fully functional
 workspaces with tables, schedules, and agent profiles — so I can get
 productive in a new domain without manual setup.
