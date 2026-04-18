@@ -44,7 +44,7 @@ import { TrustTierBadge } from "@/components/shared/trust-tier-badge";
 import { UnreadBadge } from "@/components/notifications/unread-badge";
 import { UpgradeBadge } from "@/components/instance/upgrade-badge";
 import { AuthStatusDot } from "@/components/settings/auth-status-dot";
-import { AinativeLogo } from "@/components/shared/stagent-logo";
+import { AinativeLogo } from "@/components/shared/ainative-logo";
 import { WorkspaceIndicator } from "@/components/shared/workspace-indicator";
 
 interface NavItem {
