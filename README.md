@@ -387,7 +387,7 @@ Configuration hub with provider-aware sections: Claude authentication (API key o
 The `npx ainative-business` entry point boots a Next.js server from the published npm package. It is built from `bin/cli.ts` into `dist/cli.js` using tsup, and serves as the primary distribution channel — no clone required.
 
 #### Database
-SQLite with WAL mode via better-sqlite3 + Drizzle ORM. 27+ tables including core tables: `projects`, `tasks`, `workflows`, `agent_logs`, `notifications`, `documents`, `schedules`, `settings`, `learned_context`, `usage_ledger`, `conversations`, `chat_messages`, `environments`, `environment_configs`. Self-healing bootstrap — tables are created on startup if missing.
+SQLite with WAL mode via better-sqlite3 + Drizzle ORM. <!-- STAT:dbTables -->45<!-- /STAT --> tables including core tables: `projects`, `tasks`, `workflows`, `agent_logs`, `notifications`, `documents`, `schedules`, `settings`, `learned_context`, `usage_ledger`, `conversations`, `chat_messages`, `environments`, `environment_configs`. Self-healing bootstrap — tables are created on startup if missing.
 
 #### Command Palette
 Global `⌘K` command palette for fast navigation and search across tasks, projects, workflows, and settings. Recent items, fuzzy search, and keyboard-driven navigation.
@@ -486,7 +486,7 @@ src/
     └── utils/            # Shared helpers
 ```
 
-### API Endpoints (58 routes)
+### API Endpoints (160 routes)
 
 | Domain | Endpoint | Method | Purpose |
 |--------|----------|--------|---------|
