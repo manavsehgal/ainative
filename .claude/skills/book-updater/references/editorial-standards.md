@@ -1,6 +1,6 @@
-# AI Native Book — Editorial Standards Reference
+# AI Native Business Book — Editorial Standards Reference
 
-This document captures the full editorial standards, conventions, and patterns established across 12 chapters and 33,600+ words of the AI Native book. It serves as the definitive reference for maintaining consistency during chapter updates.
+This document captures the full editorial standards, conventions, and patterns established across 12 chapters and 33,600+ words of the AI Native Business book. It serves as the definitive reference for maintaining consistency during chapter updates.
 
 ## Table of Contents
 

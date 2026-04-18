@@ -1,11 +1,11 @@
 ---
 name: book-updater
-description: Update the AI Native book chapters when dependencies change — ai-native-notes, features, Stagent API (schema, profiles, workflows), or source code. Detects what changed, regenerates affected chapters while preserving editorial standards, and syncs to the stagent.io website. Use this skill whenever the user says "update the book", "regenerate chapters", "book is stale", "sync book content", "refresh book chapters", "update book from notes", "book needs updating", or when ai-native-notes, features, schema, profiles, or API code has changed and the book should reflect those changes. Also trigger after adding new case studies, research notes, or Situational Awareness content.
+description: Update the AI Native Business book chapters when dependencies change — ai-native-notes, features, Stagent API (schema, profiles, workflows), or source code. Detects what changed, regenerates affected chapters while preserving editorial standards, and syncs to the stagent.io website. Use this skill whenever the user says "update the book", "regenerate chapters", "book is stale", "sync book content", "refresh book chapters", "update book from notes", "book needs updating", or when ai-native-notes, features, schema, profiles, or API code has changed and the book should reflect those changes. Also trigger after adding new case studies, research notes, or Situational Awareness content.
 ---
 
 # Book Updater Skill
 
-Update AI Native book chapters when their upstream dependencies change, then propagate to the stagent.io website.
+Update AI Native Business book chapters when their upstream dependencies change, then propagate to the stagent.io website.
 
 ## Book Stats (keep current)
 
