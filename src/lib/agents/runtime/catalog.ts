@@ -71,6 +71,17 @@ export interface RuntimeModelConfig {
   default: string;
   /** All supported model IDs for this runtime */
   supported: string[];
+  /**
+   * Tier aliases — purpose-labelled picks within this runtime's supported set.
+   * Routing recommendations resolve via these so rotating a model ID in the
+   * catalog automatically flows into every consumer (task runtime model,
+   * chat default model, banner display).
+   */
+  tiers?: {
+    fast?: string;
+    balanced?: string;
+    quality?: string;
+  };
 }
 
 export interface RuntimeCatalogEntry {
@@ -116,6 +127,7 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
     models: {
       default: "sonnet",
       supported: ["haiku", "sonnet", "opus"],
+      tiers: { fast: "haiku", balanced: "sonnet", quality: "opus" },
     },
   },
   "openai-codex-app-server": {
@@ -149,6 +161,7 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
     models: {
       default: "gpt-5.4",
       supported: ["gpt-5.4", "gpt-5.4-mini", "gpt-5.3-codex"],
+      tiers: { fast: "gpt-5.4-mini", balanced: "gpt-5.3-codex", quality: "gpt-5.4" },
     },
   },
   "anthropic-direct": {
@@ -184,6 +197,11 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
     models: {
       default: "claude-sonnet-4-20250514",
       supported: ["claude-haiku-4-5-20251001", "claude-sonnet-4-20250514", "claude-opus-4-20250514"],
+      tiers: {
+        fast: "claude-haiku-4-5-20251001",
+        balanced: "claude-sonnet-4-20250514",
+        quality: "claude-opus-4-20250514",
+      },
     },
   },
   "openai-direct": {
@@ -219,6 +237,7 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
     models: {
       default: "gpt-4.1",
       supported: ["gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano"],
+      tiers: { fast: "gpt-4.1-nano", balanced: "gpt-4.1-mini", quality: "gpt-4.1" },
     },
   },
   ollama: {

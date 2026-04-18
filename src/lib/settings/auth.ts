@@ -45,9 +45,14 @@ export async function getAuthSettings(): Promise<AuthSettings> {
 
 /**
  * Save auth settings. Encrypts API key before storing.
+ *
+ * All fields are optional — callers may supply any subset of
+ * { method, apiKey, model } and only the provided fields are written.
  */
 export async function setAuthSettings(input: UpdateAuthSettingsInput): Promise<void> {
-  await setSetting(SETTINGS_KEYS.AUTH_METHOD, input.method);
+  if (input.method !== undefined) {
+    await setSetting(SETTINGS_KEYS.AUTH_METHOD, input.method);
+  }
 
   if (input.apiKey) {
     await setSetting(SETTINGS_KEYS.AUTH_API_KEY, encrypt(input.apiKey));
@@ -60,6 +65,10 @@ export async function setAuthSettings(input: UpdateAuthSettingsInput): Promise<v
         .where(eq(settings.key, SETTINGS_KEYS.AUTH_API_KEY));
     }
     await setSetting(SETTINGS_KEYS.AUTH_API_KEY_SOURCE, "oauth");
+  }
+
+  if (input.model !== undefined) {
+    await setSetting(SETTINGS_KEYS.ANTHROPIC_DIRECT_MODEL, input.model);
   }
 }
 

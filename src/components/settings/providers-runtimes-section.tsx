@@ -1,8 +1,24 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { ChevronDown, ChevronRight, Network, Zap, DollarSign, Crown, Hand } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Network,
+  Zap,
+  DollarSign,
+  Crown,
+  Hand,
+  Key,
+  Shield,
+  Cpu,
+} from "lucide-react";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import {
+  recommendForRouting,
+  type RoutingRecommendation,
+} from "@/lib/settings/routing-recommendation";
 import {
   Card,
   CardContent,
@@ -35,7 +51,15 @@ interface ProviderState {
   rateLimits?: OpenAIRateLimitInfo | null;
   login?: OpenAILoginState;
   dualBilling: boolean;
+  directModel?: string | null;
   runtimes: RuntimeSetupState[];
+}
+
+interface OllamaState {
+  configured: boolean;
+  connected: boolean;
+  baseUrl: string;
+  defaultModel: string;
 }
 
 interface ProvidersPayload {
@@ -43,6 +67,8 @@ interface ProvidersPayload {
     anthropic: ProviderState;
     openai: ProviderState;
   };
+  ollama?: OllamaState;
+  chatDefaultModel?: string | null;
   routingPreference: RoutingPreference;
   configuredProviderCount: number;
 }
@@ -58,36 +84,35 @@ const ROUTING_OPTIONS: {
   {
     value: "latency",
     label: "Latency",
-    description: "Prefer direct API runtimes for faster start and response times.",
+    description: "Fastest response via direct APIs.",
     icon: Zap,
   },
   {
     value: "cost",
     label: "Cost",
-    description: "Prefer direct API runtimes for lower per-token cost.",
+    description: "Lowest per-token spend.",
     icon: DollarSign,
   },
   {
     value: "quality",
     label: "Quality",
-    description: "Prefer SDK runtimes (Claude Code, Codex) for richer tool use and reliability.",
+    description: "Richest tool use via SDKs.",
     icon: Crown,
   },
   {
     value: "manual",
     label: "Manual",
-    description: "Always use the default runtime. Override per task in the create panel.",
+    description: "Stay on the default runtime.",
     icon: Hand,
   },
 ];
 
-// ── Routing → auth recommendation ───────────────────────────────────
+// ── Recommendation chip metadata ────────────────────────────────────
 
-function recommendedAuthForRouting(pref: RoutingPreference): AuthMethod | null {
-  if (pref === "latency" || pref === "cost") return "api_key";
-  if (pref === "quality") return "oauth";
-  return null; // "manual" has no recommendation
-}
+const AUTH_CHIP_META: Record<AuthMethod, { icon: typeof Key; label: string }> = {
+  api_key: { icon: Key, label: "API key" },
+  oauth: { icon: Shield, label: "Subscription" },
+};
 
 // ── Provider row ─────────────────────────────────────────────────────
 
@@ -262,7 +287,10 @@ export function ProvidersAndRuntimesSection() {
   const [data, setData] = useState<ProvidersPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [anthropicOpen, setAnthropicOpen] = useState(false);
+  const [openAIOpen, setOpenAIOpen] = useState(false);
   const [openAILoginState, setOpenAILoginState] = useState<OpenAILoginState | null>(null);
+  const anthropicRowRef = useRef<HTMLDivElement | null>(null);
+  const openaiRowRef = useRef<HTMLDivElement | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -286,9 +314,24 @@ export function ProvidersAndRuntimesSection() {
       if (none || !data.providers.anthropic.configured) {
         setAnthropicOpen(true);
       }
-      setOpenAILoginState(data.providers.openai.login ?? null);
+      const openai = data.providers.openai;
+      const openaiNeedsAttention =
+        none ||
+        !openai.configured ||
+        ((openai.authMethod ?? "api_key") === "oauth" &&
+          !(openai.oauthConnected ?? false));
+      if (openaiNeedsAttention) {
+        setOpenAIOpen(true);
+      }
+      setOpenAILoginState(openai.login ?? null);
     }
-  }, [data?.configuredProviderCount, data?.providers.anthropic.configured]);
+  }, [
+    data?.configuredProviderCount,
+    data?.providers.anthropic.configured,
+    data?.providers.openai.configured,
+    data?.providers.openai.authMethod,
+    data?.providers.openai.oauthConnected,
+  ]);
 
   // ── Anthropic auth handlers ──────────────────────────────────────
 
@@ -359,27 +402,140 @@ export function ProvidersAndRuntimesSection() {
     return result;
   }
 
-  // ── Routing preference handler ───────────────────────────────────
+  // ── Routing preference handler (cascade) ─────────────────────────
 
   async function handleRoutingChange(value: RoutingPreference) {
-    const res = await fetch("/api/settings/routing", {
+    const routingRes = await fetch("/api/settings/routing", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ preference: value }),
     });
-    if (res.ok) {
-      setData((prev) => (prev ? { ...prev, routingPreference: value } : prev));
-      toast.success(`Routing preference set to ${value}`);
+    if (!routingRes.ok) {
+      toast.error("Could not save routing preference");
+      return;
+    }
+    setData((prev) => (prev ? { ...prev, routingPreference: value } : prev));
 
-      // Reactive: switch Anthropic auth method and expand the row
-      const rec = recommendedAuthForRouting(value);
-      if (rec) {
-        setAnthropicOpen(true);
-        const current = data?.providers.anthropic.authMethod ?? "api_key";
-        if (current !== rec) {
-          handleAnthropicMethodChange(rec);
-        }
-      }
+    const ollama = data?.ollama;
+    const rec = recommendForRouting(value, {
+      ollamaAvailable: ollama?.connected ?? false,
+      ollamaDefaultModel: ollama?.defaultModel,
+    });
+
+    if (!rec) {
+      toast.success("Manual routing — provider configuration unchanged");
+      return;
+    }
+
+    // Expand provider rows so users see the effect
+    setAnthropicOpen(true);
+    setOpenAIOpen(true);
+
+    const currentAnthropic = data?.providers.anthropic;
+    const currentOpenai = data?.providers.openai;
+
+    const anthropicBody: Record<string, string> = {};
+    if ((currentAnthropic?.authMethod ?? "api_key") !== rec.anthropic.auth) {
+      anthropicBody.method = rec.anthropic.auth;
+    }
+    // Only stamp anthropic_direct_model when the recommendation's runtime is
+    // actually anthropic-direct (the only consumer of that setting). For Quality
+    // which picks claude-code, the SDK uses its own model resolution.
+    if (
+      rec.anthropic.runtimeId === "anthropic-direct" &&
+      (currentAnthropic?.directModel ?? null) !== rec.anthropic.model
+    ) {
+      anthropicBody.model = rec.anthropic.model;
+    }
+
+    const openaiBody: Record<string, string> = {};
+    if ((currentOpenai?.authMethod ?? "api_key") !== rec.openai.auth) {
+      openaiBody.method = rec.openai.auth;
+    }
+    // Same gating: openai_direct_model is only consumed by openai-direct.
+    if (
+      rec.openai.runtimeId === "openai-direct" &&
+      (currentOpenai?.directModel ?? null) !== rec.openai.model
+    ) {
+      openaiBody.model = rec.openai.model;
+    }
+
+    const tasks: Array<{ label: string; promise: Promise<Response> }> = [];
+
+    if (Object.keys(anthropicBody).length > 0) {
+      tasks.push({
+        label: "Anthropic",
+        promise: fetch("/api/settings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(anthropicBody),
+        }),
+      });
+    }
+
+    if (Object.keys(openaiBody).length > 0) {
+      tasks.push({
+        label: "OpenAI",
+        promise: fetch("/api/settings/openai", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(openaiBody),
+        }),
+      });
+    }
+
+    if (rec.useOllama && rec.ollamaModel && rec.ollamaModel !== ollama?.defaultModel) {
+      tasks.push({
+        label: "Ollama",
+        promise: fetch("/api/settings/ollama", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ defaultModel: rec.ollamaModel }),
+        }),
+      });
+    }
+
+    if (rec.chatModel && rec.chatModel !== (data?.chatDefaultModel ?? null)) {
+      tasks.push({
+        label: "Chat default",
+        promise: fetch("/api/settings/chat", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ defaultModel: rec.chatModel }),
+        }),
+      });
+    }
+
+    if (tasks.length === 0) {
+      toast.success(`Routing set to ${value} — already matches the recommendation`);
+      fetchData();
+      return;
+    }
+
+    const results = await Promise.allSettled(tasks.map((t) => t.promise));
+    const failed: string[] = [];
+    results.forEach((r, i) => {
+      if (r.status === "rejected" || !r.value.ok) failed.push(tasks[i].label);
+    });
+
+    if (failed.length === 0) {
+      toast.success(`Routing set to ${value} — updated ${tasks.map((t) => t.label).join(", ")}`);
+    } else if (failed.length === tasks.length) {
+      toast.error(`Could not update provider configuration (${failed.join(", ")})`);
+    } else {
+      toast.warning(`Updated with errors — failed: ${failed.join(", ")}`);
+    }
+
+    fetchData();
+  }
+
+  function jumpToProvider(provider: "anthropic" | "openai") {
+    if (provider === "anthropic") {
+      setAnthropicOpen(true);
+      anthropicRowRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {
+      setOpenAIOpen(true);
+      openaiRowRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }
 
@@ -405,7 +561,15 @@ export function ProvidersAndRuntimesSection() {
     login: openAILoginState ?? providers.openai.login,
   };
   const noneConfigured = configuredProviderCount === 0;
-  const recommendedAuth = recommendedAuthForRouting(routingPreference);
+  const ollamaState = data.ollama;
+  const liveRecommendation: RoutingRecommendation | null = recommendForRouting(
+    routingPreference,
+    {
+      ollamaAvailable: ollamaState?.connected ?? false,
+      ollamaDefaultModel: ollamaState?.defaultModel,
+    },
+  );
+  const recommendedAuth = liveRecommendation?.anthropic.auth ?? null;
 
   return (
     <Card className="surface-card">
@@ -426,73 +590,82 @@ export function ProvidersAndRuntimesSection() {
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {/* Task routing — always visible */}
-        <div className="space-y-3">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Task routing
-            </p>
-            <p className="text-sm text-muted-foreground mt-1">
-              How should ainative choose a runtime when creating tasks?
+        {/* Task routing — bento: radios left (2x2 at lg), banner right.
+            Fixed min-height so radios and banner don't resize between
+            preferences. Value covers the tallest state (Cost+Ollama connected). */}
+        <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-stretch lg:min-h-[180px]">
+          <div className="flex flex-col gap-3 lg:h-full">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Task routing
+              </p>
+              <p className="mt-1 truncate text-sm text-muted-foreground" title="Pick how ainative selects a runtime per task">
+                Pick how ainative picks a runtime.
+              </p>
+            </div>
+
+            <RadioGroup
+              value={routingPreference}
+              onValueChange={(v) => handleRoutingChange(v as RoutingPreference)}
+              className="grid flex-1 grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2"
+            >
+              {ROUTING_OPTIONS.map((option) => {
+                const Icon = option.icon;
+                const isSelected = routingPreference === option.value;
+                return (
+                  <Label
+                    key={option.value}
+                    htmlFor={`routing-${option.value}`}
+                    className={`flex cursor-pointer items-center gap-2 rounded-xl border-2 px-3 py-2 transition-all hover:bg-accent/30 ${
+                      isSelected
+                        ? "border-primary bg-primary/5"
+                        : "border-border/40"
+                    }`}
+                  >
+                    <RadioGroupItem
+                      value={option.value}
+                      id={`routing-${option.value}`}
+                      className="sr-only"
+                    />
+                    <Icon
+                      className={`h-4 w-4 shrink-0 ${
+                        isSelected ? "text-primary" : "text-muted-foreground"
+                      }`}
+                    />
+                    <span
+                      className={`truncate text-sm font-medium ${
+                        isSelected ? "text-foreground" : "text-muted-foreground"
+                      }`}
+                    >
+                      {option.label}
+                    </span>
+                  </Label>
+                );
+              })}
+            </RadioGroup>
+
+            <p
+              className="truncate text-xs text-muted-foreground"
+              title={ROUTING_OPTIONS.find((o) => o.value === routingPreference)?.description}
+            >
+              {ROUTING_OPTIONS.find((o) => o.value === routingPreference)?.description}
             </p>
           </div>
 
-          <RadioGroup
-            value={routingPreference}
-            onValueChange={(v) => handleRoutingChange(v as RoutingPreference)}
-            className="grid grid-cols-2 gap-2 sm:grid-cols-4"
-          >
-            {ROUTING_OPTIONS.map((option) => {
-              const Icon = option.icon;
-              const isSelected = routingPreference === option.value;
-              return (
-                <Label
-                  key={option.value}
-                  htmlFor={`routing-${option.value}`}
-                  className={`flex cursor-pointer flex-col items-center gap-1.5 rounded-xl border-2 p-3 text-center transition-all hover:bg-accent/30 ${
-                    isSelected
-                      ? "border-primary bg-primary/5"
-                      : "border-border/40"
-                  }`}
-                >
-                  <RadioGroupItem
-                    value={option.value}
-                    id={`routing-${option.value}`}
-                    className="sr-only"
-                  />
-                  <Icon
-                    className={`h-4 w-4 ${
-                      isSelected ? "text-primary" : "text-muted-foreground"
-                    }`}
-                  />
-                  <span
-                    className={`text-sm font-medium ${
-                      isSelected ? "text-foreground" : "text-muted-foreground"
-                    }`}
-                  >
-                    {option.label}
-                  </span>
-                </Label>
-              );
-            })}
-          </RadioGroup>
-
-          <p className="text-xs text-muted-foreground">
-            {ROUTING_OPTIONS.find((o) => o.value === routingPreference)?.description}
-          </p>
-
-          {recommendedAuth && (
-            <p className="text-xs text-primary/70">
-              {recommendedAuth === "api_key"
-                ? "This preference works best with an API key configured below."
-                : "This preference works well with subscription-backed auth configured below."}
-            </p>
-          )}
+          <div className="min-w-0">
+            <RecommendationBanner
+              preference={routingPreference}
+              recommendation={liveRecommendation}
+              ollama={ollamaState ?? null}
+              onConfigure={jumpToProvider}
+            />
+          </div>
         </div>
 
         <Separator />
 
         {/* Anthropic provider — controlled open state */}
+        <div ref={anthropicRowRef}>
         <ProviderRow
           name="Anthropic"
           oauthLabel="Claude Max/Pro"
@@ -531,8 +704,10 @@ export function ProvidersAndRuntimesSection() {
             </p>
           )}
         </ProviderRow>
+        </div>
 
-        {/* OpenAI provider — uncontrolled */}
+        {/* OpenAI provider — controlled open state */}
+        <div ref={openaiRowRef}>
         <ProviderRow
           name="OpenAI"
           oauthLabel="ChatGPT"
@@ -543,6 +718,8 @@ export function ProvidersAndRuntimesSection() {
             ((openAIProvider.authMethod ?? "api_key") === "oauth" &&
               !(openAIProvider.oauthConnected ?? false))
           }
+          open={openAIOpen}
+          onOpenChange={setOpenAIOpen}
         >
           <AuthMethodSelector
             value={openAIProvider.authMethod ?? "api_key"}
@@ -612,7 +789,150 @@ export function ProvidersAndRuntimesSection() {
             />
           </div>
         </ProviderRow>
+        </div>
       </CardContent>
     </Card>
+  );
+}
+
+// ── Recommendation banner ──────────────────────────────────────────
+
+function RecommendationBanner({
+  preference,
+  recommendation,
+  ollama,
+  onConfigure,
+}: {
+  preference: RoutingPreference;
+  recommendation: RoutingRecommendation | null;
+  ollama: OllamaState | null;
+  onConfigure: (provider: "anthropic" | "openai") => void;
+}) {
+  if (!recommendation) {
+    return (
+      <div className="h-full rounded-xl border border-primary/20 bg-primary/5 px-3 py-3">
+        <p className="text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">Manual routing —</span>{" "}
+          provider configuration stays as is. Pick a preference to get per-provider recommendations.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      data-testid="routing-recommendation"
+      className="h-full rounded-xl border border-primary/20 bg-primary/5 px-3 py-3 space-y-2"
+    >
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        Recommended for{" "}
+        <span className="text-foreground normal-case">&quot;{preference}&quot;</span>
+      </p>
+
+      {recommendation.useOllama && recommendation.ollamaModel && ollama?.connected && (
+        <RecommendationRow
+          name="Ollama"
+          badge={
+            <span className="inline-flex min-w-0 max-w-[260px] shrink items-center gap-1 truncate rounded-md border border-border/60 bg-background px-2 py-0.5 text-xs">
+              <Cpu className="h-3 w-3 shrink-0" />
+              <span className="truncate">{recommendation.ollamaModel} · local</span>
+            </span>
+          }
+          hint="connected"
+          configureLabel={null}
+          onConfigure={null}
+        />
+      )}
+
+      <RecommendationRow
+        name="Anthropic"
+        badge={<AuthModelPair auth={recommendation.anthropic.auth} model={recommendation.anthropic.model} />}
+        hint={null}
+        configureLabel="Configure"
+        onConfigure={() => onConfigure("anthropic")}
+      />
+
+      <RecommendationRow
+        name="OpenAI"
+        badge={<AuthModelPair auth={recommendation.openai.auth} model={recommendation.openai.model} />}
+        hint={null}
+        configureLabel="Configure"
+        onConfigure={() => onConfigure("openai")}
+      />
+
+      <RecommendationRow
+        name="Chat default"
+        badge={
+          <Badge
+            variant="outline"
+            className="min-w-0 max-w-[220px] truncate font-mono text-[11px] font-normal"
+            title={recommendation.chatModel}
+          >
+            {recommendation.chatModel}
+          </Badge>
+        }
+        hint="chat pane"
+        configureLabel={null}
+        onConfigure={null}
+      />
+
+      <p className="text-xs text-muted-foreground">You can override any of these in the provider rows or chat model selector.</p>
+    </div>
+  );
+}
+
+function RecommendationRow({
+  name,
+  badge,
+  hint,
+  configureLabel,
+  onConfigure,
+}: {
+  name: string;
+  badge: React.ReactNode;
+  hint: string | null;
+  configureLabel: string | null;
+  onConfigure: (() => void) | null;
+}) {
+  return (
+    <div className="flex min-w-0 items-center gap-2 text-sm">
+      <span className="w-24 shrink-0 truncate font-medium">{name}</span>
+      <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
+        {badge}
+        {hint && (
+          <span className="shrink-0 text-xs text-muted-foreground">· {hint}</span>
+        )}
+      </div>
+      {configureLabel && onConfigure && (
+        <button
+          type="button"
+          onClick={onConfigure}
+          className="ml-auto inline-flex shrink-0 items-center gap-1 text-xs font-medium text-primary hover:underline"
+        >
+          {configureLabel}
+          <ChevronDown className="h-3 w-3" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function AuthModelPair({ auth, model }: { auth: AuthMethod; model: string }) {
+  const meta = AUTH_CHIP_META[auth];
+  const AuthIcon = meta.icon;
+  return (
+    <>
+      <Badge variant="outline" className="shrink-0 gap-1 font-normal">
+        <AuthIcon className="h-3 w-3" />
+        {meta.label}
+      </Badge>
+      <Badge
+        variant="outline"
+        className="min-w-0 max-w-[220px] truncate font-mono text-[11px] font-normal"
+        title={model}
+      >
+        {model}
+      </Badge>
+    </>
   );
 }

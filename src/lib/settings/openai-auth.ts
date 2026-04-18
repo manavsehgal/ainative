@@ -36,8 +36,9 @@ export interface OpenAIAuthSettings {
 }
 
 export interface OpenAIAuthConfigInput {
-  method: AuthMethod;
+  method?: AuthMethod;
   apiKey?: string;
+  model?: string;
 }
 
 interface PersistedOpenAIAccountPayload {
@@ -99,7 +100,9 @@ export async function getOpenAIAuthSettings(): Promise<OpenAIAuthSettings> {
 export async function setOpenAIAuthSettings(
   input: OpenAIAuthConfigInput
 ): Promise<void> {
-  await setSetting(SETTINGS_KEYS.OPENAI_AUTH_METHOD, input.method);
+  if (input.method !== undefined) {
+    await setSetting(SETTINGS_KEYS.OPENAI_AUTH_METHOD, input.method);
+  }
 
   if (input.apiKey) {
     await setSetting(
@@ -107,6 +110,10 @@ export async function setOpenAIAuthSettings(
       encrypt(input.apiKey)
     );
     await setSetting(SETTINGS_KEYS.OPENAI_AUTH_API_KEY_SOURCE, "db");
+  }
+
+  if (input.model !== undefined) {
+    await setSetting(SETTINGS_KEYS.OPENAI_DIRECT_MODEL, input.model);
   }
 }
 

@@ -2,21 +2,23 @@ import { z } from "zod";
 import { SUPPORTED_AGENT_RUNTIMES } from "@/lib/agents/runtime/catalog";
 
 export const updateAuthSettingsSchema = z.object({
-  method: z.enum(["api_key", "oauth"]),
+  method: z.enum(["api_key", "oauth"]).optional(),
   apiKey: z
     .string()
     .startsWith("sk-ant-", "API key must start with sk-ant-")
     .optional(),
+  model: z.string().min(1).optional(),
 });
 
 export type UpdateAuthSettingsInput = z.infer<typeof updateAuthSettingsSchema>;
 
 export const updateOpenAISettingsSchema = z.object({
-  method: z.enum(["api_key", "oauth"]),
+  method: z.enum(["api_key", "oauth"]).optional(),
   apiKey: z
     .string()
     .startsWith("sk-", "API key must start with sk-")
     .optional(),
+  model: z.string().min(1).optional(),
 });
 
 export type UpdateOpenAISettingsInput = z.infer<typeof updateOpenAISettingsSchema>;
