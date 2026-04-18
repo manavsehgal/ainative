@@ -20,6 +20,49 @@ function initRepo(dir: string) {
   runGit(["commit", "-m", "initial"], dir);
 }
 
+/**
+ * Wraps the existing runGit() helper to capture stdout. The base runGit
+ * uses stdio: "pipe" without an encoding so it returns nothing — this
+ * variant captures the trimmed string output for SHA reads.
+ */
+function getGit(args: string[], cwd: string): string {
+  return execFileSync("git", args, { cwd, encoding: "utf-8" }).trim();
+}
+
+/**
+ * Creates a bare clone of `dir` as the `origin` remote and fetches it.
+ * Returns the bare-clone path so callers can advance origin/main if needed.
+ */
+function setupOriginRemote(dir: string, bareDirParent: string): string {
+  const bareDir = mkdtempSync(join(bareDirParent, "stagent-bootstrap-bare-"));
+  rmSync(bareDir, { recursive: true, force: true });
+  runGit(["clone", "--bare", dir, bareDir], dir);
+  runGit(["remote", "add", "origin", bareDir], dir);
+  runGit(["fetch", "origin", "main"], dir);
+  return bareDir;
+}
+
+/**
+ * Advances origin/main by adding a commit in the bare remote, then
+ * re-fetches into `dir`. Returns the new origin/main SHA.
+ */
+function advanceOriginMain(dir: string, bareDir: string, message: string): string {
+  const workDir = mkdtempSync(join(tmpdir(), "stagent-bootstrap-origin-work-"));
+  try {
+    runGit(["clone", bareDir, workDir], workDir);
+    runGit(["config", "user.email", "test@example.com"], workDir);
+    runGit(["config", "user.name", "Test"], workDir);
+    writeFileSync(join(workDir, `${Date.now()}.txt`), message);
+    runGit(["add", "-A"], workDir);
+    runGit(["commit", "-m", message], workDir);
+    runGit(["push", "origin", "main"], workDir);
+    runGit(["fetch", "origin", "main"], dir);
+    return getGit(["rev-parse", "refs/remotes/origin/main"], dir);
+  } finally {
+    rmSync(workDir, { recursive: true, force: true });
+  }
+}
+
 beforeEach(() => {
   tempDir = mkdtempSync(join(tmpdir(), "stagent-bootstrap-repo-"));
   dataDir = mkdtempSync(join(tmpdir(), "stagent-bootstrap-data-"));
