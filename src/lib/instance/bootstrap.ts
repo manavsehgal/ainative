@@ -70,6 +70,49 @@ export function ensureLocalBranchShim(git: GitOps): EnsureStepResult {
   }
 }
 
+const MAIN_BRANCH_NAME = "main";
+
+/**
+ * Phase A step 2b: align refs/heads/main with origin/main on domain clones.
+ *
+ * On a domain clone (PRIVATE-INSTANCES.md §1.7), the user's working branch
+ * is `<domain>-mgr` and `main` is a tracking shim. After an upstream history
+ * rewrite (e.g. the 2026-04-17 navam-io → manavsehgal migration) `main` can
+ * orphan and accumulate hundreds of commits of phantom divergence — which
+ * the upgrade-detection poller renders as a "500+ updates" badge.
+ *
+ * Behavior matrix is identical to ensureLocalBranchShim, with one extra
+ * skip path: if local main does not exist at all, do nothing
+ * ("main_branch_absent") — bootstrap does not invent branches the user
+ * deleted on purpose.
+ */
+export function ensureMainShim(git: GitOps): EnsureStepResult {
+  const upstream = git.revParse(SHIM_TRACK_REF);
+  if (!upstream) {
+    return { step: "main-branch", status: "skipped", reason: "no_upstream_main" };
+  }
+  const existing = git.revParse(`refs/heads/${MAIN_BRANCH_NAME}`);
+  if (existing === null) {
+    return { step: "main-branch", status: "skipped", reason: "main_branch_absent" };
+  }
+  if (existing === upstream) {
+    return { step: "main-branch", status: "skipped", reason: "shim_aligned" };
+  }
+  if (git.getCurrentBranch() === MAIN_BRANCH_NAME) {
+    return { step: "main-branch", status: "skipped", reason: "main_is_current_branch" };
+  }
+  try {
+    git.createBranchAt(MAIN_BRANCH_NAME, SHIM_TRACK_REF);
+    return { step: "main-branch", status: "ok", reason: "repointed" };
+  } catch (err) {
+    return {
+      step: "main-branch",
+      status: "failed",
+      reason: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+
 export const STAGENT_HOOK_VERSION = "1.0.0";
 
 /**

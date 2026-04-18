@@ -191,6 +191,95 @@ describe("ensureLocalBranchShim (Phase A)", () => {
   });
 });
 
+describe("ensureMainShim (Phase A — domain clones only)", () => {
+  let bareDir: string;
+
+  beforeEach(() => {
+    bareDir = setupOriginRemote(tempDir, tmpdir());
+  });
+
+  afterEach(() => {
+    rmSync(bareDir, { recursive: true, force: true });
+  });
+
+  it("repoints local main when it has drifted from origin/main", async () => {
+    const { createGitOps } = await import("../git-ops");
+    const { ensureMainShim } = await import("../bootstrap");
+    const ops = createGitOps(tempDir);
+
+    // Simulate a domain-clone setup: rename main → wealth-mgr, leave a dead
+    // main shim at the old SHA, then advance origin so main is orphaned.
+    runGit(["branch", "-m", "main", "wealth-mgr"], tempDir);
+    runGit(["branch", "main", "wealth-mgr"], tempDir);
+    const newUpstream = advanceOriginMain(tempDir, bareDir, "upstream advances");
+
+    const mainBefore = getGit(["rev-parse", "main"], tempDir);
+    expect(mainBefore).not.toBe(newUpstream);
+
+    const result = ensureMainShim(ops);
+
+    expect(result.status).toBe("ok");
+    expect(result.reason).toBe("repointed");
+    expect(getGit(["rev-parse", "main"], tempDir)).toBe(newUpstream);
+  });
+
+  it("is a no-op when main is already aligned with origin/main", async () => {
+    const { createGitOps } = await import("../git-ops");
+    const { ensureMainShim } = await import("../bootstrap");
+    const ops = createGitOps(tempDir);
+
+    runGit(["checkout", "-b", "wealth-mgr"], tempDir);
+
+    const result = ensureMainShim(ops);
+
+    expect(result.status).toBe("skipped");
+    expect(result.reason).toBe("shim_aligned");
+  });
+
+  it("skips when main is the currently checked out branch", async () => {
+    const { createGitOps } = await import("../git-ops");
+    const { ensureMainShim } = await import("../bootstrap");
+    const ops = createGitOps(tempDir);
+
+    advanceOriginMain(tempDir, bareDir, "upstream advances while user on main");
+    expect(ops.getCurrentBranch()).toBe("main");
+
+    const result = ensureMainShim(ops);
+
+    expect(result.status).toBe("skipped");
+    expect(result.reason).toBe("main_is_current_branch");
+  });
+
+  it("skips when origin/main is not yet fetched", async () => {
+    const { createGitOps } = await import("../git-ops");
+    const { ensureMainShim } = await import("../bootstrap");
+
+    runGit(["checkout", "-b", "wealth-mgr"], tempDir);
+    runGit(["remote", "remove", "origin"], tempDir);
+    rmSync(join(tempDir, ".git", "refs", "remotes", "origin"), { recursive: true, force: true });
+
+    const ops = createGitOps(tempDir);
+    const result = ensureMainShim(ops);
+
+    expect(result.status).toBe("skipped");
+    expect(result.reason).toBe("no_upstream_main");
+  });
+
+  it("skips when local main does not exist", async () => {
+    const { createGitOps } = await import("../git-ops");
+    const { ensureMainShim } = await import("../bootstrap");
+    const ops = createGitOps(tempDir);
+
+    runGit(["checkout", "-b", "wealth-mgr"], tempDir);
+    runGit(["branch", "-D", "main"], tempDir);
+
+    const result = ensureMainShim(ops);
+
+    expect(result.status).toBe("skipped");
+    expect(result.reason).toBe("main_branch_absent");
+  });
+});
+
 describe("ensurePrePushHook (Phase B)", () => {
   it("writes a pre-push hook with the STAGENT_HOOK_VERSION marker", async () => {
     const { createGitOps } = await import("../git-ops");
