@@ -301,6 +301,20 @@ export async function ensureInstance(cwd: string = process.cwd()): Promise<Ensur
     steps.push(ensureLocalBranchShim(git));
   }
 
+  // Phase A step 2b: main-branch shim (domain clones only).
+  // Domain clone = settings.instance.branchName != "main". On those clones,
+  // refs/heads/main is a tracking shim that bootstrap re-points to origin/main
+  // on every boot. On single-clone setups (branchName == "main"), skip — main
+  // IS the user's working branch.
+  const config = getInstanceConfig();
+  if (config && config.branchName !== "main") {
+    if (detectRebaseInProgress(cwd)) {
+      steps.push({ step: "main-branch", status: "skipped", reason: "rebase_in_progress" });
+    } else {
+      steps.push(ensureMainShim(git));
+    }
+  }
+
   // Resolve consent (stamps firstBootCompletedAt on first call, returns decision)
   const decision = await resolveConsentDecision();
 

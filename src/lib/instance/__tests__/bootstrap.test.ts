@@ -517,6 +517,56 @@ describe("ensureInstance orchestrator", () => {
     expect(guardrails.pushRemoteBlocked).toContain("local");
   });
 
+  it("runs ensureMainShim when branchName is not 'main' (domain clone)", async () => {
+    const bareDir = setupOriginRemote(tempDir, tmpdir());
+    try {
+      runGit(["branch", "-m", "main", "wealth-mgr"], tempDir);
+      runGit(["branch", "main", "wealth-mgr"], tempDir);
+      const newUpstream = advanceOriginMain(tempDir, bareDir, "upstream advances on domain clone");
+
+      const { setInstanceConfig } = await import("../settings");
+      await setInstanceConfig({
+        instanceId: "test-instance-id",
+        branchName: "wealth-mgr",
+        isPrivateInstance: true,
+        createdAt: Math.floor(Date.now() / 1000),
+      });
+
+      const { ensureInstance } = await import("../bootstrap");
+      const result = await ensureInstance(tempDir);
+
+      const mainStep = result.steps.find((s) => s.step === "main-branch");
+      expect(mainStep?.status).toBe("ok");
+      expect(mainStep?.reason).toBe("repointed");
+      expect(getGit(["rev-parse", "main"], tempDir)).toBe(newUpstream);
+    } finally {
+      rmSync(bareDir, { recursive: true, force: true });
+    }
+  });
+
+  it("does NOT run ensureMainShim when branchName is explicitly 'main'", async () => {
+    const bareDir = setupOriginRemote(tempDir, tmpdir());
+    try {
+      // Edge case: a user (or some future migration) has set branchName to
+      // "main" — treat them as a single-clone working directly on main, so
+      // skip the shim. (Default first-boot value is "local", which IS treated
+      // as a domain-style clone for shim purposes — the shim's safety guards
+      // make it a harmless no-op when the user happens to be on main.)
+      const { setInstanceConfig } = await import("../settings");
+      await setInstanceConfig({
+        instanceId: "test-instance-id",
+        branchName: "main",
+        isPrivateInstance: false,
+        createdAt: Math.floor(Date.now() / 1000),
+      });
+      const { ensureInstance } = await import("../bootstrap");
+      const result = await ensureInstance(tempDir);
+      expect(result.steps.map((s) => s.step)).not.toContain("main-branch");
+    } finally {
+      rmSync(bareDir, { recursive: true, force: true });
+    }
+  });
+
   // NOTE: We do not test "single-clone user (STAGENT_DATA_DIR equals default)" at the
   // orchestrator level here because vi.spyOn(os, "homedir") is not possible in ESM —
   // Node's os module exports are non-configurable and cannot be redefined (vitest throws
