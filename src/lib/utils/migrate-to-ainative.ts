@@ -18,6 +18,24 @@ export interface MigrationOptions {
   logger?: (msg: string) => void;
 }
 
+interface KeychainMigrateModule {
+  migrateKeychainService: (
+    oldName: string,
+    newName: string,
+    log: (msg: string) => void,
+  ) => Promise<boolean>;
+}
+
+function hasSqliteHeader(path: string): boolean {
+  const SQLITE_MAGIC = "SQLite format 3\0";
+  try {
+    const header = readFileSync(path, { encoding: null });
+    return header.length >= 16 && header.subarray(0, 16).toString("binary") === SQLITE_MAGIC;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Idempotent migration from ~/.stagent/ to ~/.ainative/. Safe to call on every boot.
  * Never throws — errors are collected in report.errors.
@@ -65,7 +83,9 @@ export async function migrateFromStagent(
     }
   }
 
-  // Step 2: rename DB files inside the new dir
+  // Step 2: rename DB files inside the new dir. If newDir exists from a
+  // partial prior run (e.g., failed cpSync cross-device), iteration here is
+  // safe — neither old nor new DB files may exist and the step becomes a no-op.
   if (existsSync(newDir)) {
     for (const suffix of ["", "-shm", "-wal"]) {
       const oldName = join(newDir, `stagent.db${suffix}`);
@@ -81,22 +101,15 @@ export async function migrateFromStagent(
     }
   }
 
-  // Step 3: SQL row migration
+  // Step 3: SQL row migration. Only open the DB if it begins with the
+  // SQLite magic header. Opening a non-SQLite file (e.g., a test fixture
+  // placeholder) would succeed initially, then fail on the first prepare(),
+  // and the close() in finally would silently delete co-located -shm/-wal.
   const dbPath = join(newDir, "ainative.db");
-  // Only open the DB if it begins with the SQLite magic header.
-  // Opening a non-SQLite file (e.g. a plain-text placeholder) would succeed
-  // initially, then fail on the first prepare(), and the close() in the
-  // finally block would silently delete any co-located -shm/-wal files.
-  const SQLITE_MAGIC = "SQLite format 3\0";
-  const isSqlite = (() => {
-    try {
-      const header = readFileSync(dbPath, { encoding: null });
-      return header.length >= 16 && header.subarray(0, 16).toString("binary") === SQLITE_MAGIC;
-    } catch {
-      return false;
-    }
-  })();
-  if (existsSync(dbPath) && isSqlite) {
+  if (existsSync(dbPath) && !hasSqliteHeader(dbPath)) {
+    log(`skipping SQL migration — ${dbPath} exists but lacks SQLite header`);
+  }
+  if (existsSync(dbPath) && hasSqliteHeader(dbPath)) {
     try {
       const db = new Database(dbPath);
       try {
@@ -162,10 +175,8 @@ export async function migrateFromStagent(
   if (process.platform === "darwin") {
     try {
       const keychainModule = "./keychain-migrate";
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      const mod = await import(/* @vite-ignore */ keychainModule);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-      report.keychainMigrated = await (mod as { migrateKeychainService: (a: string, b: string, log: (m: string) => void) => Promise<boolean> }).migrateKeychainService("stagent", "ainative", log);
+      const mod = (await import(/* @vite-ignore */ keychainModule)) as KeychainMigrateModule;
+      report.keychainMigrated = await mod.migrateKeychainService("stagent", "ainative", log);
     } catch (err) {
       report.errors.push(`keychain migration failed: ${String(err)}`);
     }
