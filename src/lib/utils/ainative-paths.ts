@@ -2,6 +2,8 @@ import { homedir } from "os";
 import { join } from "path";
 
 export function getAinativeDataDir(): string {
+  // STAGENT_DATA_DIR fallback is transitional for Phase 1 of the ainative rename,
+  // so existing dev-mode overrides still work while migration runs. Removed in Phase 2.
   return process.env.AINATIVE_DATA_DIR || process.env.STAGENT_DATA_DIR || join(homedir(), ".ainative");
 }
 
