@@ -91,6 +91,7 @@ Features that enhance the product but aren't essential for first use — homepag
 | [keyboard-shortcut-system](keyboard-shortcut-system.md)             | P2       | completed | app-shell, command-palette-enhancement                                                                   |
 | [workflow-ux-overhaul](workflow-ux-overhaul.md)                     | P1       | completed | workflow-engine, ai-assist-workflow-creation, agent-document-context, document-output-generation        |
 | [settings-interactive-controls](settings-interactive-controls.md)   | P2       | completed | —                                                                                                        |
+| [sidebar-ia-route-restructure](sidebar-ia-route-restructure.md)     | P1       | planned   | app-shell, task-board, homepage-dashboard, keyboard-shortcut-system, command-palette-enhancement         |
 
 ### Browser & Automation
 

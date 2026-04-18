@@ -1,6 +1,33 @@
 # Feature Changelog
 
-## 2026-04-17
+## 2026-04-18
+
+### Groomed — sidebar-ia-route-restructure
+
+New P1 post-MVP feature extracted from a live design session grounding IA fixes in `docs/why-ainative.md` positioning and the `docs/journeys/work-use.md` journey. Captured in `features/sidebar-ia-route-restructure.md` and added to the roadmap's UI Enhancement section.
+
+- **IA change**: sidebar moves from 4 groups to 5. Work splits into **Home** (Dashboard, Tasks, Inbox, Chat) + **Compose** (Projects, Workflows, Profiles, Schedules, Documents, Tables). Manage renames to **Observe** (Monitor, Cost & Usage, Analytics). Learn + Configure unchanged.
+- **Promoted primitives**: Profiles + Schedules move out of Manage into Compose. Positioning doc names them as co-equal with Projects and Workflows; Manage was a misclassification.
+- **Route rename**: `/` reclaims the "Dashboard" label (it was already rendering stats + priority queue + activity feed + recent projects — a real dashboard, only reachable via logo click today). The kanban moves from `/dashboard` to `/tasks`, matching the object-plural convention every other list route already follows.
+- **Back-compat scope**: per product decision, `/dashboard` is deleted outright — ainative is in alpha, few external bookmarks, clean break preferred over a 1-line redirect stub.
+- **Keyboard shortcuts**: `g d` → `/dashboard` is replaced by `g h` → `/` and `g t` → `/tasks`.
+- **Architect impact report** (`features/architect-report.md`): MEDIUM blast radius, ~50 files, single frontend layer, no data/runtime coupling. Root-path guard in `isItemActive` already handles the new pattern.
+- **TDR-033** recommended: *Route Semantics — Object-Label Convention for List Routes*. Codifies the rule so future additions (e.g., a hypothetical `/inbox-board` or `/project-grid`) do not re-introduce view-type route names.
+- **Doc cascade**: bundled with the brand pivot `/refresh-content-pipeline` run — 15 docs files, 10 screengrab PNGs, and `docs/features/dashboard-kanban.md` → `tasks.md` rename all fold into the existing refresh, so the marginal doc cost of this feature is zero.
+- **Design bridge gate**: spec carries a blocker AC for `/frontend-designer` Product-Design Bridge review (state specs for `/` and `/tasks`, active-highlight regression checks, empty-state parity) before implementation starts.
+
+**Evidence trail**: product-manager IA review + frontend-designer design review (both in-session) + architect impact analysis (`features/architect-report.md`).
+
+### Design-bridged — sidebar-ia-route-restructure
+
+`/frontend-designer` Product-Design Bridge mode enriched the spec with state specs, active-highlight checks, visual-weight guardrails, and keyboard/a11y ACs. Spec is now implementation-ready.
+
+- Final Tasks subtext calibrated to **"Work in flight across projects"** (30 chars, DD-020 compliant); Dashboard subtext kept as "Today's work at a glance" since the rename makes it accurate for the first time.
+- State preservation ACs added for `/` (loading via SSR stream, empty via `WelcomeLanding` + `ActivationChecklist`, populated, error) and `/tasks` (SkeletonBoard via Suspense, empty, populated, error) — the bar is **zero UX regression** vs. today's `/dashboard`.
+- 16 active-highlight route regression checks added (one per routed nav item), including explicit guards that Profiles/Schedules now auto-expand **Compose** (not Observe) to catch any lingering coupling from the old Manage group.
+- Visual-weight regression checks at 1366×768 (common laptop) and 1440×900 to verify the sidebar footer stays above the fold when Compose's 6-item accordion is expanded.
+- Silent-rename interaction pattern codified: no toast, banner, or what's-new popover. Command palette keywords provide organic discovery. Alpha audience + DD-016 (hierarchical dimming) argue against migration chrome.
+- Blocker AC cleared — spec is ready for implementation.
 
 ### Completed — npm-package-ownership-migration
 
