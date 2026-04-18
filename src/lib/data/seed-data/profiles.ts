@@ -12,8 +12,8 @@ export interface SampleProfileSeed {
   skillMd: string;
 }
 
-const SAMPLE_PROFILE_AUTHOR = "Stagent Sample Data";
-const SAMPLE_PROFILE_SOURCE = "https://stagent.io/profiles/samples";
+const SAMPLE_PROFILE_AUTHOR = "ainative Sample Data";
+const SAMPLE_PROFILE_SOURCE = "https://ainative.business/profiles/samples";
 
 export const SAMPLE_PROFILE_IDS = [
   "stagent-sample-gtm-launch-strategist",

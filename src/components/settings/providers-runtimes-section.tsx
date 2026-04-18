@@ -433,7 +433,7 @@ export function ProvidersAndRuntimesSection() {
               Task routing
             </p>
             <p className="text-sm text-muted-foreground mt-1">
-              How should Stagent choose a runtime when creating tasks?
+              How should ainative choose a runtime when creating tasks?
             </p>
           </div>
 

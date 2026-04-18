@@ -1,5 +1,5 @@
 /**
- * Status Families — 5 orthogonal status dimensions for Stagent entities.
+ * Status Families — 5 orthogonal status dimensions for ainative entities.
  * Each status maps to: label, Lucide icon name, semantic color token, badge variant.
  *
  * Used by the StatusChip component for unified rendering.

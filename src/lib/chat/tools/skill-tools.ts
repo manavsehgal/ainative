@@ -3,10 +3,10 @@ import { defineTool } from "../tool-registry";
 import { ok, err, type ToolContext } from "./helpers";
 
 /**
- * Stagent MCP tools for conversation-scoped skill management.
+ * ainative MCP tools for conversation-scoped skill management.
  *
  * Primary consumer: Ollama — the HTTP chat-completion API has no native
- * concept of skills, so Stagent takes over: activate a skill (persist to
+ * concept of skills, so ainative takes over: activate a skill (persist to
  * conversations.active_skill_id) → context builder injects its SKILL.md
  * into Tier 0 of every subsequent turn.
  *
@@ -28,7 +28,7 @@ export function skillTools(_ctx: ToolContext) {
   return [
     defineTool(
       "list_skills",
-      "List all Stagent-discoverable skills across user (~/.claude, ~/.codex) and project (.claude, .agents) scopes. Returns id, name, tool persona, scope, and a short preview for each. Pass `enriched: true` for additional per-skill metadata (healthScore, syncStatus, linkedProfileId). Read-only.",
+      "List all ainative-discoverable skills across user (~/.claude, ~/.codex) and project (.claude, .agents) scopes. Returns id, name, tool persona, scope, and a short preview for each. Pass `enriched: true` for additional per-skill metadata (healthScore, syncStatus, linkedProfileId). Read-only.",
       {
         enriched: z
           .boolean()
@@ -160,7 +160,7 @@ export function skillTools(_ctx: ToolContext) {
 
     defineTool(
       "deactivate_skill",
-      "Clear the active skill on a conversation. After this call, subsequent turns will not include any Stagent-injected SKILL.md in the system prompt.",
+      "Clear the active skill on a conversation. After this call, subsequent turns will not include any ainative-injected SKILL.md in the system prompt.",
       {
         conversationId: z
           .string()

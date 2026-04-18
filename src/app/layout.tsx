@@ -28,7 +28,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Stagent",
+  title: "ainative",
   description: "AI agent task management",
   icons: {
     icon: [

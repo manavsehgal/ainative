@@ -164,7 +164,7 @@ describe("active skill Tier 0 injection", () => {
       expect(ctx.systemPrompt).not.toContain("## Active Skill:");
     });
 
-    it("DOES inject on ollama (no native support — Stagent must inject)", async () => {
+    it("DOES inject on ollama (no native support — ainative must inject)", async () => {
       mockState.runtimeId = "ollama";
       mockState.activeSkillId = ".claude/skills/capture";
       mockState.skills[".claude/skills/capture"] = {

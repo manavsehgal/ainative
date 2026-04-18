@@ -72,7 +72,7 @@ export interface AgenticLoopConfig {
   /** Format a continuation message (e.g. after max_tokens truncation). */
   formatContinuation: () => LoopMessage;
 
-  /** Execute a Stagent tool by name. */
+  /** Execute a ainative tool by name. */
   executeTool: (
     name: string,
     args: Record<string, unknown>,

@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 
-const STORAGE_KEY = "stagent-snoozed-banners";
+const STORAGE_KEY = "ainative-snoozed-banners";
 const SNOOZE_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 interface SnoozedEntry {

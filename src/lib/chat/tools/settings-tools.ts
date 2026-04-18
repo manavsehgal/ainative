@@ -99,7 +99,7 @@ export function settingsTools(_ctx: ToolContext) {
   return [
     defineTool(
       "get_settings",
-      "Get current Stagent settings including auth method, budget limits, active runtime, and workspace context. Read-only.",
+      "Get current ainative settings including auth method, budget limits, active runtime, and workspace context. Read-only.",
       {
         key: z
           .string()
@@ -172,7 +172,7 @@ export function settingsTools(_ctx: ToolContext) {
 
     defineTool(
       "set_settings",
-      `Update a Stagent setting. Requires user approval.\n\nWritable keys:\n${WRITABLE_KEYS_DOC}`,
+      `Update a ainative setting. Requires user approval.\n\nWritable keys:\n${WRITABLE_KEYS_DOC}`,
       {
         key: z.string().describe("Setting key to update"),
         value: z.string().describe("New value (always a string)"),

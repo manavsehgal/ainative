@@ -156,7 +156,7 @@ export function createTasks(
       status: "completed",
       priority: 2,
       result:
-        "Article published at /blog/ai-agent-orchestration-guide. 1,920 words, Flesch-Kincaid 42, keyword density 1.4%. Includes comparison table (Stagent vs CrewAI vs AutoGen vs LangGraph), 3 internal links, and 'Start Free' CTA. LinkedIn hook and newsletter intro drafted.",
+        "Article published at /blog/ai-agent-orchestration-guide. 1,920 words, Flesch-Kincaid 42, keyword density 1.4%. Includes comparison table (ainative vs CrewAI vs AutoGen vs LangGraph), 3 internal links, and 'Start Free' CTA. LinkedIn hook and newsletter intro drafted.",
       agentProfile: SAMPLE_PROFILE_IDS[1],
       sourceType: "workflow",
       workflowId: w2,

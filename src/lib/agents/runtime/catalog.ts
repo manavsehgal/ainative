@@ -23,7 +23,7 @@ export interface RuntimeCapabilities {
 
 /**
  * LLM-surface features that affect what the model sees and which tools/skills
- * Stagent exposes to it. Distinct from RuntimeCapabilities above, which is
+ * ainative exposes to it. Distinct from RuntimeCapabilities above, which is
  * adapter-plumbing concerns (can the adapter resume/cancel/etc.).
  *
  * Values reflect post-Phase-1 capability (what the runtime SDK *can* do),
@@ -37,7 +37,7 @@ export interface RuntimeFeatures {
   hasProgressiveDisclosure: boolean;
   /** Read/Grep/Glob/Edit/Write available as LLM tools. */
   hasFilesystemTools: boolean;
-  /** Bash tool available (Stagent gates via permission bridge). */
+  /** Bash tool available (ainative gates via permission bridge). */
   hasBash: boolean;
   /** TodoWrite tool available. */
   hasTodoWrite: boolean;
@@ -48,7 +48,7 @@ export interface RuntimeFeatures {
   /** Which project-level instructions file the runtime auto-loads, if any. */
   autoLoadsInstructions: "CLAUDE.md" | "AGENTS.md" | null;
   /**
-   * Runtime has no native skill support — Stagent must inject SKILL.md content
+   * Runtime has no native skill support — ainative must inject SKILL.md content
    * into the system prompt to expose skills to the LLM.
    */
   ainativeInjectsSkills: boolean;
@@ -106,7 +106,7 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
       hasFilesystemTools: true,
       hasBash: true,
       hasTodoWrite: true,
-      hasSubagentDelegation: false, // Stagent task primitives replace SDK Task tool
+      hasSubagentDelegation: false, // ainative task primitives replace SDK Task tool
       hasHooks: false, // excluded per Q2
       autoLoadsInstructions: "CLAUDE.md",
       ainativeInjectsSkills: false,
@@ -241,7 +241,7 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
       hasProgressiveDisclosure: false,
       hasFilesystemTools: false,
       hasBash: false,
-      hasTodoWrite: false, // Stagent MCP exposes todo tools separately
+      hasTodoWrite: false, // ainative MCP exposes todo tools separately
       hasSubagentDelegation: false,
       hasHooks: false,
       autoLoadsInstructions: null,

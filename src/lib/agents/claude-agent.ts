@@ -45,7 +45,7 @@ import {
   type RuntimeLaunchProgress,
 } from "@/lib/agents/runtime/launch-failure";
 
-// ─── Stagent MCP injection helpers ──────────────────────────────────────
+// ─── ainative MCP injection helpers ──────────────────────────────────────
 //
 // Shared by executeClaudeTask and resumeClaudeTask so the two runtime entry
 // points cannot drift apart. The drift between chat engine injection and
@@ -54,7 +54,7 @@ import {
 
 /**
  * Merge the in-process stagent MCP server into a profile/browser/external
- * MCP server map. Stagent is spread LAST so no upstream source can shadow
+ * MCP server map. ainative is spread LAST so no upstream source can shadow
  * the `stagent` key with its own server.
  *
  * `@/lib/chat/stagent-tools` is loaded via dynamic `import()` to avoid a
@@ -67,7 +67,7 @@ import {
  * until `executeClaudeTask` / `resumeClaudeTask` actually run, by which
  * time every module in the graph has finished initializing.
  */
-async function withStagentMcpServer(
+async function withAinativeMcpServer(
   profileServers: Record<string, unknown>,
   browserServers: Record<string, unknown>,
   externalServers: Record<string, unknown>,
@@ -93,7 +93,7 @@ async function withStagentMcpServer(
  * the caller does not want SDK tools added — letting the SDK fall
  * through to claude_code preset defaults.
  */
-function withStagentAllowedTools(
+function withAinativeAllowedTools(
   profileAllowedTools: string[] | undefined,
   includeSdkTools: boolean,
 ): string[] | undefined {
@@ -556,14 +556,14 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
     const effectiveMaxTurns = task.maxTurns ?? ctx.maxTurns;
 
     // Merge browser + external MCP servers, then inject the in-process
-    // stagent server via the shared helper (see withStagentMcpServer above).
+    // ainative server via the shared helper (see withAinativeMcpServer above).
     // The helper is async because it dynamically imports @/lib/chat/stagent-tools
     // to break a module-load cycle with the runtime registry.
     const [browserServers, externalServers] = await Promise.all([
       getBrowserMcpServers(),
       getExternalMcpServers(),
     ]);
-    const mergedMcpServers = await withStagentMcpServer(
+    const mergedMcpServers = await withAinativeMcpServer(
       ctx.payload?.mcpServers ?? {},
       browserServers,
       externalServers,
@@ -584,7 +584,7 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
     // CLAUDE_SDK_ALLOWED_TOOLS (Skill, Read/Grep/Glob, Edit/Write/Bash,
     // TodoWrite) so task execution matches chat. Computed once so the
     // conditional spread below does not invoke the helper twice.
-    const mergedAllowedTools = withStagentAllowedTools(
+    const mergedAllowedTools = withAinativeAllowedTools(
       ctx.payload?.allowedTools,
       includeSdkNativeTools,
     );
@@ -715,13 +715,13 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
     const effectiveMaxTurns = task.maxTurns ?? ctx.maxTurns;
 
     // Merge browser + external MCP servers, then inject the in-process
-    // stagent server via the shared helper (see withStagentMcpServer).
+    // ainative server via the shared helper (see withAinativeMcpServer).
     // Async for the same cycle-breaking reason as executeClaudeTask above.
     const [browserServers, externalServers] = await Promise.all([
       getBrowserMcpServers(),
       getExternalMcpServers(),
     ]);
-    const mergedMcpServers = await withStagentMcpServer(
+    const mergedMcpServers = await withAinativeMcpServer(
       ctx.payload?.mcpServers ?? {},
       browserServers,
       externalServers,
@@ -736,7 +736,7 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
     const runtimeFeatures = getFeaturesForModel("");
     const includeSdkNativeTools = runtimeFeatures.hasNativeSkills;
 
-    const mergedAllowedTools = withStagentAllowedTools(
+    const mergedAllowedTools = withAinativeAllowedTools(
       ctx.payload?.allowedTools,
       includeSdkNativeTools,
     );

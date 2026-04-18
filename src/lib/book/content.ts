@@ -142,7 +142,7 @@ export const CHAPTERS: BookChapter[] = [
     id: "ch-11",
     number: 11,
     title: "The Machine That Builds Machines",
-    subtitle: "Stagent Building Itself Using Itself",
+    subtitle: "ainative Building Itself Using Itself",
     part: PARTS[3],
     readingTime: 14,
     sections: [],
@@ -272,7 +272,7 @@ export function getBook(): Book {
     title: "AI Native",
     subtitle: "Building Autonomous Business Systems with AI Agents",
     description:
-      "A practical guide to building AI-native applications, from single-agent task execution to fully autonomous business processes. Every pattern is demonstrated with working code from Stagent — a tool that built itself.",
+      "A practical guide to building AI-native applications, from single-agent task execution to fully autonomous business processes. Every pattern is demonstrated with working code from ainative — a tool that built itself.",
     parts: PARTS,
     chapters,
     totalReadingTime: chapters.reduce((sum, ch) => sum + ch.readingTime, 0),

@@ -70,7 +70,7 @@ function loadFilesystemSkills(
 }
 
 /**
- * Lists every agent profile reachable from this Stagent instance, merging
+ * Lists every agent profile reachable from this ainative instance, merging
  * registry profiles with filesystem skills ("fused" view):
  *   1. Registry profiles (builtins + user registry)
  *   2. User filesystem skills at `~/.claude/skills/*\/SKILL.md` (or `userSkillsDir` override)

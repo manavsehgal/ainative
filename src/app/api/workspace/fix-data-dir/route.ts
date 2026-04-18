@@ -40,7 +40,7 @@ export async function POST() {
 
   const folderName = basename(cwd);
   const home = homedir();
-  // stagent-wealth → ~/.stagent-wealth, stagent-growth → ~/.stagent-growth
+  // stagent-wealth → ~/.ainative-wealth, stagent-growth → ~/.ainative-growth
   const dataDir = join(home, `.${folderName}`);
   const displayDataDir = `~/.${folderName}`;
 

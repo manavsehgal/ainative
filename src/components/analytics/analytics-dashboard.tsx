@@ -60,14 +60,14 @@ export function AnalyticsDashboard({
 }: AnalyticsDashboardProps) {
   const [hourlyRate, setHourlyRate] = useState(() => {
     if (typeof window === "undefined") return 75;
-    const saved = localStorage.getItem("stagent-hourly-rate");
+    const saved = localStorage.getItem("ainative-hourly-rate");
     return saved ? parseInt(saved, 10) : 75;
   });
 
   function updateHourlyRate(rate: number) {
     setHourlyRate(rate);
     if (typeof window !== "undefined") {
-      localStorage.setItem("stagent-hourly-rate", String(rate));
+      localStorage.setItem("ainative-hourly-rate", String(rate));
     }
   }
 

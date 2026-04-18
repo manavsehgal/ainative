@@ -72,13 +72,13 @@ Environment variables:
 
 Examples:
   node dist/cli.js --port 3210 --no-open
-  node dist/cli.js --data-dir ~/.stagent-dogfood --port 3100
+  node dist/cli.js --data-dir ~/.ainative-dogfood --port 3100
 `;
 }
 
 program
-  .name("stagent")
-  .description("AI Business Operating System")
+  .name("ainative")
+  .description("Companion software for the AI Native Business book — a local-first agent runtime and builder scaffold for AI-native businesses.")
   .version(pkg.version)
   .addHelpText("after", getHelpText)
   .option("-p, --port <number>", "port to start on", "3000")
@@ -217,12 +217,12 @@ async function main() {
   });
   const sidecarUrl = buildSidecarUrl(actualPort);
 
-  console.log(`Stagent ${pkg.version} — Community Edition`);
+  console.log(`ainative ${pkg.version} — Community Edition`);
   console.log(`Data dir: ${DATA_DIR}`);
   console.log(`Mode: ${isPrebuilt ? "production" : "development"}`);
   console.log(`Next entry: ${nextEntrypoint}`);
-  console.log(`Starting Stagent on ${sidecarUrl}`);
-  console.log(`Upgrade to Premium for cloud sync, expanded limits, and analytics → stagent.io/pricing`);
+  console.log(`Starting ainative on ${sidecarUrl}`);
+  console.log(`Learn more → https://ainative.business`);
 
   const child = spawn(process.execPath, [nextEntrypoint, ...nextArgs], {
     cwd: effectiveCwd,
@@ -254,6 +254,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error("Failed to start Stagent:", err);
+  console.error("Failed to start ainative:", err);
   process.exit(1);
 });

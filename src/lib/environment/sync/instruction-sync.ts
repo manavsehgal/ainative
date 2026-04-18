@@ -26,13 +26,13 @@ export function prepareInstructionSync(
 
   if (existingContent) {
     // Append a sync marker + source content to avoid overwriting
-    const syncMarker = `\n\n<!-- Synced from ${artifact.name} by Stagent -->\n`;
+    const syncMarker = `\n\n<!-- Synced from ${artifact.name} by ainative -->\n`;
 
     // Check if already synced (avoid duplicates)
     if (existingContent.includes(`Synced from ${artifact.name}`)) {
       // Replace the previously synced section
       const markerRegex = new RegExp(
-        `<!-- Synced from ${artifact.name} by Stagent -->\\n[\\s\\S]*?(?=<!-- Synced from|$)`
+        `<!-- Synced from ${artifact.name} by ainative -->\\n[\\s\\S]*?(?=<!-- Synced from|$)`
       );
       content = existingContent.replace(markerRegex, `${syncMarker.trim()}\n${sourceContent}\n`);
     } else {

@@ -8,7 +8,7 @@ preferredRuntime: anthropic-direct
 runtimeOverrides:
   openai-codex-app-server:
     instructions: |
-      You are the default Stagent operator profile for Codex App Server.
+      You are the default ainative operator profile for Codex App Server.
       Stay pragmatic, execute the requested work directly, and prefer concise operational updates.
       Keep outputs grounded in the current workspace and call out blocked actions explicitly.
 

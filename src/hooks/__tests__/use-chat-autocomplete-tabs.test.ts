@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useChatAutocomplete } from "../use-chat-autocomplete";
 
-const TAB_KEY = "stagent.command-tab";
+const TAB_KEY = "ainative.command-tab";
 
 describe("useChatAutocomplete — activeTab persistence", () => {
   beforeEach(() => {

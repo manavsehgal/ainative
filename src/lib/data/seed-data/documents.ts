@@ -119,7 +119,7 @@ AI Copilot v2 — multi-agent orchestration platform for business operations.
 - **Weaknesses:** Read-heavy, limited write operations
 
 ## Key Gap
-None of the 5 address multi-agent orchestration, governance, or business operations beyond code. Stagent's positioning as "business operations" is **uncontested**.
+None of the 5 address multi-agent orchestration, governance, or business operations beyond code. ainative's positioning as "business operations" is **uncontested**.
 `,
   },
   {
@@ -144,7 +144,7 @@ Multi-channel launch targeting solo founders and agency owners. 3 headline varia
 ## Email Sequence
 - **Day 0:** Launch announcement + quick start
 - **Day 3:** Feature deep-dive (workflows + governance)
-- **Day 7:** Case study — "How a solo founder runs 3 businesses with Stagent"
+- **Day 7:** Case study — "How a solo founder runs 3 businesses with ainative"
 
 ## Social Calendar
 - **Week 1:** LinkedIn series (5 posts, MWF) + Twitter launch thread (Day 1)

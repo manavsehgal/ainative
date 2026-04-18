@@ -37,7 +37,7 @@ describe("kanban board accessibility", () => {
             assignedAgent: null,
             agentProfile: null,
             projectId: "project-1",
-            projectName: "Stagent",
+            projectName: "ainative",
             result: null,
             sessionId: null,
             resumeCount: 0,
@@ -45,7 +45,7 @@ describe("kanban board accessibility", () => {
             updatedAt: new Date("2026-03-12T09:00:00.000Z").toISOString(),
           },
         ]}
-        projects={[{ id: "project-1", name: "Stagent" }]}
+        projects={[{ id: "project-1", name: "ainative" }]}
         projectFilter="all"
         statusFilter="all"
         sortOrder="priority"

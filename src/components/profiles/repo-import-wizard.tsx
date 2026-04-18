@@ -351,7 +351,7 @@ export function RepoImportWizard({
                   }}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Stagent will scan for all directories containing SKILL.md files.
+                  ainative will scan for all directories containing SKILL.md files.
                 </p>
               </div>
             </div>

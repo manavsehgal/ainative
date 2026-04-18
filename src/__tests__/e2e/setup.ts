@@ -31,7 +31,7 @@ export let codexAvailable = false;
 const SANDBOX_FILES: Record<string, string> = {
   "package.json": JSON.stringify(
     {
-      name: "stagent-e2e-sandbox",
+      name: "ainative-e2e-sandbox",
       version: "1.0.0",
       scripts: { build: "tsc" },
       devDependencies: { typescript: "^5.5.0" },
@@ -111,7 +111,7 @@ export async function setupE2E(): Promise<void> {
   const reachable = await isServerReachable();
   if (!reachable) {
     throw new Error(
-      "Stagent server is not reachable at the configured URL. " +
+      "ainative server is not reachable at the configured URL. " +
         "Start the dev server with `npm run dev` before running E2E tests."
     );
   }

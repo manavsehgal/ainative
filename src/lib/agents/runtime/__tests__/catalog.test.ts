@@ -56,7 +56,7 @@ describe("runtime catalog", () => {
     expect(features.ainativeInjectsSkills).toBe(false);
   });
 
-  it("marks Ollama as requiring Stagent-injected skills", () => {
+  it("marks Ollama as requiring ainative-injected skills", () => {
     const features = getRuntimeFeatures("ollama");
     expect(features.hasNativeSkills).toBe(false);
     expect(features.ainativeInjectsSkills).toBe(true);

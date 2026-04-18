@@ -39,7 +39,7 @@ const stageConfig: Record<
 > = {
   new: {
     icon: BookOpen,
-    title: "Welcome to Stagent",
+    title: "Welcome to ainative",
     subtitle:
       "Your AI agent orchestrator. Start with the getting started guide or explore feature docs at your own pace.",
     ctaLabel: "Getting Started",
@@ -49,7 +49,7 @@ const stageConfig: Record<
     icon: Sparkles,
     title: "Keep Building",
     subtitle:
-      "You've started creating tasks. Follow a guided journey to unlock more of what Stagent can do.",
+      "You've started creating tasks. Follow a guided journey to unlock more of what ainative can do.",
     ctaLabel: "Personal Use Guide",
     ctaSlug: "personal-use",
   },
@@ -57,7 +57,7 @@ const stageConfig: Record<
     icon: Rocket,
     title: "Level Up",
     subtitle:
-      "You're actively using Stagent. Explore advanced workflows, schedules, and multi-agent features.",
+      "You're actively using ainative. Explore advanced workflows, schedules, and multi-agent features.",
     ctaLabel: "Power User Guide",
     ctaSlug: "power-user",
   },

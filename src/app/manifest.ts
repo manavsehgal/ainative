@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Stagent",
-    short_name: "Stagent",
+    name: "ainative",
+    short_name: "ainative",
     description: "AI agent task management",
     start_url: "/",
     display: "standalone",

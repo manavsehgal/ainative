@@ -9,7 +9,7 @@ import { PageShell } from "@/components/shared/page-shell";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "User Guide | Stagent",
+  title: "User Guide | ainative",
 };
 
 export default async function PlaybookPage() {

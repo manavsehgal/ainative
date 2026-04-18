@@ -116,7 +116,7 @@ export function extractPlanTypeFromIdToken(idToken: string): string | null {
   }
 }
 
-async function readStagentCodexPlanTypeFromAuthFile(): Promise<string | null> {
+async function readCodexPlanTypeFromAuthFile(): Promise<string | null> {
   try {
     const raw = await readFile(getAinativeCodexAuthPath(), "utf8");
     const parsed = JSON.parse(raw) as {
@@ -181,7 +181,7 @@ export async function connectCodexClient(options: {
 export async function initializeCodexClient(client: CodexAppServerClient) {
   await client.request("initialize", {
     clientInfo: {
-      name: "Stagent",
+      name: "ainative",
       version: "0.1.1",
     },
     capabilities: null,
@@ -198,7 +198,7 @@ export async function readCodexAuthStateFromClient(
 
   const account = parseAccountInfo(accountResult.account ?? null);
   if (account?.type === "chatgpt" && !account.planType) {
-    account.planType = await readStagentCodexPlanTypeFromAuthFile();
+    account.planType = await readCodexPlanTypeFromAuthFile();
   }
   let rateLimits: OpenAIRateLimitInfo | null = null;
   if (account?.type === "chatgpt") {

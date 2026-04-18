@@ -143,7 +143,7 @@ vi.mock("@/lib/agents/browser-mcp", () => ({
 }));
 vi.mock("@/lib/chat/stagent-tools", () => ({
   createToolServer: vi.fn((_projectId?: string | null) => ({
-    asMcpServer: () => ({ __mockStagentServer: true }),
+    asMcpServer: () => ({ __mockAinativeServer: true }),
   })),
 }));
 
@@ -258,7 +258,7 @@ describe("executeClaudeTask", () => {
       options: { mcpServers?: Record<string, unknown> };
     };
     expect(queryCall.options.mcpServers).toBeDefined();
-    expect(queryCall.options.mcpServers!.ainative).toEqual({ __mockStagentServer: true });
+    expect(queryCall.options.mcpServers!.ainative).toEqual({ __mockAinativeServer: true });
     expect(vi.mocked(createToolServer)).toHaveBeenCalledWith("proj-7");
   });
 
@@ -295,7 +295,7 @@ describe("executeClaudeTask", () => {
   it("A-stagent-3: falls back to CLAUDE_SDK_ALLOWED_TOOLS when profile has none and runtime has native skills", async () => {
     mockWhere.mockResolvedValueOnce([makeTask({ projectId: "proj-7" })]);
     // Default mockGetProfile returns allowedTools: undefined. Task-runtime-skill-parity
-    // (Task 3) changed withStagentAllowedTools so the Phase 1a tool set (Skill,
+    // (Task 3) changed withAinativeAllowedTools so the Phase 1a tool set (Skill,
     // Read/Grep/Glob, Edit/Write/Bash, TodoWrite) is passed alongside mcp__ainative__*
     // when the runtime has hasNativeSkills=true — which is the claude-code default.
     mockQuery.mockReturnValue(
@@ -706,7 +706,7 @@ describe("resumeClaudeTask", () => {
     };
     expect(queryCall.options.resume).toBe("session-abc");
     expect(queryCall.options.mcpServers).toBeDefined();
-    expect(queryCall.options.mcpServers!.ainative).toEqual({ __mockStagentServer: true });
+    expect(queryCall.options.mcpServers!.ainative).toEqual({ __mockAinativeServer: true });
     expect(vi.mocked(createToolServer)).toHaveBeenCalledWith("proj-7");
   });
 

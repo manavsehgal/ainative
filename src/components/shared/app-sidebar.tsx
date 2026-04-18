@@ -225,9 +225,9 @@ export function AppSidebar() {
         <div className="flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 group-data-[collapsible=icon]:hidden">
             <AinativeLogo size={24} className="shrink-0" />
-            <span className="text-lg font-bold tracking-tight">Stagent</span>
+            <span className="text-lg font-bold tracking-tight">ainative</span>
           </Link>
-          <Link href="/" className="hidden group-data-[collapsible=icon]:flex items-center justify-center" aria-label="Stagent home">
+          <Link href="/" className="hidden group-data-[collapsible=icon]:flex items-center justify-center" aria-label="ainative home">
             <AinativeLogo size={20} />
           </Link>
           <SidebarTrigger className="group-data-[collapsible=icon]:hidden" />

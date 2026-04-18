@@ -43,7 +43,7 @@ export function buildTaskOutputInstructions(taskId: string): string {
     "Generated file outputs:",
     `- Write any final files to ${outputDir}`,
     "- Files in .md, .json, .csv, .txt, and .html are automatically captured after completion",
-    "- Keep the final filename stable if you want Stagent to version rerun outputs cleanly",
+    "- Keep the final filename stable if you want ainative to version rerun outputs cleanly",
   ].join("\n");
 }
 

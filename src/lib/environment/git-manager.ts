@@ -68,7 +68,7 @@ export function createGitCheckpoint(
   const tagName = `stagent/checkpoint/${checkpointType}/${Date.now()}`;
 
   const tagResult = git(
-    ["tag", "-a", tagName, "-m", `Stagent checkpoint: ${label}`],
+    ["tag", "-a", tagName, "-m", `ainative checkpoint: ${label}`],
     dir
   );
 

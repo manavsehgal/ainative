@@ -46,7 +46,7 @@ export interface ChatAutocompleteReturn {
   setTextareaRef: (el: HTMLTextAreaElement | null) => void;
 }
 
-const TAB_STORAGE_KEY = "stagent.command-tab";
+const TAB_STORAGE_KEY = "ainative.command-tab";
 
 function readInitialTab(): CommandTabId {
   if (typeof window === "undefined") return DEFAULT_COMMAND_TAB;

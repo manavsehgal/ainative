@@ -13,7 +13,7 @@ describe("dashboard accessibility surfaces", () => {
             title: "Fix runtime mismatch",
             status: "failed",
             priority: 0,
-            projectName: "Stagent",
+            projectName: "ainative",
           },
         ]}
       />

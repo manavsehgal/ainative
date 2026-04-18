@@ -74,7 +74,7 @@ export function EnvironmentSection() {
           Environment
         </CardTitle>
         <CardDescription>
-          How Stagent discovers and syncs skills from your environment into the
+          How ainative discovers and syncs skills from your environment into the
           agent profile registry.
         </CardDescription>
       </CardHeader>

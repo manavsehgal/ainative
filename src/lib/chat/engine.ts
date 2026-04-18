@@ -332,7 +332,7 @@ export async function* sendMessage(
       });
     }
 
-    // Create in-process MCP server for Stagent CRUD tools
+    // Create in-process MCP server for ainative CRUD tools
     const toolResults: ToolResultCapture[] = [];
     const ainativeServer = createToolServer(
       conversation.projectId,
@@ -382,7 +382,7 @@ export async function* sendMessage(
           toolName: string,
           input: Record<string, unknown>
         ): Promise<ToolPermissionResponse> => {
-          // Auto-allow safe Stagent tools; gate dangerous ones through permission bridge
+          // Auto-allow safe ainative tools; gate dangerous ones through permission bridge
           const PERMISSION_GATED_TOOLS = new Set([
             "mcp__ainative__execute_task",
             "mcp__ainative__cancel_task",
