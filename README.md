@@ -160,11 +160,11 @@ Workspace-level briefing with active work, pending review, failed items, project
 #### Task Execution
 Status-driven execution board with five columns: Planned → Queued → Running → Completed → Failed. Filter across projects, create tasks inline, and open task detail to inspect status, description, and runtime state without leaving the board.
 
-<img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/dashboard-list.png" alt="ainative kanban board" width="1200" />
+<img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/tasks-list.png" alt="ainative tasks kanban board" width="1200" />
 
-| Table View |
+| Below the Fold |
 |:-:|
-| <img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/dashboard-table.png" alt="Dashboard table view" width="580" /> |
+| <img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/tasks-below-fold.png" alt="Tasks kanban board scrolled below the fold" width="580" /> |
 
 #### Projects
 Create and organize projects as containers for related tasks. Each project can specify a working directory — agent tasks resolve `cwd` from the project's path, enabling agents to operate on external codebases. Server-rendered project cards with task counts, status badges, and a detail view at `/projects/[id]`.
@@ -384,7 +384,7 @@ Configuration hub with provider-aware sections: Claude authentication (API key o
 | <img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/settings-browser-tools.png" alt="Browser tools MCP toggles" width="380" /> | <img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/settings-presets.png" alt="Tool permission presets" width="380" /> | <img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/settings-budget.png" alt="Budget configuration" width="380" /> |
 
 #### CLI
-The `npx ainative` entry point boots a Next.js server from the published npm package. It is built from `bin/cli.ts` into `dist/cli.js` using tsup, and serves as the primary distribution channel — no clone required.
+The `npx ainative-business` entry point boots a Next.js server from the published npm package. It is built from `bin/cli.ts` into `dist/cli.js` using tsup, and serves as the primary distribution channel — no clone required.
 
 #### Database
 SQLite with WAL mode via better-sqlite3 + Drizzle ORM. 27+ tables including core tables: `projects`, `tasks`, `workflows`, `agent_logs`, `notifications`, `documents`, `schedules`, `settings`, `learned_context`, `usage_ledger`, `conversations`, `chat_messages`, `environments`, `environment_configs`. Self-healing bootstrap — tables are created on startup if missing.

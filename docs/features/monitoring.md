@@ -54,6 +54,6 @@ Failed operations and agent errors surface prominently in the activity feed. Err
 3. Click through to the task detail page for the complete execution history of that task.
 
 ## Related
-- [Dashboard & Kanban](./dashboard-kanban.md)
+- [Dashboard & Kanban](./tasks.md)
 - [Cost & Usage](./cost-usage.md)
 - [Inbox & Notifications](./inbox-notifications.md)

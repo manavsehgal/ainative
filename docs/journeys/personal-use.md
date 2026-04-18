@@ -93,9 +93,9 @@ Inspired by the chat brainstorm, Alex decides to formalize the portfolio idea in
 
 ### Step 6: Open the Dashboard Kanban Board
 
-With a project created, Alex heads to the Dashboard to start organizing work.
+With a project created, Alex heads to Tasks to start organizing work.
 
-![Dashboard kanban board with task cards organized across status columns](../screengrabs/dashboard-list.png)
+![Tasks kanban board with task cards organized across status columns](../screengrabs/tasks-list.png)
 
 1. Click **Dashboard** in the sidebar under the **Work** group
 2. Review the kanban board layout with columns like **Planned**, **In Progress**, **Completed**, and others
@@ -107,7 +107,7 @@ With a project created, Alex heads to the Dashboard to start organizing work.
 
 Alex discovers that the Dashboard supports multiple view modes.
 
-![Dashboard table view with sortable columns and density options](../screengrabs/dashboard-table.png)
+![Dashboard table view with sortable columns and density options](../screengrabs/tasks-table.png)
 
 1. Click the **Table** view toggle in the Dashboard header to switch from kanban to table layout
 2. Review the columns: title, status, priority, project, and other metadata
@@ -119,7 +119,7 @@ Alex discovers that the Dashboard supports multiple view modes.
 
 Alex creates the first task for the portfolio project.
 
-![Dashboard kanban board for creating a new task](../screengrabs/dashboard-list.png)
+![Tasks kanban board for creating a new task](../screengrabs/tasks-list.png)
 
 1. Click the **Create Task** button in the Dashboard header
 2. Enter a **Title**: "Design hero section with intro and call-to-action"
@@ -137,7 +137,7 @@ Alex creates the first task for the portfolio project.
 
 Alex uses the quick-edit dialog for a fast priority change.
 
-![Task edit dialog opened from a kanban card](../screengrabs/dashboard-card-edit.png)
+![Task edit dialog opened from a kanban card](../screengrabs/tasks-card-edit.png)
 
 1. Hover over a task card on the kanban board
 2. Click the **edit icon** (pencil) that appears on the card
@@ -148,7 +148,7 @@ Alex uses the quick-edit dialog for a fast priority change.
 
 Alex clicks on a task card to open the full detail sheet.
 
-![Task edit dialog opened from a kanban card](../screengrabs/dashboard-card-edit.png)
+![Task edit dialog opened from a kanban card](../screengrabs/tasks-card-edit.png)
 
 1. Click on any **task card** in the kanban board (not the edit icon -- the card itself)
 2. The **detail sheet** slides in from the right side of the screen

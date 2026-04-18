@@ -13,14 +13,14 @@
       "screengrabCount": 2
     },
     {
-      "slug": "dashboard-kanban",
-      "title": "Dashboard & Kanban",
+      "slug": "tasks",
+      "title": "Tasks",
       "category": "feature-reference",
-      "path": "features/dashboard-kanban.md",
-      "route": "/dashboard",
-      "tags": ["kanban", "tasks", "ai-assist", "board", "drag-and-drop", "bulk-operations", "heartbeat"],
-      "features": ["task-board", "task-definition-ai", "kanban-board-operations", "board-context-persistence", "ai-assist-workflow-creation", "detail-view-redesign", "heartbeat-scheduler"],
-      "screengrabCount": 5
+      "path": "features/tasks.md",
+      "route": "/tasks",
+      "tags": ["tasks", "kanban", "ai-assist", "board", "drag-and-drop", "bulk-operations", "heartbeat"],
+      "features": ["task-board", "task-definition-ai", "kanban-board-operations", "sidebar-ia-route-restructure", "board-context-persistence", "ai-assist-workflow-creation", "detail-view-redesign", "heartbeat-scheduler"],
+      "screengrabCount": 2
     },
     {
       "slug": "inbox-notifications",

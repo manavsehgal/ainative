@@ -4,13 +4,13 @@ subtitle: "What the Case Studies Tell Us About the Future"
 chapter: 12
 part: 4
 readingTime: 10
-lastGeneratedBy: "2026-04-05T00:00:00.000Z"
+lastGeneratedBy: "2026-04-18T17:10:00.000Z"
 relatedDocs: ["workflows", "profiles", "schedules"]
 ---
 
 ## Patterns We Have Observed
 
-Throughout this book we have examined six case studies, each from a company building AI-native systems in production. Each revealed a pattern. Each pattern maps to something ainative does today and something it will do tomorrow. The following table is the distillation of everything we have learned.
+Throughout this book we have examined six case studies, each from a company building AI-native systems in production. Each revealed a pattern. Each pattern maps to something `ainative-business` does today and something it will do tomorrow. The following table is the distillation of everything we have learned.
 
 | Pattern (Source) | Current in ainative | Future Direction |
 |---|---|---|
@@ -27,7 +27,7 @@ Throughout this book we have examined six case studies, each from a company buil
 | Digital twin (Viven.ai) | Dashboard analytics | Organization-wide simulation |
 | Self-evolving code (ICLR RSI) | Self-updating book | Agents improving own profiles |
 
-Every row follows the same shape: someone in the real world built something that works, ainative has a foundation that maps to it, and the gap between foundation and full implementation is a matter of engineering, not invention. The patterns are proven. The question is execution.
+Every row follows the same shape: someone in the real world built something that works, `ainative-business` has a foundation that maps to it, and the gap between foundation and full implementation is a matter of engineering, not invention. The patterns are proven. The question is execution.
 
 > [!case-study]
 > **Stripe Minions** -- Over a thousand pull requests merged per week at Stripe are completely minion-produced. Human-reviewed, but containing no human-written code. Each minion runs in a sandboxed Devbox with the full development environment, from Slack message to merged PR with no interaction in between.
@@ -100,7 +100,7 @@ But the factory is not ainative-specific. The stations we have described -- the 
 
 Stripe built their factory with Minions and Devbox. Ramp built theirs with Inspect and Modal sandboxes. Karpathy built his with autoresearch and a single GPU. Gas Town is an entire factory metaphor made literal, with a Mayor, Polecats, a Refinery, and Convoys. Block is building theirs with a company world model and an intelligence layer that composes atomic capabilities.
 
-ainative is one implementation. The reader's is next.
+`ainative-business` is one implementation. The reader's is next.
 
 The raw materials are available to everyone. Foundation models are accessible through APIs. Agent frameworks are open source. MCP provides a standard protocol for tool integration. A2A is emerging for cross-system orchestration. The database patterns, workflow engines, and scheduling infrastructure we described in Chapters 4-5 are engineering, not research.
 
@@ -133,7 +133,7 @@ Two thousand years of organizational design optimized for one constraint: humans
 
 The hierarchy is not going away. Humans still make the decisions that matter: ethical calls, novel situations, high-stakes moments where the cost of being wrong is existential. Block calls these people "the edge" -- where the intelligence makes contact with reality. The world model gives every person at the edge the context they need to act without waiting for information to travel up and down a chain of command.
 
-We started this book with a premise: ainative is a meta-tool that automates project management, task execution, document processing, and workflow orchestration. The ultimate proof of its capability is using it to automate itself. Eleven chapters later, we hope we have delivered on that premise. The book was assembled by the pipeline it describes. The code examples call the APIs they document. The case studies were captured by the same skills that process any other input.
+We started this book with a premise: `ainative-business` is a meta-tool that automates project management, task execution, document processing, and workflow orchestration. The ultimate proof of its capability is using it to automate itself. Eleven chapters later, we hope we have delivered on that premise. The book was assembled by the pipeline it describes. The code examples call the APIs they document. The case studies were captured by the same skills that process any other input.
 
 But this book is not the point. The point is what you build next.
 

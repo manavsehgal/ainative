@@ -152,19 +152,19 @@ Sam connects a table to the workflow engine so that row changes automatically ki
 
 Sam uses AI Assist to turn a rough task idea into a fully specified, workflow-ready plan.
 
-![AI Assist returned — improved description, complexity analysis, and Swarm pattern recommendation](../screengrabs/dashboard-create-form-ai-assist.png)
+![AI Assist returned — improved description, complexity analysis, and Swarm pattern recommendation](../screengrabs/tasks-create-form-ai-assist.png)
 
 1. From the Dashboard, click **Create Task**
 2. Enter a rough title and description -- for example, "API Security Audit" with a one-line description
 3. Click **AI Assist** -- the system analyzes the task and returns an improved description, complexity rating, recommended execution pattern (e.g., Swarm), and a checkpoint flag
 4. Review the **breakdown** -- for complex tasks, AI Assist generates a multi-step workflow with per-step descriptions
 
-![AI Assist breakdown — 6-step security audit workflow with per-step descriptions](../screengrabs/dashboard-create-form-ai-breakdown.png)
+![AI Assist breakdown — 6-step security audit workflow with per-step descriptions](../screengrabs/tasks-create-form-ai-breakdown.png)
 
 5. Click **Apply** to replace the original description with the AI-improved version, or **Convert to Workflow** to generate a full workflow from the breakdown
 6. The resulting workflow lands on the confirmation page, ready for review and customization
 
-![Task form after clicking Apply — improved description replaces original](../screengrabs/dashboard-create-form-ai-applied.png)
+![Task form after clicking Apply — improved description replaces original](../screengrabs/tasks-create-form-ai-applied.png)
 
 > **Tip:** AI Assist is the bridge between "I have a vague idea" and "I have a production-ready plan." For complex tasks, it recommends the Swarm pattern where multiple agents tackle sub-steps in parallel -- this is how multi-agent swarm execution works in practice.
 
@@ -172,7 +172,7 @@ Sam uses AI Assist to turn a rough task idea into a fully specified, workflow-re
 
 Sam cleans up the task board using bulk select mode.
 
-![Kanban board in bulk select mode with checkboxes and bulk action toolbar](../screengrabs/dashboard-bulk-select.png)
+![Kanban board in bulk select mode with checkboxes and bulk action toolbar](../screengrabs/tasks-bulk-select.png)
 
 1. Navigate to the **Dashboard** kanban board
 2. Click **Select** to enter bulk select mode

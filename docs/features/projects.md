@@ -62,6 +62,6 @@ The creation dialog collects a project name, description, and optional working d
 3. Status changes are reflected on the project card in the list view.
 
 ## Related
-- [Dashboard Kanban](./dashboard-kanban.md)
+- [Dashboard Kanban](./tasks.md)
 - [Workflows](./workflows.md)
 - [Documents](./documents.md)

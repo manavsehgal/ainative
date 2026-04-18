@@ -75,5 +75,5 @@ Agents can generate documents as output during task execution. Generated files a
 
 ## Related
 - [Projects](./projects.md)
-- [Dashboard Kanban](./dashboard-kanban.md)
+- [Dashboard Kanban](./tasks.md)
 - [Workflows](./workflows.md)

@@ -28,7 +28,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ainative",
+  title: "AI Native Business",
   description: "AI agent task management",
   icons: {
     icon: [

@@ -161,9 +161,21 @@ export function CommandPalette() {
       fetch(`/api/chat/files/search?${params}`, { signal: controller.signal })
         .then((r) => (r.ok ? r.json() : null))
         .then((data) => {
-          if (Array.isArray(data)) setFileResults(data);
-          else if (Array.isArray(data?.results)) setFileResults(data.results);
-          else setFileResults([]);
+          const raw = Array.isArray(data)
+            ? data
+            : Array.isArray(data?.results)
+              ? data.results
+              : [];
+          // API returns FileSearchHit { path, sizeBytes, mtime }; the palette
+          // needs { entityId, label } for stable React keys and the select handler.
+          const mapped = raw
+            .map((f: { path?: string; entityId?: string; label?: string }) => {
+              const entityId = f.entityId ?? f.path;
+              const label = f.label ?? f.path;
+              return entityId && label ? { entityId, label } : null;
+            })
+            .filter((f: { entityId: string; label: string } | null): f is { entityId: string; label: string } => f !== null);
+          setFileResults(mapped);
         })
         .catch(() => {
           // aborted or failed — ignore

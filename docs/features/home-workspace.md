@@ -66,6 +66,6 @@ The sidebar footer shows the active workspace name and path, so you always know 
 3. To change the trust tier, navigate to Settings.
 
 ## Related
-- [Dashboard Kanban](./dashboard-kanban.md)
+- [Dashboard Kanban](./tasks.md)
 - [Inbox Notifications](./inbox-notifications.md)
 - [Settings](./settings.md)

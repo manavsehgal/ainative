@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-04-15T00:00:00Z",
-  "fromSha": "efb73bd25a5952d0ea6923c93dc7c8e091add107",
+  "generatedAt": "2026-04-18T00:00:00Z",
+  "fromSha": "15d721ba4a8849f688e7733937b2f9a5b7f66350",
   "features": {
-    "completed": 62,
+    "completed": 186,
     "inProgress": 0,
-    "planned": 5,
-    "deferred": 14
+    "planned": 15,
+    "deferred": 27
   },
-  "chatTools": 95,
+  "chatTools": 85,
   "dbTables": 45,
   "builtinProfiles": 21,
   "workflowBlueprints": 13,
@@ -16,7 +16,7 @@
     "codex": 36,
     "shared": 22
   },
-  "referenceLibraries": 3,
+  "referenceLibraries": 4,
   "velocity": {
     "source": "unavailable",
     "note": "features/retros/ does not exist; run /supervisor retrospective to generate"

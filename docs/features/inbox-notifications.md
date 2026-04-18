@@ -81,7 +81,7 @@ When spending approaches a configured budget cap (at 80% and 100%), the inbox su
 
 ## Related
 - [Home Workspace](./home-workspace.md)
-- [Dashboard Kanban](./dashboard-kanban.md)
+- [Dashboard Kanban](./tasks.md)
 - [Tool Permissions](./tool-permissions.md)
 - [Settings](./settings.md)
 - [Agent Intelligence](./agent-intelligence.md)

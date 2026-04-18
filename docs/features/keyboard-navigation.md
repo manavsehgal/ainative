@@ -11,7 +11,30 @@ lastUpdated: "2026-04-15"
 
 # Keyboard Navigation
 
-ainative is designed for keyboard-first operation. The command palette provides instant access to any resource, and all interactive elements support full keyboard navigation with visible focus indicators.
+`ainative-business` is designed for keyboard-first operation. The command palette provides instant access to any resource, and chord shortcuts jump directly to the main sections. All interactive elements support full keyboard navigation with visible focus indicators.
+
+## Sidebar Group Overview
+
+The sidebar is divided into five groups. Chord shortcuts (press <kbd>g</kbd> then the letter) jump to items in the Home group; other items are reached via command palette or mouse click:
+
+| Group | Routes |
+|---|---|
+| Home | Dashboard `/`, Tasks `/tasks`, Inbox `/inbox`, Chat `/chat` |
+| Compose | Projects, Workflows, Profiles, Schedules, Documents, Tables |
+| Observe | Monitor, Cost & Usage, Analytics |
+| Learn | AI Native Book, User Guide |
+| Configure | Environment, Settings |
+
+## Chord Shortcuts
+
+| Shortcut | Destination |
+|---|---|
+| <kbd>g</kbd> <kbd>h</kbd> | Dashboard (`/`) |
+| <kbd>g</kbd> <kbd>t</kbd> | Tasks (`/tasks`) |
+| <kbd>Meta</kbd>+<kbd>K</kbd> | Command palette (open / close) |
+| <kbd>/</kbd> (in chat composer) | Slash command popover |
+
+The old <kbd>g</kbd> <kbd>d</kbd> shortcut was removed when the kanban moved from `/dashboard` to `/tasks`. If you had it in muscle memory, use <kbd>g</kbd> <kbd>t</kbd> for Tasks or <kbd>g</kbd> <kbd>h</kbd> for the Dashboard overview at `/`.
 
 ## Screenshots
 
@@ -67,5 +90,5 @@ A live region announces the card's current position during the drag operation fo
 ## Related
 
 - [Design System](./design-system.md)
-- [Dashboard & Kanban](./dashboard-kanban.md)
+- [Tasks](./tasks.md)
 - [Shared Components](./shared-components.md)

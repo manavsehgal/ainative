@@ -20,7 +20,7 @@ AI agents can write code, research markets, draft proposals, and triage support 
 
 **4. Trust and governance gap.** Agents that can read files, run shell commands, and call APIs need guardrails. Which tools are allowed? Who approves destructive actions? What happens when the agent asks a question at 2 AM? Without a governance layer, agent use stays limited to low-stakes experiments.
 
-**5. Distribution gap.** Setting up an agent workspace should not require cloning a repo, configuring a build system, and managing a database. Operators need `npx ainative` — one command, zero config, own your data.
+**5. Distribution gap.** Setting up an agent workspace should not require cloning a repo, configuring a build system, and managing a database. Operators need `npx ainative-business` — one command, zero config, own your data.
 
 ## ainative: AI Business Operating System
 
@@ -53,7 +53,7 @@ ainative closes all five gaps in a single local-first platform.
 Install and run your first task in under a minute:
 
 ```bash
-npx ainative
+npx ainative-business
 ```
 
 See the [Getting Started guide](./getting-started.md) for configuration details, or explore the [User Journeys](./index.md#user-journeys) for guided walkthroughs by experience level.

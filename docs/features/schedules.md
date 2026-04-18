@@ -97,7 +97,7 @@ Every firing writes a row into `schedule_firing_metrics` capturing start time, e
 ## How To
 
 ### Create a Clock-Driven Schedule
-1. Navigate to **Schedules** from the sidebar under the Manage group.
+1. Navigate to **Schedules** from the sidebar under the Compose group.
 2. Click **Create Schedule** to open the creation form.
 3. Enter a descriptive name and select type **Clock**.
 4. Describe the interval in natural language (e.g., "every day at 9am").

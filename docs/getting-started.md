@@ -15,7 +15,7 @@ Get ainative running in under a minute and create your first AI-powered business
 ainative runs as a single command with no clone or build step required:
 
 ```bash
-npx ainative
+npx ainative-business
 ```
 
 This downloads and launches ainative on [localhost:3000](http://localhost:3000). All data is stored locally:
@@ -121,7 +121,7 @@ To explore ainative with example data before creating your own:
 
 ## Creating Your First Task
 
-1. Navigate to **Dashboard** (`/dashboard`) to see the kanban board
+1. Navigate to **Tasks** (`/tasks`) to see the kanban board
 2. Click **Create Task** to open the task creation form
 3. Enter a title and description for your task
 4. (Optional) Click **AI Assist** to get an improved description, complexity estimate, and suggested agent profile

@@ -64,7 +64,7 @@ You are one person running a business. You handle product, marketing, support, o
 ## Getting Started
 
 ```bash
-npx ainative
+npx ainative-business
 ```
 
 1. Create your first project for one of the scenarios above

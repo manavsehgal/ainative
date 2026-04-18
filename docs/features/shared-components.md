@@ -71,4 +71,4 @@ Groups related form fields inside an elevation-1 card with a section title. Used
 
 - [Design System](./design-system.md)
 - [Keyboard Navigation](./keyboard-navigation.md)
-- [Dashboard & Kanban](./dashboard-kanban.md)
+- [Dashboard & Kanban](./tasks.md)

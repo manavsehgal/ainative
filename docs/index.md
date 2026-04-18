@@ -33,7 +33,7 @@ ainative is an AI Business Operating System that lets solo founders and micro-te
 | Section | Route | Key Features |
 |---------|-------|-------------|
 | [Home & Workspace](./features/home-workspace.md) | `/` | Stat cards, activity feed, navigation |
-| [Dashboard & Kanban](./features/dashboard-kanban.md) | `/dashboard` | Task board, AI Assist, bulk operations, heartbeat badges |
+| [Tasks](./features/tasks.md) | `/tasks` | Task kanban + table, AI Assist, bulk operations, heartbeat badges |
 | [Inbox & Notifications](./features/inbox-notifications.md) | `/inbox` | Approvals, handoff requests, budget alerts |
 | [Chat](./features/chat.md) | `/chat` | Conversations, model selection, @ mentions, channel chat |
 | [Projects](./features/projects.md) | `/projects` | Workspaces, task grouping, file context |

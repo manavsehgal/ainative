@@ -5,7 +5,7 @@ chapter: 8
 part: 3
 readingTime: 16
 relatedDocs: [profiles, agent-intelligence]
-lastGeneratedBy: "2026-04-16T00:00:00.000Z"
+lastGeneratedBy: "2026-04-18T17:10:00.000Z"
 ---
 
 # The Swarm — Multi-Agent Coordination
@@ -40,7 +40,7 @@ This is fundamentally different from stateless agent architectures where a crash
 
 ## Profile-Based Specialization
 
-Gas Town's role system maps directly to a concept we have been building in ainative: **agent profiles**. A profile is not just a system prompt -- it is a complete specification of an agent's capabilities, permissions, tools, and behavioral patterns. ainative currently ships with four profiles, each designed for a distinct type of work:
+Gas Town's role system maps directly to a concept we have been building in `ainative-business`: **agent profiles**. A profile is not just a system prompt -- it is a complete specification of an agent's capabilities, permissions, tools, and behavioral patterns. `ainative-business` currently ships with four profiles, each designed for a distinct type of work:
 
 - **General**: The default profile. Broad capabilities, moderate tool access, suitable for open-ended tasks that do not fit a specific specialty.
 - **Code Reviewer**: Security-focused analysis. Access to file reading and search tools but restricted write permissions. Applies OWASP checks and produces structured findings.
@@ -72,7 +72,7 @@ The profile system creates natural boundaries that prevent the chaos of unconstr
 
 One of the most dangerous failure modes in multi-agent systems is runaway agent chains. Agent A delegates to Agent B, which delegates to Agent C, which delegates to Agent D, and suddenly you have a four-deep chain of agents, each spending tokens, each potentially making decisions that compound errors from the level above. Without governance, a single poorly-scoped task can cascade into thousands of dollars of compute and a tangled mess of conflicting changes.
 
-Gas Town addresses this with explicit chain depth limits. ainative implements the same principle through a `maxChainDepth` parameter in workflow definitions. When a coordinator agent spawns worker agents, each worker tracks its depth in the chain. A worker at depth 3 in a system with `maxChainDepth: 3` cannot spawn sub-agents. It must complete its work directly or report back to its coordinator that the task needs to be decomposed differently.
+Gas Town addresses this with explicit chain depth limits. `ainative-business` implements the same principle through a `maxChainDepth` parameter in workflow definitions. When a coordinator agent spawns worker agents, each worker tracks its depth in the chain. A worker at depth 3 in a system with `maxChainDepth: 3` cannot spawn sub-agents. It must complete its work directly or report back to its coordinator that the task needs to be decomposed differently.
 
 This constraint is more than a cost control measure. It is a forcing function for task decomposition quality. If a task requires depth-4 agent chains to complete, it is almost certainly too vaguely specified. Good task decomposition produces work items that a single agent can complete in one pass. The chain depth limit makes poor decomposition fail fast rather than fail expensively.
 
@@ -96,11 +96,11 @@ A Sweep is not a one-time cleanup. It is a recurring process, analogous to garba
 
 This concept maps directly to how mature engineering organizations operate. Google has dedicated teams for large-scale changes (LSCs) that sweep across the monorepo to update deprecated APIs, fix security vulnerabilities, and enforce new standards. The difference is that LSCs require human engineers and take weeks. Agent sweeps take hours.
 
-ainative's roadmap includes a sweep system built on the workflow engine. A sweep is a workflow that queries the codebase for a specific pattern of drift, generates fix tasks, and executes them through the standard agent pipeline with human review gates. The feedback from sweeps feeds back into the knowledge graph (Chapter 7) -- if the same drift pattern appears repeatedly, it suggests that the root cause is not individual agents but a missing or unclear specification.
+`ainative-business`'s roadmap includes a sweep system built on the workflow engine. A sweep is a workflow that queries the codebase for a specific pattern of drift, generates fix tasks, and executes them through the standard agent pipeline with human review gates. The feedback from sweeps feeds back into the knowledge graph (Chapter 7) -- if the same drift pattern appears repeatedly, it suggests that the root cause is not individual agents but a missing or unclear specification.
 
 ## ainative Today
 
-ainative's current multi-agent capability operates through the **swarm workflow pattern** -- a coordinator agent that decomposes work and delegates to specialized worker agents. The task classifier routes incoming work to the appropriate agent profile based on the task description, and handoffs between agents preserve context through the workflow engine.
+`ainative-business`'s current multi-agent capability operates through the **swarm workflow pattern** -- a coordinator agent that decomposes work and delegates to specialized worker agents. The task classifier routes incoming work to the appropriate agent profile based on the task description, and handoffs between agents preserve context through the workflow engine.
 
 ```typescript
 // Building with ainative: Multi-agent swarm workflow
@@ -161,4 +161,4 @@ The current swarm system is functional but stateless -- agents are spawned for a
 
 **Automated merge conflict resolution** takes this further. Simple conflicts (two agents adding imports to the same file, or appending to the same array) can be resolved automatically. Complex conflicts (two agents modifying the same function body with different approaches) require escalation to the coordinator or to a human. The system learns over time which types of conflicts it can safely auto-resolve, feeding this knowledge back into the institutional memory system.
 
-The ultimate vision is an agent organization that mirrors the best human organizations: specialized roles, clear communication channels, shared institutional memory, governance that enables rather than restricts, and the ability to scale up or down based on the work at hand. We are not there yet. But the architecture of Gas Town, the governance of Stripe's Minions, and the profile system in ainative are all converging on the same destination -- not a single brilliant agent, but a well-coordinated swarm of specialists that is greater than the sum of its parts.
+The ultimate vision is an agent organization that mirrors the best human organizations: specialized roles, clear communication channels, shared institutional memory, governance that enables rather than restricts, and the ability to scale up or down based on the work at hand. We are not there yet. But the architecture of Gas Town, the governance of Stripe's Minions, and the profile system in `ainative-business` are all converging on the same destination -- not a single brilliant agent, but a well-coordinated swarm of specialists that is greater than the sum of its parts.

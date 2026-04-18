@@ -4,7 +4,7 @@ subtitle: "Workflow Orchestration"
 chapter: 5
 part: 2
 readingTime: 14
-lastGeneratedBy: "2026-04-16T00:00:00.000Z"
+lastGeneratedBy: "2026-04-18T17:10:00.000Z"
 relatedDocs: ["workflows", "agent-intelligence"]
 relatedJourney: "power-user"
 ---
@@ -19,15 +19,15 @@ This is workflow orchestration, and it is where AI-native development stops feel
 
 > [!case-study]
 > **8090's Foundry and Planner**
-> The Citadel in *Furiosa* has a Foundry — but the Foundry does not decide what to build. The Planner decides. The Planner analyzes what is needed, designs the sequence of operations, and the Foundry executes. In 8090's wasteland economy, the separation is critical: planning and execution are different competencies requiring different resources. Agents that can write code are not necessarily agents that can plan a multi-step delivery pipeline. ainative's workflow engine reflects this split. A planner step — using a `general` or `project-manager` profile — produces the execution plan. Subsequent steps — using `code-reviewer` or `document-writer` profiles — execute against that plan. The planner reasons broadly; the executors work precisely.
+> The Citadel in *Furiosa* has a Foundry — but the Foundry does not decide what to build. The Planner decides. The Planner analyzes what is needed, designs the sequence of operations, and the Foundry executes. In 8090's wasteland economy, the separation is critical: planning and execution are different competencies requiring different resources. Agents that can write code are not necessarily agents that can plan a multi-step delivery pipeline. `ainative-business`'s workflow engine reflects this split. A planner step — using a `general` or `project-manager` profile — produces the execution plan. Subsequent steps — using `code-reviewer` or `document-writer` profiles — execute against that plan. The planner reasons broadly; the executors work precisely.
 
 ## The Six Patterns
 
-Not all workflows are the same. Over months of building and using ainative, we have identified six distinct orchestration patterns that cover the vast majority of real-world scenarios. Each pattern makes different trade-offs between simplicity, parallelism, and human control.
+Not all workflows are the same. Over months of building and using `ainative-business`, we have identified six distinct orchestration patterns that cover the vast majority of real-world scenarios. Each pattern makes different trade-offs between simplicity, parallelism, and human control.
 
 **1. Sequence**: The simplest pattern. Steps execute one after another, each receiving the output of the previous step. Plan, then implement, then test, then review. No parallelism, no branching, maximum predictability. This is the default for teams just starting with workflow automation.
 
-**2. Planner-Executor**: A planning step produces a structured work breakdown. Execution steps run against the plan. The planner uses a general-purpose profile with broad context; the executors use specialized profiles with narrow tool permissions. This is the pattern we use most in ainative's own development — an agent decomposes a feature spec into tasks, then other agents execute each task.
+**2. Planner-Executor**: A planning step produces a structured work breakdown. Execution steps run against the plan. The planner uses a general-purpose profile with broad context; the executors use specialized profiles with narrow tool permissions. This is the pattern we use most in `ainative-business`'s own development — an agent decomposes a feature spec into tasks, then other agents execute each task.
 
 **3. Checkpoint**: A sequence with human approval gates. The workflow pauses at designated steps, surfaces results for review, and waits for explicit approval before continuing. Essential for high-stakes work where autonomous execution carries unacceptable risk — deploying to production, modifying financial data, publishing external content.
 
@@ -94,15 +94,15 @@ Between simple loops and complex DAGs lies a middle ground: the linear pipeline 
 > **Gas Town: Mayor, Polecats, Refinery**
 > Gas Town in the *Furiosa* universe runs a three-stage pipeline. The Mayor sets priorities and allocates resources. The Polecats — the town's warrior-mechanics — execute the dangerous work. The Refinery processes the results into usable fuel. Each stage has different actors with different skills and different risk profiles. The Mayor does not climb tanks. The Polecats do not set policy. The Refinery does not fight. This specialization-by-stage maps directly to workflow orchestration. A planning stage uses a profile with broad read access and no write permissions. An execution stage uses a profile with write access to specific directories. A review stage uses a profile that can read changes but not modify them. Each stage is scoped to its competency, and trust boundaries are enforced at the profile level, not through human vigilance.
 
-The pipeline pattern — sequential stages with specialized roles — is the most common workflow structure we see in production use. It is simple enough to understand at a glance, structured enough to enforce quality gates, and flexible enough to accommodate most delivery processes. When we ask ainative users how they structure their workflows, the majority describe some variant of: plan it, build it, test it, review it. Four stages, four profiles, one pipeline.
+The pipeline pattern — sequential stages with specialized roles — is the most common workflow structure we see in production use. It is simple enough to understand at a glance, structured enough to enforce quality gates, and flexible enough to accommodate most delivery processes. When we ask `ainative-business` users how they structure their workflows, the majority describe some variant of: plan it, build it, test it, review it. Four stages, four profiles, one pipeline.
 
 ## The Orchestration Ecosystem
 
-ainative's workflow engine does not exist in isolation. The broader ecosystem of workflow orchestration is maturing rapidly, and the patterns converging across the industry validate the approach.
+`ainative-business`'s workflow engine does not exist in isolation. The broader ecosystem of workflow orchestration is maturing rapidly, and the patterns converging across the industry validate the approach.
 
 Temporal.io, the durable execution platform, reached a $5 billion valuation — proving enterprise demand for reliable workflow orchestration. LangGraph, the agent orchestration framework, accumulated over 126,000 GitHub stars, demonstrating developer appetite for multi-step agent pipelines. Google's Agent-to-Agent (A2A) protocol attracted over 150 organizations, establishing that agent workflows need standardized communication interfaces.
 
-These are not competing approaches. They are layers of a stack that is still assembling itself. Temporal provides durable execution guarantees (workflows survive crashes and restarts). LangGraph provides agent-specific orchestration primitives (memory, branching, human-in-the-loop). A2A provides cross-agent communication standards (agents from different vendors in the same workflow). ainative sits at the application layer, providing the user interface and project context that makes these capabilities accessible to teams that are not distributed systems engineers.
+These are not competing approaches. They are layers of a stack that is still assembling itself. Temporal provides durable execution guarantees (workflows survive crashes and restarts). LangGraph provides agent-specific orchestration primitives (memory, branching, human-in-the-loop). A2A provides cross-agent communication standards (agents from different vendors in the same workflow). `ainative-business` sits at the application layer, providing the user interface and project context that makes these capabilities accessible to teams that are not distributed systems engineers.
 
 The convergence is real: every serious agent deployment eventually needs multi-step orchestration, role-based routing, and human approval gates. The question is not whether you need blueprints, but when.
 
@@ -128,7 +128,7 @@ Workflows today are powerful but manual. The roadmap extends them toward reuse, 
 
 **Workflow Marketplace**: A library of community-contributed blueprint templates — "Feature Delivery Pipeline," "Security Audit Workflow," "Documentation Sprint," "Bug Triage and Fix." Users install a template, customize it for their project, and run. This transforms workflows from something each team builds from scratch into shared infrastructure.
 
-**A2A Protocol Integration**: Google's Agent-to-Agent protocol enables workflows where steps execute across different agent providers. A planning step might use Claude for its reasoning depth. An implementation step might use Codex for its sandbox environment. A review step might use a specialized security analysis model. A2A provides the communication standard; ainative provides the orchestration.
+**A2A Protocol Integration**: Google's Agent-to-Agent protocol enables workflows where steps execute across different agent providers. A planning step might use Claude for its reasoning depth. An implementation step might use Codex for its sandbox environment. A review step might use a specialized security analysis model. A2A provides the communication standard; `ainative-business` provides the orchestration.
 
 **Durable Execution**: Today, if the server restarts mid-workflow, in-progress steps may need to restart. Durable execution — persisting workflow state to the database at every transition — would allow workflows to resume exactly where they left off after any interruption. This is essential for workflows that run for hours or days.
 

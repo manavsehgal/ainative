@@ -72,7 +72,7 @@ The cost and usage dashboard provides the data you need for client billing:
 ## Getting Started
 
 ```bash
-npx ainative
+npx ainative-business
 ```
 
 1. Create a project for your first client and upload their reference documents

@@ -51,5 +51,5 @@ The guide adapts to your current usage stage. Features you have already used are
 
 ## Related
 - [Home & Workspace](./home-workspace.md)
-- [Dashboard & Kanban](./dashboard-kanban.md)
+- [Dashboard & Kanban](./tasks.md)
 - [Settings](./settings.md)

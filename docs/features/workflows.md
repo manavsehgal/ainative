@@ -95,7 +95,7 @@ The AI Assist feature can analyze a task and recommend converting it into a work
 3. Failed steps display error details to help with debugging.
 
 ## Related
-- [Dashboard Kanban](./dashboard-kanban.md)
+- [Dashboard Kanban](./tasks.md)
 - [Projects](./projects.md)
 - [Profiles](./profiles.md)
 - [Schedules](./schedules.md)
