@@ -342,8 +342,8 @@ describe("ensureBranchPushConfig (Phase B)", () => {
     const { createGitOps } = await import("../git-ops");
     const { ensureBranchPushConfig } = await import("../bootstrap");
     const ops = createGitOps(tempDir);
-    ops.createAndCheckoutBranch("wealth-mgr");
-    ops.createAndCheckoutBranch("investor-mgr");
+    runGit(["branch", "wealth-mgr"], tempDir);
+    runGit(["branch", "investor-mgr"], tempDir);
     const result = ensureBranchPushConfig(ops, ["wealth-mgr", "investor-mgr"]);
     expect(result.status).toBe("ok");
     expect(execFileSync("git", ["config", "--get", "branch.wealth-mgr.pushRemote"], { cwd: tempDir, encoding: "utf-8" }).trim()).toBe("no_push");
@@ -433,20 +433,26 @@ describe("ensureInstance orchestrator", () => {
   });
 
   it("runs Phase A and stamps consent state on fresh clone (consent not_yet)", async () => {
-    const { ensureInstance } = await import("../bootstrap");
-    const result = await ensureInstance(tempDir);
-    expect(result.skipped).toBeUndefined();
-    const steps = result.steps.map((s) => s.step);
-    expect(steps).toContain("instance-config");
-    expect(steps).toContain("local-branch");
-    expect(steps).not.toContain("pre-push-hook");
-    expect(steps).not.toContain("branch-push-config");
-    const { createGitOps } = await import("../git-ops");
-    expect(createGitOps(tempDir).branchExists("local")).toBe(true);
-    expect(existsSync(join(tempDir, ".git", "hooks", "pre-push"))).toBe(false);
-    const { getGuardrails } = await import("../settings");
-    expect(getGuardrails().firstBootCompletedAt).not.toBeNull();
-    expect(getGuardrails().consentStatus).toBe("not_yet");
+    // ensureLocalBranchShim needs origin/main to exist; set it up first.
+    const bareDir = setupOriginRemote(tempDir, tmpdir());
+    try {
+      const { ensureInstance } = await import("../bootstrap");
+      const result = await ensureInstance(tempDir);
+      expect(result.skipped).toBeUndefined();
+      const steps = result.steps.map((s) => s.step);
+      expect(steps).toContain("instance-config");
+      expect(steps).toContain("local-branch");
+      expect(steps).not.toContain("pre-push-hook");
+      expect(steps).not.toContain("branch-push-config");
+      const { createGitOps } = await import("../git-ops");
+      expect(createGitOps(tempDir).branchExists("local")).toBe(true);
+      expect(existsSync(join(tempDir, ".git", "hooks", "pre-push"))).toBe(false);
+      const { getGuardrails } = await import("../settings");
+      expect(getGuardrails().firstBootCompletedAt).not.toBeNull();
+      expect(getGuardrails().consentStatus).toBe("not_yet");
+    } finally {
+      rmSync(bareDir, { recursive: true, force: true });
+    }
   });
 
   it("runs Phase B when consent is enabled", async () => {
