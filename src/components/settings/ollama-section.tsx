@@ -148,7 +148,7 @@ export function OllamaSection() {
           : "border-2 border-muted-foreground/40";
 
   return (
-    <Card className="surface-card">
+    <Card id="settings-ollama" className="surface-card scroll-mt-4">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Server className="h-5 w-5" />

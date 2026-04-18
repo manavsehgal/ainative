@@ -611,14 +611,21 @@ export function ProvidersAndRuntimesSection() {
     fetchData();
   }
 
-  function jumpToProvider(provider: "anthropic" | "openai") {
-    if (provider === "anthropic") {
+  function jumpToProvider(target: "anthropic" | "openai" | "ollama" | "chat") {
+    if (target === "anthropic") {
       setAnthropicOpen(true);
       anthropicRowRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    } else {
+      return;
+    }
+    if (target === "openai") {
       setOpenAIOpen(true);
       openaiRowRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
     }
+    // External sections — Ollama and Chat settings live as sibling sections
+    // on the settings page, so we scroll by id rather than via refs.
+    const id = target === "ollama" ? "settings-ollama" : "settings-chat";
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   // ── Render ───────────────────────────────────────────────────────
@@ -890,7 +897,7 @@ function RecommendationBanner({
   preference: RoutingPreference;
   recommendation: RoutingRecommendation | null;
   ollama: OllamaState | null;
-  onConfigure: (provider: "anthropic" | "openai") => void;
+  onConfigure: (target: "anthropic" | "openai" | "ollama" | "chat") => void;
 }) {
   if (!recommendation) {
     return (
@@ -923,8 +930,8 @@ function RecommendationBanner({
             </span>
           }
           hint="connected"
-          configureLabel={null}
-          onConfigure={null}
+          configureLabel="Configure"
+          onConfigure={() => onConfigure("ollama")}
         />
       )}
 
@@ -956,8 +963,8 @@ function RecommendationBanner({
           </Badge>
         }
         hint="chat pane"
-        configureLabel={null}
-        onConfigure={null}
+        configureLabel="Configure"
+        onConfigure={() => onConfigure("chat")}
       />
 
       <p className="text-xs text-muted-foreground">You can override any of these in the provider rows or chat model selector.</p>

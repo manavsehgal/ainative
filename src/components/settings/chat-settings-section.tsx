@@ -71,7 +71,7 @@ export function ChatSettingsSection() {
   const openaiModels = CHAT_MODELS.filter((m) => m.provider === "openai");
 
   return (
-    <Card>
+    <Card id="settings-chat" className="scroll-mt-4">
       <CardHeader>
         <CardTitle>Chat</CardTitle>
         <CardDescription>
