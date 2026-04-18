@@ -79,12 +79,12 @@ async function withStagentMcpServer(
     ...profileServers,
     ...browserServers,
     ...externalServers,
-    stagent: ainativeServer,
+    ainative: ainativeServer,
   };
 }
 
 /**
- * Prepend `mcp__stagent__*` to a profile's explicit allowedTools so the
+ * Prepend `mcp__ainative__*` to a profile's explicit allowedTools so the
  * stagent tool registration survives the SDK preset filter. When the
  * profile has no explicit allowlist and `includeSdkTools` is true, fall
  * back to Phase 1a's CLAUDE_SDK_ALLOWED_TOOLS (Skill, Read/Grep/Glob,
@@ -99,17 +99,17 @@ function withStagentAllowedTools(
 ): string[] | undefined {
   // An empty `allowedTools: []` is treated the same as `undefined` — an
   // empty array is almost never the profile author's intent (they'd get
-  // only `mcp__stagent__*` and nothing else). Require at least one tool
+  // only `mcp__ainative__*` and nothing else). Require at least one tool
   // name for the "profile has explicit list" branch.
   if (profileAllowedTools && profileAllowedTools.length > 0) {
     // Profile has explicit list — respect it. Only prepend stagent.
-    return Array.from(new Set(["mcp__stagent__*", ...profileAllowedTools]));
+    return Array.from(new Set(["mcp__ainative__*", ...profileAllowedTools]));
   }
   if (includeSdkTools) {
     // No profile allowlist but runtime has native skills — pass the
-    // Phase 1a tool set alongside mcp__stagent__* + browser/external
+    // Phase 1a tool set alongside mcp__ainative__* + browser/external
     // (callers merge their own browser/external patterns into this list).
-    return ["mcp__stagent__*", ...CLAUDE_SDK_ALLOWED_TOOLS];
+    return ["mcp__ainative__*", ...CLAUDE_SDK_ALLOWED_TOOLS];
   }
   return undefined;
 }

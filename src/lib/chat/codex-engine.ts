@@ -315,7 +315,7 @@ export async function* sendCodexMessage(
         cwd: workspace.cwd,
         approvalPolicy: "on-request",
         sandbox: "workspace-write",
-        serviceName: "stagent",
+        serviceName: "ainative",
         developerInstructions: context.systemPrompt || null,
         experimentalRawEvents: false,
         ephemeral: false,

@@ -38,7 +38,7 @@ import { toast } from "sonner";
 interface DiscoveredSkill {
   name: string;
   path: string;
-  format: "stagent" | "skillmd-only" | "unknown";
+  format: "ainative" | "skillmd-only" | "unknown";
   hasProfileYaml: boolean;
   hasSkillMd: boolean;
   hasSkillMdTmpl: boolean;
@@ -397,10 +397,10 @@ export function RepoImportWizard({
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">{skill.name}</span>
                         <Badge
-                          variant={skill.format === "stagent" ? "default" : "secondary"}
+                          variant={skill.format === "ainative" ? "default" : "secondary"}
                           className="text-[10px] px-1.5 py-0"
                         >
-                          {skill.format === "stagent" ? "Stagent" : "SKILL.md"}
+                          {skill.format === "ainative" ? "ainative" : "SKILL.md"}
                         </Badge>
                       </div>
                       {skill.description && (

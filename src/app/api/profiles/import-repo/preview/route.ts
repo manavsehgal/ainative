@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
             repoReadme: repoReadme ?? "",
           };
 
-          const adapted = skill.format === "stagent" && profileYaml
+          const adapted = skill.format === "ainative" && profileYaml
             ? adaptAinativeNative(skill, skillMd, profileYaml, repoMeta, readmeCtx)
             : adaptSkillMdOnly(skill, skillMd, repoMeta, readmeCtx);
 

@@ -544,7 +544,7 @@ export function adaptAinativeNative(
     commitSha: repoMeta.commitSha,
     contentHash: contentHash(skillMd),
     importedAt: new Date().toISOString(),
-    sourceFormat: "stagent",
+    sourceFormat: "ainative",
   };
 
   // Set source URL if not already set

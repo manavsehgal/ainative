@@ -127,7 +127,7 @@ export function ChatShell({
               : msg.metadata;
           if (
             meta.type === "permission_request" &&
-            meta.toolName === "mcp__stagent__execute_task"
+            meta.toolName === "mcp__ainative__execute_task"
           ) {
             const input = meta.toolInput;
             if (input?.taskId) taskIds.push(input.taskId);
