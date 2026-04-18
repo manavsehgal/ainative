@@ -52,6 +52,7 @@ interface NavItem {
   title: string;
   href: string;
   icon: typeof Home;
+  description: string;
   badge?: boolean;
   alsoMatches?: string[];
 }
@@ -59,31 +60,31 @@ interface NavItem {
 type GroupId = "work" | "manage" | "learn" | "configure";
 
 const workItems: NavItem[] = [
-  { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard, alsoMatches: ["/tasks"] },
-  { title: "Inbox", href: "/inbox", icon: Inbox, badge: true },
-  { title: "Chat", href: "/chat", icon: MessageCircle },
-  { title: "Projects", href: "/projects", icon: FolderKanban },
-  { title: "Workflows", href: "/workflows", icon: Workflow },
-  { title: "Documents", href: "/documents", icon: FileText },
-  { title: "Tables", href: "/tables", icon: Table2, alsoMatches: ["/tables/"] },
+  { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard, description: "Today's work at a glance", alsoMatches: ["/tasks"] },
+  { title: "Inbox", href: "/inbox", icon: Inbox, description: "Approvals and notifications", badge: true },
+  { title: "Chat", href: "/chat", icon: MessageCircle, description: "Talk directly with agents" },
+  { title: "Projects", href: "/projects", icon: FolderKanban, description: "Group work by project" },
+  { title: "Workflows", href: "/workflows", icon: Workflow, description: "Multi-step agent pipelines" },
+  { title: "Documents", href: "/documents", icon: FileText, description: "Shared context library" },
+  { title: "Tables", href: "/tables", icon: Table2, description: "Structured data views", alsoMatches: ["/tables/"] },
 ];
 
 const manageItems: NavItem[] = [
-  { title: "Monitor", href: "/monitor", icon: Activity },
-  { title: "Profiles", href: "/profiles", icon: Bot },
-  { title: "Schedules", href: "/schedules", icon: Clock },
-  { title: "Cost & Usage", href: "/costs", icon: Wallet },
-  { title: "Analytics", href: "/analytics", icon: BarChart3 },
+  { title: "Monitor", href: "/monitor", icon: Activity, description: "Live agent activity stream" },
+  { title: "Profiles", href: "/profiles", icon: Bot, description: "Tune agent behavior" },
+  { title: "Schedules", href: "/schedules", icon: Clock, description: "Recurring automated runs" },
+  { title: "Cost & Usage", href: "/costs", icon: Wallet, description: "Spend and model metering" },
+  { title: "Analytics", href: "/analytics", icon: BarChart3, description: "Throughput and outcomes" },
 ];
 
 const learnItems: NavItem[] = [
-  { title: "AI Native Book", href: "/book", icon: BookOpen },
-  { title: "User Guide", href: "/user-guide", icon: BookMarked },
+  { title: "AI Native Book", href: "/book", icon: BookOpen, description: "Philosophy and patterns" },
+  { title: "User Guide", href: "/user-guide", icon: BookMarked, description: "How-tos and walkthroughs" },
 ];
 
 const configureItems: NavItem[] = [
-  { title: "Environment", href: "/environment", icon: Globe },
-  { title: "Settings", href: "/settings", icon: Settings },
+  { title: "Environment", href: "/environment", icon: Globe, description: "System prerequisites check" },
+  { title: "Settings", href: "/settings", icon: Settings, description: "Models, auth, and defaults" },
 ];
 
 const groupMap: { id: GroupId; label: string; items: NavItem[] }[] = [
@@ -174,12 +175,18 @@ function NavGroup({
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     asChild
+                    size="lg"
                     tooltip={item.title}
                     isActive={isItemActive(item, pathname)}
                   >
                     <Link href={item.href}>
-                      <item.icon className="h-4 w-4" aria-hidden="true" />
-                      <span>{item.title}</span>
+                      <item.icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                      <div className="flex min-w-0 flex-1 flex-col items-start gap-0.5 group-data-[collapsible=icon]:hidden">
+                        <span className="truncate leading-tight">{item.title}</span>
+                        <span className="truncate text-[10.5px] leading-tight text-sidebar-foreground/50">
+                          {item.description}
+                        </span>
+                      </div>
                       {item.badge && (
                         <span className="group-data-[collapsible=icon]:hidden">
                           <UnreadBadge />
@@ -247,6 +254,7 @@ export function AppSidebar() {
         <div className="group-data-[collapsible=icon]:hidden mb-2 empty:hidden">
           <UpgradeBadge />
         </div>
+        <SidebarSeparator className="!-mx-4 !w-[calc(100%+2rem)] mb-2 group-data-[collapsible=icon]:hidden" />
         <div className="group-data-[collapsible=icon]:hidden mb-2">
           <WorkspaceIndicator variant="sidebar" />
         </div>
