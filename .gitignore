@@ -34,7 +34,7 @@ methods/
 output/
 
 # local package artifacts
-stagent-*.tgz
+ainative-*.tgz
 supabase/.temp/
 
 # superpowers skill scratch output (local only)

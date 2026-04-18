@@ -1,7 +1,7 @@
 {
-  "name": "stagent",
-  "version": "0.11.2",
-  "description": "AI Business Operating System — run your business with AI agents. Local-first, multi-provider, governed.",
+  "name": "ainative",
+  "version": "0.12.0",
+  "description": "Companion software for the AI Native Business book — a local-first agent runtime and builder scaffold for AI-native businesses.",
   "keywords": [
     "ai",
     "agents",
@@ -16,12 +16,14 @@
     "operating-system",
     "orchestration",
     "solo-founder",
-    "ai-business"
+    "ai-business",
+    "ai-native-business",
+    "book-companion"
   ],
   "license": "Apache-2.0",
   "type": "module",
   "bin": {
-    "stagent": "./dist/cli.js"
+    "ainative": "./dist/cli.js"
   },
   "files": [
     "dist/",
@@ -38,12 +40,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/manavsehgal/stagent.git"
+    "url": "https://github.com/manavsehgal/ainative.git"
   },
   "bugs": {
-    "url": "https://github.com/manavsehgal/stagent/issues"
+    "url": "https://github.com/manavsehgal/ainative/issues"
   },
-  "homepage": "https://stagent.io",
+  "homepage": "https://ainative.business",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
