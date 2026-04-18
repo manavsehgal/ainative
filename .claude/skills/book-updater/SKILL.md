@@ -239,6 +239,33 @@ All case studies use inline attribution (no footnotes). Three patterns:
 - **Practitioner-focused**: "here is what works" over "here is what might work"
 - **Reading time**: ~250 words/minute; update `readingTime` frontmatter when word count changes significantly
 
+### Software Name Convention (`ainative-business` vs `ainative`)
+
+Per `handoff/2026-04-18-ainative-business-naming-and-rendering.md`. The book reader (and the website's docs subsite) renders inline `<code>` with mono font, primary-blue text, and a primary-tinted background — this gives readers a visual cue that "this is the package/CLI name, not just a brand word." Generated chapter prose must produce that distinction.
+
+| Context | Use | Example |
+|---|---|---|
+| Software product — npm package, CLI, what runs agents | `` `ainative-business` `` (backticks in markdown) | "`ainative-business` integrates Claude Agent SDK and Codex App Server" |
+| Brand / project / repo / domain | `ainative` (plain) | "the ainative repo at github.com/manavsehgal/ainative" |
+| URLs / file paths / image filenames / storage keys | unchanged | `ainative.business`, `~/.ainative/`, `/ainative-s-128.png` |
+
+**Quick test:** *"Does this sentence describe what the software does, or who/where the project is?"* — Software → `` `ainative-business` ``; Identity → `ainative`.
+
+**Where backticks BREAK rendering (use plain `ainative-business`):**
+
+- **YAML frontmatter** in chapter files (`title:`, `subtitle:`, `description:`) — backticks become literal text in meta tags and OG cards
+- **JS string literals** that flow into `src/lib/book/content.ts` (chapter manifests, subtitles) — these render as `{plainString}` in JSX. Example: chapter 11 subtitle is `"ainative-business Building Itself Using Itself"` (plain, no backticks)
+- **JSON-LD strings**, browser `<title>` attributes
+- Headings: backticks DO work in markdown headings (`## The \`ainative-business\` Approach`), but they change the heading slug — update inline TOC anchors to match if you backtick a heading
+
+**Bulk migration regex** (the same Perl pass used on the website on 2026-04-18):
+
+```perl
+\bainative\b(?!(\.\w|-))
+```
+
+Matches bare `ainative` while skipping `ainative.business` (URL), `ainative-wealth` / `ainative-growth` (folder names), and `~/.ainative-...` (paths). For chapter files with frontmatter, gate the substitution to lines after the second `---` so YAML stays clean.
+
 ---
 
 ## Phase 4: Update Chapter Mapping
@@ -290,7 +317,13 @@ done
 
 # 5. Verify code examples reference real API
 grep -l '```typescript' book/chapters/*.md
+
+# 6. Software name convention check — should return 0 hits in chapter body prose.
+#    Correct keeps (URLs, paths, hyphenated identifiers) are excluded by the regex.
+perl -lne 'print "$ARGV:$.: $_" if /\bainative\b(?!(\.\w|-))/' book/chapters/*.md
 ```
+
+If step 6 prints any lines from chapter body prose (not frontmatter), wrap the bare `ainative` in backticks if the surrounding sentence describes what the software does, or leave it bare if it refers to the brand/project/repo. See "Software Name Convention" in Phase 3 for the rule.
 
 ### Build Verification
 

@@ -13,6 +13,54 @@ Synthesize product documentation from code, feature specs, and screengrabs. Prod
 
 ---
 
+## Software Name Convention (`ainative-business` vs `ainative`)
+
+**Applies to all generated content** — feature reference docs, journey guides, index, getting-started, and the README produced by Phase 7. Per `handoff/2026-04-18-ainative-business-naming-and-rendering.md`.
+
+The published npm package is `ainative-business` (the bare `ainative` name was rejected by npm). The user guide viewer and the website's docs subsite render inline `<code>` with mono font, primary-blue text, and a primary-tinted background — that visual cue tells readers "this is the package/CLI name, not just a brand word." Generated prose must produce that distinction.
+
+| Context | Use | Example |
+|---|---|---|
+| Software product — npm package, CLI, what runs agents | `` `ainative-business` `` (backticks in markdown) | "Install `ainative-business` to run AI agents…" |
+| Brand / project / repo / domain | `ainative` (plain) | "the ainative repo at github.com/manavsehgal/ainative" |
+| URLs / file paths / image filenames / storage keys | unchanged | `ainative.business`, `~/.ainative/`, `/ainative-s-128.png` |
+| Page-title brand suffixes, `og:site_name`, `meta author` | `ainative` | site identity stays as the brand |
+
+**Quick test:** *"Does this sentence describe what the software does, or who/where the project is?"* — Software → `` `ainative-business` ``; Identity → `ainative`.
+
+### Where backticks BREAK rendering (use plain `ainative-business`)
+
+- **YAML frontmatter** (`title:`, `description:`, `subtitle:`) — backticks become literal text in meta tags and OG cards. Generated frontmatter must use plain text.
+- **JSX/component string props** (`caption=""`, `alt=""`, `title=""`) — same problem.
+- **JSON-LD strings**, browser `<title>` attributes, JS string literals rendered as `{plainString}` in JSX.
+- **Quick Start code blocks** (`npx ainative-business`, `npm install ainative-business`) — code fences already render as mono; do not wrap in backticks.
+
+In all those spots, write `ainative-business` as plain text.
+
+### Per-output split
+
+| Output | Body prose | Frontmatter `description:` / `title:` | Image alt text |
+|---|---|---|---|
+| `docs/features/*.md` | `` `ainative-business` `` | plain `ainative-business` | plain text |
+| `docs/journeys/*.md` | `` `ainative-business` `` | plain `ainative-business` | plain text |
+| `docs/index.md`, `docs/getting-started.md` | `` `ainative-business` `` | plain `ainative-business` | plain text |
+| `README.md` body sections | `` `ainative-business` `` | n/a | n/a |
+| `README.md` Quick Start fenced code blocks | plain (already monospaced by code fence) | n/a | n/a |
+| `README.md` badge alt text and shields.io URLs | unchanged | n/a | n/a |
+| `docs/manifest.json` | n/a — JSON strings, plain text only | n/a | n/a |
+
+### Bulk migration regex
+
+If sweeping previously generated content for stale bare-name mentions, use the same Perl pass that the website used on 2026-04-18:
+
+```perl
+\bainative\b(?!(\.\w|-))
+```
+
+Matches bare `ainative` while skipping `ainative.business` (URL), `ainative-wealth` / `ainative-growth` (folder names), and `~/.ainative-...` paths. For files with frontmatter, gate substitution to lines after the second `---` so YAML stays clean.
+
+---
+
 ## Phase 1: Setup & Mode Detection
 
 Determine generation mode from user request:
@@ -189,6 +237,7 @@ lastUpdated: "{ISO date}"
 - **Derive How-To steps** from component form fields + spec acceptance criteria
 - **Never overwrite** docs with `manual: true` in frontmatter
 - **Cross-cutting docs** (Provider Runtimes, Agent Intelligence, Tool Permissions) aggregate content from multiple sections and reference those section docs
+- **Software name convention** — write `` `ainative-business` `` (with backticks) when the sentence describes what the software does or installs; write plain `ainative` when referring to the project/repo/domain. Frontmatter `title:` and `description:` always use plain text (no backticks). Image alt text uses plain text. See "Software Name Convention" near the top of this skill for the full rule and examples.
 
 ### Screenshot Type Embedding Rules
 
@@ -571,6 +620,14 @@ Condensed view of features/roadmap.md.
 - Quick Start should be copy-paste-ready (minimal steps to get running)
 - **No subscription/pricing content** — ainative is 100% Community Edition (Apache 2.0) with all features free and unlimited. Do NOT generate subscription tiers, pricing tables, soft limits, "Premium" sections, or upgrade CTAs. If feature specs still reference tiers, ignore those references in README output
 - **About section is always present** — every generated README must include a `## About Author` section sourced from `.claude/reference/ainative-io-about/`, wrapped in `<!-- ABOUT:BEGIN source=https://ainative.io/about/ -->` … `<!-- ABOUT:END -->`. Placement is locked: immediately after `## Why ainative`, before `## Runtime Bridge` / `## Architecture`. Do not paraphrase the captured content; only rename `### Why ainative` → `### Research Premise` to avoid colliding with the top-level heading. If the captured reference is missing or empty, invoke `/capture https://ainative.io/about/` before writing README and abort README regeneration if capture fails
+- **Software name convention** — apply the rule from "Software Name Convention" near the top of this skill. Specifically for README:
+  - Body prose mentioning the package/CLI/runtime → `` `ainative-business` `` (with backticks)
+  - Section headings stay as `## Why ainative`, `## Why ainative-business` (without backticks in headings to keep slugs stable for cross-doc anchors); body under those headings uses backticks for software references
+  - Quick Start fenced code blocks (`` ```bash `` or `` ```sh `` blocks containing `npx ainative-business` etc.) → no backticks needed; the fence already renders as monospace
+  - npm/install instructions in prose → `` `ainative-business` `` (e.g., "Install `ainative-business` globally with `npm install -g ainative-business`")
+  - GitHub repo references and `ainative.business` URLs → unchanged (plain `ainative` for the repo, full URL for the domain)
+  - Badge alt text and shields.io URL slugs → unchanged
+  - The About section captured from `.claude/reference/ainative-io-about/` is rendered verbatim — do not retroactively backtick `ainative` mentions inside it; respect upstream wording
 
 ### Steps
 
@@ -592,6 +649,20 @@ Condensed view of features/roadmap.md.
 1. **Image refs** — verify all `![...](../screengrabs/{file}.png)` point to existing files
 2. **Cross-doc links** — verify all `[...](./...)` links resolve to existing docs
 3. Log any broken references as warnings
+4. **Software name convention** — sweep generated docs and README for bare `ainative` mentions in body prose that should be `` `ainative-business` ``. The regex below matches bare `ainative` while skipping URLs (`ainative.business`), folder names (`ainative-wealth`, `ainative-growth`), and paths (`~/.ainative/`):
+
+   ```bash
+   perl -lne 'print "$ARGV:$.: $_" if /\bainative\b(?!(\.\w|-))/' \
+     README.md docs/index.md docs/getting-started.md docs/features/*.md docs/journeys/*.md
+   ```
+
+   Audit each hit:
+   - Body prose describing what the software does → wrap in backticks (`` `ainative-business` ``)
+   - Brand/repo/project identity → leave as bare `ainative`
+   - Frontmatter `title:` / `description:` / `subtitle:` → leave bare (backticks break meta tags)
+   - Markdown headings → leave bare (keeps slugs stable)
+
+   Log unresolved hits as warnings; do not auto-edit prose since context determines the correct treatment.
 
 ### 8b. Coverage Report
 
@@ -705,6 +776,7 @@ docs/
 - [ ] manifest.json generated for future UI
 - [ ] All image refs validated
 - [ ] All cross-doc links validated
+- [ ] Software name convention scan run (Phase 8a step 4) — no stale bare `ainative` in body prose
 - [ ] README.md generated/updated
 - [ ] README.md `## About Author` section present and matches `.claude/reference/ainative-io-about/` (modulo the `Why ainative` → `Research Premise` rename)
 - [ ] Coverage report generated
