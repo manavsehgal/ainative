@@ -4,7 +4,7 @@ status: completed
 priority: P1
 milestone: post-mvp
 source: ideas/chat-context-experience.md §11 (architect drift concern)
-dependencies: [chat-claude-sdk-skills, agent-integration, task-runtime-stagent-mcp-injection]
+dependencies: [chat-claude-sdk-skills, agent-integration, task-runtime-ainative-mcp-injection]
 ---
 
 # Task Runtime — Skill Parity With Chat
@@ -107,5 +107,5 @@ Real-environment test: create `.claude/skills/task-smoke/SKILL.md`, dispatch a t
 
 - Source: `ideas/chat-context-experience.md` §11 (architect drift concern: "Task and chat are parallel runtimes for the same SDK — inconsistency here breaks the 'same skill, everywhere' promise")
 - Depends on: `chat-claude-sdk-skills` (must land first for the shared partition helper), `runtime-capability-matrix`, `agent-integration`
-- Related: `task-runtime-stagent-mcp-injection` (sibling architecture, TDR-032)
+- Related: `task-runtime-ainative-mcp-injection` (sibling architecture, TDR-032)
 - Existing code: `src/lib/agents/claude-agent.ts`, `src/lib/chat/context-builder.ts`

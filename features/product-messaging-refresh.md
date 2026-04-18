@@ -63,7 +63,7 @@ For each file: rewrite opening 1-3 paragraphs to use new vocabulary. Leave proce
 
 ### Phase 3 — New Documents (3 files)
 
-**1. `docs/why-stagent.md`** (500-800 words)
+**1. `docs/why-ainative.md`** (500-800 words)
 - The broken AI agent stack problem
 - Five gaps: orchestration, strategy-to-execution, lifecycle, trust/governance, distribution
 - How Stagent solves it (AI Business OS positioning)
@@ -111,7 +111,7 @@ The product today IS a governed agent workspace. It does not yet have marketing/
 - [ ] In-app welcome landing pillars reframed as business outcomes
 - [ ] docs/index.md opening paragraph uses new vocabulary
 - [ ] All 4 journey guide intros updated with business-outcome framing
-- [ ] docs/why-stagent.md exists with problem statement and five gaps
+- [ ] docs/why-ainative.md exists with problem statement and five gaps
 - [ ] docs/use-cases/ directory exists with solo-founder.md and agency-operator.md
 - [ ] docs/manifest.json updated to include new documents in playbook navigation
 - [ ] No "Governed AI Agent Workspace" phrasing remains in anchor point files (Phase 1)

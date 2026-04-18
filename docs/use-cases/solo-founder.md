@@ -72,4 +72,4 @@ npx stagent
 3. Run the task and approve tool requests from the inbox
 4. Check the cost dashboard after a few runs to establish your baseline spend
 
-See the [Personal Use Journey](../journeys/personal-use.md) for a step-by-step walkthrough, or [Why Stagent](../why-stagent.md) for the full platform overview.
+See the [Personal Use Journey](../journeys/personal-use.md) for a step-by-step walkthrough, or [Why Stagent](../why-ainative.md) for the full platform overview.

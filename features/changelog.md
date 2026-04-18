@@ -486,7 +486,7 @@ Key decisions locked during brainstorm:
 - Trust ceiling: declarative + MCP protocol (no sandboxed JS execution)
 - Trust → execution tier mapping: community=Tier A (declarative), verified=Tier A+B (MCP/channels/tools), official=full access
 
-Source: handoff/stagent-app-marketplace-spec.md + brainstorm session with /architect, /product-manager, /frontend-designer
+Source: handoff/ainative-app-marketplace-spec.md + brainstorm session with /architect, /product-manager, /frontend-designer
 Plan: .claude/plans/flickering-petting-hammock.md
 
 ### Completed — app-seed-data-generation (P1)
@@ -606,7 +606,7 @@ A fix-up commit (`649db6d`) added `maxTurnsSetAt` writes alongside every `maxTur
 - `npx tsc --noEmit` → exit 0
 - No smoke test required — `schedule-tools.ts` has no runtime-registry adjacency (pure Zod schema + drizzle insert/update, no `@/lib/chat/stagent-tools` or `claude-agent.ts` imports). Per TDR-032 smoke-test budget policy, unit tests are sufficient.
 
-### Completed — task-runtime-stagent-mcp-injection (P0)
+### Completed — task-runtime-ainative-mcp-injection (P0)
 
 Wired the in-process stagent MCP server into `executeClaudeTask` and `resumeClaudeTask` in `src/lib/agents/claude-agent.ts` via two shared private helpers (`withStagentMcpServer`, `withStagentAllowedTools`) so future runtime entry points cannot drift apart. `mcp__stagent__*` is conditionally prepended to `allowedTools` only when the profile has an explicit allowlist, preserving `claude_code` preset defaults otherwise. The per-profile `canUseToolPolicy` + `handleToolPermission` model is untouched — it was already the correct design for task execution.
 
@@ -626,7 +626,7 @@ A code-quality follow-up (commit `ddd58fd`) switched from the deprecated `create
 
 Groomed four handoff docs from `handoff/` into feature specs under the Platform Hardening milestone. Two are bug fixes on the scheduled/task execution path, two are observability and control features uncovered while operating those schedules. Code paths were verified against the live codebase via an Explore pass before specs were written; one handoff's root-cause theory ("task was deleted") was corrected — the codebase has no task deletion code anywhere, so the groomed spec frames the work as "add validation + investigate scoping mismatch" rather than "stop deleting tasks."
 
-- **`task-runtime-stagent-mcp-injection`** (P0) — wires `createStagentMcpServer` into `executeClaudeTask` and `resumeClaudeTask` in `src/lib/agents/claude-agent.ts` and adds `mcp__stagent__*` to the `claude-code` runtime's `allowedTools`, matching the chat engine, `openai-direct`, and `anthropic-direct` runtimes. This is the root cause of schedule-fired agents silently reporting "No stagent table MCP tools are available in this session" in News Sentinel, Price Monitor, and Daily Briefing. A follow-up TDR under `agent-system` will codify "All runtime entry points must inject the in-process stagent MCP server consistently" so the gap cannot recur when a new runtime adapter is added.
+- **`task-runtime-ainative-mcp-injection`** (P0) — wires `createStagentMcpServer` into `executeClaudeTask` and `resumeClaudeTask` in `src/lib/agents/claude-agent.ts` and adds `mcp__stagent__*` to the `claude-code` runtime's `allowedTools`, matching the chat engine, `openai-direct`, and `anthropic-direct` runtimes. This is the root cause of schedule-fired agents silently reporting "No stagent table MCP tools are available in this session" in News Sentinel, Price Monitor, and Daily Briefing. A follow-up TDR under `agent-system` will codify "All runtime entry points must inject the in-process stagent MCP server consistently" so the gap cannot recur when a new runtime adapter is added.
 - **`task-create-profile-validation`** (P1) — rejects invalid `agentProfile` values at `create_task` (today, `anthropic-direct` — a runtime, not a profile — is accepted as if it were a profile). Also carries a time-boxed investigation spike for the reported "task disappears after creation" symptom; the codebase audit found no DELETE on tasks anywhere and traced the likely cause to data-dir (`STAGENT_DATA_DIR`) or `projectId` scoping mismatch between the creating and querying contexts.
 - **`schedule-maxturns-api-control`** (P2) — exposes the existing `schedules.maxTurns` column on `create_schedule` / `update_schedule` MCP input schemas in `src/lib/chat/tools/schedule-tools.ts`. The column, the scheduler plumbing, and the handoff from schedule to task firing already exist; only the Zod schemas are missing.
 - **`task-turn-observability`** (P2) — adds `turnCount` / `tokenCount` columns to the `tasks` table, surfaces them on `get_task` / `list_tasks`, and commits to a written definition of what the turn-count metric measures. Observed schedule turn counts of 700–2,900 far exceed any plausible "reasoning round" interpretation and currently mislead both users and AI assistants into wrong diagnoses. The spec requires the metric definition to be written down before any columns are added so the codebase doesn't persist a misnamed field.
@@ -1199,7 +1199,7 @@ Full Airtable-like structured data system shipped in a single session. 52 new fi
 ### Completed — Vision Alignment Sprints 33-37
 
 **Sprint 33 — Business Positioning (parallel):**
-- `product-messaging-refresh` (P0) — Repositioned all in-repo messaging from "Governed AI Agent Workspace" to "AI Business Operating System"; README, package.json, CLI, docs, welcome landing, 7 journey/feature docs, 3 new docs (why-stagent, use-cases)
+- `product-messaging-refresh` (P0) — Repositioned all in-repo messaging from "Governed AI Agent Workspace" to "AI Business Operating System"; README, package.json, CLI, docs, welcome landing, 7 journey/feature docs, 3 new docs (why-ainative, use-cases)
 - `business-function-profiles` (P1) — 6 new builtin profiles (marketing-strategist, sales-researcher, customer-support-agent, financial-analyst, content-creator, operations-coordinator) + 5 new workflow blueprints (lead-research, content-marketing, support-triage, financial-reporting, daily-briefing)
 
 **Sprint 34 — Heartbeat Engine:**

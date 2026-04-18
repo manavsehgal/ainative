@@ -142,7 +142,7 @@ Each feature follows the same pipeline: `writing-plans` → scope challenge → 
 
 2. **Next.js 16 refuses to start a parallel dev server in the same project root.** The user runs their own dev server on `:3000`. Do NOT `pkill` it — per project memory, only restart your own. For smoke tests, use the user's running `:3000` server rather than trying to launch your own on `:3010`. Next.js 16's dedup will fail with "Another next dev server is already running."
 
-3. **TDR-032 module-load cycle.** Any change to `src/lib/chat/engine.ts`, `src/lib/agents/claude-agent.ts`, `src/lib/agents/runtime/catalog.ts`, `src/lib/agents/runtime/index.ts`, `src/lib/agents/runtime/claude.ts`, or any file that statically imports `@/lib/chat/stagent-tools` REQUIRES a live smoke test per project writing-plans override. Unit tests cannot catch module-load cycles because `vi.mock` replaces the cycle. See `.claude/skills/architect/references/tdr-032-runtime-stagent-mcp-injection.md`.
+3. **TDR-032 module-load cycle.** Any change to `src/lib/chat/engine.ts`, `src/lib/agents/claude-agent.ts`, `src/lib/agents/runtime/catalog.ts`, `src/lib/agents/runtime/index.ts`, `src/lib/agents/runtime/claude.ts`, or any file that statically imports `@/lib/chat/stagent-tools` REQUIRES a live smoke test per project writing-plans override. Unit tests cannot catch module-load cycles because `vi.mock` replaces the cycle. See `.claude/skills/architect/references/tdr-032-runtime-ainative-mcp-injection.md`.
 
 4. **Keep `clear.ts` in sync when adding DB tables.** Any new table with FKs must get a `db.delete()` call in `src/lib/data/clear.ts` in FK-safe order (children before parents). Safety-net test at `src/lib/data/__tests__/clear.test.ts`. Settings table is intentionally excluded.
 

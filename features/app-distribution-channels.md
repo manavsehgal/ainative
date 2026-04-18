@@ -3,7 +3,7 @@ title: App Distribution Channels
 status: deferred
 priority: P2
 milestone: post-mvp
-source: handoff/stagent-app-marketplace-spec.md
+source: handoff/ainative-app-marketplace-spec.md
 dependencies: [app-cli-tools, marketplace-app-publishing]
 ---
 
@@ -193,7 +193,7 @@ newer versions across all channels.
 
 ## References
 
-- Source: handoff/stagent-app-marketplace-spec.md §4.4-4.5
+- Source: handoff/ainative-app-marketplace-spec.md §4.4-4.5
 - Related: `app-cli-tools` (CLI install command), `marketplace-app-publishing`
   (Supabase storage), `app-updates-dependencies` (uses source tracking)
 - Files to create:

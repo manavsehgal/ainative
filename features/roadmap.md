@@ -198,7 +198,7 @@ Runtime-native skills, filesystem context, file mentions, and a command-namespac
 |---------|----------|--------|--------------|
 | [runtime-capability-matrix](runtime-capability-matrix.md) | P1 | completed | provider-runtime-abstraction |
 | [chat-claude-sdk-skills](chat-claude-sdk-skills.md) | P0 | completed | chat-engine, runtime-capability-matrix, skill-portfolio, environment-scanner |
-| [task-runtime-skill-parity](task-runtime-skill-parity.md) | P1 | completed | chat-claude-sdk-skills, agent-integration, task-runtime-stagent-mcp-injection |
+| [task-runtime-skill-parity](task-runtime-skill-parity.md) | P1 | completed | chat-claude-sdk-skills, agent-integration, task-runtime-ainative-mcp-injection |
 | [chat-codex-app-server-skills](chat-codex-app-server-skills.md) | P1 | completed | chat-claude-sdk-skills, codex-chat-engine, openai-codex-app-server, environment-scanner, runtime-capability-matrix |
 | [chat-ollama-native-skills](chat-ollama-native-skills.md) | P2 | completed | chat-claude-sdk-skills, ollama-runtime-provider, environment-scanner, runtime-capability-matrix, chat-data-layer |
 | [chat-file-mentions](chat-file-mentions.md) | P1 | completed | chat-command-mentions, chat-claude-sdk-skills, workspace-context-awareness |
@@ -360,7 +360,7 @@ Durable fixes that replace symptom-level hotfixes with architectural contracts. 
 | [marketplace-install-hardening](marketplace-install-hardening.md) | P1 | deferred | instance-bootstrap |
 | [enrichment-planner-test-hardening](enrichment-planner-test-hardening.md) | P2 | planned | tables-enrichment-runtime-v2, tables-enrichment-planner-api |
 | [chat-dedup-variant-tolerance](chat-dedup-variant-tolerance.md) | P3 | completed | workflow-create-dedup |
-| [task-runtime-stagent-mcp-injection](task-runtime-stagent-mcp-injection.md) | P0 | completed | agent-integration, chat-engine |
+| [task-runtime-ainative-mcp-injection](task-runtime-ainative-mcp-injection.md) | P0 | completed | agent-integration, chat-engine |
 | [task-create-profile-validation](task-create-profile-validation.md) | P1 | completed | agent-integration, agent-profile-catalog |
 | [schedule-maxturns-api-control](schedule-maxturns-api-control.md) | P2 | completed | scheduled-prompt-loops |
 | [task-turn-observability](task-turn-observability.md) | P2 | planned | agent-integration, scheduled-prompt-loops |

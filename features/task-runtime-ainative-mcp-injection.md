@@ -3,7 +3,7 @@ title: Task Runtime Stagent MCP Injection
 status: completed
 priority: P0
 milestone: post-mvp
-source: handoff/bug-task-execution-missing-stagent-mcp.md
+source: handoff/bug-task-execution-missing-ainative-mcp.md
 dependencies: [agent-integration, chat-engine]
 ---
 
@@ -73,7 +73,7 @@ As a Stagent operator running a scheduled agent that reads or writes tables (New
 
 ## References
 
-- Source: `handoff/bug-task-execution-missing-stagent-mcp.md`
+- Source: `handoff/bug-task-execution-missing-ainative-mcp.md`
 - `src/lib/chat/engine.ts:280-315` — reference implementation (chat engine MCP injection)
 - `src/lib/chat/stagent-tools.ts:70-133` — `createToolServer` / `createStagentMcpServer` factories
 - `src/lib/agents/claude-agent.ts:492-513` — `executeClaudeTask` MCP merge point (current, broken)

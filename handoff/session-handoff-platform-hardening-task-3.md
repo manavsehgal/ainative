@@ -71,7 +71,7 @@ The spec explicitly requires the metric-definition investigation to happen **fir
 
 ### Smoke-test budget — REQUIRED
 
-Task 3 touches `claude-agent.ts` AND `scheduler.ts` AND `task-tools.ts` — **three files in or adjacent to the runtime-registry import cycle** (TDR-032). You **must** budget an end-to-end smoke step in the plan, not just unit tests. Precedent: the feature that preceded this batch (`task-runtime-stagent-mcp-injection`) shipped with 34/34 passing unit tests and `tsc --noEmit` clean but still crashed at first task execution because a static import created a `ReferenceError: Cannot access 'claudeRuntimeAdapter' before initialization`. Unit tests mocking `@/lib/chat/stagent-tools` structurally cannot catch that class of bug. See `.claude/skills/architect/references/tdr-032-runtime-stagent-mcp-injection.md` for the full decision and the smoke-test policy in `.claude/skills/writing-plans/SKILL.md`.
+Task 3 touches `claude-agent.ts` AND `scheduler.ts` AND `task-tools.ts` — **three files in or adjacent to the runtime-registry import cycle** (TDR-032). You **must** budget an end-to-end smoke step in the plan, not just unit tests. Precedent: the feature that preceded this batch (`task-runtime-ainative-mcp-injection`) shipped with 34/34 passing unit tests and `tsc --noEmit` clean but still crashed at first task execution because a static import created a `ReferenceError: Cannot access 'claudeRuntimeAdapter' before initialization`. Unit tests mocking `@/lib/chat/stagent-tools` structurally cannot catch that class of bug. See `.claude/skills/architect/references/tdr-032-runtime-ainative-mcp-injection.md` for the full decision and the smoke-test policy in `.claude/skills/writing-plans/SKILL.md`.
 
 **Smoke-test recipe (tested and known to work in Task 2 of this batch):**
 1. `PORT=3010 npm run dev` in the background
@@ -171,7 +171,7 @@ These are either from `MEMORY.md` or from lessons learned during Tasks 1 and 2 i
 | Test file for task-tools | `src/lib/chat/tools/__tests__/task-tools.test.ts` — created in Task 1, 20 tests already present |
 | Test file for claude-agent | `src/lib/agents/__tests__/claude-agent.test.ts` (has pre-existing tsc errors — ignore lines 83, 408-410, 432, 669) |
 | Clear.ts safety-net test | `src/lib/data/__tests__/clear.test.ts` — run after schema change |
-| TDR-032 | `.claude/skills/architect/references/tdr-032-runtime-stagent-mcp-injection.md` |
+| TDR-032 | `.claude/skills/architect/references/tdr-032-runtime-ainative-mcp-injection.md` |
 | Smoke-test policy | `.claude/skills/writing-plans/SKILL.md` → "Smoke-Test Budget for Runtime-Registry-Adjacent Features" |
 | Plan directory | `docs/superpowers/plans/` — file naming: `2026-04-11-task-turn-observability.md` |
 | Previous batch plans (reference) | `docs/superpowers/plans/2026-04-11-schedule-maxturns-api-control.md`, `docs/superpowers/plans/2026-04-11-task-create-profile-validation.md` — **match the structure of these** for consistency |

@@ -3,7 +3,7 @@ title: Stagent App Package Format
 status: deferred
 priority: P1
 milestone: post-mvp
-source: handoff/stagent-app-marketplace-spec.md
+source: handoff/ainative-app-marketplace-spec.md
 dependencies: [marketplace-install-hardening]
 ---
 
@@ -300,7 +300,7 @@ function checkPlatformCompat(manifest: AppManifest): boolean {
 
 ## References
 
-- Source: `handoff/stagent-app-marketplace-spec.md` section 3
+- Source: `handoff/ainative-app-marketplace-spec.md` section 3
 - Related: `app-runtime-bundle-foundation` (defines the `AppBundle` type
   this format serializes)
 - Files to modify:

@@ -8,8 +8,8 @@
 
 **Tech Stack:** TypeScript, `@anthropic-ai/claude-agent-sdk`, Vitest (hoisted mocks), better-sqlite3 via Drizzle (untouched here).
 
-**Spec:** `features/task-runtime-stagent-mcp-injection.md`
-**Source handoff:** `handoff/bug-task-execution-missing-stagent-mcp.md`
+**Spec:** `features/task-runtime-ainative-mcp-injection.md`
+**Source handoff:** `handoff/bug-task-execution-missing-ainative-mcp.md`
 
 ---
 
@@ -308,8 +308,8 @@ tools via handleToolPermission.
 Tests A-stagent-1/2/3 cover the three branches. resumeClaudeTask
 will receive the same treatment in the next commit.
 
-Refs: features/task-runtime-stagent-mcp-injection.md
-      handoff/bug-task-execution-missing-stagent-mcp.md
+Refs: features/task-runtime-ainative-mcp-injection.md
+      handoff/bug-task-execution-missing-ainative-mcp.md
 
 Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
 EOF
@@ -637,10 +637,10 @@ task's projectId. R-stagent-2 asserts mcp__stagent__* is prepended
 (not merely present) so future reorderings can't silently break the
 preset filter behavior.
 
-With this commit, features/task-runtime-stagent-mcp-injection.md is
+With this commit, features/task-runtime-ainative-mcp-injection.md is
 fully implemented on both claude-code runtime entry points.
 
-Refs: features/task-runtime-stagent-mcp-injection.md
+Refs: features/task-runtime-ainative-mcp-injection.md
 
 Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
 EOF
@@ -685,7 +685,7 @@ Create a minimal schedule that runs every 5 minutes with the same prompt as Step
 
 - [ ] **Step 5: Stop the dev server and record results**
 
-Stop the dev server. Append a short "Verification run — 2026-04-11" note to `features/task-runtime-stagent-mcp-injection.md` in the References section, citing:
+Stop the dev server. Append a short "Verification run — 2026-04-11" note to `features/task-runtime-ainative-mcp-injection.md` in the References section, citing:
 - Test task ID
 - Tool invocation observed (`mcp__stagent__query_table`)
 - Completion status
@@ -696,7 +696,7 @@ If Step 3 fails — the agent still reports missing stagent tools — **do not p
 - [ ] **Step 6: Commit the verification note**
 
 ```bash
-git add features/task-runtime-stagent-mcp-injection.md
+git add features/task-runtime-ainative-mcp-injection.md
 git commit -m "$(cat <<'EOF'
 docs(features): record verification run for stagent MCP injection
 
@@ -712,7 +712,7 @@ EOF
 
 ## Self-Review Checklist
 
-**1. Spec coverage:** Every acceptance criterion in `features/task-runtime-stagent-mcp-injection.md` maps to a task:
+**1. Spec coverage:** Every acceptance criterion in `features/task-runtime-ainative-mcp-injection.md` maps to a task:
 - "executeClaudeTask calls createStagentMcpServer..." → Task 1, Step 5
 - "resumeClaudeTask does the same" → Task 2, Step 5
 - "When the profile has an explicit allowedTools, mcp__stagent__* is prepended" → Task 1 Step 10 + Task 2 Step 6; test A-stagent-2 + R-stagent-2
@@ -730,7 +730,7 @@ EOF
 
 ## Execution Handoff
 
-**Plan complete and saved to `docs/superpowers/plans/2026-04-11-task-runtime-stagent-mcp-injection.md`. Two execution options:**
+**Plan complete and saved to `docs/superpowers/plans/2026-04-11-task-runtime-ainative-mcp-injection.md`. Two execution options:**
 
 **1. Subagent-Driven (recommended)** — I dispatch a fresh subagent per task, review between tasks, fast iteration.
 

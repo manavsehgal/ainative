@@ -8,8 +8,8 @@
 
 **Tech Stack:** TypeScript, Next.js 16, better-sqlite3, Drizzle ORM, Vitest, tsup, Zod, Claude Agent SDK, Codex App Server client.
 
-**Companion spec:** [`docs/superpowers/specs/2026-04-17-ainative-pivot-stagent-repo-design.md`](../specs/2026-04-17-ainative-pivot-stagent-repo-design.md)
-**Inbound handoff:** [`handoff/2026-04-17-ainative-pivot-stagent-repo.md`](../../../handoff/2026-04-17-ainative-pivot-stagent-repo.md)
+**Companion spec:** [`docs/superpowers/specs/2026-04-17-ainative-pivot-ainative-repo-design.md`](../specs/2026-04-17-ainative-pivot-ainative-repo-design.md)
+**Inbound handoff:** [`handoff/2026-04-17-ainative-pivot-ainative-repo.md`](../../../handoff/2026-04-17-ainative-pivot-ainative-repo.md)
 
 ---
 

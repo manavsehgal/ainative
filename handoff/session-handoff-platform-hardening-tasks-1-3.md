@@ -3,13 +3,13 @@ title: "Session Handoff: Platform Hardening tasks 1–3"
 audience: future-claude-session
 status: ready
 created: 2026-04-11
-source_session: task-runtime-stagent-mcp-injection shipped + follow-ups FU1/FU2/FU3
-handoff_reason: The P0 in the Platform Hardening batch (task-runtime-stagent-mcp-injection) shipped + TDR-032 codified + smoke-test budget policy documented. Three more groomed specs are queued for execution. This handoff passes enough context so a fresh session can pick up without re-discovering session history, decisions, or gotchas.
+source_session: task-runtime-ainative-mcp-injection shipped + follow-ups FU1/FU2/FU3
+handoff_reason: The P0 in the Platform Hardening batch (task-runtime-ainative-mcp-injection) shipped + TDR-032 codified + smoke-test budget policy documented. Three more groomed specs are queued for execution. This handoff passes enough context so a fresh session can pick up without re-discovering session history, decisions, or gotchas.
 ---
 
 # HANDOFF: Platform Hardening queue — tasks 1–3
 
-**You are picking up mid-stream on the stagent Platform Hardening batch.** The P0 in this batch already shipped (`task-runtime-stagent-mcp-injection`, merged + pushed). Three more specs are ready to execute, groomed and waiting in `features/`. Your job is to ship them in priority order.
+**You are picking up mid-stream on the stagent Platform Hardening batch.** The P0 in this batch already shipped (`task-runtime-ainative-mcp-injection`, merged + pushed). Three more specs are ready to execute, groomed and waiting in `features/`. Your job is to ship them in priority order.
 
 Read this briefing in full before touching anything. It captures session history, decisions you must honor, and gotchas you will otherwise rediscover the hard way.
 
@@ -97,7 +97,7 @@ Each has a full spec under `features/`. Read each spec in full before planning i
 - `AGENTS.md` or `MEMORY.md` — mirror the written metric definition so the project reference is consistent with the feature spec.
 - `src/lib/data/__tests__/clear.test.ts` — verify still green per `MEMORY.md → Recurring Issues → clear.ts`. New columns don't require `clear.ts` updates (that's only for new FK-dependent tables), but the safety-net test must stay green.
 
-**Smoke-test budget: REQUIRED.** Task 3 touches `claude-agent.ts` AND `schedule.ts` AND `task-tools.ts` — three files that sit in or near the runtime-registry import cycle (TDR-032). You **must** budget an end-to-end smoke step in the plan, not just unit tests. Precedent from the previous feature in this batch: 34/34 unit tests passed and `tsc --noEmit` was clean, but the feature still crashed at first task execution because a static import created a `ReferenceError: Cannot access 'claudeRuntimeAdapter' before initialization`. Unit tests mocking `@/lib/chat/stagent-tools` structurally cannot catch that class of bug. See `.claude/skills/architect/references/tdr-032-runtime-stagent-mcp-injection.md` for the full decision and the smoke-test policy in `.claude/skills/writing-plans/SKILL.md`.
+**Smoke-test budget: REQUIRED.** Task 3 touches `claude-agent.ts` AND `schedule.ts` AND `task-tools.ts` — three files that sit in or near the runtime-registry import cycle (TDR-032). You **must** budget an end-to-end smoke step in the plan, not just unit tests. Precedent from the previous feature in this batch: 34/34 unit tests passed and `tsc --noEmit` was clean, but the feature still crashed at first task execution because a static import created a `ReferenceError: Cannot access 'claudeRuntimeAdapter' before initialization`. Unit tests mocking `@/lib/chat/stagent-tools` structurally cannot catch that class of bug. See `.claude/skills/architect/references/tdr-032-runtime-ainative-mcp-injection.md` for the full decision and the smoke-test policy in `.claude/skills/writing-plans/SKILL.md`.
 
 **Smoke-test recipe (tested and known to work):**
 1. `PORT=3010 npm run dev` in the background
@@ -160,7 +160,7 @@ These came from explicit user feedback during the previous feature in this batch
 
 | Purpose | Path |
 |---|---|
-| TDR-032 invariant | `.claude/skills/architect/references/tdr-032-runtime-stagent-mcp-injection.md` |
+| TDR-032 invariant | `.claude/skills/architect/references/tdr-032-runtime-ainative-mcp-injection.md` |
 | Canonical stagent injection helpers | `src/lib/agents/claude-agent.ts:45-88` |
 | Helper call sites | `src/lib/agents/claude-agent.ts:547-578` (execute), `:677-708` (resume) |
 | Stagent tool factory | `src/lib/chat/stagent-tools.ts:70-113` |
@@ -185,7 +185,7 @@ These came from explicit user feedback during the previous feature in this batch
 63782e1 docs: smoke-test budget policy for runtime-registry-adjacent features
 8f7604e docs(architect): add TDR-032 for runtime stagent MCP injection invariant
 3b269f3 refactor(agents): dedupe withStagentAllowedTools at both spread sites
-48088a7 docs(features): flip task-runtime-stagent-mcp-injection to completed
+48088a7 docs(features): flip task-runtime-ainative-mcp-injection to completed
 2b5ae42 fix(agents): break stagent-tools import cycle via dynamic import
 4906fcb fix(agents): extract stagent helpers + inject into resumeClaudeTask
 969e096 docs(plan): rewrite Task 2 to extract shared stagent helpers first

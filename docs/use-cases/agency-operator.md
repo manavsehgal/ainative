@@ -81,4 +81,4 @@ npx stagent
 4. Set a schedule for recurring deliverables and configure budget guardrails
 5. Use the cost dashboard to track per-client spend after the first week
 
-See the [Work Use Journey](../journeys/work-use.md) for a guided walkthrough of team operations, or [Why Stagent](../why-stagent.md) for the full platform overview.
+See the [Work Use Journey](../journeys/work-use.md) for a guided walkthrough of team operations, or [Why Stagent](../why-ainative.md) for the full platform overview.

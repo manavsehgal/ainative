@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-17
 **Author:** Manav Sehgal (via brainstorming session)
-**Companion:** `handoff/2026-04-17-ainative-pivot-stagent-repo.md` (inbound contract)
+**Companion:** `handoff/2026-04-17-ainative-pivot-ainative-repo.md` (inbound contract)
 **Companion (website):** `docs/superpowers/specs/2026-04-17-ainative-pivot-design.md` in `../stagent.github.io/`
 **Status:** Draft — pending implementation plan
 
@@ -176,11 +176,11 @@ All `stagent`-bearing filenames rename via `git mv`. Per handoff verification st
 - Update `package.json` `files[]` entries to match.
 
 **Historical markdown:**
-- `handoff/bug-task-execution-missing-stagent-mcp.md`
-- `features/task-runtime-stagent-mcp-injection.md`
-- `handoff/stagent-app-marketplace-spec.md`
-- `docs/superpowers/plans/2026-04-11-task-runtime-stagent-mcp-injection.md`
-- `.claude/skills/architect/references/tdr-032-runtime-stagent-mcp-injection.md`
+- `handoff/bug-task-execution-missing-ainative-mcp.md`
+- `features/task-runtime-ainative-mcp-injection.md`
+- `handoff/ainative-app-marketplace-spec.md`
+- `docs/superpowers/plans/2026-04-11-task-runtime-ainative-mcp-injection.md`
+- `.claude/skills/architect/references/tdr-032-runtime-ainative-mcp-injection.md`
 - All other `*stagent*.md` under tracked folders.
 
 ### Discipline
@@ -322,7 +322,7 @@ Per handoff §Cross-repo coordination, within a single hour:
 
 ## References
 
-- Inbound handoff: `handoff/2026-04-17-ainative-pivot-stagent-repo.md`
+- Inbound handoff: `handoff/2026-04-17-ainative-pivot-ainative-repo.md`
 - Website spec: `../stagent.github.io/docs/superpowers/specs/2026-04-17-ainative-pivot-design.md`
 - Website plan: `../stagent.github.io/docs/superpowers/plans/2026-04-17-ainative-pivot.md`
 - CLAUDE.md runtime-registry smoke-test mandate (in this repo).
