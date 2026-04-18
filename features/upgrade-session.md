@@ -11,7 +11,7 @@ dependencies: [instance-bootstrap, upgrade-detection, agent-integration, agent-p
 
 ## Description
 
-When a user decides to pull in upstream stagent changes, clicking the "Upgrade" badge should not dump them into a raw `git merge` conflict with no guidance. This feature delivers a guided, conversational upgrade experience: a pre-flight modal explaining what will happen, then a dedicated session where a Claude agent (the `upgrade-assistant` profile) runs the merge sequence step by step, surfaces conflicts as interactive prompts ("keep mine / take theirs / show me the diff"), and restarts the dev server on completion.
+When a user decides to pull in upstream ainative changes, clicking the "Upgrade" badge should not dump them into a raw `git merge` conflict with no guidance. This feature delivers a guided, conversational upgrade experience: a pre-flight modal explaining what will happen, then a dedicated session where a Claude agent (the `upgrade-assistant` profile) runs the merge sequence step by step, surfaces conflicts as interactive prompts ("keep mine / take theirs / show me the diff"), and restarts the dev server on completion.
 
 The critical architectural choice: the upgrade session runs as a **task**, not a chat conversation. Chat tools are DB-only by design (TDR-024) and cannot shell out. Tasks already have Bash tool access via `claude-agent.ts`, `canUseTool` approval caching (TDR-015), and SSE log streaming — 100% reuse. The "Upgrade Session" UI is a dressed-up task detail view with the existing `AgentLogsView` and `PendingApprovalHost` components, shown inside a sheet overlay that feels chat-like.
 
@@ -21,7 +21,7 @@ This feature also delivers the Settings → Instance surface showing `instanceId
 
 ## User Story
 
-As a stagent end user who sees an "Upgrade Available" badge, I want to click it, read a clear explanation of what will happen, confirm, and then be walked through any merge conflicts by an agent that knows my instance branch and data directory, so that I can safely pull in upstream improvements without becoming a git expert.
+As a ainative end user who sees an "Upgrade Available" badge, I want to click it, read a clear explanation of what will happen, confirm, and then be walked through any merge conflicts by an agent that knows my instance branch and data directory, so that I can safely pull in upstream improvements without becoming a git expert.
 
 ## Technical Approach
 
@@ -100,15 +100,15 @@ See "UX Specification" section below for full interaction detail.
 - [ ] Settings → Instance section uses `DetailPane` + `SectionHeading` + labeled rows per UX Specification
 - [ ] Settings → Instance shows upgrade history as last 5 tasks with StatusChips, each clickable to reopen that upgrade session
 - [ ] Settings → Instance has "No upgrades yet" empty state when history is empty
-- [ ] Settings → Instance shows amber notice "Existing pre-push hook backed up to pre-push.stagent-backup" when applicable
-- [ ] Hook backup notice is dismissible but re-appears if the .stagent-backup file still exists
+- [ ] Settings → Instance shows amber notice "Existing pre-push hook backed up to pre-push.ainative-backup" when applicable
+- [ ] Hook backup notice is dismissible but re-appears if the .ainative-backup file still exists
 - [ ] All session states verified against UX Specification state table: initializing, running, conflict-waiting, installing, complete, failed, aborted
 - [ ] SheetContent body uses `px-6 pb-6` padding (per MEMORY.md recurring gotcha)
 - [ ] Focus returns to upgrade badge after session sheet closes
 - [ ] Design metrics verified via `/taste`: DV=3, MI=3, VD=6 (sheet body), VD=4 (modal)
-- [ ] **Single-clone user test:** full upgrade flow works on a clone with `STAGENT_DATA_DIR` unset — profile interpolates `{{INSTANCE_BRANCH}}=local`, modal shows `branch: local, data dir: ~/.stagent`, merge executes correctly
+- [ ] **Single-clone user test:** full upgrade flow works on a clone with `STAGENT_DATA_DIR` unset — profile interpolates `{{INSTANCE_BRANCH}}=local`, modal shows `branch: local, data dir: ~/.ainative`, merge executes correctly
 - [ ] **Dev-mode skip test:** upgrade badge, modal, session sheet, and Settings → Instance section all render as "disabled" or null when `STAGENT_DEV_MODE=true` — no API routes created, no scheduled tasks, no UI entry points
-- [ ] **Main dev repo safety test:** manual verification checklist for the implementing PR: run `npm run dev` in `/Users/manavsehgal/Developer/stagent` after adding `STAGENT_DEV_MODE=true` to its `.env.local` → zero new branches, zero git hooks installed, zero config changes, badge not visible, Settings → Instance section shows "Dev mode — instance features disabled"
+- [ ] **Main dev repo safety test:** manual verification checklist for the implementing PR: run `npm run dev` in `/Users/manavsehgal/Developer/ainative` after adding `STAGENT_DEV_MODE=true` to its `.env.local` → zero new branches, zero git hooks installed, zero config changes, badge not visible, Settings → Instance section shows "Dev mode — instance features disabled"
 - [ ] **Drifted-main test:** simulate a user with 3 local commits on `main` predating feature install → bootstrap creates `local` at HEAD → first upgrade session detects main-has-drifted and prompts user interactively ("I see main has commits not in origin/main. Move them to `local`?")
 - [ ] Upgrade-assistant profile SKILL.md includes explicit handling for the "main diverged from origin/main" case with a canonical user prompt
 - [ ] Settings → Instance section shows a clear "Dev mode" banner when running in dev mode, with no action buttons enabled
@@ -142,8 +142,8 @@ See "UX Specification" section below for full interaction detail.
 
 ### Persona & Core Task
 
-- **Persona:** Stagent user who customizes their clone via stagent chat itself. Technical enough to run npm scripts, not necessarily a git expert. Values not losing their customizations above all else.
-- **Core task:** Safely pull upstream stagent commits into their local branch without losing work or accidentally pushing private changes.
+- **Persona:** ainative user who customizes their clone via ainative chat itself. Technical enough to run npm scripts, not necessarily a git expert. Values not losing their customizations above all else.
+- **Core task:** Safely pull upstream ainative commits into their local branch without losing work or accidentally pushing private changes.
 - **Success metric:** Conflict-free upgrades in < 60 seconds; upgrades with conflicts completed without losing work and without reading git docs.
 - **Emotional arc:** Badge = inviting. Modal = educational. Session = conversational. Completion = celebratory.
 
@@ -181,7 +181,7 @@ Each touchpoint has a distinct role. The badge is ambient awareness (peripheral)
 **Modal layout zones:**
 1. Headline: **"Upgrade available"** + sub: "N commits ready to merge into `<branch>`"
 2. Fact panel (labeled rows): branch name, data directory, commits behind, last successful upgrade timestamp
-3. Body paragraph: "Stagent has N new commits on `main`. Merging them into `<branch>` will pull in upstream fixes and features. Any uncommitted work will be stashed and restored automatically. If merge conflicts appear, the upgrade assistant will walk you through them."
+3. Body paragraph: "ainative has N new commits on `main`. Merging them into `<branch>` will pull in upstream fixes and features. Any uncommitted work will be stashed and restored automatically. If merge conflicts appear, the upgrade assistant will walk you through them."
 4. CTAs: **Start upgrade** (primary) + Cancel (ghost)
 
 ### Session Sheet States
@@ -236,7 +236,7 @@ Rendered in Settings page using `SectionHeading` + `DetailPane` + labeled rows.
 **Empty states:** "No upgrades yet" when history is empty.
 
 **Warning banners:**
-- "Existing pre-push hook backed up to pre-push.stagent-backup" (amber) — dismissible but re-appears if backup file still exists
+- "Existing pre-push hook backed up to pre-push.ainative-backup" (amber) — dismissible but re-appears if backup file still exists
 - "Instance setup incomplete — re-run setup" (red) — appears if any `ensureX` function failed on boot
 
 ### Copy Direction (Load-Bearing)

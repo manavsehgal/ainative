@@ -11,13 +11,13 @@ dependencies: [app-shell, provider-runtime-abstraction, runtime-capability-matri
 
 ## Description
 
-Stagent's `DEFAULT_CHAT_MODEL` is currently hard-coded to `"haiku"` (Claude runtime). This works for the default audience but hides a meaningful tradeoff: users who care about cost want a cheap cloud model, users who care about privacy want Ollama, users who care about quality want Opus or GPT-5.4. Today they discover all of this only after landing in chat and noticing the model picker.
+ainative's `DEFAULT_CHAT_MODEL` is currently hard-coded to `"haiku"` (Claude runtime). This works for the default audience but hides a meaningful tradeoff: users who care about cost want a cheap cloud model, users who care about privacy want Ollama, users who care about quality want Opus or GPT-5.4. Today they discover all of this only after landing in chat and noticing the model picker.
 
 Per the resolution of Q10 in the ideas doc, first-launch onboarding should ask the user which model/provider they use most, and set defaults accordingly. This is a small, self-contained settings/onboarding feature that runs independently of the Phase 1 runtime-skill work. It becomes more valuable once Phase 1a/1b/1c ship because the runtimes actually differ in capability — at that point an informed default matters more.
 
 ## User Story
 
-As a new Stagent user, I want to be asked on first launch whether I prefer a cost-optimized, quality-optimized, latency-optimized, or privacy-optimized model, so my chat defaults match my actual priorities without hunting through settings.
+As a new ainative user, I want to be asked on first launch whether I prefer a cost-optimized, quality-optimized, latency-optimized, or privacy-optimized model, so my chat defaults match my actual priorities without hunting through settings.
 
 ## Technical Approach
 
@@ -53,7 +53,7 @@ User can skip the modal with "Use default" — sets `defaultChatModel = "claude-
 
 ### 5. Ollama availability check
 
-If the user picks "Best privacy" and no Ollama models are discovered, show a small note ("No local models found — point Stagent at your Ollama install in Settings") and fall back to `"balanced"` temporarily.
+If the user picks "Best privacy" and no Ollama models are discovered, show a small note ("No local models found — point ainative at your Ollama install in Settings") and fall back to `"balanced"` temporarily.
 
 ## Acceptance Criteria
 

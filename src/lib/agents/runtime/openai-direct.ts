@@ -16,7 +16,7 @@ import {
   buildTaskQueryContext,
   createTaskUsageState,
 } from "../claude-agent";
-import { createToolServer } from "@/lib/chat/stagent-tools";
+import { createToolServer } from "@/lib/chat/ainative-tools";
 import type { OpenAIFunctionDef } from "@/lib/chat/tool-registry";
 import { handleToolPermission, clearPermissionCache } from "../tool-permissions";
 import {
@@ -87,7 +87,7 @@ async function callOpenAIModel(
 ): Promise<ModelTurnResult & { responseId?: string }> {
   const modelId = options.modelId ?? getRuntimeCatalogEntry("openai-direct").models.default;
 
-  // Build tool array: Stagent function tools + enabled server-side tools
+  // Build tool array: ainative function tools + enabled server-side tools
   const serverToolConfig = options.serverTools ?? { web_search_preview: true };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const allTools: any[] = [...tools];
@@ -130,7 +130,7 @@ async function callOpenAIModel(
         }
       }
     } else if (item.type === "function_call") {
-      // Client-side Stagent tool call — needs HITL
+      // Client-side ainative tool call — needs HITL
       let parsedArgs: Record<string, unknown> = {};
       try {
         parsedArgs = JSON.parse(item.arguments);

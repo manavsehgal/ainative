@@ -6,11 +6,11 @@ import { tmpdir } from "os";
 let tempDir: string;
 
 beforeEach(() => {
-  tempDir = mkdtempSync(join(tmpdir(), "stagent-budget-guardrails-"));
+  tempDir = mkdtempSync(join(tmpdir(), "ainative-budget-guardrails-"));
   vi.resetModules();
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-03-17T12:00:00.000Z"));
-  vi.stubEnv("STAGENT_DATA_DIR", tempDir);
+  vi.stubEnv("AINATIVE_DATA_DIR", tempDir);
 });
 
 afterEach(() => {

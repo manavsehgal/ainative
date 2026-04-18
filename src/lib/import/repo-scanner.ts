@@ -15,7 +15,7 @@ import {
 export interface DiscoveredSkill {
   name: string;
   path: string; // directory path within repo, e.g. "skills/qa"
-  format: "stagent" | "skillmd-only" | "unknown";
+  format: "ainative" | "skillmd-only" | "unknown";
   hasProfileYaml: boolean;
   hasSkillMd: boolean;
   hasSkillMdTmpl: boolean;
@@ -164,7 +164,7 @@ export async function scanRepo(repoUrl: string): Promise<RepoScanResult> {
 
         const name = dirPath.split("/").pop() ?? (dirPath || repo);
         const format: DiscoveredSkill["format"] = info.hasProfileYaml
-          ? "stagent"
+          ? "ainative"
           : Object.keys(frontmatter).length > 0
             ? "skillmd-only"
             : "unknown";

@@ -33,7 +33,7 @@ A small inline component, consumed by both `chat-command-popover.tsx` and `filte
 ```tsx
 <FilterHint
   inputValue={query}
-  storageKey="stagent.filter-hint.dismissed"
+  storageKey="ainative.filter-hint.dismissed"
 />
 ```
 
@@ -89,7 +89,7 @@ The summary string is built from `parsed.clauses.map(c => '#' + c.key + ':' + c.
 ### Filter hint
 - [ ] Hint renders below `filter-input.tsx` when input is empty or contains no `#`
 - [ ] Hint renders in `chat-command-popover.tsx` same conditions
-- [ ] Typing a valid `#key:value` that parses to ≥1 clause sets `localStorage["stagent.filter-hint.dismissed"] = "1"` and hides the hint for subsequent mounts
+- [ ] Typing a valid `#key:value` that parses to ≥1 clause sets `localStorage["ainative.filter-hint.dismissed"] = "1"` and hides the hint for subsequent mounts
 - [ ] Clearing localStorage restores the hint (regression check for dismissal key correctness)
 
 ### Saved-search CRUD

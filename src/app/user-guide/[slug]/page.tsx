@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: PlaybookDetailProps) {
   const doc = getDocBySlug(slug);
   return {
     title: doc
-      ? `${(doc.frontmatter.title as string) || slug} | User Guide | Stagent`
+      ? `${(doc.frontmatter.title as string) || slug} | User Guide | ainative`
       : "Not Found | User Guide",
   };
 }

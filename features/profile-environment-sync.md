@@ -11,7 +11,7 @@ dependencies: [agent-profile-from-environment, environment-cache, agent-profile-
 
 ## Description
 
-Create roundtrip two-way sync between Stagent profiles and environment skill artifacts. Today the profile registry and environment scanner both read from the same filesystem (`~/.claude/skills/`) but maintain separate representations with no reconciliation — profiles don't know about their corresponding environment artifacts, and environment artifacts don't know which ones are already profiles.
+Create roundtrip two-way sync between ainative profiles and environment skill artifacts. Today the profile registry and environment scanner both read from the same filesystem (`~/.claude/skills/`) but maintain separate representations with no reconciliation — profiles don't know about their corresponding environment artifacts, and environment artifacts don't know which ones are already profiles.
 
 This feature adds a thin reconciliation layer that makes the implicit filesystem-based sync explicit and visible. A profile-artifact linker runs after each environment scan, cross-referencing skill artifacts with registered profiles by directory name. The suggestion engine is enhanced from 6 hardcoded rules to a two-tier system where any unlinked skill artifact becomes a discoverable profile candidate. Profile mutations invalidate the scan cache so the environment dashboard stays current.
 
@@ -19,7 +19,7 @@ The result: users who install a skill see it immediately as a promotable profile
 
 ## User Story
 
-As a Stagent user who installs skills and creates profiles across multiple projects, I want the environment dashboard and profile system to stay in sync automatically, so that discovered skills become usable profiles with one click and my profiles appear as linked artifacts in the environment view.
+As a ainative user who installs skills and creates profiles across multiple projects, I want the environment dashboard and profile system to stay in sync automatically, so that discovered skills become usable profiles with one click and my profiles appear as linked artifacts in the environment view.
 
 ## Technical Approach
 
@@ -66,7 +66,7 @@ origin?: "manual" | "environment" | "import" | "ai-assist";
 
 Key distinction: `scope` = WHERE (builtin/user/project), `source` = HOW CREATED. Environment-generated profiles have scope `"user"` (they live in `~/.claude/skills/`) but source `"environment"`.
 
-Existing `author: "stagent-env"` pattern in `profile-generator.ts` already partially covers this; the `origin` field makes it explicit and queryable.
+Existing `author: "ainative-env"` pattern in `profile-generator.ts` already partially covers this; the `origin` field makes it explicit and queryable.
 
 ### Component 4: Registry Enrichment (extend existing)
 

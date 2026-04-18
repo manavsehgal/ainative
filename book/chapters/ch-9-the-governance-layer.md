@@ -24,7 +24,7 @@ The instinct is to treat governance as a brake -- something that slows down the 
 
 ## The Permission Cascade
 
-Stagent's governance model is built on a three-tier permission cascade that maps to how humans naturally think about trust: **auto-approve**, **ask**, and **auto-deny**. Every tool an agent might use falls into exactly one of these tiers, and the tier determines what happens when the agent requests to use it.
+ainative's governance model is built on a three-tier permission cascade that maps to how humans naturally think about trust: **auto-approve**, **ask**, and **auto-deny**. Every tool an agent might use falls into exactly one of these tiers, and the tier determines what happens when the agent requests to use it.
 
 **Auto-approve** tools are the read-only operations -- actions that observe the world without changing it. Reading files, searching code, listing directory contents, performing web searches. These are low-risk, high-frequency operations. Requiring human approval for every `Grep` call would make agents unusably slow. The trust assumption is clear: looking at things is safe.
 
@@ -49,7 +49,7 @@ The cascade is configurable per project and per agent profile. A code-reviewer p
 
 The permission cascade describes the policy. The `canUseTool` pattern is the mechanism that enforces it. When an agent wants to use a tool, it does not call the tool directly. It calls `canUseTool` -- an asynchronous callback that checks the permission tier, and for "ask" tools, blocks until a human responds.
 
-This is architecturally distinctive. Most AI frameworks treat tool calls as synchronous operations -- the agent calls a tool, the tool executes, the result comes back. Stagent inserts an asynchronous governance checkpoint between the agent's intention and the tool's execution. The agent says "I want to write to file X." The system checks: is `Write` in the auto-approve tier? If yes, proceed. Is it in the ask tier? If yes, create a notification, pause the agent, and wait for human approval. Is it in the deny tier? If yes, reject immediately and tell the agent why.
+This is architecturally distinctive. Most AI frameworks treat tool calls as synchronous operations -- the agent calls a tool, the tool executes, the result comes back. ainative inserts an asynchronous governance checkpoint between the agent's intention and the tool's execution. The agent says "I want to write to file X." The system checks: is `Write` in the auto-approve tier? If yes, proceed. Is it in the ask tier? If yes, create a notification, pause the agent, and wait for human approval. Is it in the deny tier? If yes, reject immediately and tell the agent why.
 
 The implementation uses a database polling pattern rather than WebSockets. When an agent requests approval, a notification is created in the `notifications` table. The agent's execution loop polls this table at short intervals. When the human approves or rejects the request (through the web UI, or potentially through Slack or other channels), the notification is updated, the agent's next poll picks up the response, and execution continues or halts.
 
@@ -83,7 +83,7 @@ Not every task requires the same level of governance. Asking an agent to format 
 
 Anthropic's autonomy research (a 20-author paper published in February 2026) provides the theoretical foundation. Their key insight is that autonomy is not a property of the agent alone -- it is "co-constructed by model, user, and product." The same model can be highly autonomous in one context (formatting files in a personal project) and highly constrained in another (modifying financial calculations in a regulated environment). The governance layer's job is to encode this contextual autonomy.
 
-Stagent implements this through the interaction of three systems: **permission policies** (what the agent can do), **agent profiles** (how the agent approaches work), and **project settings** (what level of autonomy the project owner has configured). A task on a personal hobby project with the general profile might auto-approve most tools. The same task on a production financial system with the code-reviewer profile might require approval for everything including file reads.
+ainative implements this through the interaction of three systems: **permission policies** (what the agent can do), **agent profiles** (how the agent approaches work), and **project settings** (what level of autonomy the project owner has configured). A task on a personal hobby project with the general profile might auto-approve most tools. The same task on a production financial system with the code-reviewer profile might require approval for everything including file reads.
 
 This three-dimensional governance model (policy x profile x project) creates a rich space of possible configurations without requiring the user to specify every combination explicitly. Sensible defaults handle 90% of cases. The remaining 10% -- the edge cases where default governance is too loose or too tight -- can be tuned incrementally through the Always Allow escalation pattern and explicit policy overrides.
 
@@ -97,7 +97,7 @@ Alignment research — particularly the work surveyed in Aschenbrenner's *Situat
 
 **Scalable oversight.** As agent volume increases, human review of every action becomes a bottleneck. The natural evolution is hierarchical oversight: a trusted agent reviews the work of a less-trusted agent, and humans review only the escalations. This is already implicit in the swarm coordinator pattern described in Chapter 8 — the coordinator evaluates worker output and escalates anomalies. Framed as a governance strategy, it means the three-tier permission model (auto-approve, ask, auto-deny) extends into a fourth tier: *delegate review to a trusted agent, escalate to human only on disagreement*. The swarm coordinator is not just an orchestration mechanism. It is a governance mechanism.
 
-**Chain-of-thought auditability.** If agents reason via readable chains of thought, their reasoning can be audited even when their output cannot be fully verified by inspection alone. This is the governance justification for Stagent's `agent_logs` infrastructure. The logs are not merely debugging artifacts — they are the governance substrate. Every tool call, every reasoning step, every decision is recorded in structured form. When a reviewer asks "why did the agent modify this file?", the answer is in the logs. As agents become more capable and their outputs harder to verify by reading the diff alone, the reasoning trace becomes the primary governance surface. Building comprehensive logging now — before it is strictly necessary — creates the audit infrastructure that future governance will require.
+**Chain-of-thought auditability.** If agents reason via readable chains of thought, their reasoning can be audited even when their output cannot be fully verified by inspection alone. This is the governance justification for ainative's `agent_logs` infrastructure. The logs are not merely debugging artifacts — they are the governance substrate. Every tool call, every reasoning step, every decision is recorded in structured form. When a reviewer asks "why did the agent modify this file?", the answer is in the logs. As agents become more capable and their outputs harder to verify by reading the diff alone, the reasoning trace becomes the primary governance surface. Building comprehensive logging now — before it is strictly necessary — creates the audit infrastructure that future governance will require.
 
 **Defense in depth.** No single governance mechanism is sufficient. The permission cascade is one layer. Profile-based tool restrictions are another. Structured logging is a third. CI gates and code review are a fourth. Budget caps and timeouts are a fifth. Each layer catches failures that others miss. A well-governed agent system resembles a well-secured network: not one firewall, but overlapping controls at every level. The current three-tier model is a strong foundation, and it becomes stronger as additional layers — judge agents, reasoning audits, outcome-based evaluation — are added on top.
 
@@ -107,12 +107,12 @@ These alignment-informed governance principles do not replace the permission cas
 > **Stripe's CI Gates as Governance**
 > Stripe's approach to agent governance is elegant in its simplicity: agents go through exactly the same process as human engineers. All 1,300+ agent-generated PRs are human-reviewed. CI pipelines run the same checks on agent code as on human code. Code review standards apply identically. "Human-reviewed, zero human-written code" is their tagline for the most automated workflows. The insight is that you do not need a separate governance system for agents if your engineering governance is already strong. CI gates, code review, staging environments, canary deploys -- these are all governance mechanisms that work for agents just as well as they work for humans. The key constraint: maximum 2 CI retry cycles before escalating to a human. An agent that cannot get CI green in two attempts probably does not understand the problem well enough to fix it.
 
-## Stagent Today
+## ainative Today
 
-Stagent's current governance implementation centers on three systems working in concert: the permission cascade, the Always Allow persistence, and the notification inbox.
+ainative's current governance implementation centers on three systems working in concert: the permission cascade, the Always Allow persistence, and the notification inbox.
 
 ```typescript
-// Building with Stagent: Permission policy configuration
+// Building with ainative: Permission policy configuration
 const settings = await fetch("/api/settings", {
   method: "PATCH",
   headers: { "Content-Type": "application/json" },
@@ -133,7 +133,7 @@ const settings = await fetch("/api/settings", {
 }).then((r) => r.json());
 
 // When an agent requests a tool in the "requireApproval" tier:
-// 1. A notification appears in the Stagent inbox
+// 1. A notification appears in the ainative inbox
 // 2. The agent pauses execution and polls for a response
 // 3. The human approves, rejects, or "always allows"
 // 4. Execution resumes or halts based on the decision
@@ -156,7 +156,7 @@ The settings page provides a unified view of the governance configuration. Users
 
 The current governance system is functional but limited to per-tool permissions. The roadmap envisions a comprehensive trust framework that addresses the full spectrum of governance concerns.
 
-**NIST-aligned trust framework** structures governance around the NIST AI Agent Standards Initiative's emerging categories: authorization (who can deploy agents), accountability (who is responsible for agent actions), auditability (can every decision be traced), and containment (how are failures bounded). Each category maps to specific Stagent features -- permission cascades for authorization, execution logs for auditability, budget caps for containment.
+**NIST-aligned trust framework** structures governance around the NIST AI Agent Standards Initiative's emerging categories: authorization (who can deploy agents), accountability (who is responsible for agent actions), auditability (can every decision be traced), and containment (how are failures bounded). Each category maps to specific ainative features -- permission cascades for authorization, execution logs for auditability, budget caps for containment.
 
 **Risk-based escalation** moves beyond the binary ask/don't-ask model. Instead of a fixed permission tier per tool, the system assesses the risk of each specific tool invocation. Running `Bash` with `echo hello` is lower risk than running `Bash` with `npm publish`. The same tool, the same tier, but different risk profiles. Risk assessment considers the command itself, the project context, the agent's track record, and the potential blast radius of a failure.
 

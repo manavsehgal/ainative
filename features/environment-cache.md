@@ -11,13 +11,13 @@ dependencies: [environment-scanner]
 
 ## Description
 
-Persistence layer that stores environment scan results in Stagent's SQLite database. Adds 4 new tables (`environment_scans`, `environment_artifacts`, `environment_checkpoints`, `environment_sync_ops`) to cache scanner output for instant dashboard queries, track checkpoint history for rollback safety, and log sync operations.
+Persistence layer that stores environment scan results in ainative's SQLite database. Adds 4 new tables (`environment_scans`, `environment_artifacts`, `environment_checkpoints`, `environment_sync_ops`) to cache scanner output for instant dashboard queries, track checkpoint history for rollback safety, and log sync operations.
 
 The cache follows the "scanner + cache" pattern — the filesystem is the source of truth, the database is a read-optimized mirror. Stale data is mitigated by "last scanned" timestamps and manual refresh triggers.
 
 ## User Story
 
-As a Stagent user, I want my environment scan results to be instantly queryable — filtered, sorted, and searched — without re-scanning the filesystem every time I load the dashboard.
+As a ainative user, I want my environment scan results to be instantly queryable — filtered, sorted, and searched — without re-scanning the filesystem every time I load the dashboard.
 
 ## Technical Approach
 

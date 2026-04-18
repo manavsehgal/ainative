@@ -28,14 +28,14 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Stagent",
+  title: "ainative",
   description: "AI agent task management",
   icons: {
     icon: [
-      { url: "/stagent-s-64.png", sizes: "64x64", type: "image/png" },
+      { url: "/ainative-s-64.png", sizes: "64x64", type: "image/png" },
     ],
     apple: [
-      { url: "/stagent-s-128.png", sizes: "128x128", type: "image/png" },
+      { url: "/ainative-s-128.png", sizes: "128x128", type: "image/png" },
     ],
   },
 };
@@ -67,7 +67,7 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Resolve theme server-side from the stagent-theme cookie. Every client-side
+  // Resolve theme server-side from the ainative-theme cookie. Every client-side
   // theme toggle writes this cookie (see src/lib/theme.ts), so SSR stays in
   // sync with the user's preference and there is no FOUC — and no pre-hydration
   // <script> tag, which is what React 19 warns about.

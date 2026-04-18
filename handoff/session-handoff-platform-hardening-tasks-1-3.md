@@ -3,21 +3,21 @@ title: "Session Handoff: Platform Hardening tasks 1–3"
 audience: future-claude-session
 status: ready
 created: 2026-04-11
-source_session: task-runtime-stagent-mcp-injection shipped + follow-ups FU1/FU2/FU3
-handoff_reason: The P0 in the Platform Hardening batch (task-runtime-stagent-mcp-injection) shipped + TDR-032 codified + smoke-test budget policy documented. Three more groomed specs are queued for execution. This handoff passes enough context so a fresh session can pick up without re-discovering session history, decisions, or gotchas.
+source_session: task-runtime-ainative-mcp-injection shipped + follow-ups FU1/FU2/FU3
+handoff_reason: The P0 in the Platform Hardening batch (task-runtime-ainative-mcp-injection) shipped + TDR-032 codified + smoke-test budget policy documented. Three more groomed specs are queued for execution. This handoff passes enough context so a fresh session can pick up without re-discovering session history, decisions, or gotchas.
 ---
 
 # HANDOFF: Platform Hardening queue — tasks 1–3
 
-**You are picking up mid-stream on the stagent Platform Hardening batch.** The P0 in this batch already shipped (`task-runtime-stagent-mcp-injection`, merged + pushed). Three more specs are ready to execute, groomed and waiting in `features/`. Your job is to ship them in priority order.
+**You are picking up mid-stream on the ainative Platform Hardening batch.** The P0 in this batch already shipped (`task-runtime-ainative-mcp-injection`, merged + pushed). Three more specs are ready to execute, groomed and waiting in `features/`. Your job is to ship them in priority order.
 
 Read this briefing in full before touching anything. It captures session history, decisions you must honor, and gotchas you will otherwise rediscover the hard way.
 
 ## Repo state at handoff
 
 - Branch: `main`. Clean tree. 10 commits ahead of the pre-session state, all pushed to `origin/main`.
-- Working directory: `/Users/manavsehgal/Developer/stagent`
-- Main dev server: **not running.** A parallel instance `stagent-wealth` runs on `:3000` — **never touch it.** When you need to run the stagent dev server, use `PORT=3010 npm run dev` and kill it via `lsof -iTCP:3010 -sTCP:LISTEN -t | xargs -r kill` when done.
+- Working directory: `/Users/manavsehgal/Developer/ainative`
+- Main dev server: **not running.** A parallel instance `ainative-wealth` runs on `:3000` — **never touch it.** When you need to run the ainative dev server, use `PORT=3010 npm run dev` and kill it via `lsof -iTCP:3010 -sTCP:LISTEN -t | xargs -r kill` when done.
 - Node process discipline: if you start a dev server, use `run_in_background: true`, read output via the output file path the tool returns, and always kill it before ending the session.
 - Test command: `npx vitest run src/lib/agents/__tests__/<file>.test.ts 2>&1 | tail -10`
 - Type check: `npx tsc --noEmit 2>&1 | tail -3; echo exit=$?`
@@ -41,13 +41,13 @@ Each has a full spec under `features/`. Read each spec in full before planning i
 
 **What it delivers:** Reject invalid `agentProfile` values at `create_task` (today, runtimes like `anthropic-direct` are accepted as if they were profiles). Also includes a **time-boxed investigation spike** for a reported symptom where tasks "disappeared" after creation.
 
-**Critical correction already embedded in the spec:** The handoff doc that seeded this feature claimed "the task record was deleted." **That is wrong.** An Explore agent confirmed there is **zero task-deletion code anywhere in `src/`** — `claude-agent.ts:300-309, 363-371, 731-740` all persist `status: "failed"` with `failureReason` on every error path, and there is no GC/cleanup for tasks. The real cause is almost certainly a `STAGENT_DATA_DIR` or `projectId` scoping mismatch (see `MEMORY.md → shared-stagent-data-dir`). **The spec already says "investigation spike first, code second" — respect that ordering.** Do not write "stop deleting tasks" code; instead, reproduce the disappearance symptom, instrument it enough to determine the real cause, and document the finding in the spec's References section before any remediation lands.
+**Critical correction already embedded in the spec:** The handoff doc that seeded this feature claimed "the task record was deleted." **That is wrong.** An Explore agent confirmed there is **zero task-deletion code anywhere in `src/`** — `claude-agent.ts:300-309, 363-371, 731-740` all persist `status: "failed"` with `failureReason` on every error path, and there is no GC/cleanup for tasks. The real cause is almost certainly a `STAGENT_DATA_DIR` or `projectId` scoping mismatch (see `MEMORY.md → shared-ainative-data-dir`). **The spec already says "investigation spike first, code second" — respect that ordering.** Do not write "stop deleting tasks" code; instead, reproduce the disappearance symptom, instrument it enough to determine the real cause, and document the finding in the spec's References section before any remediation lands.
 
 **Files to modify:**
 - `src/lib/chat/tools/task-tools.ts:91-96` — convert `agentProfile: z.string()` to `z.string().refine(id => getProfile(id) !== undefined, ...)` using `src/lib/agents/profiles/registry.ts`.
 - `src/lib/chat/tools/__tests__/task-tools.test.ts` — add a test asserting `create_task` rejects `agentProfile: "anthropic-direct"`.
 
-**Smoke-test budget (TDR-032 / AGENTS.md → Testing and Verification):** `task-tools.ts` lives under `src/lib/chat/tools/` which is transitively imported by `@/lib/chat/stagent-tools`, which is now loaded by `claude-agent.ts` via dynamic import. The changes are schema-only (Zod refinements), so they should not introduce a cycle — but if you refactor or add a new static import at the top of `task-tools.ts`, run a quick smoke-test to confirm the dev server boots. The full smoke-test recipe is in task 3's section; same pattern.
+**Smoke-test budget (TDR-032 / AGENTS.md → Testing and Verification):** `task-tools.ts` lives under `src/lib/chat/tools/` which is transitively imported by `@/lib/chat/ainative-tools`, which is now loaded by `claude-agent.ts` via dynamic import. The changes are schema-only (Zod refinements), so they should not introduce a cycle — but if you refactor or add a new static import at the top of `task-tools.ts`, run a quick smoke-test to confirm the dev server boots. The full smoke-test recipe is in task 3's section; same pattern.
 
 **Spike subtask constraints:**
 - Time-box: ~2 hours max.
@@ -97,7 +97,7 @@ Each has a full spec under `features/`. Read each spec in full before planning i
 - `AGENTS.md` or `MEMORY.md` — mirror the written metric definition so the project reference is consistent with the feature spec.
 - `src/lib/data/__tests__/clear.test.ts` — verify still green per `MEMORY.md → Recurring Issues → clear.ts`. New columns don't require `clear.ts` updates (that's only for new FK-dependent tables), but the safety-net test must stay green.
 
-**Smoke-test budget: REQUIRED.** Task 3 touches `claude-agent.ts` AND `schedule.ts` AND `task-tools.ts` — three files that sit in or near the runtime-registry import cycle (TDR-032). You **must** budget an end-to-end smoke step in the plan, not just unit tests. Precedent from the previous feature in this batch: 34/34 unit tests passed and `tsc --noEmit` was clean, but the feature still crashed at first task execution because a static import created a `ReferenceError: Cannot access 'claudeRuntimeAdapter' before initialization`. Unit tests mocking `@/lib/chat/stagent-tools` structurally cannot catch that class of bug. See `.claude/skills/architect/references/tdr-032-runtime-stagent-mcp-injection.md` for the full decision and the smoke-test policy in `.claude/skills/writing-plans/SKILL.md`.
+**Smoke-test budget: REQUIRED.** Task 3 touches `claude-agent.ts` AND `schedule.ts` AND `task-tools.ts` — three files that sit in or near the runtime-registry import cycle (TDR-032). You **must** budget an end-to-end smoke step in the plan, not just unit tests. Precedent from the previous feature in this batch: 34/34 unit tests passed and `tsc --noEmit` was clean, but the feature still crashed at first task execution because a static import created a `ReferenceError: Cannot access 'claudeRuntimeAdapter' before initialization`. Unit tests mocking `@/lib/chat/ainative-tools` structurally cannot catch that class of bug. See `.claude/skills/architect/references/tdr-032-runtime-ainative-mcp-injection.md` for the full decision and the smoke-test policy in `.claude/skills/writing-plans/SKILL.md`.
 
 **Smoke-test recipe (tested and known to work):**
 1. `PORT=3010 npm run dev` in the background
@@ -160,10 +160,10 @@ These came from explicit user feedback during the previous feature in this batch
 
 | Purpose | Path |
 |---|---|
-| TDR-032 invariant | `.claude/skills/architect/references/tdr-032-runtime-stagent-mcp-injection.md` |
-| Canonical stagent injection helpers | `src/lib/agents/claude-agent.ts:45-88` |
+| TDR-032 invariant | `.claude/skills/architect/references/tdr-032-runtime-ainative-mcp-injection.md` |
+| Canonical ainative injection helpers | `src/lib/agents/claude-agent.ts:45-88` |
 | Helper call sites | `src/lib/agents/claude-agent.ts:547-578` (execute), `:677-708` (resume) |
-| Stagent tool factory | `src/lib/chat/stagent-tools.ts:70-113` |
+| ainative tool factory | `src/lib/chat/ainative-tools.ts:70-113` |
 | Task tools (create_task, get_task, list_tasks, execute_task) | `src/lib/chat/tools/task-tools.ts` |
 | Schedule tools (create_schedule, update_schedule, get_schedule) | `src/lib/chat/tools/schedule-tools.ts` |
 | Profile registry | `src/lib/agents/profiles/registry.ts` |
@@ -177,20 +177,20 @@ These came from explicit user feedback during the previous feature in this batch
 | Plan directory | `docs/superpowers/plans/` — follow the naming pattern `YYYY-MM-DD-<feature-name>.md` |
 | AGENTS.md — testing and verification rules | `AGENTS.md` → `## Testing and Verification` |
 | Writing-plans project override | `.claude/skills/writing-plans/SKILL.md` |
-| Project memory | `/Users/manavsehgal/.claude/projects/-Users-manavsehgal-Developer-stagent/memory/MEMORY.md` |
+| Project memory | `/Users/manavsehgal/.claude/projects/-Users-manavsehgal-Developer-ainative/memory/MEMORY.md` |
 
 ## The recent commit stack (context for what "done" looks like)
 
 ```
 63782e1 docs: smoke-test budget policy for runtime-registry-adjacent features
-8f7604e docs(architect): add TDR-032 for runtime stagent MCP injection invariant
+8f7604e docs(architect): add TDR-032 for runtime ainative MCP injection invariant
 3b269f3 refactor(agents): dedupe withStagentAllowedTools at both spread sites
-48088a7 docs(features): flip task-runtime-stagent-mcp-injection to completed
-2b5ae42 fix(agents): break stagent-tools import cycle via dynamic import
-4906fcb fix(agents): extract stagent helpers + inject into resumeClaudeTask
-969e096 docs(plan): rewrite Task 2 to extract shared stagent helpers first
-ddd58fd fix(agents): use non-deprecated createToolServer in stagent injection
-092f925 fix(agents): inject stagent MCP into executeClaudeTask
+48088a7 docs(features): flip task-runtime-ainative-mcp-injection to completed
+2b5ae42 fix(agents): break ainative-tools import cycle via dynamic import
+4906fcb fix(agents): extract ainative helpers + inject into resumeClaudeTask
+969e096 docs(plan): rewrite Task 2 to extract shared ainative helpers first
+ddd58fd fix(agents): use non-deprecated createToolServer in ainative injection
+092f925 fix(agents): inject ainative MCP into executeClaudeTask
 221f2db docs(features): groom handoff batch into Platform Hardening specs
 ```
 
@@ -221,7 +221,7 @@ Match this commit message style for the three new tasks. Notice:
 - A general task cleanup/GC retention policy for task 1 — no such policy exists today; do not build one speculatively just because the original handoff mentioned it.
 - `STAGENT_DATA_DIR` isolation model changes — out of scope even if the task 1 spike reveals it's the cause.
 - Helper type tightening from `Record<string, unknown>` to named `McpServerMap` alias — cosmetic follow-up flagged in the previous feature's code review, file separately if anyone wants it.
-- A dedup-branch test (A-stagent-4 / R-stagent-3) for `withStagentAllowedTools` — low priority, file separately.
+- A dedup-branch test (A-ainative-4 / R-ainative-3) for `withStagentAllowedTools` — low priority, file separately.
 
 ## Sanity checks before you report anything as "done"
 

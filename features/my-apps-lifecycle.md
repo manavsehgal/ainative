@@ -13,13 +13,13 @@ dependencies: [app-runtime-bundle-foundation, app-uninstall]
 
 ## Description
 
-User-built apps (created via project export, `sourceType: "file"`) are stored as SAP directories in `~/.stagent/apps/{appId}/` and loaded into the bundle registry at startup by `loadSapBundles()`. Today they only appear in Settings > Installed Apps — there is no marketplace-style browsing, no way to re-install after uninstalling, and no way to permanently delete a SAP directory from disk.
+User-built apps (created via project export, `sourceType: "file"`) are stored as SAP directories in `~/.ainative/apps/{appId}/` and loaded into the bundle registry at startup by `loadSapBundles()`. Today they only appear in Settings > Installed Apps — there is no marketplace-style browsing, no way to re-install after uninstalling, and no way to permanently delete a SAP directory from disk.
 
 This feature adds a "My Apps" tab to the marketplace that lists all user-built apps regardless of install state. It introduces three card states (Installed, Archived, Failed), a re-install flow for archived apps, and a permanent delete flow that removes the SAP directory from disk. Uninstalling a user-built app archives it by default (preserves SAP dir, removes DB row), enabling re-install later.
 
 ## User Story
 
-As a Stagent user who has exported projects into apps, I want to browse all my user-built apps in the marketplace, see which ones are installed vs. archived, re-install archived apps with one click, and permanently delete apps I no longer need — so that I have full lifecycle control over apps I've created.
+As a ainative user who has exported projects into apps, I want to browse all my user-built apps in the marketplace, see which ones are installed vs. archived, re-install archived apps with one click, and permanently delete apps I no longer need — so that I have full lifecycle control over apps I've created.
 
 ## Technical Approach
 
@@ -118,7 +118,7 @@ interface MyAppEntry {
 
 - [ ] "My Apps" tab visible in marketplace alongside Apps, Blueprints, Profiles, Templates
 - [ ] Tab shows count badge: "My Apps (N)" when N > 0
-- [ ] All SAP directories under `~/.stagent/apps/` with valid manifests appear as cards
+- [ ] All SAP directories under `~/.ainative/apps/` with valid manifests appear as cards
 - [ ] Cards show correct state badge: Installed (green), Archived (muted), Failed (red)
 - [ ] Installed apps: "Open" navigates to `/apps/{appId}`, "Uninstall" opens confirmation dialog
 - [ ] Uninstalling a user-built app preserves the SAP directory (archives it)
@@ -168,7 +168,7 @@ interface MyAppEntry {
 
 ## What Already Exists
 
-- **`loadSapBundles()`** in `src/lib/apps/registry.ts:68-104` — scans `~/.stagent/apps/`, registers SAP bundles. All SAP dirs are already in memory at runtime
+- **`loadSapBundles()`** in `src/lib/apps/registry.ts:68-104` — scans `~/.ainative/apps/`, registers SAP bundles. All SAP dirs are already in memory at runtime
 - **`installApp()`** in `src/lib/apps/service.ts:221-294` — full install+bootstrap with rollback and race handling. Accepts `providedBundle` param
 - **`uninstallApp()`** in `src/lib/apps/service.ts` — full resource cleanup (triggers, views, tables, schedules) + optional project cascade delete. Already preserves SAP dir
 - **`UninstallConfirmationDialog`** in `src/components/apps/uninstall-confirmation-dialog.tsx` — reusable for My Apps uninstall

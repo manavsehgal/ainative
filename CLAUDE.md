@@ -50,7 +50,7 @@ npm run test:coverage
 - Prefer targeted tests first, then broader suite runs when risk warrants it.
 - For UI work, use browser evaluation when the user asks or when a visual change needs real verification.
 - Save browser artifacts under `output/` unless the task explicitly wants another location.
-- **Smoke-test budget for runtime-registry-adjacent features.** Whenever a plan adds, removes, or reshapes an import in any module transitively reachable from `@/lib/agents/runtime/catalog.ts` — notably `src/lib/agents/claude-agent.ts`, `src/lib/agents/runtime/claude.ts`, `src/lib/agents/runtime/openai-direct.ts`, `src/lib/agents/runtime/anthropic-direct.ts`, or `src/lib/workflows/engine.ts` — it **must** budget an end-to-end smoke step that runs a real task under `npm run dev`, not just unit tests. Unit tests that `vi.mock("@/lib/chat/stagent-tools", ...)` (or any other chat-tools module) structurally cannot catch module-load cycles, because the real module is never evaluated during the test run. A static `import ... from "@/lib/chat/stagent-tools"` in any file under `src/lib/agents/` will compile and pass 100% of unit tests while crashing at the first Next.js request with `ReferenceError: Cannot access 'claudeRuntimeAdapter' before initialization`. Use a dynamic `await import()` inside function bodies instead, and always smoke-verify. See TDR-032 and `features/task-runtime-stagent-mcp-injection.md` → "Verification run — 2026-04-11" for the precedent.
+- **Smoke-test budget for runtime-registry-adjacent features.** Whenever a plan adds, removes, or reshapes an import in any module transitively reachable from `@/lib/agents/runtime/catalog.ts` — notably `src/lib/agents/claude-agent.ts`, `src/lib/agents/runtime/claude.ts`, `src/lib/agents/runtime/openai-direct.ts`, `src/lib/agents/runtime/anthropic-direct.ts`, or `src/lib/workflows/engine.ts` — it **must** budget an end-to-end smoke step that runs a real task under `npm run dev`, not just unit tests. Unit tests that `vi.mock("@/lib/chat/ainative-tools", ...)` (or any other chat-tools module) structurally cannot catch module-load cycles, because the real module is never evaluated during the test run. A static `import ... from "@/lib/chat/ainative-tools"` in any file under `src/lib/agents/` will compile and pass 100% of unit tests while crashing at the first Next.js request with `ReferenceError: Cannot access 'claudeRuntimeAdapter' before initialization`. Use a dynamic `await import()` inside function bodies instead, and always smoke-verify. See TDR-032 and `features/task-runtime-ainative-mcp-injection.md` → "Verification run — 2026-04-11" for the precedent.
 
 <!-- synced from AGENTS.md#engineering-principles -->
 ## Engineering Principles
@@ -68,12 +68,12 @@ These 7 directives apply to all skills, all code, and all reviews.
 <!-- synced from AGENTS.md#instance-bootstrap-dev-mode-gate -->
 ## Instance Bootstrap Dev-Mode Gate
 
-The canonical stagent dev repo must skip the `instance-bootstrap` feature's auto-upgrade machinery — otherwise a pre-push hook would be installed on first `npm run dev` and block contributor pushes to `origin/main`.
+The canonical ainative dev repo must skip the `instance-bootstrap` feature's auto-upgrade machinery — otherwise a pre-push hook would be installed on first `npm run dev` and block contributor pushes to `origin/main`.
 
 Two independent gates prevent this, both already in place:
 
 1. **`STAGENT_DEV_MODE=true` in `.env.local`** (primary, per-developer).
-2. **`.git/stagent-dev-mode` sentinel file** (secondary, git-dir-scoped). Never cloned, never committed.
+2. **`.git/ainative-dev-mode` sentinel file** (secondary, git-dir-scoped). Never cloned, never committed.
 
 When either gate is active, `ensureInstance()` returns immediately with no side effects. Do NOT remove either.
 

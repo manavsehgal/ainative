@@ -11,7 +11,7 @@ dependencies: [local-license-manager, supabase-cloud-backend]
 
 ## Description
 
-The marketplace is Stagent's primary network effect engine — not just a download catalog, but an income platform where solo operators monetize their best workflows. The tier structure is designed to maximize marketplace liquidity: Community users browse freely (creating demand visibility), Solo users can buy (creating a buyer pool), Operator users can sell (creating a creator economy), and Scale users get better economics and featured placement.
+The marketplace is ainative's primary network effect engine — not just a download catalog, but an income platform where solo operators monetize their best workflows. The tier structure is designed to maximize marketplace liquidity: Community users browse freely (creating demand visibility), Solo users can buy (creating a buyer pool), Operator users can sell (creating a creator economy), and Scale users get better economics and featured placement.
 
 This inverts the typical "gate at the top" model. Instead of locking marketplace behind the highest tier, buying is unlocked at the lowest paid tier ($19/mo) to maximize the number of potential buyers — which makes selling more attractive at the Operator tier ($49/mo).
 
@@ -104,8 +104,8 @@ As a Community user, I want to browse the marketplace to see what's available an
 ### Revenue Split
 
 Revenue is processed via Stripe Connect (Operator+ creators connect their Stripe account):
-- Operator creators: 70% of sale price (Stagent takes 30%)
-- Scale creators: 80% of sale price (Stagent takes 20%)
+- Operator creators: 70% of sale price (ainative takes 30%)
+- Scale creators: 80% of sale price (ainative takes 20%)
 - Stripe Connect handles payouts — no manual payment processing
 - Minimum payout threshold: $10
 

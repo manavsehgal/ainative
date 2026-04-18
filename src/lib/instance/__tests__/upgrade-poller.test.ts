@@ -21,12 +21,12 @@ function initRepo(dir: string) {
 }
 
 beforeEach(() => {
-  tempDir = mkdtempSync(join(tmpdir(), "stagent-upgrade-poller-"));
-  dataDir = mkdtempSync(join(tmpdir(), "stagent-upgrade-poller-data-"));
+  tempDir = mkdtempSync(join(tmpdir(), "ainative-upgrade-poller-"));
+  dataDir = mkdtempSync(join(tmpdir(), "ainative-upgrade-poller-data-"));
   initRepo(tempDir);
   vi.resetModules();
   vi.unstubAllEnvs();
-  vi.stubEnv("STAGENT_DATA_DIR", dataDir);
+  vi.stubEnv("AINATIVE_DATA_DIR", dataDir);
 });
 
 afterEach(() => {
@@ -36,15 +36,15 @@ afterEach(() => {
 });
 
 describe("tick", () => {
-  it("returns skipped=dev_mode_or_no_git when STAGENT_DEV_MODE=true", async () => {
-    vi.stubEnv("STAGENT_DEV_MODE", "true");
+  it("returns skipped=dev_mode_or_no_git when AINATIVE_DEV_MODE=true", async () => {
+    vi.stubEnv("AINATIVE_DEV_MODE", "true");
     const { tick } = await import("../upgrade-poller");
     const result = await tick(tempDir);
     expect(result.skipped).toBe("dev_mode_or_no_git");
   });
 
   it("returns skipped=dev_mode_or_no_git when .git is absent", async () => {
-    const noGitDir = mkdtempSync(join(tmpdir(), "stagent-nogit-"));
+    const noGitDir = mkdtempSync(join(tmpdir(), "ainative-nogit-"));
     try {
       const { tick } = await import("../upgrade-poller");
       const result = await tick(noGitDir);
@@ -110,7 +110,7 @@ describe("tick", () => {
     expect(open).toHaveLength(1);
 
     // Success clears the notification
-    const bareDir = mkdtempSync(join(tmpdir(), "stagent-bare-"));
+    const bareDir = mkdtempSync(join(tmpdir(), "ainative-bare-"));
     try {
       runGit(["init", "--bare", "-b", "main"], bareDir);
       runGit(["remote", "add", "origin", bareDir], tempDir);
@@ -128,7 +128,7 @@ describe("tick", () => {
 
   it("successfully updates state with zero commitsBehind when local == origin/main", async () => {
     // Set up a local 'origin' remote pointing to a bare copy of the same repo
-    const bareDir = mkdtempSync(join(tmpdir(), "stagent-bare-"));
+    const bareDir = mkdtempSync(join(tmpdir(), "ainative-bare-"));
     try {
       runGit(["init", "--bare", "-b", "main"], bareDir);
       runGit(["remote", "add", "origin", bareDir], tempDir);
@@ -148,8 +148,8 @@ describe("tick", () => {
   });
 
   it("detects commits-behind when origin has new commits not in local main", async () => {
-    const bareDir = mkdtempSync(join(tmpdir(), "stagent-bare-"));
-    const otherCloneDir = mkdtempSync(join(tmpdir(), "stagent-other-"));
+    const bareDir = mkdtempSync(join(tmpdir(), "ainative-bare-"));
+    const otherCloneDir = mkdtempSync(join(tmpdir(), "ainative-other-"));
     try {
       runGit(["init", "--bare", "-b", "main"], bareDir);
       runGit(["remote", "add", "origin", bareDir], tempDir);

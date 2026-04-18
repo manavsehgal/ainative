@@ -41,10 +41,10 @@ const {
   const mockRemoveExecution = vi.fn();
   const mockGetAuthEnv = vi.fn().mockResolvedValue(undefined);
   const mockUpdateAuthStatus = vi.fn().mockResolvedValue(undefined);
-  const mockPrepareTaskOutputDirectory = vi.fn().mockResolvedValue("/tmp/stagent-outputs/task-1");
+  const mockPrepareTaskOutputDirectory = vi.fn().mockResolvedValue("/tmp/ainative-outputs/task-1");
   const mockBuildTaskOutputInstructions = vi
     .fn()
-    .mockReturnValue("Write outputs to /tmp/stagent-outputs/task-1");
+    .mockReturnValue("Write outputs to /tmp/ainative-outputs/task-1");
   const mockScanTaskOutputDocuments = vi.fn().mockResolvedValue([]);
   const mockGetProfile = vi.fn().mockReturnValue({
     id: "general",
@@ -141,16 +141,16 @@ vi.mock("@/lib/agents/browser-mcp", () => ({
   isExaTool: vi.fn().mockReturnValue(false),
   isExaReadOnly: vi.fn().mockReturnValue(false),
 }));
-vi.mock("@/lib/chat/stagent-tools", () => ({
+vi.mock("@/lib/chat/ainative-tools", () => ({
   createToolServer: vi.fn((_projectId?: string | null) => ({
-    asMcpServer: () => ({ __mockStagentServer: true }),
+    asMcpServer: () => ({ __mockAinativeServer: true }),
   })),
 }));
 
 // Static imports (works because vi.mock is hoisted)
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import { executeClaudeTask, resumeClaudeTask } from "../claude-agent";
-import { createToolServer } from "@/lib/chat/stagent-tools";
+import { createToolServer } from "@/lib/chat/ainative-tools";
 
 const mockQuery = vi.mocked(query);
 
@@ -197,9 +197,9 @@ beforeEach(() => {
   mockDb.insert.mockReturnValue({ values: mockValues });
   mockValues.mockResolvedValue(undefined);
   mockSetWhere.mockResolvedValue(undefined);
-  mockPrepareTaskOutputDirectory.mockResolvedValue("/tmp/stagent-outputs/task-1");
+  mockPrepareTaskOutputDirectory.mockResolvedValue("/tmp/ainative-outputs/task-1");
   mockBuildTaskOutputInstructions.mockReturnValue(
-    "Write outputs to /tmp/stagent-outputs/task-1"
+    "Write outputs to /tmp/ainative-outputs/task-1"
   );
   mockScanTaskOutputDocuments.mockResolvedValue([]);
   mockGetProfile.mockReturnValue({
@@ -244,7 +244,7 @@ describe("executeClaudeTask", () => {
     expect(mockRemoveExecution).toHaveBeenCalledWith("task-1");
   });
 
-  it("A-stagent-1: injects stagent MCP server into query mcpServers", async () => {
+  it("A-ainative-1: injects ainative MCP server into query mcpServers", async () => {
     mockWhere.mockResolvedValueOnce([makeTask({ projectId: "proj-7" })]);
     mockQuery.mockReturnValue(
       createMockStream([
@@ -258,11 +258,11 @@ describe("executeClaudeTask", () => {
       options: { mcpServers?: Record<string, unknown> };
     };
     expect(queryCall.options.mcpServers).toBeDefined();
-    expect(queryCall.options.mcpServers!.stagent).toEqual({ __mockStagentServer: true });
+    expect(queryCall.options.mcpServers!.ainative).toEqual({ __mockAinativeServer: true });
     expect(vi.mocked(createToolServer)).toHaveBeenCalledWith("proj-7");
   });
 
-  it("A-stagent-2: prepends mcp__stagent__* when profile has allowedTools", async () => {
+  it("A-ainative-2: prepends mcp__ainative__* when profile has allowedTools", async () => {
     mockWhere.mockResolvedValueOnce([makeTask({ projectId: "proj-7" })]);
     mockGetProfile.mockReturnValueOnce({
       id: "restricted",
@@ -282,21 +282,21 @@ describe("executeClaudeTask", () => {
       options: { allowedTools?: string[] };
     };
     expect(queryCall.options.allowedTools).toBeDefined();
-    expect(queryCall.options.allowedTools).toContain("mcp__stagent__*");
+    expect(queryCall.options.allowedTools).toContain("mcp__ainative__*");
     expect(queryCall.options.allowedTools).toContain("Read");
     expect(queryCall.options.allowedTools).toContain("Grep");
     // Duplicates not added when profile didn't already include the pattern
-    const stagentCount = queryCall.options.allowedTools!.filter(
-      (t) => t === "mcp__stagent__*"
+    const ainativeCount = queryCall.options.allowedTools!.filter(
+      (t) => t === "mcp__ainative__*"
     ).length;
-    expect(stagentCount).toBe(1);
+    expect(ainativeCount).toBe(1);
   });
 
-  it("A-stagent-3: falls back to CLAUDE_SDK_ALLOWED_TOOLS when profile has none and runtime has native skills", async () => {
+  it("A-ainative-3: falls back to CLAUDE_SDK_ALLOWED_TOOLS when profile has none and runtime has native skills", async () => {
     mockWhere.mockResolvedValueOnce([makeTask({ projectId: "proj-7" })]);
     // Default mockGetProfile returns allowedTools: undefined. Task-runtime-skill-parity
-    // (Task 3) changed withStagentAllowedTools so the Phase 1a tool set (Skill,
-    // Read/Grep/Glob, Edit/Write/Bash, TodoWrite) is passed alongside mcp__stagent__*
+    // (Task 3) changed withAinativeAllowedTools so the Phase 1a tool set (Skill,
+    // Read/Grep/Glob, Edit/Write/Bash, TodoWrite) is passed alongside mcp__ainative__*
     // when the runtime has hasNativeSkills=true — which is the claude-code default.
     mockQuery.mockReturnValue(
       createMockStream([
@@ -311,7 +311,7 @@ describe("executeClaudeTask", () => {
     };
     expect(queryCall.options.allowedTools).toBeDefined();
     expect(queryCall.options.allowedTools).toEqual([
-      "mcp__stagent__*",
+      "mcp__ainative__*",
       "Skill",
       "Read",
       "Grep",
@@ -685,7 +685,7 @@ describe("resumeClaudeTask", () => {
     expect(mockRemoveExecution).toHaveBeenCalledWith("task-1");
   });
 
-  it("R-stagent-1: injects stagent MCP server into query mcpServers on resume", async () => {
+  it("R-ainative-1: injects ainative MCP server into query mcpServers on resume", async () => {
     mockWhere.mockResolvedValueOnce([
       makeTask({
         projectId: "proj-7",
@@ -706,11 +706,11 @@ describe("resumeClaudeTask", () => {
     };
     expect(queryCall.options.resume).toBe("session-abc");
     expect(queryCall.options.mcpServers).toBeDefined();
-    expect(queryCall.options.mcpServers!.stagent).toEqual({ __mockStagentServer: true });
+    expect(queryCall.options.mcpServers!.ainative).toEqual({ __mockAinativeServer: true });
     expect(vi.mocked(createToolServer)).toHaveBeenCalledWith("proj-7");
   });
 
-  it("R-stagent-2: prepends mcp__stagent__* on resume when profile has allowedTools", async () => {
+  it("R-ainative-2: prepends mcp__ainative__* on resume when profile has allowedTools", async () => {
     mockWhere.mockResolvedValueOnce([
       makeTask({
         projectId: "proj-7",
@@ -735,9 +735,9 @@ describe("resumeClaudeTask", () => {
     const queryCall = mockQuery.mock.calls[0][0] as {
       options: { allowedTools?: string[] };
     };
-    expect(queryCall.options.allowedTools).toContain("mcp__stagent__*");
+    expect(queryCall.options.allowedTools).toContain("mcp__ainative__*");
     expect(queryCall.options.allowedTools).toContain("Read");
-    expect(queryCall.options.allowedTools![0]).toBe("mcp__stagent__*");
+    expect(queryCall.options.allowedTools![0]).toBe("mcp__ainative__*");
   });
 });
 
@@ -994,7 +994,7 @@ describe("handleToolPermission", () => {
             ) => Promise<{ behavior: string; updatedInput?: Record<string, unknown> }>;
 
             toolResult = await canUseTool("Bash", {
-              command: "mkdir -p /tmp/stagent-outputs/task-1",
+              command: "mkdir -p /tmp/ainative-outputs/task-1",
             });
 
             yield { type: "result", result: "done" };
@@ -1008,7 +1008,7 @@ describe("handleToolPermission", () => {
     expect(toolResult).toEqual({
       behavior: "allow",
       updatedInput: {
-        command: "mkdir -p /tmp/stagent-outputs/task-1",
+        command: "mkdir -p /tmp/ainative-outputs/task-1",
       },
     });
     expect(mockValues).not.toHaveBeenCalledWith(

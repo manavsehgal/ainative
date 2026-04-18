@@ -1,6 +1,6 @@
 ---
 title: "Feature: Expose maxTurns on Schedule API"
-audience: stagent-base
+audience: ainative-base
 status: proposed
 source_branch: wealth-mgr
 handoff_reason: Schedule records store a maxTurns field but the update_schedule API doesn't expose it, preventing users from tuning per-schedule turn budgets. create_schedule also lacks this parameter.

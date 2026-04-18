@@ -11,7 +11,7 @@ import {
 
 export type TaskView = "board" | "table";
 
-const STORAGE_KEY = "stagent-task-view";
+const STORAGE_KEY = "ainative-task-view";
 
 interface TaskViewToggleProps {
   view: TaskView;

@@ -11,7 +11,7 @@ lastUpdated: "2026-04-15"
 
 # Settings
 
-The Settings page is the central configuration hub for Stagent. From a single scrollable page you can manage authentication for all provider runtimes, configure local AI models via Ollama, tune agent execution parameters, enable browser automation, set monthly cost caps, choose permission presets, manage delivery channels for Slack and Telegram, and reset workspace data. Each section saves changes immediately with confirmation feedback.
+The Settings page is the central configuration hub for ainative. From a single scrollable page you can manage authentication for all provider runtimes, configure local AI models via Ollama, tune agent execution parameters, enable browser automation, set monthly cost caps, choose permission presets, manage delivery channels for Slack and Telegram, and reset workspace data. Each section saves changes immediately with confirmation feedback.
 
 ## Screenshots
 
@@ -49,7 +49,7 @@ The Settings page is the central configuration hub for Stagent. From a single sc
 
 ### Authentication
 
-Choose how Stagent connects to each provider runtime. For **Anthropic**, **OAuth** uses your existing Max subscription at no additional API cost, while **API Key** uses the Anthropic key stored in your environment. For **OpenAI**, Codex App Server can use either an **OpenAI API key** or **ChatGPT** browser sign-in, while OpenAI Direct continues to use an API key. Connection tests validate the currently selected runtime mode and the OpenAI section shows active ChatGPT account and Codex rate-limit state when available.
+Choose how ainative connects to each provider runtime. For **Anthropic**, **OAuth** uses your existing Max subscription at no additional API cost, while **API Key** uses the Anthropic key stored in your environment. For **OpenAI**, Codex App Server can use either an **OpenAI API key** or **ChatGPT** browser sign-in, while OpenAI Direct continues to use an API key. Connection tests validate the currently selected runtime mode and the OpenAI section shows active ChatGPT account and Codex rate-limit state when available.
 
 ### Ollama Runtime (Local Models)
 
@@ -75,7 +75,7 @@ Pick the default model for new chat conversations. The selector shows available 
 
 ### Browser Tools
 
-Enable browser automation for chat and task execution without leaving Stagent. Two independent toggles control complementary capabilities:
+Enable browser automation for chat and task execution without leaving ainative. Two independent toggles control complementary capabilities:
 
 - **Chrome DevTools** -- connects to a running Chrome window. Useful for debugging your own app, inspecting network traffic, running performance audits, and taking screenshots of live pages.
 - **Playwright** -- launches its own headless browser. Useful for autonomous web research, page scraping, structured analysis, and cross-browser testing.
@@ -90,7 +90,7 @@ Configure external messaging integrations for outbound notifications and bidirec
 - **Telegram** -- connect via bot token for both notifications and bidirectional chat
 - **Webhook** -- send notifications to any HTTP endpoint (outbound only)
 
-Each channel card has four controls: a **Chat** toggle for bidirectional mode (Slack and Telegram only), an **Active** toggle, a **Test** button, and a **Delete** button. When Chat is enabled, you can message Stagent directly from Slack or Telegram and receive AI responses in the same conversation. See the [Delivery Channels](./delivery-channels.md) guide for detailed setup instructions.
+Each channel card has four controls: a **Chat** toggle for bidirectional mode (Slack and Telegram only), an **Active** toggle, a **Test** button, and a **Delete** button. When Chat is enabled, you can message ainative directly from Slack or Telegram and receive AI responses in the same conversation. See the [Delivery Channels](./delivery-channels.md) guide for detailed setup instructions.
 
 ### Cost and Usage Guardrails
 
@@ -132,7 +132,7 @@ Protect your workspace with automatic and manual database backups:
 - **Automatic backup** -- enable scheduled backups with a configurable cron interval (e.g., every 6 hours, daily). Snapshots are created in the background without interrupting your workflow.
 - **Retention settings** -- control how many snapshots to keep with a maximum count and a maximum age in weeks. Older snapshots beyond the retention limits are pruned automatically.
 - **Snapshot list** -- view all existing snapshots with timestamps and sizes. Each snapshot has **Restore** and **Delete** action buttons for quick management.
-- **Pre-restore safety snapshot** -- before restoring an older snapshot, Stagent automatically creates a safety snapshot of the current database state so you can roll back if needed.
+- **Pre-restore safety snapshot** -- before restoring an older snapshot, ainative automatically creates a safety snapshot of the current database state so you can roll back if needed.
 
 ## How To
 
@@ -181,7 +181,7 @@ Protect your workspace with automatic and manual database backups:
 The **Instance** card surfaces metadata about this installation: the stable `instanceId`, the current instance branch (e.g., `local` for single-clone users, `wealth-mgr` for private instances), the upstream remote it tracks, and whether the first-boot bootstrap has completed. Power users also see the guardrail state — whether a pre-push hook is installed and whether `pushRemote=no_push` is set on the instance branch.
 
 ### Dev Mode Gate
-When `STAGENT_DEV_MODE=true` is set in `.env.local` or the `.git/stagent-dev-mode` sentinel file is present, the Instance section displays a "Dev mode" banner and the upgrade machinery is intentionally bypassed. This is the gate that protects the main dev repo from having a pre-push hook installed by the instance-bootstrap flow — contributors working on Stagent itself must not have their own push workflow broken.
+When `STAGENT_DEV_MODE=true` is set in `.env.local` or the `.git/ainative-dev-mode` sentinel file is present, the Instance section displays a "Dev mode" banner and the upgrade machinery is intentionally bypassed. This is the gate that protects the main dev repo from having a pre-push hook installed by the instance-bootstrap flow — contributors working on ainative itself must not have their own push workflow broken.
 
 ### Upgrade Detection
 An hourly scheduled poll runs `git fetch` against the upstream remote and compares `HEAD` to `origin/main`. When upstream is ahead, the sidebar shows a small **Upgrade available** badge next to Settings and the Instance card surfaces a "New version available" card with the number of commits behind. Detection is `git`-based rather than GitHub REST to avoid rate limits. Three consecutive poll failures escalate to a persistent notification.

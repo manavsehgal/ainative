@@ -59,7 +59,7 @@ Every chat starts a new conversation that is saved automatically. Your conversat
 
 ### Channel Conversations
 
-When bidirectional chat is enabled on a Slack or Telegram delivery channel, messages sent to Stagent from those platforms create conversations visible in the Chat sidebar. The same chat engine handles both web and channel conversations, including tool access, permission handling, and multi-turn context.
+When bidirectional chat is enabled on a Slack or Telegram delivery channel, messages sent to ainative from those platforms create conversations visible in the Chat sidebar. The same chat engine handles both web and channel conversations, including tool access, permission handling, and multi-turn context.
 
 ### Skill Composition
 
@@ -124,7 +124,7 @@ Responses stream in token by token with a blinking cursor. Markdown formatting -
 ### Chat from Slack or Telegram
 
 1. Configure a delivery channel with Chat mode enabled (see [Settings](./settings.md)).
-2. Send a message to Stagent from Slack or Telegram.
+2. Send a message to ainative from Slack or Telegram.
 3. The conversation appears in the Chat sidebar and can be continued from either platform.
 
 ## Related

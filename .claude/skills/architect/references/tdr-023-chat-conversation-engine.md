@@ -10,7 +10,7 @@ category: api-design
 
 ## Context
 
-The project needed a conversational interface where users can interact with agents naturally — asking questions about projects, creating tasks, and querying data. This required persistent conversation history, streaming responses, and access to Stagent's data through a tool interface.
+The project needed a conversational interface where users can interact with agents naturally — asking questions about projects, creating tasks, and querying data. This required persistent conversation history, streaming responses, and access to ainative's data through a tool interface.
 
 ## Decision
 
@@ -21,7 +21,7 @@ The chat engine (`src/lib/chat/engine.ts`) manages conversations backed by two S
 
 **Streaming**: The engine uses Claude Agent SDK's `query()` for streaming responses via SSE. This is architecturally consistent with TDR-005 (SSE for log streaming) but distinct from TDR-003 (DB polling for async coordination). Chat streaming is content delivery, not coordination.
 
-**Tool access**: Agents access Stagent data through an MCP tool server pattern (`stagent-tools.ts`), not direct DB access. The tool registry (`tool-catalog.ts`) defines available tools per conversation context. This maintains the Server Component / API route boundary (TDR-004) — the chat engine is a server-side component that queries DB directly for context building but exposes data to agents only through tools.
+**Tool access**: Agents access ainative data through an MCP tool server pattern (`ainative-tools.ts`), not direct DB access. The tool registry (`tool-catalog.ts`) defines available tools per conversation context. This maintains the Server Component / API route boundary (TDR-004) — the chat engine is a server-side component that queries DB directly for context building but exposes data to agents only through tools.
 
 **Context building**: `context-builder.ts` assembles per-turn context by merging project state, entity references from `@mentions` (detected by `entity-detector.ts`), and conversation history.
 
@@ -48,6 +48,6 @@ The chat engine (`src/lib/chat/engine.ts`) manages conversations backed by two S
 - `src/lib/chat/ollama-engine.ts` — Ollama local engine
 - `src/lib/chat/context-builder.ts` — per-turn context assembly
 - `src/lib/chat/entity-detector.ts` — @mention entity detection
-- `src/lib/chat/stagent-tools.ts` — MCP tool server for agent data access
+- `src/lib/chat/ainative-tools.ts` — MCP tool server for agent data access
 - `src/lib/chat/tool-catalog.ts` — tool registry and catalog
 - `src/lib/db/schema.ts` — `conversations`, `chatMessages` tables

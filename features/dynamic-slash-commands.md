@@ -11,7 +11,7 @@ dependencies: [chat-command-mentions, chat-input-composer, project-scoped-profil
 
 ## Description
 
-Stagent's chat slash command system is entirely static — defined as a hardcoded array in `tool-catalog.ts`. When a user types `/` in chat, they see Stagent's built-in tools (tasks, projects, workflows, etc.) but nothing from their project's skills or custom profiles.
+ainative's chat slash command system is entirely static — defined as a hardcoded array in `tool-catalog.ts`. When a user types `/` in chat, they see ainative's built-in tools (tasks, projects, workflows, etc.) but nothing from their project's skills or custom profiles.
 
 This feature extends the slash command popover with a dynamic "Skills" group populated from the active project's discovered skills. When a project has custom Claude Code skills in `.claude/skills/`, those skills appear as slash commands in chat. Selecting a skill inserts a template that activates the skill's profile for the conversation.
 

@@ -15,11 +15,11 @@ Reposition all in-repo product messaging from "Governed AI Agent Workspace" to "
 
 The repositioning does not change the product's technical capabilities — it reframes existing 74+ features around business outcomes rather than governance primitives. The current positioning ("govern your AI agents, operate with oversight") speaks to developers managing agent infrastructure. The new positioning ("run your entire business with AI agents") speaks to solo founders building AI-native businesses.
 
-Website updates (stagent.io) are explicitly out of scope. This spec covers only in-repo artifacts that ship with `npx stagent` or live on GitHub.
+Website updates (ainative.io) are explicitly out of scope. This spec covers only in-repo artifacts that ship with `npx ainative` or live on GitHub.
 
 ## User Story
 
-As a solo founder evaluating Stagent, I want the README and in-app experience to immediately communicate that this is a platform for running my business with AI agents, so that I understand the value without having to decode developer governance terminology.
+As a solo founder evaluating ainative, I want the README and in-app experience to immediately communicate that this is a platform for running my business with AI agents, so that I understand the value without having to decode developer governance terminology.
 
 ## Technical Approach
 
@@ -29,7 +29,7 @@ These establish the canonical new voice. All other updates reference this vocabu
 
 **1. `README.md`**
 - Hero blockquote (line 3): Replace "Governed AI Agent Workspace — Supervised Local Execution, Workflows, Documents, and Provider Runtimes" with business-outcome positioning
-- "Why Stagent" section (lines 29-38): Rewrite to lead with the problem ("The AI agent stack is broken") and position governance as the solution, not the identity
+- "Why ainative" section (lines 29-38): Rewrite to lead with the problem ("The AI agent stack is broken") and position governance as the solution, not the identity
 - Feature Highlights table (lines 48+): Add business-outcome framing column or regroup entries by function (Operations, Intelligence, Governance, Content)
 - Add badges: "AI Business Operating System" and "74+ Features Shipped"
 - Keep: Feature deep-dive body text (technically accurate), API endpoints table, Tech stack, Development section
@@ -63,15 +63,15 @@ For each file: rewrite opening 1-3 paragraphs to use new vocabulary. Leave proce
 
 ### Phase 3 — New Documents (3 files)
 
-**1. `docs/why-stagent.md`** (500-800 words)
+**1. `docs/why-ainative.md`** (500-800 words)
 - The broken AI agent stack problem
 - Five gaps: orchestration, strategy-to-execution, lifecycle, trust/governance, distribution
-- How Stagent solves it (AI Business OS positioning)
+- How ainative solves it (AI Business OS positioning)
 - Market validation signals (solo founder stats, failure rates, analyst projections)
 - Link to getting-started.md
 
 **2. `docs/use-cases/solo-founder.md`**
-- Maps Stagent features to solo founder business operations
+- Maps ainative features to solo founder business operations
 - Projects = business units, Workflows = business processes, Profiles = AI team members
 - Schedules = recurring operations, Cost dashboard = business spend control
 - Example scenarios: content marketing pipeline, lead research, customer support triage
@@ -105,13 +105,13 @@ The product today IS a governed agent workspace. It does not yet have marketing/
 ## Acceptance Criteria
 
 - [ ] README hero communicates "AI Business Operating System" positioning within first 3 lines
-- [ ] "Why Stagent" section leads with problem statement, not feature list
+- [ ] "Why ainative" section leads with problem statement, not feature list
 - [ ] package.json description and keywords reflect new positioning
-- [ ] CLI help text (`npx stagent --help`) shows updated description
+- [ ] CLI help text (`npx ainative --help`) shows updated description
 - [ ] In-app welcome landing pillars reframed as business outcomes
 - [ ] docs/index.md opening paragraph uses new vocabulary
 - [ ] All 4 journey guide intros updated with business-outcome framing
-- [ ] docs/why-stagent.md exists with problem statement and five gaps
+- [ ] docs/why-ainative.md exists with problem statement and five gaps
 - [ ] docs/use-cases/ directory exists with solo-founder.md and agency-operator.md
 - [ ] docs/manifest.json updated to include new documents in playbook navigation
 - [ ] No "Governed AI Agent Workspace" phrasing remains in anchor point files (Phase 1)
@@ -125,7 +125,7 @@ The product today IS a governed agent workspace. It does not yet have marketing/
 - Package metadata (description, keywords)
 
 **Excluded:**
-- Website (stagent.io) updates — separate initiative
+- Website (ainative.io) updates — separate initiative
 - Book chapter body text — regenerate via document-writer later
 - UI component changes beyond welcome-landing.tsx copy
 - New features or code capabilities — messaging only

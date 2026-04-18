@@ -11,7 +11,7 @@ dependencies: [app-runtime-bundle-foundation]
 
 ## Description
 
-App sidebar menus (e.g., Wealth, Growth) are always fully expanded, showing all sub-links at all times. They do not follow the accordion behavior used by Stagent's native sidebar groups (Work, Manage, Configure), where expanding one section collapses the others. This wastes vertical space and creates inconsistent UX as more apps are installed.
+App sidebar menus (e.g., Wealth, Growth) are always fully expanded, showing all sub-links at all times. They do not follow the accordion behavior used by ainative's native sidebar groups (Work, Manage, Configure), where expanding one section collapses the others. This wastes vertical space and creates inconsistent UX as more apps are installed.
 
 ## User Story
 

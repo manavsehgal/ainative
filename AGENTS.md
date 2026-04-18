@@ -1,4 +1,4 @@
-# Stagent Agent Guide
+# ainative Agent Guide
 
 This repository supports both Codex and Claude Code. Treat this file as the stable, shared instruction source for project-specific agent behavior.
 
@@ -21,7 +21,7 @@ This repository supports both Codex and Claude Code. Treat this file as the stab
 
 - Read `design-system/MASTER.md` and `src/app/globals.css` before making substantial UI changes.
 - Use semantic tokens instead of raw Tailwind semantic colors.
-- Stagent uses two surface families:
+- ainative uses two surface families:
   - glass surfaces for shell chrome, dialogs, popovers, and low-density accent panels
   - solid `surface-*` utilities for dense operational screens
 - On dashboard, inbox, monitor, kanban, project, and settings screens, prefer readability and scan speed over decorative blur.
@@ -46,7 +46,7 @@ This repository supports both Codex and Claude Code. Treat this file as the stab
 - Prefer targeted tests first, then broader suite runs when risk warrants it.
 - For UI work, use browser evaluation when the user asks or when a visual change needs real verification.
 - Save browser artifacts under `output/` unless the task explicitly wants another location.
-- **Smoke-test budget for runtime-registry-adjacent features.** Whenever a plan adds, removes, or reshapes an import in any module transitively reachable from `@/lib/agents/runtime/catalog.ts` — notably `src/lib/agents/claude-agent.ts`, `src/lib/agents/runtime/claude.ts`, `src/lib/agents/runtime/openai-direct.ts`, `src/lib/agents/runtime/anthropic-direct.ts`, or `src/lib/workflows/engine.ts` — it **must** budget an end-to-end smoke step that runs a real task under `npm run dev`, not just unit tests. Unit tests that `vi.mock("@/lib/chat/stagent-tools", ...)` (or any other chat-tools module) structurally cannot catch module-load cycles, because the real module is never evaluated during the test run. A static `import ... from "@/lib/chat/stagent-tools"` in any file under `src/lib/agents/` will compile and pass 100% of unit tests while crashing at the first Next.js request with `ReferenceError: Cannot access 'claudeRuntimeAdapter' before initialization`. Use a dynamic `await import()` inside function bodies instead, and always smoke-verify. See TDR-032 and `features/task-runtime-stagent-mcp-injection.md` → "Verification run — 2026-04-11" for the precedent.
+- **Smoke-test budget for runtime-registry-adjacent features.** Whenever a plan adds, removes, or reshapes an import in any module transitively reachable from `@/lib/agents/runtime/catalog.ts` — notably `src/lib/agents/claude-agent.ts`, `src/lib/agents/runtime/claude.ts`, `src/lib/agents/runtime/openai-direct.ts`, `src/lib/agents/runtime/anthropic-direct.ts`, or `src/lib/workflows/engine.ts` — it **must** budget an end-to-end smoke step that runs a real task under `npm run dev`, not just unit tests. Unit tests that `vi.mock("@/lib/chat/ainative-tools", ...)` (or any other chat-tools module) structurally cannot catch module-load cycles, because the real module is never evaluated during the test run. A static `import ... from "@/lib/chat/ainative-tools"` in any file under `src/lib/agents/` will compile and pass 100% of unit tests while crashing at the first Next.js request with `ReferenceError: Cannot access 'claudeRuntimeAdapter' before initialization`. Use a dynamic `await import()` inside function bodies instead, and always smoke-verify. See TDR-032 and `features/task-runtime-ainative-mcp-injection.md` → "Verification run — 2026-04-11" for the precedent.
 
 ### Chat stream termination runbook
 
@@ -81,7 +81,7 @@ These 7 directives apply to all skills, all code, and all reviews. They are the 
 
 ## Worktree Context
 
-- Dogfooding worktrees use isolated data dirs via `STAGENT_DATA_DIR` in `.env.local`. Never share a DB between instances.
+- Dogfooding worktrees use isolated data dirs via `AINATIVE_DATA_DIR` in `.env.local`. Never share a DB between instances.
 - Migration files: use `XXXX_` prefix during development, renumber to next sequential at PR time.
 - Run `/worktree-production` for setup, sync, seed, and migration procedures.
 - In a dogfooding worktree: focus on using the app. Report bugs — don't fix them here.
@@ -89,16 +89,16 @@ These 7 directives apply to all skills, all code, and all reviews. They are the 
 
 ## Instance Bootstrap Dev-Mode Gate
 
-The canonical stagent dev repo (`/Users/manavsehgal/Developer/stagent`) must skip the `instance-bootstrap` feature's auto-upgrade machinery — otherwise a pre-push hook would be installed on first `npm run dev` and block contributor pushes to `origin/main`.
+The canonical ainative dev repo (`/Users/manavsehgal/Developer/ainative`) must skip the `instance-bootstrap` feature's auto-upgrade machinery — otherwise a pre-push hook would be installed on first `npm run dev` and block contributor pushes to `origin/main`.
 
 Two independent gates prevent this, both already in place:
 
-1. **`STAGENT_DEV_MODE=true` in `.env.local`** (primary, per-developer). Set on this machine. Required for every contributor's local setup — add it to your `.env.local` before first `npm run dev` after pulling in the instance-bootstrap feature.
-2. **`.git/stagent-dev-mode` sentinel file** (secondary, git-dir-scoped). Never cloned, never committed, persists across `.env.local` edits. Create once per clone: `touch .git/stagent-dev-mode`.
+1. **`AINATIVE_DEV_MODE=true` in `.env.local`** (primary, per-developer). Set on this machine. Required for every contributor's local setup — add it to your `.env.local` before first `npm run dev` after pulling in the instance-bootstrap feature.
+2. **`.git/ainative-dev-mode` sentinel file** (secondary, git-dir-scoped). Never cloned, never committed, persists across `.env.local` edits. Create once per clone: `touch .git/ainative-dev-mode`.
 
 When either gate is active, `ensureInstance()` returns immediately with no side effects — no branches created, no hooks installed, no scheduled tasks registered.
 
-**To test the instance-bootstrap feature in the main repo** (e.g., verifying the consent flow): set `STAGENT_INSTANCE_MODE=true` in your shell — this override wins over both dev-mode gates. Unset it when done testing.
+**To test the instance-bootstrap feature in the main repo** (e.g., verifying the consent flow): set `AINATIVE_INSTANCE_MODE=true` in your shell — this override wins over both dev-mode gates. Unset it when done testing.
 
 See `features/instance-bootstrap.md` for the full gate logic and `PRIVATE-INSTANCES.md` (gitignored) for the end-user workflow this feature automates.
 

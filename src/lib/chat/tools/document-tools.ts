@@ -7,7 +7,7 @@ import { ok, err, resolveEntityId, type ToolContext } from "./helpers";
 import { access, stat, copyFile, mkdir } from "fs/promises";
 import { basename, extname, join } from "path";
 import crypto from "crypto";
-import { getStagentUploadsDir } from "@/lib/utils/stagent-paths";
+import { getAinativeUploadsDir } from "@/lib/utils/ainative-paths";
 import { processDocument } from "@/lib/documents/processor";
 
 const MIME_TYPES: Record<string, string> = {
@@ -140,7 +140,7 @@ export function documentTools(ctx: ToolContext) {
 
     defineTool(
       "upload_document",
-      "Upload a file from the filesystem as a document. Use this to register files you create as documents in the Documents library. The file is copied to Stagent storage and queued for preprocessing (text extraction).",
+      "Upload a file from the filesystem as a document. Use this to register files you create as documents in the Documents library. The file is copied to ainative storage and queued for preprocessing (text extraction).",
       {
         file_path: z.string().describe("Absolute path to the file to upload"),
         taskId: z.string().optional().describe("Associate with a task ID"),
@@ -162,7 +162,7 @@ export function documentTools(ctx: ToolContext) {
           const filename = `${id}${ext}`;
 
           // Copy to uploads directory
-          const uploadsDir = getStagentUploadsDir();
+          const uploadsDir = getAinativeUploadsDir();
           await mkdir(uploadsDir, { recursive: true });
           const storagePath = join(uploadsDir, filename);
           await copyFile(args.file_path, storagePath);

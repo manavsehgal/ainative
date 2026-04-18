@@ -1,15 +1,15 @@
 ---
-name: stagent-app
-description: Scaffold a Stagent-native app by composing existing primitives (agent profiles, workflow blueprints, user tables, schedules, document routing) from a YAML manifest instead of writing TypeScript. Use when the user asks to "create a Stagent app", "scaffold an app", "build an app manifest", "design an app in Stagent", "wealth-manager-style app", "app from config", "compose a Stagent app", or when they want to package a workflow + profile + schedule + table combination as a reusable bundle. Also triggers when the user wants to turn an ad-hoc workflow into a shippable app or when a proposed feature can be built entirely by composition of existing primitives. Do NOT use for writing new TypeScript components, new DB migrations, new chat tools, or net-new primitive kinds — those are outside the config-over-code contract; route to `product-manager` or `architect` instead.
+name: ainative-app
+description: Scaffold an ainative-native app by composing existing primitives (agent profiles, workflow blueprints, user tables, schedules, document routing) from a YAML manifest instead of writing TypeScript. Use when the user asks to "create an ainative app", "scaffold an app", "build an app manifest", "design an app in ainative", "wealth-manager-style app", "app from config", "compose an ainative app", or when they want to package a workflow + profile + schedule + table combination as a reusable bundle. Also triggers when the user wants to turn an ad-hoc workflow into a shippable app or when a proposed feature can be built entirely by composition of existing primitives. Do NOT use for writing new TypeScript components, new DB migrations, new chat tools, or net-new primitive kinds — those are outside the config-over-code contract; route to `product-manager` or `architect` instead.
 ---
 
-# stagent-app
+# ainative-app
 
-Turn "I want a Stagent app that does X" into a ready-to-register scaffold composed of Stagent's shipped primitives. No TypeScript, no schema migrations — just YAML, markdown, and chat-tool invocations that wire into existing registries.
+Turn "I want an ainative app that does X" into a ready-to-register scaffold composed of ainative's shipped primitives. No TypeScript, no schema migrations — just YAML, markdown, and chat-tool invocations that wire into existing registries.
 
 ## Core Principle
 
-**Stagent apps are compositions of primitives, not new code.**
+**ainative apps are compositions of primitives, not new code.**
 
 An app is a named, namespaced bundle of:
 
@@ -26,12 +26,12 @@ If the user's idea requires a new DB table kind, a new chat tool, a new UI route
 
 Invoke this skill when the user says things like:
 
-- "scaffold a Stagent app for X"
+- "scaffold a ainative app for X"
 - "create an app that does Y"
 - "build a wealth-manager-style app for Z"
 - "turn this workflow into a reusable app"
 - "compose an app from existing profiles + blueprints"
-- "design a Stagent app manifest"
+- "design a ainative app manifest"
 
 Ignore triggers unrelated to composition (e.g., "build a feature", "write a component" — those belong to other skills).
 
@@ -42,7 +42,7 @@ What you can compose, and where it lives:
 | Primitive | Registry path | Loader | User override |
 |-----------|---------------|--------|---------------|
 | Agent profile | `src/lib/agents/profiles/builtins/<id>/profile.yaml` + SKILL.md | `src/lib/agents/profiles/registry.ts` | `.claude/skills/<id>/profile.yaml` + SKILL.md |
-| Workflow blueprint | `src/lib/workflows/blueprints/builtins/<id>.yaml` | `src/lib/workflows/blueprints/registry.ts` | `~/.stagent/blueprints/<id>.yaml` (via `getStagentBlueprintsDir()` in `src/lib/utils/stagent-paths.ts:16`) |
+| Workflow blueprint | `src/lib/workflows/blueprints/builtins/<id>.yaml` | `src/lib/workflows/blueprints/registry.ts` | `~/.ainative/blueprints/<id>.yaml` (via `getStagentBlueprintsDir()` in `src/lib/utils/ainative-paths.ts:16`) |
 | User table | `userTables`/`userTableRows` schema | chat tools `create_table`, `create_row`, `import_table_data` | — (DB-backed) |
 | Schedule | `schedules` schema | chat tool `create_schedule` | — (DB-backed, no YAML registry YET — see Gap Awareness) |
 | Document routing | `workflowDocumentInputs`, `taskTableInputs`, `projectDocumentDefaults` | Chat tools + `/documents` UI | — |
@@ -88,8 +88,8 @@ Write these files (absolute paths from repo root, unless noted):
   The SKILL.md holds the system-prompt behavior (frontmatter `name:`, `description:` — mirror existing project skills). The profile.yaml holds metadata + tool policy.
 
 - **One new blueprint YAML per new blueprint:**
-  `~/.stagent/blueprints/<app-id>--<blueprint-id>.yaml`
-  (Absolute home-dir path. Do NOT write into `src/lib/workflows/blueprints/builtins/` — that's reserved for upstream Stagent itself. User blueprints load via `getStagentBlueprintsDir()`.)
+  `~/.ainative/blueprints/<app-id>--<blueprint-id>.yaml`
+  (Absolute home-dir path. Do NOT write into `src/lib/workflows/blueprints/builtins/` — that's reserved for upstream ainative itself. User blueprints load via `getStagentBlueprintsDir()`.)
 
 - **One app-level manifest:**
   `.claude/apps/<app-id>/manifest.yaml` — see schema below.
@@ -134,7 +134,7 @@ profiles:
 
 blueprints:
   - id: wealth-tracker--weekly-review
-    source: ~/.stagent/blueprints/wealth-tracker--weekly-review.yaml
+    source: ~/.ainative/blueprints/wealth-tracker--weekly-review.yaml
 
 tables:
   - id: wealth-tracker--positions
@@ -231,7 +231,7 @@ advice. If the user asks for trade ideas, explicitly decline and suggest consult
 a licensed advisor.
 ```
 
-`~/.stagent/blueprints/wealth-tracker--weekly-review.yaml`:
+`~/.ainative/blueprints/wealth-tracker--weekly-review.yaml`:
 
 ```yaml
 id: wealth-tracker--weekly-review
@@ -287,7 +287,7 @@ profiles:
 
 blueprints:
   - id: wealth-tracker--weekly-review
-    source: ~/.stagent/blueprints/wealth-tracker--weekly-review.yaml
+    source: ~/.ainative/blueprints/wealth-tracker--weekly-review.yaml
 
 tables:
   - id: wealth-tracker--positions
@@ -332,7 +332,7 @@ Personal portfolio check-ins for a self-directed investor.
 
 ## Artifacts
 - Profile: `.claude/skills/wealth-tracker--portfolio-coach/`
-- Blueprint: `~/.stagent/blueprints/wealth-tracker--weekly-review.yaml`
+- Blueprint: `~/.ainative/blueprints/wealth-tracker--weekly-review.yaml`
 - Table: `wealth-tracker--positions`
 - Schedule: `wealth-tracker--monday-8am`
 ```
@@ -354,7 +354,7 @@ Personal portfolio check-ins for a self-directed investor.
 
 These limits reflect what the PLATFORM supports today. None require this skill to change — they shape what artifacts emit.
 
-1. **Schedules have no YAML registry.** This skill uses the `create_schedule` chat tool in Phase 4 instead of writing a `~/.stagent/schedules/<id>.yaml`. When a schedule registry lands (proposed in `output/screengrabs/dogfood-log-2026-04-14.md` §8), this skill should switch to writing YAML and dropping the chat-tool call.
+1. **Schedules have no YAML registry.** This skill uses the `create_schedule` chat tool in Phase 4 instead of writing a `~/.ainative/schedules/<id>.yaml`. When a schedule registry lands (proposed in `output/screengrabs/dogfood-log-2026-04-14.md` §8), this skill should switch to writing YAML and dropping the chat-tool call.
 
 2. **Permission rules are not declarative.** `src/lib/settings/permission-presets.ts:19-66` hardcodes 3 presets. This skill picks from those three or leaves `permissions.preset: custom` as a signal for the user to configure via `/settings` after install.
 
@@ -374,7 +374,7 @@ These limits reflect what the PLATFORM supports today. None require this skill t
 
 - `src/lib/agents/profiles/registry.ts` — profile loader. Reuse `loadProfiles()` and `getProfile(id)`; never write a parallel loader.
 - `src/lib/workflows/blueprints/registry.ts` — blueprint loader. Reuse `getBlueprint(id)` and `listBlueprints()`.
-- `src/lib/utils/stagent-paths.ts:16` — `getStagentBlueprintsDir()` returns the user's `~/.stagent/blueprints/`.
+- `src/lib/utils/ainative-paths.ts:16` — `getStagentBlueprintsDir()` returns the user's `~/.ainative/blueprints/`.
 - `features/app-package-format.md` — deferred spec for the portable `.sap` format this skill is forward-compatible with.
 - `features/app-runtime-bundle-foundation.md` — already-shipped `AppBundle` runtime.
 - `src/lib/apps/builtins.ts` — code-defined builtin apps (do not modify).

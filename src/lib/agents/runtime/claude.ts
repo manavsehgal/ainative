@@ -349,7 +349,7 @@ function buildProfileAssistSystemPrompt(existingProfileIds: string[]): string {
     ? `Existing profiles (avoid duplicating): ${existingProfileIds.join(", ")}`
     : "No existing profiles.";
 
-  return `You are a Stagent profile generation assistant. Given a user's goal description, generate a complete agent profile configuration.
+  return `You are a ainative profile generation assistant. Given a user's goal description, generate a complete agent profile configuration.
 
 Return ONLY a JSON object (no markdown, no code fences) with this exact schema:
 {

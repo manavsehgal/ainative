@@ -11,7 +11,7 @@ dependencies: [tables-data-layer, tables-spreadsheet-editor]
 
 ## Description
 
-Enable Stagent's agent primitives (tasks, workflows, schedules, chat) to create, read, query, and write table data programmatically. Adds agent tools for table operations, a table context builder for injecting table data into agent prompts, junction tables for linking tables to tasks/workflows/schedules, and a TablePickerSheet for user selection.
+Enable ainative's agent primitives (tasks, workflows, schedules, chat) to create, read, query, and write table data programmatically. Adds agent tools for table operations, a table context builder for injecting table data into agent prompts, junction tables for linking tables to tasks/workflows/schedules, and a TablePickerSheet for user selection.
 
 ## User Story
 

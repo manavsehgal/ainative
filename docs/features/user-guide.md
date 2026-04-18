@@ -11,7 +11,7 @@ lastUpdated: "2026-03-31"
 
 # User Guide
 
-Built-in documentation and adoption tracking system that surfaces product guides, feature reference articles, and guided learning journeys directly within the Stagent workspace. The User Guide includes a feature adoption tracker that shows your usage progress across all feature areas, four persona-based learning journeys, and a browsable feature exploration grid.
+Built-in documentation and adoption tracking system that surfaces product guides, feature reference articles, and guided learning journeys directly within the ainative workspace. The User Guide includes a feature adoption tracker that shows your usage progress across all feature areas, four persona-based learning journeys, and a browsable feature exploration grid.
 
 ## Screenshots
 
@@ -21,10 +21,10 @@ Built-in documentation and adoption tracking system that surfaces product guides
 ## Key Features
 
 ### Feature Adoption Tracker
-A visual tracker at the top of the page shows your adoption depth across all major feature areas. As you use different parts of Stagent, the tracker updates to reflect which features you have explored and which remain undiscovered.
+A visual tracker at the top of the page shows your adoption depth across all major feature areas. As you use different parts of ainative, the tracker updates to reflect which features you have explored and which remain undiscovered.
 
 ### Guided Learning Journeys
-Four persona-based journeys walk you through Stagent at your own pace:
+Four persona-based journeys walk you through ainative at your own pace:
 - **Personal Use** -- for solo founders getting started with their first AI-powered tasks
 - **Work Use** -- for team leads managing projects, documents, and workflows
 - **Power User** -- for automation specialists configuring profiles, schedules, and monitoring
@@ -46,7 +46,7 @@ The guide adapts to your current usage stage. Features you have already used are
 
 ### Follow a Learning Journey
 1. Open the User Guide and select a journey (Personal, Work, Power User, or Developer).
-2. Follow the step-by-step guide, which links directly to the relevant pages in Stagent.
+2. Follow the step-by-step guide, which links directly to the relevant pages in ainative.
 3. Your progress through the journey is tracked automatically.
 
 ## Related

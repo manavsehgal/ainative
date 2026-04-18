@@ -310,5 +310,5 @@ The agent guides the remix through a structured conversation:
 - Files to modify:
   - `src/lib/chat/tools/app-tools.ts` — add `forkApp` tool
   - `src/lib/apps/types.ts` — add `forkedFrom` to `AppManifest`
-  - `src/lib/chat/stagent-tools.ts` — register new tool
+  - `src/lib/chat/ainative-tools.ts` — register new tool
   - `src/lib/chat/tool-catalog.ts` — add to "Apps" group

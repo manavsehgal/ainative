@@ -192,13 +192,13 @@ Features that enhance the product but aren't essential for first use — homepag
 
 ### Chat Context Experience
 
-Runtime-native skills, filesystem context, file mentions, and a command-namespace redesign that brings CLI parity to Stagent chat while preserving the differentiation layer. Source: `ideas/chat-context-experience.md` (2026-04-13).
+Runtime-native skills, filesystem context, file mentions, and a command-namespace redesign that brings CLI parity to ainative chat while preserving the differentiation layer. Source: `ideas/chat-context-experience.md` (2026-04-13).
 
 | Feature | Priority | Status | Dependencies |
 |---------|----------|--------|--------------|
 | [runtime-capability-matrix](runtime-capability-matrix.md) | P1 | completed | provider-runtime-abstraction |
 | [chat-claude-sdk-skills](chat-claude-sdk-skills.md) | P0 | completed | chat-engine, runtime-capability-matrix, skill-portfolio, environment-scanner |
-| [task-runtime-skill-parity](task-runtime-skill-parity.md) | P1 | completed | chat-claude-sdk-skills, agent-integration, task-runtime-stagent-mcp-injection |
+| [task-runtime-skill-parity](task-runtime-skill-parity.md) | P1 | completed | chat-claude-sdk-skills, agent-integration, task-runtime-ainative-mcp-injection |
 | [chat-codex-app-server-skills](chat-codex-app-server-skills.md) | P1 | completed | chat-claude-sdk-skills, codex-chat-engine, openai-codex-app-server, environment-scanner, runtime-capability-matrix |
 | [chat-ollama-native-skills](chat-ollama-native-skills.md) | P2 | completed | chat-claude-sdk-skills, ollama-runtime-provider, environment-scanner, runtime-capability-matrix, chat-data-layer |
 | [chat-file-mentions](chat-file-mentions.md) | P1 | completed | chat-command-mentions, chat-claude-sdk-skills, workspace-context-awareness |
@@ -279,7 +279,7 @@ Runtime-native skills, filesystem context, file mentions, and a command-namespac
 
 ### PLG Monetization — Foundation Layer
 
-> **Fully superseded by `community-edition-simplification` (2026-04-13).** Every row in the three PLG Monetization sections below shipped and was later fully reverted when Stagent pivoted to a 100% free Community Edition. Kept as historical record.
+> **Fully superseded by `community-edition-simplification` (2026-04-13).** Every row in the three PLG Monetization sections below shipped and was later fully reverted when ainative pivoted to a 100% free Community Edition. Kept as historical record.
 
 | Feature | Priority | Status | Dependencies |
 |---------|----------|--------|--------------|
@@ -313,7 +313,7 @@ Runtime-native skills, filesystem context, file mentions, and a command-namespac
 
 ### Community Edition Simplification
 
-Reversal of the PLG Monetization stack. Stagent becomes a single free Community Edition with all features unlocked — no tiers, no billing, no cloud dependency, no telemetry. Supersedes every row in the three PLG Monetization sections above.
+Reversal of the PLG Monetization stack. ainative becomes a single free Community Edition with all features unlocked — no tiers, no billing, no cloud dependency, no telemetry. Supersedes every row in the three PLG Monetization sections above.
 
 | Feature | Priority | Status | Dependencies |
 |---------|----------|--------|--------------|
@@ -329,7 +329,7 @@ Reversal of the PLG Monetization stack. Stagent becomes a single free Community 
 
 ### Clone Lifecycle & Self-Upgrade
 
-Automates the PRIVATE-INSTANCES runbook — turns the manual `git merge main` + scale activation dance into a guided in-app flow for every git-clone user. Foundation for the self-modifying dev env model where users customize stagent via stagent chat itself.
+Automates the PRIVATE-INSTANCES runbook — turns the manual `git merge main` + scale activation dance into a guided in-app flow for every git-clone user. Foundation for the self-modifying dev env model where users customize ainative via ainative chat itself.
 
 | Feature | Priority | Status | Dependencies |
 |---------|----------|--------|--------------|
@@ -340,7 +340,7 @@ Automates the PRIVATE-INSTANCES runbook — turns the manual `git merge main` + 
 
 ### Growth-Enabling Primitives
 
-General-purpose workflow and table capabilities identified while building the Growth module — both deliberately added to Stagent core (not Growth) because they serve every user, not just revenue operators. Extracted from `2026-04-08-stagent-core-growth-primitives-design.md`.
+General-purpose workflow and table capabilities identified while building the Growth module — both deliberately added to ainative core (not Growth) because they serve every user, not just revenue operators. Extracted from `2026-04-08-ainative-core-growth-primitives-design.md`.
 
 | Feature | Priority | Status | Dependencies |
 |---------|----------|--------|--------------|
@@ -360,7 +360,7 @@ Durable fixes that replace symptom-level hotfixes with architectural contracts. 
 | [marketplace-install-hardening](marketplace-install-hardening.md) | P1 | deferred | instance-bootstrap |
 | [enrichment-planner-test-hardening](enrichment-planner-test-hardening.md) | P2 | planned | tables-enrichment-runtime-v2, tables-enrichment-planner-api |
 | [chat-dedup-variant-tolerance](chat-dedup-variant-tolerance.md) | P3 | completed | workflow-create-dedup |
-| [task-runtime-stagent-mcp-injection](task-runtime-stagent-mcp-injection.md) | P0 | completed | agent-integration, chat-engine |
+| [task-runtime-ainative-mcp-injection](task-runtime-ainative-mcp-injection.md) | P0 | completed | agent-integration, chat-engine |
 | [task-create-profile-validation](task-create-profile-validation.md) | P1 | completed | agent-integration, agent-profile-catalog |
 | [schedule-maxturns-api-control](schedule-maxturns-api-control.md) | P2 | completed | scheduled-prompt-loops |
 | [task-turn-observability](task-turn-observability.md) | P2 | planned | agent-integration, scheduled-prompt-loops |
@@ -396,7 +396,7 @@ Growing the composition grammar from 7 primitives to ~18, enabling richer app ca
 
 ### App Marketplace — Chat-Native Authoring
 
-Build, remix, and edit apps through conversation — Stagent's unique differentiator.
+Build, remix, and edit apps through conversation — ainative's unique differentiator.
 
 | Feature | Priority | Status | Dependencies |
 |---------|----------|--------|--------------|
@@ -580,7 +580,7 @@ playbook-documentation (completed)
                     └── living-book-self-updating (completed)
 ```
 
-> **PLG Monetization chain removed (2026-04-13).** The license manager, Stripe billing, subscription UI, supabase cloud backend, cloud-sync, upgrade CTAs, telemetry, marketing pricing page, and related chain were implemented and then ripped out in commit `0436803` as part of the community-edition pivot. The specs in the status table remain marked `completed` as an archival record of what shipped pre-pivot — they do not reflect current codebase state. Stagent is 100% free community edition; no pricing, tier gates, or billing code exists anywhere.
+> **PLG Monetization chain removed (2026-04-13).** The license manager, Stripe billing, subscription UI, supabase cloud backend, cloud-sync, upgrade CTAs, telemetry, marketing pricing page, and related chain were implemented and then ripped out in commit `0436803` as part of the community-edition pivot. The specs in the status table remain marked `completed` as an archival record of what shipped pre-pivot — they do not reflect current codebase state. ainative is 100% free community edition; no pricing, tier gates, or billing code exists anywhere.
 
 Vision alignment chain:
 
@@ -691,7 +691,7 @@ workflow-engine + workflow-editing + document-output-generation
 
 - **Pricing source of truth**: Need a durable model-pricing strategy for Claude and Codex so historical usage rows preserve derived cost even if provider pricing changes later
 - **Parallel workflow UX ceiling**: Need to decide how much branch configurability to expose beyond the current fork/join pattern without turning the editor into a graph builder
-- **Notification channel policy**: Need to define when Stagent should escalate from in-app approval toast to browser notification delivery, especially for hidden tabs
+- **Notification channel policy**: Need to define when ainative should escalate from in-app approval toast to browser notification delivery, especially for hidden tabs
 
 ### Deferred from Vision Alignment (2026-03-31)
 

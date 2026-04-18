@@ -11,11 +11,11 @@ lastUpdated: "2026-04-16"
 
 # Work Use Guide
 
-Meet Jordan, a team lead running a cross-functional product team on Stagent. Jordan uses AI agents to manage multiple workstreams -- uploading reference documents, orchestrating multi-step business processes, scheduling recurring automations, tracking spend, triaging permission requests, and receiving notifications across Slack and Telegram. This guide walks through a full working session -- from organizing projects to clearing the inbox at end of day.
+Meet Jordan, a team lead running a cross-functional product team on ainative. Jordan uses AI agents to manage multiple workstreams -- uploading reference documents, orchestrating multi-step business processes, scheduling recurring automations, tracking spend, triaging permission requests, and receiving notifications across Slack and Telegram. This guide walks through a full working session -- from organizing projects to clearing the inbox at end of day.
 
 ## Prerequisites
 
-- Stagent installed and running locally (`npm run dev`)
+- ainative installed and running locally (`npm run dev`)
 - An Anthropic API key configured in `.env.local`
 - At least one project already created (see [Personal Use Guide](./personal-use.md) if starting fresh)
 - A document to upload (PDF, text file, image, Word doc, or spreadsheet)
@@ -73,7 +73,7 @@ Jordan uploads reference documents that agents will consult during planning task
 3. Assign the documents to the appropriate project
 4. Click **Upload** to process and store the files
 
-> **Tip:** Stagent automatically extracts text from uploaded documents so agents can reference their contents during task execution.
+> **Tip:** ainative automatically extracts text from uploaded documents so agents can reference their contents during task execution.
 
 ### Step 5: Switch Document Views
 
@@ -107,7 +107,7 @@ Jordan has a CSV export from the previous quarter's performance review. Importin
 
 1. From the **Tables** page, click **Create Table**
 2. Choose **Import** and select the CSV or XLSX file
-3. Review the column mapping -- Stagent auto-detects column types from the data
+3. Review the column mapping -- ainative auto-detects column types from the data
 4. Assign the table to the relevant project
 5. Click **Create** to import the data into a fully editable spreadsheet view
 6. Click into the table to open the **Data tab** with a spreadsheet-style editor -- edit cells inline, add rows, and review content
@@ -207,9 +207,9 @@ Jordan sets up Slack so the entire team receives schedule results and important 
 2. Click **+ Add Channel** and select **Slack**
 3. Enter the webhook URL, bot token, and channel ID (see the [Delivery Channels](../features/delivery-channels.md) guide for setup steps)
 4. Click **Create Channel** then **Test** to verify
-5. Toggle **Chat** on for bidirectional mode -- team members can ask Stagent questions directly from Slack
+5. Toggle **Chat** on for bidirectional mode -- team members can ask ainative questions directly from Slack
 
-> **Tip:** With Chat enabled on Slack, anyone in the channel can message Stagent and get workspace-aware responses. This turns Slack into a team-wide AI assistant interface.
+> **Tip:** With Chat enabled on Slack, anyone in the channel can message ainative and get workspace-aware responses. This turns Slack into a team-wide AI assistant interface.
 
 ### Step 16: Manage Schedules
 

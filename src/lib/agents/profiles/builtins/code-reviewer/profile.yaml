@@ -18,7 +18,7 @@ canUseToolPolicy:
 maxTurns: 20
 outputFormat: structured-findings
 
-author: stagent
+author: ainative
 
 tests:
   - task: "Review the auth middleware for security issues"

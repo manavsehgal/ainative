@@ -3,12 +3,12 @@ import { homedir } from "os";
 import { execFileSync } from "child_process";
 import { statSync } from "fs";
 import { join } from "path";
-import { getStagentDataDir } from "@/lib/utils/stagent-paths";
+import { getAinativeDataDir } from "@/lib/utils/ainative-paths";
 import { isDevMode, isPrivateInstance } from "@/lib/instance/detect";
 
-/** The directory the user launched stagent from (falls back to process.cwd()). */
+/** The directory the user launched ainative from (falls back to process.cwd()). */
 export function getLaunchCwd(): string {
-  return process.env.STAGENT_LAUNCH_CWD || process.cwd();
+  return process.env.AINATIVE_LAUNCH_CWD || process.cwd();
 }
 
 export interface WorkspaceContext {
@@ -51,7 +51,7 @@ export function getWorkspaceContext(): WorkspaceContext {
     // no .git at all
   }
 
-  const rawDataDir = getStagentDataDir();
+  const rawDataDir = getAinativeDataDir();
   const dataDir = rawDataDir.startsWith(home)
     ? "~" + rawDataDir.slice(home.length)
     : rawDataDir;

@@ -4,7 +4,7 @@ status: completed
 priority: P1
 milestone: post-mvp
 source: ideas/chat-context-experience.md §11 (architect drift concern)
-dependencies: [chat-claude-sdk-skills, agent-integration, task-runtime-stagent-mcp-injection]
+dependencies: [chat-claude-sdk-skills, agent-integration, task-runtime-ainative-mcp-injection]
 ---
 
 # Task Runtime — Skill Parity With Chat
@@ -30,7 +30,7 @@ query({
   prompt,
   options: {
     model, maxTurns, cwd, env,
-    mcpServers: { stagent: stagentServer, ... },
+    mcpServers: { ainative: stagentServer, ... },
     allowedTools: [
       "mcp__stagent__*",
       // ...existing browser/external patterns
@@ -55,7 +55,7 @@ Import the partitioned Tier 0 from the shared context builder (the partition fro
 
 ### 4. Permission bridge
 
-Task execution already has a permission bridge for Stagent MCP tools. Extend it to cover the newly allowed filesystem tools and Bash. The notification/permission UI (`ambient-approval-toast`) already handles the pattern — just ensure the new tool names reach it.
+Task execution already has a permission bridge for ainative MCP tools. Extend it to cover the newly allowed filesystem tools and Bash. The notification/permission UI (`ambient-approval-toast`) already handles the pattern — just ensure the new tool names reach it.
 
 ### 5. Hooks excluded
 
@@ -107,5 +107,5 @@ Real-environment test: create `.claude/skills/task-smoke/SKILL.md`, dispatch a t
 
 - Source: `ideas/chat-context-experience.md` §11 (architect drift concern: "Task and chat are parallel runtimes for the same SDK — inconsistency here breaks the 'same skill, everywhere' promise")
 - Depends on: `chat-claude-sdk-skills` (must land first for the shared partition helper), `runtime-capability-matrix`, `agent-integration`
-- Related: `task-runtime-stagent-mcp-injection` (sibling architecture, TDR-032)
+- Related: `task-runtime-ainative-mcp-injection` (sibling architecture, TDR-032)
 - Existing code: `src/lib/agents/claude-agent.ts`, `src/lib/chat/context-builder.ts`

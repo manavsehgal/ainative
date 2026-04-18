@@ -41,7 +41,9 @@ export const importMetaSchema = z.object({
   commitSha: z.string(),
   contentHash: z.string(),
   importedAt: z.string(),
-  sourceFormat: z.enum(["stagent", "skillmd-only", "unknown"]),
+  sourceFormat: z
+    .enum(["ainative", "stagent", "skillmd-only", "unknown"])
+    .transform((x) => (x === "stagent" ? "ainative" : x)),
 });
 
 export type ImportMeta = z.infer<typeof importMetaSchema>;

@@ -11,17 +11,17 @@ dependencies: [agent-profile-catalog, environment-scanner, auto-environment-scan
 
 ## Description
 
-Stagent's profile registry scans `~/.claude/skills/` for agent profiles (TDR-007), but ignores project-level `.claude/skills/` directories. This means a project's custom Claude Code skills — which may include specialized reviewers, domain experts, or workflow-specific agents — are invisible to Stagent's chat, task execution, and profile selector.
+ainative's profile registry scans `~/.claude/skills/` for agent profiles (TDR-007), but ignores project-level `.claude/skills/` directories. This means a project's custom Claude Code skills — which may include specialized reviewers, domain experts, or workflow-specific agents — are invisible to ainative's chat, task execution, and profile selector.
 
 This feature bridges project-level skills to the profile system by reading them **in-place** from the project's `.claude/skills/` directory. Project skills are NOT copied to `~/.claude/skills/` — the project repo remains the source of truth. They appear as read-only, project-scoped profiles that are available only when the project is active.
 
 ### Key Design Decision: Read In-Place, Not Copy
 
-Copying project skills to `~/.claude/skills/` creates a sync problem: which version is canonical? By reading in-place, we avoid drift between the project's skill definitions and Stagent's profile registry. The tradeoff is that project profiles only exist while the project context is active — which is the correct behavior since they belong to the project, not the user.
+Copying project skills to `~/.claude/skills/` creates a sync problem: which version is canonical? By reading in-place, we avoid drift between the project's skill definitions and ainative's profile registry. The tradeoff is that project profiles only exist while the project context is active — which is the correct behavior since they belong to the project, not the user.
 
 ### SKILL.md-Only Skills
 
-Many Claude Code skills have only a `SKILL.md` file with no `profile.yaml` sidecar. These are valid skills but lack Stagent metadata (tools, MCP servers, domain, tags). For these, we generate a minimal in-memory profile:
+Many Claude Code skills have only a `SKILL.md` file with no `profile.yaml` sidecar. These are valid skills but lack ainative metadata (tools, MCP servers, domain, tags). For these, we generate a minimal in-memory profile:
 
 - `id`: directory name (kebab-case)
 - `name`: from SKILL.md frontmatter `name:` field, falling back to directory name
@@ -31,11 +31,11 @@ Many Claude Code skills have only a `SKILL.md` file with no `profile.yaml` sidec
 - `supportedRuntimes`: `["claude-code"]`
 - `skillMd`: full SKILL.md content
 
-This lets any Claude Code skill appear in Stagent without requiring the project author to add Stagent-specific configuration.
+This lets any Claude Code skill appear in ainative without requiring the project author to add ainative-specific configuration.
 
 ## User Story
 
-As a developer working on a project with custom Claude Code skills (`.claude/skills/`), I want those skills to automatically appear as available agent profiles in Stagent, so I can use them in chat and task execution without manually importing them.
+As a developer working on a project with custom Claude Code skills (`.claude/skills/`), I want those skills to automatically appear as available agent profiles in ainative, so I can use them in chat and task execution without manually importing them.
 
 ## Technical Approach
 

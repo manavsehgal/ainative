@@ -19,7 +19,7 @@ canUseToolPolicy:
 
 maxTurns: 20
 
-author: stagent
+author: ainative
 
 tests:
   - task: "Document the standard operating procedure for onboarding a new client"

@@ -3,7 +3,7 @@
 Reference table for recommending `/taste` design metric values based on product context.
 DV = DESIGN_VARIANCE, MI = MOTION_INTENSITY, VD = VISUAL_DENSITY (all 1-10 scale, see `/taste`).
 
-**Stagent's target range:** DV 3-4, MI 2-3, VD 6-7 (calm, consistent, border-centric, dense operational surfaces with breathing room).
+**ainative's target range:** DV 3-4, MI 2-3, VD 6-7 (calm, consistent, border-centric, dense operational surfaces with breathing room).
 
 | Product Context | DV | MI | VD | Style Direction | Key Anti-Pattern |
 |-----------------|------|------|------|-----------------|------------------|

@@ -20,13 +20,14 @@ import {
   resolveNextEntrypoint,
   resolveSidecarPort,
 } from "../src/lib/desktop/sidecar-launch";
-import { getStagentDataDir, getStagentDbPath } from "../src/lib/utils/stagent-paths";
+import { getAinativeDataDir, getAinativeDbPath } from "../src/lib/utils/ainative-paths";
 import {
-  bootstrapStagentDatabase,
-  hasLegacyStagentTables,
+  bootstrapAinativeDatabase,
+  hasLegacyTables,
   hasMigrationHistory,
   markAllMigrationsApplied,
 } from "../src/lib/db/bootstrap";
+import { migrateLegacyData } from "../src/lib/utils/migrate-to-ainative";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const appDir = join(__dirname, "..");
@@ -55,8 +56,8 @@ if (existsSync(_envLocalPath)) {
 const pkg = JSON.parse(readFileSync(join(appDir, "package.json"), "utf-8"));
 
 function getHelpText() {
-  const dir = getStagentDataDir();
-  const db = getStagentDbPath();
+  const dir = getAinativeDataDir();
+  const db = getAinativeDbPath();
   return `
 Data:
   Directory        ${dir}
@@ -65,23 +66,23 @@ Data:
   Logs             ${join(dir, "logs")}
 
 Environment variables:
-  STAGENT_DATA_DIR Custom data directory for the web app
+  AINATIVE_DATA_DIR Custom data directory for the web app
   ANTHROPIC_API_KEY Claude runtime access
   OPENAI_API_KEY   OpenAI Codex runtime access
 
 Examples:
   node dist/cli.js --port 3210 --no-open
-  node dist/cli.js --data-dir ~/.stagent-dogfood --port 3100
+  node dist/cli.js --data-dir ~/.ainative-dogfood --port 3100
 `;
 }
 
 program
-  .name("stagent")
-  .description("AI Business Operating System")
+  .name("ainative")
+  .description("Companion software for the AI Native Business book — a local-first agent runtime and builder scaffold for AI-native businesses.")
   .version(pkg.version)
   .addHelpText("after", getHelpText)
   .option("-p, --port <number>", "port to start on", "3000")
-  .option("--data-dir <path>", "custom data directory (overrides STAGENT_DATA_DIR)")
+  .option("--data-dir <path>", "custom data directory (overrides AINATIVE_DATA_DIR)")
   .option("--reset", "delete the local database before starting")
   .option("--no-open", "don't auto-open browser");
 
@@ -91,11 +92,17 @@ const opts = program.opts();
 
 // Apply --data-dir before resolving paths
 if (opts.dataDir) {
-  process.env.STAGENT_DATA_DIR = opts.dataDir;
+  process.env.AINATIVE_DATA_DIR = opts.dataDir;
 }
 
-const DATA_DIR = getStagentDataDir();
-const dbPath = getStagentDbPath();
+// Migrate any legacy ~/.stagent/ layout to ~/.ainative/ before resolving any
+// data-dir paths below. Must run here at module top-level (not inside main())
+// because the following const declarations and mkdirSync/Database calls also
+// execute at module-load time. Idempotent — safe on every invocation.
+await migrateLegacyData();
+
+const DATA_DIR = getAinativeDataDir();
+const dbPath = getAinativeDbPath();
 const requestedPort = Number.parseInt(opts.port, 10);
 
 if (Number.isNaN(requestedPort) || requestedPort <= 0) {
@@ -129,15 +136,15 @@ sqlite.pragma("foreign_keys = ON");
 const migrationsDir = join(appDir, "src", "lib", "db", "migrations");
 const db = drizzle(sqlite);
 const needsLegacyRecovery =
-  hasLegacyStagentTables(sqlite) && !hasMigrationHistory(sqlite);
+  hasLegacyTables(sqlite) && !hasMigrationHistory(sqlite);
 
 if (needsLegacyRecovery) {
-  bootstrapStagentDatabase(sqlite);
+  bootstrapAinativeDatabase(sqlite);
   markAllMigrationsApplied(sqlite, migrationsDir);
   console.log("Recovered legacy database schema.");
 } else {
   migrate(db, { migrationsFolder: migrationsDir });
-  bootstrapStagentDatabase(sqlite);
+  bootstrapAinativeDatabase(sqlite);
 }
 
 sqlite.close();
@@ -210,20 +217,20 @@ async function main() {
   });
   const sidecarUrl = buildSidecarUrl(actualPort);
 
-  console.log(`Stagent ${pkg.version} — Community Edition`);
+  console.log(`ainative ${pkg.version} — Community Edition`);
   console.log(`Data dir: ${DATA_DIR}`);
   console.log(`Mode: ${isPrebuilt ? "production" : "development"}`);
   console.log(`Next entry: ${nextEntrypoint}`);
-  console.log(`Starting Stagent on ${sidecarUrl}`);
-  console.log(`Upgrade to Premium for cloud sync, expanded limits, and analytics → stagent.io/pricing`);
+  console.log(`Starting ainative on ${sidecarUrl}`);
+  console.log(`Learn more → https://ainative.business`);
 
   const child = spawn(process.execPath, [nextEntrypoint, ...nextArgs], {
     cwd: effectiveCwd,
     stdio: "inherit",
     env: {
       ...process.env,
-      STAGENT_DATA_DIR: DATA_DIR,
-      STAGENT_LAUNCH_CWD: launchCwd,
+      AINATIVE_DATA_DIR: DATA_DIR,
+      AINATIVE_LAUNCH_CWD: launchCwd,
       PORT: String(actualPort),
     },
   });
@@ -247,6 +254,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error("Failed to start Stagent:", err);
+  console.error("Failed to start ainative:", err);
   process.exit(1);
 });

@@ -19,7 +19,7 @@ All scanning is **read-only** — the scanner never modifies any CLI artifacts. 
 
 ## User Story
 
-As a Stagent user with an existing Claude Code and/or Codex setup, I want Stagent to automatically discover all my CLI configurations — skills, plugins, hooks, MCP servers, permissions, instructions, memory, and rules — so I can see everything in one place without manually entering any configuration.
+As a ainative user with an existing Claude Code and/or Codex setup, I want ainative to automatically discover all my CLI configurations — skills, plugins, hooks, MCP servers, permissions, instructions, memory, and rules — so I can see everything in one place without manually entering any configuration.
 
 ## Technical Approach
 

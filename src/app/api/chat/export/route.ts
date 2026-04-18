@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
   const id = randomUUID();
   const safeName = title.replace(/[^a-z0-9-_\. ]/gi, "_").slice(0, 80);
   const filename = `${Date.now()}-${safeName}.md`;
-  const dir = path.join(homedir(), ".stagent", "uploads", "chat-exports");
+  const dir = path.join(homedir(), ".ainative", "uploads", "chat-exports");
   await mkdir(dir, { recursive: true });
   const storagePath = path.join(dir, filename);
   await writeFile(storagePath, markdown, "utf8");

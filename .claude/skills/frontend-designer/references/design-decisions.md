@@ -1,4 +1,4 @@
-# Design Decisions — Stagent Calm Ops
+# Design Decisions — ainative Calm Ops
 
 Decision catalog with rationale. Updated by the self-healing loop during Mode 4 audits.
 Each decision has an ID (DD-NNN), decided date, rationale, and supersession chain where applicable.
@@ -57,7 +57,7 @@ Each decision has an ID (DD-NNN), decided date, rationale, and supersession chai
 ### DD-006: Inter + JetBrains Mono
 
 - **Decided:** 2026-03-20
-- **Rationale:** Inter is optimized for small text (13-14px) in dense operational views — its x-height and letter spacing excel at the sizes Stagent uses most. JetBrains Mono for code, IDs, timestamps, and monospace data.
+- **Rationale:** Inter is optimized for small text (13-14px) in dense operational views — its x-height and letter spacing excel at the sizes ainative uses most. JetBrains Mono for code, IDs, timestamps, and monospace data.
 - **Supersedes:** Geist Sans + Geist Mono (initial choice, removed)
 - **Forbidden:** Any reference to `Geist`, `geist-sans`, `geist-mono`
 - **Base font size:** 14px (set on `<html>`)

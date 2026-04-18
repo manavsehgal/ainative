@@ -25,10 +25,10 @@ The machine that builds machines needs a forge that never sleeps, that can run d
 
 ## Fire-and-Forget
 
-Stagent's execution model is built on a simple but powerful pattern: fire-and-forget with async observation. When a task is ready for execution, the client sends a POST request and immediately receives an HTTP 202 Accepted response. The server acknowledges the request and begins execution in the background. The client is free to navigate away, start other tasks, or close the browser entirely.
+ainative's execution model is built on a simple but powerful pattern: fire-and-forget with async observation. When a task is ready for execution, the client sends a POST request and immediately receives an HTTP 202 Accepted response. The server acknowledges the request and begins execution in the background. The client is free to navigate away, start other tasks, or close the browser entirely.
 
 ```typescript
-// Building with Stagent: Multi-runtime task execution
+// Building with ainative: Multi-runtime task execution
 const task = await fetch("/api/tasks", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
@@ -69,7 +69,7 @@ Why not WebSockets? Because our database is already a message queue. The `notifi
 
 Not every task should run on the same model. A code review task benefits from Claude's deep reasoning. A quick text transformation might be fine on a local Ollama instance at zero cost. A task requiring web search might route through OpenAI's tools. The forge needs to be runtime-agnostic.
 
-Stagent supports five execution runtimes:
+ainative supports five execution runtimes:
 
 **Claude Code SDK**: The primary runtime for complex coding tasks. Uses the `@anthropic-ai/claude-agent-sdk` with a subprocess model — the execution manager spawns a Claude Code process with the task prompt, project context, and tool permissions. The `canUseTool` callback implements a database polling pattern where the agent pauses when it wants to use a tool, writes a notification, and waits for human approval (or auto-approval based on the profile's `canUseToolPolicy`).
 
@@ -77,7 +77,7 @@ Stagent supports five execution runtimes:
 
 **OpenAI Direct API**: Same pattern as Anthropic Direct, but routing through OpenAI's API. Useful for tasks where GPT models have specific strengths or when diversifying model risk.
 
-**Codex App Server**: OpenAI's Codex runtime, integrated via a WebSocket JSON-RPC client in `src/lib/agents/runtime/codex-app-server-client.ts`. Provides a sandboxed execution environment with its own tool ecosystem. The integration is bidirectional — Stagent can dispatch tasks to Codex and receive structured results.
+**Codex App Server**: OpenAI's Codex runtime, integrated via a WebSocket JSON-RPC client in `src/lib/agents/runtime/codex-app-server-client.ts`. Provides a sandboxed execution environment with its own tool ecosystem. The integration is bidirectional — ainative can dispatch tasks to Codex and receive structured results.
 
 **Ollama (Local)**: For privacy-sensitive tasks or high-volume low-stakes work. Runs entirely on local hardware with no data leaving the machine. The trade-off is capability — local models are smaller and less capable — but for certain task categories, the cost and privacy benefits dominate.
 
@@ -93,7 +93,7 @@ Assigning a task to a runtime is half the routing problem. The other half is beh
 
 This is where agent profiles earn their keep. A profile is not just a system prompt — it is a complete behavioral specification. It declares allowed tools, auto-approval policies, maximum conversation turns, domain tags, and test cases. When a task executes, its `agentProfile` field determines which profile governs the agent's behavior.
 
-Stagent ships with a task classifier that can automatically select profiles based on task content. The classifier examines the task title and description, matches against profile domain tags, and suggests the best fit. A task titled "Review authentication changes for security issues" routes to the `code-reviewer` profile. A task titled "Research competitor pricing models" routes to the `researcher` profile. A task titled "Write API documentation for the payments module" routes to the `document-writer` profile.
+ainative ships with a task classifier that can automatically select profiles based on task content. The classifier examines the task title and description, matches against profile domain tags, and suggests the best fit. A task titled "Review authentication changes for security issues" routes to the `code-reviewer` profile. A task titled "Research competitor pricing models" routes to the `researcher` profile. A task titled "Write API documentation for the payments module" routes to the `document-writer` profile.
 
 The classifier is a convenience, not a constraint. Users can always override the suggested profile. The goal is reducing friction — when a user creates twenty tasks in a batch, they should not have to manually select a profile for each one. The classifier handles the common cases; the user handles the exceptions.
 
@@ -103,7 +103,7 @@ This separation of runtime (where the agent runs) from profile (how the agent be
 
 Speed without safety is recklessness. The forge runs hot, but it has safeguards.
 
-The `canUseTool` pattern is Stagent's primary safety mechanism for agent execution. When an agent wants to use a tool — read a file, write to disk, execute a shell command, make an API call — the execution manager intercepts the request. It checks the agent's profile to determine the approval policy for that specific tool.
+The `canUseTool` pattern is ainative's primary safety mechanism for agent execution. When an agent wants to use a tool — read a file, write to disk, execute a shell command, make an API call — the execution manager intercepts the request. It checks the agent's profile to determine the approval policy for that specific tool.
 
 Three outcomes are possible:
 
@@ -133,9 +133,9 @@ But the economics are not uniformly positive. A study of open-source projects us
 
 > [!case-study]
 > **Devin and the Verification Gap**
-> Devin's 67% merge rate sounds impressive until you ask: what happens to the other 33%? Those rejected PRs still consumed reviewer attention. They still created notification noise. They still occupied space in the review queue. At scale — hundreds of PRs per week — the rejected fraction becomes a significant burden. This is the verification gap: the delta between what agents can produce and what humans can validate. Stagent's approach to this gap is twofold. First, structured logging: every tool call, every file read, every decision is recorded in `agent_logs`, creating a reviewable audit trail. Second, profile-based constraints: by limiting what each agent can do (a code-reviewer cannot write code, a researcher cannot modify files), we reduce the surface area of each review. A PR from a tightly constrained agent is easier to verify than one from an unconstrained agent.
+> Devin's 67% merge rate sounds impressive until you ask: what happens to the other 33%? Those rejected PRs still consumed reviewer attention. They still created notification noise. They still occupied space in the review queue. At scale — hundreds of PRs per week — the rejected fraction becomes a significant burden. This is the verification gap: the delta between what agents can produce and what humans can validate. ainative's approach to this gap is twofold. First, structured logging: every tool call, every file read, every decision is recorded in `agent_logs`, creating a reviewable audit trail. Second, profile-based constraints: by limiting what each agent can do (a code-reviewer cannot write code, a researcher cannot modify files), we reduce the surface area of each review. A PR from a tightly constrained agent is easier to verify than one from an unconstrained agent.
 
-## Stagent Today
+## ainative Today
 
 The forge is operational. Here is the current state:
 

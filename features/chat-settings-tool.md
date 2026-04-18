@@ -11,13 +11,13 @@ dependencies: [tool-permission-persistence]
 
 ## Description
 
-Add a `set_settings` tool to the stagent chat agent, allowing users to modify settings via natural language instructions. Today the agent can read settings with `get_settings` but cannot change them — the user must navigate to the Settings UI page for any configuration change.
+Add a `set_settings` tool to the ainative chat agent, allowing users to modify settings via natural language instructions. Today the agent can read settings with `get_settings` but cannot change them — the user must navigate to the Settings UI page for any configuration change.
 
 This tool uses an explicit allowlist of safe, user-facing keys with per-key validation. It is permission-gated so the user sees a confirmation prompt before any setting is actually changed. Secrets (API keys) and internal state keys are excluded by design.
 
 ## User Story
 
-As a stagent user, I want to say "set my timeout to 120 seconds" or "enable Playwright" in chat so that I can configure my workspace without leaving the conversation.
+As a ainative user, I want to say "set my timeout to 120 seconds" or "enable Playwright" in chat so that I can configure my workspace without leaving the conversation.
 
 ## Technical Approach
 

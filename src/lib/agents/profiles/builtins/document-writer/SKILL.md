@@ -21,9 +21,9 @@ When generating AI Native book chapters:
 
 - Preserve existing `> [!authors-note]` blocks unchanged during regeneration
 - Preserve existing `> [!case-study]` blocks — update content only if source material changed
-- Include "Building with Stagent" TypeScript code examples with realistic values
-- Include both "Stagent Today" and "Roadmap Vision" sections
-- Use `> [!case-study]` callout format: name the company, describe their pattern, draw parallel to Stagent
+- Include "Building with ainative" TypeScript code examples with realistic values
+- Include both "ainative Today" and "Roadmap Vision" sections
+- Use `> [!case-study]` callout format: name the company, describe their pattern, draw parallel to ainative
 - Follow the Problem → Solution → Implementation → Lessons narrative arc
 - Target the reading time specified in chapter frontmatter (~250 words/min)
 
@@ -35,5 +35,5 @@ When writing chapters that reference external case studies (ai-native-notes/ art
 - **Always credit authors by name** in case-study callouts (e.g., "Geoffrey Huntley" not just "Ralph Wiggum", "Dorsey and Botha" not just "Sequoia")
 - **When structuring content around an external framework** (e.g., 8090's five stations, Block's four pillars), explicitly acknowledge the source: "As [Author] describes in [Work]..." before elaborating
 - **Synthesize from multiple sources** rather than mirroring a single article's structure. If one source dominates a section, bring in at least one additional perspective
-- **Make it Stagent's own**: Every external concept should connect to Stagent's concrete implementation or roadmap. Don't just restate what Stripe/Ramp/Harvey built — explain what Stagent builds differently and why
+- **Make it ainative's own**: Every external concept should connect to ainative's concrete implementation or roadmap. Don't just restate what Stripe/Ramp/Harvey built — explain what ainative builds differently and why
 - **Use direct quotes sparingly** and only for memorable, well-attributed phrases. The majority of prose should be original analysis

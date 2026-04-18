@@ -45,7 +45,7 @@ export interface InteractiveLinkBlock {
   interactiveType: "link";
   label: string;
   description: string;
-  /** Route within Stagent to navigate to */
+  /** Route within ainative to navigate to */
   href: string;
 }
 

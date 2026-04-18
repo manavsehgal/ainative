@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { logoutStagentCodexAuth } from "@/lib/agents/runtime/openai-codex-auth";
+import { logoutCodexAuth } from "@/lib/agents/runtime/openai-codex-auth";
 
 export async function POST() {
-  await logoutStagentCodexAuth();
+  await logoutCodexAuth();
   return NextResponse.json({ success: true });
 }

@@ -7,7 +7,7 @@
 ## What shipped in the previous session
 
 1. **`runtime-capability-matrix` (P1)** — declared LLM-surface capability as first-class artifact. 7 commits `fb130b1` → `34350f5`. Plan: `.claude/plans/steady-capable-matrix.md`.
-2. **`chat-claude-sdk-skills` (P0)** — flipped Stagent chat on the `claude-code` runtime from "isolation mode" to "SDK-native." Enables `settingSources`, `Skill` tool, filesystem tools (Read/Grep/Glob/Edit/Write/Bash/TodoWrite), and `list_profiles` fusion with SDK-discovered skills. 11 commits `78bdbaa` → `fc44233`. Plan: `.claude/plans/claude-sdk-skills-ignition.md`.
+2. **`chat-claude-sdk-skills` (P0)** — flipped ainative chat on the `claude-code` runtime from "isolation mode" to "SDK-native." Enables `settingSources`, `Skill` tool, filesystem tools (Read/Grep/Glob/Edit/Write/Bash/TodoWrite), and `list_profiles` fusion with SDK-discovered skills. 11 commits `78bdbaa` → `fc44233`. Plan: `.claude/plans/claude-sdk-skills-ignition.md`.
 3. **`createStagentMcpServer` deprecation cleanup** — 1 commit `2979350`. Net −19 lines.
 
 Both feature specs have their `status: complete` flipped, roadmap updated, changelog entries appended. TDR-032 live smoke tests verified via browser.
@@ -26,7 +26,7 @@ Work through **three sequential cleanups / continuations**, then continue with t
 
 **Files:**
 - `src/lib/data/clear.ts` lines 58-60, 96-97 — comments describe preservation logic for a "license table" that was dropped in migration `0026_drop_license.sql`. Delete or update the comments to reflect that the table no longer exists.
-- `src/lib/instance/fingerprint.ts` lines 5-7 — comment still describes the function's purpose as "cloud license metering." Update to describe the actual current purpose (machine fingerprinting for stagent instance identity; no longer billing-related).
+- `src/lib/instance/fingerprint.ts` lines 5-7 — comment still describes the function's purpose as "cloud license metering." Update to describe the actual current purpose (machine fingerprinting for ainative instance identity; no longer billing-related).
 
 **Verification:**
 - `npm test` — all tests continue to pass
@@ -63,7 +63,7 @@ comment predates the Community-Edition rollback. Comments-only, no code change.
    - (c) Accept drift — CLAUDE.md is the LLM-visible view; treat it like product copy
 
 **Implementation approach:**
-- Read current `AGENTS.md` and `MEMORY.md` (skim the top of each — MEMORY.md is the file at `/Users/manavsehgal/.claude/projects/-Users-manavsehgal-Developer-stagent/memory/MEMORY.md`, not a repo file; `AGENTS.md` is in the repo root)
+- Read current `AGENTS.md` and `MEMORY.md` (skim the top of each — MEMORY.md is the file at `/Users/manavsehgal/.claude/projects/-Users-manavsehgal-Developer-ainative/memory/MEMORY.md`, not a repo file; `AGENTS.md` is in the repo root)
 - Draft the proposed CLAUDE.md content in a markdown code block
 - Get user approval before writing
 - After writing, verify via a smoke test: ask chat "What does CLAUDE.md tell you about X" where X is something you just added, confirm the response reflects actual content
@@ -125,12 +125,12 @@ Priority-ordered backlog (all planned, none started):
 | P1 | `chat-codex-app-server-skills` | `features/chat-codex-app-server-skills.md` | Mirrors chat-claude-sdk-skills into the `openai-codex-app-server` runtime. Uses `turn/start` skill params. Depends on Phase 1a UX contract now established. |
 | P1 | `chat-file-mentions` | `features/chat-file-mentions.md` | `@file:path` typeahead with tiered expansion (Q6). Independent of runtime work. |
 | P1 | `chat-command-namespace-refactor` | `features/chat-command-namespace-refactor.md` | `/` = verbs, `@` = nouns, tabbed popover, ⌘K palette, capability hint banner (Q9a). **Breaking UX change accepted per Q7.** Flagged for `/frontend-designer` sign-off before implementation. |
-| P2 | `chat-ollama-native-skills` | `features/chat-ollama-native-skills.md` | Stagent-native `activate_skill` MCP tools + context injection for Ollama (no SDK support). |
+| P2 | `chat-ollama-native-skills` | `features/chat-ollama-native-skills.md` | ainative-native `activate_skill` MCP tools + context injection for Ollama (no SDK support). |
 | P2 | `chat-environment-integration` | `features/chat-environment-integration.md` | Environment metadata badges in skills popover (DD-CE-004). |
 | P2 | `onboarding-runtime-provider-choice` | `features/onboarding-runtime-provider-choice.md` | First-launch model/provider preference modal (Q10). Parallel track to runtime work. |
 | P3 | `chat-advanced-ux` | `features/chat-advanced-ux.md` | `#`-filters, templates, composition, branches. |
 
-**Recommended order after step 3:** `chat-codex-app-server-skills` → `chat-file-mentions` → `chat-command-namespace-refactor` → then P2 tier. Rationale: finishing the runtime-native Phase 1 trio (Claude done, Codex next, Ollama last because it's Stagent-native injection rather than SDK-native) keeps a coherent feature story.
+**Recommended order after step 3:** `chat-codex-app-server-skills` → `chat-file-mentions` → `chat-command-namespace-refactor` → then P2 tier. Rationale: finishing the runtime-native Phase 1 trio (Claude done, Codex next, Ollama last because it's ainative-native injection rather than SDK-native) keeps a coherent feature story.
 
 Each feature follows the same pipeline: `writing-plans` → scope challenge → `subagent-driven-development` → live smoke test → closeout.
 
@@ -142,7 +142,7 @@ Each feature follows the same pipeline: `writing-plans` → scope challenge → 
 
 2. **Next.js 16 refuses to start a parallel dev server in the same project root.** The user runs their own dev server on `:3000`. Do NOT `pkill` it — per project memory, only restart your own. For smoke tests, use the user's running `:3000` server rather than trying to launch your own on `:3010`. Next.js 16's dedup will fail with "Another next dev server is already running."
 
-3. **TDR-032 module-load cycle.** Any change to `src/lib/chat/engine.ts`, `src/lib/agents/claude-agent.ts`, `src/lib/agents/runtime/catalog.ts`, `src/lib/agents/runtime/index.ts`, `src/lib/agents/runtime/claude.ts`, or any file that statically imports `@/lib/chat/stagent-tools` REQUIRES a live smoke test per project writing-plans override. Unit tests cannot catch module-load cycles because `vi.mock` replaces the cycle. See `.claude/skills/architect/references/tdr-032-runtime-stagent-mcp-injection.md`.
+3. **TDR-032 module-load cycle.** Any change to `src/lib/chat/engine.ts`, `src/lib/agents/claude-agent.ts`, `src/lib/agents/runtime/catalog.ts`, `src/lib/agents/runtime/index.ts`, `src/lib/agents/runtime/claude.ts`, or any file that statically imports `@/lib/chat/ainative-tools` REQUIRES a live smoke test per project writing-plans override. Unit tests cannot catch module-load cycles because `vi.mock` replaces the cycle. See `.claude/skills/architect/references/tdr-032-runtime-ainative-mcp-injection.md`.
 
 4. **Keep `clear.ts` in sync when adding DB tables.** Any new table with FKs must get a `db.delete()` call in `src/lib/data/clear.ts` in FK-safe order (children before parents). Safety-net test at `src/lib/data/__tests__/clear.test.ts`. Settings table is intentionally excluded.
 
@@ -165,7 +165,7 @@ Each feature follows the same pipeline: `writing-plans` → scope challenge → 
 On session start:
 
 1. Read this handoff doc top-to-bottom.
-2. Read `AGENTS.md`, `MEMORY.md` at `/Users/manavsehgal/.claude/projects/-Users-manavsehgal-Developer-stagent/memory/MEMORY.md`, and `FLOW.md`.
+2. Read `AGENTS.md`, `MEMORY.md` at `/Users/manavsehgal/.claude/projects/-Users-manavsehgal-Developer-ainative/memory/MEMORY.md`, and `FLOW.md`.
 3. Confirm current state: `git log --oneline -15` — HEAD should be at `2979350` or later.
 4. Confirm working tree clean: `git status`.
 5. Confirm tests pass: `npm test 2>&1 | tail -5` — expect 775+ passing.

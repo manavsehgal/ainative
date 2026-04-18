@@ -17,7 +17,7 @@ canUseToolPolicy:
 
 maxTurns: 30
 
-author: stagent
+author: ainative
 
 tests:
   - task: "Analyze this CSV file and summarize the key trends"

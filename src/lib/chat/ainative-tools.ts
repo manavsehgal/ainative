@@ -101,7 +101,7 @@ export function createToolServer(
         sdkTool(def.name, def.description, def.zodShape, def.handler),
       );
       return createSdkMcpServer({
-        name: "stagent",
+        name: "ainative",
         version: "1.0.0",
         tools: sdkTools,
       });

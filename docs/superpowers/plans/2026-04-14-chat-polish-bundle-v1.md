@@ -195,7 +195,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, it, expect, beforeEach } from "vitest";
 import { FilterHint } from "../filter-hint";
 
-const KEY = "stagent.filter-hint.dismissed";
+const KEY = "ainative.filter-hint.dismissed";
 
 describe("FilterHint", () => {
   beforeEach(() => {
@@ -364,7 +364,7 @@ return (
         </Badge>
       ))}
     </div>
-    <FilterHint inputValue={local} storageKey="stagent.filter-hint.dismissed" />
+    <FilterHint inputValue={local} storageKey="ainative.filter-hint.dismissed" />
   </div>
 );
 ```
@@ -380,7 +380,7 @@ import { FilterHint } from "@/components/shared/filter-hint";
 Locate the popover's `CommandList` rendering (around line 325, inside the `<div id={...tabpanel}>`). Add `<FilterHint>` just below the `CommandInput` (or at the top of `CommandList` — whichever is consistent with the cmdk layout you find). Use the same storage key as `FilterInput`:
 
 ```tsx
-<FilterHint inputValue={query} storageKey="stagent.filter-hint.dismissed" />
+<FilterHint inputValue={query} storageKey="ainative.filter-hint.dismissed" />
 ```
 
 > **Implementer note:** The popover today does not include a visible `CommandInput` (input is the chat textarea itself). If that is still the case, mount `FilterHint` at the top of the `CommandList` so it appears above the first group. Do NOT duplicate the hint into multiple tabs — one mount per popover instance.
@@ -1116,7 +1116,7 @@ Wait for `Ready in ...` on port 3000.
    - Open `/documents`. Expect `Tip: use #key:value to filter...` row below the input.
    - Type `#type:pdf` in the filter input.
    - Reload the page. Hint should NOT reappear (flag is set).
-   - Clear `localStorage.removeItem("stagent.filter-hint.dismissed")` in devtools, reload. Hint returns.
+   - Clear `localStorage.removeItem("ainative.filter-hint.dismissed")` in devtools, reload. Hint returns.
 
 2. **Filter hint — chat popover:**
    - Open `/chat`. Type `@` to open the mention popover. Expect the same hint row visible.

@@ -11,7 +11,7 @@ lastUpdated: "2026-04-15"
 
 # Provider Runtimes
 
-Stagent supports five provider runtimes, allowing tasks, workflows, schedules, and chat to target different AI providers depending on the use case. A smart router can automatically select the best runtime for each task based on content, profile affinity, and cost preferences. Profiles are compatible across providers, so switching runtimes does not require redefining agent behavior.
+ainative supports five provider runtimes, allowing tasks, workflows, schedules, and chat to target different AI providers depending on the use case. A smart router can automatically select the best runtime for each task based on content, profile affinity, and cost preferences. Profiles are compatible across providers, so switching runtimes does not require redefining agent behavior.
 
 ## Screenshots
 
@@ -52,7 +52,7 @@ The Codex runtime connects to the OpenAI Codex App Server over WebSocket using J
 - Resumable threads with persistent state across reconnections.
 - WebSocket transport for low-latency bidirectional communication.
 - Two auth modes for Codex App Server:
-  - **ChatGPT** -- browser sign-in tied to your ChatGPT plan, with cached session reuse in Stagent's isolated Codex home
+  - **ChatGPT** -- browser sign-in tied to your ChatGPT plan, with cached session reuse in ainative's isolated Codex home
   - **API Key** -- direct API-key auth using `OPENAI_API_KEY`
 - OpenAI Direct remains a separate API-key-backed runtime even when Codex App Server uses ChatGPT auth.
 
@@ -92,9 +92,9 @@ Each runtime advertises its capabilities through a central matrix used by the re
 
 - **`supportsSkillComposition`** — whether the runtime accepts multiple concurrent skills on a single conversation. Gates the Chat Skills tab multi-activation behavior.
 - **`maxActiveSkills`** — hard cap on the active skill stack. The Chat composer shows "N of M active" against this value.
-- **`hasNativeSkills`** / **`stagentInjectsSkills`** / **`autoLoadsInstructions`** — decide whether Stagent should inject SKILL.md or trust the runtime's native loader, preventing duplicated context on Codex and Claude.
+- **`hasNativeSkills`** / **`stagentInjectsSkills`** / **`autoLoadsInstructions`** — decide whether ainative should inject SKILL.md or trust the runtime's native loader, preventing duplicated context on Codex and Claude.
 
-Reading this matrix before wiring a feature is the canonical way to answer "should Stagent do X, or trust the runtime to do X."
+Reading this matrix before wiring a feature is the canonical way to answer "should ainative do X, or trust the runtime to do X."
 
 ### Runtime Validation Hardening
 

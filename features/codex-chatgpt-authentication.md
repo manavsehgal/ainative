@@ -11,13 +11,13 @@ dependencies: [openai-codex-app-server, provider-runtime-abstraction]
 
 ## Description
 
-Stagent's initial Codex App Server integration only supported API-key authentication. That was enough to prove the runtime adapter, but it left Stagent behind the current Codex product surface, which also supports browser-based ChatGPT sign-in tied to a ChatGPT plan. Users who rely on ChatGPT-managed Codex access had no way to use that entitlement inside Stagent.
+ainative's initial Codex App Server integration only supported API-key authentication. That was enough to prove the runtime adapter, but it left ainative behind the current Codex product surface, which also supports browser-based ChatGPT sign-in tied to a ChatGPT plan. Users who rely on ChatGPT-managed Codex access had no way to use that entitlement inside ainative.
 
-This feature adds ChatGPT sign-in as a first-class authentication mode for the Codex App Server runtime. The v1 scope is local browser login only: Stagent starts the `chatgpt` auth flow, opens or exposes the returned URL, waits for the app-server callback to complete, and then reuses the cached Codex session for future health checks, chat turns, and task executions.
+This feature adds ChatGPT sign-in as a first-class authentication mode for the Codex App Server runtime. The v1 scope is local browser login only: ainative starts the `chatgpt` auth flow, opens or exposes the returned URL, waits for the app-server callback to complete, and then reuses the cached Codex session for future health checks, chat turns, and task executions.
 
 ## User Story
 
-As a Stagent user with Codex access through my ChatGPT plan, I want to connect Codex App Server with browser sign-in instead of an API key so that I can use the same authentication mode and entitlements I already have in Codex.
+As a ainative user with Codex access through my ChatGPT plan, I want to connect Codex App Server with browser sign-in instead of an API key so that I can use the same authentication mode and entitlements I already have in Codex.
 
 ## Technical Approach
 
@@ -25,7 +25,7 @@ As a Stagent user with Codex access through my ChatGPT plan, I want to connect C
   - selected auth method for Codex App Server (`api_key` or `oauth`)
   - shared OpenAI API key state for OpenAI Direct
   - persisted OAuth connection/account metadata
-- Add a Stagent-managed login flow around Codex App Server JSON-RPC:
+- Add a ainative-managed login flow around Codex App Server JSON-RPC:
   - `account/login/start { type: "chatgpt" }`
   - `account/login/completed`
   - `account/login/cancel`

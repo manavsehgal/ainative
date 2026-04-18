@@ -7,7 +7,7 @@ tags: [shopping, comparison, reviews, recommendation]
 pattern: sequence
 estimatedDuration: "5-15 min"
 difficulty: beginner
-author: stagent
+author: ainative
 
 variables:
   - id: product

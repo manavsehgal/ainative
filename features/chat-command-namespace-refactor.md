@@ -11,23 +11,23 @@ dependencies: [chat-claude-sdk-skills, chat-file-mentions, runtime-capability-ma
 
 ## Description
 
-Stagent chat's current `/` popover mixes verbs and nouns: "new task" sits next to "list tasks" sits next to "researcher profile" sits next to 88 Stagent MCP tools grouped by function. As Phase 1a/1b/1c introduce filesystem skills, filesystem tools, and (via `chat-file-mentions`) file references through `@`, the current mental model will strain — over 200 items across ambiguous categories.
+ainative chat's current `/` popover mixes verbs and nouns: "new task" sits next to "list tasks" sits next to "researcher profile" sits next to 88 ainative MCP tools grouped by function. As Phase 1a/1b/1c introduce filesystem skills, filesystem tools, and (via `chat-file-mentions`) file references through `@`, the current mental model will strain — over 200 items across ambiguous categories.
 
-This feature refactors the command UX around a clean split: `/` is for **actions** (skills, session commands, Stagent primitives, filesystem tools) and `@` is for **references** (Stagent entities + files). The `/` popover becomes tabbed (Actions / Skills / Tools / Files / Entities) with environment-aware skill badges (health, profile link, cross-tool sync). A `⌘K` global command palette gives power users terminal-speed access. A new capability hint banner below the chat input resolves Q9a: when the active runtime can't do X/Y/Z, the banner says so in plain text without littering the popover with disabled rows.
+This feature refactors the command UX around a clean split: `/` is for **actions** (skills, session commands, ainative primitives, filesystem tools) and `@` is for **references** (ainative entities + files). The `/` popover becomes tabbed (Actions / Skills / Tools / Files / Entities) with environment-aware skill badges (health, profile link, cross-tool sync). A `⌘K` global command palette gives power users terminal-speed access. A new capability hint banner below the chat input resolves Q9a: when the active runtime can't do X/Y/Z, the banner says so in plain text without littering the popover with disabled rows.
 
-Stagent is alpha, so per Q7 we accept this as a breaking UX change and skip the deprecation shim.
+ainative is alpha, so per Q7 we accept this as a breaking UX change and skip the deprecation shim.
 
 **Design sign-off required:** this spec must be reviewed by `/frontend-designer` before implementation begins — it introduces a new `CommandTabBar` component and touches the primary input surface.
 
 ## User Story
 
-As a Stagent user who wants to discover what I can do, I want a predictable command system where `/` does things and `@` names things, grouped by category, so I can build muscle memory that transfers between chat, the CLI, and the command palette.
+As a ainative user who wants to discover what I can do, I want a predictable command system where `/` does things and `@` names things, grouped by category, so I can build muscle memory that transfers between chat, the CLI, and the command palette.
 
 ## Technical Approach
 
 ### 1. Split verbs from nouns
 
-Move every noun-like entry out of the `/` popover and into the `@` popover: profiles (Stagent registry profiles acting as references), document references, table references, etc. Anything that "names a thing" belongs under `@`; anything that "performs an action" belongs under `/`.
+Move every noun-like entry out of the `/` popover and into the `@` popover: profiles (ainative registry profiles acting as references), document references, table references, etc. Anything that "names a thing" belongs under `@`; anything that "performs an action" belongs under `/`.
 
 ### 2. `/` tab structure
 
@@ -83,7 +83,7 @@ Per taste metrics: **DESIGN_VARIANCE 3-4**, **MOTION_INTENSITY 2**, **VISUAL_DEN
 - `/clear` — starts a new conversation (matches UI "New conversation" button)
 - `/compact` — replaces existing auto-compact UI button trigger
 - `/export` — sends current conversation to the document pool
-- `/new-task`, `/new-workflow`, `/new-schedule` — inline Stagent primitive creators
+- `/new-task`, `/new-workflow`, `/new-schedule` — inline ainative primitive creators
 
 ## Acceptance Criteria
 
@@ -105,7 +105,7 @@ Per taste metrics: **DESIGN_VARIANCE 3-4**, **MOTION_INTENSITY 2**, **VISUAL_DEN
 **Included:**
 - Tabbed `/` popover with new category structure
 - New `CommandTabBar` component
-- Action commands (Stagent primitives + session commands)
+- Action commands (ainative primitives + session commands)
 - Capability hint banner
 - `⌘K` global command palette integration
 - Full keyboard shortcut table from §5.5
@@ -131,9 +131,9 @@ Per taste metrics: **DESIGN_VARIANCE 3-4**, **MOTION_INTENSITY 2**, **VISUAL_DEN
 - `src/components/chat/command-tab-bar.tsx` — `role=tablist` with arrow-key nav, roving tabindex, ARIA labels.
 - `src/components/chat/chat-command-popover.tsx` — tabbed slash mode, single `<Command>` root preserved (avoids focus-state loss on tab switch). Entities tab renders a pointer to `@`.
 - `src/components/chat/capability-banner.tsx` — single-line `role=status` banner, per-runtime `sessionStorage` dismissal. Hidden on `claude-code`/`openai-codex-app-server`; visible on `ollama`/`anthropic-direct`/`openai-direct`.
-- `src/components/chat/help-dialog.tsx` — keyboard shortcut dialog rendered from the session provider; opens via `stagent.chat.help` CustomEvent.
-- `src/app/api/chat/export/route.ts` — NEW endpoint that writes inline markdown to `~/.stagent/uploads/chat-exports/<name>.md` and inserts a documents row with `direction: "output"`, `source: "chat-export"`.
-- `src/components/chat/chat-session-provider.tsx` — wires `stagent.chat.{clear,compact,export,help}` CustomEvents. `/compact` currently shows a "coming soon" toast (no compact machinery yet).
+- `src/components/chat/help-dialog.tsx` — keyboard shortcut dialog rendered from the session provider; opens via `ainative.chat.help` CustomEvent.
+- `src/app/api/chat/export/route.ts` — NEW endpoint that writes inline markdown to `~/.ainative/uploads/chat-exports/<name>.md` and inserts a documents row with `direction: "output"`, `source: "chat-export"`.
+- `src/components/chat/chat-session-provider.tsx` — wires `ainative.chat.{clear,compact,export,help}` CustomEvents. `/compact` currently shows a "coming soon" toast (no compact machinery yet).
 - `src/components/chat/chat-input.tsx` — dispatches session commands via CustomEvents; derives runtime via `resolveAgentRuntime(getRuntimeForModel(modelId))`; binds `⌘L` / `⌘⇧L` (clear) and `⌘/` (focus + slash).
 - `src/components/shared/command-palette.tsx` — ⌘K palette extended with Skills (guarded by `skills.length > 0`) and Files (debounced 200ms search against `/api/chat/files/search`).
 - 8 new session commands in `tool-catalog.ts` under a new `Session` group: `clear`, `compact`, `export`, `help`, `settings`, `new-task`, `new-workflow`, `new-schedule`.
@@ -166,6 +166,6 @@ Two palette `toast.info("… coming soon")` stubs for Skills activation + File m
 - `/compact` is a stub (toast only) — real compaction machinery to be added alongside `chat-advanced-ux` or a dedicated feature.
 - `/help` + Enter when the popover's last-remembered tab is **Entities** sends the text as a chat message (edge case: no cmdk-item is selected under the Entities placeholder). Happy path on Actions tab works as expected.
 - ⌘K palette → Skills / Files selection dispatches CustomEvents but has no chat-input listener yet; `toast.info("coming soon")` provides user feedback.
-- `chat-file-mentions` listener on `stagent.chat.insert-mention` to wire the Files group once it lands.
+- `chat-file-mentions` listener on `ainative.chat.insert-mention` to wire the Files group once it lands.
 
 Commits: `99cd92e`, `827d0df`, `9283338`, `3851fd3`, `29f161c`, `4140e99`, `1bc1078`, `d2469e4`, `728017b`, `541c6fd`, `571d685`, `db235aa`.

@@ -3,7 +3,7 @@ title: App Updates & Dependencies
 status: deferred
 priority: P2
 milestone: post-mvp
-source: handoff/stagent-app-marketplace-spec.md
+source: handoff/ainative-app-marketplace-spec.md
 dependencies: [app-conflict-resolution, app-cli-tools]
 ---
 
@@ -26,7 +26,7 @@ previous bundle without data loss.
 
 ## User Story
 
-As a Stagent user, I want to update my installed apps to get new features and
+As a ainative user, I want to update my installed apps to get new features and
 fixes without losing my data, and I want clear visibility into what changed
 and the ability to roll back if an update breaks something.
 
@@ -38,13 +38,13 @@ migrations safely.
 
 ### 1. Update Flow
 
-`stagent app update <app-id>` (CLI) or "Update" button (UI):
+`ainative app update <app-id>` (CLI) or "Update" button (UI):
 
 ```
 1. Check registry for newer version
 2. Download new .sap from source channel
 3. Verify SHA-256 checksum
-4. Back up current bundle → ~/.stagent/apps/{app-id}/backup/{version}/
+4. Back up current bundle → ~/.ainative/apps/{app-id}/backup/{version}/
 5. Detect local modifications (see §5)
 6. Apply additive schema migrations
 7. Update manifest in app_instances
@@ -54,7 +54,7 @@ migrations safely.
 
 ### 2. Outdated Check
 
-`stagent app outdated` — checks all installed apps against their source:
+`ainative app outdated` — checks all installed apps against their source:
 
 | App | Installed | Latest | Source |
 |-----|-----------|--------|--------|
@@ -66,7 +66,7 @@ Implementation:
 - For marketplace apps: query Supabase `app_packages` for latest version
 - For git-repo apps: check latest GitHub release or HEAD of default branch
 - For local-file apps: skip (no remote to check)
-- For official apps: check `@stagent/{name}` latest release
+- For official apps: check `@ainative/{name}` latest release
 
 Compare semver strings. Report only apps with available updates.
 
@@ -215,9 +215,9 @@ Hook execution:
 
 ### 7. Rollback
 
-`stagent app rollback <app-id>`:
+`ainative app rollback <app-id>`:
 
-1. Check that a backup exists at `~/.stagent/apps/{app-id}/backup/{version}/`
+1. Check that a backup exists at `~/.ainative/apps/{app-id}/backup/{version}/`
 2. Restore the previous manifest to `app_instances`
 3. **Do not drop tables or columns** (additive-only invariant applies to
    rollback too — new tables/columns remain, they're just unused)
@@ -236,17 +236,17 @@ and may be picked up by a future successful update.
 - "Rollback" button appears after a recent update (within 7 days)
 
 **Notification:**
-- When `stagent app outdated` detects updates, create a notification:
+- When `ainative app outdated` detects updates, create a notification:
   "2 app updates available: Wealth Manager 1.3.0, Content Planner 1.1.0"
 
 ## Acceptance Criteria
 
-- [ ] `stagent app update <app-id>` downloads and applies a newer version.
-- [ ] `stagent app outdated` lists all apps with available updates.
+- [ ] `ainative app update <app-id>` downloads and applies a newer version.
+- [ ] `ainative app outdated` lists all apps with available updates.
 - [ ] Schema migration is additive-only: new tables and columns only.
 - [ ] Dropped tables/columns in a new version cause the update to be rejected.
 - [ ] Backup created before every update at predictable path.
-- [ ] `stagent app rollback <app-id>` restores previous manifest without
+- [ ] `ainative app rollback <app-id>` restores previous manifest without
       dropping data.
 - [ ] Dependencies declared in manifest are checked before install/update.
 - [ ] Missing required dependencies prompt user to install them.
@@ -276,7 +276,7 @@ and may be picked up by a future successful update.
 
 ## References
 
-- Source: handoff/stagent-app-marketplace-spec.md §11 Phase 3
+- Source: handoff/ainative-app-marketplace-spec.md §11 Phase 3
 - Related: `app-conflict-resolution` (namespace + version compat checks),
   `app-cli-tools` (CLI commands), `app-distribution-channels` (source
   channel resolution for update checks)

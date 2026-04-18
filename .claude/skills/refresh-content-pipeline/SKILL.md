@@ -52,7 +52,7 @@ This skill fixes both by treating content as a derived output of code state, wit
   [4] README + code-sample validator (in-skill logic)
           │  Reads stats snapshot. Auto-edits when drift is unambiguous.
           ▼
-  [5] /book-updater ──▶ book/chapters/, stagent.io/
+  [5] /book-updater ──▶ book/chapters/, ainative.io/
           │
           ▼
   [6] Write .refresh-pipeline/last-run.json
@@ -76,7 +76,7 @@ The skill is incremental — it reads git diff since `.refresh-pipeline/last-run
 | `ai-native-notes/*.md` | 0, 5 |
 | Public API surface (exports from `src/lib/**/index.ts`, route handlers) | 0, 2, 4 |
 | Any count-affecting change (features, tools, profiles, blueprints, skills dirs) | 0, 4 — stats always refresh first |
-| `.claude/reference/stagent-io-about/**` (manual recapture or upstream drift) | 4 |
+| `.claude/reference/ainative-io-about/**` (manual recapture or upstream drift) | 4 |
 | Nothing | Report "no refresh needed", exit cleanly |
 
 Map every changed file to one or more rows. Union the stage set. Run stages in numerical order, skipping those not in the set.
@@ -94,7 +94,7 @@ This is the single source of truth for counts referenced in README, book chapter
 | Field | Source | Method |
 |-------|--------|--------|
 | `features.{completed,inProgress,planned,deferred}` | `features/*.md` frontmatter | Parse YAML, group by `status` |
-| `chatTools` | `src/lib/chat/stagent-tools/` | Count exported tool definitions in the registry |
+| `chatTools` | `src/lib/chat/ainative-tools/` | Count exported tool definitions in the registry |
 | `dbTables` | `src/lib/db/schema.ts` | Count `sqliteTable(...)` invocations |
 | `builtinProfiles` | `src/lib/agents/profiles/builtins/` | Count subdirectories |
 | `workflowBlueprints` | `src/lib/workflows/blueprints/` or registry YAML | Count entries |
@@ -146,11 +146,11 @@ Stages 1–3 and 5 are delegations. Stage 4 is the substantive in-skill logic.
 
 4. **About section sync** in `README.md`. The About block is wrapped in:
    ```
-   <!-- ABOUT:BEGIN source=https://stagent.io/about/ -->
+   <!-- ABOUT:BEGIN source=https://ainative.io/about/ -->
    …content…
    <!-- ABOUT:END -->
    ```
-   Before validating, re-run `/capture https://stagent.io/about/` to refresh the canonical snapshot at `.claude/reference/stagent-io-about/`. Then diff the README body between the ABOUT markers against the captured markdown (normalizing whitespace and accepting the documented rename `### Why Stagent` → `### Research Premise`). When the two differ, auto-replace the README content between the markers with the captured content (applying the same rename). If `/capture` fails (network down, upstream HTML change), skip the auto-edit and record a "reported drift" entry pointing at the failure — do not delete or truncate the existing About block.
+   Before validating, re-run `/capture https://ainative.io/about/` to refresh the canonical snapshot at `.claude/reference/ainative-io-about/`. Then diff the README body between the ABOUT markers against the captured markdown (normalizing whitespace and accepting the documented rename `### Why ainative` → `### Research Premise`). When the two differ, auto-replace the README content between the markers with the captured content (applying the same rename). If `/capture` fails (network down, upstream HTML change), skip the auto-edit and record a "reported drift" entry pointing at the failure — do not delete or truncate the existing About block.
 
 ### Auto-edit rules
 
@@ -163,7 +163,7 @@ Report and skip otherwise. Every auto-edit records a line in the final run summa
 
 ### Why auto-edit is safe here
 
-Markers make the edit location unambiguous — we replace only content between matched delimiters. STAT markers check against a numeric snapshot; ABOUT markers check against the captured `.claude/reference/stagent-io-about/` snapshot (itself refreshed via `/capture` before the diff). Code-block symbol renames are verifiable against the actual export list. We never touch prose outside a marker pair, which is where meaning is subjective.
+Markers make the edit location unambiguous — we replace only content between matched delimiters. STAT markers check against a numeric snapshot; ABOUT markers check against the captured `.claude/reference/ainative-io-about/` snapshot (itself refreshed via `/capture` before the diff). Code-block symbol renames are verifiable against the actual export list. We never touch prose outside a marker pair, which is where meaning is subjective.
 
 ---
 
@@ -251,8 +251,8 @@ Run these checks after creating or modifying this skill:
 3. **Book-trigger** — edit `src/lib/db/schema.ts` only → plan should include stages 0, 4, 5 and skip 1, 2, 3.
 4. **Feedback loop** — force a coverage gap in `docs/.coverage-gaps.json` after stage 3 → verify stage 2 re-runs exactly once, then stage 3 re-verifies.
 5. **Marker auto-edit** — introduce a stale `<!-- STAT:featureCount -->99<!-- /STAT -->` in README → stage 4 corrects it to the snapshot value and logs the auto-edit.
-6. **Code-block rename** — rename a symbol exported from `src/lib/chat/stagent-tools/` → stage 4 updates references in README and `docs/features/*.md`.
-7. **About sync** — introduce a trivial edit between `<!-- ABOUT:BEGIN … -->` and `<!-- ABOUT:END -->` in README (e.g., change "Ex Amazon AGI" to "Ex Amazon"). Run Stage 4. Expected: the block is restored to match `.claude/reference/stagent-io-about/` content, one auto-edit is logged as `auto-edit: README.md ABOUT block ← stagent.io/about`.
+6. **Code-block rename** — rename a symbol exported from `src/lib/chat/ainative-tools/` → stage 4 updates references in README and `docs/features/*.md`.
+7. **About sync** — introduce a trivial edit between `<!-- ABOUT:BEGIN … -->` and `<!-- ABOUT:END -->` in README (e.g., change "Ex Amazon AGI" to "Ex Amazon"). Run Stage 4. Expected: the block is restored to match `.claude/reference/ainative-io-about/` content, one auto-edit is logged as `auto-edit: README.md ABOUT block ← ainative.io/about`.
 8. **No duplication** — `rg -n "route discovery|image copying|frontmatter parsing" .claude/skills/refresh-content-pipeline/` should return zero matches. All such logic lives in downstream skills.
 
 ---

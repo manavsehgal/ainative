@@ -59,11 +59,11 @@ vi.mock("../processor", () => ({
 
 describe("output-scanner", () => {
   let tempDataDir: string;
-  const originalDataDir = process.env.STAGENT_DATA_DIR;
+  const originalDataDir = process.env.AINATIVE_DATA_DIR;
 
   beforeEach(() => {
-    tempDataDir = fs.mkdtempSync(path.join(os.tmpdir(), "stagent-output-scanner-"));
-    process.env.STAGENT_DATA_DIR = tempDataDir;
+    tempDataDir = fs.mkdtempSync(path.join(os.tmpdir(), "ainative-output-scanner-"));
+    process.env.AINATIVE_DATA_DIR = tempDataDir;
     vi.resetModules();
     mockSelect.mockClear();
     mockFrom.mockClear();
@@ -74,7 +74,7 @@ describe("output-scanner", () => {
   });
 
   afterEach(() => {
-    process.env.STAGENT_DATA_DIR = originalDataDir;
+    process.env.AINATIVE_DATA_DIR = originalDataDir;
     fs.rmSync(tempDataDir, { recursive: true, force: true });
   });
 

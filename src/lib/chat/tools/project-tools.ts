@@ -48,7 +48,7 @@ export function projectTools(ctx: ToolContext) {
 
     defineTool(
       "create_project",
-      "Create a new project in Stagent.",
+      "Create a new project in ainative.",
       {
         name: z.string().min(1).max(100).describe("Project name"),
         description: z.string().max(500).optional().describe("Project description"),

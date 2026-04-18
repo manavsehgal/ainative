@@ -17,13 +17,13 @@ dependencies:
 
 ## Description
 
-Stagent's initial visual system leaned heavily on glassmorphism and backdrop blur across dense operational screens. That created an atmospheric look, but it made board views, notification lists, settings forms, and dashboard cards feel softer and less stable than an operator console should.
+ainative's initial visual system leaned heavily on glassmorphism and backdrop blur across dense operational screens. That created an atmospheric look, but it made board views, notification lists, settings forms, and dashboard cards feel softer and less stable than an operator console should.
 
 This feature introduces a solid-surface layer for high-density UI while preserving the broader brand gradients. It also hardens theme startup so the app resolves light or dark mode before paint, reducing flash and making the shell feel more deliberate and technically reliable.
 
 ## User Story
 
-As a Stagent operator, I want dashboard cards, task cards, inbox items, and settings panels to feel crisp and stable so that I can scan and act quickly without visual blur or theme flicker getting in the way.
+As a ainative operator, I want dashboard cards, task cards, inbox items, and settings panels to feel crisp and stable so that I can scan and act quickly without visual blur or theme flicker getting in the way.
 
 ## Technical Approach
 

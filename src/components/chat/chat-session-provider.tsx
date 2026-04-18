@@ -168,7 +168,7 @@ export function ChatSessionProvider({ children }: { children: ReactNode }) {
         let restoredId = payload.initialActiveId;
         if (!restoredId) {
           try {
-            restoredId = localStorage.getItem("stagent-active-chat") || null;
+            restoredId = localStorage.getItem("ainative-active-chat") || null;
           } catch {
             /* localStorage unavailable */
           }
@@ -235,8 +235,8 @@ export function ChatSessionProvider({ children }: { children: ReactNode }) {
     (id: string | null, opts?: { skipLoad?: boolean }) => {
       setActiveId(id);
       try {
-        if (id) localStorage.setItem("stagent-active-chat", id);
-        else localStorage.removeItem("stagent-active-chat");
+        if (id) localStorage.setItem("ainative-active-chat", id);
+        else localStorage.removeItem("ainative-active-chat");
       } catch {
         /* localStorage unavailable */
       }
@@ -343,16 +343,16 @@ export function ChatSessionProvider({ children }: { children: ReactNode }) {
     };
     const handleHelp = () => setHelpDialogOpen(true);
 
-    window.addEventListener("stagent.chat.clear", handleClear);
-    window.addEventListener("stagent.chat.compact", handleCompact);
-    window.addEventListener("stagent.chat.export", handleExport);
-    window.addEventListener("stagent.chat.help", handleHelp);
+    window.addEventListener("ainative.chat.clear", handleClear);
+    window.addEventListener("ainative.chat.compact", handleCompact);
+    window.addEventListener("ainative.chat.export", handleExport);
+    window.addEventListener("ainative.chat.help", handleHelp);
 
     return () => {
-      window.removeEventListener("stagent.chat.clear", handleClear);
-      window.removeEventListener("stagent.chat.compact", handleCompact);
-      window.removeEventListener("stagent.chat.export", handleExport);
-      window.removeEventListener("stagent.chat.help", handleHelp);
+      window.removeEventListener("ainative.chat.clear", handleClear);
+      window.removeEventListener("ainative.chat.compact", handleCompact);
+      window.removeEventListener("ainative.chat.export", handleExport);
+      window.removeEventListener("ainative.chat.help", handleHelp);
     };
   }, [createConversation]);
 

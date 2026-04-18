@@ -9,17 +9,17 @@ dependencies: []
 
 # Edition README Update
 
-> **Superseded by `community-edition-simplification` (2026-04-13).** This feature shipped but was later fully reverted when Stagent pivoted to a 100% free Community Edition with no tiers, billing, or cloud dependency. Kept as historical record.
+> **Superseded by `community-edition-simplification` (2026-04-13).** This feature shipped but was later fully reverted when ainative pivoted to a 100% free Community Edition with no tiers, billing, or cloud dependency. Kept as historical record.
 
 ## Description
 
 Updates the project README.md with Community vs Premium positioning, establishing the product's edition narrative before any code-level gating ships. This is a content-only change with no code dependencies — it can start immediately in Week 1.
 
-The update adds: a feature comparison table, soft limits table, Premium features list, pricing summary with "Get Premium" link, and framing text for the `npx stagent` first-run message.
+The update adds: a feature comparison table, soft limits table, Premium features list, pricing summary with "Get Premium" link, and framing text for the `npx ainative` first-run message.
 
 ## User Story
 
-As a potential user reading the README, I want to understand what Stagent offers for free versus what requires a paid plan, so I can evaluate the product with clear expectations.
+As a potential user reading the README, I want to understand what ainative offers for free versus what requires a paid plan, so I can evaluate the product with clear expectations.
 
 As an existing Community user, I want to see what Premium unlocks so I can decide whether the upgrade is worth it.
 
@@ -31,7 +31,7 @@ As an existing Community user, I want to see what Premium unlocks so I can decid
 
 Header: "Community & Premium Editions"
 
-Framing paragraph: Stagent is free and fully functional as a local-first tool. Premium tiers add cloud sync, expanded limits, and marketplace access for power users and teams.
+Framing paragraph: ainative is free and fully functional as a local-first tool. Premium tiers add cloud sync, expanded limits, and marketplace access for power users and teams.
 
 **2. Feature Comparison Table**:
 
@@ -76,8 +76,8 @@ Framing paragraph: Stagent is free and fully functional as a local-first tool. P
 
 **6. First-Run Message Framing**:
 
-Update the `npx stagent` welcome output text to include:
-- "Running Stagent Community Edition"
+Update the `npx ainative` welcome output text to include:
+- "Running ainative Community Edition"
 - "Upgrade to Premium for cloud sync, expanded limits, and marketplace access"
 - Link to pricing page
 - This is a text constant change in the CLI entry point, not a runtime check

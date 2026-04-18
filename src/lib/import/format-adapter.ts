@@ -1,5 +1,5 @@
 /**
- * Converts non-Stagent skill formats into valid ProfileConfig + SKILL.md pairs.
+ * Converts non-ainative skill formats into valid ProfileConfig + SKILL.md pairs.
  * Handles gstack-style SKILL.md-with-frontmatter → profile.yaml generation.
  */
 
@@ -441,7 +441,7 @@ export function contentHash(content: string): string {
 }
 
 /**
- * Adapt a SKILL.md-only format (e.g., gstack) into a Stagent ProfileConfig.
+ * Adapt a SKILL.md-only format (e.g., gstack) into a ainative ProfileConfig.
  * Reads SKILL.md body + README context for rich descriptions and tags.
  */
 export function adaptSkillMdOnly(
@@ -494,10 +494,10 @@ export function adaptSkillMdOnly(
 }
 
 /**
- * Adapt a Stagent-native format (profile.yaml + SKILL.md) from a remote repo.
+ * Adapt a ainative-native format (profile.yaml + SKILL.md) from a remote repo.
  * Enriches tags/description from SKILL.md body + README if the profile.yaml values are weak.
  */
-export function adaptStagentNative(
+export function adaptAinativeNative(
   skill: DiscoveredSkill,
   skillMd: string,
   profileYamlContent: string,
@@ -544,7 +544,7 @@ export function adaptStagentNative(
     commitSha: repoMeta.commitSha,
     contentHash: contentHash(skillMd),
     importedAt: new Date().toISOString(),
-    sourceFormat: "stagent",
+    sourceFormat: "ainative",
   };
 
   // Set source URL if not already set

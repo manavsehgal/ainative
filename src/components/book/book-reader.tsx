@@ -36,8 +36,8 @@ import { PathSelector } from "./path-selector";
 import { PathProgress } from "./path-progress";
 import { getReadingPath, getNextPathChapter, isChapterInPath } from "@/lib/book/reading-paths";
 
-const PREFS_KEY = "stagent-book-prefs";
-const PROGRESS_KEY = "stagent-book-progress";
+const PREFS_KEY = "ainative-book-prefs";
+const PROGRESS_KEY = "ainative-book-progress";
 const SYNC_DEBOUNCE_MS = 2000;
 
 function loadPrefs(): ReaderPreferences {
@@ -142,7 +142,7 @@ export function BookReader({ chapters: CHAPTERS }: { chapters: BookChapter[] }) 
 
   // Load reading path preference and fetch recommendation
   useEffect(() => {
-    const saved = localStorage.getItem("stagent-book-path");
+    const saved = localStorage.getItem("ainative-book-path");
     if (saved) setActivePath(saved);
 
     fetch("/api/book/stage")
@@ -156,9 +156,9 @@ export function BookReader({ chapters: CHAPTERS }: { chapters: BookChapter[] }) 
   const handlePathChange = useCallback((pathId: string | null) => {
     setActivePath(pathId);
     if (pathId) {
-      localStorage.setItem("stagent-book-path", pathId);
+      localStorage.setItem("ainative-book-path", pathId);
     } else {
-      localStorage.removeItem("stagent-book-path");
+      localStorage.removeItem("ainative-book-path");
     }
   }, []);
 

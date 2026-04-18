@@ -10,7 +10,7 @@ category: infrastructure
 
 ## Context
 
-Stagent is distributed as a git-cloneable repo that every end user is expected to customize via stagent chat itself. This means the same codebase must behave differently in two environments:
+ainative is distributed as a git-cloneable repo that every end user is expected to customize via ainative chat itself. This means the same codebase must behave differently in two environments:
 
 1. **End-user clones** — need a `local` branch auto-created for their customizations, a pre-push hook installed (with consent) to block accidental origin pushes, and machinery to pull upstream updates safely
 2. **The canonical dev repo** — contributors push feature branches to main constantly, merge PRs, run visual E2E tests. If the instance bootstrap ran here, it would install a pre-push hook that blocks all `git push` operations, silently breaking contributor workflow on first `npm run dev` after the feature shipped
@@ -26,14 +26,14 @@ Instance bootstrap lives in `src/lib/instance/bootstrap.ts` exporting an idempot
 The function is gated by **three layers** that together prevent damage to the canonical dev repo:
 
 1. **Primary gate:** `STAGENT_DEV_MODE=true` environment variable, read from `.env.local`. Per-developer, per-machine.
-2. **Secondary gate:** `.git/stagent-dev-mode` sentinel file, a zero-byte marker inside the `.git` directory. `.git/` is never cloned, never committed, never synced. Survives `.env.local` edits and contributor onboarding onto fresh clones — once a contributor runs `touch .git/stagent-dev-mode` they are permanently protected until they explicitly remove it.
+2. **Secondary gate:** `.git/ainative-dev-mode` sentinel file, a zero-byte marker inside the `.git` directory. `.git/` is never cloned, never committed, never synced. Survives `.env.local` edits and contributor onboarding onto fresh clones — once a contributor runs `touch .git/ainative-dev-mode` they are permanently protected until they explicitly remove it.
 3. **Tertiary gate:** **Two-phase execution with explicit consent for destructive operations.**
    - **Phase A** (instanceId generation, `local` branch creation, consent state stamping) runs on every first boot without user consent because every action is non-destructive: `git checkout -b local` does not modify any existing branch, and writing settings rows is reversible via `Clear All Data` or direct SQL.
    - **Phase B** (pre-push hook installation, `branch.X.pushRemote=no_push` git config, writing guardrail state back to settings) runs only when `settings.instance.guardrails.consentStatus === 'enabled'`. First-boot default is `'not_yet'`; the user must explicitly opt in via the upgrade-session Settings → Instance UI.
 
 **Override for feature testing:** `STAGENT_INSTANCE_MODE=true` wins over both dev-mode gates, so contributors can test the instance-bootstrap / upgrade-detection / upgrade-session features in the canonical dev repo without removing their safety gates.
 
-The canonical dev repo sets `STAGENT_DEV_MODE=true` in its `.env.local` and has a `.git/stagent-dev-mode` sentinel file. Both gates are documented in `AGENTS.md` → "Instance Bootstrap Dev-Mode Gate" and `CLAUDE.md` as "do not remove" under any circumstance.
+The canonical dev repo sets `STAGENT_DEV_MODE=true` in its `.env.local` and has a `.git/ainative-dev-mode` sentinel file. Both gates are documented in `AGENTS.md` → "Instance Bootstrap Dev-Mode Gate" and `CLAUDE.md` as "do not remove" under any circumstance.
 
 ## Consequences
 
@@ -49,7 +49,7 @@ The canonical dev repo sets `STAGENT_DEV_MODE=true` in its `.env.local` and has 
 
 - **Single env var, no sentinel, no consent.** Rejected as too fragile — a single accidentally-deleted env var breaks contributor workflow catastrophically.
 - **Consent required for all operations.** Rejected because non-destructive state (instanceId, local branch) is genuinely safe and the upgrade-session feature needs this data to exist before its UI can render.
-- **Bootstrap in a separate CLI command users must run manually** (e.g., `npx stagent init`). Rejected because the whole point of the self-modifying dev environment model is that users shouldn't have to run setup scripts — first `npm run dev` should "just work" with safe defaults.
+- **Bootstrap in a separate CLI command users must run manually** (e.g., `npx ainative init`). Rejected because the whole point of the self-modifying dev environment model is that users shouldn't have to run setup scripts — first `npm run dev` should "just work" with safe defaults.
 - **Bootstrap in a Next.js middleware or API route.** Rejected because middleware runs on every request (wrong) and API routes run on demand (would delay instance setup until first page load, missing the scheduler-startup ordering requirement).
 - **Sentinel file at the repo root instead of `.git/`.** Rejected because repo-root files get committed and propagate to clones — inverting the intended direction (the gate should stop the dev repo but not affect user clones).
 
@@ -59,7 +59,7 @@ The canonical dev repo sets `STAGENT_DEV_MODE=true` in its `.env.local` and has 
 - `src/lib/instance/detect.ts` — `isDevMode()` with env var + sentinel file checks
 - `src/instrumentation.ts` — call site, inside `register()`'s existing `try/catch`
 - `.env.local` (dev repo) — contains `STAGENT_DEV_MODE=true`
-- `.git/stagent-dev-mode` (dev repo) — zero-byte sentinel
+- `.git/ainative-dev-mode` (dev repo) — zero-byte sentinel
 - `AGENTS.md` → "Instance Bootstrap Dev-Mode Gate" section
 - `CLAUDE.md` — short pointer to AGENTS.md section
 - `memory/instance-bootstrap-dev-gate.md` — cross-session project memory

@@ -130,7 +130,7 @@ export function PlaybookDetailView({
 
     // Resolve image paths to GitHub raw URLs (public/readme/ excluded from npm package)
     const GITHUB_RAW_BASE =
-      "https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme";
+      "https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme";
     let resolvedSrc = src;
     if (src.includes("screengrabs/")) {
       resolvedSrc = `${GITHUB_RAW_BASE}/${src.split("screengrabs/").pop()}`;

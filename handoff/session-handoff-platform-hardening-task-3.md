@@ -14,8 +14,8 @@ handoff_reason: Tasks 2 and 1 from the Platform Hardening batch shipped cleanly 
 ## Repo state at handoff
 
 - Branch: `main`. 8 commits ahead of the pre-batch state, all pushed to `origin/main`.
-- Working directory: `/Users/manavsehgal/Developer/stagent`
-- Main dev server: **not running.** A parallel instance `stagent-wealth` runs on `:3000` — **never touch it.** When you need to run the stagent dev server for the smoke test, use `PORT=3010 npm run dev` and kill via `lsof -iTCP:3010 -sTCP:LISTEN -t | xargs -r kill` when done.
+- Working directory: `/Users/manavsehgal/Developer/ainative`
+- Main dev server: **not running.** A parallel instance `ainative-wealth` runs on `:3000` — **never touch it.** When you need to run the ainative dev server for the smoke test, use `PORT=3010 npm run dev` and kill via `lsof -iTCP:3010 -sTCP:LISTEN -t | xargs -r kill` when done.
 - Node process discipline: use `run_in_background: true`, read output via the tool's output file path, and always kill before ending the session.
 - Test command: `npx vitest run <path> 2>&1 | tail -30`
 - Type check: `npx tsc --noEmit 2>&1 | tail -5; echo exit=$?`
@@ -71,7 +71,7 @@ The spec explicitly requires the metric-definition investigation to happen **fir
 
 ### Smoke-test budget — REQUIRED
 
-Task 3 touches `claude-agent.ts` AND `scheduler.ts` AND `task-tools.ts` — **three files in or adjacent to the runtime-registry import cycle** (TDR-032). You **must** budget an end-to-end smoke step in the plan, not just unit tests. Precedent: the feature that preceded this batch (`task-runtime-stagent-mcp-injection`) shipped with 34/34 passing unit tests and `tsc --noEmit` clean but still crashed at first task execution because a static import created a `ReferenceError: Cannot access 'claudeRuntimeAdapter' before initialization`. Unit tests mocking `@/lib/chat/stagent-tools` structurally cannot catch that class of bug. See `.claude/skills/architect/references/tdr-032-runtime-stagent-mcp-injection.md` for the full decision and the smoke-test policy in `.claude/skills/writing-plans/SKILL.md`.
+Task 3 touches `claude-agent.ts` AND `scheduler.ts` AND `task-tools.ts` — **three files in or adjacent to the runtime-registry import cycle** (TDR-032). You **must** budget an end-to-end smoke step in the plan, not just unit tests. Precedent: the feature that preceded this batch (`task-runtime-ainative-mcp-injection`) shipped with 34/34 passing unit tests and `tsc --noEmit` clean but still crashed at first task execution because a static import created a `ReferenceError: Cannot access 'claudeRuntimeAdapter' before initialization`. Unit tests mocking `@/lib/chat/ainative-tools` structurally cannot catch that class of bug. See `.claude/skills/architect/references/tdr-032-runtime-ainative-mcp-injection.md` for the full decision and the smoke-test policy in `.claude/skills/writing-plans/SKILL.md`.
 
 **Smoke-test recipe (tested and known to work in Task 2 of this batch):**
 1. `PORT=3010 npm run dev` in the background
@@ -136,7 +136,7 @@ These are either from `MEMORY.md` or from lessons learned during Tasks 1 and 2 i
 
 4. **Drizzle `sql` template treats column refs as bound params.** Don't write `sql\`...${tasks.turnCount}\`` — use Drizzle's typed query builder (`.where(isNull(tasks.turnCount))`, etc.). Tripped up schedule aggregation work in the past per `MEMORY.md → Lessons Learned`.
 
-5. **Runtime-registry module cycle.** Any static import from `claude-agent.ts` or `scheduler.ts` into `@/lib/chat/stagent-tools` or transitively `@/lib/chat/tools/*` can trigger a `ReferenceError: Cannot access 'claudeRuntimeAdapter' before initialization`. Task 3 only adds DB writes / reads within those files, so the risk is low — but if you find yourself importing a chat-tool helper into claude-agent.ts, use a dynamic `await import()` inside the function body. See TDR-032.
+5. **Runtime-registry module cycle.** Any static import from `claude-agent.ts` or `scheduler.ts` into `@/lib/chat/ainative-tools` or transitively `@/lib/chat/tools/*` can trigger a `ReferenceError: Cannot access 'claudeRuntimeAdapter' before initialization`. Task 3 only adds DB writes / reads within those files, so the risk is low — but if you find yourself importing a chat-tool helper into claude-agent.ts, use a dynamic `await import()` inside the function body. See TDR-032.
 
 6. **`task-tools.ts` was just modified by Task 1.** Line numbers shifted. Do not trust the spec's line-number hints blindly; read the current file. Task 1 added:
    - A static import of `@/lib/agents/profiles/registry` (top of file)
@@ -171,12 +171,12 @@ These are either from `MEMORY.md` or from lessons learned during Tasks 1 and 2 i
 | Test file for task-tools | `src/lib/chat/tools/__tests__/task-tools.test.ts` — created in Task 1, 20 tests already present |
 | Test file for claude-agent | `src/lib/agents/__tests__/claude-agent.test.ts` (has pre-existing tsc errors — ignore lines 83, 408-410, 432, 669) |
 | Clear.ts safety-net test | `src/lib/data/__tests__/clear.test.ts` — run after schema change |
-| TDR-032 | `.claude/skills/architect/references/tdr-032-runtime-stagent-mcp-injection.md` |
+| TDR-032 | `.claude/skills/architect/references/tdr-032-runtime-ainative-mcp-injection.md` |
 | Smoke-test policy | `.claude/skills/writing-plans/SKILL.md` → "Smoke-Test Budget for Runtime-Registry-Adjacent Features" |
 | Plan directory | `docs/superpowers/plans/` — file naming: `2026-04-11-task-turn-observability.md` |
 | Previous batch plans (reference) | `docs/superpowers/plans/2026-04-11-schedule-maxturns-api-control.md`, `docs/superpowers/plans/2026-04-11-task-create-profile-validation.md` — **match the structure of these** for consistency |
 | AGENTS.md testing section | `AGENTS.md` → `## Testing and Verification` |
-| Project memory | `/Users/manavsehgal/.claude/projects/-Users-manavsehgal-Developer-stagent/memory/MEMORY.md` |
+| Project memory | `/Users/manavsehgal/.claude/projects/-Users-manavsehgal-Developer-ainative/memory/MEMORY.md` |
 | Recent commit stack | `git log --oneline -12` |
 
 ## What to do first when the session starts

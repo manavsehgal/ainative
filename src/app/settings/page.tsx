@@ -20,7 +20,7 @@ export default function SettingsPage() {
   return (
     <PageShell
       title="Settings"
-      description="Manage your Stagent configuration"
+      description="Manage your ainative configuration"
     >
       <div className="space-y-6">
         <InstanceSection />

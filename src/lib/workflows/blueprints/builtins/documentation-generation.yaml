@@ -7,7 +7,7 @@ tags: [documentation, api-docs, technical-writing, readme]
 pattern: sequence
 estimatedDuration: "10-15 min"
 difficulty: beginner
-author: stagent
+author: ainative
 
 variables:
   - id: target

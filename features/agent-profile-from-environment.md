@@ -11,13 +11,13 @@ dependencies: [environment-cache, multi-agent-routing]
 
 ## Description
 
-Auto-generate Stagent agent profiles from discovered environment artifacts. When the scanner finds clusters of related skills, MCP servers, and permissions, it suggests profile definitions that combine them into coherent agent capabilities. This closes the loop between environment visibility and task orchestration — your CLI configuration literally becomes your agent capability.
+Auto-generate ainative agent profiles from discovered environment artifacts. When the scanner finds clusters of related skills, MCP servers, and permissions, it suggests profile definitions that combine them into coherent agent capabilities. This closes the loop between environment visibility and task orchestration — your CLI configuration literally becomes your agent capability.
 
 For example: a project with a `code-review` skill, `security-best-practices` skill, and `Bash`/`Read`/`Grep` permissions suggests a "Security Reviewer" profile. A project with a `playwright` MCP server and `quality-manager` skill suggests a "QA Tester" profile.
 
 ## User Story
 
-As a Stagent user who has configured various skills and MCP servers across my CLI tools, I want Stagent to automatically suggest agent profiles based on what it finds in my environment, so I can immediately start routing tasks to specialized agents without manually defining profiles from scratch.
+As a ainative user who has configured various skills and MCP servers across my CLI tools, I want ainative to automatically suggest agent profiles based on what it finds in my environment, so I can immediately start routing tasks to specialized agents without manually defining profiles from scratch.
 
 ## Technical Approach
 

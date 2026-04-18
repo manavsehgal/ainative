@@ -88,7 +88,7 @@ export function taskTools(ctx: ToolContext) {
 
     defineTool(
       "create_task",
-      "Create a new task record in Stagent. Use this when the user asks to create, add, or plan a task.",
+      "Create a new task record in ainative. Use this when the user asks to create, add, or plan a task.",
       {
         title: z.string().min(1).max(200).describe("Task title"),
         description: z

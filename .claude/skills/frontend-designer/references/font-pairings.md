@@ -2,7 +2,7 @@
 
 Curated pairings using Google Fonts. Load via `https://fonts.googleapis.com/css2?family=Font+Name:wght@400;500;700&display=swap`.
 
-**Stagent uses:** Inter (body) + JetBrains Mono (code). See DD-006 in design-decisions.md.
+**ainative uses:** Inter (body) + JetBrains Mono (code). See DD-006 in design-decisions.md.
 
 | Pairing | Display Font | Body Font | Best For |
 |---------|-------------|-----------|----------|

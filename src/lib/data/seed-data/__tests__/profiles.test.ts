@@ -40,7 +40,7 @@ describe("sample profile seeds", () => {
 
   it("defines stable reserved sample profile ids", () => {
     expect(SAMPLE_PROFILE_IDS).toHaveLength(5);
-    expect(SAMPLE_PROFILE_IDS.every((id) => id.startsWith("stagent-sample-"))).toBe(true);
+    expect(SAMPLE_PROFILE_IDS.every((id) => id.startsWith("ainative-sample-"))).toBe(true);
   });
 
   it("returns realistic sample profiles with skill markdown", () => {

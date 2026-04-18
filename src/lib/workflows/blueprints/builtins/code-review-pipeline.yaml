@@ -7,7 +7,7 @@ tags: [code-review, security, quality, owasp]
 pattern: checkpoint
 estimatedDuration: "10-20 min"
 difficulty: intermediate
-author: stagent
+author: ainative
 
 variables:
   - id: target

@@ -8,7 +8,7 @@ describe("parseSkillDir", () => {
   let root: string;
 
   beforeEach(() => {
-    root = mkdtempSync(join(tmpdir(), "stagent-skill-test-"));
+    root = mkdtempSync(join(tmpdir(), "ainative-skill-test-"));
   });
 
   afterEach(() => {

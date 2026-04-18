@@ -11,13 +11,13 @@ dependencies: [chat-engine, environment-scanner]
 
 ## Description
 
-When Stagent runs from a git worktree, agents create files in the main repository folder instead of the active worktree directory. The underlying plumbing works correctly — `STAGENT_LAUNCH_CWD` captures the launch directory and the SDK `cwd` parameter is set — but agents don't receive enough context to understand they're in a worktree or that they should create files relative to their working directory.
+When ainative runs from a git worktree, agents create files in the main repository folder instead of the active worktree directory. The underlying plumbing works correctly — `STAGENT_LAUNCH_CWD` captures the launch directory and the SDK `cwd` parameter is set — but agents don't receive enough context to understand they're in a worktree or that they should create files relative to their working directory.
 
 This feature surfaces existing workspace context (working directory, git branch, worktree status) to agents through the system prompt and the `get_settings` tool, and adds explicit file-creation guidance to prevent path-inference errors.
 
 ## User Story
 
-As a developer running Stagent from a git worktree, I want agents to create files in the worktree directory so that my work stays isolated from the main repository.
+As a developer running ainative from a git worktree, I want agents to create files in the worktree directory so that my work stays isolated from the main repository.
 
 ## Technical Approach
 

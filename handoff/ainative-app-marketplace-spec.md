@@ -1,4 +1,4 @@
-# Stagent App Marketplace — Feature Specification
+# ainative App Marketplace — Feature Specification
 
 **Status:** Draft
 **Date:** 2026-04-09
@@ -9,17 +9,17 @@
 
 ## 1. Problem Statement
 
-Stagent users build powerful domain-specific applications (Wealth Manager, Growth Module, etc.) as compositional layers on top of Stagent's core primitives — Tables, Workflows, Schedules, Profiles, Triggers, and Documents. Today, there is no way to package these applications for distribution. A user who builds a Wealth Manager cannot share it with another Stagent user without manual file copying, and doing so risks leaking private data (real portfolio positions, client contacts, deal pipelines).
+ainative users build powerful domain-specific applications (Wealth Manager, Growth Module, etc.) as compositional layers on top of ainative's core primitives — Tables, Workflows, Schedules, Profiles, Triggers, and Documents. Today, there is no way to package these applications for distribution. A user who builds a Wealth Manager cannot share it with another ainative user without manual file copying, and doing so risks leaking private data (real portfolio positions, client contacts, deal pipelines).
 
 **Goals:**
-1. Define a standard **Stagent App Package** format that bundles UI, logic, profiles, blueprints, table templates, and sample data into a distributable unit
+1. Define a standard **ainative App Package** format that bundles UI, logic, profiles, blueprints, table templates, and sample data into a distributable unit
 2. Enable **conflict-free installation** — multiple apps coexist without touching each other's code or data
 3. Provide **safe distribution** with synthetic sample data replacing creator's private data
 4. Leverage **existing infrastructure** (blueprints, profiles, table templates, marketplace client) rather than building from scratch
 
 ---
 
-## 2. Architecture Analysis — What IS a Stagent App?
+## 2. Architecture Analysis — What IS a ainative App?
 
 ### 2.1 Evidence from Existing Apps
 
@@ -62,7 +62,7 @@ This composability is what makes marketplace distribution viable without forking
 
 ---
 
-## 3. Stagent App Package Format (`.sap`)
+## 3. ainative App Package Format (`.sap`)
 
 ### 3.1 Package Structure
 
@@ -141,7 +141,7 @@ repository: https://github.com/...    # Optional source repo
 
 # Platform compatibility
 platform:
-  minVersion: "0.9.6"                 # Minimum Stagent version
+  minVersion: "0.9.6"                 # Minimum ainative version
   maxVersion: "1.x"                   # Maximum compatible version
 
 # Marketplace metadata
@@ -260,7 +260,7 @@ The distribution architecture separates **registry** (metadata, discovery, monet
 │  GITHUB RELEASES    │  │  SUPABASE STORAGE     ││
 │  (Open-Source Apps)  │  │  (Simple Upload Apps)  ││
 │                     │  │                        ││
-│  • .sap as release  │  │  • stagent-marketplace ││
+│  • .sap as release  │  │  • ainative-marketplace ││
 │    asset            │  │    storage bucket      ││
 │  • Git-native       │  │  • Direct upload from  ││
 │    versioning       │  │    CLI                 ││
@@ -275,7 +275,7 @@ The distribution architecture separates **registry** (metadata, discovery, monet
 
 | Concern | GitHub-Only Problem | Supabase-Only Problem | Hybrid Solution |
 |---------|--------------------|-----------------------|-----------------|
-| **Auth** | Separate auth system from Stagent | ✅ Already wired | Supabase Auth for registry; GitHub tokens optional for source repos |
+| **Auth** | Separate auth system from ainative | ✅ Already wired | Supabase Auth for registry; GitHub tokens optional for source repos |
 | **Monetization** | No built-in payments | ✅ Stripe already integrated | Supabase handles billing; package hosted anywhere |
 | **Discovery** | GitHub search is noisy | ✅ Structured catalog | Supabase Edge Function for curated browse/search |
 | **Open Source** | ✅ PRs, issues, stars | No community workflow | GitHub repos for open-source apps; Supabase just indexes them |
@@ -284,7 +284,7 @@ The distribution architecture separates **registry** (metadata, discovery, monet
 
 ### 4.3 How It Extends the Current Marketplace
 
-The existing marketplace (`blueprints` table + `marketplace-catalog` Edge Function + `stagent-sync` Storage bucket) handles individual workflow blueprints as YAML text. The app package system is a **superset**:
+The existing marketplace (`blueprints` table + `marketplace-catalog` Edge Function + `ainative-sync` Storage bucket) handles individual workflow blueprints as YAML text. The app package system is a **superset**:
 
 ```
 Current:  blueprints table  → YAML text in column   → single workflow
@@ -354,16 +354,16 @@ Marketplace Tabs:
 ```
 
 **Publishing Flow (Operator+ tier):**
-1. Creator runs `stagent app pack` CLI command in their instance
+1. Creator runs `ainative app pack` CLI command in their instance
 2. CLI validates manifest, strips private data, packages into `.sap` archive
 3. Creator reviews package contents (especially seed data)
 4. Creator chooses storage target:
-   - **Supabase Storage** (default): `stagent app publish` uploads `.sap` to `stagent-marketplace` bucket
-   - **GitHub Release**: Creator pushes `.sap` as release asset, provides URL to `stagent app publish --url <github-release-url>`
+   - **Supabase Storage** (default): `ainative app publish` uploads `.sap` to `ainative-marketplace` bucket
+   - **GitHub Release**: Creator pushes `.sap` as release asset, provides URL to `ainative app publish --url <github-release-url>`
 5. Marketplace stores metadata in `app_packages` table with `download_url` pointing to chosen storage
 
 **Browse & Install Flow (Solo+ tier):**
-1. User opens `/marketplace/apps` or runs `stagent app browse`
+1. User opens `/marketplace/apps` or runs `ainative app browse`
 2. Browse by category, search by name/tags
 3. Preview: screenshots, description, what's included (profiles, blueprints, tables)
 4. Click "Install" → approval gate (requires confirmation)
@@ -375,10 +375,10 @@ For offline distribution, private teams, or development:
 
 ```bash
 # Export from creator's instance
-stagent app pack --app wealth-manager --output ./wealth-manager-1.0.0.sap
+ainative app pack --app wealth-manager --output ./wealth-manager-1.0.0.sap
 
 # Import on another instance
-stagent app install ./wealth-manager-1.0.0.sap
+ainative app install ./wealth-manager-1.0.0.sap
 ```
 
 #### Channel 3: Git Repository Import
@@ -386,18 +386,18 @@ stagent app install ./wealth-manager-1.0.0.sap
 For open-source apps distributed via GitHub:
 
 ```bash
-stagent app install https://github.com/user/stagent-wealth-manager
+ainative app install https://github.com/user/ainative-wealth-manager
 ```
 
 The repo must have a `manifest.yaml` at root following the `.sap` structure. The CLI clones the repo, validates, and installs — equivalent to downloading a `.sap` but from source.
 
-#### Channel 4: Official Apps (Stagent GitHub Org)
+#### Channel 4: Official Apps (ainative GitHub Org)
 
-Built-in/official apps (wealth-mgr, growth-mgr) live as repos under the `stagent` GitHub org, dogfooding the distribution model:
+Built-in/official apps (wealth-mgr, growth-mgr) live as repos under the `ainative` GitHub org, dogfooding the distribution model:
 
 ```
-github.com/stagent/app-wealth-manager   → registered in Supabase marketplace
-github.com/stagent/app-growth-module    → registered in Supabase marketplace
+github.com/ainative/app-wealth-manager   → registered in Supabase marketplace
+github.com/ainative/app-growth-module    → registered in Supabase marketplace
 ```
 
 These serve as reference implementations and always carry a "Verified" badge in the marketplace.
@@ -516,25 +516,25 @@ New CLI commands for app creators:
 
 ```bash
 # Validate manifest and package structure
-stagent app validate
+ainative app validate
 
 # Package app into .sap archive (strips private data)
-stagent app pack --output ./my-app-1.0.0.sap
+ainative app pack --output ./my-app-1.0.0.sap
 
 # Publish to marketplace
-stagent app publish
+ainative app publish
 
 # Install from file, URL, or marketplace
-stagent app install <source>
+ainative app install <source>
 
 # List installed apps
-stagent app list
+ainative app list
 
 # Uninstall (removes files, keeps user data in tables)
-stagent app uninstall <app-id>
+ainative app uninstall <app-id>
 
 # Update to new version
-stagent app update <app-id>
+ainative app update <app-id>
 ```
 
 ### 6.5 Seed Data Sanitization
@@ -544,13 +544,13 @@ When packing an app, the CLI ensures no private data leaks through a two-layer a
 **Layer 1 — Automated sanitization** (see §7.2 for full details):
 ```
 1. Creator declares per-column sanitization rules in manifest.yaml
-2. `stagent app seed` snapshots live tables (read-only) and applies rules:
+2. `ainative app seed` snapshots live tables (read-only) and applies rules:
    keep | randomize | shift | faker | derive | redact | hash
 3. CLI runs PII detection pass on sanitized output
 4. Creator reviews diff preview before writing seed files
 ```
 
-**Layer 2 — Pack-time validation** (`stagent app pack`):
+**Layer 2 — Pack-time validation** (`ainative app pack`):
 ```
 1. Table templates contain ONLY column schemas (no row data)
 2. Seed data files must be explicitly declared in manifest
@@ -574,7 +574,7 @@ When packing an app, the CLI ensures no private data leaks through a two-layer a
 
 ### 7.2 Automated Seed Data Generation
 
-The `stagent app seed` command automates the export → sanitize → write flow so creators never have to manually curate CSV files. The creator declares sanitization rules in `manifest.yaml`, and the CLI does the rest.
+The `ainative app seed` command automates the export → sanitize → write flow so creators never have to manually curate CSV files. The creator declares sanitization rules in `manifest.yaml`, and the CLI does the rest.
 
 #### 7.2.1 Sanitization Rules in Manifest
 
@@ -641,16 +641,16 @@ seedData:
 
 ```bash
 # Generate seed data for all tables declared in manifest
-stagent app seed
+ainative app seed
 
 # Generate for a specific table with custom row count
-stagent app seed --table positions --rows 20
+ainative app seed --table positions --rows 20
 
 # Dry-run: show what would be generated without writing files
-stagent app seed --dry-run
+ainative app seed --dry-run
 
 # Preview sanitization: show before/after for 3 sample rows
-stagent app seed --preview --table contacts
+ainative app seed --preview --table contacts
 ```
 
 **What the CLI does internally:**
@@ -681,7 +681,7 @@ stagent app seed --preview --table contacts
 | Creator's real data leaks into package | Column-level sanitization rules + PII detection pass |
 | Export mutates creator's database | Read-only snapshot — source tables are never modified |
 | Installer's existing data overwritten | Apps install into a new Project; seed only runs on fresh install |
-| Creator updates app, re-publishes | Re-run `stagent app seed` to re-snapshot and re-sanitize |
+| Creator updates app, re-publishes | Re-run `ainative app seed` to re-snapshot and re-sanitize |
 | Relational integrity breaks | `shift` preserves relative date order; `hash` preserves foreign key uniqueness; `derive` recalculates dependent values |
 
 ### 7.3 Example: Wealth Manager Seed Data (After Sanitization)
@@ -739,8 +739,8 @@ platform:
   maxVersion: "1.x"
 ```
 
-- If current Stagent version < minVersion → block install with upgrade prompt
-- If current Stagent version > maxVersion → warn but allow (may have breaking changes)
+- If current ainative version < minVersion → block install with upgrade prompt
+- If current ainative version > maxVersion → warn but allow (may have breaking changes)
 - Marketplace shows compatibility badge per app
 
 ### 8.3 Data Safety
@@ -848,16 +848,16 @@ platform:
 
 ```bash
 # Initialize app package structure in current directory
-stagent app init
+ainative app init
 # → Creates manifest.yaml, seed-data/, profiles/, blueprints/, templates/
 
 # Validate package structure and manifest
-stagent app validate
+ainative app validate
 # → Checks: manifest schema, file references, namespace rules,
 #    seed data format, profile/blueprint validity
 
 # Generate seed data from current tables (automated sanitization)
-stagent app seed
+ainative app seed
 # → Reads sanitization rules from manifest.yaml
 # → Snapshots live tables (read-only), applies per-column rules
 # → Runs PII detection, shows diff preview, writes seed-data/*.csv
@@ -869,11 +869,11 @@ stagent app seed
 #   --preview            # Show before/after for 3 sample rows
 
 # Package into distributable archive
-stagent app pack
+ainative app pack
 # → Validates, strips git history, creates wealth-manager-1.0.0.sap
 
 # Publish to marketplace
-stagent app publish
+ainative app publish
 # → Uploads .sap to marketplace, requires Operator+ tier
 ```
 
@@ -881,37 +881,37 @@ stagent app publish
 
 ```bash
 # Browse marketplace
-stagent app browse [--category finance]
+ainative app browse [--category finance]
 
 # Install from marketplace
-stagent app install wealth-manager
+ainative app install wealth-manager
 
 # Install from local file
-stagent app install ./wealth-manager-1.0.0.sap
+ainative app install ./wealth-manager-1.0.0.sap
 
 # Install from git repo
-stagent app install https://github.com/user/stagent-wealth-manager
+ainative app install https://github.com/user/ainative-wealth-manager
 
 # List installed apps
-stagent app list
+ainative app list
 
 # Check for updates
-stagent app outdated
+ainative app outdated
 
 # Update specific app
-stagent app update wealth-manager
+ainative app update wealth-manager
 
 # Disable without removing
-stagent app disable wealth-manager
+ainative app disable wealth-manager
 
 # Re-enable
-stagent app enable wealth-manager
+ainative app enable wealth-manager
 
 # Uninstall (preserves user data)
-stagent app uninstall wealth-manager
+ainative app uninstall wealth-manager
 
 # Uninstall and remove data
-stagent app uninstall wealth-manager --purge
+ainative app uninstall wealth-manager --purge
 ```
 
 ---
@@ -923,17 +923,17 @@ stagent app uninstall wealth-manager --purge
 **Goal**: Creator can pack an app, another user can install it from a file.
 
 - [ ] Define manifest.yaml JSON Schema (Zod validator)
-- [ ] `stagent app init` — scaffold package structure
-- [ ] `stagent app validate` — check manifest + file references
-- [ ] `stagent app pack` — create .sap archive (tarball)
-- [ ] `stagent app install <file>` — unpack and install files
+- [ ] `ainative app init` — scaffold package structure
+- [ ] `ainative app validate` — check manifest + file references
+- [ ] `ainative app pack` — create .sap archive (tarball)
+- [ ] `ainative app install <file>` — unpack and install files
 - [ ] `installed_apps` database table
 - [ ] Dynamic sidebar rendering from app registry
 - [ ] Generalized bootstrap API (`/api/apps/[appId]/bootstrap`)
 - [ ] Seed data loading (CSV → table rows with `_sample` flag)
-- [ ] `stagent app list` / `stagent app uninstall`
+- [ ] `ainative app list` / `ainative app uninstall`
 
-**Deliverables**: wealth-manager.sap and growth-module.sap packages that install cleanly on a fresh Stagent instance.
+**Deliverables**: wealth-manager.sap and growth-module.sap packages that install cleanly on a fresh ainative instance.
 
 ### Phase 2 — Marketplace Distribution
 
@@ -941,8 +941,8 @@ stagent app uninstall wealth-manager --purge
 
 - [ ] Marketplace "Apps" tab UI (`/marketplace/apps`)
 - [ ] App detail page with screenshots and contents preview
-- [ ] `stagent app publish` — upload to Supabase Storage
-- [ ] `stagent app install <marketplace-id>` — download and install
+- [ ] `ainative app publish` — upload to Supabase Storage
+- [ ] `ainative app install <marketplace-id>` — download and install
 - [ ] App ratings and install counts
 - [ ] Installed apps management page (`/settings/apps`)
 - [ ] Version compatibility checking
@@ -952,8 +952,8 @@ stagent app uninstall wealth-manager --purge
 
 **Goal**: Apps can be updated safely and declare dependencies on other apps.
 
-- [ ] `stagent app update` — download new version, apply migrations
-- [ ] `stagent app outdated` — check for available updates
+- [ ] `ainative app update` — download new version, apply migrations
+- [ ] `ainative app outdated` — check for available updates
 - [ ] App dependency resolution (app A requires app B)
 - [ ] Migration hooks (post-update scripts for schema changes)
 - [ ] Local modification detection (warn before overwriting customized files)
@@ -975,10 +975,10 @@ stagent app uninstall wealth-manager --purge
 
 ```bash
 # From the wealth-mgr branch:
-cd /Users/manavsehgal/Developer/stagent-wealth
+cd /Users/manavsehgal/Developer/ainative-wealth
 
 # 1. Initialize app package structure
-stagent app init --id wealth-manager --name "Wealth Manager"
+ainative app init --id wealth-manager --name "Wealth Manager"
 
 # 2. Move files into package layout (already namespaced correctly)
 #    src/app/wealth-manager/ → package src/app/wealth-manager/
@@ -989,25 +989,25 @@ stagent app init --id wealth-manager --name "Wealth Manager"
 #    src/lib/agents/profiles/builtins/wealth-manager/ → package profiles/
 
 # 4. Create table template YAMLs from existing table definitions
-stagent app extract-templates --tables positions,transactions,watchlist,alerts,wash_sales
+ainative app extract-templates --tables positions,transactions,watchlist,alerts,wash_sales
 
 # 5. Generate synthetic seed data
-stagent app seed --table positions --rows 15 --output seed-data/positions.csv
-stagent app seed --table transactions --rows 20 --output seed-data/transactions.csv
+ainative app seed --table positions --rows 15 --output seed-data/positions.csv
+ainative app seed --table transactions --rows 20 --output seed-data/transactions.csv
 
 # 6. Define blueprints from existing workflow specs
 #    (manual: convert feature spec workflows to blueprint YAML)
 
 # 7. Validate and pack
-stagent app validate
-stagent app pack
+ainative app validate
+ainative app pack
 ```
 
 ### 12.2 Growth Module (growth-mgr branch)
 
 ```bash
 # From the growth-mgr branch:
-cd /Users/manavsehgal/Developer/stagent-growth
+cd /Users/manavsehgal/Developer/ainative-growth
 
 # Growth is already well-structured for packaging:
 # - Bootstrap is idempotent (src/lib/growth/bootstrap.ts)
@@ -1016,19 +1016,19 @@ cd /Users/manavsehgal/Developer/stagent-growth
 # - Profiles are defined inline (4 profiles)
 
 # 1. Initialize and extract
-stagent app init --id growth-module --name "Growth Module"
+ainative app init --id growth-module --name "Growth Module"
 
 # 2. Convert inline profiles to YAML files
-stagent app extract-profiles --source src/lib/growth/profiles.ts
+ainative app extract-profiles --source src/lib/growth/profiles.ts
 
 # 3. Generate seed data from templates
-stagent app seed --table contacts --rows 15
-stagent app seed --table accounts --rows 10
-stagent app seed --table opportunities --rows 12
+ainative app seed --table contacts --rows 15
+ainative app seed --table accounts --rows 10
+ainative app seed --table opportunities --rows 12
 
 # 4. Pack
-stagent app validate
-stagent app pack
+ainative app validate
+ainative app pack
 ```
 
 ---
@@ -1037,7 +1037,7 @@ stagent app pack
 
 ### 13.1 Data Sanitization Checklist
 
-Before publishing, the `stagent app pack` command runs these checks:
+Before publishing, the `ainative app pack` command runs these checks:
 
 - [ ] No `.env` or `.env.local` files in package
 - [ ] No API keys, tokens, or credentials in any file
@@ -1067,12 +1067,12 @@ Before publishing, the `stagent app pack` command runs these checks:
 
 ## 14. Open Questions
 
-1. **Hot reload vs restart**: Can apps be installed without restarting the Stagent server? Next.js dynamic routes may require a rebuild.
+1. **Hot reload vs restart**: Can apps be installed without restarting the ainative server? Next.js dynamic routes may require a rebuild.
 2. **Shared CSS**: Should apps be restricted to Tailwind utility classes, or can they ship custom CSS? (Both current apps only add minimal CSS.)
 3. **API route convention**: Should apps be allowed to add custom API routes, or must they exclusively use platform APIs? (Growth uses 1 custom route; Wealth uses 0.)
 4. **Table template inheritance**: Should app templates support "extends" for common patterns (e.g., all CRM apps share a base Contact schema)?
 5. **Multi-project install**: Can the same app be installed into multiple projects (e.g., managing two separate portfolios)?
-6. **Offline-first marketplace**: Should there be a curated set of "featured apps" bundled with Stagent for offline discovery?
+6. **Offline-first marketplace**: Should there be a curated set of "featured apps" bundled with ainative for offline discovery?
 
 ---
 

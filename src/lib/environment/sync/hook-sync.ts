@@ -22,7 +22,7 @@ export function prepareHookSync(
   const existingContent = safeReadFile(targetPath);
 
   // Add a header indicating this was synced
-  const header = `# Hook: ${artifact.name}\n# Synced from ${artifact.tool} by Stagent\n# Source: ${artifact.absPath}\n\n`;
+  const header = `# Hook: ${artifact.name}\n# Synced from ${artifact.tool} by ainative\n# Source: ${artifact.absPath}\n\n`;
 
   return {
     targetPath,

@@ -1,15 +1,15 @@
-# Task Runtime Stagent MCP Injection — Implementation Plan
+# Task Runtime ainative MCP Injection — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Wire the in-process stagent MCP server into `executeClaudeTask` and `resumeClaudeTask` so scheduled and manual tasks running under the `claude-code` runtime have reliable access to `mcp__stagent__*` tools.
+**Goal:** Wire the in-process ainative MCP server into `executeClaudeTask` and `resumeClaudeTask` so scheduled and manual tasks running under the `claude-code` runtime have reliable access to `mcp__stagent__*` tools.
 
-**Architecture:** Small, surgical edit in one file (`src/lib/agents/claude-agent.ts`). Both execution entry points already build a `mergedMcpServers` object and already conditionally pass `allowedTools`. We (1) call the existing `createStagentMcpServer(task.projectId)` factory and merge its output into `mergedMcpServers` under the `stagent` key, and (2) conditionally prepend `"mcp__stagent__*"` to `allowedTools` only when the profile already provided one, so profiles relying on the `claude_code` preset's default tool surface are not accidentally restricted. Permission gating is unchanged — the existing `handleToolPermission` + per-profile `canUseToolPolicy` model is the correct design for task execution and does not need to be ported from the chat engine's inline switch.
+**Architecture:** Small, surgical edit in one file (`src/lib/agents/claude-agent.ts`). Both execution entry points already build a `mergedMcpServers` object and already conditionally pass `allowedTools`. We (1) call the existing `createStagentMcpServer(task.projectId)` factory and merge its output into `mergedMcpServers` under the `ainative` key, and (2) conditionally prepend `"mcp__stagent__*"` to `allowedTools` only when the profile already provided one, so profiles relying on the `claude_code` preset's default tool surface are not accidentally restricted. Permission gating is unchanged — the existing `handleToolPermission` + per-profile `canUseToolPolicy` model is the correct design for task execution and does not need to be ported from the chat engine's inline switch.
 
 **Tech Stack:** TypeScript, `@anthropic-ai/claude-agent-sdk`, Vitest (hoisted mocks), better-sqlite3 via Drizzle (untouched here).
 
-**Spec:** `features/task-runtime-stagent-mcp-injection.md`
-**Source handoff:** `handoff/bug-task-execution-missing-stagent-mcp.md`
+**Spec:** `features/task-runtime-ainative-mcp-injection.md`
+**Source handoff:** `handoff/bug-task-execution-missing-ainative-mcp.md`
 
 ---
 
@@ -17,10 +17,10 @@
 
 | Asset | Path | Why we reuse it |
 |---|---|---|
-| `createToolServer(projectId, onToolResult?)` factory | `src/lib/chat/stagent-tools.ts:70-113` | Returns `{ asMcpServer, forProvider, definitions }`. Call `.asMcpServer()` to get the SDK-compatible server object for the `claude-code` runtime path. **Note:** `createStagentMcpServer` is a deprecated wrapper for chat-engine back-compat — new code should call `createToolServer().asMcpServer()` directly (see the `@deprecated` JSDoc at line 125). |
-| `mergedMcpServers` merge pattern | `src/lib/agents/claude-agent.ts:487-493` (execute) and `:606-612` (resume) | Already merges profile + browser + external MCP servers. We prepend `stagent:` as the first key. |
+| `createToolServer(projectId, onToolResult?)` factory | `src/lib/chat/ainative-tools.ts:70-113` | Returns `{ asMcpServer, forProvider, definitions }`. Call `.asMcpServer()` to get the SDK-compatible server object for the `claude-code` runtime path. **Note:** `createStagentMcpServer` is a deprecated wrapper for chat-engine back-compat — new code should call `createToolServer().asMcpServer()` directly (see the `@deprecated` JSDoc at line 125). |
+| `mergedMcpServers` merge pattern | `src/lib/agents/claude-agent.ts:487-493` (execute) and `:606-612` (resume) | Already merges profile + browser + external MCP servers. We prepend `ainative:` as the first key. |
 | Conditional `allowedTools` pattern | `src/lib/agents/claude-agent.ts:511` and `:631` | Already omits `allowedTools` when the profile has none, preserving preset defaults. We extend this pattern: when present, prepend `"mcp__stagent__*"`; when absent, still omit. |
-| `handleToolPermission` + `ctx.canUseToolPolicy` | `src/lib/agents/claude-agent.ts:516-521` and `:635-641`; `src/lib/agents/tool-permissions.ts:115` | Per-profile `autoApprove`/`autoDeny` + saved user patterns + notification-based approval. Already correctly gates stagent tools by default — any stagent tool not explicitly auto-approved by a profile creates an approval notification. **Do not change.** |
+| `handleToolPermission` + `ctx.canUseToolPolicy` | `src/lib/agents/claude-agent.ts:516-521` and `:635-641`; `src/lib/agents/tool-permissions.ts:115` | Per-profile `autoApprove`/`autoDeny` + saved user patterns + notification-based approval. Already correctly gates ainative tools by default — any ainative tool not explicitly auto-approved by a profile creates an approval notification. **Do not change.** |
 | Test harness with hoisted mocks | `src/lib/agents/__tests__/claude-agent.test.ts` | `vi.mocked(query)` captures call args on the first call. `createMockStream()` helper yields fake SDK frames. `makeTask()` helper produces task rows. `mockQuery.mock.calls[0][0].options` is the assertion surface. |
 
 ## NOT in scope
@@ -28,9 +28,9 @@
 | Excluded item | Why |
 |---|---|
 | Lifting `PERMISSION_GATED_TOOLS` out of `src/lib/chat/engine.ts` into a shared constant | The task path already has a stronger per-profile `canUseToolPolicy` model. The chat engine's inline deny-list is a chat-specific shortcut and porting it would argue with the existing architecture. See spec's Technical Approach third bullet. |
-| Refactoring the stagent tool registry (`createToolServer` / `asMcpServer`) | Factory is already correctly structured and already reused by `openai-direct` / `anthropic-direct`. |
-| Adding wildcard support to `canUseToolPolicy.autoApprove` | Profiles currently list exact tool names. Wildcard support is a separate feature — file as follow-up if any profile needs to auto-approve "all stagent read tools". |
-| Rewiring `openai-direct` / `anthropic-direct` runtimes | They already inject stagent tools via `createToolServer` (see `src/lib/agents/runtime/openai-direct.ts:19`, `anthropic-direct.ts:18`). |
+| Refactoring the ainative tool registry (`createToolServer` / `asMcpServer`) | Factory is already correctly structured and already reused by `openai-direct` / `anthropic-direct`. |
+| Adding wildcard support to `canUseToolPolicy.autoApprove` | Profiles currently list exact tool names. Wildcard support is a separate feature — file as follow-up if any profile needs to auto-approve "all ainative read tools". |
+| Rewiring `openai-direct` / `anthropic-direct` runtimes | They already inject ainative tools via `createToolServer` (see `src/lib/agents/runtime/openai-direct.ts:19`, `anthropic-direct.ts:18`). |
 | Chat engine changes | The chat engine's injection already works. Do not touch `src/lib/chat/engine.ts`. |
 | Backfill of historical tasks | This bug is about runtime wiring, not data. |
 | End-to-end smoke test against a real DB | Vitest mocks are sufficient for the wiring assertion. A real-DB smoke run is step 4 of the verification section, not a coded test. |
@@ -39,38 +39,38 @@
 
 | Failure mode | Detection | Recovery |
 |---|---|---|
-| Profile has `allowedTools: []` (empty array, truthy, falls into the "has allowlist" branch) | Test A (below) covers this — the empty-array case should still prepend `mcp__stagent__*`, producing `["mcp__stagent__*"]`. | Intentional: an empty allowlist plus stagent prepended gives the agent access to stagent tools only. This is the safest interpretation of a profile that explicitly opted out of all other tools. |
-| Profile has `allowedTools: undefined` / not set | Conditional spread omits `allowedTools` entirely. SDK falls back to `claude_code` preset defaults. Stagent tools are still reachable because they are registered via `mcpServers.stagent`. | Intentional: do not pass `allowedTools` unless the profile set one. No code change needed beyond what the current conditional already does. |
+| Profile has `allowedTools: []` (empty array, truthy, falls into the "has allowlist" branch) | Test A (below) covers this — the empty-array case should still prepend `mcp__stagent__*`, producing `["mcp__stagent__*"]`. | Intentional: an empty allowlist plus ainative prepended gives the agent access to ainative tools only. This is the safest interpretation of a profile that explicitly opted out of all other tools. |
+| Profile has `allowedTools: undefined` / not set | Conditional spread omits `allowedTools` entirely. SDK falls back to `claude_code` preset defaults. ainative tools are still reachable because they are registered via `mcpServers.ainative`. | Intentional: do not pass `allowedTools` unless the profile set one. No code change needed beyond what the current conditional already does. |
 | `createStagentMcpServer` throws (tool registry init failure) | The `try { ... } catch` block at `claude-agent.ts:478-548` already catches and calls `handleExecutionError`, which persists `status: "failed"` with `failureReason`. No new handling needed. | Existing `handleExecutionError` path. Task is marked failed with the thrown error message. |
-| Duplicate `stagent` key collision (profile defines its own `stagent` MCP server) | Spread order `{ stagent: stagentServer, ...profileMcpServers }` — profile wins, overwriting ours. | **Problem:** a malicious or misconfigured profile could shadow our stagent server. **Mitigation:** reverse the spread order — `{ ...profileMcpServers, stagent: stagentServer }` — so stagent always wins. Codified in Task 1, Step 3. |
+| Duplicate `ainative` key collision (profile defines its own `ainative` MCP server) | Spread order `{ ainative: stagentServer, ...profileMcpServers }` — profile wins, overwriting ours. | **Problem:** a malicious or misconfigured profile could shadow our ainative server. **Mitigation:** reverse the spread order — `{ ...profileMcpServers, ainative: stagentServer }` — so ainative always wins. Codified in Task 1, Step 3. |
 | `allowedTools` contains a literal `"mcp__stagent__*"` already (profile pre-declared it) | Test D covers: when the profile already lists `"mcp__stagent__*"`, don't duplicate it. | Use `profileAllowedTools.includes("mcp__stagent__*") ? profileAllowedTools : ["mcp__stagent__*", ...profileAllowedTools]`. Simpler alternative: deduplicate via `Array.from(new Set(...))`. Task 1 uses the `Set` form — cleaner and handles overlaps from browser/external patterns too. |
 
 ## File Structure
 
 **Modified:**
 - `src/lib/agents/claude-agent.ts` — 2 edit sites: `executeClaudeTask` MCP merge (~line 487-514) and `resumeClaudeTask` MCP merge (~line 606-634). One new import.
-- `src/lib/agents/__tests__/claude-agent.test.ts` — add 4 new tests (2 per execution path), plus one new `vi.mock` block for `@/lib/chat/stagent-tools`.
+- `src/lib/agents/__tests__/claude-agent.test.ts` — add 4 new tests (2 per execution path), plus one new `vi.mock` block for `@/lib/chat/ainative-tools`.
 
 **Created:** None.
 
-**Unchanged (do not touch):** `src/lib/chat/engine.ts`, `src/lib/chat/stagent-tools.ts`, `src/lib/agents/tool-permissions.ts`, `src/lib/agents/profiles/**`, any runtime adapter under `src/lib/agents/runtime/`.
+**Unchanged (do not touch):** `src/lib/chat/engine.ts`, `src/lib/chat/ainative-tools.ts`, `src/lib/agents/tool-permissions.ts`, `src/lib/agents/profiles/**`, any runtime adapter under `src/lib/agents/runtime/`.
 
 ---
 
-## Task 1: Wire stagent injection into `executeClaudeTask`
+## Task 1: Wire ainative injection into `executeClaudeTask`
 
 **Files:**
 - Modify: `src/lib/agents/claude-agent.ts` (imports + `executeClaudeTask` MCP merge at lines 487-514)
-- Test: `src/lib/agents/__tests__/claude-agent.test.ts` (add `vi.mock` for stagent-tools + 2 new tests in Group A)
+- Test: `src/lib/agents/__tests__/claude-agent.test.ts` (add `vi.mock` for ainative-tools + 2 new tests in Group A)
 
 ---
 
-- [ ] **Step 1: Add the stagent-tools mock to the test file**
+- [ ] **Step 1: Add the ainative-tools mock to the test file**
 
 Open `src/lib/agents/__tests__/claude-agent.test.ts`. Locate the block of `vi.mock(...)` calls around lines 81-142 (after the hoisted mock declarations, before the static `import { executeClaudeTask, resumeClaudeTask } from "../claude-agent"` at line 147). Add this mock at the end of the block, just before the static imports:
 
 ```ts
-vi.mock("@/lib/chat/stagent-tools", () => ({
+vi.mock("@/lib/chat/ainative-tools", () => ({
   createToolServer: vi.fn((_projectId?: string | null) => ({
     asMcpServer: () => ({ __mockStagentServer: true }),
   })),
@@ -79,12 +79,12 @@ vi.mock("@/lib/chat/stagent-tools", () => ({
 
 This returns a sentinel object whose identity we can assert on in later steps. Mocking `createToolServer` (not the deprecated `createStagentMcpServer` wrapper) matches the production import.
 
-- [ ] **Step 2: Write the failing test — `executeClaudeTask` injects stagent into `mcpServers`**
+- [ ] **Step 2: Write the failing test — `executeClaudeTask` injects ainative into `mcpServers`**
 
 In `src/lib/agents/__tests__/claude-agent.test.ts`, inside the `describe("executeClaudeTask", ...)` block (around line 215), add this test after the existing A1/A2 tests:
 
 ```ts
-it("A-stagent-1: injects stagent MCP server into query mcpServers", async () => {
+it("A-ainative-1: injects ainative MCP server into query mcpServers", async () => {
   mockWhere.mockResolvedValueOnce([makeTask({ projectId: "proj-7" })]);
   mockQuery.mockReturnValue(
     createMockStream([
@@ -98,7 +98,7 @@ it("A-stagent-1: injects stagent MCP server into query mcpServers", async () => 
     options: { mcpServers?: Record<string, unknown> };
   };
   expect(queryCall.options.mcpServers).toBeDefined();
-  expect(queryCall.options.mcpServers!.stagent).toEqual({ __mockStagentServer: true });
+  expect(queryCall.options.mcpServers!.ainative).toEqual({ __mockStagentServer: true });
 });
 ```
 
@@ -106,10 +106,10 @@ it("A-stagent-1: injects stagent MCP server into query mcpServers", async () => 
 
 Run:
 ```bash
-npx vitest run src/lib/agents/__tests__/claude-agent.test.ts -t "A-stagent-1"
+npx vitest run src/lib/agents/__tests__/claude-agent.test.ts -t "A-ainative-1"
 ```
 
-Expected: FAIL. Either `mcpServers` is undefined (current behavior when `mergedMcpServers` is empty due to the `Object.keys().length > 0` guard) or `mcpServers.stagent` is missing.
+Expected: FAIL. Either `mcpServers` is undefined (current behavior when `mergedMcpServers` is empty due to the `Object.keys().length > 0` guard) or `mcpServers.ainative` is missing.
 
 - [ ] **Step 4: Add the import to `claude-agent.ts`**
 
@@ -122,12 +122,12 @@ import { getBrowserMcpServers, getExternalMcpServers } from "./browser-mcp";
 Immediately after this line, add:
 
 ```ts
-import { createToolServer } from "@/lib/chat/stagent-tools";
+import { createToolServer } from "@/lib/chat/ainative-tools";
 ```
 
 (`createStagentMcpServer` is a `@deprecated` wrapper — new code uses `createToolServer(...).asMcpServer()`.)
 
-- [ ] **Step 5: Inject stagent into `executeClaudeTask`'s MCP merge**
+- [ ] **Step 5: Inject ainative into `executeClaudeTask`'s MCP merge**
 
 Still in `src/lib/agents/claude-agent.ts`, find this block around lines 487-493:
 
@@ -149,17 +149,17 @@ Replace it with:
       getBrowserMcpServers(),
       getExternalMcpServers(),
     ]);
-    // Inject the in-process stagent MCP server so scheduled and manual tasks
+    // Inject the in-process ainative MCP server so scheduled and manual tasks
     // have access to mcp__stagent__* tools (table CRUD, notifications, etc.).
-    // Spread profile/browser/external first, then stagent — ensures no profile
-    // can accidentally shadow our server under the `stagent` key.
+    // Spread profile/browser/external first, then ainative — ensures no profile
+    // can accidentally shadow our server under the `ainative` key.
     const stagentServer = createToolServer(task.projectId).asMcpServer();
     const profileMcpServers = ctx.payload?.mcpServers ?? {};
     const mergedMcpServers = {
       ...profileMcpServers,
       ...browserServers,
       ...externalServers,
-      stagent: stagentServer,
+      ainative: stagentServer,
     };
 ```
 
@@ -167,19 +167,19 @@ Replace it with:
 
 Run:
 ```bash
-npx vitest run src/lib/agents/__tests__/claude-agent.test.ts -t "A-stagent-1"
+npx vitest run src/lib/agents/__tests__/claude-agent.test.ts -t "A-ainative-1"
 ```
 
-Expected: PASS. `mockQuery.mock.calls[0][0].options.mcpServers.stagent` equals `{ __mockStagentServer: true }`.
+Expected: PASS. `mockQuery.mock.calls[0][0].options.mcpServers.ainative` equals `{ __mockStagentServer: true }`.
 
 - [ ] **Step 7: Write the failing test — `executeClaudeTask` prepends `mcp__stagent__*` only when profile has an allowlist**
 
 Back in the test file, the default `mockGetProfile` mock (line 199-204) returns `{ allowedTools: undefined }`, so `ctx.payload?.allowedTools` will also be falsy by default. We need a test that sets up a profile with an explicit allowlist.
 
-Add this test right after A-stagent-1:
+Add this test right after A-ainative-1:
 
 ```ts
-it("A-stagent-2: prepends mcp__stagent__* when profile has allowedTools", async () => {
+it("A-ainative-2: prepends mcp__stagent__* when profile has allowedTools", async () => {
   mockWhere.mockResolvedValueOnce([makeTask({ projectId: "proj-7" })]);
   mockGetProfile.mockReturnValueOnce({
     id: "restricted",
@@ -212,10 +212,10 @@ it("A-stagent-2: prepends mcp__stagent__* when profile has allowedTools", async 
 
 - [ ] **Step 8: Write the failing test — `executeClaudeTask` omits `allowedTools` entirely when profile has none**
 
-Add this test right after A-stagent-2:
+Add this test right after A-ainative-2:
 
 ```ts
-it("A-stagent-3: omits allowedTools when profile has none (preset defaults preserved)", async () => {
+it("A-ainative-3: omits allowedTools when profile has none (preset defaults preserved)", async () => {
   mockWhere.mockResolvedValueOnce([makeTask({ projectId: "proj-7" })]);
   // Default mockGetProfile returns allowedTools: undefined, so ctx.payload.allowedTools
   // will also be undefined — the query() call should NOT include an allowedTools option.
@@ -238,11 +238,11 @@ it("A-stagent-3: omits allowedTools when profile has none (preset defaults prese
 
 Run:
 ```bash
-npx vitest run src/lib/agents/__tests__/claude-agent.test.ts -t "A-stagent-2"
-npx vitest run src/lib/agents/__tests__/claude-agent.test.ts -t "A-stagent-3"
+npx vitest run src/lib/agents/__tests__/claude-agent.test.ts -t "A-ainative-2"
+npx vitest run src/lib/agents/__tests__/claude-agent.test.ts -t "A-ainative-3"
 ```
 
-Expected: A-stagent-2 FAILS (current code passes profile's `allowedTools` as-is without prepending). A-stagent-3 PASSES already (current conditional already omits when falsy) — that's fine, it's a regression test.
+Expected: A-ainative-2 FAILS (current code passes profile's `allowedTools` as-is without prepending). A-ainative-3 PASSES already (current conditional already omits when falsy) — that's fine, it's a regression test.
 
 - [ ] **Step 10: Implement the `allowedTools` merge in `executeClaudeTask`**
 
@@ -256,9 +256,9 @@ Replace it with:
 
 ```ts
         // When the profile set an explicit allowedTools, prepend mcp__stagent__*
-        // so the stagent tool registration is not filtered out. When the profile
-        // has no allowedTools, fall through to the preset defaults (stagent tools
-        // are still reachable because they're registered via mcpServers.stagent).
+        // so the ainative tool registration is not filtered out. When the profile
+        // has no allowedTools, fall through to the preset defaults (ainative tools
+        // are still reachable because they're registered via mcpServers.ainative).
         ...(ctx.payload?.allowedTools && {
           allowedTools: Array.from(
             new Set(["mcp__stagent__*", ...ctx.payload.allowedTools])
@@ -270,10 +270,10 @@ Replace it with:
 
 Run:
 ```bash
-npx vitest run src/lib/agents/__tests__/claude-agent.test.ts -t "A-stagent"
+npx vitest run src/lib/agents/__tests__/claude-agent.test.ts -t "A-ainative"
 ```
 
-Expected: all three (A-stagent-1, A-stagent-2, A-stagent-3) PASS.
+Expected: all three (A-ainative-1, A-ainative-2, A-ainative-3) PASS.
 
 - [ ] **Step 12: Run the full `claude-agent.test.ts` file to check for regressions**
 
@@ -282,34 +282,34 @@ Run:
 npx vitest run src/lib/agents/__tests__/claude-agent.test.ts
 ```
 
-Expected: all tests PASS (existing A1/A2/B/C/D groups and the new A-stagent tests).
+Expected: all tests PASS (existing A1/A2/B/C/D groups and the new A-ainative tests).
 
-If any previously-passing test now fails, diagnose before proceeding. Most likely failure: a Group A test that previously asserted `mcpServers` was absent because the merge was empty — the new code always merges `stagent`, so `mcpServers` is now always present in the call args. Adjust the existing assertion to be `expect(queryCall.options.mcpServers).toBeDefined()` or inspect specific keys.
+If any previously-passing test now fails, diagnose before proceeding. Most likely failure: a Group A test that previously asserted `mcpServers` was absent because the merge was empty — the new code always merges `ainative`, so `mcpServers` is now always present in the call args. Adjust the existing assertion to be `expect(queryCall.options.mcpServers).toBeDefined()` or inspect specific keys.
 
 - [ ] **Step 13: Commit**
 
 ```bash
 git add src/lib/agents/claude-agent.ts src/lib/agents/__tests__/claude-agent.test.ts
 git commit -m "$(cat <<'EOF'
-fix(agents): inject stagent MCP into executeClaudeTask
+fix(agents): inject ainative MCP into executeClaudeTask
 
 The claude-code runtime's executeClaudeTask was missing the in-process
-stagent MCP server that chat engine, openai-direct, and anthropic-direct
-all inject. Scheduled and manual tasks reported "No stagent table MCP
+ainative MCP server that chat engine, openai-direct, and anthropic-direct
+all inject. Scheduled and manual tasks reported "No ainative table MCP
 tools are available" when their prompts tried to read/write tables.
 
 Adds createStagentMcpServer(task.projectId) to the mergedMcpServers
 merge, and prepends mcp__stagent__* to allowedTools only when the
 profile has an explicit allowlist (profiles without one continue to
 use the claude_code preset defaults). The per-profile canUseToolPolicy
-permission model is untouched — it already gates dangerous stagent
+permission model is untouched — it already gates dangerous ainative
 tools via handleToolPermission.
 
-Tests A-stagent-1/2/3 cover the three branches. resumeClaudeTask
+Tests A-ainative-1/2/3 cover the three branches. resumeClaudeTask
 will receive the same treatment in the next commit.
 
-Refs: features/task-runtime-stagent-mcp-injection.md
-      handoff/bug-task-execution-missing-stagent-mcp.md
+Refs: features/task-runtime-ainative-mcp-injection.md
+      handoff/bug-task-execution-missing-ainative-mcp.md
 
 Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
 EOF
@@ -320,11 +320,11 @@ EOF
 
 ## Task 2: Extract shared helpers and mirror into `resumeClaudeTask`
 
-**Why this task extracts helpers first:** The code review of Task 1 pointed out that the two execution paths (`executeClaudeTask` and `resumeClaudeTask`) have already drifted once — that drift is literally the bug this feature fixes. Duplicating the stagent injection inline at two call sites recreates the drift vector. Extracting two tiny private helpers at the top of the file and calling them from both sites makes future drift structurally impossible. This was a judgment call deferred by Task 1 (YAGNI, two call sites) that Task 2 reverses now that we can see both call sites in context.
+**Why this task extracts helpers first:** The code review of Task 1 pointed out that the two execution paths (`executeClaudeTask` and `resumeClaudeTask`) have already drifted once — that drift is literally the bug this feature fixes. Duplicating the ainative injection inline at two call sites recreates the drift vector. Extracting two tiny private helpers at the top of the file and calling them from both sites makes future drift structurally impossible. This was a judgment call deferred by Task 1 (YAGNI, two call sites) that Task 2 reverses now that we can see both call sites in context.
 
 **Files:**
 - Modify: `src/lib/agents/claude-agent.ts` — add two private helpers near the top of the file (below imports), refactor `executeClaudeTask` (lines 488-530) and `resumeClaudeTask` (lines 606-634) to call them.
-- Test: `src/lib/agents/__tests__/claude-agent.test.ts` — add 2 new tests for `resumeClaudeTask`, and add one line to A-stagent-1 and R-stagent-1 asserting `createToolServer` was called with the task's `projectId`.
+- Test: `src/lib/agents/__tests__/claude-agent.test.ts` — add 2 new tests for `resumeClaudeTask`, and add one line to A-ainative-1 and R-ainative-1 asserting `createToolServer` was called with the task's `projectId`.
 
 ---
 
@@ -333,7 +333,7 @@ EOF
 Open `src/lib/agents/__tests__/claude-agent.test.ts` and locate the `describe("resumeClaudeTask", ...)` block. If it does not exist, create it at the end of the file after Group D. Add these two tests:
 
 ```ts
-it("R-stagent-1: injects stagent MCP server into query mcpServers on resume", async () => {
+it("R-ainative-1: injects ainative MCP server into query mcpServers on resume", async () => {
   mockWhere.mockResolvedValueOnce([
     makeTask({
       projectId: "proj-7",
@@ -354,13 +354,13 @@ it("R-stagent-1: injects stagent MCP server into query mcpServers on resume", as
   };
   expect(queryCall.options.resume).toBe("session-abc");
   expect(queryCall.options.mcpServers).toBeDefined();
-  expect(queryCall.options.mcpServers!.stagent).toEqual({ __mockStagentServer: true });
+  expect(queryCall.options.mcpServers!.ainative).toEqual({ __mockStagentServer: true });
   // Review note: assert the factory saw the task's projectId so a future
   // regression that passes undefined or the wrong id is caught.
   expect(vi.mocked(createToolServer)).toHaveBeenCalledWith("proj-7");
 });
 
-it("R-stagent-2: prepends mcp__stagent__* on resume when profile has allowedTools", async () => {
+it("R-ainative-2: prepends mcp__stagent__* on resume when profile has allowedTools", async () => {
   mockWhere.mockResolvedValueOnce([
     makeTask({
       projectId: "proj-7",
@@ -387,7 +387,7 @@ it("R-stagent-2: prepends mcp__stagent__* on resume when profile has allowedTool
   };
   expect(queryCall.options.allowedTools).toContain("mcp__stagent__*");
   expect(queryCall.options.allowedTools).toContain("Read");
-  // Assert ordering: stagent prepended, not appended. The comment in the
+  // Assert ordering: ainative prepended, not appended. The comment in the
   // helper claims "prepend" — this test pins that contract.
   expect(queryCall.options.allowedTools![0]).toBe("mcp__stagent__*");
 });
@@ -396,14 +396,14 @@ it("R-stagent-2: prepends mcp__stagent__* on resume when profile has allowedTool
 For the `createToolServer` assertion to work, the mocked factory must be importable in the test. Near the top-level static imports (after `import { query } from "@anthropic-ai/claude-agent-sdk"`), add:
 
 ```ts
-import { createToolServer } from "@/lib/chat/stagent-tools";
+import { createToolServer } from "@/lib/chat/ainative-tools";
 ```
 
 This works because `vi.mock` is hoisted — the import picks up the mocked factory, not the real one.
 
-- [ ] **Step 2: Add the same `toHaveBeenCalledWith` assertion to A-stagent-1**
+- [ ] **Step 2: Add the same `toHaveBeenCalledWith` assertion to A-ainative-1**
 
-While editing the test file, also add one line to the existing A-stagent-1 test (from Task 1) right before its closing brace:
+While editing the test file, also add one line to the existing A-ainative-1 test (from Task 1) right before its closing brace:
 
 ```ts
   expect(vi.mocked(createToolServer)).toHaveBeenCalledWith("proj-7");
@@ -414,18 +414,18 @@ This hardens Task 1's test against the same regression class.
 - [ ] **Step 3: Run the new/updated tests to verify they fail**
 
 ```bash
-npx vitest run src/lib/agents/__tests__/claude-agent.test.ts -t "R-stagent"
-npx vitest run src/lib/agents/__tests__/claude-agent.test.ts -t "A-stagent-1"
+npx vitest run src/lib/agents/__tests__/claude-agent.test.ts -t "R-ainative"
+npx vitest run src/lib/agents/__tests__/claude-agent.test.ts -t "A-ainative-1"
 ```
 
-Expected: R-stagent-1 and R-stagent-2 FAIL (resume path has no stagent injection yet). A-stagent-1 may PASS or FAIL depending on the mock reset behavior — if `vi.mocked(createToolServer).mock.calls` includes the Task 1 call, it passes; if the mock is reset between tests, it still passes because this test just awaited `executeClaudeTask` which triggers the call. Either way, it should be green after Step 3. If it's red, the `vi.mocked(createToolServer)` access is broken — diagnose before proceeding.
+Expected: R-ainative-1 and R-ainative-2 FAIL (resume path has no ainative injection yet). A-ainative-1 may PASS or FAIL depending on the mock reset behavior — if `vi.mocked(createToolServer).mock.calls` includes the Task 1 call, it passes; if the mock is reset between tests, it still passes because this test just awaited `executeClaudeTask` which triggers the call. Either way, it should be green after Step 3. If it's red, the `vi.mocked(createToolServer)` access is broken — diagnose before proceeding.
 
 - [ ] **Step 4: Add the two helpers to `claude-agent.ts`**
 
 Open `src/lib/agents/claude-agent.ts`. Below the import block (after line ~45, before the first function definition), add:
 
 ```ts
-// ─── Stagent MCP injection helpers ──────────────────────────────────────
+// ─── ainative MCP injection helpers ──────────────────────────────────────
 //
 // Shared by executeClaudeTask and resumeClaudeTask so the two runtime entry
 // points cannot drift apart. The drift between chat engine injection and
@@ -433,9 +433,9 @@ Open `src/lib/agents/claude-agent.ts`. Below the import block (after line ~45, b
 // fixes — do not duplicate these patterns inline.
 
 /**
- * Merge the in-process stagent MCP server into a profile/browser/external
- * MCP server map. Stagent is spread LAST so no upstream source can shadow
- * the `stagent` key with its own server.
+ * Merge the in-process ainative MCP server into a profile/browser/external
+ * MCP server map. ainative is spread LAST so no upstream source can shadow
+ * the `ainative` key with its own server.
  */
 function withStagentMcpServer(
   profileServers: Record<string, unknown>,
@@ -448,13 +448,13 @@ function withStagentMcpServer(
     ...profileServers,
     ...browserServers,
     ...externalServers,
-    stagent: stagentServer,
+    ainative: stagentServer,
   };
 }
 
 /**
  * Prepend `mcp__stagent__*` to a profile's explicit allowedTools so the
- * stagent tool registration survives the SDK preset filter. Returns
+ * ainative tool registration survives the SDK preset filter. Returns
  * `undefined` when the profile has no allowedTools — callers should spread
  * the result conditionally so the SDK falls through to preset defaults in
  * that case.
@@ -477,17 +477,17 @@ Still in `src/lib/agents/claude-agent.ts`, find the MCP merge block in `executeC
       getBrowserMcpServers(),
       getExternalMcpServers(),
     ]);
-    // Inject the in-process stagent MCP server so scheduled and manual tasks
+    // Inject the in-process ainative MCP server so scheduled and manual tasks
     // have access to mcp__stagent__* tools (table CRUD, notifications, etc.).
-    // Spread profile/browser/external first, then stagent — ensures no profile
-    // can accidentally shadow our server under the `stagent` key.
+    // Spread profile/browser/external first, then ainative — ensures no profile
+    // can accidentally shadow our server under the `ainative` key.
     const stagentServer = createToolServer(task.projectId).asMcpServer();
     const profileMcpServers = ctx.payload?.mcpServers ?? {};
     const mergedMcpServers = {
       ...profileMcpServers,
       ...browserServers,
       ...externalServers,
-      stagent: stagentServer,
+      ainative: stagentServer,
     };
 ```
 
@@ -495,7 +495,7 @@ Replace it with:
 
 ```ts
     // Merge browser + external MCP servers, then inject the in-process
-    // stagent server via the shared helper (see withStagentMcpServer above).
+    // ainative server via the shared helper (see withStagentMcpServer above).
     const [browserServers, externalServers] = await Promise.all([
       getBrowserMcpServers(),
       getExternalMcpServers(),
@@ -512,9 +512,9 @@ Then find the `allowedTools` spread in the same function's `query({ options: { .
 
 ```ts
         // When the profile set an explicit allowedTools, prepend mcp__stagent__*
-        // so the stagent tool registration is not filtered out. When the profile
-        // has no allowedTools, fall through to the preset defaults (stagent tools
-        // are still reachable because they're registered via mcpServers.stagent).
+        // so the ainative tool registration is not filtered out. When the profile
+        // has no allowedTools, fall through to the preset defaults (ainative tools
+        // are still reachable because they're registered via mcpServers.ainative).
         ...(ctx.payload?.allowedTools && {
           allowedTools: Array.from(
             new Set(["mcp__stagent__*", ...ctx.payload.allowedTools])
@@ -538,10 +538,10 @@ Replace it with:
 - [ ] **Step 6: Run all Task 1 tests to confirm no regression from the refactor**
 
 ```bash
-npx vitest run src/lib/agents/__tests__/claude-agent.test.ts -t "A-stagent"
+npx vitest run src/lib/agents/__tests__/claude-agent.test.ts -t "A-ainative"
 ```
 
-Expected: all three A-stagent tests PASS. The refactor is behavior-preserving.
+Expected: all three A-ainative tests PASS. The refactor is behavior-preserving.
 
 - [ ] **Step 7: Apply the helpers in `resumeClaudeTask`**
 
@@ -561,7 +561,7 @@ Replace with:
 
 ```ts
     // Merge browser + external MCP servers, then inject the in-process
-    // stagent server via the shared helper (see withStagentMcpServer).
+    // ainative server via the shared helper (see withStagentMcpServer).
     const [browserServers, externalServers] = await Promise.all([
       getBrowserMcpServers(),
       getExternalMcpServers(),
@@ -592,10 +592,10 @@ Replace with the same pattern used in Step 5:
 - [ ] **Step 8: Run the resume tests to verify they pass**
 
 ```bash
-npx vitest run src/lib/agents/__tests__/claude-agent.test.ts -t "R-stagent"
+npx vitest run src/lib/agents/__tests__/claude-agent.test.ts -t "R-ainative"
 ```
 
-Expected: both R-stagent-1 and R-stagent-2 PASS.
+Expected: both R-ainative-1 and R-ainative-2 PASS.
 
 - [ ] **Step 9: Run the full `claude-agent.test.ts` file**
 
@@ -603,7 +603,7 @@ Expected: both R-stagent-1 and R-stagent-2 PASS.
 npx vitest run src/lib/agents/__tests__/claude-agent.test.ts
 ```
 
-Expected: all tests PASS — 3 A-stagent tests, 2 R-stagent tests, and all pre-existing tests (total should be 34).
+Expected: all tests PASS — 3 A-ainative tests, 2 R-ainative tests, and all pre-existing tests (total should be 34).
 
 - [ ] **Step 10: Run the TypeScript check**
 
@@ -618,11 +618,11 @@ Expected: exit 0, or the same pre-existing errors noted at the end of Task 1 (`c
 ```bash
 git add src/lib/agents/claude-agent.ts src/lib/agents/__tests__/claude-agent.test.ts
 git commit -m "$(cat <<'EOF'
-fix(agents): extract stagent helpers + inject into resumeClaudeTask
+fix(agents): extract ainative helpers + inject into resumeClaudeTask
 
 Introduces two private helpers in claude-agent.ts — withStagentMcpServer
 and withStagentAllowedTools — that both executeClaudeTask and resumeClaudeTask
-now call. Previously the stagent injection was inline in executeClaudeTask
+now call. Previously the ainative injection was inline in executeClaudeTask
 (092f925); this commit refactors that call site to use the shared helpers
 and applies the same helpers to resumeClaudeTask.
 
@@ -631,16 +631,16 @@ the two runtime entry points have already drifted once — that drift is
 literally the bug this feature fixes. Shared helpers make the same class
 of drift structurally impossible going forward.
 
-New tests R-stagent-1/2 cover the resume path. Existing A-stagent-1 and
-new R-stagent-1 now also assert createToolServer was called with the
-task's projectId. R-stagent-2 asserts mcp__stagent__* is prepended
+New tests R-ainative-1/2 cover the resume path. Existing A-ainative-1 and
+new R-ainative-1 now also assert createToolServer was called with the
+task's projectId. R-ainative-2 asserts mcp__stagent__* is prepended
 (not merely present) so future reorderings can't silently break the
 preset filter behavior.
 
-With this commit, features/task-runtime-stagent-mcp-injection.md is
+With this commit, features/task-runtime-ainative-mcp-injection.md is
 fully implemented on both claude-code runtime entry points.
 
-Refs: features/task-runtime-stagent-mcp-injection.md
+Refs: features/task-runtime-ainative-mcp-injection.md
 
 Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
 EOF
@@ -651,7 +651,7 @@ EOF
 
 ## Task 3: End-to-end smoke verification
 
-**Purpose:** The unit tests prove the wiring reaches the SDK call with the right shape. This task proves that a real task against a real stagent tool invocation actually works end-to-end — which is the acceptance criterion the user actually cares about.
+**Purpose:** The unit tests prove the wiring reaches the SDK call with the right shape. This task proves that a real task against a real ainative tool invocation actually works end-to-end — which is the acceptance criterion the user actually cares about.
 
 **Files:** None (manual verification; record results in the spec's References section).
 
@@ -665,9 +665,9 @@ npm run dev
 
 Expected: server boots on :3000 without errors. Wait for "✓ Ready".
 
-- [ ] **Step 2: Create a test task that exercises stagent MCP**
+- [ ] **Step 2: Create a test task that exercises ainative MCP**
 
-Using the chat interface or a direct `create_task` MCP call, create a task whose prompt explicitly uses a stagent tool. A minimal example:
+Using the chat interface or a direct `create_task` MCP call, create a task whose prompt explicitly uses a ainative tool. A minimal example:
 
 > Use `mcp__stagent__query_table` to list rows from any table in the current project. Report the row count. If no tables exist, say "no tables" and stop.
 
@@ -677,7 +677,7 @@ Assign it to the `general` profile (or any profile that does not override `allow
 
 Approve execution via the Inbox or the chat UI's approval toast. Watch the task's log stream.
 
-Expected: the agent successfully invokes `mcp__stagent__query_table` (you should see a `tool_use` log entry with that tool name) and reports back with either the row count or "no tables". The agent must NOT report "No stagent table MCP tools are available in this session."
+Expected: the agent successfully invokes `mcp__stagent__query_table` (you should see a `tool_use` log entry with that tool name) and reports back with either the row count or "no tables". The agent must NOT report "No ainative table MCP tools are available in this session."
 
 - [ ] **Step 4: Verify with a schedule (bonus, skip if time-pressed)**
 
@@ -685,20 +685,20 @@ Create a minimal schedule that runs every 5 minutes with the same prompt as Step
 
 - [ ] **Step 5: Stop the dev server and record results**
 
-Stop the dev server. Append a short "Verification run — 2026-04-11" note to `features/task-runtime-stagent-mcp-injection.md` in the References section, citing:
+Stop the dev server. Append a short "Verification run — 2026-04-11" note to `features/task-runtime-ainative-mcp-injection.md` in the References section, citing:
 - Test task ID
 - Tool invocation observed (`mcp__stagent__query_table`)
 - Completion status
 - (Optional) schedule firing id if Step 4 was run
 
-If Step 3 fails — the agent still reports missing stagent tools — **do not proceed to flip the feature to completed**. Diagnose by checking the `agentLogs` table for the task, reading the SDK stderr chunks captured in `claude-agent.ts`, and re-running with `console.log(JSON.stringify(mergedMcpServers))` temporarily added before the `query()` call to confirm the stagent key is present at runtime. Report findings to the user.
+If Step 3 fails — the agent still reports missing ainative tools — **do not proceed to flip the feature to completed**. Diagnose by checking the `agentLogs` table for the task, reading the SDK stderr chunks captured in `claude-agent.ts`, and re-running with `console.log(JSON.stringify(mergedMcpServers))` temporarily added before the `query()` call to confirm the ainative key is present at runtime. Report findings to the user.
 
 - [ ] **Step 6: Commit the verification note**
 
 ```bash
-git add features/task-runtime-stagent-mcp-injection.md
+git add features/task-runtime-ainative-mcp-injection.md
 git commit -m "$(cat <<'EOF'
-docs(features): record verification run for stagent MCP injection
+docs(features): record verification run for ainative MCP injection
 
 Appends end-to-end verification notes to the feature spec after
 confirming a test task successfully invoked mcp__stagent__query_table.
@@ -712,14 +712,14 @@ EOF
 
 ## Self-Review Checklist
 
-**1. Spec coverage:** Every acceptance criterion in `features/task-runtime-stagent-mcp-injection.md` maps to a task:
+**1. Spec coverage:** Every acceptance criterion in `features/task-runtime-ainative-mcp-injection.md` maps to a task:
 - "executeClaudeTask calls createStagentMcpServer..." → Task 1, Step 5
 - "resumeClaudeTask does the same" → Task 2, Step 5
-- "When the profile has an explicit allowedTools, mcp__stagent__* is prepended" → Task 1 Step 10 + Task 2 Step 6; test A-stagent-2 + R-stagent-2
-- "When the profile has no allowedTools, the SDK option is still omitted" → Task 1 Step 10 kept the conditional spread; test A-stagent-3
-- "Permission-gated stagent tools still route through handleToolPermission" → No code change (already correct); verified by not touching lines 516-521 and 635-641
+- "When the profile has an explicit allowedTools, mcp__stagent__* is prepended" → Task 1 Step 10 + Task 2 Step 6; test A-ainative-2 + R-ainative-2
+- "When the profile has no allowedTools, the SDK option is still omitted" → Task 1 Step 10 kept the conditional spread; test A-ainative-3
+- "Permission-gated ainative tools still route through handleToolPermission" → No code change (already correct); verified by not touching lines 516-521 and 635-641
 - "Existing claude-agent.test.ts tests still pass" → Task 1 Step 12, Task 2 Step 8
-- "New unit tests assert mcpServers.stagent present on both paths" → A-stagent-1, R-stagent-1
+- "New unit tests assert mcpServers.ainative present on both paths" → A-ainative-1, R-ainative-1
 - "Chat engine behavior is unchanged" → No edits to `src/lib/chat/engine.ts` (NOT in scope)
 
 **2. Placeholder scan:** No TBDs. Every code block has concrete content. Error messages and commit messages are literal.
@@ -730,7 +730,7 @@ EOF
 
 ## Execution Handoff
 
-**Plan complete and saved to `docs/superpowers/plans/2026-04-11-task-runtime-stagent-mcp-injection.md`. Two execution options:**
+**Plan complete and saved to `docs/superpowers/plans/2026-04-11-task-runtime-ainative-mcp-injection.md`. Two execution options:**
 
 **1. Subagent-Driven (recommended)** — I dispatch a fresh subagent per task, review between tasks, fast iteration.
 

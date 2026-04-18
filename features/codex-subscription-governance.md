@@ -11,13 +11,13 @@ dependencies: [codex-chatgpt-authentication, spend-budget-guardrails]
 
 ## Description
 
-Once Codex App Server supports both API-key and ChatGPT-plan authentication inside Stagent, the Settings surface needs to distinguish usage-priced OpenAI Direct/API-key Codex from subscription-backed ChatGPT Codex. Without that split, operators cannot tell which runtime is active, which billing model applies, or whether they are simultaneously using both.
+Once Codex App Server supports both API-key and ChatGPT-plan authentication inside ainative, the Settings surface needs to distinguish usage-priced OpenAI Direct/API-key Codex from subscription-backed ChatGPT Codex. Without that split, operators cannot tell which runtime is active, which billing model applies, or whether they are simultaneously using both.
 
 This feature adds the minimal governance and UX layer needed for that distinction: runtime setup now marks ChatGPT-backed Codex as subscription-priced, OpenAI provider state can show both subscription-backed Codex and usage-priced OpenAI Direct at the same time, and Settings exposes ChatGPT account/rate-limit metadata instead of treating every OpenAI path as API-key-only.
 
 ## User Story
 
-As a Stagent operator, I want the OpenAI provider UI to tell me whether Codex is using my ChatGPT plan or an API key so that I can understand the billing mode and active runtime surface before launching work.
+As a ainative operator, I want the OpenAI provider UI to tell me whether Codex is using my ChatGPT plan or an API key so that I can understand the billing mode and active runtime surface before launching work.
 
 ## Technical Approach
 

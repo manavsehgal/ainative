@@ -26,7 +26,7 @@ their role and gets a complete, pre-vetted setup.
 
 ## User Story
 
-As a new Stagent user, I want to install a curated collection of apps that
+As a new ainative user, I want to install a curated collection of apps that
 match my role (consultant, content creator, developer), so I can get a
 complete setup in one click instead of evaluating and installing apps one
 by one.
@@ -74,7 +74,7 @@ Profiles, Templates).
 │  [Featured Image]                   │
 │                                     │
 │  Solo Consultant Pack               │
-│  by Stagent Team                    │
+│  by ainative Team                    │
 │                                     │
 │  Everything you need to run a solo  │
 │  consulting practice: client CRM,   │

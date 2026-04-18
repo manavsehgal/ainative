@@ -13,13 +13,13 @@ import {
   type OpenAIRateLimitWindow,
 } from "@/lib/settings/openai-auth";
 import {
-  getStagentCodexAuthPath,
-  getStagentCodexConfigPath,
-  getStagentCodexDir,
-} from "@/lib/utils/stagent-paths";
+  getAinativeCodexAuthPath,
+  getAinativeCodexConfigPath,
+  getAinativeCodexDir,
+} from "@/lib/utils/ainative-paths";
 import { CodexAppServerClient } from "./codex-app-server-client";
 
-const STAGENT_CODEX_CONFIG = `cli_auth_credentials_store = "file"
+const AINATIVE_CODEX_CONFIG = `cli_auth_credentials_store = "file"
 `;
 
 interface AccountReadResult {
@@ -116,9 +116,9 @@ export function extractPlanTypeFromIdToken(idToken: string): string | null {
   }
 }
 
-async function readStagentCodexPlanTypeFromAuthFile(): Promise<string | null> {
+async function readCodexPlanTypeFromAuthFile(): Promise<string | null> {
   try {
-    const raw = await readFile(getStagentCodexAuthPath(), "utf8");
+    const raw = await readFile(getAinativeCodexAuthPath(), "utf8");
     const parsed = JSON.parse(raw) as {
       tokens?: {
         id_token?: string | null;
@@ -132,8 +132,8 @@ async function readStagentCodexPlanTypeFromAuthFile(): Promise<string | null> {
 }
 
 async function ensureCodexHomeConfig() {
-  const codexDir = getStagentCodexDir();
-  const configPath = getStagentCodexConfigPath();
+  const codexDir = getAinativeCodexDir();
+  const configPath = getAinativeCodexConfigPath();
 
   await mkdir(codexDir, { recursive: true });
   await mkdir(dirname(configPath), { recursive: true });
@@ -150,8 +150,8 @@ async function ensureCodexHomeConfig() {
   }
 
   const next = current.trim().length > 0
-    ? `${current.trimEnd()}\n\n${STAGENT_CODEX_CONFIG}`
-    : STAGENT_CODEX_CONFIG;
+    ? `${current.trimEnd()}\n\n${AINATIVE_CODEX_CONFIG}`
+    : AINATIVE_CODEX_CONFIG;
   await writeFile(configPath, next, "utf8");
 }
 
@@ -162,12 +162,12 @@ export async function buildCodexAuthEnv(
 
   return {
     ...env,
-    CODEX_HOME: getStagentCodexDir(),
+    CODEX_HOME: getAinativeCodexDir(),
     OPENAI_API_KEY: env?.OPENAI_API_KEY,
   };
 }
 
-export async function connectStagentCodexClient(options: {
+export async function connectCodexClient(options: {
   cwd?: string;
   env?: Record<string, string | undefined>;
 } = {}) {
@@ -181,7 +181,7 @@ export async function connectStagentCodexClient(options: {
 export async function initializeCodexClient(client: CodexAppServerClient) {
   await client.request("initialize", {
     clientInfo: {
-      name: "Stagent",
+      name: "ainative",
       version: "0.1.1",
     },
     capabilities: null,
@@ -198,7 +198,7 @@ export async function readCodexAuthStateFromClient(
 
   const account = parseAccountInfo(accountResult.account ?? null);
   if (account?.type === "chatgpt" && !account.planType) {
-    account.planType = await readStagentCodexPlanTypeFromAuthFile();
+    account.planType = await readCodexPlanTypeFromAuthFile();
   }
   let rateLimits: OpenAIRateLimitInfo | null = null;
   if (account?.type === "chatgpt") {
@@ -259,7 +259,7 @@ export async function resolveOpenAICodexAuthContext(): Promise<ResolvedOpenAICod
   if (settings.method === "oauth") {
     if (!settings.oauthConnected) {
       try {
-        const state = await readStagentCodexAuthState({ refreshToken: false });
+        const state = await readCodexAuthState({ refreshToken: false });
         if (!state.connected) {
           throw new Error("OpenAI ChatGPT sign-in is not configured.");
         }
@@ -274,7 +274,7 @@ export async function resolveOpenAICodexAuthContext(): Promise<ResolvedOpenAICod
       method: "oauth",
       apiKeySource: "oauth",
       connect: (cwd?: string) =>
-        connectStagentCodexClient({
+        connectCodexClient({
           cwd,
           env: { OPENAI_API_KEY: undefined },
         }),
@@ -290,7 +290,7 @@ export async function resolveOpenAICodexAuthContext(): Promise<ResolvedOpenAICod
     method: "api_key",
     apiKeySource: source,
     connect: (cwd?: string) =>
-      connectStagentCodexClient({
+      connectCodexClient({
         cwd,
         env: { OPENAI_API_KEY: apiKey },
       }),
@@ -332,14 +332,14 @@ export async function ensureOpenAICodexClientAuthenticated(
   });
 }
 
-export async function readStagentCodexAuthState(options: {
+export async function readCodexAuthState(options: {
   refreshToken?: boolean;
   cwd?: string;
 } = {}) {
   let client: CodexAppServerClient | null = null;
 
   try {
-    client = await connectStagentCodexClient({ cwd: options.cwd });
+    client = await connectCodexClient({ cwd: options.cwd });
     await initializeCodexClient(client);
 
     const state = await readCodexAuthStateFromClient(client, {
@@ -364,11 +364,11 @@ export async function readStagentCodexAuthState(options: {
   }
 }
 
-export async function logoutStagentCodexAuth() {
+export async function logoutCodexAuth() {
   let client: CodexAppServerClient | null = null;
 
   try {
-    client = await connectStagentCodexClient();
+    client = await connectCodexClient();
     await initializeCodexClient(client);
     await client.request("account/logout");
   } catch {
@@ -380,7 +380,7 @@ export async function logoutStagentCodexAuth() {
   }
 
   try {
-    await rm(getStagentCodexAuthPath(), { force: true });
+    await rm(getAinativeCodexAuthPath(), { force: true });
   } catch {
     // Ignore cleanup failures.
   }

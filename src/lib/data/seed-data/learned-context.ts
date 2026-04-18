@@ -27,7 +27,7 @@ export function createLearnedContext(
     // GTM profile: proposal → approved (benefit-led headlines)
     {
       id: crypto.randomUUID(),
-      profileId: "stagent-sample-gtm-launch-strategist",
+      profileId: "ainative-sample-gtm-launch-strategist",
       version: 1,
       content: null,
       diff: null,
@@ -41,7 +41,7 @@ export function createLearnedContext(
     },
     {
       id: crypto.randomUUID(),
-      profileId: "stagent-sample-gtm-launch-strategist",
+      profileId: "ainative-sample-gtm-launch-strategist",
       version: 2,
       content:
         "User prefers benefit-led headlines over feature-led ones. When writing marketing copy, prioritize pain/outcome framing over feature announcements. Use social proof as supporting evidence, not the lead.",
@@ -57,7 +57,7 @@ export function createLearnedContext(
     // Content profile: proposal → approved (article length)
     {
       id: crypto.randomUUID(),
-      profileId: "stagent-sample-content-production-editor",
+      profileId: "ainative-sample-content-production-editor",
       version: 1,
       content: null,
       diff: null,
@@ -71,7 +71,7 @@ export function createLearnedContext(
     },
     {
       id: crypto.randomUUID(),
-      profileId: "stagent-sample-content-production-editor",
+      profileId: "ainative-sample-content-production-editor",
       version: 2,
       content:
         "Target 1,500-2,000 words for SEO articles. Shorter pieces don't rank for competitive keywords; longer ones have lower completion rates. Aim for Flesch-Kincaid score under 45.",
@@ -87,7 +87,7 @@ export function createLearnedContext(
     // RevOps profile: proposal (deal stall threshold — pending)
     {
       id: crypto.randomUUID(),
-      profileId: "stagent-sample-revenue-ops-analyst",
+      profileId: "ainative-sample-revenue-ops-analyst",
       version: 1,
       content: null,
       diff: null,
@@ -103,7 +103,7 @@ export function createLearnedContext(
     // CS profile: proposal → approved (NPS threshold)
     {
       id: crypto.randomUUID(),
-      profileId: "stagent-sample-customer-success-analyst",
+      profileId: "ainative-sample-customer-success-analyst",
       version: 1,
       content: null,
       diff: null,
@@ -117,7 +117,7 @@ export function createLearnedContext(
     },
     {
       id: crypto.randomUUID(),
-      profileId: "stagent-sample-customer-success-analyst",
+      profileId: "ainative-sample-customer-success-analyst",
       version: 2,
       content:
         "NPS below 30 triggers immediate CSM outreach. Accounts without a workflow by Day 7 are at 82% churn risk — trigger proactive intervention at Day 5.",
@@ -133,7 +133,7 @@ export function createLearnedContext(
     // Due Diligence profile: proposal → rejected (too broad)
     {
       id: crypto.randomUUID(),
-      profileId: "stagent-sample-due-diligence-analyst",
+      profileId: "ainative-sample-due-diligence-analyst",
       version: 1,
       content: null,
       diff: null,
@@ -147,7 +147,7 @@ export function createLearnedContext(
     },
     {
       id: crypto.randomUUID(),
-      profileId: "stagent-sample-due-diligence-analyst",
+      profileId: "ainative-sample-due-diligence-analyst",
       version: 2,
       content: null,
       diff: null,

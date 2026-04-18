@@ -26,7 +26,7 @@ As a power user, I want to create and share custom blueprints as portable YAML f
 ### Blueprint Storage
 
 - **Built-in**: `src/lib/workflows/blueprints/*.yaml` (8 blueprints shipped)
-- **User custom**: `~/.stagent/blueprints/*.yaml`
+- **User custom**: `~/.ainative/blueprints/*.yaml`
 - **Registry**: `src/lib/workflows/blueprints/registry.ts` — loads, validates, and indexes blueprints
 - **Instantiator**: `src/lib/workflows/blueprints/instantiator.ts` — resolves `{{variables}}` and creates concrete workflows
 
@@ -42,8 +42,8 @@ tags: [research, analysis, report, writing]
 pattern: sequence
 estimatedDuration: "15-30 min"
 difficulty: intermediate
-author: stagent
-source: https://github.com/stagent/blueprints
+author: ainative
+source: https://github.com/ainative/blueprints
 
 variables:
   - id: topic
@@ -192,7 +192,7 @@ const BlueprintSchema = z.object({
 
 **`src/lib/workflows/blueprints/registry.ts`**:
 
-- `loadBlueprints()` — scans built-in dir + `~/.stagent/blueprints/*.yaml`, validates with Zod
+- `loadBlueprints()` — scans built-in dir + `~/.ainative/blueprints/*.yaml`, validates with Zod
 - `getBlueprint(id)` — returns validated blueprint or null
 - `listBlueprints(filters?)` — filter by domain, tags, pattern, search text
 - `validateBlueprint(yaml)` — parse and validate against Zod schema
@@ -240,16 +240,16 @@ interface WorkflowStep {
 ### Sharing (GitHub Import/Export)
 
 **Import**:
-- `POST /api/import { url, type: "blueprint" }` or CLI `stagent import <url>`
-- Fetches YAML file(s) from GitHub → validates with Zod → writes to `~/.stagent/blueprints/`
+- `POST /api/import { url, type: "blueprint" }` or CLI `ainative import <url>`
+- Fetches YAML file(s) from GitHub → validates with Zod → writes to `~/.ainative/blueprints/`
 - For repo URLs, scans `blueprints/*.yaml` directory
 
 **Export**:
-- CLI: `stagent export --blueprint <id>` → outputs the YAML file
+- CLI: `ainative export --blueprint <id>` → outputs the YAML file
 
 **Unified sharing convention** for repos that bundle both profiles and blueprints:
 ```
-my-stagent-pack/
+my-ainative-pack/
   .claude/skills/
     wealth-manager/SKILL.md + profile.yaml
     travel-planner/SKILL.md + profile.yaml
@@ -285,7 +285,7 @@ my-stagent-pack/
 - YAML text editor for creating custom blueprints
 - Zod validation feedback in real-time
 - Profile ID autocomplete from profile registry
-- Save writes to `~/.stagent/blueprints/`
+- Save writes to `~/.ainative/blueprints/`
 
 ## Acceptance Criteria
 
@@ -300,7 +300,7 @@ my-stagent-pack/
 - [ ] Users can create custom blueprints via YAML editor
 - [ ] Import blueprints from GitHub URLs
 - [ ] Blueprint-created workflows track source blueprintId for lineage
-- [ ] User blueprints in `~/.stagent/blueprints/` loaded alongside built-ins
+- [ ] User blueprints in `~/.ainative/blueprints/` loaded alongside built-ins
 
 ## Scope Boundaries
 

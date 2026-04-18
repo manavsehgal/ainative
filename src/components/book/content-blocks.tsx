@@ -143,7 +143,7 @@ function CodeBlockView({
 
 /* ─── ImageBlock ─── */
 
-const BOOK_IMAGE_BASE = "https://raw.githubusercontent.com/manavsehgal/stagent/main/book/images";
+const BOOK_IMAGE_BASE = "https://raw.githubusercontent.com/manavsehgal/ainative/main/book/images";
 
 function ImageBlockView({
   src,

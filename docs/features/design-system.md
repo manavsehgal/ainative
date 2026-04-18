@@ -11,7 +11,7 @@ lastUpdated: "2026-03-31"
 
 # Design System -- Calm Ops
 
-Stagent follows the "Calm Ops" design philosophy: opaque surfaces, border-centric elevation, and zero glass morphism. The system prioritizes readability and scan speed on operational screens.
+ainative follows the "Calm Ops" design philosophy: opaque surfaces, border-centric elevation, and zero glass morphism. The system prioritizes readability and scan speed on operational screens.
 
 ## Key Features
 

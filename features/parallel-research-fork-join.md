@@ -11,9 +11,9 @@ dependencies: [workflow-engine, multi-agent-routing]
 
 ## Description
 
-Parallel Research Fork/Join is the next bounded expansion of Stagent's workflow engine. It adds one new control-flow pattern: launch multiple research branches at the same time, wait for them all to finish, then hand their outputs to a final synthesis step.
+Parallel Research Fork/Join is the next bounded expansion of ainative's workflow engine. It adds one new control-flow pattern: launch multiple research branches at the same time, wait for them all to finish, then hand their outputs to a final synthesis step.
 
-This should ship as a narrow workflow primitive, not as a grab-bag of advanced orchestration ideas. Critic/verifier loops, evaluator-optimizer patterns, and broader swarm behavior remain out of scope until Stagent proves that simple fork/join concurrency is understandable, observable, and reliable in the existing workflow UX.
+This should ship as a narrow workflow primitive, not as a grab-bag of advanced orchestration ideas. Critic/verifier loops, evaluator-optimizer patterns, and broader swarm behavior remain out of scope until ainative proves that simple fork/join concurrency is understandable, observable, and reliable in the existing workflow UX.
 
 ## User Story
 

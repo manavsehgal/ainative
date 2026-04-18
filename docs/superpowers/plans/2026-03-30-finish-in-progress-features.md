@@ -24,7 +24,7 @@
 | Component | Path | State |
 |-----------|------|-------|
 | Repo scanner + GitHub API | `src/lib/import/repo-scanner.ts`, `github-api.ts` | Complete |
-| Format adapter (gstack→stagent) | `src/lib/import/format-adapter.ts` | Complete |
+| Format adapter (gstack→ainative) | `src/lib/import/format-adapter.ts` | Complete |
 | Dedup engine | `src/lib/import/dedup.ts` | Complete |
 | 5 API routes (scan/preview/confirm/check-updates/apply-updates) | `src/app/api/profiles/import-repo/` | Complete |
 | Repo import wizard (4 steps) | `src/components/profiles/repo-import-wizard.tsx` | Complete |

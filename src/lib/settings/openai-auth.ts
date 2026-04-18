@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { SETTINGS_KEYS, type ApiKeySource, type AuthMethod } from "@/lib/constants/settings";
 import { decrypt, encrypt } from "@/lib/utils/crypto";
-import { getStagentCodexAuthPath } from "@/lib/utils/stagent-paths";
+import { getAinativeCodexAuthPath } from "@/lib/utils/ainative-paths";
 import { getSetting, setSetting } from "./helpers";
 
 export type OpenAIAccountType = "apiKey" | "chatgpt" | "chatgptAuthTokens";
@@ -84,7 +84,7 @@ export async function getOpenAIAuthSettings(): Promise<OpenAIAuthSettings> {
 
   const oauthConnected =
     storedOauthConnected === "true" ||
-    (storedOauthConnected == null && existsSync(getStagentCodexAuthPath()));
+    (storedOauthConnected == null && existsSync(getAinativeCodexAuthPath()));
 
   return {
     method,

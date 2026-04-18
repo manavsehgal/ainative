@@ -16,7 +16,7 @@ canUseToolPolicy:
 
 maxTurns: 20
 
-author: stagent
+author: ainative
 
 tests:
   - task: "Compare the top 3 laptops under $1500 for software development"

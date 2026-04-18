@@ -188,7 +188,7 @@ export function CommandPalette() {
   function handleSelectSkill(id: string, name: string) {
     setOpen(false);
     window.dispatchEvent(
-      new CustomEvent("stagent.chat.activate-skill", { detail: { id } })
+      new CustomEvent("ainative.chat.activate-skill", { detail: { id } })
     );
     toast.info(`Skill "${name}" — activation coming soon`);
   }
@@ -196,7 +196,7 @@ export function CommandPalette() {
   function handleSelectFile(entityId: string, label: string) {
     setOpen(false);
     window.dispatchEvent(
-      new CustomEvent("stagent.chat.insert-mention", {
+      new CustomEvent("ainative.chat.insert-mention", {
         detail: { type: "file", path: entityId, label },
       })
     );
@@ -431,7 +431,7 @@ export function CommandPalette() {
               router.push("/chat");
               window.setTimeout(() => {
                 window.dispatchEvent(
-                  new CustomEvent("stagent.chat.openTemplatePicker")
+                  new CustomEvent("ainative.chat.openTemplatePicker")
                 );
               }, 50);
             }}

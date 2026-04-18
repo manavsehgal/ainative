@@ -26,7 +26,7 @@ User Guide UI → /user-guide route renders journeys with GitHub raw URLs
                     └──────────── if gaps remain ──────────────────┘
 ```
 
-The user guide UI resolves images from `public/readme/*.png` via GitHub raw URLs (`screengrabs/` → `https://raw.githubusercontent.com/manavsehgal/stagent/main/public/readme/`). This skill closes the gap between where screenshots are captured and where GitHub serves them.
+The user guide UI resolves images from `public/readme/*.png` via GitHub raw URLs (`screengrabs/` → `https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/`). This skill closes the gap between where screenshots are captured and where GitHub serves them.
 
 > **npm exclusion:** `public/readme/` is committed to git (needed for GitHub raw URLs) but excluded from the npm package via `package.json` `"files"`. Do NOT re-add `"public/"` to the files array — only specific non-readme assets are shipped.
 

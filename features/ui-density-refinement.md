@@ -22,7 +22,7 @@ This feature is the focused follow-up tranche for those issues. It should preser
 
 ## User Story
 
-As a Stagent operator, I want the main workspace chrome and page-level layouts to feel balanced and intentional so that high-frequency screens are easy to scan and don't feel visually unfinished.
+As a ainative operator, I want the main workspace chrome and page-level layouts to feel balanced and intentional so that high-frequency screens are easy to scan and don't feel visually unfinished.
 
 ## Technical Approach
 

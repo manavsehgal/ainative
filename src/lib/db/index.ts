@@ -3,12 +3,12 @@ import { drizzle } from "drizzle-orm/better-sqlite3";
 import * as schema from "./schema";
 import { join } from "path";
 import { mkdirSync } from "fs";
-import { getStagentDataDir } from "@/lib/utils/stagent-paths";
-import { bootstrapStagentDatabase } from "./bootstrap";
+import { getAinativeDataDir } from "@/lib/utils/ainative-paths";
+import { bootstrapAinativeDatabase } from "./bootstrap";
 
-const dataDir = getStagentDataDir();
+const dataDir = getAinativeDataDir();
 mkdirSync(dataDir, { recursive: true });
-const dbPath = join(dataDir, "stagent.db");
+const dbPath = join(dataDir, "ainative.db");
 
 const sqlite = new Database(dbPath);
 sqlite.pragma("journal_mode = WAL");
@@ -18,7 +18,7 @@ sqlite.pragma("foreign_keys = ON");
 // Drizzle migrations (DROP TABLE, CREATE INDEX, etc.) run separately
 // at server startup in instrumentation-node.ts to avoid SQLITE_BUSY
 // conflicts during next build.
-bootstrapStagentDatabase(sqlite);
+bootstrapAinativeDatabase(sqlite);
 
 export const db = drizzle(sqlite, { schema });
 export { sqlite };

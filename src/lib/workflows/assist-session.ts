@@ -1,6 +1,6 @@
 import type { TaskAssistResponse } from "@/lib/agents/runtime/task-assist-types";
 
-const STORAGE_KEY = "stagent:workflow-from-assist";
+const STORAGE_KEY = "ainative:workflow-from-assist";
 
 export interface WorkflowAssistState {
   assistResult: TaskAssistResponse;
@@ -40,7 +40,7 @@ export function clearAssistState(): void {
   }
 }
 
-const FORM_RESTORE_KEY = "stagent:task-form-restore";
+const FORM_RESTORE_KEY = "ainative:task-form-restore";
 
 export interface TaskFormState {
   title: string;

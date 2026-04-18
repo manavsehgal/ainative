@@ -14,7 +14,7 @@ dependencies: [marketplace-app-publishing, telemetry-foundation]
 ## Description
 
 Star ratings and text reviews are table stakes for any marketplace. What makes
-Stagent's review system distinctive is **verified-usage weighting**: ratings
+ainative's review system distinctive is **verified-usage weighting**: ratings
 from users who actually installed the app and ran its schedules for 7+ days
 count double in the weighted average. This eliminates drive-by reviews and
 rewards creators whose apps deliver sustained value.
@@ -24,7 +24,7 @@ and let creators respond. No editing, no upvoting, no complex threading.
 
 ## User Story
 
-As a Stagent user, I want to see honest ratings from people who actually used
+As a ainative user, I want to see honest ratings from people who actually used
 an app before I install it, so I can trust the marketplace signal and avoid
 apps that look good on paper but fail in practice.
 

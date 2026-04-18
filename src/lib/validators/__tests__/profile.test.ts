@@ -30,8 +30,8 @@ describe("ProfileConfigSchema", () => {
       },
       maxTurns: 20,
       outputFormat: "markdown",
-      author: "stagent",
-      source: "https://github.com/stagent/profiles",
+      author: "ainative",
+      source: "https://github.com/ainative/profiles",
       tests: [
         {
           task: "Do a thing",
@@ -100,5 +100,26 @@ describe("ProfileConfigSchema", () => {
       maxTurns: -5,
     });
     expect(result.success).toBe(false);
+  });
+
+  it("accepts legacy sourceFormat 'stagent' and normalizes to 'ainative'", () => {
+    const result = ProfileConfigSchema.safeParse({
+      ...validProfile,
+      importMeta: {
+        repoUrl: "https://github.com/example/repo",
+        repoOwner: "example",
+        repoName: "repo",
+        branch: "main",
+        filePath: "skills/qa/profile.yaml",
+        commitSha: "abc123def456",
+        contentHash: "sha256hash",
+        importedAt: new Date().toISOString(),
+        sourceFormat: "stagent",
+      },
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.importMeta?.sourceFormat).toBe("ainative");
+    }
   });
 });

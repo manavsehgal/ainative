@@ -1,7 +1,7 @@
 import {
-  connectStagentCodexClient,
+  connectCodexClient,
   initializeCodexClient,
-  readStagentCodexAuthState,
+  readCodexAuthState,
 } from "@/lib/agents/runtime/openai-codex-auth";
 import { clearOpenAIOAuthStatus } from "./openai-auth";
 import type { CodexAppServerClient } from "@/lib/agents/runtime/codex-app-server-client";
@@ -80,7 +80,7 @@ export async function startOpenAIChatGPTLogin(): Promise<OpenAILoginState> {
   }
 
   try {
-    const current = await readStagentCodexAuthState({ refreshToken: false });
+    const current = await readCodexAuthState({ refreshToken: false });
     if (current.connected) {
       return updateState({
         phase: "connected",
@@ -96,7 +96,7 @@ export async function startOpenAIChatGPTLogin(): Promise<OpenAILoginState> {
     await clearOpenAIOAuthStatus();
   }
 
-  const client = await connectStagentCodexClient();
+  const client = await connectCodexClient();
   await initializeCodexClient(client);
 
   const startedAt = new Date().toISOString();
@@ -135,7 +135,7 @@ export async function startOpenAIChatGPTLogin(): Promise<OpenAILoginState> {
     if (params?.success) {
       void (async () => {
         try {
-          const current = await readStagentCodexAuthState({ refreshToken: true });
+          const current = await readCodexAuthState({ refreshToken: true });
           updateState({
             phase: "connected",
             loginId: completedLoginId ?? null,

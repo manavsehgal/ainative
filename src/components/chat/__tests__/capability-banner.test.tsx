@@ -27,11 +27,11 @@ describe("CapabilityBanner", () => {
     render(<CapabilityBanner runtimeId="ollama" />);
     fireEvent.click(screen.getByRole("button", { name: /dismiss/i }));
     expect(screen.queryByRole("status")).toBeNull();
-    expect(sessionStorage.getItem("stagent.capability-banner.dismissed.ollama")).toBe("1");
+    expect(sessionStorage.getItem("ainative.capability-banner.dismissed.ollama")).toBe("1");
   });
 
   it("stays dismissed on remount if sessionStorage flag set", () => {
-    sessionStorage.setItem("stagent.capability-banner.dismissed.ollama", "1");
+    sessionStorage.setItem("ainative.capability-banner.dismissed.ollama", "1");
     render(<CapabilityBanner runtimeId="ollama" />);
     expect(screen.queryByRole("status")).toBeNull();
   });

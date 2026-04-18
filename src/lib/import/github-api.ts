@@ -94,7 +94,7 @@ function toGitHubError(res: Response): GitHubApiError {
 function headers(): HeadersInit {
   const h: Record<string, string> = {
     Accept: "application/vnd.github.v3+json",
-    "User-Agent": "Stagent/1.0",
+    "User-Agent": "ainative/1.0",
   };
   const token = process.env.GITHUB_TOKEN;
   if (token) {

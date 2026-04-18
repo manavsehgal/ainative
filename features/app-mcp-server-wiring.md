@@ -18,7 +18,7 @@ tools backed by MCP servers need a dedicated wiring path. MCP (Model Context
 Protocol) servers are external processes that expose tools over a standard
 protocol — either via stdio (local subprocess) or HTTP (remote endpoint).
 Letting apps declare MCP servers unlocks cross-platform portability: the same
-app that works inside Stagent's chat also works from Claude Desktop, Cursor,
+app that works inside ainative's chat also works from Claude Desktop, Cursor,
 or any MCP-compatible client.
 
 This feature adds `mcpServers` as a new primitive on `AppBundle`. At install
@@ -145,7 +145,7 @@ function assertMcpTrustLevel(trustLevel: AppTrustLevel): void {
 ```
 
 This check runs at validation time (not just bootstrap) so the error
-surfaces immediately in `stagent app validate` and in the marketplace
+surfaces immediately in `ainative app validate` and in the marketplace
 install dialog.
 
 ### 5. Bootstrap handler (`src/lib/apps/service.ts`)
@@ -185,7 +185,7 @@ For each declared MCP server:
 4. **Store in resourceMap** — Record server registration IDs in
    `resourceMap.mcpServers`.
 
-### 6. Dynamic tool inclusion (`src/lib/chat/stagent-tools.ts`)
+### 6. Dynamic tool inclusion (`src/lib/chat/ainative-tools.ts`)
 
 Modify `collectAllTools()` to include MCP-backed tools when the active
 project matches an installed app's project:
@@ -265,7 +265,7 @@ mcpServers: [
     description: "Real-time and historical market data via MCP",
     transport: "stdio",
     command: "npx",
-    args: ["-y", "@stagent/mcp-market-data"],
+    args: ["-y", "@ainative/mcp-market-data"],
     envVars: ["MARKET_DATA_API_KEY"],
     tools: [
       {
@@ -341,7 +341,7 @@ when the app's trust level is `official` (which it is for builtins).
   - `src/lib/apps/validation.ts` — new Zod schema with transport refinement
   - `src/lib/apps/service.ts` — MCP bootstrap handler, trust-level gate
   - `src/lib/apps/builtins.ts` — wealth-manager MCP example
-  - `src/lib/chat/stagent-tools.ts` — dynamic MCP tool inclusion in
+  - `src/lib/chat/ainative-tools.ts` — dynamic MCP tool inclusion in
     `collectAllTools()`
   - `src/lib/chat/tool-registry.ts` — extend `defineTool()` for MCP-backed
     tools

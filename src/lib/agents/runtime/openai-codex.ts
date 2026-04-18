@@ -586,7 +586,7 @@ async function handleServerRequest(
         contentItems: [
           {
             type: "inputText",
-            text: "Dynamic tool calls are not supported by Stagent's Codex runtime yet.",
+            text: "Dynamic tool calls are not supported by ainative's Codex runtime yet.",
           },
         ],
       });
@@ -629,7 +629,7 @@ async function runAssistTurn({
       cwd,
       approvalPolicy: "never",
       sandbox: "workspace-write",
-      serviceName: "stagent",
+      serviceName: "ainative",
       developerInstructions,
       experimentalRawEvents: false,
       ephemeral: true,
@@ -894,7 +894,7 @@ async function executeOpenAICodexTask(
         cwd,
         approvalPolicy: "on-request",
         sandbox: "workspace-write",
-        serviceName: "stagent",
+        serviceName: "ainative",
         developerInstructions: instructions || null,
         experimentalRawEvents: false,
         ephemeral: false,

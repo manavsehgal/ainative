@@ -9,17 +9,17 @@ dependencies: [stripe-billing-integration]
 
 # Marketing Site Pricing & Landing Page Update
 
-> **Superseded by `community-edition-simplification` (2026-04-13).** This feature shipped but was later fully reverted when Stagent pivoted to a 100% free Community Edition with no tiers, billing, or cloud dependency. Kept as historical record.
+> **Superseded by `community-edition-simplification` (2026-04-13).** This feature shipped but was later fully reverted when ainative pivoted to a 100% free Community Edition with no tiers, billing, or cloud dependency. Kept as historical record.
 
 ## Description
 
-Updates the existing stagent.github.io marketing site (Astro 5 + React + Tailwind v4) to reflect the PLG monetization strategy. The site already has a `Pricing.astro` section with outdated tiers (Community Free / Pro $149 / Team $499 + Advisory Services). This feature rewrites Pricing.astro with the new 4-tier structure (Community / Solo / Operator / Scale), adds marketplace creator economics as a primary selling point, updates Hero copy to shift from "waitlist" to "live product + upgrade path," and replaces the Advisory Services block with a marketplace creator pitch.
+Updates the existing ainative.github.io marketing site (Astro 5 + React + Tailwind v4) to reflect the PLG monetization strategy. The site already has a `Pricing.astro` section with outdated tiers (Community Free / Pro $149 / Team $499 + Advisory Services). This feature rewrites Pricing.astro with the new 4-tier structure (Community / Solo / Operator / Scale), adds marketplace creator economics as a primary selling point, updates Hero copy to shift from "waitlist" to "live product + upgrade path," and replaces the Advisory Services block with a marketplace creator pitch.
 
-The site lives at `/Users/manavsehgal/Developer/stagent.github.io` and deploys to stagent.io via GitHub Pages.
+The site lives at `/Users/manavsehgal/Developer/ainative.github.io` and deploys to ainative.io via GitHub Pages.
 
 ## User Story
 
-As a potential Stagent user visiting stagent.io, I want to see clear pricing tiers with specific value at each level — especially the marketplace earning potential — so I can understand why upgrading from free makes economic sense.
+As a potential ainative user visiting ainative.io, I want to see clear pricing tiers with specific value at each level — especially the marketplace earning potential — so I can understand why upgrading from free makes economic sense.
 
 As an existing Community user, I want the pricing page to show me exactly what I gain at each tier, with emphasis on the marketplace creator opportunity at Operator, so I'm motivated by income potential rather than just feature unlocks.
 
@@ -28,7 +28,7 @@ As an existing Community user, I want the pricing page to show me exactly what I
 ### Site Architecture (existing)
 
 ```
-stagent.github.io/
+ainative.github.io/
 ├── src/
 │   ├── pages/index.astro           ← Main landing page (imports all sections)
 │   ├── components/sections/
@@ -70,7 +70,7 @@ const tiers = [
       '30-day execution history',
       'Community support',
     ],
-    cta: { type: 'command', text: 'npx stagent' },
+    cta: { type: 'command', text: 'npx ainative' },
   },
   {
     name: 'Solo',
@@ -135,15 +135,15 @@ const tiers = [
 **Stripe CTA buttons:**
 - `type: 'stripe'` buttons link to Stripe Payment Links (static URLs, no API call needed)
 - Payment Links collect email (required) — this is the identity anchor for license matching
-- After payment, Stripe redirects to `https://stagent.io/confirmed?session_id={ID}`
-- The existing `/confirmed` page is updated to show: "Install `npx stagent` and sign in with {email} to activate"
-- Community tier keeps `npx stagent` command block (existing pattern)
+- After payment, Stripe redirects to `https://ainative.io/confirmed?session_id={ID}`
+- The existing `/confirmed` page is updated to show: "Install `npx ainative` and sign in with {email} to activate"
+- Community tier keeps `npx ainative` command block (existing pattern)
 
 **Dual-entry flow (how marketing site payment connects to the product):**
 ```
-stagent.io → user clicks "Get Operator" → Stripe Payment Link
+ainative.io → user clicks "Get Operator" → Stripe Payment Link
   → pays with email → Stripe webhook → Supabase license row created
-  → redirect to /confirmed → "Install npx stagent, sign in with {email}"
+  → redirect to /confirmed → "Install npx ainative, sign in with {email}"
   → user installs → signs in with same email → license auto-activates
 ```
 
@@ -177,7 +177,7 @@ Current state: "Get early access to Pro features, advisory services" with waitli
 - **Keep** the email capture form (still valuable for pre-launch list)
 - **Change** label from "Get early access to Pro features, advisory services" to "Get the weekly State of AI Agents report"
 - **Change** button from "Get Early Access" to "Subscribe" (framing as value delivery, not waitlist)
-- **Keep** the `npx stagent` terminal block and all other Hero elements unchanged
+- **Keep** the `npx ainative` terminal block and all other Hero elements unchanged
 - **Keep** value pills (Local-First, Multi-Model AI, Human-in-the-Loop)
 
 Minimal change — just the email capture framing shifts from "waitlist" to "ongoing value."
@@ -199,7 +199,7 @@ Current: "Ready to build an AI-native business?" with waitlist form.
 - **Keep** headline: "Ready to build an AI-native business?"
 - **Add** a secondary line: "Free forever. Upgrade when your agents outgrow the limits."
 - **Keep** the email form (reframe: "Get the State of AI Agents report")
-- **Keep** the terminal `npx stagent` block
+- **Keep** the terminal `npx ainative` block
 - **Add** links: "View Pricing" → `#pricing`, "Read the Docs" → `/docs`
 
 ### 5. Optional: Dedicated `/pricing` Page
@@ -211,7 +211,7 @@ Create `src/pages/pricing.astro` that renders the Pricing section as a standalon
 import Layout from '../layouts/Layout.astro';
 import Pricing from '../components/sections/Pricing.astro';
 ---
-<Layout title="Pricing — Stagent" description="Compare Stagent pricing tiers">
+<Layout title="Pricing — ainative" description="Compare ainative pricing tiers">
   <main>
     <Pricing />
   </main>
@@ -246,7 +246,7 @@ const faqs = [
   },
   {
     q: 'What AI providers can I use?',
-    a: 'Claude, GPT, Codex, direct APIs, and Ollama (local, $0). You bring your own API keys — Stagent never intermediates.',
+    a: 'Claude, GPT, Codex, direct APIs, and Ollama (local, $0). You bring your own API keys — ainative never intermediates.',
   },
 ];
 ```
@@ -258,7 +258,7 @@ Render as collapsible `<details>/<summary>` elements (native HTML, no JS needed)
 - [ ] Pricing.astro renders 4 tiers: Community (Free), Solo ($19), Operator ($49), Scale ($99)
 - [ ] Monthly/annual toggle updates all price displays via client-side JS
 - [ ] Annual prices show "Save ~20%" badge
-- [ ] Community tier shows `npx stagent` command block (existing pattern preserved)
+- [ ] Community tier shows `npx ainative` command block (existing pattern preserved)
 - [ ] Solo/Operator/Scale tiers link to Stripe Payment Links
 - [ ] Operator tier highlighted with `border-primary/40 bg-primary/[0.03]` and "Most Popular" badge
 - [ ] Marketplace creator pitch block replaces Advisory Services block
@@ -297,10 +297,10 @@ Render as collapsible `<details>/<summary>` elements (native HTML, no JS needed)
 - Related: [`edition-readme-update`](edition-readme-update.md) — README positioning
 - Related: [`marketplace-access-gate`](marketplace-access-gate.md) — marketplace creator economics
 - Related: [`upgrade-cta-banners`](upgrade-cta-banners.md) — in-app banners link to /pricing
-- Marketing site repo: `/Users/manavsehgal/Developer/stagent.github.io`
+- Marketing site repo: `/Users/manavsehgal/Developer/ainative.github.io`
 - Existing Pricing component: `src/components/sections/Pricing.astro`
 - Existing Hero: `src/components/sections/Hero.astro`
 - Existing PersonaLanes: `src/components/sections/PersonaLanes.astro`
 - Existing CTAFooter: `src/components/sections/CTAFooter.astro`
 - Site tech: Astro 5, React 19, Tailwind v4, TypeScript, OKLCH design tokens
-- Supabase waitlist endpoint: `https://stagent.supabase.co/functions/v1/waitlist-signup`
+- Supabase waitlist endpoint: `https://ainative.supabase.co/functions/v1/waitlist-signup`

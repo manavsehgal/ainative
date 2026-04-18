@@ -6,30 +6,30 @@ lastUpdated: "2026-03-31"
 
 # Getting Started
 
-Get Stagent running in under a minute and create your first AI-powered business task.
+Get ainative running in under a minute and create your first AI-powered business task.
 
 ## Installation
 
 ### Quick Start (npx)
 
-Stagent runs as a single command with no clone or build step required:
+ainative runs as a single command with no clone or build step required:
 
 ```bash
-npx stagent
+npx ainative
 ```
 
-This downloads and launches Stagent on [localhost:3000](http://localhost:3000). All data is stored locally:
+This downloads and launches ainative on [localhost:3000](http://localhost:3000). All data is stored locally:
 
-- **Database**: `~/.stagent/stagent.db` (SQLite with WAL mode)
-- **Uploads**: `~/.stagent/uploads/`
+- **Database**: `~/.ainative/ainative.db` (SQLite with WAL mode)
+- **Uploads**: `~/.ainative/uploads/`
 
 ### From Source
 
 For contributors or developers who want full control:
 
 ```bash
-git clone https://github.com/manavsehgal/stagent.git
-cd stagent && npm install
+git clone https://github.com/manavsehgal/ainative.git
+cd ainative && npm install
 npm run dev
 ```
 
@@ -43,7 +43,7 @@ npm run dev
 
 ## First Run
 
-When you open Stagent for the first time at [localhost:3000](http://localhost:3000):
+When you open ainative for the first time at [localhost:3000](http://localhost:3000):
 
 1. **Home Workspace** appears with empty stat cards, an activity feed placeholder, and sidebar navigation
 2. **Configure a runtime** by navigating to **Settings** to enter your provider credentials
@@ -102,7 +102,7 @@ Agents request permission before using tools. Streamline approvals from **Settin
 
 ### Delivery Channels
 
-Receive schedule results and chat with Stagent from Slack, Telegram, or webhooks:
+Receive schedule results and chat with ainative from Slack, Telegram, or webhooks:
 
 1. Navigate to **Settings** and scroll to **Delivery Channels**
 2. Click **+ Add Channel** and configure your messaging service
@@ -113,7 +113,7 @@ See the [Delivery Channels](./features/delivery-channels.md) guide for detailed 
 
 ### Seed Sample Data
 
-To explore Stagent with example data before creating your own:
+To explore ainative with example data before creating your own:
 
 1. Navigate to **Settings** then **Data Management**
 2. Click **Seed Sample Data**
@@ -133,7 +133,7 @@ To explore Stagent with example data before creating your own:
 
 ## CLI Usage
 
-Stagent includes a CLI for headless and scripted workflows:
+ainative includes a CLI for headless and scripted workflows:
 
 ```bash
 # Build the CLI from source
@@ -143,7 +143,7 @@ npm run build:cli
 node dist/cli.js
 
 # Or use the published package
-stagent
+ainative
 ```
 
 ### Useful Commands

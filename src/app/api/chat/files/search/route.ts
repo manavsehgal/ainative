@@ -9,7 +9,7 @@ import { searchFiles } from "@/lib/chat/files/search";
  * GET /api/chat/files/search?q=&projectId=&limit=20
  *
  * Returns files under the active project's workingDirectory (if a valid
- * projectId is supplied), else under the stagent launch cwd. The client
+ * projectId is supplied), else under the ainative launch cwd. The client
  * never supplies cwd directly — that would let a hostile prompt or XSS
  * reach arbitrary paths on disk.
  *

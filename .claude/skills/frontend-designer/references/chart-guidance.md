@@ -16,6 +16,6 @@ When a deliverable includes data visualization, recommend chart types by data pa
 | Treemap | Hierarchical proportions | Nivo |
 | Gauge/Radial | Progress toward target | Recharts |
 
-**Stagent note:** The project uses custom SVG chart components (Sparkline, DonutRing, MiniBar) in `src/components/charts/` rather than external libraries. Prefer these existing components when possible.
+**ainative note:** The project uses custom SVG chart components (Sparkline, DonutRing, MiniBar) in `src/components/charts/` rather than external libraries. Prefer these existing components when possible.
 
 **Anti-patterns:** Never use 3D charts. Prefer small multiples over dual-axis. Avoid pie charts with >5 slices (use horizontal bar instead).

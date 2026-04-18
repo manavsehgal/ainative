@@ -11,7 +11,7 @@ import { invalidateLatestScan, getLatestScan } from "@/lib/environment/data";
 import { db } from "@/lib/db";
 import { environmentArtifacts } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
-import { getStagentProfilesDir } from "@/lib/utils/stagent-paths";
+import { getAinativeProfilesDir } from "@/lib/utils/ainative-paths";
 
 /**
  * Builtins ship inside the repo at src/lib/agents/profiles/builtins/.
@@ -41,7 +41,7 @@ const SKILLS_DIR = path.join(
  * Auto-promoted profiles (from environment discovery) are written here
  * instead of SKILLS_DIR to avoid colliding with Claude Code's skill namespace.
  */
-const PROMOTED_PROFILES_DIR = getStagentProfilesDir();
+const PROMOTED_PROFILES_DIR = getAinativeProfilesDir();
 
 // ---------------------------------------------------------------------------
 // Cache
@@ -212,9 +212,9 @@ function scanProfilesFromDir(
       // Infer origin from metadata
       const origin = config.importMeta
         ? "import" as const
-        : config.author === "stagent-env"
+        : config.author === "ainative-env"
           ? "environment" as const
-          : config.author === "stagent-ai-assist"
+          : config.author === "ainative-ai-assist"
             ? "ai-assist" as const
             : "manual" as const;
 
@@ -339,7 +339,7 @@ export function createProfile(config: ProfileConfig, skillMd: string): void {
 }
 
 /**
- * Create an auto-promoted profile in ~/.stagent/profiles/ (not ~/.claude/skills/).
+ * Create an auto-promoted profile in ~/.ainative/profiles/ (not ~/.claude/skills/).
  * This avoids colliding with Claude Code's skill discovery namespace.
  */
 export function createPromotedProfile(config: ProfileConfig, skillMd: string): void {

@@ -19,7 +19,7 @@ canUseToolPolicy:
 maxTurns: 20
 outputFormat: markdown
 
-author: stagent
+author: ainative
 
 tests:
   - task: "Write API documentation for the /api/tasks endpoint"

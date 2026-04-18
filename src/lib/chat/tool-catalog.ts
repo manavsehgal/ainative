@@ -92,7 +92,7 @@ export const TOOL_GROUP_ORDER: ToolGroup[] = [
 // Mirrors names/descriptions from src/lib/chat/tools/*.ts
 // Keep in sync when adding or renaming MCP tools.
 
-const STAGENT_TOOLS: ToolCatalogEntry[] = [
+const AINATIVE_TOOLS: ToolCatalogEntry[] = [
   // ── Tasks ──
   { name: "list_tasks", description: "List tasks, filter by project or status", group: "Tasks", paramHint: "projectId, status" },
   { name: "get_task", description: "Get full details for a task", group: "Tasks", paramHint: "taskId" },
@@ -150,8 +150,8 @@ const STAGENT_TOOLS: ToolCatalogEntry[] = [
   { name: "get_usage_summary", description: "Get spending and token usage stats", group: "Usage", paramHint: "days" },
 
   // ── Settings ──
-  { name: "get_settings", description: "Get current Stagent settings", group: "Settings", paramHint: "key" },
-  { name: "set_settings", description: "Update a Stagent setting (approval required)", group: "Settings", paramHint: "key, value" },
+  { name: "get_settings", description: "Get current ainative settings", group: "Settings", paramHint: "key" },
+  { name: "set_settings", description: "Update a ainative setting (approval required)", group: "Settings", paramHint: "key, value" },
 
   // ── Skills ──
   { name: "list_skills", description: "List all discoverable skills (user + project scopes)", group: "Skills" },
@@ -211,7 +211,7 @@ const SESSION_ENTRIES: ToolCatalogEntry[] = [
   { name: "compact", description: "Summarize and compact conversation history", group: "Session", behavior: "execute_immediately" },
   { name: "export", description: "Save current conversation as a document", group: "Session", behavior: "execute_immediately" },
   { name: "help", description: "Show chat shortcuts and commands", group: "Session", behavior: "execute_immediately" },
-  { name: "settings", description: "Open Stagent settings", group: "Session", behavior: "execute_immediately" },
+  { name: "settings", description: "Open ainative settings", group: "Session", behavior: "execute_immediately" },
   { name: "new-task", description: "Create a new task", group: "Session", paramHint: "title" },
   { name: "new-workflow", description: "Create a new workflow", group: "Session", paramHint: "name" },
   { name: "new-schedule", description: "Create a new schedule", group: "Session", paramHint: "name, interval" },
@@ -233,13 +233,13 @@ export function getToolCatalog(opts?: { includeBrowser?: boolean }): ToolCatalog
 
   if (withBrowser) {
     if (!cachedWithBrowser) {
-      cachedWithBrowser = [...SESSION_ENTRIES, ...STAGENT_TOOLS, ...BROWSER_TOOLS, ...UTILITY_ENTRIES];
+      cachedWithBrowser = [...SESSION_ENTRIES, ...AINATIVE_TOOLS, ...BROWSER_TOOLS, ...UTILITY_ENTRIES];
     }
     return cachedWithBrowser;
   }
 
   if (!cachedCatalog) {
-    cachedCatalog = [...SESSION_ENTRIES, ...STAGENT_TOOLS, ...UTILITY_ENTRIES];
+    cachedCatalog = [...SESSION_ENTRIES, ...AINATIVE_TOOLS, ...UTILITY_ENTRIES];
   }
   return cachedCatalog;
 }

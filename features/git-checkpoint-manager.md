@@ -17,9 +17,9 @@ Additionally, this feature provides git worktree management for onboarded projec
 
 ## User Story
 
-As a Stagent user about to sync configuration between Claude Code and Codex, I want Stagent to automatically create a checkpoint before making any changes, so I can safely rollback to the previous state if something goes wrong.
+As a ainative user about to sync configuration between Claude Code and Codex, I want ainative to automatically create a checkpoint before making any changes, so I can safely rollback to the previous state if something goes wrong.
 
-As a developer working on an onboarded project, I want to manage git worktrees from Stagent's UI, so I can work on feature branches in isolation and see each worktree's environment configuration separately.
+As a developer working on an onboarded project, I want to manage git worktrees from ainative's UI, so I can work on feature branches in isolation and see each worktree's environment configuration separately.
 
 ## Technical Approach
 
@@ -27,7 +27,7 @@ As a developer working on an onboarded project, I want to manage git worktrees f
 
 **`src/lib/environment/git-manager.ts`** — Core git operations:
 
-- **`createCheckpoint(projectPath, label, affectedPaths[])`** — For paths inside a git repo: stages affected files, commits with `[stagent-checkpoint] pre-sync: {label}`, tags with `stagent/checkpoint/{id}`. For paths outside git (~/.claude/, ~/.codex/): copies affected files to `~/.stagent/backups/{timestamp}/{relative-path}`. Records checkpoint in `environment_checkpoints` table with git_tag/git_commit_sha or backup_path.
+- **`createCheckpoint(projectPath, label, affectedPaths[])`** — For paths inside a git repo: stages affected files, commits with `[ainative-checkpoint] pre-sync: {label}`, tags with `ainative/checkpoint/{id}`. For paths outside git (~/.claude/, ~/.codex/): copies affected files to `~/.ainative/backups/{timestamp}/{relative-path}`. Records checkpoint in `environment_checkpoints` table with git_tag/git_commit_sha or backup_path.
 - **`rollbackCheckpoint(checkpointId)`** — For git checkpoints: `git checkout {sha} -- {affected paths}` to restore files. For backup checkpoints: copies from backup dir back to original locations. Updates checkpoint status to "rolled_back" and all associated sync_ops.
 - **`listCheckpoints(projectId)`** — Returns checkpoint history with labels, timestamps, file counts, and status.
 - **`isGitRepo(path)`** — Checks if a path is inside a git repository.
@@ -37,12 +37,12 @@ As a developer working on an onboarded project, I want to manage git worktrees f
 
 The checkpoint mechanism automatically selects the right approach:
 - **Project-level paths** (inside `workingDirectory`): Uses git commits + tags. These are already in a git repo.
-- **Global paths** (`~/.claude/`, `~/.codex/`): Uses file backup to `~/.stagent/backups/`. These directories are NOT git repos.
+- **Global paths** (`~/.claude/`, `~/.codex/`): Uses file backup to `~/.ainative/backups/`. These directories are NOT git repos.
 - **Mixed operations** (e.g., sync a skill from project to `~/.codex/`): Creates both a git checkpoint for project files AND a file backup for global files, linked to the same checkpoint record.
 
 ### Git Tag Naming
 
-Tags follow `stagent/checkpoint/{nanoid}` format. If tag already exists (collision), append timestamp suffix. Tags are local only — never pushed.
+Tags follow `ainative/checkpoint/{nanoid}` format. If tag already exists (collision), append timestamp suffix. Tags are local only — never pushed.
 
 ### Worktree Management
 
@@ -76,7 +76,7 @@ Each worktree can be scanned independently via the environment scanner by passin
 ## Acceptance Criteria
 
 - [ ] Checkpoint creation works for project-level files (git commit + tag)
-- [ ] Checkpoint creation works for global files (~/.stagent/backups/)
+- [ ] Checkpoint creation works for global files (~/.ainative/backups/)
 - [ ] Mixed checkpoints handle both git and backup paths
 - [ ] Rollback restores files to pre-checkpoint state (git checkout for git, copy for backups)
 - [ ] Rollback updates checkpoint and sync_op statuses in DB

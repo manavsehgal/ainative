@@ -9,7 +9,7 @@
 
 ## Context
 
-A real user session — researching seed investors for Stagent with a 3-step workflow and 6 attached documents — surfaced 9 cascading failures across workflow execution, budget management, model routing, and chat intelligence. Every execution attempt failed. Investigation revealed that much of the required infrastructure already exists but is not wired to user-facing surfaces (dead constants, unexposed DB columns, unused function parameters). Beyond fixing these gaps, we're expanding into proactive workflow optimization: a co-pilot that generates optimal definitions, a live execution dashboard, embedded debugging, and execution-informed learning from past runs.
+A real user session — researching seed investors for ainative with a 3-step workflow and 6 attached documents — surfaced 9 cascading failures across workflow execution, budget management, model routing, and chat intelligence. Every execution attempt failed. Investigation revealed that much of the required infrastructure already exists but is not wired to user-facing surfaces (dead constants, unexposed DB columns, unused function parameters). Beyond fixing these gaps, we're expanding into proactive workflow optimization: a co-pilot that generates optimal definitions, a live execution dashboard, embedded debugging, and execution-informed learning from past runs.
 
 ---
 

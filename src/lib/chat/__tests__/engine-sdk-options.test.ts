@@ -25,7 +25,7 @@ describe("Claude SDK options (Phase 1a)", () => {
     );
   });
 
-  it("does NOT include Task (subagent delegation replaced by Stagent primitives)", () => {
+  it("does NOT include Task (subagent delegation replaced by ainative primitives)", () => {
     expect(CLAUDE_SDK_ALLOWED_TOOLS).not.toContain("Task");
   });
 

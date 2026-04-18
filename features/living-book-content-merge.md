@@ -18,7 +18,7 @@ This is the foundation of the "Living Book" initiative: a single unified content
 
 ## User Story
 
-As a Stagent user reading the Book, I want each chapter to include practical reference links and "Try It Now" sections, so I can move from understanding concepts to doing them without switching to a separate documentation system.
+As a ainative user reading the Book, I want each chapter to include practical reference links and "Try It Now" sections, so I can move from understanding concepts to doing them without switching to a separate documentation system.
 
 As a Playbook user, I want my feature guides to be discoverable within the Book's narrative context, so I understand where each feature fits in the bigger autonomy story.
 

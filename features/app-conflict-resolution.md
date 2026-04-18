@@ -3,7 +3,7 @@ title: App Conflict Resolution
 status: deferred
 priority: P2
 milestone: post-mvp
-source: handoff/stagent-app-marketplace-spec.md
+source: handoff/ainative-app-marketplace-spec.md
 dependencies: [app-package-format, marketplace-install-hardening]
 ---
 
@@ -29,7 +29,7 @@ choices rather than a silent failure or data loss.
 
 ## User Story
 
-As a Stagent user installing a new app, I want the platform to detect
+As a ainative user installing a new app, I want the platform to detect
 conflicts with my existing apps before installation starts, so I never end
 up with broken sidebar links, overwritten data, or mysterious errors from
 namespace collisions.
@@ -244,7 +244,7 @@ When updating an installed app to a new version:
 ### 4. Git safety
 
 App source files (the `.sap` directory or extracted package files) are
-stored under `~/.stagent/apps/{app-id}/` and are gitignored by default.
+stored under `~/.ainative/apps/{app-id}/` and are gitignored by default.
 This prevents accidentally committing marketplace-downloaded apps to the
 user's repo.
 
@@ -295,7 +295,7 @@ modifications and offers to back up the modified files.
 
 The conflict checker integrates into the install flow at two points:
 
-**CLI** — `stagent app install` runs `runPreInstallChecks()` before calling
+**CLI** — `ainative app install` runs `runPreInstallChecks()` before calling
 `installApp()`. If conflicts exist, display them and prompt for confirmation.
 If errors exist, block unless `--force` is passed.
 
@@ -360,7 +360,7 @@ if (!report.canProceed && !body.force) {
 
 ## References
 
-- Source: `handoff/stagent-app-marketplace-spec.md` section 8
+- Source: `handoff/ainative-app-marketplace-spec.md` section 8
 - Related: `marketplace-install-hardening` (UNIQUE constraint is the DB-level
   fallback), `app-package-format` (defines namespace isolation rules),
   `app-updates-dependencies` (builds on conflict detection for update flow)

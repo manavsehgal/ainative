@@ -3,7 +3,7 @@ title: Marketplace App Publishing
 status: completed
 priority: P1
 milestone: post-mvp
-source: handoff/stagent-app-marketplace-spec.md, brainstorm 2026-04-11
+source: handoff/ainative-app-marketplace-spec.md, brainstorm 2026-04-11
 dependencies: [app-package-format, app-cli-tools, marketplace-access-gate]
 ---
 
@@ -11,14 +11,14 @@ dependencies: [app-package-format, app-cli-tools, marketplace-access-gate]
 
 ## Description
 
-Creators need a way to publish their apps to the Stagent marketplace so other
+Creators need a way to publish their apps to the ainative marketplace so other
 users can discover and install them. This feature implements the full publish
 flow: pack the app locally, review the package contents, fill in listing
 metadata (title, description, category, pricing, screenshots), and submit
 to the Supabase-backed marketplace registry.
 
 The publish flow is available both from the UI (a publish sheet in the
-marketplace) and from the CLI (`stagent app publish`). Both paths converge on
+marketplace) and from the CLI (`ainative app publish`). Both paths converge on
 the same API route that uploads the `.sap` archive to Supabase Storage and
 registers metadata in the `app_packages` table.
 
@@ -28,7 +28,7 @@ existing blueprint publishing gate in `marketplace-access-gate`.
 ## User Story
 
 As an app creator on the Operator tier, I want to publish my locally-built
-app to the Stagent marketplace with screenshots, pricing, and a description,
+app to the ainative marketplace with screenshots, pricing, and a description,
 so other users can discover, evaluate, and install it — and I can optionally
 earn revenue from paid apps.
 
@@ -52,7 +52,7 @@ the installed-apps manager. The sheet contains a multi-section form:
 **Pricing:**
 - Radio: Free | Paid
 - If paid: price input ($1.00 – $25.00 range, $0.50 increments)
-- Revenue split note: "Stagent takes 20% platform fee" (from marketplace-access-gate)
+- Revenue split note: "ainative takes 20% platform fee" (from marketplace-access-gate)
 
 **README:**
 - Markdown editor for the full app README
@@ -85,11 +85,11 @@ Processing steps:
    `validation.ts` schema
 3. **Compute checksum** — SHA-256 hash of the `.sap` file for integrity
    verification on download
-4. **Upload to Supabase Storage** — upload `.sap` to `stagent-marketplace`
+4. **Upload to Supabase Storage** — upload `.sap` to `ainative-marketplace`
    bucket under `apps/{app-id}/{version}/app.sap`
-5. **Upload screenshots** — to `stagent-marketplace` bucket under
+5. **Upload screenshots** — to `ainative-marketplace` bucket under
    `apps/{app-id}/screenshots/`
-6. **Upload icon** — to `stagent-marketplace` bucket under
+6. **Upload icon** — to `ainative-marketplace` bucket under
    `apps/{app-id}/icon.{ext}`
 7. **Register metadata** — insert row into Supabase `app_packages` table:
    - `app_id`, `version`, `title`, `description`, `category`, `tags`
@@ -124,11 +124,11 @@ marketplace module.
 
 ### 4. Storage Configuration
 
-Supabase Storage bucket: `stagent-marketplace`
+Supabase Storage bucket: `ainative-marketplace`
 
 Directory structure:
 ```
-stagent-marketplace/
+ainative-marketplace/
   apps/
     {app-id}/
       {version}/
@@ -163,7 +163,7 @@ release downloads still verify the SHA-256 checksum.
 
 ### 7. CLI Integration
 
-`stagent app publish` — reads the current directory as a `.sap` package,
+`ainative app publish` — reads the current directory as a `.sap` package,
 validates, prompts for metadata (or reads from `manifest.yaml` fields),
 and calls the same API route.
 
@@ -205,7 +205,7 @@ here is the shared backend.
 
 ## References
 
-- Source: handoff/stagent-app-marketplace-spec.md §4.5, §10.1
+- Source: handoff/ainative-app-marketplace-spec.md §4.5, §10.1
 - Related: `marketplace-access-gate` (tier gating), `app-package-format`
   (.sap structure), `app-cli-tools` (CLI publish command)
 - Files to modify:

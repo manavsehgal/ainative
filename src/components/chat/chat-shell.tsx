@@ -65,9 +65,9 @@ export function ChatShell({
     function onOpen() {
       setTemplatePickerOpen(true);
     }
-    window.addEventListener("stagent.chat.openTemplatePicker", onOpen);
+    window.addEventListener("ainative.chat.openTemplatePicker", onOpen);
     return () =>
-      window.removeEventListener("stagent.chat.openTemplatePicker", onOpen);
+      window.removeEventListener("ainative.chat.openTemplatePicker", onOpen);
   }, []);
 
   // Track streaming state + activeId in refs so the unmount cleanup sees the
@@ -127,7 +127,7 @@ export function ChatShell({
               : msg.metadata;
           if (
             meta.type === "permission_request" &&
-            meta.toolName === "mcp__stagent__execute_task"
+            meta.toolName === "mcp__ainative__execute_task"
           ) {
             const input = meta.toolInput;
             if (input?.taskId) taskIds.push(input.taskId);

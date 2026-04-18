@@ -1,4 +1,4 @@
-// Shared theme utilities. Server reads the `stagent-theme` cookie and renders
+// Shared theme utilities. Server reads the `ainative-theme` cookie and renders
 // <html className="dark"> directly, so we no longer need a pre-hydration <script>
 // bootstrap to prevent FOUC. Every client-side toggle must keep the cookie in
 // sync so the next SSR matches.
@@ -9,7 +9,7 @@
 
 export type ResolvedTheme = "light" | "dark";
 
-export const THEME_COOKIE = "stagent-theme";
+export const THEME_COOKIE = "ainative-theme";
 export const DEFAULT_THEME: ResolvedTheme = "light";
 
 export function isResolvedTheme(value: unknown): value is ResolvedTheme {
@@ -64,7 +64,7 @@ export function readClientTheme(): ResolvedTheme {
   } catch {
     /* ignore */
   }
-  const cookieMatch = document.cookie.match(/(?:^|;\s*)stagent-theme=([^;]+)/);
+  const cookieMatch = document.cookie.match(/(?:^|;\s*)ainative-theme=([^;]+)/);
   const cookieValue = cookieMatch?.[1];
   if (isResolvedTheme(cookieValue)) return cookieValue;
   return DEFAULT_THEME;

@@ -11,7 +11,7 @@ lastUpdated: "2026-04-15"
 
 # Keyboard Navigation
 
-Stagent is designed for keyboard-first operation. The command palette provides instant access to any resource, and all interactive elements support full keyboard navigation with visible focus indicators.
+ainative is designed for keyboard-first operation. The command palette provides instant access to any resource, and all interactive elements support full keyboard navigation with visible focus indicators.
 
 ## Screenshots
 

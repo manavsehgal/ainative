@@ -11,13 +11,13 @@ dependencies: [playbook-documentation, database-schema]
 
 ## Description
 
-A data-driven system that analyzes Stagent's own database to determine which features the user has actually adopted, how deeply, and what stage of the product journey they're in. This powers the playbook's personalized experience — showing adoption heatmaps, recommending next steps, and tracking journey completions.
+A data-driven system that analyzes ainative's own database to determine which features the user has actually adopted, how deeply, and what stage of the product journey they're in. This powers the playbook's personalized experience — showing adoption heatmaps, recommending next steps, and tracking journey completions.
 
 The system queries real DB state (task counts, workflow usage, document uploads, schedule creation, etc.) to compute adoption depth per feature area. This data feeds into the playbook UI as an adoption heatmap and drives the usage-stage classifier that determines whether the user is in the "Getting Started", "Active Use", or "Power User" stage.
 
 ## User Story
 
-As a new Stagent user, I want the documentation to show me which features I've actually used so that I can focus on learning the features I haven't explored yet.
+As a new ainative user, I want the documentation to show me which features I've actually used so that I can focus on learning the features I haven't explored yet.
 
 ## Technical Approach
 

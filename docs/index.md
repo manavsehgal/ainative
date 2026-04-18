@@ -1,15 +1,15 @@
 ---
-title: "Stagent Documentation"
+title: "ainative Documentation"
 category: "index"
 lastUpdated: "2026-04-15"
 ---
 
-# Stagent Documentation
+# ainative Documentation
 
-Stagent is an AI Business Operating System that lets solo founders and micro-teams run their entire business with AI agents -- locally, governed, and cost-controlled. Deploy specialized profiles across five runtime providers (including local models via Ollama), automate multi-step business processes with heartbeat scheduling and natural language cadence, and maintain full visibility over spend and execution across channels like Slack and Telegram.
+ainative is an AI Business Operating System that lets solo founders and micro-teams run their entire business with AI agents -- locally, governed, and cost-controlled. Deploy specialized profiles across five runtime providers (including local models via Ollama), automate multi-step business processes with heartbeat scheduling and natural language cadence, and maintain full visibility over spend and execution across channels like Slack and Telegram.
 
 ## Getting Started
-- [Why Stagent](./why-stagent.md) -- The problem, the solution, and who it's for
+- [Why ainative](./why-ainative.md) -- The problem, the solution, and who it's for
 - [Quick Start Guide](./getting-started.md)
 
 ## Use Cases

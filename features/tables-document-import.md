@@ -17,7 +17,7 @@ The import can create a new table or append to an existing one. Each import is t
 
 ## User Story
 
-As a user, I want to import data from a CSV or spreadsheet document into a table so that I can work with my existing data in Stagent's structured table format without manual re-entry.
+As a user, I want to import data from a CSV or spreadsheet document into a table so that I can work with my existing data in ainative's structured table format without manual re-entry.
 
 ## Technical Approach
 

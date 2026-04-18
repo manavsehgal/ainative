@@ -37,14 +37,14 @@ An **arena** is a recurring improvement loop. It runs on a schedule, attempts to
 
 The distinction matters because they require different safety profiles. A heartbeat can run with read-only permissions — it only observes. An arena needs write permissions — it modifies code, runs experiments, creates artifacts. The tool policies encoded in agent profiles enforce this distinction at the system level. A heartbeat schedule uses a profile with `autoApprove: [Read, Grep, Glob]` and `autoDeny: [Write, Bash]`. An arena schedule uses a profile with broader permissions and stricter budget constraints.
 
-Stagent supports both through the same scheduling infrastructure but encourages users to be explicit about which type they are creating. The `type` field on a schedule declaration distinguishes `heartbeat` from `arena`, and the UI surfaces different configuration options for each.
+ainative supports both through the same scheduling infrastructure but encourages users to be explicit about which type they are creating. The `type` field on a schedule declaration distinguishes `heartbeat` from `arena`, and the UI surfaces different configuration options for each.
 
 ## Natural Language Scheduling
 
 One of the smallest features that produces the largest usability improvement is natural language interval parsing. Humans do not think in cron syntax. They think in phrases: "every weekday at 9am," "twice a day," "every 30 minutes during business hours," "the first Monday of each month."
 
 ```typescript
-// Building with Stagent: Arena-style scheduled intelligence
+// Building with ainative: Arena-style scheduled intelligence
 const schedule = await fetch("/api/schedules", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
@@ -73,7 +73,7 @@ The scheduler engine in `src/lib/schedules/scheduler.ts` reads schedule configur
 
 ## Stop Conditions
 
-An arena without stop conditions is a runaway process. Stagent supports four types of stop conditions, and every schedule must declare at least one:
+An arena without stop conditions is a runaway process. ainative supports four types of stop conditions, and every schedule must declare at least one:
 
 **Max Iterations**: The simplest stop condition. The agent runs N times and stops. A heartbeat that checks codebase health once per night sets `maxIterations: 1`. An arena that tries ten optimization approaches sets `maxIterations: 10`.
 
@@ -95,7 +95,7 @@ One dimension these budgets do not capture is their trajectory. The economics of
 
 The arena pattern extends naturally into longer-running autonomous loops. While a heartbeat runs once and reports, and an arena runs a fixed number of iterations, an autonomous loop runs continuously until an external condition changes.
 
-Stagent's loop executor supports this through the `autonomous-loop-execution` feature. A loop has an executor that manages iteration context — passing the output of each iteration as input to the next — and supports pause/resume so humans can intervene without losing progress.
+ainative's loop executor supports this through the `autonomous-loop-execution` feature. A loop has an executor that manages iteration context — passing the output of each iteration as input to the next — and supports pause/resume so humans can intervene without losing progress.
 
 The iteration context is critical. Without it, each iteration starts from scratch, repeating work the previous iteration already did. With it, the agent builds on its own previous results. An optimization arena that reduced bundle size by 3KB in iteration one starts iteration two with that knowledge, looking for the next 3KB reduction rather than rediscovering the first one.
 
@@ -111,11 +111,11 @@ The arena metaphor is not just about constraints and schedules. It is about comp
 
 This is the logic behind competitive evaluation. SWE-bench, the software engineering benchmark, ranks agent systems against each other on identical problem sets. Claude Opus 4.6 currently holds the top position. DR-Arena takes this further: zero human intervention, automated evaluation, ranked results. The ICLR 2026 workshop on Recursive Self-Improvement explored the theoretical foundations of agents that improve through competitive dynamics.
 
-In Stagent, the competitive dimension is not yet fully realized, but the infrastructure supports it. A schedule can dispatch the same task to multiple profiles, collect results, and a human (or a judge agent) selects the best output. This is ensemble execution: not trusting any single agent's output, but sampling from multiple agents and selecting from the distribution.
+In ainative, the competitive dimension is not yet fully realized, but the infrastructure supports it. A schedule can dispatch the same task to multiple profiles, collect results, and a human (or a judge agent) selects the best output. This is ensemble execution: not trusting any single agent's output, but sampling from multiple agents and selecting from the distribution.
 
 The competitive pattern is particularly powerful for creative and architectural work — domains where there is no single right answer and the best approach depends on taste, context, and trade-offs that a single agent cannot fully explore. Having three agents propose three different architectures and a human architect choose the best one is faster and produces better outcomes than having one agent iterate three times.
 
-## Stagent Today
+## ainative Today
 
 The scheduling infrastructure is complete and running in production:
 

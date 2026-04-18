@@ -26,7 +26,7 @@ while still allowing the community to build and share useful declarative apps.
 
 ## User Story
 
-As a Stagent user, I want to see a clear trust badge on every marketplace app
+As a ainative user, I want to see a clear trust badge on every marketplace app
 and understand what permissions it requires before installing, so I can make
 informed decisions about which apps to trust with my data and workflows.
 
@@ -43,7 +43,7 @@ memory even if its manifest declares those primitives.
 | `private` | Gray shield | Any user | Default for locally-created apps |
 | `community` | Blue shield | Operator+ | Published to marketplace (automatic) |
 | `verified` | Green shield + checkmark | Platform-reviewed creators | Apply → review → approved |
-| `official` | Gold shield + star | Stagent team | Internal only |
+| `official` | Gold shield + star | ainative team | Internal only |
 
 ### 2. Execution Tier Mapping
 

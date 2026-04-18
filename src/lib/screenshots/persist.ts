@@ -3,7 +3,7 @@ import { mkdirSync, writeFileSync, unlinkSync } from "fs";
 import { join } from "path";
 import { db } from "@/lib/db";
 import { documents } from "@/lib/db/schema";
-import { getStagentScreenshotsDir } from "@/lib/utils/stagent-paths";
+import { getAinativeScreenshotsDir } from "@/lib/utils/ainative-paths";
 import type { ScreenshotAttachment } from "@/lib/chat/types";
 
 const MAX_BASE64_BYTES = 20 * 1024 * 1024; // 20MB
@@ -32,7 +32,7 @@ export async function persistScreenshot(
   base64Data: string,
   opts: PersistOptions
 ): Promise<ScreenshotAttachment | null> {
-  const screenshotsDir = getStagentScreenshotsDir();
+  const screenshotsDir = getAinativeScreenshotsDir();
   const id = randomUUID();
   const originalPath = join(screenshotsDir, `${id}.png`);
   let thumbnailPath: string | null = null;

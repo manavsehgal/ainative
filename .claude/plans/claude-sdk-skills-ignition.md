@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Flip Stagent chat on the `claude-code` runtime from "isolation mode" to "SDK-native" — enable filesystem skills, CLAUDE.md auto-loading, and the full filesystem tool suite (Read/Grep/Glob/Edit/Write/Bash/TodoWrite) routed through the existing permission bridge — and update `list_profiles` to honestly reflect what's reachable.
+**Goal:** Flip ainative chat on the `claude-code` runtime from "isolation mode" to "SDK-native" — enable filesystem skills, CLAUDE.md auto-loading, and the full filesystem tool suite (Read/Grep/Glob/Edit/Write/Bash/TodoWrite) routed through the existing permission bridge — and update `list_profiles` to honestly reflect what's reachable.
 
 **Architecture:** Two small option changes to the `query()` call at `src/lib/chat/engine.ts:300-315` activate the SDK's native skill and filesystem machinery. The existing `canUseTool` callback at lines 317-400+ already routes any unknown tool through a saved-permissions → side-channel-request flow, so `Edit`/`Write`/`Bash`/`TodoWrite` gating is free once they're in `allowedTools`; only `Read`/`Grep`/`Glob` need a read-only auto-allow branch (mirroring the existing browser/exa pattern). A Tier 0 / CLAUDE.md partition audit documents why this codebase requires minimal content migration. A new `listAllProfiles(projectDir)` helper fuses registry profiles with SDK-discovered filesystem skills, and the chat `list_profiles` tool uses it. TDR-032-mandated live smoke tests verify no module-load cycle and confirm the three concrete user-visible capabilities (skill invocation, CLAUDE.md reach, Grep works without prompt spam).
 
@@ -13,11 +13,11 @@
 ## What already exists
 
 - `src/lib/chat/engine.ts:300-315` — the target `query()` call. `cwd` is already resolved from `workspace.cwd` (via `project.workingDirectory` → launch cwd fallback at lines 188-207, identical pattern to `claude-agent.ts:479-489`). `env` passes through `buildClaudeSdkEnv`. `allowedTools` is a `string[]` with existing spread patterns.
-- `src/lib/chat/engine.ts:317-400+` — the `canUseTool` callback. **Fully generic:** handles Stagent MCP (`PERMISSION_GATED_TOOLS` list), Exa (read-only auto-allow), browser (read-only auto-allow, mutation → check), AskUserQuestion special case, then falls through to `isToolAllowed(toolName, input)` (saved-permission check) → side-channel permission request via `emitSideChannelEvent`. Any new tool added to `allowedTools` inherits this flow. **Implication:** `Edit`/`Write`/`Bash`/`TodoWrite` gating is free. Only `Read`/`Grep`/`Glob` need a new auto-allow branch.
+- `src/lib/chat/engine.ts:317-400+` — the `canUseTool` callback. **Fully generic:** handles ainative MCP (`PERMISSION_GATED_TOOLS` list), Exa (read-only auto-allow), browser (read-only auto-allow, mutation → check), AskUserQuestion special case, then falls through to `isToolAllowed(toolName, input)` (saved-permission check) → side-channel permission request via `emitSideChannelEvent`. Any new tool added to `allowedTools` inherits this flow. **Implication:** `Edit`/`Write`/`Bash`/`TodoWrite` gating is free. Only `Read`/`Grep`/`Glob` need a new auto-allow branch.
 - `src/lib/chat/permission-bridge.ts` — the side-channel queue (`createSideChannel`, `emitSideChannelEvent`, `createPendingRequest`, `resolvePendingRequest`) used by chat only. No modifications needed for this plan.
 - `src/lib/chat/tools/profile-tools.ts:7-28` — current `list_profiles` returns registry-only via `listProfiles()` from `@/lib/agents/profiles/registry`. Does not see filesystem skills.
 - `src/lib/agents/profiles/registry.ts` — `listProfiles()` loads builtins + `~/.claude/skills/` *for registry profiles only* (not raw filesystem skills). No `listAllProfiles(projectDir)` helper exists.
-- `src/lib/chat/system-prompt.ts` — `STAGENT_SYSTEM_PROMPT` constant, 117 lines. Content audit: overwhelmingly Stagent identity + tool catalog + tool routing + Stagent-domain semantics (delay steps, enrich_table, workflow dedup). **The repo's `CLAUDE.md` is 34 lines and mostly "read AGENTS.md" pointers** — almost no content overlap.
+- `src/lib/chat/system-prompt.ts` — `STAGENT_SYSTEM_PROMPT` constant, 117 lines. Content audit: overwhelmingly ainative identity + tool catalog + tool routing + ainative-domain semantics (delay steps, enrich_table, workflow dedup). **The repo's `CLAUDE.md` is 34 lines and mostly "read AGENTS.md" pointers** — almost no content overlap.
 - `CLAUDE.md` (project root) — thin Claude-compatible pointer to `AGENTS.md`. The SDK's `settingSources: ["project"]` loads `CLAUDE.md` but does NOT follow its pointer to `AGENTS.md` (that's a Codex convention).
 - `.claude/skills/` — 23 skills on disk. All load via `settingSources` (progressive disclosure keeps per-skill cost to SKILL.md frontmatter until invoked).
 - `~/.claude/skills/` — user-level skills. Also loaded via `settingSources: "user"`.
@@ -32,20 +32,20 @@
 - **Task execution runtime parity** — `claude-agent.ts` does not get filesystem tools or `settingSources` in this plan. Drift is documented as an intentional seam; `task-runtime-skill-parity` (P1, sibling spec) closes it.
 - **Filesystem hook loading** — the SDK supports `hooks` as a separate option; we explicitly do not pass it (Q2 scope exclusion). A regression test asserts the option is absent.
 - **Popover UX refactor** — `chat-command-namespace-refactor` covers the `/` verb vs `@` noun redesign. This plan updates the underlying `list_profiles` data, not the popover component.
-- **`Task` subagent delegation tool** — explicitly NOT in `allowedTools`. Stagent task primitives replace the SDK's `Task` tool per §3.3 of the ideas doc.
+- **`Task` subagent delegation tool** — explicitly NOT in `allowedTools`. ainative task primitives replace the SDK's `Task` tool per §3.3 of the ideas doc.
 - **Rich CLAUDE.md authoring** — we do not write new CLAUDE.md content. If Tier 0 gets trimmed, content may move into CLAUDE.md; otherwise CLAUDE.md stays as the thin pointer it already is. Making CLAUDE.md genuinely useful is separate editorial work.
 - **Refactoring the existing `cwd` resolver** into a shared helper. Both `engine.ts` and `claude-agent.ts` currently duplicate the ~10-line pattern. That's a small DRY opportunity but not this plan's job.
-- **New permission UI** — all gating reuses the existing side-channel flow. If a user sees a `Bash` approval toast, it looks exactly like a Stagent `execute_task` toast, which is fine for MVP.
+- **New permission UI** — all gating reuses the existing side-channel flow. If a user sees a `Bash` approval toast, it looks exactly like a ainative `execute_task` toast, which is fine for MVP.
 
 ## Error & Rescue Registry
 
 | Failure mode | How it manifests | Recovery strategy |
 |---|---|---|
-| Module-load cycle via chat-tools import (TDR-032) | `ReferenceError: Cannot access 'claudeRuntimeAdapter' before initialization` at first chat request in `npm run dev` | Task 7 (smoke test) is the only check that catches this. Recovery: trace the import graph from any file that touches `@/lib/chat/stagent-tools` and introduce a dynamic `await import()` at the call site. Reference: TDR-032, commits `092f925` → `2b5ae42`, and `runtime-capability-matrix` smoke test (this plan's immediate predecessor) which passed. |
+| Module-load cycle via chat-tools import (TDR-032) | `ReferenceError: Cannot access 'claudeRuntimeAdapter' before initialization` at first chat request in `npm run dev` | Task 7 (smoke test) is the only check that catches this. Recovery: trace the import graph from any file that touches `@/lib/chat/ainative-tools` and introduce a dynamic `await import()` at the call site. Reference: TDR-032, commits `092f925` → `2b5ae42`, and `runtime-capability-matrix` smoke test (this plan's immediate predecessor) which passed. |
 | Permission-prompt spam on every `Read` call | User asks "read CLAUDE.md" and gets 5+ side-channel permission toasts before any content appears | Task 1's auto-allow branch is the fix. If the wrong set of read-only patterns is chosen (e.g. `Edit` accidentally auto-allowed), the test harness in Task 1 Step 7 asserts the exact auto-allow set. |
 | SDK loads 23+ skills, floods context budget | First chat turn's input tokens spike, `maxTurns` is exhausted prematurely | Unlikely due to progressive disclosure (only frontmatter loads until invoked), but Task 7's smoke test records the first-turn input-token count and flags if it exceeds 25% more than a baseline non-SDK-skills turn. If breached, revisit by narrowing `settingSources` to `["user"]` or `["project"]` alone. |
 | `settingSources: ["user", "project"]` loads hostile skill from user's `~/.claude/skills/` | Malicious skill's SKILL.md reaches the LLM | Out of scope for this plan — no new attack surface vs. Claude Code CLI itself, which is how these skills already load. Documented as trust assumption. |
-| `CLAUDE.md` at repo root is empty or contradicts Stagent identity | LLM follows CLAUDE.md guidance instead of Stagent tool-use semantics | Current CLAUDE.md is a thin pointer — contradiction risk is low. Task 2's audit documents the specific content in today's CLAUDE.md and flags any future conflict risk to the `chat-claude-sdk-skills-tier0-partition` follow-up. |
+| `CLAUDE.md` at repo root is empty or contradicts ainative identity | LLM follows CLAUDE.md guidance instead of ainative tool-use semantics | Current CLAUDE.md is a thin pointer — contradiction risk is low. Task 2's audit documents the specific content in today's CLAUDE.md and flags any future conflict risk to the `chat-claude-sdk-skills-tier0-partition` follow-up. |
 | `listAllProfiles(projectDir)` crashes on malformed SKILL.md frontmatter in one of the 23 skills | `list_profiles` chat tool returns 500 | Task 4's helper wraps per-skill parsing in try/catch and logs-then-skips invalid entries. Unit test in Task 4 Step 1 covers this. |
 | `list_profiles` now returns 30+ entries (23 skills + ~7 registry profiles) | Popover overflows, `/` menu becomes unusable | Popover UX is out of scope (`chat-command-namespace-refactor`). For now, the raw list is honest; the popover can paginate or filter on its own timeline. |
 
@@ -91,7 +91,7 @@ describe("Claude SDK options (Phase 1a)", () => {
     );
   });
 
-  it("does NOT include Task (subagent delegation replaced by Stagent primitives)", () => {
+  it("does NOT include Task (subagent delegation replaced by ainative primitives)", () => {
     expect(CLAUDE_SDK_ALLOWED_TOOLS).not.toContain("Task");
   });
 
@@ -152,14 +152,14 @@ export const CLAUDE_SDK_READ_ONLY_FS_TOOLS = new Set<string>([
 Change `src/lib/chat/engine.ts:314-315` from:
 
 ```typescript
-        mcpServers: { stagent: stagentServer, ...browserServers, ...externalServers },
+        mcpServers: { ainative: stagentServer, ...browserServers, ...externalServers },
         allowedTools: ["mcp__stagent__*", ...browserToolPatterns, ...externalToolPatterns],
 ```
 
 to:
 
 ```typescript
-        mcpServers: { stagent: stagentServer, ...browserServers, ...externalServers },
+        mcpServers: { ainative: stagentServer, ...browserServers, ...externalServers },
         allowedTools: [
           "mcp__stagent__*",
           ...browserToolPatterns,
@@ -271,7 +271,7 @@ export async function canUseToolForTest(
 }
 ```
 
-Note: this helper is **only** the auto-allow policy for SDK filesystem/Skill tools. The full `canUseTool` closure in `query()` options handles Stagent MCP, browser, Exa, and the saved-permission fallback. We are not refactoring the full closure — just extracting a testable slice of the new policy.
+Note: this helper is **only** the auto-allow policy for SDK filesystem/Skill tools. The full `canUseTool` closure in `query()` options handles ainative MCP, browser, Exa, and the saved-permission fallback. We are not refactoring the full closure — just extracting a testable slice of the new policy.
 
 - [ ] **Step 9: Re-run the full test file to verify**
 
@@ -290,7 +290,7 @@ set (Skill, Read, Grep, Glob, Edit, Write, Bash, TodoWrite) to the chat
 query() options. Read/Grep/Glob auto-allow via the existing browser/exa
 read-only pattern; Edit/Write/Bash/TodoWrite gate through the side-channel
 permission bridge automatically (no new plumbing). Task tool excluded —
-Stagent task primitives replace it per §3.3 of the ideas doc.
+ainative task primitives replace it per §3.3 of the ideas doc.
 
 Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
 EOF
@@ -364,7 +364,7 @@ EOF
 - Modify: `src/lib/chat/system-prompt.ts` (inline doc comment)
 - Create: `features/chat-claude-sdk-skills.md` (append audit section)
 
-Performs the partition audit that DD-CE-002 requires and **documents the finding in code**. For this specific codebase, the finding is expected to be "minimal movement needed" — Tier 0 is overwhelmingly Stagent-identity, and the repo's current `CLAUDE.md` is a thin pointer file. The audit documents this explicitly so future work can flag any regression (e.g. someone adding project-specific testing rules to `system-prompt.ts` instead of to `CLAUDE.md`).
+Performs the partition audit that DD-CE-002 requires and **documents the finding in code**. For this specific codebase, the finding is expected to be "minimal movement needed" — Tier 0 is overwhelmingly ainative-identity, and the repo's current `CLAUDE.md` is a thin pointer file. The audit documents this explicitly so future work can flag any regression (e.g. someone adding project-specific testing rules to `system-prompt.ts` instead of to `CLAUDE.md`).
 
 **What this task is NOT:** speculative editorial rewriting of the system prompt. If the audit finds nothing to move, nothing moves.
 
@@ -373,22 +373,22 @@ Performs the partition audit that DD-CE-002 requires and **documents the finding
 Read `src/lib/chat/system-prompt.ts` lines 6-117. For each numbered block below, apply the rubric:
 
 **Rubric:**
-- **KEEP in Tier 0** if content is (a) Stagent identity, (b) Stagent tool catalog / routing, (c) Stagent domain semantics (e.g. "delay steps mean X"), or (d) LLM interaction style that applies regardless of project.
+- **KEEP in Tier 0** if content is (a) ainative identity, (b) ainative tool catalog / routing, (c) ainative domain semantics (e.g. "delay steps mean X"), or (d) LLM interaction style that applies regardless of project.
 - **MOVE to CLAUDE.md** if content is (a) project conventions (coding style, testing rules), (b) repo-specific rules (git workflow, commit format), or (c) anything that a developer editing AGENTS.md would write.
 
 Audit result for this codebase (document below; do not yet edit):
 
 | Block | Lines | Decision | Rationale |
 |---|---|---|---|
-| Identity | 6 | KEEP | Stagent identity |
-| Tool catalog | 8-79 | KEEP | Stagent primitives |
+| Identity | 6 | KEEP | ainative identity |
+| Tool catalog | 8-79 | KEEP | ainative primitives |
 | When to Use Which Tools | 81-90 | KEEP | Tool routing guidance |
 | Approach | 92-98 | KEEP | LLM interaction style |
-| Guidelines lines 101-109 | 101-109 | KEEP | All Stagent-domain semantics (priority default, approval markers, workflow patterns, delay steps syntax, enrich_table idempotency, create_workflow dedup) |
-| Worktree note | 110 | KEEP (borderline) | Mixes Stagent file-creation semantics with worktree-awareness. Could argue for moving to CLAUDE.md, but the instruction is fundamentally about how Stagent tools should behave, not about the repo's development workflow. |
-| Document Pool Awareness | 112-117 | KEEP | Stagent workflow patterns |
+| Guidelines lines 101-109 | 101-109 | KEEP | All ainative-domain semantics (priority default, approval markers, workflow patterns, delay steps syntax, enrich_table idempotency, create_workflow dedup) |
+| Worktree note | 110 | KEEP (borderline) | Mixes ainative file-creation semantics with worktree-awareness. Could argue for moving to CLAUDE.md, but the instruction is fundamentally about how ainative tools should behave, not about the repo's development workflow. |
+| Document Pool Awareness | 112-117 | KEEP | ainative workflow patterns |
 
-**Conclusion:** **Zero content moves for this codebase.** The partition is already clean because Tier 0 is deliberately Stagent-identity-focused. The audit itself is the deliverable — it establishes the rubric so future additions can be placed correctly.
+**Conclusion:** **Zero content moves for this codebase.** The partition is already clean because Tier 0 is deliberately ainative-identity-focused. The audit itself is the deliverable — it establishes the rubric so future additions can be placed correctly.
 
 - [ ] **Step 2: Add the audit as a code comment above `STAGENT_SYSTEM_PROMPT`**
 
@@ -396,7 +396,7 @@ Change the existing comment block at `src/lib/chat/system-prompt.ts:1-5` from:
 
 ```typescript
 /**
- * Enhanced system prompt for the Stagent chat LLM.
+ * Enhanced system prompt for the ainative chat LLM.
  * Provides identity, tool catalog, and intent routing guidance.
  */
 ```
@@ -405,7 +405,7 @@ to:
 
 ```typescript
 /**
- * Enhanced system prompt for the Stagent chat LLM.
+ * Enhanced system prompt for the ainative chat LLM.
  * Provides identity, tool catalog, and intent routing guidance.
  *
  * ## Tier 0 vs CLAUDE.md partition (DD-CE-002)
@@ -415,16 +415,16 @@ to:
  * via `settingSources: ["user", "project"]`. To avoid double-prompting,
  * this system prompt MUST stay scoped to:
  *
- *   (a) Stagent identity
- *   (b) Stagent tool catalog and routing
- *   (c) Stagent domain semantics (delay steps, enrich_table, workflow dedup)
+ *   (a) ainative identity
+ *   (b) ainative tool catalog and routing
+ *   (c) ainative domain semantics (delay steps, enrich_table, workflow dedup)
  *   (d) LLM interaction style
  *
  * Content that is project-specific (coding conventions, testing rules,
  * git workflow, repo-specific gotchas) belongs in `CLAUDE.md` — NOT here.
  *
  * Audit (2026-04-13): every current block in this prompt passes the rubric.
- * No content migration was required for Stagent's current CLAUDE.md state.
+ * No content migration was required for ainative's current CLAUDE.md state.
  * The worktree note on line 110 is borderline and flagged for revisit if
  * CLAUDE.md gains an explicit worktree section.
  *
@@ -443,10 +443,10 @@ Append to `features/chat-claude-sdk-skills.md` (after the References section):
 Audit performed 2026-04-13 during implementation of this feature.
 
 **Rubric:**
-- KEEP in Tier 0 (`src/lib/chat/system-prompt.ts`): Stagent identity, tool catalog, tool routing, Stagent domain semantics, LLM interaction style.
+- KEEP in Tier 0 (`src/lib/chat/system-prompt.ts`): ainative identity, tool catalog, tool routing, ainative domain semantics, LLM interaction style.
 - MOVE to CLAUDE.md: project conventions, repo-specific rules, testing/git workflow guidance.
 
-**Result for the stagent repo:** zero content migration. Tier 0 blocks all pass the KEEP rubric:
+**Result for the ainative repo:** zero content migration. Tier 0 blocks all pass the KEEP rubric:
 
 | Block (lines in `system-prompt.ts`) | Decision |
 |---|---|
@@ -478,7 +478,7 @@ git commit -m "$(cat <<'EOF'
 docs(chat): document Tier 0 vs CLAUDE.md partition rubric (DD-CE-002)
 
 Completes the partition audit required by DD-CE-002. Finding: no content
-migration needed for this codebase — Tier 0 is already Stagent-identity
+migration needed for this codebase — Tier 0 is already ainative-identity
 scoped. The rubric is codified as a doc comment above STAGENT_SYSTEM_PROMPT
 so future additions are caught in code review, and the audit result is
 appended to the feature spec.
@@ -514,8 +514,8 @@ describe("listAllProfiles", () => {
   let userSkillsDir: string;
 
   beforeEach(() => {
-    projectDir = mkdtempSync(join(tmpdir(), "stagent-skills-"));
-    userSkillsDir = mkdtempSync(join(tmpdir(), "stagent-user-skills-"));
+    projectDir = mkdtempSync(join(tmpdir(), "ainative-skills-"));
+    userSkillsDir = mkdtempSync(join(tmpdir(), "ainative-user-skills-"));
     mkdirSync(join(projectDir, ".claude", "skills"), { recursive: true });
   });
 
@@ -681,7 +681,7 @@ function loadFilesystemSkills(
 }
 
 /**
- * Lists every agent profile reachable from this Stagent instance:
+ * Lists every agent profile reachable from this ainative instance:
  *   1. Registry profiles (builtins + user registry)
  *   2. Project filesystem skills at `<projectDir>/.claude/skills/*/SKILL.md`
  *   3. User filesystem skills at `~/.claude/skills/*/SKILL.md` (or `userSkillsDir` override)
@@ -844,12 +844,12 @@ export function getListProfilesTool(projectDir: string | null) {
 
 - [ ] **Step 4: Find and update consumers of the old `list_profiles` tool export**
 
-Run: `grep -rn "list_profiles\|profile-tools" src/lib/chat/ --include="*.ts"` to find where the tool is registered into the Stagent MCP server. Most likely:
-- `src/lib/chat/stagent-tools.ts` or similar imports all tools into one array.
+Run: `grep -rn "list_profiles\|profile-tools" src/lib/chat/ --include="*.ts"` to find where the tool is registered into the ainative MCP server. Most likely:
+- `src/lib/chat/ainative-tools.ts` or similar imports all tools into one array.
 
 Whatever consumes the old tool export, change it to call `getListProfilesTool(projectId)` with the current conversation's project directory. The project directory is available in `engine.ts` via `workspace.cwd` or the resolved `project.workingDirectory` (lines 188-207).
 
-If the current registration pattern is a static array of tools (not per-request), you must thread `projectDir` through. The simplest change: in `engine.ts`, wherever the Stagent MCP server is assembled (around line 280), pass `workspace.cwd` (or the project's working directory) so `getListProfilesTool` can be called with it.
+If the current registration pattern is a static array of tools (not per-request), you must thread `projectDir` through. The simplest change: in `engine.ts`, wherever the ainative MCP server is assembled (around line 280), pass `workspace.cwd` (or the project's working directory) so `getListProfilesTool` can be called with it.
 
 - [ ] **Step 5: Run the test file to verify pass**
 
@@ -864,7 +864,7 @@ Expected: all pre-existing chat tests still pass (no regressions from threading 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add src/lib/chat/tools/profile-tools.ts src/lib/chat/tools/__tests__/profile-tools.test.ts src/lib/chat/engine.ts src/lib/chat/stagent-tools.ts
+git add src/lib/chat/tools/profile-tools.ts src/lib/chat/tools/__tests__/profile-tools.test.ts src/lib/chat/engine.ts src/lib/chat/ainative-tools.ts
 git commit -m "$(cat <<'EOF'
 feat(chat): list_profiles surfaces filesystem skills alongside registry
 
@@ -883,7 +883,7 @@ EOF
 
 **Files:** none modified; verification run.
 
-Per project-override writing-plans rule: any plan touching `src/lib/chat/engine.ts` or modules that statically import `@/lib/chat/stagent-tools` MUST include an end-to-end smoke test on a running dev server. Unit tests cannot catch module-load cycles.
+Per project-override writing-plans rule: any plan touching `src/lib/chat/engine.ts` or modules that statically import `@/lib/chat/ainative-tools` MUST include an end-to-end smoke test on a running dev server. Unit tests cannot catch module-load cycles.
 
 This task exercises three user-visible capabilities the acceptance criteria require:
 1. A filesystem skill reaches the LLM via `Skill` tool invocation
@@ -954,7 +954,7 @@ Expected: the response lists files like `src/lib/agents/runtime/catalog.ts`, `sr
 
 Check the dev server's terminal output during all three turns. Expected: no `ReferenceError: Cannot access 'claudeRuntimeAdapter' before initialization`, no missing-tools errors, no 500s in the chat API responses.
 
-If `ReferenceError` appears: a module-load cycle was introduced. Trace the import from `engine.ts` → any file that pulls `@/lib/chat/stagent-tools` statically → introduce `await import(...)` at the call site. Reference: TDR-032.
+If `ReferenceError` appears: a module-load cycle was introduced. Trace the import from `engine.ts` → any file that pulls `@/lib/chat/ainative-tools` statically → introduce `await import(...)` at the call site. Reference: TDR-032.
 
 - [ ] **Step 7: Clean up the disposable skill**
 
@@ -1032,9 +1032,9 @@ Prepend under the `## 2026-04-13` heading in `features/changelog.md`:
 ```markdown
 ### Completed — chat-claude-sdk-skills (P0)
 
-Flipped Stagent chat on the `claude-code` runtime from "isolation mode" to "SDK-native." Three small changes to `src/lib/chat/engine.ts`: added `settingSources: ["user", "project"]`, added the SDK filesystem tool set (Skill, Read, Grep, Glob, Edit, Write, Bash, TodoWrite) to `allowedTools`, and added a read-only auto-allow branch in `canUseTool` for Read/Grep/Glob (mirroring the browser/exa pattern). Edit/Write/Bash/TodoWrite gate through the existing side-channel permission flow automatically — no new permission plumbing. `Task` subagent tool intentionally excluded; Stagent task primitives replace it.
+Flipped ainative chat on the `claude-code` runtime from "isolation mode" to "SDK-native." Three small changes to `src/lib/chat/engine.ts`: added `settingSources: ["user", "project"]`, added the SDK filesystem tool set (Skill, Read, Grep, Glob, Edit, Write, Bash, TodoWrite) to `allowedTools`, and added a read-only auto-allow branch in `canUseTool` for Read/Grep/Glob (mirroring the browser/exa pattern). Edit/Write/Bash/TodoWrite gate through the existing side-channel permission flow automatically — no new permission plumbing. `Task` subagent tool intentionally excluded; ainative task primitives replace it.
 
-Tier 0 / CLAUDE.md partition audit (DD-CE-002): documented in a doc comment on `STAGENT_SYSTEM_PROMPT`. Finding: zero content migration needed — Tier 0 is already Stagent-identity scoped for this codebase.
+Tier 0 / CLAUDE.md partition audit (DD-CE-002): documented in a doc comment on `STAGENT_SYSTEM_PROMPT`. Finding: zero content migration needed — Tier 0 is already ainative-identity scoped for this codebase.
 
 `list_profiles` chat tool now fuses registry profiles with SDK-discovered filesystem skills from `<projectDir>/.claude/skills/` and `~/.claude/skills/` via a new `listAllProfiles(projectDir)` helper. Dedupes by id — registry wins on collision. Malformed SKILL.md frontmatter logs-then-skips.
 

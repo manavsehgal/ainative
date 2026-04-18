@@ -11,13 +11,13 @@ dependencies: [usage-metering-ledger, spend-budget-guardrails, micro-visualizati
 
 ## Description
 
-Once usage data and budget policy exist, Stagent needs a first-class surface for operators to inspect them. Cost governance should not be buried in Settings or inferred from raw monitoring logs. Users need a dedicated view that answers three practical questions quickly: how much did we spend, where did the tokens go, and what activity created that usage.
+Once usage data and budget policy exist, ainative needs a first-class surface for operators to inspect them. Cost governance should not be buried in Settings or inferred from raw monitoring logs. Users need a dedicated view that answers three practical questions quickly: how much did we spend, where did the tokens go, and what activity created that usage.
 
 This feature adds `Cost & Usage` as a top-level sidebar destination and introduces a dedicated dashboard route for spend, tokens, budget state, and auditability. The view combines high-signal summary cards, trend charts, provider/model breakdowns, and a filterable activity ledger so users can move from overview to specific execution records without leaving the operational shell.
 
 ## User Story
 
-As a Stagent operator, I want a dedicated Cost & Usage screen so that I can review spend trends, identify which provider or model drove usage, and audit the activity behind each dollar or token count.
+As a ainative operator, I want a dedicated Cost & Usage screen so that I can review spend trends, identify which provider or model drove usage, and audit the activity behind each dollar or token count.
 
 ## Technical Approach
 

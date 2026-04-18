@@ -3,7 +3,7 @@ id: TDR-030
 title: Hybrid instance licensing — local unlimited, cloud metered per seat
 status: superseded
 date: 2026-04-07
-superseded_by: "Community Edition simplification (commit 0436803) — all subscription tiering removed, stagent is 100% free"
+superseded_by: "Community Edition simplification (commit 0436803) — all subscription tiering removed, ainative is 100% free"
 category: infrastructure
 ---
 
@@ -11,7 +11,7 @@ category: infrastructure
 
 ## Context
 
-Stagent's distribution model assumes power users will run multiple domain-focused instances on the same machine (wealth manager, investor relations, growth/sales, etc.), each with its own `STAGENT_DATA_DIR` and branch. The license row lives in the SQLite settings table per data dir, so architecturally every instance has its own tier activation.
+ainative's distribution model assumes power users will run multiple domain-focused instances on the same machine (wealth manager, investor relations, growth/sales, etc.), each with its own `STAGENT_DATA_DIR` and branch. The license row lives in the SQLite settings table per data dir, so architecturally every instance has its own tier activation.
 
 This creates a commercial design question: *how should licensing work when a single paying user runs 3 clones on their laptop?*
 
@@ -23,7 +23,7 @@ Three options were explored during the clone lifecycle brainstorm:
 
 3. **Hybrid: local features unlimited, cloud features metered per seat.** Local tier features (tasks, workflows, documents, agents, the task runner, the entire offline value prop) work in any number of `STAGENT_DATA_DIR`s without gating. Cloud-side features (cloud sync, marketplace, telemetry, license validation itself) meter seats at the Supabase edge function using a stable `(email, machineFingerprint, instanceId)` tuple.
 
-Option 3 matches the product principle that stagent's offline/local value is the primary pitch and cloud features are a complement. It also matches the existing architecture: `LicenseManager` already reads the license row per data dir, so no local gating work is needed. Only the cloud validation payload needs to change.
+Option 3 matches the product principle that ainative's offline/local value is the primary pitch and cloud features are a complement. It also matches the existing architecture: `LicenseManager` already reads the license row per data dir, so no local gating work is needed. Only the cloud validation payload needs to change.
 
 ## Decision
 
@@ -54,7 +54,7 @@ Instance licensing is **hybrid**:
 - **Strict per-instance activation** (option 1 above) — rejected. High friction, high implementation cost, no clear upsell pricing. Would require a dedicated "activate another instance" flow with its own UI, which duplicates the existing activation flow without meaningful differentiation.
 - **Generous unlimited** (option 2 above) — rejected. No upsell path. Also inconsistent with the tier philosophy where premium tiers should offer more capability, not just the same capability with different limits elsewhere.
 - **Honor system, zero enforcement** — rejected for the same reason as generous unlimited. Works for individual hobbyists but doesn't support a revenue model.
-- **Counting instances entirely client-side via some coordination mechanism** (shared lock file in `~/.stagent-meta/`, process discovery, etc.) — rejected. Fragile, hackable, and requires cross-instance IPC which is a whole new surface area.
+- **Counting instances entirely client-side via some coordination mechanism** (shared lock file in `~/.ainative-meta/`, process discovery, etc.) — rejected. Fragile, hackable, and requires cross-instance IPC which is a whole new surface area.
 - **Per-email cloud seat count ignoring machineFingerprint** — rejected because it would conflate "same user on two machines" (legitimate and should probably be free for scale tier) with "two instances on one machine" (what we're trying to meter).
 
 ## References
@@ -65,5 +65,5 @@ Instance licensing is **hybrid**:
 - `src/lib/instance/bootstrap.ts` — generates stable `instanceId`
 - `src/lib/instance/fingerprint.ts` — machine fingerprint generator (built by `instance-license-metering` feature, not `instance-bootstrap`)
 - `features/instance-license-metering.md` — full feature spec
-- `memory/shared-stagent-data-dir.md` — prior art on `STAGENT_DATA_DIR` isolation and multi-clone licensing friction
+- `memory/shared-ainative-data-dir.md` — prior art on `STAGENT_DATA_DIR` isolation and multi-clone licensing friction
 - TDR-011 — JSON-in-TEXT columns (for `settings.license.seatStatus`)

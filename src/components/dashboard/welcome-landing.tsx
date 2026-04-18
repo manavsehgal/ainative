@@ -28,7 +28,7 @@ export function WelcomeLanding() {
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] max-w-2xl mx-auto text-center px-4">
       <h1 className="text-3xl font-bold tracking-tight mb-3">
-        Welcome to Stagent
+        Welcome to ainative
       </h1>
       <p className="text-base text-muted-foreground mb-8 max-w-lg">
         Your AI Business Operating System. Deploy AI agents, automate business processes, and maintain full control of spend and execution.

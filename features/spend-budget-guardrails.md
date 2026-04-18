@@ -11,13 +11,13 @@ dependencies: [usage-metering-ledger, inbox-notifications, provider-runtime-abst
 
 ## Description
 
-Once Stagent can meter usage reliably, the next operational requirement is governance: users need a way to say how much Claude- and Codex-backed work is allowed to cost before Stagent stops launching more paid activity. Without that control, provider expansion increases operator anxiety and makes automation harder to trust.
+Once ainative can meter usage reliably, the next operational requirement is governance: users need a way to say how much Claude- and Codex-backed work is allowed to cost before ainative stops launching more paid activity. Without that control, provider expansion increases operator anxiety and makes automation harder to trust.
 
-This feature adds budget guardrails to Settings and enforces them across every provider entry point. Users can define optional daily and monthly overall spend caps, plus runtime-scoped spend caps with optional advanced token ceilings. Stagent warns as usage approaches a limit, hard-stops new provider-calling work after a limit is exceeded, and records the reason explicitly rather than silently queueing or retrying blocked activity.
+This feature adds budget guardrails to Settings and enforces them across every provider entry point. Users can define optional daily and monthly overall spend caps, plus runtime-scoped spend caps with optional advanced token ceilings. ainative warns as usage approaches a limit, hard-stops new provider-calling work after a limit is exceeded, and records the reason explicitly rather than silently queueing or retrying blocked activity.
 
 ## User Story
 
-As a Stagent operator, I want configurable daily and monthly usage budgets so that I can let agents run autonomously up to a defined limit without risking uncontrolled Claude or Codex spend.
+As a ainative operator, I want configurable daily and monthly usage budgets so that I can let agents run autonomously up to a defined limit without risking uncontrolled Claude or Codex spend.
 
 ## Technical Approach
 
@@ -29,7 +29,7 @@ As a Stagent operator, I want configurable daily and monthly usage budgets so th
   - per-runtime/provider monthly spend cap
   - optional advanced per-runtime/provider daily token cap
   - optional advanced per-runtime/provider monthly token cap
-- Use the usage ledger as the source of truth for current-window totals. Budget windows should be evaluated using Stagent's local runtime timezone so reset behavior matches the machine the app is running on.
+- Use the usage ledger as the source of truth for current-window totals. Budget windows should be evaluated using ainative's local runtime timezone so reset behavior matches the machine the app is running on.
 - Add a budget evaluation service that runs before every provider call starts:
   - task execute
   - task resume
@@ -63,7 +63,7 @@ As a Stagent operator, I want configurable daily and monthly usage budgets so th
 ## Implementation Notes
 
 - Added structured budget-policy storage under `settings` with Zod validation for overall daily/monthly spend caps and runtime-scoped spend/token caps
-- Added a shared budget-guardrail service that aggregates current daily/monthly usage from the normalized usage ledger using the local Stagent runtime timezone
+- Added a shared budget-guardrail service that aggregates current daily/monthly usage from the normalized usage ledger using the local ainative runtime timezone
 - Warning notifications are deduplicated per budget window, while blocked attempts create explicit Inbox alerts and zero-cost `usage_ledger` rows with `blocked` status
 - Task execute/resume routes now preflight budgets for immediate operator feedback, and the shared runtime layer also guards workflows, schedules, task assist, and profile tests
 - Settings now includes a dense `Cost & Usage Guardrails` section showing spend-first editable caps, derived token guidance from recent blended pricing, advanced token overrides, live health states, and next reset timestamps for each active window

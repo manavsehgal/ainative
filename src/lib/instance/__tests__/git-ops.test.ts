@@ -11,7 +11,7 @@ function runGit(args: string[], cwd: string) {
 }
 
 beforeEach(() => {
-  tempDir = mkdtempSync(join(tmpdir(), "stagent-git-ops-"));
+  tempDir = mkdtempSync(join(tmpdir(), "ainative-git-ops-"));
   runGit(["init", "-b", "main"], tempDir);
   runGit(["config", "user.email", "test@example.com"], tempDir);
   runGit(["config", "user.name", "Test"], tempDir);
@@ -32,7 +32,7 @@ describe("RealGitOps", () => {
   });
 
   it("isGitRepo returns false outside a git repo", async () => {
-    const nonRepo = mkdtempSync(join(tmpdir(), "stagent-nogit-"));
+    const nonRepo = mkdtempSync(join(tmpdir(), "ainative-nogit-"));
     try {
       const { createGitOps } = await import("../git-ops");
       const ops = createGitOps(nonRepo);

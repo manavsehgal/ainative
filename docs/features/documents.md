@@ -11,7 +11,7 @@ lastUpdated: "2026-04-15"
 
 # Documents
 
-The Document Library is where you upload, manage, and organize files that agents can reference during task execution. Stagent automatically preprocesses uploaded files to extract text, making their content available as context for agents without manual copy-pasting.
+The Document Library is where you upload, manage, and organize files that agents can reference during task execution. ainative automatically preprocesses uploaded files to extract text, making their content available as context for agents without manual copy-pasting.
 
 ## Screenshots
 
@@ -33,7 +33,7 @@ The `/documents` list page is the reference consumer for the shared **FilterInpu
 The upload dialog accepts files via drag-and-drop or file picker. A visual indicator shows supported file types. Multiple files can be uploaded in a single batch.
 
 ### Supported File Types
-Stagent processes a range of document formats:
+ainative processes a range of document formats:
 - **PDF** -- Text extraction via pdf-parse.
 - **Text** -- Plain text, Markdown, code files.
 - **Images** -- Metadata extraction (dimensions, format).
@@ -41,7 +41,7 @@ Stagent processes a range of document formats:
 - **Spreadsheets** -- Excel and CSV files.
 
 ### Automatic Preprocessing
-After upload, Stagent automatically extracts text content from supported file types. The extracted text is stored alongside the original file, ready to be injected into agent context. Processing status is visible on each document card.
+After upload, ainative automatically extracts text content from supported file types. The extracted text is stored alongside the original file, ready to be injected into agent context. Processing status is visible on each document card.
 
 ### Agent Document Context
 Documents can be attached to tasks. When an agent executes a task with attached documents, the extracted text is included in the agent's context window, giving it direct access to the document content without needing file-system access.

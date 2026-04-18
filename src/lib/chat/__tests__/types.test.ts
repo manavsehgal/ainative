@@ -10,7 +10,7 @@ describe("getFeaturesForModel", () => {
 
   it("returns Ollama features for an ollama-prefixed model id", () => {
     const features = getFeaturesForModel("ollama:llama3");
-    expect(features.stagentInjectsSkills).toBe(true);
+    expect(features.ainativeInjectsSkills).toBe(true);
     expect(features.hasNativeSkills).toBe(false);
   });
 

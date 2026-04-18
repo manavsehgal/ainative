@@ -11,7 +11,7 @@ dependencies: []
 
 ## Description
 
-Stagent is a self-modifying dev environment — every git-clone user customizes their checkout via stagent chat itself. To make that customization safe, the first time a clone boots we need to establish branch discipline: user customizations must live on a dedicated local branch (never on `main`), and the clone must block accidental pushes of that branch to the public origin. This foundation is required for both single-clone users and multi-instance power users (wealth/investor/growth-style private instances).
+ainative is a self-modifying dev environment — every git-clone user customizes their checkout via ainative chat itself. To make that customization safe, the first time a clone boots we need to establish branch discipline: user customizations must live on a dedicated local branch (never on `main`), and the clone must block accidental pushes of that branch to the public origin. This foundation is required for both single-clone users and multi-instance power users (wealth/investor/growth-style private instances).
 
 This feature delivers the idempotent first-boot installer that runs from `src/instrumentation.ts` alongside scheduler startup. It detects clone type (`.git` present, not in dev mode, `STAGENT_DATA_DIR` maybe overridden), generates a stable `instanceId`, creates a `local` branch if the user is on clean `main`, installs a pre-push hook, and writes per-branch `pushRemote = no_push` config. All steps are idempotent and safe to run every boot.
 
@@ -19,7 +19,7 @@ No new database tables. All state lives in the existing `settings` key-value tab
 
 ## User Story
 
-As a stagent end user who just cloned the repo and is about to make my first customization via chat, I want stagent to automatically protect me from accidentally pushing my private changes to the public origin and from losing my work during future upgrades, so that I can focus on using stagent to build my app without worrying about git hygiene.
+As a ainative end user who just cloned the repo and is about to make my first customization via chat, I want ainative to automatically protect me from accidentally pushing my private changes to the public origin and from losing my work during future upgrades, so that I can focus on using ainative to build my app without worrying about git hygiene.
 
 ## Technical Approach
 
@@ -29,12 +29,12 @@ As a stagent end user who just cloned the repo and is about to make my first cus
 - `settings.ts` — read/write helpers for `settings.instance` and `settings.instance.guardrails` rows, using existing settings table patterns
 - `detect.ts` — clone-type detection with **layered dev-mode gates** (all of the following cause bootstrap to no-op):
   1. `process.env.STAGENT_DEV_MODE === "true"` (primary gate — per-developer, set in `.env.local`)
-  2. `.git/stagent-dev-mode` sentinel file exists (secondary gate — git-dir-scoped, never cloned, persists across `.env.local` changes)
+  2. `.git/ainative-dev-mode` sentinel file exists (secondary gate — git-dir-scoped, never cloned, persists across `.env.local` changes)
   3. `.git` directory absent (non-git runtime like `npx`)
   
   **Override:** `process.env.STAGENT_INSTANCE_MODE === "true"` forces bootstrap to run even in dev mode, so contributors can test this feature in the main repo. Opt-in beats opt-out.
   
-  Also computes `isPrivateInstance` from `STAGENT_DATA_DIR` comparison to default `~/.stagent` (used by license metering, does not affect bootstrap behavior).
+  Also computes `isPrivateInstance` from `STAGENT_DATA_DIR` comparison to default `~/.ainative` (used by license metering, does not affect bootstrap behavior).
 - `fingerprint.ts` — machine fingerprint generator: `os.hostname() + os.userInfo().username + sha256(primary network MAC)` → stable per machine, not personally identifying (used by the license metering feature)
 - `git-ops.ts` — thin wrapper around Node's `execFileSync` from `node:child_process`, with strict argument arrays, no shell interpolation (never uses the shell-invoking variant). Exports typed helpers like `getCurrentBranch()`, `getCommitsAhead(base)`, `createBranch(name)`, `configSet(key, value)`. Injectable for unit tests.
 - `bootstrap.ts` — the orchestrator with idempotent `ensureInstance()` function. **Two-phase execution to protect against workflow damage:**
@@ -44,7 +44,7 @@ As a stagent end user who just cloned the repo and is about to make my first cus
   - `ensureLocalBranch()` — if a branch named `local` does not already exist, runs `git checkout -b local` **at the current HEAD** (regardless of whether HEAD is on `main`, or whether `main` has drifted from `origin/main`). This is non-destructive: `git checkout -b` does not modify any existing branch. If already on `local` or any non-main branch and `local` doesn't exist, creates `local` at current HEAD and stays on current branch. Records the "instance branch" in settings as `local` if it was created, or the user's current branch if they were already on something non-default.
 
   **Phase B — Destructive (requires explicit consent):**
-  - `ensurePrePushHook()` — writes `.git/hooks/pre-push`, backs up any existing non-stagent hook
+  - `ensurePrePushHook()` — writes `.git/hooks/pre-push`, backs up any existing non-ainative hook
   - `ensureBranchPushConfig()` — sets `branch.<name>.pushRemote` to `no_push` for each blocked branch
 
   Phase B only runs if `settings.instance.guardrails.consentStatus === "enabled"`. First boot creates a pending notification: **"Protect this clone from accidental origin pushes? This will install a pre-push hook and block direct origin pushes on your instance branch."** with three actions: `[Enable guardrails]`, `[Not now]` (re-prompts next boot), `[Never on this clone]` (permanently skip). User's choice is persisted.
@@ -65,19 +65,19 @@ As a stagent end user who just cloned the repo and is about to make my first cus
 - Clone already on `local` branch → `ensureLocalBranch` no-op
 - Clone with local commits on `main` (pre-existing user customizations) → creates `local` at current HEAD (non-destructive), `main` still points at user's HEAD
 - Pre-push hook missing, consent=enabled → installs
-- Pre-push hook present with stagent marker → no-op (version check)
+- Pre-push hook present with ainative marker → no-op (version check)
 - Pre-push hook present without marker, consent=enabled → backs up, installs ours
 - Rebase in progress (`.git/rebase-merge` exists) → skips branch creation, logs warning, does not run Phase B
 
 *Dev-mode skip paths (all must result in zero filesystem/git mutations):*
 - `STAGENT_DEV_MODE=true` env var set → all phases are no-ops
-- `.git/stagent-dev-mode` sentinel file present → all phases are no-ops
+- `.git/ainative-dev-mode` sentinel file present → all phases are no-ops
 - Both set → all phases are no-ops
 - `STAGENT_DEV_MODE=true` AND `STAGENT_INSTANCE_MODE=true` → override wins, bootstrap runs normally
-- `.git/stagent-dev-mode` present AND `STAGENT_INSTANCE_MODE=true` → override wins, bootstrap runs normally
+- `.git/ainative-dev-mode` present AND `STAGENT_INSTANCE_MODE=true` → override wins, bootstrap runs normally
 
 *Generalization test (single-clone user on default data dir):*
-- `STAGENT_DATA_DIR` unset (default `~/.stagent`) → `isPrivateInstance=false`, bootstrap runs identically, `local` branch created, guardrails flow identical to private-instance case
+- `STAGENT_DATA_DIR` unset (default `~/.ainative`) → `isPrivateInstance=false`, bootstrap runs identically, `local` branch created, guardrails flow identical to private-instance case
 
 **Important edge cases:**
 - Filesystem read-only (sandbox mode) — all writes must fail gracefully, not crash startup
@@ -96,11 +96,11 @@ As a stagent end user who just cloned the repo and is about to make my first cus
 
 *Dev-mode gates (safety-critical — must all pass to prevent breaking the main dev repo):*
 - [ ] Called with `STAGENT_DEV_MODE=true` → zero filesystem mutations, zero git config changes, zero branch creation, returns `{skipped: "dev_mode_env"}`
-- [ ] Called with `.git/stagent-dev-mode` sentinel file present → zero mutations, returns `{skipped: "dev_mode_sentinel"}`
+- [ ] Called with `.git/ainative-dev-mode` sentinel file present → zero mutations, returns `{skipped: "dev_mode_sentinel"}`
 - [ ] Called with `STAGENT_DEV_MODE=true` AND `STAGENT_INSTANCE_MODE=true` → override wins, bootstrap runs normally (opt-in beats opt-out)
 - [ ] Called with no `.git` directory present → returns `{skipped: "no_git"}`, no errors
-- [ ] Test explicitly covers the stagent main dev repo scenario: temp-dir with a `.env.local` containing `STAGENT_DEV_MODE=true` → `ensureInstance()` makes no changes
-- [ ] Pre-ship checklist item (verified manually before merge): `STAGENT_DEV_MODE=true` added to `/Users/manavsehgal/Developer/stagent/.env.local` AND documented in `AGENTS.md` + `CLAUDE.md`
+- [ ] Test explicitly covers the ainative main dev repo scenario: temp-dir with a `.env.local` containing `STAGENT_DEV_MODE=true` → `ensureInstance()` makes no changes
+- [ ] Pre-ship checklist item (verified manually before merge): `STAGENT_DEV_MODE=true` added to `/Users/manavsehgal/Developer/ainative/.env.local` AND documented in `AGENTS.md` + `CLAUDE.md`
 
 *Consent flow:*
 - [ ] First boot with no existing consent → Phase A runs, Phase B skipped, notification created with 3 actions
@@ -112,13 +112,13 @@ As a stagent end user who just cloned the repo and is about to make my first cus
 
 *Guardrails (once consent is granted):*
 - [ ] Pre-push hook file at `.git/hooks/pre-push` exists, is executable, contains the `STAGENT_HOOK_VERSION` marker
-- [ ] Pre-existing non-stagent `pre-push` hook is backed up to `pre-push.stagent-backup`, warning logged
+- [ ] Pre-existing non-ainative `pre-push` hook is backed up to `pre-push.ainative-backup`, warning logged
 - [ ] `git config branch.local.pushRemote` returns `no_push`
 - [ ] Attempting `git push origin local` is rejected by the hook unless `ALLOW_PRIVATE_PUSH=1` is set
 
 *Single-clone user generalization (explicit test):*
 - [ ] Test scenario: `STAGENT_DATA_DIR` unset → `isPrivateInstance=false` → bootstrap runs identically → `local` branch created → same consent flow → guardrails work identically
-- [ ] Test scenario: user has existing commits on `main` from prior stagent usage → `local` branch created at current HEAD → `main` still points at user's HEAD → no commits lost
+- [ ] Test scenario: user has existing commits on `main` from prior ainative usage → `local` branch created at current HEAD → `main` still points at user's HEAD → no commits lost
 
 *Edge cases:*
 - [ ] Called with `.git/rebase-merge` present → `ensureLocalBranch` skips with warning log, does not crash
@@ -151,5 +151,5 @@ As a stagent end user who just cloned the repo and is about to make my first cus
 - Source: `features/architect-report.md` — Integration Design section, specifically "First-Boot & Guardrail Installer" and "Data Model Design"
 - Related features: unblocks `upgrade-detection`, `upgrade-session`, `instance-license-metering`
 - Design pattern: follows TDR-009 (idempotent bootstrap) for boot-time setup
-- Memory: `memory/shared-stagent-data-dir.md` — prior art on `STAGENT_DATA_DIR` isolation
+- Memory: `memory/shared-ainative-data-dir.md` — prior art on `STAGENT_DATA_DIR` isolation
 - Local doc: `PRIVATE-INSTANCES.md` (root, gitignored) — runbook this feature automates

@@ -43,7 +43,7 @@ export async function POST() {
 
     const branchName = config.branchName;
     const commitsBehind = upgrade.commitsBehind;
-    const dataDir = process.env.STAGENT_DATA_DIR ?? "~/.stagent";
+    const dataDir = process.env.AINATIVE_DATA_DIR ?? "~/.ainative";
 
     const description = [
       `Upgrade instance branch \`${branchName}\` with ${commitsBehind} upstream commit(s) from origin/main.`,

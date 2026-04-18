@@ -3,7 +3,7 @@ title: Natural Language Scheduling
 status: completed
 priority: P1
 milestone: post-mvp
-source: ideas/vision/Stagent-OpenClaw-Companion-Research-Report.md
+source: ideas/vision/ainative-OpenClaw-Companion-Research-Report.md
 dependencies: [heartbeat-scheduler]
 ---
 
@@ -125,7 +125,7 @@ Extend the chat engine to detect scheduling intent in user messages:
 
 ## References
 
-- Source: `ideas/vision/Stagent-OpenClaw-Companion-Research-Report.md` — Section 3.8 (HEARTBEAT.md as Natural-Language Cron)
+- Source: `ideas/vision/ainative-OpenClaw-Companion-Research-Report.md` — Section 3.8 (HEARTBEAT.md as Natural-Language Cron)
 - Existing interval parser: `src/lib/schedules/interval-parser.ts`
 - Existing scheduler: `src/lib/schedules/scheduler.ts`
 - Related features: heartbeat-scheduler (provides the heartbeat schedule type this feature creates)

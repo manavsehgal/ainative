@@ -21,7 +21,7 @@ As a user, I want to resume a failed or interrupted agent task without losing th
 
 ## Technical Approach
 
-- **Session storage**: `~/.stagent/sessions/` directory for Agent SDK session data
+- **Session storage**: `~/.ainative/sessions/` directory for Agent SDK session data
 - **Session ID**: Stored in `tasks` table (add `sessionId` column)
 - **Resume flow**: When retrying a failed task, pass `resume: sessionId` to the Agent SDK
 - **Cleanup**: Completed task sessions can be cleaned up after a configurable retention period
@@ -43,7 +43,7 @@ Session Cleanup → Old completed sessions removed
 - [ ] Each task execution creates an Agent SDK session and stores the session ID
 - [ ] Failed tasks can be resumed, continuing from the previous session context
 - [ ] Resumed sessions maintain previous conversation history and tool state
-- [ ] Session files are stored in `~/.stagent/sessions/`
+- [ ] Session files are stored in `~/.ainative/sessions/`
 - [ ] Old sessions (completed tasks >7 days) can be cleaned up
 - [ ] Session resume works correctly across app restarts
 
@@ -52,7 +52,7 @@ Session Cleanup → Old completed sessions removed
 **Included:**
 - Session creation and ID storage
 - Session resume for failed/interrupted tasks
-- Session file storage in `~/.stagent/sessions/`
+- Session file storage in `~/.ainative/sessions/`
 - Basic session cleanup
 
 **Excluded:**

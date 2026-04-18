@@ -65,10 +65,10 @@ export function createGitCheckpoint(
   const commitSha = getCurrentCommit(dir);
   if (!commitSha) return null;
 
-  const tagName = `stagent/checkpoint/${checkpointType}/${Date.now()}`;
+  const tagName = `ainative/checkpoint/${checkpointType}/${Date.now()}`;
 
   const tagResult = git(
-    ["tag", "-a", tagName, "-m", `Stagent checkpoint: ${label}`],
+    ["tag", "-a", tagName, "-m", `ainative checkpoint: ${label}`],
     dir
   );
 
@@ -117,7 +117,7 @@ export function rollbackToCheckpoint(
   git(["add", "-A"], dir);
 
   const commitResult = git(
-    ["commit", "-m", `[stagent] rollback to: ${label}`, "--allow-empty", "--no-verify"],
+    ["commit", "-m", `[ainative] rollback to: ${label}`, "--allow-empty", "--no-verify"],
     dir
   );
 
@@ -129,7 +129,7 @@ export function rollbackToCheckpoint(
   return { success: true, newCommitSha: newSha || undefined };
 }
 
-/** List all stagent checkpoint tags in the repo. */
+/** List all ainative checkpoint tags in the repo. */
 export function listCheckpointTags(
   dir: string
 ): Array<{ tag: string; commitSha: string; date: string }> {
@@ -137,7 +137,7 @@ export function listCheckpointTags(
     [
       "tag",
       "-l",
-      "stagent/checkpoint/*",
+      "ainative/checkpoint/*",
       "--format=%(refname:short)|%(objectname:short)|%(creatordate:iso)",
     ],
     dir

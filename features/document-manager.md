@@ -16,7 +16,7 @@ A dedicated `/documents` route with a full file browser and management UI. Users
 
 ## User Story
 
-As a user, I want a central place to browse and manage all documents in Stagent, so I can find files, see their processing status, preview content, and organize them across tasks and projects.
+As a user, I want a central place to browse and manage all documents in ainative, so I can find files, see their processing status, preview content, and organize them across tasks and projects.
 
 ## Technical Approach
 

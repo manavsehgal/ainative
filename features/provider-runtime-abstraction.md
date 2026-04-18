@@ -11,13 +11,13 @@ dependencies: [agent-integration, inbox-notifications, monitoring-dashboard, ses
 
 ## Description
 
-Stagent currently has a strong Claude-first execution stack, but the implementation is still provider-shaped: task execution, resume, approvals, schedules, workflow child tasks, task-definition AI, profile smoke tests, and auth checks all import Claude-specific runtime code directly. That makes the app effective today, but it turns every new provider into a cross-cutting rewrite.
+ainative currently has a strong Claude-first execution stack, but the implementation is still provider-shaped: task execution, resume, approvals, schedules, workflow child tasks, task-definition AI, profile smoke tests, and auth checks all import Claude-specific runtime code directly. That makes the app effective today, but it turns every new provider into a cross-cutting rewrite.
 
-This feature introduces a provider-neutral runtime boundary so Stagent can support multiple agent backends without fracturing the product surface. The goal is not to ship a flashy provider switch immediately. The goal is to preserve the existing governed execution model while making Claude the first adapter behind a common contract and opening the path for a second runtime such as OpenAI Codex App Server.
+This feature introduces a provider-neutral runtime boundary so ainative can support multiple agent backends without fracturing the product surface. The goal is not to ship a flashy provider switch immediately. The goal is to preserve the existing governed execution model while making Claude the first adapter behind a common contract and opening the path for a second runtime such as OpenAI Codex App Server.
 
 ## User Story
 
-As a Stagent operator, I want agent execution to run through a provider-neutral runtime layer so that Claude remains stable today and new runtimes can be added later without breaking tasks, workflows, schedules, inbox approvals, or monitoring.
+As a ainative operator, I want agent execution to run through a provider-neutral runtime layer so that Claude remains stable today and new runtimes can be added later without breaking tasks, workflows, schedules, inbox approvals, or monitoring.
 
 ## Technical Approach
 
@@ -76,4 +76,4 @@ As a Stagent operator, I want agent execution to run through a provider-neutral 
 ## Post-Completion Updates
 
 - **SDK audit (2026-03-15)**: Refactored `executeClaudeTask()` and `resumeClaudeTask()` to use `systemPrompt: { type: 'preset', preset: 'claude_code', append }` instead of concatenating profile instructions into the user prompt (F1). Extracted shared `buildTaskQueryContext()` helper to eliminate duplicate prompt construction between execute and resume paths (F12). See [sdk-runtime-hardening](sdk-runtime-hardening.md)
-- **Output contract (2026-03-17)**: All runtime adapters must call `scanTaskOutputDocuments()` after task completion to detect and register output artifacts, and use `buildTaskOutputInstructions()` to inject output path conventions into the task prompt. This contract is already implemented in both the Claude Code and Codex adapters — the output directory convention (`~/.stagent/outputs/{taskId}/`) is shared across runtimes. No `onTaskCompleted` hook exists in the `AgentRuntimeAdapter` interface; both adapters handle this inline after execution. See [Agent E2E Test Report](../output/done-agent-e2e-test-report.md) Rec #2.
+- **Output contract (2026-03-17)**: All runtime adapters must call `scanTaskOutputDocuments()` after task completion to detect and register output artifacts, and use `buildTaskOutputInstructions()` to inject output path conventions into the task prompt. This contract is already implemented in both the Claude Code and Codex adapters — the output directory convention (`~/.ainative/outputs/{taskId}/`) is shared across runtimes. No `onTaskCompleted` hook exists in the `AgentRuntimeAdapter` interface; both adapters handle this inline after execution. See [Agent E2E Test Report](../output/done-agent-e2e-test-report.md) Rec #2.

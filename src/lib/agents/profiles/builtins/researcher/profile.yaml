@@ -17,7 +17,7 @@ canUseToolPolicy:
 
 maxTurns: 40
 
-author: stagent
+author: ainative
 
 tests:
   - task: "Research the latest trends in AI agent frameworks"

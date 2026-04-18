@@ -1,5 +1,5 @@
 /**
- * E2E test helpers — HTTP client utilities for calling Stagent API endpoints.
+ * E2E test helpers — HTTP client utilities for calling ainative API endpoints.
  *
  * These helpers call the live Next.js dev/prod server. The base URL defaults
  * to http://localhost:3000 and can be overridden via E2E_BASE_URL env var.
@@ -274,7 +274,7 @@ export async function isRuntimeAvailable(
 }
 
 /**
- * Check if the Stagent server is reachable.
+ * Check if the ainative server is reachable.
  */
 export async function isServerReachable(): Promise<boolean> {
   try {

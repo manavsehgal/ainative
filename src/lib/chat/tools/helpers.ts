@@ -1,5 +1,5 @@
 /**
- * Shared helpers and types for Stagent chat MCP tools.
+ * Shared helpers and types for ainative chat MCP tools.
  */
 
 import { db } from "@/lib/db";

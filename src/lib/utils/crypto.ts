@@ -10,13 +10,13 @@ const KEY_LENGTH = 32;
 
 function getKeyfilePath(): string {
   return join(
-    process.env.STAGENT_DATA_DIR || join(homedir(), ".stagent"),
+    process.env.AINATIVE_DATA_DIR || join(homedir(), ".ainative"),
     ".keyfile"
   );
 }
 
 /**
- * Read or create the encryption keyfile at ~/.stagent/.keyfile.
+ * Read or create the encryption keyfile at ~/.ainative/.keyfile.
  * File is 32 random bytes with chmod 0600 (owner-only read/write).
  */
 export function getOrCreateKeyfile(): Buffer {

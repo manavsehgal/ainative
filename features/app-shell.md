@@ -3,7 +3,7 @@ title: App Shell & Navigation
 status: completed
 priority: P0
 milestone: mvp
-source: ideas/tech-stack-stagent.md, ideas/mvp-vision.md
+source: ideas/tech-stack-ainative.md, ideas/mvp-vision.md
 dependencies: []
 ---
 
@@ -92,6 +92,6 @@ Uses OKLCH colors for perceptually uniform palette. Defines CSS custom propertie
 
 ## References
 
-- Source: `ideas/tech-stack-stagent.md` — Web App Stack section, Project Structure, Styling
+- Source: `ideas/tech-stack-ainative.md` — Web App Stack section, Project Structure, Styling
 - Source: `ideas/mvp-vision.md` — MVP Scope Views & UX (four views)
 - Related features: all view features render inside this shell

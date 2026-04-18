@@ -49,7 +49,7 @@ import { join } from "path";
 import { homedir } from "os";
 import { clearSampleProfiles } from "./seed-data/profiles";
 
-const dataDir = process.env.STAGENT_DATA_DIR || join(homedir(), ".stagent");
+const dataDir = process.env.AINATIVE_DATA_DIR || join(homedir(), ".ainative");
 const uploadsDir = join(dataDir, "uploads");
 const screenshotsDir = join(dataDir, "screenshots");
 

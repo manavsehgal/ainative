@@ -11,7 +11,7 @@ dependencies:
 
 # License Activation Flow
 
-> **Superseded by `community-edition-simplification` (2026-04-13).** This feature shipped but was later fully reverted when Stagent pivoted to a 100% free Community Edition with no tiers, billing, or cloud dependency. Kept as historical record.
+> **Superseded by `community-edition-simplification` (2026-04-13).** This feature shipped but was later fully reverted when ainative pivoted to a 100% free Community Edition with no tiers, billing, or cloud dependency. Kept as historical record.
 
 ## Description
 
@@ -19,7 +19,7 @@ The end-to-end journey from purchase to premium features unlocked. Supports two 
 
 **Path A — In-app purchase (primary):** User clicks upgrade in `/settings/subscription` → Stripe Checkout → returns to app → `LicenseManager.validate()` finds the license by email → auto-activates. No license key needed.
 
-**Path B — Marketing site purchase:** User pays on stagent.io → receives install email → runs `npx stagent` → signs in with Supabase Auth (same email) → `LicenseManager.validate()` finds the license → auto-activates. No license key needed.
+**Path B — Marketing site purchase:** User pays on ainative.io → receives install email → runs `npx ainative` → signs in with Supabase Auth (same email) → `LicenseManager.validate()` finds the license → auto-activates. No license key needed.
 
 **Path C — Manual key entry (fallback):** For edge cases where email matching fails, a license key input form exists in `/settings/subscription`. User enters key → validates against Supabase → activates.
 
@@ -29,7 +29,7 @@ The primary UX is **zero-friction email-based activation** — pay, sign in with
 
 As a user who just upgraded via Stripe Checkout in the app, I want my premium features to unlock automatically when I return — no key entry, no extra steps.
 
-As a user who purchased on stagent.io before installing, I want to sign in with my email and have my subscription recognized automatically.
+As a user who purchased on ainative.io before installing, I want to sign in with my email and have my subscription recognized automatically.
 
 As a user whose email matching failed, I want a fallback license key form so I can still activate manually.
 
@@ -43,7 +43,7 @@ License keys follow a human-readable format with built-in checksum:
 STAG-XXXX-XXXX-XXXX-XXXX
 ```
 
-- Prefix: `STAG-` (identifies Stagent keys)
+- Prefix: `STAG-` (identifies ainative keys)
 - 16 alphanumeric characters in 4 groups (uppercase, no ambiguous chars like 0/O, 1/I/L)
 - Last 4 characters are a CRC-16 checksum of the first 12
 - Example: `STAG-A3BF-K7MN-P2QR-W9X4`
@@ -296,9 +296,9 @@ No license key needed — the Stripe webhook already created the license row in 
 
 ### Path B: Marketing Site Purchase
 
-1. User pays on stagent.io via Stripe Payment Link
+1. User pays on ainative.io via Stripe Payment Link
 2. Stripe webhook creates license row in Supabase (linked to email)
-3. User receives email: "Install `npx stagent` and sign in with this email"
+3. User receives email: "Install `npx ainative` and sign in with this email"
 4. User installs, opens app, goes to `/settings/subscription`
 5. Sees "Sign in to activate" prompt (Supabase Auth with email/GitHub)
 6. Signs in → `LicenseManager.validate()` finds license by email → auto-activates

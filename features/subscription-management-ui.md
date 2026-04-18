@@ -10,7 +10,7 @@ dependencies:
 
 # Subscription Management UI
 
-> **Superseded by `community-edition-simplification` (2026-04-13).** This feature shipped but was later fully reverted when Stagent pivoted to a 100% free Community Edition with no tiers, billing, or cloud dependency. Kept as historical record.
+> **Superseded by `community-edition-simplification` (2026-04-13).** This feature shipped but was later fully reverted when ainative pivoted to a 100% free Community Edition with no tiers, billing, or cloud dependency. Kept as historical record.
 
 ## Description
 
@@ -20,7 +20,7 @@ The page adapts to four key states: Community (shows upgrade CTAs), paid active 
 
 ## User Story
 
-As a Stagent user, I want a single page where I can see my current plan, understand how much of my limits I've used, compare available tiers, and manage my subscription — so that I can make informed upgrade decisions and manage billing without leaving the app.
+As a ainative user, I want a single page where I can see my current plan, understand how much of my limits I've used, compare available tiers, and manage my subscription — so that I can make informed upgrade decisions and manage billing without leaving the app.
 
 ## Technical Approach
 

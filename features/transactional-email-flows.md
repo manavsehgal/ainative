@@ -9,7 +9,7 @@ dependencies: [supabase-cloud-backend, stripe-billing-integration, community-edi
 
 # Transactional Email Flows
 
-> **Superseded by `community-edition-simplification` (2026-04-13).** This feature shipped but was later fully reverted when Stagent pivoted to a 100% free Community Edition with no tiers, billing, or cloud dependency. Kept as historical record.
+> **Superseded by `community-edition-simplification` (2026-04-13).** This feature shipped but was later fully reverted when ainative pivoted to a 100% free Community Edition with no tiers, billing, or cloud dependency. Kept as historical record.
 
 ## Description
 
@@ -77,7 +77,7 @@ if (count >= 37) {
 ### Resend Templates
 
 Each email uses a Resend template with consistent branding:
-- Stagent logo header
+- ainative logo header
 - Clean, text-focused layout
 - Unsubscribe link in footer
 - Templates managed in Resend dashboard (not in codebase)

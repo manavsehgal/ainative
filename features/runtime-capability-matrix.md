@@ -11,13 +11,13 @@ dependencies: [provider-runtime-abstraction]
 
 ## Description
 
-Stagent's chat dispatcher routes to three parallel runtime engines (Claude Agent SDK, Codex App Server, Ollama HTTP) that have genuinely uneven capability: Claude and Codex support skills natively with progressive disclosure; Ollama needs Stagent-level injection. Claude supports the full filesystem tool suite; Ollama supports none. Today, the chat UI hard-codes a few runtime conditionals and the `engine.ts` dispatcher at `src/lib/chat/engine.ts:152-166` is the only structural abstraction. As Phase 1a/1b/1c land, the number of per-runtime differences will explode (skills, filesystem tools, hooks, TodoWrite, subagents, progressive disclosure) and scattered conditionals will rot quickly.
+ainative's chat dispatcher routes to three parallel runtime engines (Claude Agent SDK, Codex App Server, Ollama HTTP) that have genuinely uneven capability: Claude and Codex support skills natively with progressive disclosure; Ollama needs ainative-level injection. Claude supports the full filesystem tool suite; Ollama supports none. Today, the chat UI hard-codes a few runtime conditionals and the `engine.ts` dispatcher at `src/lib/chat/engine.ts:152-166` is the only structural abstraction. As Phase 1a/1b/1c land, the number of per-runtime differences will explode (skills, filesystem tools, hooks, TodoWrite, subagents, progressive disclosure) and scattered conditionals will rot quickly.
 
 This feature makes capability **a first-class artifact**: every runtime in `src/lib/agents/runtime/catalog.ts` declares an explicit capability bag (booleans + small enums). Chat UI, task execution, and command popovers all read this bag to decide what to render, what to hide, and what to filter. It is a small, surgical refactor that unblocks clean implementation of Phase 1a/1b/1c, the Q8a skill compatibility filter, and the Q9 capability hint banner.
 
 ## User Story
 
-As a Stagent engineer adding a new runtime-aware feature, I want one place to declare "runtime X supports capability Y" and have the UI and engine paths react correctly, so I'm not hunting through six files for runtime conditionals every time a vendor ships a new SDK feature.
+As a ainative engineer adding a new runtime-aware feature, I want one place to declare "runtime X supports capability Y" and have the UI and engine paths react correctly, so I'm not hunting through six files for runtime conditionals every time a vendor ships a new SDK feature.
 
 ## Technical Approach
 
@@ -35,7 +35,7 @@ export interface RuntimeCapabilities {
   hasSubagentDelegation: boolean;   // Task tool or Codex multi-agent
   hasHooks: boolean;                // filesystem hook loading
   autoLoadsInstructions: "CLAUDE.md" | "AGENTS.md" | null;
-  stagentInjectsSkills: boolean;    // Stagent must inject SKILL.md into prompt
+  stagentInjectsSkills: boolean;    // ainative must inject SKILL.md into prompt
 }
 
 export interface RuntimeDescriptor {
@@ -55,8 +55,8 @@ Initial values per §2.7 of the ideas doc:
 | hasProgressiveDisclosure | true | true | false |
 | hasFilesystemTools | true (after 1a) | true via App Server | false |
 | hasBash | true (permission-gated) | true | false |
-| hasTodoWrite | true (after 1a) | true (App Server todo/*) | Stagent MCP only |
-| hasSubagentDelegation | false (Stagent replaces) | false (Stagent replaces) | false |
+| hasTodoWrite | true (after 1a) | true (App Server todo/*) | ainative MCP only |
+| hasSubagentDelegation | false (ainative replaces) | false (ainative replaces) | false |
 | hasHooks | false (excluded per Q2) | false | false |
 | autoLoadsInstructions | `"CLAUDE.md"` | `"AGENTS.md"` | null |
 | stagentInjectsSkills | false | false | true |

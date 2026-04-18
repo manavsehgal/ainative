@@ -12,7 +12,7 @@ dependencies:
 
 ## Description
 
-Fix the broken file-to-task linking pipeline. Currently, files upload to `~/.stagent/uploads/` successfully but are never associated with tasks — `fileIds` sent by the client are silently stripped by Zod validation. This feature adds a `documents` table, wires file IDs through task creation, and displays attachments in the task detail view.
+Fix the broken file-to-task linking pipeline. Currently, files upload to `~/.ainative/uploads/` successfully but are never associated with tasks — `fileIds` sent by the client are silently stripped by Zod validation. This feature adds a `documents` table, wires file IDs through task creation, and displays attachments in the task detail view.
 
 No new npm dependencies required.
 

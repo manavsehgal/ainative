@@ -45,7 +45,7 @@ import {
   type RuntimeLaunchProgress,
 } from "@/lib/agents/runtime/launch-failure";
 
-// ─── Stagent MCP injection helpers ──────────────────────────────────────
+// ─── ainative MCP injection helpers ──────────────────────────────────────
 //
 // Shared by executeClaudeTask and resumeClaudeTask so the two runtime entry
 // points cannot drift apart. The drift between chat engine injection and
@@ -53,39 +53,39 @@ import {
 // fixes — do not duplicate these patterns inline.
 
 /**
- * Merge the in-process stagent MCP server into a profile/browser/external
- * MCP server map. Stagent is spread LAST so no upstream source can shadow
- * the `stagent` key with its own server.
+ * Merge the in-process ainative MCP server into a profile/browser/external
+ * MCP server map. ainative is spread LAST so no upstream source can shadow
+ * the `ainative` key with its own server.
  *
- * `@/lib/chat/stagent-tools` is loaded via dynamic `import()` to avoid a
+ * `@/lib/chat/ainative-tools` is loaded via dynamic `import()` to avoid a
  * circular-dependency crash: that module transitively pulls in the chat
  * tools registry, which imports the runtime registry (`runtime/catalog`,
  * `runtime/index`), which statically references `claudeRuntimeAdapter` —
  * the very module this file is defined in. A static import here would
  * crash with "Cannot access 'claudeRuntimeAdapter' before initialization"
- * at module-load time. The dynamic import defers the stagent-tools module
+ * at module-load time. The dynamic import defers the ainative-tools module
  * until `executeClaudeTask` / `resumeClaudeTask` actually run, by which
  * time every module in the graph has finished initializing.
  */
-async function withStagentMcpServer(
+async function withAinativeMcpServer(
   profileServers: Record<string, unknown>,
   browserServers: Record<string, unknown>,
   externalServers: Record<string, unknown>,
   projectId?: string | null,
 ): Promise<Record<string, unknown>> {
-  const { createToolServer } = await import("@/lib/chat/stagent-tools");
-  const stagentServer = createToolServer(projectId).asMcpServer();
+  const { createToolServer } = await import("@/lib/chat/ainative-tools");
+  const ainativeServer = createToolServer(projectId).asMcpServer();
   return {
     ...profileServers,
     ...browserServers,
     ...externalServers,
-    stagent: stagentServer,
+    ainative: ainativeServer,
   };
 }
 
 /**
- * Prepend `mcp__stagent__*` to a profile's explicit allowedTools so the
- * stagent tool registration survives the SDK preset filter. When the
+ * Prepend `mcp__ainative__*` to a profile's explicit allowedTools so the
+ * ainative tool registration survives the SDK preset filter. When the
  * profile has no explicit allowlist and `includeSdkTools` is true, fall
  * back to Phase 1a's CLAUDE_SDK_ALLOWED_TOOLS (Skill, Read/Grep/Glob,
  * Edit/Write/Bash, TodoWrite) so task execution gets the same toolset as
@@ -93,23 +93,23 @@ async function withStagentMcpServer(
  * the caller does not want SDK tools added — letting the SDK fall
  * through to claude_code preset defaults.
  */
-function withStagentAllowedTools(
+function withAinativeAllowedTools(
   profileAllowedTools: string[] | undefined,
   includeSdkTools: boolean,
 ): string[] | undefined {
   // An empty `allowedTools: []` is treated the same as `undefined` — an
   // empty array is almost never the profile author's intent (they'd get
-  // only `mcp__stagent__*` and nothing else). Require at least one tool
+  // only `mcp__ainative__*` and nothing else). Require at least one tool
   // name for the "profile has explicit list" branch.
   if (profileAllowedTools && profileAllowedTools.length > 0) {
-    // Profile has explicit list — respect it. Only prepend stagent.
-    return Array.from(new Set(["mcp__stagent__*", ...profileAllowedTools]));
+    // Profile has explicit list — respect it. Only prepend ainative.
+    return Array.from(new Set(["mcp__ainative__*", ...profileAllowedTools]));
   }
   if (includeSdkTools) {
     // No profile allowlist but runtime has native skills — pass the
-    // Phase 1a tool set alongside mcp__stagent__* + browser/external
+    // Phase 1a tool set alongside mcp__ainative__* + browser/external
     // (callers merge their own browser/external patterns into this list).
-    return ["mcp__stagent__*", ...CLAUDE_SDK_ALLOWED_TOOLS];
+    return ["mcp__ainative__*", ...CLAUDE_SDK_ALLOWED_TOOLS];
   }
   return undefined;
 }
@@ -556,14 +556,14 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
     const effectiveMaxTurns = task.maxTurns ?? ctx.maxTurns;
 
     // Merge browser + external MCP servers, then inject the in-process
-    // stagent server via the shared helper (see withStagentMcpServer above).
-    // The helper is async because it dynamically imports @/lib/chat/stagent-tools
+    // ainative server via the shared helper (see withAinativeMcpServer above).
+    // The helper is async because it dynamically imports @/lib/chat/ainative-tools
     // to break a module-load cycle with the runtime registry.
     const [browserServers, externalServers] = await Promise.all([
       getBrowserMcpServers(),
       getExternalMcpServers(),
     ]);
-    const mergedMcpServers = await withStagentMcpServer(
+    const mergedMcpServers = await withAinativeMcpServer(
       ctx.payload?.mcpServers ?? {},
       browserServers,
       externalServers,
@@ -584,7 +584,7 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
     // CLAUDE_SDK_ALLOWED_TOOLS (Skill, Read/Grep/Glob, Edit/Write/Bash,
     // TodoWrite) so task execution matches chat. Computed once so the
     // conditional spread below does not invoke the helper twice.
-    const mergedAllowedTools = withStagentAllowedTools(
+    const mergedAllowedTools = withAinativeAllowedTools(
       ctx.payload?.allowedTools,
       includeSdkNativeTools,
     );
@@ -715,13 +715,13 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
     const effectiveMaxTurns = task.maxTurns ?? ctx.maxTurns;
 
     // Merge browser + external MCP servers, then inject the in-process
-    // stagent server via the shared helper (see withStagentMcpServer).
+    // ainative server via the shared helper (see withAinativeMcpServer).
     // Async for the same cycle-breaking reason as executeClaudeTask above.
     const [browserServers, externalServers] = await Promise.all([
       getBrowserMcpServers(),
       getExternalMcpServers(),
     ]);
-    const mergedMcpServers = await withStagentMcpServer(
+    const mergedMcpServers = await withAinativeMcpServer(
       ctx.payload?.mcpServers ?? {},
       browserServers,
       externalServers,
@@ -736,7 +736,7 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
     const runtimeFeatures = getFeaturesForModel("");
     const includeSdkNativeTools = runtimeFeatures.hasNativeSkills;
 
-    const mergedAllowedTools = withStagentAllowedTools(
+    const mergedAllowedTools = withAinativeAllowedTools(
       ctx.payload?.allowedTools,
       includeSdkNativeTools,
     );

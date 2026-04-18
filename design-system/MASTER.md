@@ -1,4 +1,4 @@
-# Stagent Design System — Calm Ops
+# ainative Design System — Calm Ops
 
 Single source of truth for visual decisions. All new components must follow these conventions.
 

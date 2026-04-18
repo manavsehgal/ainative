@@ -15,7 +15,7 @@ Direct API runtimes unlock model capabilities that SDK-based runtimes don't expo
 
 ## User Story
 
-As a Stagent user, I want access to extended thinking for complex tasks, context compaction for long sessions, and model routing for cost optimization so that I get the best results from direct API runtimes.
+As a ainative user, I want access to extended thinking for complex tasks, context compaction for long sessions, and model routing for cost optimization so that I get the best results from direct API runtimes.
 
 ## Technical Approach
 
@@ -85,7 +85,7 @@ Server-side tools are available but need UI configuration:
 
 - Add server-side tool toggles to profile edit UI
 - Store configuration in profile `runtimeOverrides`
-- Pass enabled tools to API calls alongside Stagent custom tools
+- Pass enabled tools to API calls alongside ainative custom tools
 
 ### Files to Modify
 

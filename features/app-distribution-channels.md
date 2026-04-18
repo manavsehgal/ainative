@@ -3,7 +3,7 @@ title: App Distribution Channels
 status: deferred
 priority: P2
 milestone: post-mvp
-source: handoff/stagent-app-marketplace-spec.md
+source: handoff/ainative-app-marketplace-spec.md
 dependencies: [app-cli-tools, marketplace-app-publishing]
 ---
 
@@ -13,21 +13,21 @@ dependencies: [app-cli-tools, marketplace-app-publishing]
 
 ## Description
 
-Stagent apps can be distributed through four channels, each serving a different
+ainative apps can be distributed through four channels, each serving a different
 use case. The marketplace (cloud) is the primary discovery surface, but power
 users and developers also need local file import, git repo cloning, and
 official org distribution. This feature implements source-type detection,
 channel-specific download logic, and unified checksum verification across
 all four channels.
 
-A single `stagent app install <source>` command (and the corresponding API)
+A single `ainative app install <source>` command (and the corresponding API)
 handles all channels — the system detects the source type from the argument
 and dispatches to the appropriate handler.
 
 ## User Story
 
-As a developer, I want to install Stagent apps from any source — the
-marketplace, a local file, a GitHub repo, or the official Stagent org — using
+As a developer, I want to install ainative apps from any source — the
+marketplace, a local file, a GitHub repo, or the official ainative org — using
 a single install command, so I can work with apps regardless of how they are
 distributed.
 
@@ -37,10 +37,10 @@ distributed.
 
 | Channel | Source Pattern | Example |
 |---------|--------------|---------|
-| **Marketplace** | Bare app ID or `marketplace:{id}` | `stagent app install wealth-manager` |
-| **Local file** | File path ending in `.sap` or `.md` | `stagent app install ./my-app.sap` |
-| **Git repo** | HTTPS/SSH URL ending in `.git` or GitHub URL | `stagent app install https://github.com/user/stagent-wealth-manager` |
-| **Official** | `@stagent/{name}` or auto-detected from stagent org | `stagent app install @stagent/wealth-manager` |
+| **Marketplace** | Bare app ID or `marketplace:{id}` | `ainative app install wealth-manager` |
+| **Local file** | File path ending in `.sap` or `.md` | `ainative app install ./my-app.sap` |
+| **Git repo** | HTTPS/SSH URL ending in `.git` or GitHub URL | `ainative app install https://github.com/user/ainative-wealth-manager` |
+| **Official** | `@ainative/{name}` or auto-detected from ainative org | `ainative app install @ainative/wealth-manager` |
 
 ### 2. Source Type Detection
 
@@ -51,7 +51,7 @@ type SourceType = 'marketplace' | 'local-file' | 'git-repo' | 'official';
 function detectSourceType(source: string): SourceType {
   // 1. Explicit prefix
   if (source.startsWith('marketplace:')) return 'marketplace';
-  if (source.startsWith('@stagent/')) return 'official';
+  if (source.startsWith('@ainative/')) return 'official';
 
   // 2. File extension
   if (source.endsWith('.sap') || source.endsWith('.md')) return 'local-file';
@@ -85,7 +85,7 @@ Each channel has a handler that returns a normalized `AppBundle`:
 5. Record `sourceType: 'local-file'`, `sourceUrl: absolute-path`
 
 **Git repo handler:**
-1. Clone repo to temp directory (`~/.stagent/tmp/clone-{timestamp}`)
+1. Clone repo to temp directory (`~/.ainative/tmp/clone-{timestamp}`)
 2. Look for `manifest.yaml` at repo root
 3. If found: treat as `.sap` directory format
 4. If not found: look for `app.md` at root
@@ -94,7 +94,7 @@ Each channel has a handler that returns a normalized `AppBundle`:
 7. Clean up temp directory after extraction
 
 **Official handler:**
-1. Map `@stagent/{name}` to `https://github.com/stagent-ai/stagent-{name}`
+1. Map `@ainative/{name}` to `https://github.com/ainative-ai/ainative-{name}`
 2. Check GitHub releases for latest version
 3. Download release asset (`.sap` tarball)
 4. Verify SHA-256 from release notes or `.sha256` sidecar file
@@ -146,7 +146,7 @@ Releases:
 4. If a `.sha256` file exists as a release asset, download and verify
 
 No GitHub token required for public repos. For private repos, the user
-provides a token via `GITHUB_TOKEN` env var or `stagent` settings.
+provides a token via `GITHUB_TOKEN` env var or `ainative` settings.
 
 ### 6. Instance Tracking
 
@@ -165,10 +165,10 @@ newer versions across all channels.
 ## Acceptance Criteria
 
 - [ ] `detectSourceType()` correctly classifies all four channel patterns.
-- [ ] `stagent app install ./my-app.sap` installs from local file.
-- [ ] `stagent app install https://github.com/user/repo` clones and installs.
-- [ ] `stagent app install @stagent/wealth-manager` installs from official org.
-- [ ] `stagent app install wealth-manager` installs from marketplace.
+- [ ] `ainative app install ./my-app.sap` installs from local file.
+- [ ] `ainative app install https://github.com/user/repo` clones and installs.
+- [ ] `ainative app install @ainative/wealth-manager` installs from official org.
+- [ ] `ainative app install wealth-manager` installs from marketplace.
 - [ ] SHA-256 checksum verified on all channels; mismatch throws clear error.
 - [ ] `app_instances` records `source_type` and `source_url` for all installs.
 - [ ] Git clone temp directory cleaned up after extraction.
@@ -193,7 +193,7 @@ newer versions across all channels.
 
 ## References
 
-- Source: handoff/stagent-app-marketplace-spec.md §4.4-4.5
+- Source: handoff/ainative-app-marketplace-spec.md §4.4-4.5
 - Related: `app-cli-tools` (CLI install command), `marketplace-app-publishing`
   (Supabase storage), `app-updates-dependencies` (uses source tracking)
 - Files to create:

@@ -11,15 +11,15 @@ dependencies: [multi-channel-delivery, chat-engine]
 
 ## Description
 
-Enable users to chat with Stagent agents directly from Slack, Telegram, or any webhook-integrated channel. Phase 1 (multi-channel-delivery) established outbound-only delivery. This feature closes the loop — inbound messages from channels are routed to the existing chat engine, agent responses are sent back to the same thread, and multi-turn conversations are maintained across messages.
+Enable users to chat with ainative agents directly from Slack, Telegram, or any webhook-integrated channel. Phase 1 (multi-channel-delivery) established outbound-only delivery. This feature closes the loop — inbound messages from channels are routed to the existing chat engine, agent responses are sent back to the same thread, and multi-turn conversations are maintained across messages.
 
 The key insight is that the chat engine's `sendMessage()` async generator is already runtime-agnostic (Claude SDK, Codex, Ollama). A new Channel Gateway layer consumes this generator synchronously (accumulating streaming deltas into complete messages) and routes responses back through channel adapters. No duplication of the engine.
 
-This transforms Stagent from "another dashboard" into "AI that lives where I work" — solo founders and teams can interact with any agent profile (wealth-manager, content-creator, etc.) from their messaging app of choice.
+This transforms ainative from "another dashboard" into "AI that lives where I work" — solo founders and teams can interact with any agent profile (wealth-manager, content-creator, etc.) from their messaging app of choice.
 
 ## User Story
 
-As a solo founder, I want to chat with my Stagent agents directly in Slack or Telegram, so that I can get AI assistance without switching to the browser dashboard.
+As a solo founder, I want to chat with my ainative agents directly in Slack or Telegram, so that I can get AI assistance without switching to the browser dashboard.
 
 ## Technical Approach
 
@@ -39,7 +39,7 @@ Bridges inbound channel messages to the existing chat engine:
 
 ### Channel Bindings (Data Model)
 
-New table: `channel_bindings` — maps a channel config + external thread to a Stagent conversation.
+New table: `channel_bindings` — maps a channel config + external thread to a ainative conversation.
 
 ```
 channel_bindings

@@ -3,10 +3,10 @@ import { existsSync, unlinkSync, mkdirSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 
-// Mock stagent-paths to use a temp directory
-const testDir = join(tmpdir(), "stagent-screenshot-test-" + Date.now());
-vi.mock("@/lib/utils/stagent-paths", () => ({
-  getStagentScreenshotsDir: () => testDir,
+// Mock ainative-paths to use a temp directory
+const testDir = join(tmpdir(), "ainative-screenshot-test-" + Date.now());
+vi.mock("@/lib/utils/ainative-paths", () => ({
+  getAinativeScreenshotsDir: () => testDir,
 }));
 
 // Mock the database
@@ -99,6 +99,6 @@ describe("persistScreenshot", () => {
   it("exports correct screenshot tool names", () => {
     expect(SCREENSHOT_TOOL_NAMES.has("mcp__chrome-devtools__take_screenshot")).toBe(true);
     expect(SCREENSHOT_TOOL_NAMES.has("mcp__playwright__browser_take_screenshot")).toBe(true);
-    expect(SCREENSHOT_TOOL_NAMES.has("mcp__stagent__execute_task")).toBe(false);
+    expect(SCREENSHOT_TOOL_NAMES.has("mcp__ainative__execute_task")).toBe(false);
   });
 });

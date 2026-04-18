@@ -13,11 +13,11 @@ dependencies:
 
 ## Description
 
-Built-in documentation system at `/playbook` that surfaces product guides, workflow tutorials, and best practices directly inside the Stagent UI. The system is usage-stage-aware — it adapts content prominence based on where the user is in their adoption journey (onboarding → active → advanced). Includes an adoption heatmap showing feature discovery progress, journey cards for guided walkthroughs, full markdown rendering, table of contents navigation, and command palette integration for quick doc access.
+Built-in documentation system at `/playbook` that surfaces product guides, workflow tutorials, and best practices directly inside the ainative UI. The system is usage-stage-aware — it adapts content prominence based on where the user is in their adoption journey (onboarding → active → advanced). Includes an adoption heatmap showing feature discovery progress, journey cards for guided walkthroughs, full markdown rendering, table of contents navigation, and command palette integration for quick doc access.
 
 ## User Story
 
-As a Stagent user, I want to access contextual product documentation without leaving the app, so I can learn features progressively and reference workflows at the point of need.
+As a ainative user, I want to access contextual product documentation without leaving the app, so I can learn features progressively and reference workflows at the point of need.
 
 As a power user, I want the docs to reflect my adoption stage so that beginner content fades and advanced guides surface as I grow into the product.
 

@@ -3,7 +3,7 @@ title: App Seed Data Generation
 status: deferred
 priority: P1
 milestone: post-mvp
-source: handoff/stagent-app-marketplace-spec.md
+source: handoff/ainative-app-marketplace-spec.md
 dependencies: [app-package-format]
 ---
 
@@ -148,12 +148,12 @@ Errors (high-confidence PII like SSNs) block seed data generation. Warnings
 (ambiguous patterns like short numeric sequences) are displayed but don't
 block.
 
-### 4. CLI command — `stagent app seed`
+### 4. CLI command — `ainative app seed`
 
-The `stagent app seed` command orchestrates the full pipeline:
+The `ainative app seed` command orchestrates the full pipeline:
 
 ```
-stagent app seed [--app-dir <path>] [--table <name>] [--force]
+ainative app seed [--app-dir <path>] [--table <name>] [--force]
 
 Steps:
 1. Read manifest.yaml from app directory
@@ -202,7 +202,7 @@ async function loadSeedData(appId: string, tableId: string, csvPath: string) {
       IP patterns.
 - [ ] PII scanner blocks generation on high-confidence findings unless
       `--force` is passed.
-- [ ] `stagent app seed` produces CSV files in `seed-data/` matching the
+- [ ] `ainative app seed` produces CSV files in `seed-data/` matching the
       declared table schemas.
 - [ ] Diff preview shows original vs sanitized values for review.
 - [ ] `bootstrapApp()` loads seed-data CSVs when present in the package.
@@ -215,7 +215,7 @@ async function loadSeedData(appId: string, tableId: string, csvPath: string) {
 - 7 sanitization strategy modules (keep, randomize, shift, faker, derive,
   redact, hash)
 - PII scanner with 7 detection patterns
-- `stagent app seed` CLI command with preview and confirmation
+- `ainative app seed` CLI command with preview and confirmation
 - Seed data loading during app bootstrap
 - Manifest `seedData` section schema validation
 - CSV output format for seed data files
@@ -230,7 +230,7 @@ async function loadSeedData(appId: string, tableId: string, csvPath: string) {
 
 ## References
 
-- Source: `handoff/stagent-app-marketplace-spec.md` section 7
+- Source: `handoff/ainative-app-marketplace-spec.md` section 7
 - Related: `app-package-format` (defines where seed-data lives in `.sap`),
   `app-cli-tools` (provides the CLI framework for `seed` command)
 - Files to create:

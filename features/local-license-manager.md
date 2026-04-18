@@ -15,7 +15,7 @@ Adds a `license` table to local SQLite and builds `src/lib/license/manager.ts` â
 
 ## User Story
 
-As a Stagent user, I want my license tier to be enforced locally with offline resilience so that premium features work reliably even without constant internet.
+As a ainative user, I want my license tier to be enforced locally with offline resilience so that premium features work reliably even without constant internet.
 
 ## Technical Approach
 

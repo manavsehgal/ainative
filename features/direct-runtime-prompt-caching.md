@@ -11,19 +11,19 @@ dependencies: [anthropic-direct-runtime]
 
 ## Description
 
-The Anthropic Messages API supports prompt caching — marking content blocks with `cache_control` so repeated prompts reuse cached token processing at 90% lower cost. Stagent's task and chat execution patterns are ideal for caching: the same system prompt + profile instructions + learned context are sent with every task for a given profile.
+The Anthropic Messages API supports prompt caching — marking content blocks with `cache_control` so repeated prompts reuse cached token processing at 90% lower cost. ainative's task and chat execution patterns are ideal for caching: the same system prompt + profile instructions + learned context are sent with every task for a given profile.
 
 This feature wires prompt caching into the `anthropic-direct` runtime adapter. It's a pure cost optimization — no behavior changes, no new UI beyond usage dashboard enhancements to show cache hit rates.
 
 ## User Story
 
-As a Stagent user running tasks on the Anthropic Direct runtime, I want prompt caching enabled automatically so that repeated tasks with the same profile cost up to 90% less on input tokens.
+As a ainative user running tasks on the Anthropic Direct runtime, I want prompt caching enabled automatically so that repeated tasks with the same profile cost up to 90% less on input tokens.
 
 ## Technical Approach
 
 ### Cache Block Strategy
 
-Stagent's system prompt has a natural layering that maps perfectly to cache breakpoints:
+ainative's system prompt has a natural layering that maps perfectly to cache breakpoints:
 
 ```
 ┌─────────────────────────────────┐
@@ -60,7 +60,7 @@ The first 3 blocks are stable across tasks with the same profile → ideal for c
 
 ### Batch API for Meta-Completions
 
-Stagent's meta-completions (task assist, profile assist, pattern extraction) are single-turn, non-time-sensitive queries. These are ideal for the Anthropic Batch API which offers 50% discount:
+ainative's meta-completions (task assist, profile assist, pattern extraction) are single-turn, non-time-sensitive queries. These are ideal for the Anthropic Batch API which offers 50% discount:
 
 - In `anthropic-direct.ts`, add `batchMode` option for `runTaskAssist()` and `runProfileAssist()`
 - Use `messages.batches.create()` for batch-eligible queries

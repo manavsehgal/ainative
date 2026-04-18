@@ -11,7 +11,7 @@ dependencies: [environment-cache]
 
 ## Description
 
-Score each project's CLI environment against best practices derived from the Claude Agent SDK documentation and Anthropic's effective-agents reference. The health score gamifies environment quality — instead of reading docs about "you should have hooks," Stagent tells you specifically what's missing and offers one-click fixes.
+Score each project's CLI environment against best practices derived from the Claude Agent SDK documentation and Anthropic's effective-agents reference. The health score gamifies environment quality — instead of reading docs about "you should have hooks," ainative tells you specifically what's missing and offers one-click fixes.
 
 Scores are computed from 4 dimensions (Instructions, Safety, Capability, Maintenance), each weighted 25%. Per-project scores enable cross-project health comparison and workspace-wide health averages. Trend tracking uses scan history to show improvement over time.
 

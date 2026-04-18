@@ -6,7 +6,7 @@ import { access, stat, copyFile, mkdir } from "fs/promises";
 import path, { basename, extname, join } from "path";
 import { homedir } from "os";
 import crypto from "crypto";
-import { getStagentUploadsDir } from "@/lib/utils/stagent-paths";
+import { getAinativeUploadsDir } from "@/lib/utils/ainative-paths";
 import { processDocument } from "@/lib/documents/processor";
 import { z } from "zod/v4";
 
@@ -171,7 +171,7 @@ export async function POST(req: NextRequest) {
   const id = crypto.randomUUID();
   const filename = `${id}${ext}`;
 
-  const uploadsDir = getStagentUploadsDir();
+  const uploadsDir = getAinativeUploadsDir();
   await mkdir(uploadsDir, { recursive: true });
   const storagePath = join(uploadsDir, filename);
   await copyFile(resolvedPath, storagePath);

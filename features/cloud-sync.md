@@ -11,7 +11,7 @@ dependencies:
 
 # Cloud Sync
 
-> **Superseded by `community-edition-simplification` (2026-04-13).** This feature shipped but was later fully reverted when Stagent pivoted to a 100% free Community Edition with no tiers, billing, or cloud dependency. Kept as historical record.
+> **Superseded by `community-edition-simplification` (2026-04-13).** This feature shipped but was later fully reverted when ainative pivoted to a 100% free Community Edition with no tiers, billing, or cloud dependency. Kept as historical record.
 
 ## Description
 
@@ -21,7 +21,7 @@ V1 is full-database export (no selective/incremental sync). Conflict resolution 
 
 ## User Story
 
-As an Operator tier user working across multiple machines, I want to sync my Stagent database between devices so that my agent memories, workflow configurations, and execution history are available everywhere — with the confidence that my data is encrypted and only I can read it.
+As an Operator tier user working across multiple machines, I want to sync my ainative database between devices so that my agent memories, workflow configurations, and execution history are available everywhere — with the confidence that my data is encrypted and only I can read it.
 
 ## Technical Approach
 
@@ -32,7 +32,7 @@ All data is encrypted client-side before upload using AES-256-GCM with HKDF-deri
 ```ts
 // Key derivation
 const ikm = new TextEncoder().encode(userId);
-const info = new TextEncoder().encode('stagent-sync-v1');
+const info = new TextEncoder().encode('ainative-sync-v1');
 const salt = crypto.getRandomValues(new Uint8Array(32));
 
 const keyMaterial = await crypto.subtle.importKey('raw', ikm, 'HKDF', false, ['deriveKey']);
@@ -73,7 +73,7 @@ export class CloudSync {
    */
   async exportAndEncrypt(): Promise<SyncResult> {
     // 1. Create a temporary backup using better-sqlite3 .backup()
-    const tempPath = path.join(os.tmpdir(), `stagent-export-${Date.now()}.db`);
+    const tempPath = path.join(os.tmpdir(), `ainative-export-${Date.now()}.db`);
     await db.backup(tempPath);
 
     // 2. Read the backup file
@@ -96,11 +96,11 @@ export class CloudSync {
 
   /**
    * Upload encrypted snapshot to Supabase Storage.
-   * Path: stagent-sync/{userId}/{timestamp}.enc
+   * Path: ainative-sync/{userId}/{timestamp}.enc
    */
   async uploadSnapshot(envelope: Buffer): Promise<SyncResult> {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const storagePath = `stagent-sync/${this.userId}/${timestamp}.enc`;
+    const storagePath = `ainative-sync/${this.userId}/${timestamp}.enc`;
 
     const { error } = await this.supabase.storage
       .from('sync-snapshots')
@@ -124,7 +124,7 @@ export class CloudSync {
     // List snapshots for this user, sorted by timestamp descending
     const { data: files } = await this.supabase.storage
       .from('sync-snapshots')
-      .list(`stagent-sync/${this.userId}`, {
+      .list(`ainative-sync/${this.userId}`, {
         sortBy: { column: 'created_at', order: 'desc' },
         limit: 1,
       });
@@ -133,7 +133,7 @@ export class CloudSync {
 
     const { data } = await this.supabase.storage
       .from('sync-snapshots')
-      .download(`stagent-sync/${this.userId}/${files[0].name}`);
+      .download(`ainative-sync/${this.userId}/${files[0].name}`);
 
     if (!data) throw new SyncError('download_failed', 'Failed to download snapshot');
 
@@ -149,7 +149,7 @@ export class CloudSync {
     // 1. Safety backup of current database
     const safetyPath = path.join(
       path.dirname(DB_PATH),
-      `stagent-pre-restore-${Date.now()}.db`
+      `ainative-pre-restore-${Date.now()}.db`
     );
     await db.backup(safetyPath);
 
@@ -157,7 +157,7 @@ export class CloudSync {
     const decrypted = await this.downloadLatestSnapshot();
 
     // 3. Write decrypted database to temp file
-    const tempPath = path.join(os.tmpdir(), `stagent-restore-${Date.now()}.db`);
+    const tempPath = path.join(os.tmpdir(), `ainative-restore-${Date.now()}.db`);
     await fs.writeFile(tempPath, decrypted);
 
     // 4. Validate the decrypted database
@@ -208,7 +208,7 @@ export class CloudSync {
 ### Supabase Infrastructure
 
 **Storage bucket**: `sync-snapshots` with RLS policy:
-- Users can only access `stagent-sync/{their-user-id}/*`
+- Users can only access `ainative-sync/{their-user-id}/*`
 - Max file size: 100MB (covers large SQLite databases)
 
 **Database table**: `sync_sessions` for tracking restore points:
@@ -354,8 +354,8 @@ if (!allowed) {
 ## Acceptance Criteria
 
 - [ ] `exportAndEncrypt()` creates a consistent SQLite backup and encrypts with AES-256-GCM
-- [ ] Encryption uses HKDF with userId as IKM and 'stagent-sync-v1' as info
-- [ ] Encrypted snapshots uploaded to Supabase Storage at `stagent-sync/{userId}/{timestamp}.enc`
+- [ ] Encryption uses HKDF with userId as IKM and 'ainative-sync-v1' as info
+- [ ] Encrypted snapshots uploaded to Supabase Storage at `ainative-sync/{userId}/{timestamp}.enc`
 - [ ] `downloadLatestSnapshot()` retrieves and decrypts the most recent snapshot
 - [ ] `decryptAndRestore()` creates a safety backup before overwriting the active database
 - [ ] Database validation checks for required tables before completing restore
@@ -397,7 +397,7 @@ if (!allowed) {
 - Depends on: `features/supabase-cloud-backend.md` — Supabase client, Storage bucket, RLS policies
 - Depends on: `features/stripe-billing-integration.md` — Operator tier verification
 - SQLite backup: better-sqlite3 `.backup()` API — consistent snapshot without WAL issues
-- Database location: `~/.stagent/stagent.db` — backup source and restore target
+- Database location: `~/.ainative/ainative.db` — backup source and restore target
 - Database module: `src/lib/db/index.ts` — connection management, close/reopen helpers
 - Settings UI pattern: `src/app/settings/page.tsx` — FormSectionCard layout
 - Web Crypto API: AES-GCM + HKDF available in Node.js and browser environments

@@ -11,8 +11,8 @@
 **Worktree guidance:** This plan makes invasive changes to scheduler semantics. Run it in a dedicated worktree:
 
 ```bash
-git worktree add -b schedule-orchestration ../stagent-schedule-orchestration main
-cd ../stagent-schedule-orchestration
+git worktree add -b schedule-orchestration ../ainative-schedule-orchestration main
+cd ../ainative-schedule-orchestration
 ```
 
 ---
@@ -2832,7 +2832,7 @@ Create `.claude/skills/architect/references/tdr-chat-shares-event-loop.md`:
 
 ## Context
 
-Stagent runs chat and scheduled tasks in the same Node process, on the same event loop. The 2026-04-08 incident showed this is a critical architectural constraint: when 5 schedules saturated the event loop, a user's chat SSE stream was starved and dropped mid-stream.
+ainative runs chat and scheduled tasks in the same Node process, on the same event loop. The 2026-04-08 incident showed this is a critical architectural constraint: when 5 schedules saturated the event loop, a user's chat SSE stream was starved and dropped mid-stream.
 
 ## Decision
 

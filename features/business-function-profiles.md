@@ -128,7 +128,7 @@ Each blueprint gets a YAML file in `src/lib/workflows/blueprints/builtins/`.
 All 6 new profiles use:
 - `supportedRuntimes: [claude-code, openai-codex-app-server, anthropic-direct, openai-direct]`
 - `preferredRuntime: anthropic-direct`
-- `author: stagent`
+- `author: ainative`
 - `version: "1.0.0"`
 
 ### Registry Integration
@@ -145,7 +145,7 @@ Similarly, the blueprint registry in `src/lib/workflows/blueprints/registry.ts` 
 - [ ] 5 new blueprint YAML files exist in `src/lib/workflows/blueprints/builtins/`
 - [ ] Each blueprint has valid schema: id, name, description, version, domain, tags, pattern, variables, steps
 - [ ] Blueprint steps reference valid profile IDs (new and existing profiles)
-- [ ] `npx stagent` lists all 20 profiles (14 existing + 6 new) in the profiles surface
+- [ ] `npx ainative` lists all 20 profiles (14 existing + 6 new) in the profiles surface
 - [ ] All 13 blueprints (8 existing + 5 new) appear in the workflow blueprint picker
 - [ ] Smoke tests pass for each new profile (task execution returns expected keywords)
 - [ ] New profiles appear in the profile AI-assist suggestions when matching business function keywords
@@ -167,6 +167,6 @@ Similarly, the blueprint registry in `src/lib/workflows/blueprints/registry.ts` 
 ## References
 
 - Source: `ideas/vision/machine-builds-machine-claude-ext-rsrch.md` — Section 7 (Tier 1: rename/repackage profiles, create business workflow blueprints)
-- Source: `ideas/vision/Stagent-OpenClaw-Companion-Research-Report.md` — Section 3.1 (SOUL.md format, 187+ production templates across 19 categories)
+- Source: `ideas/vision/ainative-OpenClaw-Companion-Research-Report.md` — Section 3.1 (SOUL.md format, 187+ production templates across 19 categories)
 - Related features: agent-profile-catalog (completed), workflow-blueprints (completed), product-messaging-refresh (new positioning references these profiles)
 - Existing patterns: `src/lib/agents/profiles/builtins/researcher/` (profile structure reference), `src/lib/workflows/blueprints/builtins/research-report.yaml` (blueprint structure reference)

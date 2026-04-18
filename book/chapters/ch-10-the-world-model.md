@@ -25,19 +25,19 @@ Block distinguishes two world models. The company world model is how the organiz
 
 ## Block's Four Pillars
 
-In their Sequoia essay, Dorsey and Botha propose that a world-model-driven company builds four things instead of traditional product roadmaps. We summarize their framework here because it maps directly to how we think about Stagent's architecture:
+In their Sequoia essay, Dorsey and Botha propose that a world-model-driven company builds four things instead of traditional product roadmaps. We summarize their framework here because it maps directly to how we think about ainative's architecture:
 
-**First, capabilities** — the atomic primitives of the business. For Block, these are financial services (payments, lending, payroll). For a software platform like Stagent, they are the core operations: task execution, workflow orchestration, document processing, scheduling. These are not products with UIs. They are reliable, composable building blocks.
+**First, capabilities** — the atomic primitives of the business. For Block, these are financial services (payments, lending, payroll). For a software platform like ainative, they are the core operations: task execution, workflow orchestration, document processing, scheduling. These are not products with UIs. They are reliable, composable building blocks.
 
 **Second, a world model** — the live representation of organizational and customer state. Dorsey distinguishes a *company world model* (how the organization understands itself) from a *customer world model* (per-user understanding from real behavioral data). Most AI efforts focus on the customer side. The transformative move is building the company side.
 
-**Third, an intelligence layer** — the system that composes capabilities in response to signals from the world model. In Dorsey and Botha's example, Block's intelligence layer might detect a merchant's seasonal cash flow dip and proactively compose a short-term loan from the lending capability. No product manager planned that specific interaction — the system composed it from available parts. This is the pattern Stagent's workflow engine aspires to.
+**Third, an intelligence layer** — the system that composes capabilities in response to signals from the world model. In Dorsey and Botha's example, Block's intelligence layer might detect a merchant's seasonal cash flow dip and proactively compose a short-term loan from the lending capability. No product manager planned that specific interaction — the system composed it from available parts. This is the pattern ainative's workflow engine aspires to.
 
 **Fourth, interfaces** — the delivery surfaces (apps, dashboards, APIs) through which composed solutions reach users. Dorsey and Botha argue these are important but not where the value lives. The value is in the model and the intelligence.
 
 The most radical insight is what happens when the intelligence layer fails. As Dorsey and Botha put it: "When the intelligence layer tries to compose a solution and can't because the capability doesn't exist, that failure signal is the future roadmap." The traditional roadmap — where product managers hypothesize about what to build next — becomes, in their framing, the company's "ultimate limiting factor."
 
-This framework maps cleanly to what we have been building throughout this book. Stagent's agent profiles are capabilities. Its database is the embryonic world model. Its workflow engine and agent execution layer form the intelligence layer. Its Next.js interface is the delivery surface. And when an agent encounters a task it cannot complete -- a missing tool, an unavailable profile, an unresolvable dependency -- that is exactly the failure signal Dorsey describes.
+This framework maps cleanly to what we have been building throughout this book. ainative's agent profiles are capabilities. Its database is the embryonic world model. Its workflow engine and agent execution layer form the intelligence layer. Its Next.js interface is the delivery surface. And when an agent encounters a task it cannot complete -- a missing tool, an unavailable profile, an unresolvable dependency -- that is exactly the failure signal Dorsey describes.
 
 ## Harvey's Spectre
 
@@ -54,11 +54,11 @@ Harvey's CEO, Gabe Pereyra, frames the broader implication clearly: "Leverage is
 > [!case-study]
 > **Harvey Spectre** -- "In practice, Spectre is the beginning of a company world model: a live picture of what is happening inside Harvey and what needs to happen next." Spectre is monitoring-triggered, not prompt-triggered. It watches organizational state and acts when patterns emerge, shifting the bottleneck from implementation to coordination and judgment.
 
-## Stagent's Embryonic World Model
+## ainative's Embryonic World Model
 
 We are not Block or Harvey. We do not have millions of transactions or hundreds of engineers. But we have the same architectural foundation, and it is worth examining what we already have.
 
-Stagent's world model lives in ten database tables:
+ainative's world model lives in ten database tables:
 
 | Table | What It Captures |
 |---|---|
@@ -78,8 +78,8 @@ Every action in the system creates a queryable artifact. When an agent executes 
 This is not yet a world model in Block's sense. It is a database. But it is a database designed from the start to be queryable by agents, not just by humans. And that design choice -- making organizational state machine-readable -- is the prerequisite for everything that follows.
 
 ```typescript
-// Building with Stagent: Querying the organizational world model
-// Every action in Stagent creates queryable state
+// Building with ainative: Querying the organizational world model
+// Every action in ainative creates queryable state
 
 // What's the health of Project X?
 const project = await fetch("/api/projects/proj-8f3a-4b2c").then(r => r.json());
@@ -96,17 +96,17 @@ const avgCompletionTime = tasks
 // "Project X has 3 blocked tasks — should I escalate or attempt to unblock?"
 ```
 
-The dashboard in Stagent is not decoration. It is the first intelligence surface built on top of the world model. It shows task distribution by status, agent activity over time, workflow completion rates, and project health. Today a human reads it. Tomorrow an agent reads the same data through the same APIs and decides what to do about it.
+The dashboard in ainative is not decoration. It is the first intelligence surface built on top of the world model. It shows task distribution by status, agent activity over time, workflow completion rates, and project health. Today a human reads it. Tomorrow an agent reads the same data through the same APIs and decides what to do about it.
 
 ## From Database to Intelligence
 
-The evolution from database to world model to organizational intelligence follows a predictable path. We can see five stages, and Stagent is currently between the first and second.
+The evolution from database to world model to organizational intelligence follows a predictable path. We can see five stages, and ainative is currently between the first and second.
 
 **Stage 1: Static Tables.** Data exists. You can query it. But nothing acts on the queries autonomously. This is where most project management tools live forever. You have a Jira board. You look at it. You decide what to do.
 
-**Stage 2: Queryable State.** Agents can read organizational state through APIs and make decisions based on what they find. "Project X has 3 blocked tasks. Task Y has been waiting for 3 days. The agent assigned to Task Y has failed twice." Stagent is entering this stage. Agents can query tasks, read logs, check project status, and use that context to inform their execution.
+**Stage 2: Queryable State.** Agents can read organizational state through APIs and make decisions based on what they find. "Project X has 3 blocked tasks. Task Y has been waiting for 3 days. The agent assigned to Task Y has failed twice." ainative is entering this stage. Agents can query tasks, read logs, check project status, and use that context to inform their execution.
 
-**Stage 3: Proactive Insights.** The system does not wait to be asked. Scheduled agents scan the world model and surface patterns. "Every Monday morning, three projects have tasks that have been idle for more than 48 hours. Here is a prioritized list." This is what Harvey's Spectre does. Stagent's scheduled loops are the foundation for this stage.
+**Stage 3: Proactive Insights.** The system does not wait to be asked. Scheduled agents scan the world model and surface patterns. "Every Monday morning, three projects have tasks that have been idle for more than 48 hours. Here is a prioritized list." This is what Harvey's Spectre does. ainative's scheduled loops are the foundation for this stage.
 
 **Stage 4: Causal Models.** The system understands not just what is happening but why. "Task Y is blocked because Document Z has not been processed, and Document Z has not been processed because the PDF processor failed on a corrupted file." Causal chains enable the system to suggest fixes, not just report problems. This requires the learned_context table to accumulate enough patterns to build dependency graphs.
 
@@ -115,18 +115,18 @@ The evolution from database to world model to organizational intelligence follow
 > [!case-study]
 > **8090 Knowledge Graph** -- "A living map that propagates changes forward and backward automatically across every artifact." 8090's Software Factory binds its five stations (Refinery, Foundry, Planner, Validator, Knowledge Graph) with a graph that captures not just what decisions were made but why. When requirements shift, changes propagate automatically. This is institutional memory that compounds with every project -- the organizational equivalent of compound interest.
 
-## Stagent Today
+## ainative Today
 
-Today's Stagent world model is Stage 1 trending toward Stage 2. The ten tables capture organizational state. The APIs expose it. Agents can query it during task execution. The dashboard renders it for humans.
+Today's ainative world model is Stage 1 trending toward Stage 2. The ten tables capture organizational state. The APIs expose it. Agents can query it during task execution. The dashboard renders it for humans.
 
 What makes this foundation viable is a design principle that runs throughout the codebase: every action creates an artifact. There are no side-channel communications, no unrecorded decisions, no tribal knowledge that exists only in someone's head. When an agent executes a task, the full conversation -- prompts, responses, tool calls, errors -- is recorded in `agent_logs`. When a workflow transitions between steps, the state change is written to the database. When a human makes a permission decision, it is stored in `settings` and `notifications`.
 
-This is the "remote-first" advantage that Dorsey describes at Block. "Everything we do creates artifacts. Decisions, discussions, code, designs, plans, problems, and progress all exist as recorded actions. It's the raw material for a company world model." Stagent is remote-first by nature -- it is a software system where all state is machine-readable. The world model is not something we need to build on top. It is something that emerges from the data we are already capturing.
+This is the "remote-first" advantage that Dorsey describes at Block. "Everything we do creates artifacts. Decisions, discussions, code, designs, plans, problems, and progress all exist as recorded actions. It's the raw material for a company world model." ainative is remote-first by nature -- it is a software system where all state is machine-readable. The world model is not something we need to build on top. It is something that emerges from the data we are already capturing.
 
 The learned_context table deserves special attention. When agents discover patterns during execution -- a particular approach that works well for a type of task, a common failure mode, a useful piece of organizational knowledge -- they can propose learned context entries. These accumulate over time, forming the rudimentary causal layer. Today they are text entries that agents can query. Tomorrow they become nodes in a knowledge graph.
 
 ```typescript
-// Building with Stagent: Learned context as embryonic intelligence
+// Building with ainative: Learned context as embryonic intelligence
 // Agents propose context during execution; the system accumulates it
 
 // After a task completes, the agent proposes what it learned
@@ -148,13 +148,13 @@ const relevantContext = await fetch(
 
 ## Roadmap Vision
 
-The distance between Stagent's ten tables and Block's company world model is large but traversable. Here is what the path looks like.
+The distance between ainative's ten tables and Block's company world model is large but traversable. Here is what the path looks like.
 
 **Full Knowledge Graph.** The learned_context table evolves into a proper graph database (or graph layer on top of SQLite). Nodes represent projects, tasks, agents, documents, decisions, and patterns. Edges represent relationships: "depends-on," "caused-by," "resolved-by," "similar-to." This is 8090's Knowledge Graph pattern: a living map that propagates changes forward and backward automatically.
 
 **Emergent Roadmap.** When agents fail -- when the intelligence layer cannot compose a solution because the capability does not exist -- those failure signals are captured, clustered, and surfaced as roadmap candidates. No product manager hypothesizes about what to build next. The system tells you what is missing. This is the most radical idea in Dorsey's framework, and it is technically achievable once the failure signals are structured and queryable.
 
-**Digital Twins.** Josh Bersin and Viven.ai describe "the intelligence of the entire team as if it's one person." A digital twin of the organization that can answer questions like "if we add two more engineers to this project, what happens to the timeline?" or "which agent profile is most effective for compliance tasks?" This requires the predictive layer -- Stage 5 -- but the foundation is agent performance data that Stagent already captures in the usage_ledger.
+**Digital Twins.** Josh Bersin and Viven.ai describe "the intelligence of the entire team as if it's one person." A digital twin of the organization that can answer questions like "if we add two more engineers to this project, what happens to the timeline?" or "which agent profile is most effective for compliance tasks?" This requires the predictive layer -- Stage 5 -- but the foundation is agent performance data that ainative already captures in the usage_ledger.
 
 **Generation at Scale.** Duolingo shipped 148 courses in one year after spending twelve years building the first set manually. The world model -- understanding what a good course looks like, what learners struggle with, how content should progress -- enabled generation at a pace that manual processes could never match. The same principle applies to any organization with a rich enough world model: once the model understands the patterns, it can generate new instances faster than humans can plan them.
 

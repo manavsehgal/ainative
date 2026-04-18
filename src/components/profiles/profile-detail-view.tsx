@@ -318,7 +318,7 @@ export function ProfileDetailView({ profileId, isBuiltin, initialProfile }: Prof
                   {" · "}
                   {new Date(profile.importMeta.importedAt).toLocaleDateString()}
                   {" · "}
-                  {profile.importMeta.sourceFormat === "stagent" ? "Stagent native" : "SKILL.md adapted"}
+                  {profile.importMeta.sourceFormat === "ainative" ? "ainative native" : "SKILL.md adapted"}
                   {profile.importMeta.filePath && (
                     <>
                       {" · "}

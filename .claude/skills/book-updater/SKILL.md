@@ -1,11 +1,11 @@
 ---
 name: book-updater
-description: Update the AI Native Business book chapters when dependencies change — ai-native-notes, features, Stagent API (schema, profiles, workflows), or source code. Detects what changed, regenerates affected chapters while preserving editorial standards, and syncs to the stagent.io website. Use this skill whenever the user says "update the book", "regenerate chapters", "book is stale", "sync book content", "refresh book chapters", "update book from notes", "book needs updating", or when ai-native-notes, features, schema, profiles, or API code has changed and the book should reflect those changes. Also trigger after adding new case studies, research notes, or Situational Awareness content.
+description: Update the AI Native Business book chapters when dependencies change — ai-native-notes, features, ainative API (schema, profiles, workflows), or source code. Detects what changed, regenerates affected chapters while preserving editorial standards, and syncs to the ainative.business website. Use this skill whenever the user says "update the book", "regenerate chapters", "book is stale", "sync book content", "refresh book chapters", "update book from notes", "book needs updating", or when ai-native-notes, features, schema, profiles, or API code has changed and the book should reflect those changes. Also trigger after adding new case studies, research notes, or Situational Awareness content.
 ---
 
 # Book Updater Skill
 
-Update AI Native Business book chapters when their upstream dependencies change, then propagate to the stagent.io website.
+Update AI Native Business book chapters when their upstream dependencies change, then propagate to the ainative.business website.
 
 ## Book Stats (keep current)
 
@@ -61,7 +61,7 @@ src/lib/agents/profiles/ ──────┤                              │
 src/lib/agents/execution-manager.ts ─┤                        │
 src/lib/workflows/ ────────────┤                              │
 src/lib/schedules/ ────────────┤                              ▼
-src/lib/documents/ ────────────┘                   stagent.github.io
+src/lib/documents/ ────────────┘                   ainative-business.github.io
 ai-native-notes/ai-native-book-strategy.md ──→ (editorial constraints for all chapters)
 ```
 
@@ -134,11 +134,11 @@ relatedJourney: "journey-slug"
 ## Technical Sections (2-4 per chapter)
 
 ```typescript
-// Building with Stagent: description
+// Building with ainative: description
 // Realistic code example from actual API
 ```
 
-## Stagent Today (current implementation state)
+## ainative Today (current implementation state)
 
 ## Roadmap Vision (future directions)
 ```
@@ -147,8 +147,8 @@ relatedJourney: "journey-slug"
 
 - **Opening**: Thesis statement + narrative context
 - **Case studies**: `> [!case-study]` blocks with inline attribution
-- **Code examples**: TypeScript using real Stagent API patterns
-- **Stagent Today**: Current state of implementation (grounded in code)
+- **Code examples**: TypeScript using real ainative API patterns
+- **ainative Today**: Current state of implementation (grounded in code)
 - **Roadmap Vision**: Future directions with concrete next steps
 
 ---
@@ -163,7 +163,7 @@ When integrating external research (from ai-native-notes), follow the altitude m
 
 1. **Translate, don't transplant.** Express external concepts through existing book patterns and case studies. "Scalable oversight" becomes "the swarm coordinator as a governance mechanism."
 2. **Maintain practitioner tone.** Frame as engineering decisions, not predictions. "The trendlines have not stopped" — not "AGI by 2027."
-3. **Connect to existing patterns.** Every addition must reference at least one chapter, case study, or Stagent feature.
+3. **Connect to existing patterns.** Every addition must reference at least one chapter, case study, or ainative feature.
 4. **Respect the grounding principle.** Every claim maps to running code. External research without implementation connections gets a pointer ("see X for the macro trajectory"), not absorption.
 
 ### Forbidden Patterns
@@ -181,7 +181,7 @@ grep -ri "superintelligence\|AGI by 2027\|existential risk\|national security\|g
 - Geopolitical competition framing (US vs China, national security)
 - Civilizational-stakes rhetoric ("most important century," existential risk)
 - Infrastructure economics (TSMC fabs, datacenter locations, CHIPS Act)
-- Content without connection to at least one Stagent feature or case study
+- Content without connection to at least one ainative feature or case study
 
 The single pre-existing use of "existential" in Ch 12 (referring to business decisions) is acceptable.
 
@@ -212,7 +212,7 @@ All case studies use inline attribution (no footnotes). Three patterns:
 - **Book content**: Covered by repository-level Apache 2.0 license (Manav Sehgal, 2025)
 - **Case studies**: Use fair-use excerpts with proper inline attribution (author, title, date)
 - **External research** (Aschenbrenner, Anthropic, etc.): Reference by name with citations; quote briefly for commentary/criticism under fair use
-- **Code examples**: All TypeScript examples demonstrate Stagent's own API; no third-party code
+- **Code examples**: All TypeScript examples demonstrate ainative's own API; no third-party code
 - **No full reproduction** of external articles — only quotes, data points, and framework descriptions with attribution
 - **Case study sources** are publicly available blog posts, essays, and conference talks; attribution preserves the source relationship
 
@@ -285,7 +285,7 @@ grep -c "\[!case-study\]" book/chapters/*.md
 # 4. Verify all chapters have required sections
 for f in book/chapters/*.md; do
   echo "=== $(basename $f) ==="
-  grep -c "## Stagent Today\|## Roadmap Vision" "$f"
+  grep -c "## ainative Today\|## Roadmap Vision" "$f"
 done
 
 # 5. Verify code examples reference real API
@@ -295,26 +295,26 @@ grep -l '```typescript' book/chapters/*.md
 ### Build Verification
 
 ```bash
-# Ensure the Stagent app still builds
+# Ensure the ainative app still builds
 npm run build 2>&1 | tail -5
 ```
 
 ---
 
-## Phase 7: Propagate to stagent.io Website
+## Phase 7: Propagate to ainative.business Website
 
-After updating book chapters in the Stagent repo, sync to the website.
+After updating book chapters in the ainative repo, sync to the website.
 
 ### Option A: Invoke the Apply Book Update Skill
 
-If working in the stagent.github.io repo, invoke `/apply-book-update` — that skill handles the full sync workflow (compare, copy, update code files, verify build).
+If working in the ainative.github.io repo, invoke `/apply-book-update` — that skill handles the full sync workflow (compare, copy, update code files, verify build).
 
 ### Option B: Update the Apply Book Update Skill
 
 If the book's structure has changed (new chapters, new parts, new callout types, changed frontmatter fields), also update the downstream skill at:
 
 ```
-/Users/manavsehgal/Developer/stagent.github.io/.claude/skills/apply-book-update/SKILL.md
+/Users/manavsehgal/Developer/ainative.github.io/.claude/skills/apply-book-update/SKILL.md
 ```
 
 Updates needed when:
@@ -387,13 +387,13 @@ Produce a summary of what was updated:
 ### Editorial Checks
 - [ ] Tone check passed (no forbidden terms)
 - [ ] All case studies attributed
-- [ ] All chapters have Stagent Today + Roadmap Vision
+- [ ] All chapters have ainative Today + Roadmap Vision
 - [ ] Code examples reference real API
 - [ ] Frontmatter updated (lastGeneratedBy, readingTime)
 - [ ] Chapter mapping updated if new dependencies
 
 ### Website Sync
-- [ ] Chapters copied to stagent.github.io
+- [ ] Chapters copied to ainative.github.io
 - [ ] Code files updated (if structural change)
 - [ ] Build verified
 - [ ] apply-book-update skill updated (if structure changed)

@@ -26,7 +26,7 @@
 - `src/lib/agents/claude-agent.ts:60-88` — `withStagentMcpServer` and `withStagentAllowedTools` helpers. `withStagentAllowedTools` returns `undefined` when a profile has no allowlist. After this change, callers must pass `CLAUDE_SDK_ALLOWED_TOOLS` as fallback instead of letting the SDK fall through to claude_code preset defaults — because the preset doesn't include `mcp__stagent__*` AND the preset already includes Skill/Read/Grep/etc, so we need to make sure we don't produce two conflicting tool lists.
 - `src/lib/chat/types.ts:120` — `getFeaturesForModel(modelId)` returns `RuntimeFeatures`. Use `.hasNativeSkills` as the capability gate before wiring Phase 1a options.
 - `src/lib/chat/__tests__/engine-sdk-options.test.ts` — reference test shape; task test will mirror it including the "hooks excluded" regex check over `claude-agent.ts` source.
-- `features/task-runtime-stagent-mcp-injection.md` — TDR-032 precedent; its "Verification run — 2026-04-11" section documents the exact smoke-test format to follow.
+- `features/task-runtime-ainative-mcp-injection.md` — TDR-032 precedent; its "Verification run — 2026-04-11" section documents the exact smoke-test format to follow.
 
 ## Files touched
 
@@ -44,7 +44,7 @@
 
 | Failure mode | Symptom | Recovery |
 |---|---|---|
-| **Module-load cycle via static import of `@/lib/chat/stagent-tools`** | `ReferenceError: Cannot access 'claudeRuntimeAdapter' before initialization` on first Next.js request; 100% of unit tests pass | Never `import ... from "@/lib/chat/stagent-tools"` at top of any file under `src/lib/agents/`. Use `await import()` inside function bodies (existing pattern at `claude-agent.ts:66`). The smoke test is the only thing that catches this. |
+| **Module-load cycle via static import of `@/lib/chat/ainative-tools`** | `ReferenceError: Cannot access 'claudeRuntimeAdapter' before initialization` on first Next.js request; 100% of unit tests pass | Never `import ... from "@/lib/chat/ainative-tools"` at top of any file under `src/lib/agents/`. Use `await import()` inside function bodies (existing pattern at `claude-agent.ts:66`). The smoke test is the only thing that catches this. |
 | **Profile explicit allowedTools collides with CLAUDE_SDK tools** | Profile says `["Read"]` only; runtime passes `["Read", ..., "Bash"]`; user expects no Bash | `withStagentAllowedTools` returns the profile's list unchanged when present. Only use `CLAUDE_SDK_ALLOWED_TOOLS` as fallback when the profile has no allowlist. Test with a profile that explicitly restricts to `["Read"]`. |
 | **Non-claude-code runtime gets settingSources** | Anthropic-direct or OpenAI-direct task execution hits an option it can't parse; crash or silent ignore | Gate on `getFeaturesForModel(modelId).hasNativeSkills` before adding settingSources or Skill tool. Test covers the `hasNativeSkills: false` branch. |
 | **Filesystem tool auto-allow races with profile autoDeny** | Profile says `autoDeny: ["Read"]`; model calls Read; auto-allow layer short-circuits before deny check | Place new layer AFTER Layer 1 (profile policy) in `handleToolPermission`. Profile policy wins by ordering. Test with a profile that denies Read. |
@@ -420,7 +420,7 @@ Replace the existing `withStagentAllowedTools` function (roughly lines 83-88 in 
 ```typescript
 /**
  * Prepend `mcp__stagent__*` to a profile's explicit allowedTools so the
- * stagent tool registration survives the SDK preset filter. When the
+ * ainative tool registration survives the SDK preset filter. When the
  * profile has no explicit allowlist and `includeSdkTools` is true, fall
  * back to Phase 1a's CLAUDE_SDK_ALLOWED_TOOLS (Skill, Read/Grep/Glob,
  * Edit/Write/Bash, TodoWrite) so task execution gets the same toolset as
@@ -433,7 +433,7 @@ function withStagentAllowedTools(
   includeSdkTools: boolean,
 ): string[] | undefined {
   if (profileAllowedTools) {
-    // Profile has explicit list — respect it. Only prepend stagent.
+    // Profile has explicit list — respect it. Only prepend ainative.
     return Array.from(new Set(["mcp__stagent__*", ...profileAllowedTools]));
   }
   if (includeSdkTools) {

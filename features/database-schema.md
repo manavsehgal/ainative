@@ -3,7 +3,7 @@ title: Database Schema & Data Layer
 status: completed
 priority: P0
 milestone: mvp
-source: ideas/tech-stack-stagent.md
+source: ideas/tech-stack-ainative.md
 dependencies: []
 ---
 
@@ -13,19 +13,19 @@ dependencies: []
 
 The local-first data layer using SQLite (better-sqlite3) with Drizzle ORM. This defines the core data model that all other features build on: projects, tasks, workflows, agent logs, and notifications.
 
-The database lives at `~/.stagent/stagent.db` in WAL mode for concurrent access from multiple API routes. Drizzle ORM provides type-safe queries with a SQL-like API, and Drizzle Kit generates versioned SQL migration files that the CLI runs on every startup.
+The database lives at `~/.ainative/ainative.db` in WAL mode for concurrent access from multiple API routes. Drizzle ORM provides type-safe queries with a SQL-like API, and Drizzle Kit generates versioned SQL migration files that the CLI runs on every startup.
 
 This feature establishes the data access pattern: a shared `db` instance exported from `src/lib/db/index.ts` that all server components and API routes import.
 
 ## User Story
 
-As a developer building Stagent features, I want a type-safe, migration-based database layer so that I can reliably store and query projects, tasks, and agent activity without manual SQL.
+As a developer building ainative features, I want a type-safe, migration-based database layer so that I can reliably store and query projects, tasks, and agent activity without manual SQL.
 
 ## Technical Approach
 
 - **Driver**: better-sqlite3 (synchronous, fast, no native addon build issues)
 - **ORM**: drizzle-orm with `drizzle-orm/better-sqlite3` adapter
-- **Location**: `~/.stagent/stagent.db` via `STAGENT_DATA_DIR` env var
+- **Location**: `~/.ainative/ainative.db` via `STAGENT_DATA_DIR` env var
 - **Journal mode**: WAL (concurrent reads + single writer)
 - **Foreign keys**: Enabled via pragma
 
@@ -55,8 +55,8 @@ import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import * as schema from "./schema";
 
-const dataDir = process.env.STAGENT_DATA_DIR || join(homedir(), ".stagent");
-const sqlite = new Database(join(dataDir, "stagent.db"));
+const dataDir = process.env.STAGENT_DATA_DIR || join(homedir(), ".ainative");
+const sqlite = new Database(join(dataDir, "ainative.db"));
 sqlite.pragma("journal_mode = WAL");
 sqlite.pragma("foreign_keys = ON");
 
@@ -71,7 +71,7 @@ export default defineConfig({
   schema: "./src/lib/db/schema.ts",
   out: "./src/lib/db/migrations",
   dialect: "sqlite",
-  dbCredentials: { url: join(homedir(), ".stagent", "stagent.db") },
+  dbCredentials: { url: join(homedir(), ".ainative", "ainative.db") },
 });
 ```
 
@@ -106,6 +106,6 @@ export default defineConfig({
 
 ## References
 
-- Source: `ideas/tech-stack-stagent.md` — Database Layer section, Schema Design
+- Source: `ideas/tech-stack-ainative.md` — Database Layer section, Schema Design
 - Source: `ideas/mvp-vision.md` — task states, notification types
 - Related features: `cli-bootstrap` (runs migrations), `task-board` (queries tasks), `inbox-notifications` (queries notifications)

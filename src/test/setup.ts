@@ -13,8 +13,8 @@ global.ResizeObserver = class ResizeObserver {
 // Mock scrollIntoView for cmdk
 HTMLElement.prototype.scrollIntoView = () => {};
 
-if (!process.env.STAGENT_DATA_DIR) {
-  const tempDataDir = mkdtempSync(join(tmpdir(), "stagent-vitest-"));
+if (!process.env.AINATIVE_DATA_DIR) {
+  const tempDataDir = mkdtempSync(join(tmpdir(), "ainative-vitest-"));
   mkdirSync(tempDataDir, { recursive: true });
-  process.env.STAGENT_DATA_DIR = tempDataDir;
+  process.env.AINATIVE_DATA_DIR = tempDataDir;
 }

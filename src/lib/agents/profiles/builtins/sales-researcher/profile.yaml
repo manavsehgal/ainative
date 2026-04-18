@@ -19,7 +19,7 @@ canUseToolPolicy:
 
 maxTurns: 20
 
-author: stagent
+author: ainative
 
 tests:
   - task: "Research potential leads for an AI consulting firm"

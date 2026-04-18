@@ -396,4 +396,4 @@ After all 5 tasks:
 
 **Type consistency:** `isStreamingRef`, `useChatSession()`, and telemetry log prefix `[chat-stream]` are used identically across Tasks 2 and 3.
 
-**Smoke-test budget:** this plan does **not** touch any module under `src/lib/agents/runtime/`, `src/lib/workflows/engine.ts`, or anything that statically imports `@/lib/chat/stagent-tools`. The project override's mandatory smoke task is not triggered. Task 4's smoke step is driven by the spec's own AC, not the runtime-registry gate.
+**Smoke-test budget:** this plan does **not** touch any module under `src/lib/agents/runtime/`, `src/lib/workflows/engine.ts`, or anything that statically imports `@/lib/chat/ainative-tools`. The project override's mandatory smoke task is not triggered. Task 4's smoke step is driven by the spec's own AC, not the runtime-registry gate.

@@ -47,7 +47,7 @@ import {
 } from "./permission-bridge";
 import { isToolAllowed } from "@/lib/settings/permissions";
 import { getLaunchCwd, getWorkspaceContext } from "@/lib/environment/workspace-context";
-import { createToolServer } from "./stagent-tools";
+import { createToolServer } from "./ainative-tools";
 import {
   getBrowserMcpServers,
   getBrowserAllowedToolPatterns,
@@ -332,9 +332,9 @@ export async function* sendMessage(
       });
     }
 
-    // Create in-process MCP server for Stagent CRUD tools
+    // Create in-process MCP server for ainative CRUD tools
     const toolResults: ToolResultCapture[] = [];
-    const stagentServer = createToolServer(
+    const ainativeServer = createToolServer(
       conversation.projectId,
       (toolName, result) => { toolResults.push({ toolName, result }); },
       projectCwd,
@@ -369,9 +369,9 @@ export async function* sendMessage(
           // Keep only last 50 chunks to avoid unbounded memory
           if (stderrChunks.length > 50) stderrChunks.shift();
         },
-        mcpServers: { stagent: stagentServer, ...browserServers, ...externalServers },
+        mcpServers: { ainative: ainativeServer, ...browserServers, ...externalServers },
         allowedTools: [
-          "mcp__stagent__*",
+          "mcp__ainative__*",
           ...browserToolPatterns,
           ...externalToolPatterns,
           ...CLAUDE_SDK_ALLOWED_TOOLS,
@@ -382,21 +382,21 @@ export async function* sendMessage(
           toolName: string,
           input: Record<string, unknown>
         ): Promise<ToolPermissionResponse> => {
-          // Auto-allow safe Stagent tools; gate dangerous ones through permission bridge
+          // Auto-allow safe ainative tools; gate dangerous ones through permission bridge
           const PERMISSION_GATED_TOOLS = new Set([
-            "mcp__stagent__execute_task",
-            "mcp__stagent__cancel_task",
-            "mcp__stagent__execute_workflow",
-            "mcp__stagent__delete_workflow",
-            "mcp__stagent__delete_schedule",
-            "mcp__stagent__upload_document",
-            "mcp__stagent__update_document",
-            "mcp__stagent__delete_document",
-            "mcp__stagent__set_settings",
+            "mcp__ainative__execute_task",
+            "mcp__ainative__cancel_task",
+            "mcp__ainative__execute_workflow",
+            "mcp__ainative__delete_workflow",
+            "mcp__ainative__delete_schedule",
+            "mcp__ainative__upload_document",
+            "mcp__ainative__update_document",
+            "mcp__ainative__delete_document",
+            "mcp__ainative__set_settings",
           ]);
-          if (toolName.startsWith("mcp__stagent__") && !PERMISSION_GATED_TOOLS.has(toolName)) {
+          if (toolName.startsWith("mcp__ainative__") && !PERMISSION_GATED_TOOLS.has(toolName)) {
             // Emit tool-use status so the user sees what the model is doing
-            const shortName = toolName.replace("mcp__stagent__", "").replace(/_/g, " ");
+            const shortName = toolName.replace("mcp__ainative__", "").replace(/_/g, " ");
             emitSideChannelEvent(conversationId, {
               type: "status",
               phase: "tool_use",
