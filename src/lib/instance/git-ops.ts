@@ -52,8 +52,10 @@ export function createGitOps(cwd: string = process.cwd()): GitOps {
       }
     },
 
-    createAndCheckoutBranch(name: string): void {
-      run(["checkout", "-b", name]);
+    createBranchAt(name: string, ref: string): void {
+      // -f intentional: this is for tracking shims we own. Existing branch at
+      // a different SHA gets repointed; non-existent branch gets created.
+      run(["branch", "-f", name, ref]);
     },
 
     setConfig(key: string, value: string): void {
