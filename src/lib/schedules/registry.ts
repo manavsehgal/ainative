@@ -142,6 +142,48 @@ export function createScheduleFromYaml(yamlContent: string): ScheduleSpec {
   return result.data;
 }
 
+// ── Plugin-injection surface ───────────────────────────────────────────────
+// Mirrors src/lib/workflows/blueprints/registry.ts lines 143–177 exactly,
+// substituting WorkflowBlueprint → ScheduleSpec and blueprint → schedule.
+
+interface PluginScheduleEntry {
+  pluginId: string;
+  schedule: ScheduleSpec;
+}
+
+const pluginScheduleIndex: Map<string, Set<string>> = new Map();
+
+export function mergePluginSchedules(entries: PluginScheduleEntry[]): void {
+  const cache = ensureLoaded();
+  for (const entry of entries) {
+    cache.set(entry.schedule.id, entry.schedule);
+    if (!pluginScheduleIndex.has(entry.pluginId)) {
+      pluginScheduleIndex.set(entry.pluginId, new Set());
+    }
+    pluginScheduleIndex.get(entry.pluginId)!.add(entry.schedule.id);
+  }
+}
+
+export function clearPluginSchedules(pluginId: string): void {
+  const cache = scheduleCache;
+  const ids = pluginScheduleIndex.get(pluginId);
+  if (!ids) return;
+  if (cache) for (const id of ids) cache.delete(id);
+  pluginScheduleIndex.delete(pluginId);
+}
+
+export function clearAllPluginSchedules(): void {
+  for (const pluginId of Array.from(pluginScheduleIndex.keys())) {
+    clearPluginSchedules(pluginId);
+  }
+}
+
+export function listPluginScheduleIds(pluginId: string): string[] {
+  return Array.from(pluginScheduleIndex.get(pluginId) ?? []);
+}
+
+// ── User CRUD ──────────────────────────────────────────────────────────────
+
 export function deleteSchedule(id: string): void {
   if (isBuiltinSchedule(id)) {
     throw new Error("Cannot delete built-in schedules");

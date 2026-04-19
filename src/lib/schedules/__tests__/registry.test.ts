@@ -105,4 +105,123 @@ describe("schedule registry", () => {
       fs.existsSync(path.join(tmpDir, "schedules", "daily-summary.yaml"))
     ).toBe(false);
   });
+
+  // ── Plugin-injection surface (T5) ─────────────────────────────────────────
+
+  it("mergePluginSchedules adds entries to the cache", async () => {
+    const { mergePluginSchedules, getSchedule, listSchedules } =
+      await import("../registry");
+    const spec = {
+      id: "plugin-sched-a",
+      name: "Plugin Sched A",
+      version: "1.0.0",
+      prompt: "Do something.",
+      type: "scheduled" as const,
+      interval: "1h",
+    };
+    mergePluginSchedules([{ pluginId: "my-plugin", schedule: spec }]);
+    expect(getSchedule("plugin-sched-a")?.name).toBe("Plugin Sched A");
+    expect(listSchedules().map((s: { id: string }) => s.id)).toContain(
+      "plugin-sched-a"
+    );
+  });
+
+  it("clearPluginSchedules removes only entries for that plugin", async () => {
+    const { mergePluginSchedules, clearPluginSchedules, getSchedule } =
+      await import("../registry");
+    const specA = {
+      id: "plugin-sched-a",
+      name: "Plugin Sched A",
+      version: "1.0.0",
+      prompt: "Do A.",
+      type: "scheduled" as const,
+      interval: "1h",
+    };
+    const specB = {
+      id: "plugin-sched-b",
+      name: "Plugin Sched B",
+      version: "1.0.0",
+      prompt: "Do B.",
+      type: "scheduled" as const,
+      interval: "2h",
+    };
+    mergePluginSchedules([{ pluginId: "plugin-1", schedule: specA }]);
+    mergePluginSchedules([{ pluginId: "plugin-2", schedule: specB }]);
+    clearPluginSchedules("plugin-1");
+    expect(getSchedule("plugin-sched-a")).toBeUndefined();
+    expect(getSchedule("plugin-sched-b")?.name).toBe("Plugin Sched B");
+  });
+
+  it("clearAllPluginSchedules removes entries for all plugins", async () => {
+    const {
+      mergePluginSchedules,
+      clearAllPluginSchedules,
+      getSchedule,
+      listSchedules,
+    } = await import("../registry");
+    const specA = {
+      id: "plugin-sched-a",
+      name: "Plugin Sched A",
+      version: "1.0.0",
+      prompt: "Do A.",
+      type: "scheduled" as const,
+      interval: "1h",
+    };
+    const specB = {
+      id: "plugin-sched-b",
+      name: "Plugin Sched B",
+      version: "1.0.0",
+      prompt: "Do B.",
+      type: "scheduled" as const,
+      interval: "2h",
+    };
+    mergePluginSchedules([{ pluginId: "plugin-1", schedule: specA }]);
+    mergePluginSchedules([{ pluginId: "plugin-2", schedule: specB }]);
+    clearAllPluginSchedules();
+    expect(getSchedule("plugin-sched-a")).toBeUndefined();
+    expect(getSchedule("plugin-sched-b")).toBeUndefined();
+    expect(listSchedules()).toEqual([]);
+  });
+
+  it("listPluginScheduleIds returns ids only for the given plugin", async () => {
+    const { mergePluginSchedules, listPluginScheduleIds } =
+      await import("../registry");
+    const specA = {
+      id: "plugin-sched-a",
+      name: "Plugin Sched A",
+      version: "1.0.0",
+      prompt: "Do A.",
+      type: "scheduled" as const,
+      interval: "1h",
+    };
+    const specB = {
+      id: "plugin-sched-b",
+      name: "Plugin Sched B",
+      version: "1.0.0",
+      prompt: "Do B.",
+      type: "scheduled" as const,
+      interval: "2h",
+    };
+    mergePluginSchedules([
+      { pluginId: "plugin-1", schedule: specA },
+      { pluginId: "plugin-1", schedule: specB },
+    ]);
+    mergePluginSchedules([
+      {
+        pluginId: "plugin-2",
+        schedule: {
+          id: "plugin-sched-c",
+          name: "Plugin Sched C",
+          version: "1.0.0",
+          prompt: "Do C.",
+          type: "scheduled" as const,
+          interval: "3h",
+        },
+      },
+    ]);
+    const ids = listPluginScheduleIds("plugin-1");
+    expect(ids.sort()).toEqual(["plugin-sched-a", "plugin-sched-b"]);
+    expect(listPluginScheduleIds("plugin-2")).toEqual(["plugin-sched-c"]);
+    expect(listPluginScheduleIds("no-such-plugin")).toEqual([]);
+  });
 });
