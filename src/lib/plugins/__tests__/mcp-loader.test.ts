@@ -238,7 +238,7 @@ it("5. Safe mode: AINATIVE_SAFE_MODE=true returns {} even with accepted plugins"
 // Test 6: Ollama runtime filter
 // ---------------------------------------------------------------------------
 
-it("6. Ollama runtime filter: { runtime: 'ollama' } returns {} even with accepted plugins", async () => {
+it("6. Ollama runtime filter: { runtime: 'ollama' } returns {} + logs per-plugin skip line", async () => {
   const pluginId = "ollama-filter-plugin";
   const yaml = writePluginYaml(pluginId);
   touchFile(path.join(pluginsDir, pluginId, "bin", "server"));
@@ -247,6 +247,13 @@ it("6. Ollama runtime filter: { runtime: 'ollama' } returns {} even with accepte
 
   const result = await loadPluginMcpServers({ runtime: "ollama" });
   expect(result).toEqual({});
+
+  // Spec: "plugin <id> skipped on <runtime> runtime" per plugin, once per session.
+  const logPath = path.join(tmpDir, "logs", "plugins.log");
+  const logContent = fs.readFileSync(logPath, "utf-8");
+  expect(logContent).toMatch(
+    new RegExp(`plugin ${pluginId} skipped on ollama runtime`)
+  );
 });
 
 // ---------------------------------------------------------------------------

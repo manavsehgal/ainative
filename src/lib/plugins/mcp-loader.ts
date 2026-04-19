@@ -417,18 +417,34 @@ export async function listPluginMcpRegistrations(opts?: {
     return [];
   }
 
-  // Short-circuit: runtime that doesn't support plugin MCP servers
+  // Short-circuit: runtime that doesn't support plugin MCP servers.
+  // Enumerate plugin dirs to emit the spec-required per-plugin log line
+  // ("plugin <id> skipped on <runtime> runtime") before returning empty.
   if (opts?.runtime) {
     const features = getRuntimeFeatures(opts.runtime);
     if (!features.supportsPluginMcpServers) {
-      // Log once per (pluginId, runtime) pair — we don't have plugin ids yet,
-      // so log a single summary and return.
-      const logKey = `__summary@${opts.runtime}`;
-      if (!ollamaSkipLogged.has(logKey)) {
-        ollamaSkipLogged.add(logKey);
-        logToFile(
-          `[mcp-loader] runtime "${opts.runtime}" has supportsPluginMcpServers=false — skipping all plugins`
-        );
+      const pluginsDir = getAinativePluginsDir();
+      if (fs.existsSync(pluginsDir)) {
+        try {
+          for (const entry of fs.readdirSync(pluginsDir)) {
+            const logKey = `${entry}@${opts.runtime}`;
+            if (!ollamaSkipLogged.has(logKey)) {
+              ollamaSkipLogged.add(logKey);
+              logToFile(
+                `[mcp-loader] plugin ${entry} skipped on ${opts.runtime} runtime`
+              );
+            }
+          }
+        } catch {
+          // Plugin dir unreadable — fall through to summary log.
+          const logKey = `__summary@${opts.runtime}`;
+          if (!ollamaSkipLogged.has(logKey)) {
+            ollamaSkipLogged.add(logKey);
+            logToFile(
+              `[mcp-loader] runtime "${opts.runtime}" has supportsPluginMcpServers=false — skipping all plugins`
+            );
+          }
+        }
       }
       return [];
     }
