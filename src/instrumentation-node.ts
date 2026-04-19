@@ -24,6 +24,33 @@ export async function registerNodeInstrumentation() {
     // Runs here (not in db/index.ts) to avoid SQLITE_BUSY during next build.
     await runPendingMigrations();
 
+    // Plugin loader (Kind 5 only). Seeds dogfood examples on first boot,
+    // scans ~/.ainative/plugins/, registers profiles + blueprints + tables.
+    // Failures are isolated per-plugin; boot continues regardless.
+    //
+    // ORDERING INVARIANTS (do not move this block without re-checking):
+    //   - MUST come AFTER runPendingMigrations() — installPluginTables writes
+    //     to userTableTemplates which the migrations create/upgrade.
+    //   - MUST come BEFORE startScheduler() — scheduled tasks may reference
+    //     plugin profiles (e.g., "finance-pack/personal-cfo"); if scheduler
+    //     fires before plugins load, the profile lookup fails and the task
+    //     crashes with "profile not found".
+    //   - MUST come BEFORE startChannelPoller() — same reason; channel events
+    //     can spawn tasks bound to plugin profiles.
+    //   - Order vs startUpgradePoller is irrelevant (upgrade poller is async
+    //     background, doesn't read profiles synchronously).
+    try {
+      const { seedExamplePluginsIfEmpty } = await import("@/lib/plugins/seed");
+      const { loadPlugins } = await import("@/lib/plugins/registry");
+      seedExamplePluginsIfEmpty();
+      const plugins = loadPlugins();
+      const loaded = plugins.filter((p) => p.status === "loaded").length;
+      const disabled = plugins.length - loaded;
+      console.log(`[plugins] ${loaded} loaded, ${disabled} disabled`);
+    } catch (err) {
+      console.error("[plugins] loader failed:", err);
+    }
+
     // Instance upgrade poller — hourly `git fetch` to detect upstream commits.
     // Skipped in dev mode; lightweight; uses advisory lock to prevent overlap.
     const { startUpgradePoller } = await import("@/lib/instance/upgrade-poller");
