@@ -1,0 +1,14 @@
+id: monthly-close
+name: Monthly Financial Close
+description: Run the monthly close on the 1st of each month at 9am local.
+version: "1.0.0"
+type: scheduled
+cronExpression: "0 9 1 * *"
+prompt: |
+  Run the monthly close procedure:
+  1. Reconcile all transactions for the prior month.
+  2. Categorize unclassified entries and flag anomalies > 2 standard deviations.
+  3. Produce the month's P&L summary and a reconciliation report.
+
+agentProfile: finance-pack/personal-cfo
+recurs: true

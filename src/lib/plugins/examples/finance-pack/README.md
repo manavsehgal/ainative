@@ -6,6 +6,7 @@ A starter plugin bundle that demonstrates the Kind 5 primitive-bundle pattern.
 - `profiles/personal-cfo/` — agent profile that thinks like a personal CFO
 - `blueprints/monthly-close.yaml` — three-step monthly close workflow
 - `tables/transactions.yaml` — transactions ledger schema
+- `schedules/monthly-close.yaml` — monthly close schedule that fires on the 1st at 9am, running the personal-cfo profile
 
 **To use:**
 1. The bundle auto-installs at `~/.ainative/plugins/finance-pack/` on first boot.
