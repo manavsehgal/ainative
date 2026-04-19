@@ -8,6 +8,7 @@ import { getAinativePluginsDir, getAinativeLogsDir } from "@/lib/utils/ainative-
 import {
   mergePluginProfiles,
   clearAllPluginProfiles,
+  clearPluginProfiles,
   scanProfilesIntoMap,
 } from "@/lib/agents/profiles/registry";
 import type { AgentProfile } from "@/lib/agents/profiles/types";
@@ -15,6 +16,7 @@ import { BlueprintSchema } from "@/lib/validators/blueprint";
 import {
   mergePluginBlueprints,
   clearAllPluginBlueprints,
+  clearPluginBlueprints,
   validateBlueprintRefs,
 } from "@/lib/workflows/blueprints/registry";
 import type { WorkflowBlueprint } from "@/lib/workflows/blueprints/types";
@@ -210,6 +212,66 @@ function scanBundleTables(rootDir: string, pluginId: string): PluginTableTemplat
 }
 
 /**
+ * Per-bundle loader. Given an already-validated manifest + rootDir, runs the
+ * profile/blueprint/table scan + merge + install steps and returns the
+ * resulting `LoadedPlugin` record. Shared by `scanPlugins` (full scan) and
+ * `reloadPlugin` (targeted single-bundle reload) so both paths produce
+ * identical state — the only behavioral difference between them is which
+ * bundles they iterate.
+ *
+ * Returns a "disabled" record (without touching primitive registries) when
+ * apiVersion is unsupported. Manifest readability + duplicate-id dedupe are
+ * the caller's responsibility.
+ */
+function loadOneBundle(rootDir: string, manifest: PluginManifest): LoadedPlugin {
+  if (!isSupportedApiVersion(manifest.apiVersion)) {
+    logToFile(`disabled ${manifest.id}: apiVersion_mismatch (${manifest.apiVersion})`);
+    return {
+      id: manifest.id, manifest, rootDir,
+      profiles: [], blueprints: [], tables: [],
+      status: "disabled", error: "apiVersion_mismatch",
+    };
+  }
+
+  // T7: scan bundle profiles, merge into the canonical profile registry,
+  // and surface their namespaced ids on the LoadedPlugin record.
+  const scannedProfiles = scanBundleProfiles(rootDir, manifest.id);
+  mergePluginProfiles(
+    scannedProfiles.map((s) => ({ pluginId: manifest.id, profile: s.profile }))
+  );
+
+  // T8: scan bundle blueprints, validate cross-references against sibling
+  // profiles + builtins, merge into the canonical blueprint registry under
+  // namespaced ids.
+  const siblingProfileIds = new Set(scannedProfiles.map((s) => s.namespacedId));
+  const scannedBlueprints = scanBundleBlueprints(rootDir, manifest.id, siblingProfileIds);
+  mergePluginBlueprints(
+    scannedBlueprints.map((s) => ({ pluginId: manifest.id, blueprint: s.blueprint }))
+  );
+
+  // T9: tables. Clear any stale rows owned by this plugin first, then
+  // install fresh. `installPluginTables` writes to user_table_templates
+  // with a composite id (plugin:<pluginId>:<tableId>) and suffixes the
+  // display name with the plugin id to disambiguate collisions with builtins.
+  removePluginTables(manifest.id);
+  const scannedTables = scanBundleTables(rootDir, manifest.id);
+  installPluginTables(manifest.id, scannedTables);
+  const tableIds = scannedTables.map((t) => `plugin:${manifest.id}:${t.id}`);
+
+  logToFile(
+    `loaded ${manifest.id}@${manifest.version}: ${scannedProfiles.length} profiles, ${scannedBlueprints.length} blueprints, ${tableIds.length} tables`
+  );
+
+  return {
+    id: manifest.id, manifest, rootDir,
+    profiles: scannedProfiles.map((s) => s.namespacedId),
+    blueprints: scannedBlueprints.map((s) => s.namespacedId),
+    tables: tableIds,
+    status: "loaded",
+  };
+}
+
+/**
  * Pure scan of the plugins dir. Does NOT touch the cache.
  * Used by both `loadPlugins()` (lazy, cached) and `reloadPlugins()` (eager).
  */
@@ -236,16 +298,6 @@ function scanPlugins(): LoadedPlugin[] {
       continue;
     }
 
-    if (!isSupportedApiVersion(manifest.apiVersion)) {
-      result.push({
-        id: manifest.id, manifest, rootDir,
-        profiles: [], blueprints: [], tables: [],
-        status: "disabled", error: "apiVersion_mismatch",
-      });
-      logToFile(`disabled ${manifest.id}: apiVersion_mismatch (${manifest.apiVersion})`);
-      continue;
-    }
-
     if (seenIds.has(manifest.id)) {
       result.push({
         id: manifest.id, manifest, rootDir,
@@ -257,43 +309,9 @@ function scanPlugins(): LoadedPlugin[] {
     }
     seenIds.add(manifest.id);
 
-    // T7: scan bundle profiles, merge into the canonical profile registry,
-    // and surface their namespaced ids on the LoadedPlugin record.
-    // T8 adds blueprints; T9 will add tables alongside this in the same loop.
-    const scannedProfiles = scanBundleProfiles(rootDir, manifest.id);
-    mergePluginProfiles(
-      scannedProfiles.map((s) => ({ pluginId: manifest.id, profile: s.profile }))
-    );
-
-    // T8: scan bundle blueprints, validate cross-references against sibling
-    // profiles + builtins, merge into the canonical blueprint registry under
-    // namespaced ids.
-    const siblingProfileIds = new Set(scannedProfiles.map((s) => s.namespacedId));
-    const scannedBlueprints = scanBundleBlueprints(rootDir, manifest.id, siblingProfileIds);
-    mergePluginBlueprints(
-      scannedBlueprints.map((s) => ({ pluginId: manifest.id, blueprint: s.blueprint }))
-    );
-
-    // T9: tables. Clear any stale rows owned by this plugin first, then
-    // install fresh. `installPluginTables` writes to user_table_templates
-    // with a composite id (plugin:<pluginId>:<tableId>) and suffixes the
-    // display name with the plugin id to disambiguate collisions with builtins.
-    removePluginTables(manifest.id);
-    const scannedTables = scanBundleTables(rootDir, manifest.id);
-    installPluginTables(manifest.id, scannedTables);
-    const tableIds = scannedTables.map((t) => `plugin:${manifest.id}:${t.id}`);
-
-    result.push({
-      id: manifest.id, manifest, rootDir,
-      profiles: scannedProfiles.map((s) => s.namespacedId),
-      blueprints: scannedBlueprints.map((s) => s.namespacedId),
-      tables: tableIds,
-      status: "loaded",
-    });
-    loadedIds.add(manifest.id);
-    logToFile(
-      `loaded ${manifest.id}@${manifest.version}: ${scannedProfiles.length} profiles, ${scannedBlueprints.length} blueprints, ${tableIds.length} tables`
-    );
+    const loaded = loadOneBundle(rootDir, manifest);
+    result.push(loaded);
+    if (loaded.status === "loaded") loadedIds.add(manifest.id);
   }
 
   // T9: record what we just loaded so the next reload knows which plugins'
@@ -366,10 +384,58 @@ export function getPlugin(id: string): LoadedPlugin | null {
   return (pluginCache ?? loadPlugins()).find((p) => p.id === id) ?? null;
 }
 
+/**
+ * T9b: Targeted single-plugin reload.
+ *
+ * Re-scans ONLY the named plugin's bundle, preserving every other plugin's
+ * cached entry by object identity. Used by hot-reload flows where the agent
+ * has just rewritten one bundle and a full `reloadPlugins()` would be
+ * needlessly disruptive (it would re-run profile/blueprint/table merges for
+ * every other bundle and invalidate downstream consumers).
+ *
+ * Returns the freshly-loaded plugin record, or `null` if the bundle no
+ * longer exists on disk (or never did). The plugin's prior contributions
+ * are cleared from all three primitive registries either way — so a "deleted
+ * plugin" reload behaves as an unload.
+ */
 export function reloadPlugin(id: string): LoadedPlugin | null {
-  // Skeleton implementation: full reload, return the requested plugin (or null).
-  // True single-plugin reload (clear just one plugin, re-scan only its bundle)
-  // is added in Task 9b once scanBundleProfiles/Blueprints/Tables exist.
-  reloadPlugins();
-  return getPlugin(id);
+  // Step 1: Locate the plugin's rootDir from disk (the agent may have just
+  // moved or renamed the directory, so we don't trust the cache).
+  let foundDir: string | null = null;
+  let foundManifest: PluginManifest | null = null;
+  for (const rootDir of discoverBundleRoots()) {
+    const { manifest } = readManifest(rootDir);
+    if (manifest && manifest.id === id) {
+      foundDir = rootDir;
+      foundManifest = manifest;
+      break;
+    }
+  }
+
+  // Step 2: Clear THIS plugin's prior contributions from all three registries.
+  // Other plugins' entries stay intact — that's the whole point.
+  clearPluginProfiles(id);
+  clearPluginBlueprints(id);
+  removePluginTables(id);
+
+  // Step 3: Drop just this entry from the cache (don't null pluginCache).
+  // Force population first so downstream identity-preservation guarantees
+  // hold even when the cache hasn't been hydrated yet.
+  if (!pluginCache) loadPlugins();
+  if (pluginCache) {
+    pluginCache = pluginCache.filter((p) => p.id !== id);
+  }
+  // Keep the plugin-id tracker in sync with cache state — `lastLoadedPluginIds`
+  // is the fallback used by `removeAllPluginTablesForCachedPlugins` when the
+  // cache is null, and we don't want a deleted plugin's id lingering there.
+  lastLoadedPluginIds.delete(id);
+
+  // Step 4: If disk no longer has the plugin, we're done — it was deleted.
+  if (!foundDir || !foundManifest) return null;
+
+  // Step 5: Re-scan only this bundle and merge.
+  const loaded = loadOneBundle(foundDir, foundManifest);
+  if (pluginCache) pluginCache.push(loaded);
+  if (loaded.status === "loaded") lastLoadedPluginIds.add(id);
+  return loaded;
 }
