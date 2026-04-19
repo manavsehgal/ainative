@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+// Shared capability tuple — single source of truth used by Zod schema and
+// capability-check.ts hash derivation. Exported so consumers don't need a
+// parallel list.
+export const CAPABILITY_VALUES = ["fs", "net", "child_process", "env"] as const;
+export type Capability = typeof CAPABILITY_VALUES[number];
+
 const PrimitivesBundleManifestSchema = z
   .object({
     id: z.string().regex(/^[a-z][a-z0-9-]*$/, "id must be kebab-case starting with a letter"),
@@ -23,9 +29,7 @@ const ChatToolsPluginManifestSchema = z
     description: z.string().optional(),
     author: z.string().optional(),
     tags: z.array(z.string()).optional(),
-    capabilities: z.array(
-      z.enum(["fs", "net", "child_process", "env"])
-    ).default([]),
+    capabilities: z.array(z.enum(CAPABILITY_VALUES)).default([]),
     confinementMode: z.enum(["none", "seatbelt", "apparmor", "docker"]).optional(),
     dockerImage: z.string().optional(),
     defaultToolApproval: z.enum(["never", "prompt", "approve"]).optional(),

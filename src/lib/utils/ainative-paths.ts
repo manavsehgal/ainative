@@ -62,6 +62,11 @@ export function getAinativePluginsDir(): string {
   return join(getAinativeDataDir(), "plugins");
 }
 
+/** Path to the plugins.lock file — sibling of the plugins/ directory. */
+export function getAinativePluginsLockPath(): string {
+  return join(getAinativeDataDir(), "plugins.lock");
+}
+
 export function getAinativeSchedulesDir(): string {
   return join(getAinativeDataDir(), "schedules");
 }
