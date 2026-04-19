@@ -246,6 +246,13 @@ const MAX_PLUGIN_SAMPLE_ROWS = 10_000;
  * Install (or replace) a plugin's table templates as user_table_templates rows.
  * Idempotent — running twice with the same pluginId leaves the same row count.
  * Plugin tables ride scope: "system" with a composite id "plugin:<id>:<table>".
+ *
+ * Race-tolerance: a single-statement UPSERT (INSERT ... ON CONFLICT DO UPDATE)
+ * removes the check-then-write window that a concurrent `reload_plugins` from
+ * a second process (multi-process WAL) could otherwise exploit to hit
+ * `SqliteError: UNIQUE constraint failed`. `createdAt` is preserved on
+ * conflict; only `updatedAt` and the payload fields move. Regression guard:
+ * plugin-tables.test.ts → "reconciles a row pre-inserted by a concurrent writer".
  */
 export function installPluginTables(pluginId: string, tables: PluginTableTemplate[]): void {
   const now = new Date();
@@ -260,10 +267,22 @@ export function installPluginTables(pluginId: string, tables: PluginTableTemplat
     // doesn't produce two indistinguishable rows in the picker UI.
     // The builtin row stays untouched; the plugin row is visually disambiguated.
     const displayName = `${t.name} (${pluginId})`;
-    const existing = db.select({ id: userTableTemplates.id }).from(userTableTemplates).where(eq(userTableTemplates.id, id)).get();
-    if (existing) {
-      db.update(userTableTemplates)
-        .set({
+    db.insert(userTableTemplates)
+      .values({
+        id,
+        name: displayName,
+        description: t.description,
+        category: t.category,
+        columnSchema: JSON.stringify(columnsWithPositions),
+        sampleData,
+        scope: "system",
+        icon: t.icon,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: userTableTemplates.id,
+        set: {
           name: displayName,
           description: t.description,
           category: t.category,
@@ -271,25 +290,9 @@ export function installPluginTables(pluginId: string, tables: PluginTableTemplat
           sampleData,
           icon: t.icon,
           updatedAt: now,
-        })
-        .where(eq(userTableTemplates.id, id))
-        .run();
-    } else {
-      db.insert(userTableTemplates)
-        .values({
-          id,
-          name: displayName,
-          description: t.description,
-          category: t.category,
-          columnSchema: JSON.stringify(columnsWithPositions),
-          sampleData,
-          scope: "system",
-          icon: t.icon,
-          createdAt: now,
-          updatedAt: now,
-        })
-        .run();
-    }
+        },
+      })
+      .run();
   }
 }
 

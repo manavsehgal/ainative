@@ -45,4 +45,39 @@ describe("plugin tables", () => {
     const remaining = db.select().from(userTableTemplates).where(like(userTableTemplates.id, "plugin:test-pack-%:%")).all();
     expect(remaining.map((r) => r.id)).toEqual(["plugin:test-pack-b:b"]);
   });
+
+  it("reconciles a row pre-inserted by a concurrent writer (race-tolerance invariant)", () => {
+    // Simulates a multi-process WAL scenario: another ainative-business process
+    // has already inserted a row with the same composite id between our
+    // hypothetical SELECT and INSERT. installPluginTables must not throw, and
+    // must reconcile the row to our desired values. This locks in the
+    // defensive upsert contract from TDR-034 / Path C.
+    const compositeId = "plugin:test-pack:transactions";
+    const now = new Date(0);
+    db.insert(userTableTemplates).values({
+      id: compositeId,
+      name: "Stale name",
+      description: "stale",
+      category: "finance",
+      columnSchema: JSON.stringify([]),
+      sampleData: null,
+      scope: "system",
+      icon: "OldIcon",
+      createdAt: now,
+      updatedAt: now,
+    }).run();
+
+    expect(() => installPluginTables("test-pack", [fakeTable("transactions")])).not.toThrow();
+
+    const row = db
+      .select()
+      .from(userTableTemplates)
+      .where(eq(userTableTemplates.id, compositeId))
+      .get();
+    expect(row?.name).toBe("Test transactions (test-pack)");
+    expect(row?.icon).toBe("DollarSign");
+    // createdAt must be preserved across the upsert; only updatedAt moves.
+    expect(row?.createdAt.getTime()).toBe(now.getTime());
+    expect(row?.updatedAt.getTime()).toBeGreaterThan(now.getTime());
+  });
 });
