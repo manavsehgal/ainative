@@ -28,8 +28,8 @@ import { getAppRoot } from "@/lib/utils/app-root";
  * changing process.env after first import will NOT be picked up by the
  * already-captured USER_DIR constant. This matches blueprints/registry.ts.
  *
- * Plugin-injection surface (mergePluginSchedules, clearPluginSchedules,
- * etc.) is intentionally out of scope here — it ships in T5.
+ * Plugin-injection surface: mergePluginSchedules, clearPluginSchedules,
+ * clearAllPluginSchedules, listPluginScheduleIds — mirrors blueprints.
  */
 
 const BUILTINS_DIR = path.resolve(
