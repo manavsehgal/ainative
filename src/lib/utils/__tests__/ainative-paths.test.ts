@@ -17,8 +17,11 @@ describe("plugin path helpers", () => {
     expect(getAinativePluginsDir()).toBe(path.join("/tmp/test-ainative", "plugins"));
   });
 
-  it("getAinativePluginExamplesDir resolves under the package src tree", () => {
+  it("getAinativePluginExamplesDir resolves to an absolute path under the package src tree", () => {
     const dir = getAinativePluginExamplesDir();
-    expect(dir).toMatch(/src[\\/]+lib[\\/]+plugins[\\/]+examples$/);
+    // Tighten beyond regex tail-match so a getAppRoot fallback to process.cwd()
+    // (or any cwd that happens to satisfy the suffix pattern) cannot pass.
+    expect(path.isAbsolute(dir)).toBe(true);
+    expect(dir.endsWith(path.join("src", "lib", "plugins", "examples"))).toBe(true);
   });
 });

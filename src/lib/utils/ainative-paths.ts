@@ -62,6 +62,7 @@ export function getAinativePluginsDir(): string {
   return join(getAinativeDataDir(), "plugins");
 }
 
+/** Bundled example plugins shipped with the app (source tree, not data dir). */
 export function getAinativePluginExamplesDir(): string {
   return join(
     getAppRoot(import.meta.dirname, 3),
