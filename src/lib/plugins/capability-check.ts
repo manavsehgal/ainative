@@ -14,7 +14,6 @@
 
 import crypto from "node:crypto";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import yaml from "js-yaml";
 import { z } from "zod";
@@ -137,8 +136,6 @@ export function deriveManifestHash(pluginYamlContent: string): string {
 // ---------------------------------------------------------------------------
 // plugins.lock I/O
 // ---------------------------------------------------------------------------
-
-const EMPTY_LOCK: PluginsLockFile = { version: 1, accepted: {} };
 
 /**
  * Read plugins.lock. Fails closed:
