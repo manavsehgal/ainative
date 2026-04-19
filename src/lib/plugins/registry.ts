@@ -297,8 +297,8 @@ function scanBundleTables(rootDir: string, pluginId: string): PluginTableTemplat
 function scanBundleSchedules(
   rootDir: string,
   pluginId: string
-): Array<{ namespacedId: string; spec: ScheduleSpec }> {
-  return scanBundleSection<{ namespacedId: string; spec: ScheduleSpec }>({
+): Array<{ namespacedId: string; spec: ScheduleSpec; file: string }> {
+  return scanBundleSection<{ namespacedId: string; spec: ScheduleSpec; file: string }>({
     rootDir,
     section: "schedules",
     parseFile: (filePath) => {
@@ -310,7 +310,7 @@ function scanBundleSchedules(
           logToFile(`skip schedule ${pluginId}/${file}: ${parsed.error.issues.map((i) => i.message).join("; ")}`);
           return null;
         }
-        return { namespacedId: `${pluginId}/${parsed.data.id}`, spec: parsed.data };
+        return { namespacedId: `${pluginId}/${parsed.data.id}`, spec: parsed.data, file };
       } catch (err) {
         logToFile(`skip schedule ${pluginId}/${file}: ${err instanceof Error ? err.message : String(err)}`);
         return null;
@@ -380,12 +380,17 @@ async function loadOneBundle(rootDir: string, manifest: PluginManifest): Promise
   const scannedSchedules = scanBundleSchedules(rootDir, manifest.id);
   const validSchedules: ScheduleSpec[] = [];
   for (const s of scannedSchedules) {
-    const result = await validateScheduleRefs(s.spec, { pluginId: manifest.id, siblingProfileIds });
-    if (!result.ok) {
-      logToFile(`skip schedule ${s.namespacedId}: ${result.error}`);
+    try {
+      const result = await validateScheduleRefs(s.spec, { pluginId: manifest.id, siblingProfileIds });
+      if (!result.ok) {
+        logToFile(`skip schedule ${manifest.id}/${s.file}: ${result.error}`);
+        continue;
+      }
+      validSchedules.push(s.spec);
+    } catch (err) {
+      logToFile(`skip schedule ${manifest.id}/${s.file}: validateScheduleRefs threw: ${err instanceof Error ? err.message : String(err)}`);
       continue;
     }
-    validSchedules.push(s.spec);
   }
   // Mirror the tables pattern: clear first, then re-install, so removed
   // specs drop their DB rows.
@@ -394,6 +399,7 @@ async function loadOneBundle(rootDir: string, manifest: PluginManifest): Promise
   const scheduleIds = validSchedules.map((s) => `plugin:${manifest.id}:${s.id}`);
 
   // Also merge into the in-memory schedules registry cache (mirrors blueprints).
+  // Build from s.spec (not s) so the `file` field does not leak into ScheduleSpec.
   mergePluginSchedules(
     validSchedules.map((s) => ({
       pluginId: manifest.id,
