@@ -346,8 +346,7 @@ function scanPlugin(pluginDir: string, pluginId: string): ScanResult {
 
     // --- Ainative-SDK transport ---
     if (isAinativeSdk) {
-      const rawEntry2 = rawEntry;
-      const entryField = typeof rawEntry2.entry === "string" ? rawEntry2.entry : "";
+      const entryField = typeof rawEntry.entry === "string" ? rawEntry.entry : "";
       if (!entryField) {
         logToFile(
           `[mcp-loader] plugin ${pluginId} server "${serverName}": transport:ainative-sdk missing entry field (sdk_entry_not_found)`
@@ -381,7 +380,7 @@ function scanPlugin(pluginDir: string, pluginId: string): ScanResult {
         continue;
       }
 
-      const resolvedEnv = resolveEnvTemplates(rawEntry2.env, context);
+      const resolvedEnv = resolveEnvTemplates(rawEntry.env, context);
       const config: NormalizedMcpConfig = {
         transport: "ainative-sdk",
         entry: absEntry,
@@ -426,8 +425,10 @@ export async function listPluginMcpRegistrations(opts?: {
       const pluginsDir = getAinativePluginsDir();
       if (fs.existsSync(pluginsDir)) {
         try {
-          for (const entry of fs.readdirSync(pluginsDir)) {
-            const logKey = `${entry}@${opts.runtime}`;
+          // Dedup keys scoped with pluginsDir so tmpdir-based tests each
+          // get a fresh keyspace (prevents cross-test log-suppression flakes).
+          for (const entry of fs.readdirSync(pluginsDir).sort()) {
+            const logKey = `${entry}@${opts.runtime}@${pluginsDir}`;
             if (!ollamaSkipLogged.has(logKey)) {
               ollamaSkipLogged.add(logKey);
               logToFile(
@@ -436,8 +437,7 @@ export async function listPluginMcpRegistrations(opts?: {
             }
           }
         } catch {
-          // Plugin dir unreadable — fall through to summary log.
-          const logKey = `__summary@${opts.runtime}`;
+          const logKey = `__summary@${opts.runtime}@${pluginsDir}`;
           if (!ollamaSkipLogged.has(logKey)) {
             ollamaSkipLogged.add(logKey);
             logToFile(
@@ -459,7 +459,8 @@ export async function listPluginMcpRegistrations(opts?: {
 
   let pluginDirEntries: string[];
   try {
-    pluginDirEntries = fs.readdirSync(pluginsDir);
+    // Sort for deterministic enumeration order across macOS/Linux/Windows.
+    pluginDirEntries = fs.readdirSync(pluginsDir).sort();
   } catch {
     logToFile(`[mcp-loader] could not read plugins directory: ${pluginsDir}`);
     return [];
@@ -480,10 +481,6 @@ export async function listPluginMcpRegistrations(opts?: {
     if (!stat.isDirectory()) continue;
 
     const pluginId = entry;
-
-    // Log per-plugin Ollama skip (if runtime filter would have blocked it)
-    // Note: this branch is only reached when supportsPluginMcpServers=true,
-    // so per-plugin Ollama skip logging happens via the summary above.
 
     try {
       const result = scanPlugin(pluginDir, pluginId);
