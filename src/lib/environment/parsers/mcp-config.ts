@@ -5,7 +5,7 @@
  */
 
 import type { EnvironmentArtifact, ToolPersona, ArtifactScope } from "../types";
-import { computeHash, safePreview, safeStat, safeReadFile } from "./utils";
+import { computeHash, safeStat, safeReadFile } from "./utils";
 import { parseTOML } from "./toml";
 
 /**
