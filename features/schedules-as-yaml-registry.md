@@ -386,6 +386,39 @@ Each tool **must** use dynamic `await import("@/lib/schedules/registry")` inside
 - **Multi-timezone for scheduled (non-heartbeat) type** — `cronExpression` is evaluated in the server timezone for `type: scheduled`. `activeTimezone` is heartbeat-only and only governs active-hours windowing.
 - **Partial reload** — reload either reconciles everything or nothing. No per-schedule targeted reload in v1 (the M1 `reload_plugin(id)` tool handles plugin-scoped targeted reload already).
 
+## Verification run — 2026-04-19
+
+**Commit SHA verified:** `51308a56` (state-preservation bug fix applied on top of T10 wiring)
+**Port:** 3010
+**Data dir:** `~/.ainative-smoke-m2` (isolated, fresh)
+
+**Boot sequence** (from `/tmp/m2-smoke-2.log`):
+- `[instance] bootstrap skipped: dev_mode_sentinel` ✅
+- `[db] Recovered legacy database — all migrations stamped.` ✅
+- `[plugins] 1 loaded, 0 disabled` ✅ (finance-pack auto-seeded)
+- `[scheduler] started — polling every 60s` (AFTER plugins, ordering invariant intact) ✅
+- No `ReferenceError` / `Cannot access ... before initialization` / `claudeRuntimeAdapter` errors ✅
+
+**Dogfood schedule present** (`GET /api/plugins`):
+- `finance-pack.schedules: ["plugin:finance-pack:monthly-close"]` ✅
+- DB row: `plugin:finance-pack:monthly-close|Monthly Financial Close (finance-pack)|finance-pack/personal-cfo|active|0` ✅ (composite id + `(finance-pack)` suffix + sibling profile ref)
+
+**State preservation (T18 Step 7)**:
+```
+SET:    status=paused, firing_count=17
+RELOAD: POST /api/plugins/reload (200 in 172ms)
+AFTER:  status=paused, firing_count=17  ← PRESERVED ✅
+```
+
+**Reload path (T18 Step 6)**:
+- Added user pack `test-m2/schedules/daily-digest.yaml`, reload → DB row `plugin:test-m2:daily-digest` appeared ✅
+- Removed `test-m2` dir, reload → orphan row dropped, `finance-pack:monthly-close` row survived ✅
+- After 3 cumulative reloads, finance-pack state still `paused|17` — preservation holds across multiple reload cycles ✅
+
+**Bug surfaced by this smoke run**: initial T10 wiring had `removePluginSchedules` before `installPluginSchedules`, defeating the `onConflictDoUpdate` upsert. The fix at `51308a56` deletes orphans POST-install via new `removeOrphanSchedules(pluginId, keepIds)` helper. Regression tests in `schedule-integration.test.ts` (state preservation + orphan cleanup) and `installer.test.ts` (helper unit tests) guard against regression. This is precisely the failure mode T18 is designed to catch — unit tests structurally cannot verify it because they don't exercise the full `loadOneBundle` → DB → reload cycle against a shared row.
+
+---
+
 ## References
 
 - Source: [`ideas/self-extending-machine-strategy.md`](../ideas/self-extending-machine-strategy.md) §9 Milestone 2, §5 (plugin disk layout), §10 (non-goals)
