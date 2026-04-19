@@ -2,7 +2,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import yaml from "js-yaml";
-import { PluginManifestSchema, type LoadedPlugin, type PluginManifest } from "./sdk/types";
+import { z } from "zod";
+import { PluginManifestSchema, type LoadedPlugin, type PluginManifest, type PluginTableTemplate } from "./sdk/types";
 import { getAinativePluginsDir, getAinativeLogsDir } from "@/lib/utils/ainative-paths";
 import {
   mergePluginProfiles,
@@ -17,6 +18,7 @@ import {
   validateBlueprintRefs,
 } from "@/lib/workflows/blueprints/registry";
 import type { WorkflowBlueprint } from "@/lib/workflows/blueprints/types";
+import { installPluginTables, removePluginTables } from "@/lib/data/seed-data/table-templates";
 
 // apiVersion compatibility window. A plugin's manifest.apiVersion must
 // be in this set or the plugin is disabled with reason "apiVersion_mismatch".
@@ -47,6 +49,13 @@ export function isSupportedApiVersion(apiVersion: string): boolean {
 }
 
 let pluginCache: LoadedPlugin[] | null = null;
+
+// T9: Track the ids of plugins whose tables we installed in the most recent
+// scan. The cache itself is invalidated lazily by `reloadPlugins()`, so we
+// can't rely on `pluginCache` to know which DB rows to clear before re-scanning.
+// This separate tracker survives `pluginCache = null` and lets the reload
+// drop stale rows owned by bundles that were removed between scans.
+let lastLoadedPluginIds: Set<string> = new Set();
 
 function logToFile(line: string): void {
   try {
@@ -151,12 +160,63 @@ function scanBundleBlueprints(
 }
 
 /**
+ * YAML-parsing schema for plugin table templates. Distinct from the runtime
+ * `PluginTableTemplate` type because it provides defaults for description and
+ * icon — plugin authors may omit either, and the loader fills in safe values.
+ * The parsed shape is a superset of the runtime type, so the cast at the
+ * bottom is sound.
+ */
+const PluginTableSchema = z.object({
+  id: z.string().regex(/^[a-z][a-z0-9-]*$/),
+  name: z.string(),
+  description: z.string().default(""),
+  category: z.enum(["business", "personal", "pm", "finance", "content"]),
+  icon: z.string().default("Table"),
+  columns: z.array(z.object({
+    name: z.string(),
+    displayName: z.string(),
+    dataType: z.string(),
+    config: z.record(z.string(), z.unknown()).optional(),
+  })),
+  sampleRows: z.array(z.record(z.string(), z.unknown())).optional(),
+});
+
+/**
+ * Scan a single bundle's tables/ directory. Each YAML is validated against
+ * PluginTableSchema; failures are logged and the offending file is dropped
+ * (the rest of the bundle still loads). Returns parsed templates ready for
+ * `installPluginTables` — the loader is responsible for the DB upsert and
+ * for prefixing the namespaced ids that surface on the LoadedPlugin record.
+ */
+function scanBundleTables(rootDir: string, pluginId: string): PluginTableTemplate[] {
+  const dir = path.join(rootDir, "tables");
+  if (!fs.existsSync(dir)) return [];
+  const out: PluginTableTemplate[] = [];
+  for (const file of fs.readdirSync(dir)) {
+    if (!file.endsWith(".yaml") && !file.endsWith(".yml")) continue;
+    try {
+      const raw = yaml.load(fs.readFileSync(path.join(dir, file), "utf-8"));
+      const parsed = PluginTableSchema.safeParse(raw);
+      if (!parsed.success) {
+        logToFile(`skip table ${pluginId}/${file}: ${parsed.error.issues.map((i) => i.message).join("; ")}`);
+        continue;
+      }
+      out.push(parsed.data as PluginTableTemplate);
+    } catch (err) {
+      logToFile(`skip table ${pluginId}/${file}: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+  return out;
+}
+
+/**
  * Pure scan of the plugins dir. Does NOT touch the cache.
  * Used by both `loadPlugins()` (lazy, cached) and `reloadPlugins()` (eager).
  */
 function scanPlugins(): LoadedPlugin[] {
   const seenIds = new Set<string>();
   const result: LoadedPlugin[] = [];
+  const loadedIds = new Set<string>();
 
   for (const rootDir of discoverBundleRoots()) {
     const { manifest, error } = readManifest(rootDir);
@@ -214,18 +274,31 @@ function scanPlugins(): LoadedPlugin[] {
       scannedBlueprints.map((s) => ({ pluginId: manifest.id, blueprint: s.blueprint }))
     );
 
+    // T9: tables. Clear any stale rows owned by this plugin first, then
+    // install fresh. `installPluginTables` writes to user_table_templates
+    // with a composite id (plugin:<pluginId>:<tableId>) and suffixes the
+    // display name with the plugin id to disambiguate collisions with builtins.
+    removePluginTables(manifest.id);
+    const scannedTables = scanBundleTables(rootDir, manifest.id);
+    installPluginTables(manifest.id, scannedTables);
+    const tableIds = scannedTables.map((t) => `plugin:${manifest.id}:${t.id}`);
+
     result.push({
       id: manifest.id, manifest, rootDir,
       profiles: scannedProfiles.map((s) => s.namespacedId),
       blueprints: scannedBlueprints.map((s) => s.namespacedId),
-      tables: [],
+      tables: tableIds,
       status: "loaded",
     });
+    loadedIds.add(manifest.id);
     logToFile(
-      `loaded ${manifest.id}@${manifest.version}: ${scannedProfiles.length} profiles, ${scannedBlueprints.length} blueprints`
+      `loaded ${manifest.id}@${manifest.version}: ${scannedProfiles.length} profiles, ${scannedBlueprints.length} blueprints, ${tableIds.length} tables`
     );
   }
 
+  // T9: record what we just loaded so the next reload knows which plugins'
+  // table rows to drop, even when the cache has been invalidated in between.
+  lastLoadedPluginIds = loadedIds;
   return result;
 }
 
@@ -242,6 +315,31 @@ export function loadPlugins(): LoadedPlugin[] {
   return pluginCache;
 }
 
+/**
+ * T9 helper: drop the DB-resident table rows for every plugin that was
+ * loaded in the most recent scan. Iterates `lastLoadedPluginIds` (which
+ * survives `pluginCache = null`) so a bundle removed entirely from disk
+ * between reloads still has its stale rows cleaned up.
+ *
+ * Belt-and-braces: the per-bundle `removePluginTables(manifest.id)` inside
+ * scanPlugins also clears at scan time, but that path only fires for bundles
+ * still on disk. Removed bundles rely on this helper for cleanup.
+ */
+function removeAllPluginTablesForCachedPlugins(): void {
+  // Prefer the live cache when available (it's the authoritative current
+  // state), but fall back to lastLoadedPluginIds when the cache is null —
+  // which is the normal state after `reloadPlugins()` invalidates lazily.
+  if (pluginCache) {
+    for (const p of pluginCache) {
+      if (p.status === "loaded") removePluginTables(p.id);
+    }
+    return;
+  }
+  for (const id of lastLoadedPluginIds) {
+    removePluginTables(id);
+  }
+}
+
 export function reloadPlugins(): LoadedPlugin[] {
   // T7: clear ALL plugin-injected profiles before re-scanning so that
   // removed bundles drop their profiles, and renamed/changed profiles
@@ -253,6 +351,7 @@ export function reloadPlugins(): LoadedPlugin[] {
   //   reloadPlugins(); ...mutate plugins/...; loadPlugins();
   // pattern used by tests and by future hot-reload flows that write
   // bundle files between invalidation and observation.
+  removeAllPluginTablesForCachedPlugins();
   clearAllPluginProfiles();
   clearAllPluginBlueprints();
   pluginCache = null;
