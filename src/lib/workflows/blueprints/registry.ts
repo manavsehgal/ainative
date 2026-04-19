@@ -126,3 +126,88 @@ export function deleteBlueprint(id: string): void {
 export function getUserBlueprintsDir(): string {
   return USER_BLUEPRINTS_DIR;
 }
+
+// ---------------------------------------------------------------------------
+// Plugin blueprint injection (Kind 5)
+// ---------------------------------------------------------------------------
+
+// Static import is intentional and safe: TDR-032's no-static-chat-tools-import
+// rule applies to the @/lib/chat/ainative-tools cycle, not the
+// workflows→profiles direction. Profile registry has zero static chat-tools
+// dependency (verified by grep). This formalizes a layer dependency that
+// already exists implicitly via workflows/engine.ts invoking profile-bound agents.
+// Do NOT replace with a dynamic import "for safety" — that would defeat
+// the sync loader simplicity for no actual cycle-prevention benefit.
+import { getProfile } from "@/lib/agents/profiles/registry";
+
+interface PluginBlueprintEntry {
+  pluginId: string;
+  blueprint: WorkflowBlueprint;
+}
+
+const pluginBlueprintIndex: Map<string, Set<string>> = new Map();
+
+export function mergePluginBlueprints(entries: PluginBlueprintEntry[]): void {
+  const cache = ensureLoaded();
+  for (const entry of entries) {
+    cache.set(entry.blueprint.id, entry.blueprint);
+    if (!pluginBlueprintIndex.has(entry.pluginId)) {
+      pluginBlueprintIndex.set(entry.pluginId, new Set());
+    }
+    pluginBlueprintIndex.get(entry.pluginId)!.add(entry.blueprint.id);
+  }
+}
+
+export function clearPluginBlueprints(pluginId: string): void {
+  const cache = blueprintCache;
+  const ids = pluginBlueprintIndex.get(pluginId);
+  if (!ids) return;
+  if (cache) for (const id of ids) cache.delete(id);
+  pluginBlueprintIndex.delete(pluginId);
+}
+
+export function clearAllPluginBlueprints(): void {
+  for (const pluginId of Array.from(pluginBlueprintIndex.keys())) {
+    clearPluginBlueprints(pluginId);
+  }
+}
+
+export function listPluginBlueprintIds(pluginId: string): string[] {
+  return Array.from(pluginBlueprintIndex.get(pluginId) ?? []);
+}
+
+export interface ValidateBlueprintRefsOptions {
+  pluginId: string;
+  /** namespaced profile ids declared by THIS plugin */
+  siblingProfileIds: Set<string>;
+}
+
+export interface ValidateBlueprintRefsResult {
+  ok: boolean;
+  error?: string;
+}
+
+export function validateBlueprintRefs(
+  bp: WorkflowBlueprint,
+  opts: ValidateBlueprintRefsOptions
+): ValidateBlueprintRefsResult {
+  const steps = (bp as unknown as { steps?: Array<{ profileId?: string }> }).steps ?? [];
+  for (const step of steps) {
+    if (!step.profileId) continue;
+    const ref = step.profileId;
+    if (ref.includes("/")) {
+      const [refPluginId] = ref.split("/");
+      if (refPluginId !== opts.pluginId) {
+        return { ok: false, error: `cross-plugin profile reference not allowed: ${ref}` };
+      }
+      if (!opts.siblingProfileIds.has(ref)) {
+        return { ok: false, error: `unresolved sibling profile reference: ${ref}` };
+      }
+    } else {
+      if (!getProfile(ref)) {
+        return { ok: false, error: `unresolved profile reference: ${ref}` };
+      }
+    }
+  }
+  return { ok: true };
+}
