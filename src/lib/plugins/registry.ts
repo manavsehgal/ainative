@@ -99,11 +99,63 @@ function discoverBundleRoots(): string[] {
 }
 
 /**
+ * Generic per-section scanner: walks `<rootDir>/<section>/` for `.yaml`/`.yml`
+ * files, invokes `parseFile(absPath)` on each, and returns the non-null
+ * results in readdir order.
+ *
+ * File-level concerns only:
+ *   - directory existence check (missing → `[]`)
+ *   - yaml/yml extension filter (non-yaml silently skipped)
+ *   - try/catch around `parseFile` (throws logged via console.warn, file skipped)
+ *   - null-return handling (silently skipped, no warning)
+ *
+ * Per-section concerns stay in the callers: namespacing, validation,
+ * cross-reference resolution, structured log-to-file warnings. Callers that
+ * want to surface a parse error via the `[plugins] Error in ...` warning
+ * branch should throw from `parseFile`; callers that want a silent skip
+ * (e.g. after emitting their own structured warning) should return `null`.
+ *
+ * Generic over `T` so each caller gets back exactly the shape it constructed
+ * — no forced wrapping, no post-processing. The three existing sections
+ * (profiles, blueprints, tables) and the incoming schedules scanner all
+ * return different shapes; a uniform helper would force unnatural mappings.
+ */
+export function scanBundleSection<T>(opts: {
+  rootDir: string;
+  section: "profiles" | "blueprints" | "tables" | "schedules";
+  parseFile: (filePath: string) => T | null;
+}): T[] {
+  const dir = path.join(opts.rootDir, opts.section);
+  if (!fs.existsSync(dir)) return [];
+  const out: T[] = [];
+  for (const file of fs.readdirSync(dir)) {
+    if (!file.endsWith(".yaml") && !file.endsWith(".yml")) continue;
+    const filePath = path.join(dir, file);
+    try {
+      const result = opts.parseFile(filePath);
+      if (result !== null) out.push(result);
+    } catch (err) {
+      console.warn(`[plugins] Error in ${opts.section}/${file}:`, err);
+    }
+  }
+  return out;
+}
+
+/**
  * Scan a single bundle's profiles/ directory using the canonical profile
  * scanner with namespace support. Reusing the canonical scanner means
  * plugin profiles get IDENTICAL treatment to builtins (SKILL.md frontmatter
  * extraction, multi-runtime inference, origin classification, tests, etc).
  * Hand-rolling the construction here would silently drop these features.
+ *
+ * NOTE (M2 refactor): this function is NOT an adapter over `scanBundleSection`.
+ * The canonical profile scanner (`scanProfilesIntoMap`) is directory-scoped,
+ * not file-scoped — it does its own directory walk to support SKILL.md
+ * sibling discovery and multi-runtime inference. Shoehorning it into a
+ * per-file `parseFile` closure would either (a) duplicate the walk and
+ * break identity with builtin profile loading, or (b) require refactoring
+ * `scanProfilesIntoMap` itself, which is out of scope for this extraction.
+ * Leaving as-is preserves the "IDENTICAL treatment to builtins" guarantee.
  */
 function scanBundleProfiles(
   rootDir: string,
@@ -134,31 +186,36 @@ function scanBundleBlueprints(
   pluginId: string,
   siblingProfileIds: Set<string>
 ): Array<{ namespacedId: string; blueprint: WorkflowBlueprint }> {
-  const dir = path.join(rootDir, "blueprints");
-  if (!fs.existsSync(dir)) return [];
-  const out: Array<{ namespacedId: string; blueprint: WorkflowBlueprint }> = [];
-  for (const file of fs.readdirSync(dir)) {
-    if (!file.endsWith(".yaml") && !file.endsWith(".yml")) continue;
-    try {
-      const raw = yaml.load(fs.readFileSync(path.join(dir, file), "utf-8"));
-      const parsed = BlueprintSchema.safeParse(raw);
-      if (!parsed.success) {
-        logToFile(`skip blueprint ${pluginId}/${file}: ${parsed.error.issues.map((i) => i.message).join("; ")}`);
-        continue;
+  return scanBundleSection<{ namespacedId: string; blueprint: WorkflowBlueprint }>({
+    rootDir,
+    section: "blueprints",
+    parseFile: (filePath) => {
+      const file = path.basename(filePath);
+      // Catch yaml-parse + schema errors in-adapter so we preserve the existing
+      // structured `logToFile` warning format. If we let the helper's catch
+      // handle them, the warning would land on console.warn with a different
+      // prefix — drift from M1 behavior.
+      try {
+        const raw = yaml.load(fs.readFileSync(filePath, "utf-8"));
+        const parsed = BlueprintSchema.safeParse(raw);
+        if (!parsed.success) {
+          logToFile(`skip blueprint ${pluginId}/${file}: ${parsed.error.issues.map((i) => i.message).join("; ")}`);
+          return null;
+        }
+        const namespacedId = `${pluginId}/${parsed.data.id}`;
+        const blueprint = { ...parsed.data, id: namespacedId, isBuiltin: false } as unknown as WorkflowBlueprint;
+        const refs = validateBlueprintRefs(blueprint, { pluginId, siblingProfileIds });
+        if (!refs.ok) {
+          logToFile(`skip blueprint ${namespacedId}: ${refs.error}`);
+          return null;
+        }
+        return { namespacedId, blueprint };
+      } catch (err) {
+        logToFile(`skip blueprint ${pluginId}/${file}: ${err instanceof Error ? err.message : String(err)}`);
+        return null;
       }
-      const namespacedId = `${pluginId}/${parsed.data.id}`;
-      const blueprint = { ...parsed.data, id: namespacedId, isBuiltin: false } as unknown as WorkflowBlueprint;
-      const refs = validateBlueprintRefs(blueprint, { pluginId, siblingProfileIds });
-      if (!refs.ok) {
-        logToFile(`skip blueprint ${namespacedId}: ${refs.error}`);
-        continue;
-      }
-      out.push({ namespacedId, blueprint });
-    } catch (err) {
-      logToFile(`skip blueprint ${pluginId}/${file}: ${err instanceof Error ? err.message : String(err)}`);
-    }
-  }
-  return out;
+    },
+  });
 }
 
 /**
@@ -191,24 +248,27 @@ const PluginTableSchema = z.object({
  * for prefixing the namespaced ids that surface on the LoadedPlugin record.
  */
 function scanBundleTables(rootDir: string, pluginId: string): PluginTableTemplate[] {
-  const dir = path.join(rootDir, "tables");
-  if (!fs.existsSync(dir)) return [];
-  const out: PluginTableTemplate[] = [];
-  for (const file of fs.readdirSync(dir)) {
-    if (!file.endsWith(".yaml") && !file.endsWith(".yml")) continue;
-    try {
-      const raw = yaml.load(fs.readFileSync(path.join(dir, file), "utf-8"));
-      const parsed = PluginTableSchema.safeParse(raw);
-      if (!parsed.success) {
-        logToFile(`skip table ${pluginId}/${file}: ${parsed.error.issues.map((i) => i.message).join("; ")}`);
-        continue;
+  return scanBundleSection<PluginTableTemplate>({
+    rootDir,
+    section: "tables",
+    parseFile: (filePath) => {
+      const file = path.basename(filePath);
+      // Same reasoning as scanBundleBlueprints: in-adapter try/catch keeps the
+      // `logToFile("skip table ...")` warning format byte-identical to M1.
+      try {
+        const raw = yaml.load(fs.readFileSync(filePath, "utf-8"));
+        const parsed = PluginTableSchema.safeParse(raw);
+        if (!parsed.success) {
+          logToFile(`skip table ${pluginId}/${file}: ${parsed.error.issues.map((i) => i.message).join("; ")}`);
+          return null;
+        }
+        return parsed.data as PluginTableTemplate;
+      } catch (err) {
+        logToFile(`skip table ${pluginId}/${file}: ${err instanceof Error ? err.message : String(err)}`);
+        return null;
       }
-      out.push(parsed.data as PluginTableTemplate);
-    } catch (err) {
-      logToFile(`skip table ${pluginId}/${file}: ${err instanceof Error ? err.message : String(err)}`);
-    }
-  }
-  return out;
+    },
+  });
 }
 
 /**
