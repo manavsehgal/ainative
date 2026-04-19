@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const PluginManifestSchema = z
+const PrimitivesBundleManifestSchema = z
   .object({
     id: z.string().regex(/^[a-z][a-z0-9-]*$/, "id must be kebab-case starting with a letter"),
     version: z.string().regex(/^\d+\.\d+\.\d+$/, "version must be semver MAJOR.MINOR.PATCH"),
@@ -12,6 +12,30 @@ export const PluginManifestSchema = z
     tags: z.array(z.string()).optional(),
   })
   .strict();
+
+const ChatToolsPluginManifestSchema = z
+  .object({
+    id: z.string().regex(/^[a-z][a-z0-9-]*$/, "id must be kebab-case starting with a letter"),
+    version: z.string().regex(/^\d+\.\d+\.\d+$/, "version must be semver MAJOR.MINOR.PATCH"),
+    apiVersion: z.string().regex(/^\d+\.\d+$/, "apiVersion must be MAJOR.MINOR"),
+    kind: z.literal("chat-tools"),
+    name: z.string().optional(),
+    description: z.string().optional(),
+    author: z.string().optional(),
+    tags: z.array(z.string()).optional(),
+    capabilities: z.array(
+      z.enum(["fs", "net", "child_process", "env"])
+    ).default([]),
+    confinementMode: z.enum(["none", "seatbelt", "apparmor", "docker"]).optional(),
+    dockerImage: z.string().optional(),
+    defaultToolApproval: z.enum(["never", "prompt", "approve"]).optional(),
+  })
+  .strict();
+
+export const PluginManifestSchema = z.discriminatedUnion("kind", [
+  PrimitivesBundleManifestSchema,
+  ChatToolsPluginManifestSchema,
+]);
 
 export type PluginManifest = z.infer<typeof PluginManifestSchema>;
 

@@ -47,15 +47,18 @@ describe("PluginManifestSchema", () => {
     expect(PluginManifestSchema.safeParse({ ...valid, apiVersion: "0" }).success).toBe(false);
   });
 
-  it("rejects unknown kind", () => {
-    expect(PluginManifestSchema.safeParse({ ...valid, kind: "chat-tools" }).success).toBe(false);
+  it("rejects truly unknown kind", () => {
     expect(PluginManifestSchema.safeParse({ ...valid, kind: "anything-else" }).success).toBe(false);
+    expect(PluginManifestSchema.safeParse({ ...valid, kind: "invalid-kind" }).success).toBe(false);
   });
 
-  it("rejects Kind 1 fields (entry, capabilities) for forward compatibility", () => {
+  it("rejects Kind 1 fields on Kind 5 manifests (forward compatibility)", () => {
+    // Kind 1-specific fields should be rejected when applied to a Kind 5 manifest
     const r1 = PluginManifestSchema.safeParse({ ...valid, entry: "./index.js" });
     const r2 = PluginManifestSchema.safeParse({ ...valid, capabilities: ["fs"] });
+    const r3 = PluginManifestSchema.safeParse({ ...valid, confinementMode: "seatbelt" });
     expect(r1.success).toBe(false);
     expect(r2.success).toBe(false);
+    expect(r3.success).toBe(false);
   });
 });
