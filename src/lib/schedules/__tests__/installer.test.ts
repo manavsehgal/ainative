@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { db } from "@/lib/db";
 import { schedules as schedulesTable } from "@/lib/db/schema";
-import { eq, like } from "drizzle-orm";
+import { eq, like, getTableColumns } from "drizzle-orm";
 import { installSchedulesFromSpecs } from "../installer";
 import type { ScheduleSpec } from "@/lib/validators/schedule-spec";
 
@@ -227,5 +227,38 @@ describe("installSchedulesFromSpecs — state preservation", () => {
     expect(row?.turnBudgetBreachStreak).toBe(1);
     // createdAt preserved
     expect(row?.createdAt.getTime()).toBe(staleCreatedAt.getTime());
+  });
+});
+
+describe("column-coverage invariant", () => {
+  it("column coverage: every schedules column is explicitly categorized", () => {
+    // These two sets must together cover every column in the schedules table.
+    // Adding a column to the schema without adding it to one of these sets = test fails.
+    const CONFIG_COLUMNS = new Set([
+      "name", "prompt", "cronExpression", "agentProfile", "assignedAgent",
+      "recurs", "maxFirings", "expiresAt", "type", "heartbeatChecklist",
+      "activeHoursStart", "activeHoursEnd", "activeTimezone", "heartbeatBudgetPerDay",
+      "deliveryChannels", "maxTurns", "maxRunDurationSec", "updatedAt",
+    ]);
+    const STATE_COLUMNS = new Set([
+      "status", "firingCount", "lastFiredAt", "nextFireAt", "suppressionCount",
+      "lastActionAt", "heartbeatSpentToday", "heartbeatBudgetResetAt",
+      "avgTurnsPerFiring", "lastTurnCount", "failureStreak", "lastFailureReason",
+      "maxTurnsSetAt", "turnBudgetBreachStreak", "createdAt",
+      "projectId",  // DB-only: user-set via UI, never by loader; preserved across reload (functionally STATE)
+    ]);
+    const PRIMARY_KEY = new Set(["id"]);
+    const categorized = new Set([...CONFIG_COLUMNS, ...STATE_COLUMNS, ...PRIMARY_KEY]);
+
+    // Enumerate actual schedules-table columns from the Drizzle table definition.
+    // getTableColumns returns only column definitions (no internal Drizzle metadata).
+    const actualColumns = new Set(Object.keys(getTableColumns(schedulesTable)));
+
+    for (const col of actualColumns) {
+      expect(categorized.has(col), `schedules.${col} is not in CONFIG or STATE sets — categorize it`).toBe(true);
+    }
+    for (const col of categorized) {
+      expect(actualColumns.has(col), `${col} is in config/state set but not in schedules table`).toBe(true);
+    }
   });
 });
