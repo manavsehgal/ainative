@@ -152,6 +152,17 @@ describe("capability-check — deriveManifestHash", () => {
     const hash = deriveManifestHash(makeYaml());
     expect(hash).toMatch(/^sha256:[0-9a-f]{64}$/);
   });
+
+  // 19. Scalar input → named error
+  it("19. deriveManifestHash throws named error on YAML scalar input", () => {
+    expect(() => deriveManifestHash('"hello"')).toThrow(/YAML mapping/);
+  });
+
+  // 20. Empty/null input → named error
+  it("20. deriveManifestHash throws named error on empty/null YAML", () => {
+    expect(() => deriveManifestHash("")).toThrow(/YAML mapping/);
+    expect(() => deriveManifestHash("null")).toThrow(/YAML mapping/);
+  });
 });
 
 // ---------------------------------------------------------------------------

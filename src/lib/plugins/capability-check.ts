@@ -117,7 +117,14 @@ function sortKeysDeep(value: unknown): unknown {
  *  5. SHA-256, output prefixed "sha256:".
  */
 export function deriveManifestHash(pluginYamlContent: string): string {
-  const raw = yaml.load(pluginYamlContent) as Record<string, unknown>;
+  const raw = yaml.load(pluginYamlContent);
+
+  // Guard: plugin.yaml must be a YAML mapping (object), not scalar, array, or null.
+  if (raw === null || raw === undefined || typeof raw !== "object" || Array.isArray(raw)) {
+    throw new Error(
+      `[capability-check] deriveManifestHash: plugin.yaml must be a YAML mapping, got ${raw === null ? "null" : Array.isArray(raw) ? "array" : typeof raw}`,
+    );
+  }
 
   // Remove cosmetic fields (top-level only per spec).
   const subset: Record<string, unknown> = {};
