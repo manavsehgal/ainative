@@ -4,6 +4,9 @@ import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import yaml from "js-yaml";
+import { eq } from "drizzle-orm";
+import { db } from "@/lib/db";
+import { schedules as schedulesTable } from "@/lib/db/schema";
 import { reloadPlugins } from "../registry";
 import { getSchedule, clearAllPluginSchedules } from "@/lib/schedules/registry";
 import { listInstalledPluginScheduleIds, removePluginSchedules } from "@/lib/schedules/installer";
@@ -165,5 +168,61 @@ describe("plugin loader → schedule integration", () => {
 
     // In-memory cache entry gone
     expect(getSchedule("test-pack/weekly-report")).toBeUndefined();
+  });
+
+  // ── (d) State preservation: runtime state survives reload ─────────────────
+  it("(d) preserves runtime state (status, firingCount) across reloadPlugins", async () => {
+    writeBundle("test-pack", {
+      schedules: [makeScheduleFixture({ id: "monthly-close" })],
+    });
+
+    // First load — creates the DB row
+    await reloadPlugins();
+
+    // Simulate user pausing the schedule + some fire history
+    db.update(schedulesTable)
+      .set({ status: "paused", firingCount: 17 })
+      .where(eq(schedulesTable.id, "plugin:test-pack:monthly-close"))
+      .run();
+
+    // Reload — must preserve runtime state, not reset it
+    await reloadPlugins();
+
+    const row = db
+      .select()
+      .from(schedulesTable)
+      .where(eq(schedulesTable.id, "plugin:test-pack:monthly-close"))
+      .get();
+    expect(row?.status).toBe("paused");
+    expect(row?.firingCount).toBe(17);
+  });
+
+  // ── (e) Orphan cleanup: removed spec drops its DB row ─────────────────────
+  it("(e) deletes schedule rows for specs removed from the bundle (orphan cleanup)", async () => {
+    // Install bundle with two schedules
+    writeBundle("test-pack", {
+      schedules: [
+        makeScheduleFixture({ id: "keep-me" }),
+        makeScheduleFixture({ id: "drop-me" }),
+      ],
+    });
+
+    await reloadPlugins();
+
+    // Both rows present
+    const idsBefore = listInstalledPluginScheduleIds("test-pack").sort();
+    expect(idsBefore).toEqual([
+      "plugin:test-pack:drop-me",
+      "plugin:test-pack:keep-me",
+    ]);
+
+    // Remove drop-me.yaml from disk to simulate spec deletion from bundle
+    fs.rmSync(path.join(tmpDir, "plugins", "test-pack", "schedules", "drop-me.yaml"));
+
+    await reloadPlugins();
+
+    const idsAfter = listInstalledPluginScheduleIds("test-pack");
+    expect(idsAfter).toEqual(["plugin:test-pack:keep-me"]);
+    expect(idsAfter).not.toContain("plugin:test-pack:drop-me");
   });
 });

@@ -27,7 +27,7 @@ import {
   clearPluginSchedules,
   validateScheduleRefs,
 } from "@/lib/schedules/registry";
-import { installPluginSchedules, removePluginSchedules } from "@/lib/schedules/installer";
+import { installPluginSchedules, removePluginSchedules, removeOrphanSchedules } from "@/lib/schedules/installer";
 import { ScheduleSpecSchema } from "@/lib/validators/schedule-spec";
 import type { ScheduleSpec } from "@/lib/validators/schedule-spec";
 
@@ -392,11 +392,16 @@ async function loadOneBundle(rootDir: string, manifest: PluginManifest): Promise
       continue;
     }
   }
-  // Mirror the tables pattern: clear first, then re-install, so removed
-  // specs drop their DB rows.
-  removePluginSchedules(manifest.id);
+  // Install first (state-preserving upsert), then drop orphans.
+  // IMPORTANT: do NOT remove before install — that would defeat the
+  // onConflictDoUpdate in installSchedulesFromSpecs and silently reset runtime
+  // state columns (status, firingCount, etc.) on every reload. Tables use
+  // clear-first because they have no user-owned runtime state; schedules must
+  // preserve it. Orphan cleanup (specs removed between reloads) is handled by
+  // removeOrphanSchedules after the upsert, not before. See TDR-T18 bug report.
   installPluginSchedules(manifest.id, validSchedules);
   const scheduleIds = validSchedules.map((s) => `plugin:${manifest.id}:${s.id}`);
+  removeOrphanSchedules(manifest.id, scheduleIds);
 
   // Also merge into the in-memory schedules registry cache (mirrors blueprints).
   // Build from s.spec (not s) so the `file` field does not leak into ScheduleSpec.
@@ -499,40 +504,79 @@ export async function loadPlugins(): Promise<LoadedPlugin[]> {
  * at scan time, but that path only fires for bundles still on disk. Removed
  * bundles rely on this helper for cleanup.
  */
-function removeAllPluginRowsForCachedPlugins(): void {
+/**
+ * Collect the set of plugin ids that are currently known as loaded.
+ * Used by reloadPlugins() to determine which plugins were removed from disk.
+ */
+function collectPreviouslyLoadedIds(): Set<string> {
+  if (pluginCache) {
+    return new Set(pluginCache.filter((p) => p.status === "loaded").map((p) => p.id));
+  }
+  return new Set(lastLoadedPluginIds);
+}
+
+function removeAllPluginTableRowsForCachedPlugins(): void {
   // Prefer the live cache when available (it's the authoritative current
   // state), but fall back to lastLoadedPluginIds when the cache is null —
   // which is the normal state after `reloadPlugins()` invalidates lazily.
+  //
+  // NOTE: schedules are intentionally NOT cleared here. Per-bundle orphan
+  // cleanup (removeOrphanSchedules) handles spec removals within a still-present
+  // plugin. Whole-plugin removal is handled in reloadPlugins() after the scan,
+  // where we know which plugin ids are truly gone. Clearing schedules here
+  // (before the upsert) would defeat the onConflictDoUpdate in
+  // installSchedulesFromSpecs and silently reset runtime state (status,
+  // firingCount, etc.) on every reload. See T18 bug fix.
   if (pluginCache) {
     for (const p of pluginCache) {
       if (p.status === "loaded") {
         removePluginTables(p.id);
-        removePluginSchedules(p.id);
       }
     }
     return;
   }
   for (const id of lastLoadedPluginIds) {
     removePluginTables(id);
-    removePluginSchedules(id);
   }
 }
 
 export async function reloadPlugins(): Promise<LoadedPlugin[]> {
+  // Collect the pre-scan plugin ids before cache is invalidated, so we can
+  // clean up schedules for bundles that are fully removed from disk.
+  const prevLoadedIds = collectPreviouslyLoadedIds();
+
   // Clear ALL plugin-injected primitives before re-scanning so that
   // removed bundles drop their contributions, and renamed/changed primitives
-  // don't accumulate stale entries. Also drop all plugin-owned DB rows so
+  // don't accumulate stale entries. Also drop plugin-owned DB table rows so
   // bundles removed from disk don't leave orphaned rows.
+  //
+  // NOTE: schedule DB rows are NOT removed here. They are handled in two ways:
+  //   1. Still-present plugins: per-bundle removeOrphanSchedules (inside
+  //      loadOneBundle) deletes specs removed between reloads while preserving
+  //      runtime state for surviving specs via the upsert.
+  //   2. Fully removed plugins (bundle dir deleted): handled below after the
+  //      scan, using prevLoadedIds minus the new scan result.
   //
   // Repopulates `pluginCache` with the fresh scan result so that the sync
   // `listPlugins()` / `getPlugin()` helpers see up-to-date state immediately
   // after this call returns, without requiring a separate `loadPlugins()`.
-  removeAllPluginRowsForCachedPlugins();
+  removeAllPluginTableRowsForCachedPlugins();
   clearAllPluginProfiles();
   clearAllPluginBlueprints();
   clearAllPluginSchedules();
   pluginCache = null;
   pluginCache = await scanPlugins();
+
+  // Clean up schedule DB rows for plugins that were loaded before but are NOT
+  // in the fresh scan (bundle directory deleted between reloads). Per-bundle
+  // orphan cleanup already ran for surviving plugins inside scanPlugins().
+  const newLoadedIds = new Set(pluginCache.filter((p) => p.status === "loaded").map((p) => p.id));
+  for (const id of prevLoadedIds) {
+    if (!newLoadedIds.has(id)) {
+      removePluginSchedules(id);
+    }
+  }
+
   return pluginCache;
 }
 

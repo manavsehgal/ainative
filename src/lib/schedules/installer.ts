@@ -25,7 +25,7 @@
 
 import { db } from "@/lib/db";
 import { schedules as schedulesTable } from "@/lib/db/schema";
-import { like } from "drizzle-orm";
+import { and, like, notInArray } from "drizzle-orm";
 import { parseInterval, computeNextFireTime } from "./interval-parser";
 import type { ScheduleSpec } from "@/lib/validators/schedule-spec";
 
@@ -152,6 +152,32 @@ export function installPluginSchedules(pluginId: string, specs: ScheduleSpec[]):
 export function removePluginSchedules(pluginId: string): void {
   const pattern = `${PLUGIN_SCHEDULE_PREFIX}${pluginId}:%`;
   db.delete(schedulesTable).where(like(schedulesTable.id, pattern)).run();
+}
+
+/**
+ * Delete schedule rows that belong to a plugin but are NOT in `keepIds`.
+ *
+ * Called after installPluginSchedules so that specs removed between reloads
+ * have their DB rows cleaned up, while specs still present keep their runtime
+ * state (status, firingCount, etc.) intact via the upsert in
+ * installSchedulesFromSpecs.
+ *
+ * If `keepIds` is empty (all schedules removed from the bundle), this behaves
+ * identically to removePluginSchedules — all rows for the plugin are deleted.
+ *
+ * @param pluginId - The plugin whose rows are candidates for deletion.
+ * @param keepIds  - Composite ids (plugin:<pluginId>:<specId>) to retain.
+ */
+export function removeOrphanSchedules(pluginId: string, keepIds: string[]): void {
+  const pattern = `${PLUGIN_SCHEDULE_PREFIX}${pluginId}:%`;
+  if (keepIds.length === 0) {
+    // Nothing to keep — delete all rows for this plugin
+    db.delete(schedulesTable).where(like(schedulesTable.id, pattern)).run();
+  } else {
+    db.delete(schedulesTable)
+      .where(and(like(schedulesTable.id, pattern), notInArray(schedulesTable.id, keepIds)))
+      .run();
+  }
 }
 
 /**

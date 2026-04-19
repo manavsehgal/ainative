@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { db } from "@/lib/db";
 import { schedules as schedulesTable } from "@/lib/db/schema";
 import { eq, like, getTableColumns } from "drizzle-orm";
-import { installSchedulesFromSpecs, installPluginSchedules, removePluginSchedules, listInstalledPluginScheduleIds } from "../installer";
+import { installSchedulesFromSpecs, installPluginSchedules, removePluginSchedules, removeOrphanSchedules, listInstalledPluginScheduleIds } from "../installer";
 import type { ScheduleSpec } from "@/lib/validators/schedule-spec";
 
 const fakeScheduled = (id: string, overrides: Partial<ScheduleSpec> = {}): ScheduleSpec => ({
@@ -264,6 +264,45 @@ describe("plugin schedule helpers", () => {
     expect(listInstalledPluginScheduleIds("test-pack-a").sort()).toEqual(["plugin:test-pack-a:a", "plugin:test-pack-a:b"]);
     expect(listInstalledPluginScheduleIds("test-pack-c")).toEqual(["plugin:test-pack-c:c"]);
     expect(listInstalledPluginScheduleIds("no-such-plugin")).toEqual([]);
+  });
+});
+
+describe("removeOrphanSchedules", () => {
+  beforeEach(() => {
+    db.delete(schedulesTable).where(like(schedulesTable.id, "plugin:test-%:%")).run();
+  });
+
+  it("keeps all rows when every installed id is in keepIds", () => {
+    installPluginSchedules("test-orphan", [fakeScheduled("s1"), fakeScheduled("s2")]);
+    const keepIds = ["plugin:test-orphan:s1", "plugin:test-orphan:s2"];
+    removeOrphanSchedules("test-orphan", keepIds);
+    const remaining = listInstalledPluginScheduleIds("test-orphan").sort();
+    expect(remaining).toEqual(keepIds.sort());
+  });
+
+  it("deletes all plugin rows when keepIds is empty", () => {
+    installPluginSchedules("test-orphan", [fakeScheduled("s1"), fakeScheduled("s2")]);
+    removeOrphanSchedules("test-orphan", []);
+    expect(listInstalledPluginScheduleIds("test-orphan")).toEqual([]);
+  });
+
+  it("deletes only orphaned rows and keeps retained rows (mixed case)", () => {
+    installPluginSchedules("test-orphan", [fakeScheduled("s1"), fakeScheduled("s2"), fakeScheduled("s3")]);
+    // Keep s1 and s3; s2 is an orphan (removed from spec)
+    removeOrphanSchedules("test-orphan", ["plugin:test-orphan:s1", "plugin:test-orphan:s3"]);
+    const remaining = listInstalledPluginScheduleIds("test-orphan").sort();
+    expect(remaining).toEqual(["plugin:test-orphan:s1", "plugin:test-orphan:s3"]);
+    expect(remaining).not.toContain("plugin:test-orphan:s2");
+  });
+
+  it("does not touch rows belonging to a different plugin", () => {
+    installPluginSchedules("test-orphan-a", [fakeScheduled("s1")]);
+    installPluginSchedules("test-orphan-b", [fakeScheduled("s1")]);
+    // Remove all from plugin a
+    removeOrphanSchedules("test-orphan-a", []);
+    // Plugin b rows must be untouched
+    expect(listInstalledPluginScheduleIds("test-orphan-b")).toEqual(["plugin:test-orphan-b:s1"]);
+    expect(listInstalledPluginScheduleIds("test-orphan-a")).toEqual([]);
   });
 });
 
