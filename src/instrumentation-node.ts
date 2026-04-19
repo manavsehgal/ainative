@@ -25,18 +25,23 @@ export async function registerNodeInstrumentation() {
     await runPendingMigrations();
 
     // Plugin loader (Kind 5 only). Seeds dogfood examples on first boot,
-    // scans ~/.ainative/plugins/, registers profiles + blueprints + tables.
+    // scans ~/.ainative/plugins/, registers profiles + blueprints + tables + schedules.
     // Failures are isolated per-plugin; boot continues regardless.
     //
     // ORDERING INVARIANTS (do not move this block without re-checking):
-    //   - MUST come AFTER runPendingMigrations() — installPluginTables writes
-    //     to userTableTemplates which the migrations create/upgrade.
-    //   - MUST come BEFORE startScheduler() — scheduled tasks may reference
-    //     plugin profiles (e.g., "finance-pack/personal-cfo"); if scheduler
-    //     fires before plugins load, the profile lookup fails and the task
-    //     crashes with "profile not found".
-    //   - MUST come BEFORE startChannelPoller() — same reason; channel events
-    //     can spawn tasks bound to plugin profiles.
+    //   - MUST come AFTER runPendingMigrations() — installPluginTables +
+    //     installPluginSchedules write to userTableTemplates / schedules
+    //     which the migrations create/upgrade.
+    //   - MUST come BEFORE startScheduler() — two-part reason:
+    //     (1) Plugin-shipped schedules land in the `schedules` table via
+    //         installPluginSchedules; if scheduler starts first, its initial
+    //         tick doesn't see those rows and they fire one cadence late.
+    //     (2) Scheduled tasks may reference plugin profiles (e.g.,
+    //         "finance-pack/personal-cfo"); if scheduler fires before plugins
+    //         load, the profile lookup fails and the task crashes with
+    //         "profile not found".
+    //   - MUST come BEFORE startChannelPoller() — same reason as (2); channel
+    //     events can spawn tasks bound to plugin profiles.
     //   - Order vs startUpgradePoller is irrelevant (upgrade poller is async
     //     background, doesn't read profiles synchronously).
     try {
