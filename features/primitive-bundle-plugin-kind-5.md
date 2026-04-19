@@ -292,6 +292,80 @@ Repeat Smoke 1 from a git-clone checkout (`AINATIVE_DATA_DIR=~/.ainative-smoke-c
 - **Capability declaration and user click-accept flows** — these are Kind 1 concerns (Milestone 3) and don't apply to data-only bundles.
 - **`--safe-mode` CLI flag** — Kind 1 concern (Milestone 3). Kind 5 bundles are inherently safe to load.
 
+## Verification run — 2026-04-19
+
+Real `npm run dev` smoke per CLAUDE.md's runtime-registry-adjacent budget rule. Goal: prove no module-load cycle (TDR-032 risk) introduced by the new chat-tool surface.
+
+**Setup**
+- Repo at commit `74feaf74` on `main` (post T1–T17, pre-T19/T20).
+- Clean smoke data dir: `~/.ainative-smoke-plugins-m1` (empty before run).
+- Server: `PORT=3010 AINATIVE_DATA_DIR=~/.ainative-smoke-plugins-m1 npm run dev`
+- Runtime: Claude Agent SDK (default for the dev server).
+
+**Boot sequence observed (from `/tmp/ainative-smoke-m1.log`)**
+
+```
+[bootstrap] ALTER TABLE failed: no such table: conversations  (pre-existing, harmless)
+[instance] bootstrap skipped: dev_mode_sentinel
+[db] Recovered legacy database — all migrations stamped.
+[plugins] 1 loaded, 0 disabled
+[upgrade-poller] skipped (dev mode or no .git)
+[scheduler] started — polling every 60s
+[channel-poller] started — polling every 5s
+[auto-backup] Starting auto-backup timer (60s poll)
+✓ Ready in 253ms
+```
+
+Plugin loader fired AFTER migrations, BEFORE scheduler — ordering invariants from T13 honored. Server reached ready state in 253ms.
+
+**API verification (curl against http://localhost:3010)**
+
+| Endpoint | Result |
+|---|---|
+| `GET /api/plugins` | `[{id: "finance-pack", status: "loaded", profiles: ["finance-pack/personal-cfo"], blueprints: ["finance-pack/monthly-close"], tables: ["plugin:finance-pack:transactions"]}]` |
+| `GET /api/profiles` (filtered to plugin) | `finance-pack/personal-cfo` — name "Personal CFO", domain personal |
+| `GET /api/blueprints` (filtered to plugin) | `finance-pack/monthly-close` — name "Monthly Close", pattern sequence |
+| `GET /api/tables/templates` (filtered to plugin) | `plugin:finance-pack:transactions` — name "Transactions (finance-pack)", category finance |
+
+The `(finance-pack)` suffix on the table-template `name` field is the architect-mandated picker-collision guard. Visible in production output as expected.
+
+**Reload-flow verification**
+
+```bash
+# Add test-pack to disk
+mkdir ~/.ainative-smoke-plugins-m1/plugins/test-pack
+cat > ~/.ainative-smoke-plugins-m1/plugins/test-pack/plugin.yaml <<EOF
+id: test-pack
+version: 0.1.0
+apiVersion: "0.14"
+kind: primitives-bundle
+EOF
+
+# POST reload
+curl -X POST :3010/api/plugins/reload
+# → loaded: ["finance-pack", "test-pack"], disabled: []
+
+# Remove and reload
+rm -rf ~/.ainative-smoke-plugins-m1/plugins/test-pack
+curl -X POST :3010/api/plugins/reload
+# → loaded: ["finance-pack"]
+```
+
+Add → reload → present, remove → reload → absent. Reload contract intact end-to-end.
+
+**Cycle / runtime error scan**
+
+```
+$ grep -E "ReferenceError|Cannot access.*before initialization|claudeRuntimeAdapter" /tmp/ainative-smoke-m1.log
+(no output — clean)
+```
+
+**TDR-032 verdict: NO MODULE-LOAD CYCLE.** The dynamic `await import()` discipline in `src/lib/chat/tools/plugin-tools.ts` (T14) and in `src/instrumentation-node.ts` (T13) successfully avoided the cycle that unit tests cannot catch. The new chat-tool kit added 3 tools (`reload_plugins`, `reload_plugin`, `list_plugins`) and the runtime registry remained healthy.
+
+**Per-plugin trace from `~/.ainative-smoke-plugins-m1/logs/plugins.log`** confirms each loader run logged the per-bundle summary with profile/blueprint/table counts. Reload firings are visible as separate timestamped lines.
+
+**Cleanup**: Dev server stopped cleanly via PID kill + `pkill -f next-server` follow-up. Port 3010 freed. Smoke data dir left in place for follow-up inspection.
+
 ## References
 
 - Source: `ideas/self-extending-machine-strategy.md` — §4 (composition ladder), §5 (plugin primitive), §9 Milestone 1, §10 (non-goals), §11 Risk A (coverage gap off-ramp)
