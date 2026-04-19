@@ -432,8 +432,8 @@ Post-rollback composition-first strategy (`ideas/self-extending-machine-strategy
 | Feature | Priority | Status | Dependencies |
 |---------|----------|--------|--------------|
 | [primitive-bundle-plugin-kind-5](primitive-bundle-plugin-kind-5.md) | P0 | shipped | agent-profile-catalog, workflow-blueprints |
-| [schedules-as-yaml-registry](schedules-as-yaml-registry.md) (Milestone 2) | P0 | planned | primitive-bundle-plugin-kind-5, scheduled-prompt-loops |
-| chat-tools-plugin-kind-1 (Milestone 3) | P0 | planned | primitive-bundle-plugin-kind-5 |
+| [schedules-as-yaml-registry](schedules-as-yaml-registry.md) (Milestone 2) | P0 | shipped | primitive-bundle-plugin-kind-5, scheduled-prompt-loops |
+| [chat-tools-plugin-kind-1](chat-tools-plugin-kind-1.md) (Milestone 3) | P0 | planned | primitive-bundle-plugin-kind-5, schedules-as-yaml-registry, chat-engine, provider-runtime-abstraction, runtime-capability-matrix |
 | nl-to-composition-v1 (Milestone 4) | P1 | planned | primitive-bundle-plugin-kind-5, chat-tools-plugin-kind-1, schedules-as-yaml-registry |
 | install-parity-audit (Milestone 5) | P1 | planned | nl-to-composition-v1 |
 

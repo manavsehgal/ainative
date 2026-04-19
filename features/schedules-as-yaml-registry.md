@@ -1,6 +1,6 @@
 ---
 title: Schedules as YAML Registry
-status: planned
+status: completed
 priority: P0
 milestone: post-mvp
 source: ideas/self-extending-machine-strategy.md
