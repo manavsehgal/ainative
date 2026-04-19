@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { getAinativePluginsDir, getAinativePluginExamplesDir } from "../ainative-paths";
+import { getAinativePluginsDir, getAinativePluginExamplesDir, getAinativeSchedulesDir } from "../ainative-paths";
 import path from "node:path";
 
 describe("plugin path helpers", () => {
@@ -23,5 +23,10 @@ describe("plugin path helpers", () => {
     // (or any cwd that happens to satisfy the suffix pattern) cannot pass.
     expect(path.isAbsolute(dir)).toBe(true);
     expect(dir.endsWith(path.join("src", "lib", "plugins", "examples"))).toBe(true);
+  });
+
+  it("getAinativeSchedulesDir returns <dataDir>/schedules", () => {
+    process.env.AINATIVE_DATA_DIR = "/tmp/test-ainative-m2";
+    expect(getAinativeSchedulesDir()).toBe(path.join("/tmp/test-ainative-m2", "schedules"));
   });
 });

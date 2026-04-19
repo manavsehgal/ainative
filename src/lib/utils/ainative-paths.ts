@@ -62,6 +62,10 @@ export function getAinativePluginsDir(): string {
   return join(getAinativeDataDir(), "plugins");
 }
 
+export function getAinativeSchedulesDir(): string {
+  return join(getAinativeDataDir(), "schedules");
+}
+
 /** Bundled example plugins shipped with the app (source tree, not data dir). */
 export function getAinativePluginExamplesDir(): string {
   return join(
