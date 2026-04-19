@@ -65,7 +65,7 @@ describe("schedule registry", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const { listSchedules } = await import("../registry");
     const list = listSchedules();
-    expect(list.map((s) => s.id)).toEqual(["daily-summary"]);
+    expect(list.map((s: { id: string }) => s.id)).toEqual(["daily-summary"]);
     expect(warn).toHaveBeenCalled();
     warn.mockRestore();
   });
@@ -75,7 +75,7 @@ describe("schedule registry", () => {
     expect(listSchedules()).toEqual([]);
     writeUserSchedule("new.yaml", { ...minimal, id: "new", name: "New" });
     reloadSchedules();
-    expect(listSchedules().map((s) => s.id)).toEqual(["new"]);
+    expect(listSchedules().map((s: { id: string }) => s.id)).toEqual(["new"]);
   });
 
   it("createScheduleFromYaml writes to user dir and reloads", async () => {
