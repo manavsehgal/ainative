@@ -182,6 +182,39 @@ export function listPluginScheduleIds(pluginId: string): string[] {
   return Array.from(pluginScheduleIndex.get(pluginId) ?? []);
 }
 
+// ── Cross-reference validator ──────────────────────────────────────────────
+// Mirrors validateBlueprintRefs (src/lib/workflows/blueprints/registry.ts
+// lines 190–215) with ONE deliberate deviation: dynamic `await import()` of
+// the profile registry instead of a static import.
+
+export async function validateScheduleRefs(
+  spec: ScheduleSpec,
+  opts: { pluginId: string; siblingProfileIds: Set<string> }
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const ref = spec.agentProfile ?? spec.assignedAgent;
+  if (!ref) return { ok: true }; // no profile constraint = use default
+  if (ref.includes("/")) {
+    const [refPluginId] = ref.split("/");
+    if (refPluginId !== opts.pluginId) {
+      return { ok: false, error: `cross-plugin profile reference not allowed: ${ref}` };
+    }
+    if (!opts.siblingProfileIds.has(ref)) {
+      return { ok: false, error: `unresolved sibling profile reference: ${ref}` };
+    }
+    return { ok: true };
+  }
+  // Unnamespaced — must resolve in the builtin profile registry
+  // NOTE: dynamic import to avoid the TDR-032 cycle if this file is ever
+  //       imported transitively from runtime modules. Blueprints use a
+  //       static import here; schedules use dynamic because the schedules
+  //       module IS in the boot path via installer.ts + the chat-tool.
+  const { getProfile } = await import("@/lib/agents/profiles/registry");
+  if (!getProfile(ref)) {
+    return { ok: false, error: `unresolved profile reference: ${ref}` };
+  }
+  return { ok: true };
+}
+
 // ── User CRUD ──────────────────────────────────────────────────────────────
 
 export function deleteSchedule(id: string): void {
