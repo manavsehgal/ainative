@@ -1,5 +1,22 @@
 # Feature Changelog
 
+## 2026-04-19
+
+### Shipped — primitive-bundle-plugin-kind-5
+
+Milestone 1 of the Self-Extension Platform. Plugin loader scans
+`~/.ainative/plugins/<id>/`, validates manifests against a Zod schema
+with apiVersion compatibility check, and merges per-bundle profiles
+(namespaced `<id>/<profile>`), blueprints (namespaced `<id>/<blueprint>`),
+and tables (DB rows with composite id `plugin:<id>:<table>`). Three new
+chat tools — `list_plugins`, `reload_plugins`, `reload_plugin` — and two
+API routes — `GET /api/plugins`, `POST /api/plugins/reload`. Finance-pack
+dogfood bundle (Personal CFO + monthly-close blueprint + transactions
+table) auto-seeds on first boot when `plugins/` is empty. Identical
+behavior on npx and git-clone install paths (no install-path branches in
+the loader). 0 new DB columns. Smoke verified at `74feaf74` (see spec
+"Verification run — 2026-04-19").
+
 ## 2026-04-18
 
 ### Groomed — primitive-bundle-plugin-kind-5 + Self-Extension Platform roadmap section

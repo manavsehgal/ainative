@@ -1,6 +1,6 @@
 ---
 title: Primitive Bundle Plugin (Kind 5)
-status: planned
+status: completed
 priority: P0
 milestone: post-mvp
 source: ideas/self-extending-machine-strategy.md
@@ -125,7 +125,7 @@ Responsibilities:
 
 **`src/lib/workflows/blueprints/registry.ts`** — same pattern. Accept `pluginScope`, namespace returned ids, append to internal map. `validateBlueprint()` must also validate that any `profileId` reference inside a plugin blueprint either (a) resolves to a plugin-namespaced id from the same plugin, or (b) resolves to a builtin/user-profile id. Cross-plugin profile references are **not supported in v1** — emit validation error.
 
-**`src/lib/data/seed-data/table-templates.ts`** — currently a hardcoded TypeScript array of 12 templates. Refactor to export a mutable registry (`addTableTemplate(id, template)`) and expose a loader that scans `<plugin-dir>/tables/<id>.yaml` files. Table template YAML must conform to the same shape as the existing TS templates: `{ id, name, description, category, columns, sampleRows }`. Sample rows may be an inline YAML array or a relative path to a CSV file.
+**`src/lib/data/seed-data/table-templates.ts`** — remains a one-time DB seeder that inserts into `userTableTemplates` with `scope: "system"` at DB-module-load time. Plugin tables ride the same table via composite primary keys: `id = "plugin:<plugin-id>:<table-id>"`, `scope: "system"`. The plugin's display `name` is suffixed with `(<plugin-id>)` to disambiguate from same-named builtins in the picker UI. Reload removes plugin rows by `LIKE 'plugin:<plugin-id>:%'` predicate via `removePluginTables(pluginId)`. **No DB schema change** — honors strategy doc §10 ("no new DB columns via plugin"). The pre-existing `seedTableTemplates()` function and the 12 builtin templates are untouched.
 
 ### Path utility
 
