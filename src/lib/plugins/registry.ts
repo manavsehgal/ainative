@@ -10,6 +10,13 @@ import {
   scanProfilesIntoMap,
 } from "@/lib/agents/profiles/registry";
 import type { AgentProfile } from "@/lib/agents/profiles/types";
+import { BlueprintSchema } from "@/lib/validators/blueprint";
+import {
+  mergePluginBlueprints,
+  clearAllPluginBlueprints,
+  validateBlueprintRefs,
+} from "@/lib/workflows/blueprints/registry";
+import type { WorkflowBlueprint } from "@/lib/workflows/blueprints/types";
 
 // apiVersion compatibility window. A plugin's manifest.apiVersion must
 // be in this set or the plugin is disabled with reason "apiVersion_mismatch".
@@ -102,6 +109,48 @@ function scanBundleProfiles(
 }
 
 /**
+ * Scan a single bundle's blueprints/ directory. Each YAML is namespaced
+ * `<pluginId>/<localId>` and validated against BlueprintSchema. Cross-ref
+ * validation (via validateBlueprintRefs) ensures profile references resolve
+ * either to a builtin profile, a same-plugin sibling, or are rejected as
+ * cross-plugin references.
+ *
+ * Skips (with log) on schema parse failure or unresolved ref. Bundle still
+ * loads — only the offending blueprint is dropped.
+ */
+function scanBundleBlueprints(
+  rootDir: string,
+  pluginId: string,
+  siblingProfileIds: Set<string>
+): Array<{ namespacedId: string; blueprint: WorkflowBlueprint }> {
+  const dir = path.join(rootDir, "blueprints");
+  if (!fs.existsSync(dir)) return [];
+  const out: Array<{ namespacedId: string; blueprint: WorkflowBlueprint }> = [];
+  for (const file of fs.readdirSync(dir)) {
+    if (!file.endsWith(".yaml") && !file.endsWith(".yml")) continue;
+    try {
+      const raw = yaml.load(fs.readFileSync(path.join(dir, file), "utf-8"));
+      const parsed = BlueprintSchema.safeParse(raw);
+      if (!parsed.success) {
+        logToFile(`skip blueprint ${pluginId}/${file}: ${parsed.error.issues.map((i) => i.message).join("; ")}`);
+        continue;
+      }
+      const namespacedId = `${pluginId}/${parsed.data.id}`;
+      const blueprint = { ...parsed.data, id: namespacedId, isBuiltin: false } as unknown as WorkflowBlueprint;
+      const refs = validateBlueprintRefs(blueprint, { pluginId, siblingProfileIds });
+      if (!refs.ok) {
+        logToFile(`skip blueprint ${namespacedId}: ${refs.error}`);
+        continue;
+      }
+      out.push({ namespacedId, blueprint });
+    } catch (err) {
+      logToFile(`skip blueprint ${pluginId}/${file}: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+  return out;
+}
+
+/**
  * Pure scan of the plugins dir. Does NOT touch the cache.
  * Used by both `loadPlugins()` (lazy, cached) and `reloadPlugins()` (eager).
  */
@@ -150,21 +199,30 @@ function scanPlugins(): LoadedPlugin[] {
 
     // T7: scan bundle profiles, merge into the canonical profile registry,
     // and surface their namespaced ids on the LoadedPlugin record.
-    // T8/T9 will add blueprints + tables alongside this in the same loop.
+    // T8 adds blueprints; T9 will add tables alongside this in the same loop.
     const scannedProfiles = scanBundleProfiles(rootDir, manifest.id);
     mergePluginProfiles(
       scannedProfiles.map((s) => ({ pluginId: manifest.id, profile: s.profile }))
     );
 
+    // T8: scan bundle blueprints, validate cross-references against sibling
+    // profiles + builtins, merge into the canonical blueprint registry under
+    // namespaced ids.
+    const siblingProfileIds = new Set(scannedProfiles.map((s) => s.namespacedId));
+    const scannedBlueprints = scanBundleBlueprints(rootDir, manifest.id, siblingProfileIds);
+    mergePluginBlueprints(
+      scannedBlueprints.map((s) => ({ pluginId: manifest.id, blueprint: s.blueprint }))
+    );
+
     result.push({
       id: manifest.id, manifest, rootDir,
       profiles: scannedProfiles.map((s) => s.namespacedId),
-      blueprints: [],
+      blueprints: scannedBlueprints.map((s) => s.namespacedId),
       tables: [],
       status: "loaded",
     });
     logToFile(
-      `loaded ${manifest.id}@${manifest.version}: ${scannedProfiles.length} profiles`
+      `loaded ${manifest.id}@${manifest.version}: ${scannedProfiles.length} profiles, ${scannedBlueprints.length} blueprints`
     );
   }
 
@@ -196,6 +254,7 @@ export function reloadPlugins(): LoadedPlugin[] {
   // pattern used by tests and by future hot-reload flows that write
   // bundle files between invalidation and observation.
   clearAllPluginProfiles();
+  clearAllPluginBlueprints();
   pluginCache = null;
   return scanPlugins();
 }
