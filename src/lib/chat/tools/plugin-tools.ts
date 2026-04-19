@@ -49,6 +49,7 @@ export function pluginTools(_ctx: ToolContext) {
                 profiles: p.profiles,
                 blueprints: p.blueprints,
                 tables: p.tables,
+                schedules: p.schedules,
               })),
             disabled: plugins
               .filter((p) => p.status === "disabled")

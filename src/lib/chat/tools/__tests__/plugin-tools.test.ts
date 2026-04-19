@@ -52,6 +52,36 @@ describe("plugin chat tools", () => {
     expect(result.content?.[0]?.text).toMatch(/loaded/);
   });
 
+  it("reload_plugins includes schedules field in loaded shape", async () => {
+    // Write plugin with a schedules/ subdir (no agentProfile → cross-ref passes trivially).
+    const pluginDir = path.join(tmpDir, "plugins", "sched-test");
+    fs.mkdirSync(path.join(pluginDir, "schedules"), { recursive: true });
+    fs.writeFileSync(
+      path.join(pluginDir, "plugin.yaml"),
+      yaml.dump({ id: "sched-test", version: "0.1.0", apiVersion: "0.14", kind: "primitives-bundle" })
+    );
+    fs.writeFileSync(
+      path.join(pluginDir, "schedules", "weekly-report.yaml"),
+      yaml.dump({
+        id: "weekly-report",
+        name: "Weekly Report",
+        version: "1.0.0",
+        type: "scheduled",
+        cronExpression: "0 9 * * 1",
+        prompt: "Generate the weekly report",
+        recurs: true,
+      })
+    );
+
+    const tools = pluginTools(ctx);
+    const reload = tools.find((t) => t.name === "reload_plugins");
+    const result = await reload!.handler({});
+    const text = result.content?.[0]?.text ?? "";
+    // The loaded entry for sched-test should include the schedules array.
+    expect(text).toMatch(/"id":\s*"sched-test"/);
+    expect(text).toMatch(/plugin:sched-test:weekly-report/);
+  });
+
   it("list_plugins returns currently loaded plugins", async () => {
     writePlugin("a");
     const tools = pluginTools(ctx);
