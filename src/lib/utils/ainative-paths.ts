@@ -1,5 +1,6 @@
 import { homedir } from "os";
 import { join } from "path";
+import { getAppRoot } from "@/lib/utils/app-root";
 
 export function getAinativeDataDir(): string {
   return process.env.AINATIVE_DATA_DIR || join(homedir(), ".ainative");
@@ -55,4 +56,15 @@ export function getAinativeCodexAuthPath(): string {
 
 export function getAinativeProfilesDir(): string {
   return join(getAinativeDataDir(), "profiles");
+}
+
+export function getAinativePluginsDir(): string {
+  return join(getAinativeDataDir(), "plugins");
+}
+
+export function getAinativePluginExamplesDir(): string {
+  return join(
+    getAppRoot(import.meta.dirname, 3),
+    "src", "lib", "plugins", "examples"
+  );
 }
