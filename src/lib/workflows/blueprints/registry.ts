@@ -191,8 +191,10 @@ export function validateBlueprintRefs(
   bp: WorkflowBlueprint,
   opts: ValidateBlueprintRefsOptions
 ): ValidateBlueprintRefsResult {
-  const steps = (bp as unknown as { steps?: Array<{ profileId?: string }> }).steps ?? [];
-  for (const step of steps) {
+  // Plugin loader (T8) namespaces blueprint.id as `<pluginId>/<localId>`, so
+  // cross-plugin id collisions in the cache do not occur in practice. The
+  // pluginBlueprintIndex therefore reliably tracks ownership for clear/list.
+  for (const step of bp.steps ?? []) {
     if (!step.profileId) continue;
     const ref = step.profileId;
     if (ref.includes("/")) {
