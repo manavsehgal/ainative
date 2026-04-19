@@ -11,10 +11,11 @@ import { z } from "zod";
  *                     timezone, and daily budget cap
  *
  * Cross-field rule: exactly one of `interval` or `cronExpression` must be
- * set. Enforced via `.refine()` on each discriminated-union member
- * (discriminatedUnion members must remain ZodObject-shaped for the
- * discriminator to work; refines on members are still allowed and the
- * resulting ZodObject.refine is acceptable to Zod v4's discriminatedUnion).
+ * set. Enforced via a `.refine()` on the top-level `ScheduleSpecSchema`
+ * (NOT on each union member). Keeping members as plain strict `ZodObject`
+ * preserves Zod v4's discriminatedUnion fast-path — wrapping members with
+ * `.refine()` produces a `ZodEffects` that breaks fast-path dispatch in
+ * some Zod v4 minor versions. Top-level refine is the safe idiom.
  *
  * Type contract for downstream M2 work:
  *   - T4 registry (scan, cache, load, reload, get, list, user CRUD)
@@ -56,14 +57,15 @@ const intervalOrCron = (s: { interval?: string; cronExpression?: string }): bool
 const intervalOrCronMessage = "must specify exactly one of interval or cronExpression";
 
 // Scheduled subtype — base fields + type discriminator, strict so
-// heartbeat-only fields are rejected.
+// heartbeat-only fields are rejected at parse time without an explicit
+// block-list. Plain ZodObject (no refine) so discriminatedUnion can
+// use its fast-path.
 const ScheduledSchema = z
   .object({
     type: z.literal("scheduled"),
     ...ScheduleBaseFields,
   })
-  .strict()
-  .refine(intervalOrCron, { message: intervalOrCronMessage });
+  .strict();
 
 // Heartbeat subtype — base fields + heartbeat-specific extras.
 const HeartbeatSchema = z
@@ -76,13 +78,11 @@ const HeartbeatSchema = z
     activeTimezone: z.string().optional(),
     heartbeatBudgetPerDay: z.number().int().positive().nullable().optional(),
   })
-  .strict()
-  .refine(intervalOrCron, { message: intervalOrCronMessage });
+  .strict();
 
-export const ScheduleSpecSchema = z.discriminatedUnion("type", [
-  ScheduledSchema,
-  HeartbeatSchema,
-]);
+export const ScheduleSpecSchema = z
+  .discriminatedUnion("type", [ScheduledSchema, HeartbeatSchema])
+  .refine(intervalOrCron, { message: intervalOrCronMessage });
 
 export type ScheduleSpec = z.infer<typeof ScheduleSpecSchema>;
 export type ScheduledSpec = z.infer<typeof ScheduledSchema>;
