@@ -2,6 +2,19 @@
 
 ## 2026-04-19
 
+### Groomed — schedules-as-yaml-registry
+
+Milestone 2 of the Self-Extension Platform, groomed against `ideas/self-extending-machine-strategy.md` §9 Milestone 2. Closes the composition gap left open by Milestone 1: schedules were the only top-tier primitive still DB-only, so Kind 5 bundles could ship a profile/blueprint/table but not the recurring schedule that drives them. finance-pack's `personal-cfo` profile had no `monthly-close` schedule to pair with — this spec fixes that.
+
+- **Feature spec**: `features/schedules-as-yaml-registry.md` (397 lines). YAML + Zod `discriminatedUnion` (scheduled vs heartbeat) + registry + loader, mirroring `workflow-blueprints.md` with one load-bearing addition — **state preservation on reload**. The schedules table has 30+ columns split between config and runtime state (firingCount, lastFiredAt, suppressionCount, failureStreak, heartbeatSpentToday, turn-budget breach counters, etc.). A naive upsert would reset counters and break the scheduler. The spec's DB upsert is a single-statement `onConflictDoUpdate` whose `.set()` clause carries **config fields only** — runtime state lives in `.values()` only (applied on first insert, never on conflict). Same pattern shipped for `installPluginTables` in Path C (2026-04-19), validated as race-safe there.
+- **Plugin integration**: composite id `plugin:<plugin-id>:<schedule-id>` with `(<plugin-id>)` display-name suffix, mirroring M1's table strategy per TDR-034. No schema change to the `schedules` table.
+- **Architect Refinement 2 — bundled into this milestone**: generic `scanBundleSection<T>` helper replaces the three M1 per-section scanners before the fourth user (schedules) is added. Explicitly called for by `features/architect-report.md` Refinement 2. Keeps the M1 rule "extract at third use, not first" honest.
+- **Architect Refinement 1 — de-risked here**: `z.discriminatedUnion` pattern adopted for `type: scheduled | heartbeat` previews the M3 manifest `kind: primitives-bundle | chat-tools` pattern. Landing the shape one milestone early.
+- **Dogfood**: finance-pack bundle gets `schedules/monthly-close.yaml` referencing `finance-pack/personal-cfo`. First-boot auto-seeder from M1 picks it up without change. After boot, `GET /api/plugins` reports finance-pack's schedules list — end-to-end proof.
+- **Three new chat tools**: `list_schedule_specs`, `install_schedule_from_yaml`, `reload_schedules`. Dynamic `await import()` for the registry per TDR-032 cycle discipline. Real `npm run dev` smoke step is mandatory in the implementation plan (M1 T18 precedent — unit tests cannot catch module-load cycles).
+- **Roadmap**: `schedules-as-yaml-registry (Milestone 2)` row in Self-Extension Platform section updated from plain text to a link to the new spec. Priority `P0`, status `planned`, dependencies `primitive-bundle-plugin-kind-5` + `scheduled-prompt-loops`.
+- **Scope guardrails**: v1 ships **zero built-in schedules** (schedules are inherently domain-specific; profiles/blueprints ship builtins because they're generic). No DB→YAML export (runtime state doesn't belong in config files). No multi-timezone for `scheduled` type (`activeTimezone` is heartbeat-only).
+
 ### Shipped — primitive-bundle-plugin-kind-5
 
 Milestone 1 of the Self-Extension Platform. Plugin loader scans
