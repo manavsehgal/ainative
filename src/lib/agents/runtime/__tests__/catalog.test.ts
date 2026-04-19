@@ -6,6 +6,7 @@ import {
   getRuntimeFeatures,
   listRuntimeCatalog,
   resolveAgentRuntime,
+  type AgentRuntimeId,
 } from "@/lib/agents/runtime/catalog";
 
 describe("runtime catalog", () => {
@@ -81,6 +82,7 @@ describe("runtime catalog", () => {
       "ainativeInjectsSkills",
       "supportsSkillComposition",
       "maxActiveSkills",
+      "supportsPluginMcpServers",
     ];
 
     // Guard against the "list grows stale" failure mode: if a new key is added
@@ -119,6 +121,7 @@ describe("runtime catalog", () => {
           "hasSubagentDelegation": false,
           "hasTodoWrite": false,
           "maxActiveSkills": 3,
+          "supportsPluginMcpServers": true,
           "supportsSkillComposition": true,
         },
         "claude-code": {
@@ -132,6 +135,7 @@ describe("runtime catalog", () => {
           "hasSubagentDelegation": false,
           "hasTodoWrite": true,
           "maxActiveSkills": 3,
+          "supportsPluginMcpServers": true,
           "supportsSkillComposition": true,
         },
         "ollama": {
@@ -145,6 +149,7 @@ describe("runtime catalog", () => {
           "hasSubagentDelegation": false,
           "hasTodoWrite": false,
           "maxActiveSkills": 1,
+          "supportsPluginMcpServers": false,
           "supportsSkillComposition": false,
         },
         "openai-codex-app-server": {
@@ -158,6 +163,7 @@ describe("runtime catalog", () => {
           "hasSubagentDelegation": false,
           "hasTodoWrite": true,
           "maxActiveSkills": 3,
+          "supportsPluginMcpServers": true,
           "supportsSkillComposition": true,
         },
         "openai-direct": {
@@ -171,9 +177,29 @@ describe("runtime catalog", () => {
           "hasSubagentDelegation": false,
           "hasTodoWrite": false,
           "maxActiveSkills": 3,
+          "supportsPluginMcpServers": true,
           "supportsSkillComposition": true,
         },
       }
     `);
+  });
+
+  // T5 invariant — supportsPluginMcpServers declared values per TDR-035 §1.
+  // Update this test intentionally if a runtime's MCP surface changes, and
+  // reference the spec change in the commit message.
+  it("T5 invariant: supportsPluginMcpServers values match TDR-035 §1 declarations", () => {
+    const expected: Record<AgentRuntimeId, boolean> = {
+      "claude-code": true,
+      "openai-codex-app-server": true,
+      "anthropic-direct": true,
+      "openai-direct": true,
+      "ollama": false,
+    };
+    for (const [runtimeId, expectedValue] of Object.entries(expected)) {
+      expect(
+        getRuntimeFeatures(runtimeId as AgentRuntimeId).supportsPluginMcpServers,
+        `${runtimeId}.supportsPluginMcpServers should be ${expectedValue}`
+      ).toBe(expectedValue);
+    }
   });
 });

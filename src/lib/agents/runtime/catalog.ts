@@ -64,6 +64,19 @@ export interface RuntimeFeatures {
    * by the activate_skill tool. Ignored when supportsSkillComposition=false.
    */
   maxActiveSkills: number;
+  /**
+   * Runtime accepts plugin-shipped MCP servers injected via the plugin-MCP
+   * loader (TDR-035). When false (Ollama), the loader returns {} immediately
+   * rather than spawning subprocesses or importing SDK modules.
+   *
+   * Values per runtime:
+   *   claude-code                : true  (Claude SDK mcpServers param)
+   *   openai-codex-app-server    : true  (config.toml mcp_servers sync)
+   *   anthropic-direct           : true  (Messages API mcp_servers)
+   *   openai-direct              : true  (Responses API tools[type=mcp])
+   *   ollama                     : false (no MCP surface)
+   */
+  supportsPluginMcpServers: boolean;
 }
 
 export interface RuntimeModelConfig {
@@ -123,6 +136,7 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
       ainativeInjectsSkills: false,
       supportsSkillComposition: true,
       maxActiveSkills: 3,
+      supportsPluginMcpServers: true,
     },
     models: {
       default: "sonnet",
@@ -157,6 +171,7 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
       ainativeInjectsSkills: false,
       supportsSkillComposition: true,
       maxActiveSkills: 3,
+      supportsPluginMcpServers: true,
     },
     models: {
       default: "gpt-5.4",
@@ -193,6 +208,7 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
       ainativeInjectsSkills: false,
       supportsSkillComposition: true,
       maxActiveSkills: 3,
+      supportsPluginMcpServers: true,
     },
     models: {
       default: "claude-sonnet-4-20250514",
@@ -233,6 +249,7 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
       ainativeInjectsSkills: false,
       supportsSkillComposition: true,
       maxActiveSkills: 3,
+      supportsPluginMcpServers: true,
     },
     models: {
       default: "gpt-4.1",
@@ -267,6 +284,7 @@ const RUNTIME_CATALOG: Record<AgentRuntimeId, RuntimeCatalogEntry> = {
       ainativeInjectsSkills: true,
       supportsSkillComposition: false,
       maxActiveSkills: 1,
+      supportsPluginMcpServers: false,
     },
     models: {
       default: "llama3",
