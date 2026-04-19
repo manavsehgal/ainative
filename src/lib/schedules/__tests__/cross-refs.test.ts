@@ -94,6 +94,12 @@ describe("validateScheduleRefs", () => {
     }
   });
 
+  it("falls back to assignedAgent when agentProfile is undefined", async () => {
+    const spec = fakeScheduled({ agentProfile: undefined, assignedAgent: "general" });
+    const result = await validateScheduleRefs(spec, defaultOpts);
+    expect(result).toEqual({ ok: true });
+  });
+
   it("no agentProfile and no assignedAgent returns { ok: true }", async () => {
     // Both fields are undefined — exercises the `spec.agentProfile ?? spec.assignedAgent` path
     const spec = fakeScheduled({ agentProfile: undefined, assignedAgent: undefined });

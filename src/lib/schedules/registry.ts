@@ -187,9 +187,15 @@ export function listPluginScheduleIds(pluginId: string): string[] {
 // lines 190–215) with ONE deliberate deviation: dynamic `await import()` of
 // the profile registry instead of a static import.
 
+export interface ValidateScheduleRefsOptions {
+  pluginId: string;
+  /** namespaced profile ids declared by THIS plugin */
+  siblingProfileIds: Set<string>;
+}
+
 export async function validateScheduleRefs(
   spec: ScheduleSpec,
-  opts: { pluginId: string; siblingProfileIds: Set<string> }
+  opts: ValidateScheduleRefsOptions
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const ref = spec.agentProfile ?? spec.assignedAgent;
   if (!ref) return { ok: true }; // no profile constraint = use default
