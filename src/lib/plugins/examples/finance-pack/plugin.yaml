@@ -1,0 +1,13 @@
+id: finance-pack
+version: 0.1.0
+apiVersion: "0.14"
+kind: primitives-bundle
+name: Finance Pack
+description: |
+  Personal CFO profile with monthly-close blueprint and a transactions
+  table schema. Composes a lightweight personal-finance automation
+  from existing primitives.
+author: ainative
+tags:
+  - finance
+  - personal

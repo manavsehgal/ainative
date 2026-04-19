@@ -1,0 +1,57 @@
+id: transactions
+name: Transactions
+description: Personal transactions ledger
+category: finance
+icon: DollarSign
+columns:
+  - name: date
+    displayName: Date
+    dataType: date
+  - name: merchant
+    displayName: Merchant
+    dataType: text
+  - name: amount
+    displayName: Amount
+    dataType: number
+  - name: category
+    displayName: Category
+    dataType: select
+    config:
+      options: [housing, food, transport, savings, discretionary, other]
+  - name: account
+    displayName: Account
+    dataType: text
+  - name: notes
+    displayName: Notes
+    dataType: text
+  - name: is_recurring
+    displayName: Recurring?
+    dataType: boolean
+  - name: month
+    displayName: Month
+    dataType: text
+sampleRows:
+  - date: "2026-04-01"
+    merchant: Rent
+    amount: 2200
+    category: housing
+    account: Checking
+    notes: ""
+    is_recurring: true
+    month: "2026-04"
+  - date: "2026-04-03"
+    merchant: Whole Foods
+    amount: 84.20
+    category: food
+    account: Credit
+    notes: "weekly groceries"
+    is_recurring: false
+    month: "2026-04"
+  - date: "2026-04-05"
+    merchant: Lyft
+    amount: 18.40
+    category: transport
+    account: Credit
+    notes: ""
+    is_recurring: false
+    month: "2026-04"

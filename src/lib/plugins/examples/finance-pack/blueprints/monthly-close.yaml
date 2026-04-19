@@ -1,0 +1,38 @@
+id: monthly-close
+name: Monthly Close
+description: Three-step monthly close — categorize transactions, summarize, recommend.
+version: "0.1.0"
+domain: personal
+pattern: sequence
+tags:
+  - finance
+  - personal
+difficulty: beginner
+estimatedDuration: "15m"
+author: ainative
+variables:
+  - id: month
+    type: text
+    label: Month
+    description: Month being closed (e.g. "2026-04")
+    required: true
+    placeholder: "2026-04"
+steps:
+  - name: Categorize transactions
+    profileId: finance-pack/personal-cfo
+    promptTemplate: |
+      Categorize all transactions for {{month}} into housing, food, transport,
+      savings, discretionary, other.
+    requiresApproval: false
+  - name: Summarize the month
+    profileId: finance-pack/personal-cfo
+    promptTemplate: |
+      Summarize {{month}}: total inflow, total outflow, net change, top 3
+      categories by spend.
+    requiresApproval: false
+  - name: Recommend actions
+    profileId: finance-pack/personal-cfo
+    promptTemplate: |
+      Recommend at most three concrete actions for next month based on the
+      {{month}} summary.
+    requiresApproval: false

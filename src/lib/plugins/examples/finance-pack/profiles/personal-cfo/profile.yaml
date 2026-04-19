@@ -1,0 +1,17 @@
+id: personal-cfo
+name: Personal CFO
+version: "0.1.0"
+domain: personal
+tags: [finance, personal, budgeting, cfo, transactions]
+supportedRuntimes: [claude-code, anthropic-direct, openai-direct, ollama]
+preferredRuntime: anthropic-direct
+allowedTools:
+  - Read
+
+canUseToolPolicy:
+  autoApprove: [Read]
+  autoDeny: [Bash, Write, Edit]
+
+maxTurns: 20
+
+author: ainative
