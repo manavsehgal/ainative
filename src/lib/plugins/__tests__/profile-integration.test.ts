@@ -28,43 +28,43 @@ function writeBundle(pluginId: string, profiles: Array<{ id: string; name: strin
 }
 
 describe("plugin loader → profile integration", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "plugin-profiles-"));
     process.env.AINATIVE_DATA_DIR = tmpDir;
     clearAllPluginProfiles();
-    reloadPlugins();
+    await reloadPlugins();
   });
-  afterEach(() => {
+  afterEach(async () => {
     delete process.env.AINATIVE_DATA_DIR;
     fs.rmSync(tmpDir, { recursive: true, force: true });
     clearAllPluginProfiles();
-    reloadPlugins();
+    await reloadPlugins();
   });
 
-  it("registers plugin profiles under <plugin-id>/<profile-id>", () => {
+  it("registers plugin profiles under <plugin-id>/<profile-id>", async () => {
     writeBundle("finance-pack", [{ id: "personal-cfo", name: "Personal CFO", skill: "# CFO" }]);
-    const result = reloadPlugins();
+    const result = await reloadPlugins();
     expect(result[0].profiles).toEqual(["finance-pack/personal-cfo"]);
     expect(getProfile("finance-pack/personal-cfo")?.name).toBe("Personal CFO");
   });
 
-  it("skips profiles with broken YAML, loads the rest", () => {
+  it("skips profiles with broken YAML, loads the rest", async () => {
     writeBundle("mixed-pack", [{ id: "good", name: "Good", skill: "" }]);
     const badDir = path.join(tmpDir, "plugins", "mixed-pack", "profiles", "bad");
     fs.mkdirSync(badDir, { recursive: true });
     fs.writeFileSync(path.join(badDir, "profile.yaml"), "::: not yaml :::");
-    const result = reloadPlugins();
+    const result = await reloadPlugins();
     expect(result[0].status).toBe("loaded");
     expect(result[0].profiles).toEqual(["mixed-pack/good"]);
   });
 
-  it("clears prior plugin profiles on reload", () => {
+  it("clears prior plugin profiles on reload", async () => {
     writeBundle("v1", [{ id: "p", name: "v1", skill: "" }]);
-    reloadPlugins();
+    await reloadPlugins();
     expect(getProfile("v1/p")?.name).toBe("v1");
 
     fs.rmSync(path.join(tmpDir, "plugins", "v1"), { recursive: true, force: true });
-    reloadPlugins();
+    await reloadPlugins();
     expect(getProfile("v1/p")).toBeUndefined();
   });
 });

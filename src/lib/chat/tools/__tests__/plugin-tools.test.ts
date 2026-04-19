@@ -32,14 +32,14 @@ describe("plugin chat tools", () => {
     // Make sure the registry cache is clean before each test so that the
     // env-var change above takes effect for the very first scan.
     const { reloadPlugins } = await import("@/lib/plugins/registry");
-    reloadPlugins();
+    await reloadPlugins();
   });
 
   afterEach(async () => {
     delete process.env.AINATIVE_DATA_DIR;
     fs.rmSync(tmpDir, { recursive: true, force: true });
     const { reloadPlugins } = await import("@/lib/plugins/registry");
-    reloadPlugins();
+    await reloadPlugins();
   });
 
   it("reload_plugins rescans and returns summary", async () => {

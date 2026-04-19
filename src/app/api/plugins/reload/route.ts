@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { reloadPlugins } from "@/lib/plugins/registry";
 
 export async function POST() {
-  const plugins = reloadPlugins();
+  const plugins = await reloadPlugins();
   return NextResponse.json({
     loaded: plugins.filter((p) => p.status === "loaded").map((p) => ({
       id: p.id,

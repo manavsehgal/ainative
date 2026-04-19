@@ -31,14 +31,14 @@ describe("install-path parity", () => {
     delete process.env.AINATIVE_DATA_DIR;
   });
 
-  it("loader output is identical (modulo paths) across both data dirs", () => {
+  it("loader output is identical (modulo paths) across both data dirs", async () => {
     process.env.AINATIVE_DATA_DIR = npxLikeDir;
-    const npxResult = reloadPlugins().map((p) => ({
+    const npxResult = (await reloadPlugins()).map((p) => ({
       ...p, rootDir: "<dir>",
     }));
 
     process.env.AINATIVE_DATA_DIR = cloneLikeDir;
-    const cloneResult = reloadPlugins().map((p) => ({
+    const cloneResult = (await reloadPlugins()).map((p) => ({
       ...p, rootDir: "<dir>",
     }));
 

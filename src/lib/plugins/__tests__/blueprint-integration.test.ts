@@ -58,36 +58,36 @@ function writeBundle(pluginId: string, opts: {
 }
 
 describe("plugin loader → blueprint integration", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "plugin-blueprints-"));
     process.env.AINATIVE_DATA_DIR = tmpDir;
     clearAllPluginProfiles();
     clearAllPluginBlueprints();
-    reloadPlugins();
+    await reloadPlugins();
   });
-  afterEach(() => {
+  afterEach(async () => {
     delete process.env.AINATIVE_DATA_DIR;
     fs.rmSync(tmpDir, { recursive: true, force: true });
     clearAllPluginProfiles();
     clearAllPluginBlueprints();
-    reloadPlugins();
+    await reloadPlugins();
   });
 
-  it("registers blueprints with namespaced ids when refs resolve", () => {
+  it("registers blueprints with namespaced ids when refs resolve", async () => {
     writeBundle("finance-pack", {
       profiles: [{ id: "personal-cfo", name: "CFO" }],
       blueprints: [{ id: "monthly-close", profileRef: "finance-pack/personal-cfo" }],
     });
-    const [plugin] = reloadPlugins();
+    const [plugin] = await reloadPlugins();
     expect(plugin.blueprints).toEqual(["finance-pack/monthly-close"]);
     expect(getBlueprint("finance-pack/monthly-close")).toBeTruthy();
   });
 
-  it("skips a blueprint with unresolved cross-plugin reference", () => {
+  it("skips a blueprint with unresolved cross-plugin reference", async () => {
     writeBundle("alpha", {
       blueprints: [{ id: "x", profileRef: "beta/some-profile" }],
     });
-    const [plugin] = reloadPlugins();
+    const [plugin] = await reloadPlugins();
     expect(plugin.status).toBe("loaded"); // bundle still loaded
     expect(plugin.blueprints).toEqual([]); // but blueprint skipped
   });

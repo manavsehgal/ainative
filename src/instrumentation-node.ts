@@ -43,7 +43,7 @@ export async function registerNodeInstrumentation() {
       const { seedExamplePluginsIfEmpty } = await import("@/lib/plugins/seed");
       const { loadPlugins } = await import("@/lib/plugins/registry");
       seedExamplePluginsIfEmpty();
-      const plugins = loadPlugins();
+      const plugins = await loadPlugins();
       const loaded = plugins.filter((p) => p.status === "loaded").length;
       const disabled = plugins.length - loaded;
       console.log(`[plugins] ${loaded} loaded, ${disabled} disabled`);

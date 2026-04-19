@@ -16,44 +16,44 @@ function writePlugin(id: string, version: string) {
 }
 
 describe("plugin reload contract", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "plugin-reload-"));
     process.env.AINATIVE_DATA_DIR = tmpDir;
-    reloadPlugins();
+    await reloadPlugins();
   });
-  afterEach(() => {
+  afterEach(async () => {
     delete process.env.AINATIVE_DATA_DIR;
     fs.rmSync(tmpDir, { recursive: true, force: true });
-    reloadPlugins();
+    await reloadPlugins();
   });
 
-  it("add plugin → reload → present", () => {
+  it("add plugin → reload → present", async () => {
     writePlugin("a", "0.1.0");
-    reloadPlugins();
+    await reloadPlugins();
     expect(getPlugin("a")).toBeTruthy();
   });
 
-  it("remove plugin directory → reload → absent", () => {
+  it("remove plugin directory → reload → absent", async () => {
     writePlugin("a", "0.1.0");
-    reloadPlugins();
+    await reloadPlugins();
     fs.rmSync(path.join(tmpDir, "plugins", "a"), { recursive: true, force: true });
-    reloadPlugins();
+    await reloadPlugins();
     expect(getPlugin("a")).toBeNull();
   });
 
-  it("modify plugin manifest → reload → version change visible", () => {
+  it("modify plugin manifest → reload → version change visible", async () => {
     writePlugin("a", "0.1.0");
-    reloadPlugins();
+    await reloadPlugins();
     expect(getPlugin("a")?.manifest.version).toBe("0.1.0");
     writePlugin("a", "0.2.0");
-    reloadPlugins();
+    await reloadPlugins();
     expect(getPlugin("a")?.manifest.version).toBe("0.2.0");
   });
 
-  it("reloadPlugin(id) returns null for an id removed from disk", () => {
+  it("reloadPlugin(id) returns null for an id removed from disk", async () => {
     writePlugin("a", "0.1.0");
-    reloadPlugins();
+    await reloadPlugins();
     fs.rmSync(path.join(tmpDir, "plugins", "a"), { recursive: true, force: true });
-    expect(reloadPlugin("a")).toBeNull();
+    expect(await reloadPlugin("a")).toBeNull();
   });
 });

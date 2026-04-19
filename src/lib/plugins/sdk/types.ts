@@ -22,6 +22,7 @@ export interface LoadedPlugin {
   profiles: string[];      // namespaced profile ids: "<plugin-id>/<profile-id>"
   blueprints: string[];    // namespaced blueprint ids
   tables: string[];        // namespaced table template ids: "plugin:<plugin-id>:<table-id>"
+  schedules: string[];     // composite DB ids: "plugin:<plugin-id>:<schedule-id>"
   status: "loaded" | "disabled";
   error?: string;
 }

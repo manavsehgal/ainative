@@ -40,7 +40,7 @@ export function pluginTools(_ctx: ToolContext) {
         try {
           // Dynamic import — see TDR-032 note at top of file.
           const { reloadPlugins } = await import("@/lib/plugins/registry");
-          const plugins = reloadPlugins();
+          const plugins = await reloadPlugins();
           return ok({
             loaded: plugins
               .filter((p) => p.status === "loaded")
@@ -75,7 +75,7 @@ export function pluginTools(_ctx: ToolContext) {
         try {
           // Dynamic import — see TDR-032 note at top of file.
           const { reloadPlugin } = await import("@/lib/plugins/registry");
-          const plugin = reloadPlugin(args.id);
+          const plugin = await reloadPlugin(args.id);
           if (!plugin) return ok({ id: args.id, status: "removed" });
           return ok(plugin);
         } catch (e) {

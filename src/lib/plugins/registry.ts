@@ -21,6 +21,15 @@ import {
 } from "@/lib/workflows/blueprints/registry";
 import type { WorkflowBlueprint } from "@/lib/workflows/blueprints/types";
 import { installPluginTables, removePluginTables } from "@/lib/data/seed-data/table-templates";
+import {
+  mergePluginSchedules,
+  clearAllPluginSchedules,
+  clearPluginSchedules,
+  validateScheduleRefs,
+} from "@/lib/schedules/registry";
+import { installPluginSchedules, removePluginSchedules } from "@/lib/schedules/installer";
+import { ScheduleSpecSchema } from "@/lib/validators/schedule-spec";
+import type { ScheduleSpec } from "@/lib/validators/schedule-spec";
 
 // apiVersion compatibility window. A plugin's manifest.apiVersion must
 // be in this set or the plugin is disabled with reason "apiVersion_mismatch".
@@ -272,23 +281,68 @@ function scanBundleTables(rootDir: string, pluginId: string): PluginTableTemplat
 }
 
 /**
+ * Scan a single bundle's schedules/ directory. Each YAML is namespaced
+ * `<pluginId>/<localId>` and validated against ScheduleSpecSchema. Cross-ref
+ * validation (via validateScheduleRefs) ensures profile references resolve
+ * either to a builtin profile, a same-plugin sibling, or are rejected as
+ * cross-plugin references.
+ *
+ * Skips (with log) on schema parse failure or unresolved ref. Bundle still
+ * loads — only the offending schedule is dropped.
+ *
+ * NOTE: this is a thin adapter over scanBundleSection<T>, mirroring the
+ * pattern of scanBundleBlueprints. In-adapter try/catch keeps the logToFile
+ * warning format consistent with the other sections.
+ */
+function scanBundleSchedules(
+  rootDir: string,
+  pluginId: string
+): Array<{ namespacedId: string; spec: ScheduleSpec }> {
+  return scanBundleSection<{ namespacedId: string; spec: ScheduleSpec }>({
+    rootDir,
+    section: "schedules",
+    parseFile: (filePath) => {
+      const file = path.basename(filePath);
+      try {
+        const raw = yaml.load(fs.readFileSync(filePath, "utf-8"));
+        const parsed = ScheduleSpecSchema.safeParse(raw);
+        if (!parsed.success) {
+          logToFile(`skip schedule ${pluginId}/${file}: ${parsed.error.issues.map((i) => i.message).join("; ")}`);
+          return null;
+        }
+        return { namespacedId: `${pluginId}/${parsed.data.id}`, spec: parsed.data };
+      } catch (err) {
+        logToFile(`skip schedule ${pluginId}/${file}: ${err instanceof Error ? err.message : String(err)}`);
+        return null;
+      }
+    },
+  });
+}
+
+/**
  * Per-bundle loader. Given an already-validated manifest + rootDir, runs the
- * profile/blueprint/table scan + merge + install steps and returns the
- * resulting `LoadedPlugin` record. Shared by `scanPlugins` (full scan) and
- * `reloadPlugin` (targeted single-bundle reload) so both paths produce
+ * profile/blueprint/table/schedule scan + merge + install steps and returns
+ * the resulting `LoadedPlugin` record. Shared by `scanPlugins` (full scan)
+ * and `reloadPlugin` (targeted single-bundle reload) so both paths produce
  * identical state — the only behavioral difference between them is which
  * bundles they iterate.
  *
  * Returns a "disabled" record (without touching primitive registries) when
  * apiVersion is unsupported. Manifest readability + duplicate-id dedupe are
  * the caller's responsibility.
+ *
+ * ASYNC NOTE (T10): `validateScheduleRefs` uses `await import()` to avoid the
+ * TDR-032 cycle (schedules registry is on the boot path). This makes
+ * loadOneBundle async, which cascades to scanPlugins → loadPlugins →
+ * reloadPlugins → reloadPlugin. listPlugins / getPlugin remain sync (they
+ * read pluginCache directly).
  */
-function loadOneBundle(rootDir: string, manifest: PluginManifest): LoadedPlugin {
+async function loadOneBundle(rootDir: string, manifest: PluginManifest): Promise<LoadedPlugin> {
   if (!isSupportedApiVersion(manifest.apiVersion)) {
     logToFile(`disabled ${manifest.id}: apiVersion_mismatch (${manifest.apiVersion})`);
     return {
       id: manifest.id, manifest, rootDir,
-      profiles: [], blueprints: [], tables: [],
+      profiles: [], blueprints: [], tables: [], schedules: [],
       status: "disabled", error: "apiVersion_mismatch",
     };
   }
@@ -318,8 +372,37 @@ function loadOneBundle(rootDir: string, manifest: PluginManifest): LoadedPlugin 
   installPluginTables(manifest.id, scannedTables);
   const tableIds = scannedTables.map((t) => `plugin:${manifest.id}:${t.id}`);
 
+  // T10: scan bundle schedules, validate cross-references against sibling
+  // profiles + builtins, install into the schedules DB table under composite
+  // ids (plugin:<pluginId>:<scheduleId>) and merge into the canonical schedule
+  // registry cache. validateScheduleRefs is async (dynamic profile-registry
+  // import for TDR-032 defense), so this block awaits per-spec.
+  const scannedSchedules = scanBundleSchedules(rootDir, manifest.id);
+  const validSchedules: ScheduleSpec[] = [];
+  for (const s of scannedSchedules) {
+    const result = await validateScheduleRefs(s.spec, { pluginId: manifest.id, siblingProfileIds });
+    if (!result.ok) {
+      logToFile(`skip schedule ${s.namespacedId}: ${result.error}`);
+      continue;
+    }
+    validSchedules.push(s.spec);
+  }
+  // Mirror the tables pattern: clear first, then re-install, so removed
+  // specs drop their DB rows.
+  removePluginSchedules(manifest.id);
+  installPluginSchedules(manifest.id, validSchedules);
+  const scheduleIds = validSchedules.map((s) => `plugin:${manifest.id}:${s.id}`);
+
+  // Also merge into the in-memory schedules registry cache (mirrors blueprints).
+  mergePluginSchedules(
+    validSchedules.map((s) => ({
+      pluginId: manifest.id,
+      schedule: { ...s, id: `${manifest.id}/${s.id}` },
+    }))
+  );
+
   logToFile(
-    `loaded ${manifest.id}@${manifest.version}: ${scannedProfiles.length} profiles, ${scannedBlueprints.length} blueprints, ${tableIds.length} tables`
+    `loaded ${manifest.id}@${manifest.version}: ${scannedProfiles.length} profiles, ${scannedBlueprints.length} blueprints, ${tableIds.length} tables, ${scheduleIds.length} schedules`
   );
 
   return {
@@ -327,6 +410,7 @@ function loadOneBundle(rootDir: string, manifest: PluginManifest): LoadedPlugin 
     profiles: scannedProfiles.map((s) => s.namespacedId),
     blueprints: scannedBlueprints.map((s) => s.namespacedId),
     tables: tableIds,
+    schedules: scheduleIds,
     status: "loaded",
   };
 }
@@ -334,8 +418,11 @@ function loadOneBundle(rootDir: string, manifest: PluginManifest): LoadedPlugin 
 /**
  * Pure scan of the plugins dir. Does NOT touch the cache.
  * Used by both `loadPlugins()` (lazy, cached) and `reloadPlugins()` (eager).
+ *
+ * ASYNC NOTE (T10): async because loadOneBundle is async (validateScheduleRefs
+ * uses dynamic import for TDR-032 defence).
  */
-function scanPlugins(): LoadedPlugin[] {
+async function scanPlugins(): Promise<LoadedPlugin[]> {
   const seenIds = new Set<string>();
   const result: LoadedPlugin[] = [];
   const loadedIds = new Set<string>();
@@ -351,6 +438,7 @@ function scanPlugins(): LoadedPlugin[] {
         profiles: [],
         blueprints: [],
         tables: [],
+        schedules: [],
         status: "disabled",
         error,
       });
@@ -361,7 +449,7 @@ function scanPlugins(): LoadedPlugin[] {
     if (seenIds.has(manifest.id)) {
       result.push({
         id: manifest.id, manifest, rootDir,
-        profiles: [], blueprints: [], tables: [],
+        profiles: [], blueprints: [], tables: [], schedules: [],
         status: "disabled", error: "duplicate_plugin_id",
       });
       logToFile(`disabled ${rootDir}: duplicate_plugin_id (${manifest.id})`);
@@ -369,7 +457,7 @@ function scanPlugins(): LoadedPlugin[] {
     }
     seenIds.add(manifest.id);
 
-    const loaded = loadOneBundle(rootDir, manifest);
+    const loaded = await loadOneBundle(rootDir, manifest);
     result.push(loaded);
     if (loaded.status === "loaded") loadedIds.add(manifest.id);
   }
@@ -386,79 +474,100 @@ function scanPlugins(): LoadedPlugin[] {
  *
  * T7/T8/T9 add primitive integration to the scan loop body. T6 only
  * handles manifest validation + apiVersion compat + duplicate-id dedupe.
+ * T10: async because scanPlugins → loadOneBundle → validateScheduleRefs
+ * uses dynamic import for TDR-032 defence.
  */
-export function loadPlugins(): LoadedPlugin[] {
+export async function loadPlugins(): Promise<LoadedPlugin[]> {
   if (pluginCache) return pluginCache;
-  pluginCache = scanPlugins();
+  pluginCache = await scanPlugins();
   return pluginCache;
 }
 
 /**
- * T9 helper: drop the DB-resident table rows for every plugin that was
- * loaded in the most recent scan. Iterates `lastLoadedPluginIds` (which
- * survives `pluginCache = null`) so a bundle removed entirely from disk
- * between reloads still has its stale rows cleaned up.
+ * T9/T10 helper: drop the DB-resident table + schedule rows for every plugin
+ * that was loaded in the most recent scan. Iterates `lastLoadedPluginIds`
+ * (which survives `pluginCache = null`) so a bundle removed entirely from
+ * disk between reloads still has its stale rows cleaned up.
  *
- * Belt-and-braces: the per-bundle `removePluginTables(manifest.id)` inside
- * scanPlugins also clears at scan time, but that path only fires for bundles
- * still on disk. Removed bundles rely on this helper for cleanup.
+ * Belt-and-braces: the per-bundle remove calls inside scanPlugins also clear
+ * at scan time, but that path only fires for bundles still on disk. Removed
+ * bundles rely on this helper for cleanup.
  */
-function removeAllPluginTablesForCachedPlugins(): void {
+function removeAllPluginRowsForCachedPlugins(): void {
   // Prefer the live cache when available (it's the authoritative current
   // state), but fall back to lastLoadedPluginIds when the cache is null —
   // which is the normal state after `reloadPlugins()` invalidates lazily.
   if (pluginCache) {
     for (const p of pluginCache) {
-      if (p.status === "loaded") removePluginTables(p.id);
+      if (p.status === "loaded") {
+        removePluginTables(p.id);
+        removePluginSchedules(p.id);
+      }
     }
     return;
   }
   for (const id of lastLoadedPluginIds) {
     removePluginTables(id);
+    removePluginSchedules(id);
   }
 }
 
-export function reloadPlugins(): LoadedPlugin[] {
-  // T7: clear ALL plugin-injected profiles before re-scanning so that
-  // removed bundles drop their profiles, and renamed/changed profiles
-  // don't accumulate stale entries.
+export async function reloadPlugins(): Promise<LoadedPlugin[]> {
+  // Clear ALL plugin-injected primitives before re-scanning so that
+  // removed bundles drop their contributions, and renamed/changed primitives
+  // don't accumulate stale entries. Also drop all plugin-owned DB rows so
+  // bundles removed from disk don't leave orphaned rows.
   //
-  // Invalidate the cache lazily — the NEXT `loadPlugins()` call re-scans.
-  // Returns a fresh scan for callers that want immediate state, but does
-  // NOT use that scan to repopulate the cache. This preserves the
-  //   reloadPlugins(); ...mutate plugins/...; loadPlugins();
-  // pattern used by tests and by future hot-reload flows that write
-  // bundle files between invalidation and observation.
-  removeAllPluginTablesForCachedPlugins();
+  // Repopulates `pluginCache` with the fresh scan result so that the sync
+  // `listPlugins()` / `getPlugin()` helpers see up-to-date state immediately
+  // after this call returns, without requiring a separate `loadPlugins()`.
+  removeAllPluginRowsForCachedPlugins();
   clearAllPluginProfiles();
   clearAllPluginBlueprints();
+  clearAllPluginSchedules();
   pluginCache = null;
-  return scanPlugins();
-}
-
-export function listPlugins(): LoadedPlugin[] {
-  return pluginCache ?? loadPlugins();
-}
-
-export function getPlugin(id: string): LoadedPlugin | null {
-  return (pluginCache ?? loadPlugins()).find((p) => p.id === id) ?? null;
+  pluginCache = await scanPlugins();
+  return pluginCache;
 }
 
 /**
- * T9b: Targeted single-plugin reload.
+ * Sync read of the cache. Returns the cached list or an empty array if the
+ * cache hasn't been hydrated yet. Callers that need a guaranteed-fresh scan
+ * must call `await loadPlugins()` or `await reloadPlugins()` first.
+ *
+ * Stays sync intentionally — it's the hot read-path for UI components and
+ * tool responses that inspect plugin state after the boot-time load.
+ */
+export function listPlugins(): LoadedPlugin[] {
+  return pluginCache ?? [];
+}
+
+/**
+ * Sync lookup in the cache. Returns null if the cache is unpopulated or the
+ * id is not found. Same sync-read contract as listPlugins.
+ */
+export function getPlugin(id: string): LoadedPlugin | null {
+  return pluginCache?.find((p) => p.id === id) ?? null;
+}
+
+/**
+ * T9b/T10: Targeted single-plugin reload.
  *
  * Re-scans ONLY the named plugin's bundle, preserving every other plugin's
  * cached entry by object identity. Used by hot-reload flows where the agent
  * has just rewritten one bundle and a full `reloadPlugins()` would be
- * needlessly disruptive (it would re-run profile/blueprint/table merges for
- * every other bundle and invalidate downstream consumers).
+ * needlessly disruptive (it would re-run profile/blueprint/table/schedule
+ * merges for every other bundle and invalidate downstream consumers).
  *
  * Returns the freshly-loaded plugin record, or `null` if the bundle no
  * longer exists on disk (or never did). The plugin's prior contributions
- * are cleared from all three primitive registries either way — so a "deleted
+ * are cleared from all four primitive registries either way — so a "deleted
  * plugin" reload behaves as an unload.
+ *
+ * ASYNC NOTE (T10): async because loadOneBundle → validateScheduleRefs
+ * uses dynamic import for TDR-032 defence.
  */
-export function reloadPlugin(id: string): LoadedPlugin | null {
+export async function reloadPlugin(id: string): Promise<LoadedPlugin | null> {
   // Step 1: Locate the plugin's rootDir from disk (the agent may have just
   // moved or renamed the directory, so we don't trust the cache).
   let foundDir: string | null = null;
@@ -472,21 +581,23 @@ export function reloadPlugin(id: string): LoadedPlugin | null {
     }
   }
 
-  // Step 2: Clear THIS plugin's prior contributions from all three registries.
+  // Step 2: Clear THIS plugin's prior contributions from all four registries.
   // Other plugins' entries stay intact — that's the whole point.
   clearPluginProfiles(id);
   clearPluginBlueprints(id);
+  clearPluginSchedules(id);
   removePluginTables(id);
+  removePluginSchedules(id);
 
   // Step 3: Drop just this entry from the cache (don't null pluginCache).
   // Force population first so downstream identity-preservation guarantees
   // hold even when the cache hasn't been hydrated yet.
-  if (!pluginCache) loadPlugins();
+  if (!pluginCache) await loadPlugins();
   if (pluginCache) {
     pluginCache = pluginCache.filter((p) => p.id !== id);
   }
   // Keep the plugin-id tracker in sync with cache state — `lastLoadedPluginIds`
-  // is the fallback used by `removeAllPluginTablesForCachedPlugins` when the
+  // is the fallback used by `removeAllPluginRowsForCachedPlugins` when the
   // cache is null, and we don't want a deleted plugin's id lingering there.
   lastLoadedPluginIds.delete(id);
 
@@ -494,7 +605,7 @@ export function reloadPlugin(id: string): LoadedPlugin | null {
   if (!foundDir || !foundManifest) return null;
 
   // Step 5: Re-scan only this bundle and merge.
-  const loaded = loadOneBundle(foundDir, foundManifest);
+  const loaded = await loadOneBundle(foundDir, foundManifest);
   if (pluginCache) pluginCache.push(loaded);
   if (loaded.status === "loaded") lastLoadedPluginIds.add(id);
   return loaded;

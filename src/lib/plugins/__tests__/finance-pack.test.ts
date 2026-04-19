@@ -22,8 +22,8 @@ describe("finance-pack bundle", () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it("loads as a Kind 5 plugin with one profile, one blueprint, one table", () => {
-    const [plugin] = reloadPlugins();
+  it("loads as a Kind 5 plugin with one profile, one blueprint, one table", async () => {
+    const [plugin] = await reloadPlugins();
     expect(plugin.status).toBe("loaded");
     expect(plugin.profiles).toContain("finance-pack/personal-cfo");
     expect(plugin.blueprints).toContain("finance-pack/monthly-close");
