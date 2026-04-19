@@ -4,6 +4,12 @@ import path from "node:path";
 import yaml from "js-yaml";
 import { PluginManifestSchema, type LoadedPlugin, type PluginManifest } from "./sdk/types";
 import { getAinativePluginsDir, getAinativeLogsDir } from "@/lib/utils/ainative-paths";
+import {
+  mergePluginProfiles,
+  clearAllPluginProfiles,
+  scanProfilesIntoMap,
+} from "@/lib/agents/profiles/registry";
+import type { AgentProfile } from "@/lib/agents/profiles/types";
 
 // apiVersion compatibility window. A plugin's manifest.apiVersion must
 // be in this set or the plugin is disabled with reason "apiVersion_mismatch".
@@ -75,6 +81,27 @@ function discoverBundleRoots(): string[] {
 }
 
 /**
+ * Scan a single bundle's profiles/ directory using the canonical profile
+ * scanner with namespace support. Reusing the canonical scanner means
+ * plugin profiles get IDENTICAL treatment to builtins (SKILL.md frontmatter
+ * extraction, multi-runtime inference, origin classification, tests, etc).
+ * Hand-rolling the construction here would silently drop these features.
+ */
+function scanBundleProfiles(
+  rootDir: string,
+  pluginId: string
+): Array<{ namespacedId: string; profile: AgentProfile }> {
+  const profilesDir = path.join(rootDir, "profiles");
+  if (!fs.existsSync(profilesDir)) return [];
+  const tmp = new Map<string, AgentProfile>();
+  scanProfilesIntoMap(profilesDir, tmp, { namespace: pluginId });
+  return Array.from(tmp.entries()).map(([id, profile]) => ({
+    namespacedId: id,
+    profile,
+  }));
+}
+
+/**
  * Pure scan of the plugins dir. Does NOT touch the cache.
  * Used by both `loadPlugins()` (lazy, cached) and `reloadPlugins()` (eager).
  */
@@ -121,13 +148,24 @@ function scanPlugins(): LoadedPlugin[] {
     }
     seenIds.add(manifest.id);
 
-    // T7/T8/T9 add primitive integration here. T6 just registers the plugin.
+    // T7: scan bundle profiles, merge into the canonical profile registry,
+    // and surface their namespaced ids on the LoadedPlugin record.
+    // T8/T9 will add blueprints + tables alongside this in the same loop.
+    const scannedProfiles = scanBundleProfiles(rootDir, manifest.id);
+    mergePluginProfiles(
+      scannedProfiles.map((s) => ({ pluginId: manifest.id, profile: s.profile }))
+    );
+
     result.push({
       id: manifest.id, manifest, rootDir,
-      profiles: [], blueprints: [], tables: [],
+      profiles: scannedProfiles.map((s) => s.namespacedId),
+      blueprints: [],
+      tables: [],
       status: "loaded",
     });
-    logToFile(`loaded ${manifest.id}@${manifest.version} from ${rootDir}`);
+    logToFile(
+      `loaded ${manifest.id}@${manifest.version}: ${scannedProfiles.length} profiles`
+    );
   }
 
   return result;
@@ -147,12 +185,17 @@ export function loadPlugins(): LoadedPlugin[] {
 }
 
 export function reloadPlugins(): LoadedPlugin[] {
+  // T7: clear ALL plugin-injected profiles before re-scanning so that
+  // removed bundles drop their profiles, and renamed/changed profiles
+  // don't accumulate stale entries.
+  //
   // Invalidate the cache lazily — the NEXT `loadPlugins()` call re-scans.
   // Returns a fresh scan for callers that want immediate state, but does
   // NOT use that scan to repopulate the cache. This preserves the
   //   reloadPlugins(); ...mutate plugins/...; loadPlugins();
   // pattern used by tests and by future hot-reload flows that write
   // bundle files between invalidation and observation.
+  clearAllPluginProfiles();
   pluginCache = null;
   return scanPlugins();
 }

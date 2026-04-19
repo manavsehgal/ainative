@@ -172,7 +172,8 @@ function ensureBuiltins(): void {
 
 function scanProfilesFromDir(
   baseDir: string,
-  profiles: Map<string, AgentProfile>
+  profiles: Map<string, AgentProfile>,
+  options: { namespace?: string } = {}
 ): void {
   if (!fs.existsSync(baseDir)) return;
 
@@ -218,8 +219,15 @@ function scanProfilesFromDir(
             ? "ai-assist" as const
             : "manual" as const;
 
-      profiles.set(config.id, {
-        id: config.id,
+      // When called from the Kind 5 plugin loader, namespace the id so
+      // bundle profiles get registered as "<plugin-id>/<profile-id>" and
+      // never collide with builtin / user-customized profiles.
+      const finalId = options.namespace
+        ? `${options.namespace}/${config.id}`
+        : config.id;
+
+      profiles.set(finalId, {
+        id: finalId,
         name: config.name,
         description,
         domain: config.domain,
@@ -247,6 +255,21 @@ function scanProfilesFromDir(
     }
   }
 
+}
+
+/**
+ * Scan a directory of profile.yaml/SKILL.md folders and inject namespaced
+ * profile entries into the provided Map. Used by the Kind 5 plugin loader
+ * to ingest <plugin>/profiles/* with `<plugin-id>/<profile-id>` keys, while
+ * preserving all the canonical profile-loading behavior (frontmatter
+ * extraction, runtime inference, origin classification).
+ */
+export function scanProfilesIntoMap(
+  baseDir: string,
+  profiles: Map<string, AgentProfile>,
+  options: { namespace?: string } = {}
+): void {
+  scanProfilesFromDir(baseDir, profiles, options);
 }
 
 function scanProfiles(): Map<string, AgentProfile> {
