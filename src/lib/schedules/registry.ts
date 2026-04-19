@@ -43,6 +43,11 @@ const BUILTINS_DIR = path.resolve(
 const USER_DIR = getAinativeSchedulesDir();
 
 let scheduleCache: Map<string, ScheduleSpec> | null = null;
+// Parallel index of ids that came from the builtins dir at load time.
+// Populated by loadAll() alongside scheduleCache. Avoids re-reading the
+// builtins directory on every isBuiltinSchedule() call, which matters
+// once the builtins dir is non-empty (v2+). Cleared by reloadSchedules.
+let builtinIdsCache: Set<string> | null = null;
 
 function scanDirectory(dir: string): Map<string, ScheduleSpec> {
   const schedules = new Map<string, ScheduleSpec>();
@@ -77,8 +82,10 @@ function scanDirectory(dir: string): Map<string, ScheduleSpec> {
 function loadAll(): Map<string, ScheduleSpec> {
   const all = new Map<string, ScheduleSpec>();
 
-  // Built-ins first
-  for (const [id, s] of scanDirectory(BUILTINS_DIR)) all.set(id, s);
+  // Built-ins first; remember their ids so isBuiltinSchedule avoids re-I/O.
+  const builtins = scanDirectory(BUILTINS_DIR);
+  builtinIdsCache = new Set(builtins.keys());
+  for (const [id, s] of builtins) all.set(id, s);
 
   // User schedules override built-ins
   for (const [id, s] of scanDirectory(USER_DIR)) all.set(id, s);
@@ -103,10 +110,12 @@ export function listSchedules(): ScheduleSpec[] {
 
 export function reloadSchedules(): void {
   scheduleCache = null;
+  builtinIdsCache = null;
 }
 
 export function isBuiltinSchedule(id: string): boolean {
-  return scanDirectory(BUILTINS_DIR).has(id);
+  ensureLoaded();
+  return builtinIdsCache?.has(id) ?? false;
 }
 
 export function getUserSchedulesDir(): string {
