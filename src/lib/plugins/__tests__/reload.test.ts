@@ -1,0 +1,59 @@
+// src/lib/plugins/__tests__/reload.test.ts
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import fs from "node:fs";
+import path from "node:path";
+import os from "node:os";
+import yaml from "js-yaml";
+import { reloadPlugins, getPlugin, reloadPlugin } from "../registry";
+
+let tmpDir: string;
+function writePlugin(id: string, version: string) {
+  const dir = path.join(tmpDir, "plugins", id);
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, "plugin.yaml"), yaml.dump({
+    id, version, apiVersion: "0.14", kind: "primitives-bundle",
+  }));
+}
+
+describe("plugin reload contract", () => {
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "plugin-reload-"));
+    process.env.AINATIVE_DATA_DIR = tmpDir;
+    reloadPlugins();
+  });
+  afterEach(() => {
+    delete process.env.AINATIVE_DATA_DIR;
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    reloadPlugins();
+  });
+
+  it("add plugin → reload → present", () => {
+    writePlugin("a", "0.1.0");
+    reloadPlugins();
+    expect(getPlugin("a")).toBeTruthy();
+  });
+
+  it("remove plugin directory → reload → absent", () => {
+    writePlugin("a", "0.1.0");
+    reloadPlugins();
+    fs.rmSync(path.join(tmpDir, "plugins", "a"), { recursive: true, force: true });
+    reloadPlugins();
+    expect(getPlugin("a")).toBeNull();
+  });
+
+  it("modify plugin manifest → reload → version change visible", () => {
+    writePlugin("a", "0.1.0");
+    reloadPlugins();
+    expect(getPlugin("a")?.manifest.version).toBe("0.1.0");
+    writePlugin("a", "0.2.0");
+    reloadPlugins();
+    expect(getPlugin("a")?.manifest.version).toBe("0.2.0");
+  });
+
+  it("reloadPlugin(id) returns null for an id removed from disk", () => {
+    writePlugin("a", "0.1.0");
+    reloadPlugins();
+    fs.rmSync(path.join(tmpDir, "plugins", "a"), { recursive: true, force: true });
+    expect(reloadPlugin("a")).toBeNull();
+  });
+});
