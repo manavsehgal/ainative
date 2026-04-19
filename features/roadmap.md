@@ -425,6 +425,18 @@ Marketplace listing, publishing, trust, and community ecosystem features.
 | [app-embeddable-install-widget](app-embeddable-install-widget.md) | P3 | deferred | marketplace-app-listing |
 | [my-apps-lifecycle](my-apps-lifecycle.md) | P1 | deferred | app-runtime-bundle-foundation |
 
+### Self-Extension Platform
+
+Post-rollback composition-first strategy (`ideas/self-extending-machine-strategy.md`, 2026-04-18). Replaces the rolled-back App Marketplace cluster. Ships two plugin kinds only — primitives bundles and chat tools — with deliberate non-goals around publishing, trust tiers, and marketplace distribution.
+
+| Feature | Priority | Status | Dependencies |
+|---------|----------|--------|--------------|
+| [primitive-bundle-plugin-kind-5](primitive-bundle-plugin-kind-5.md) | P0 | planned | agent-profile-catalog, workflow-blueprints |
+| schedules-as-yaml-registry (Milestone 2) | P0 | planned | primitive-bundle-plugin-kind-5, scheduled-prompt-loops |
+| chat-tools-plugin-kind-1 (Milestone 3) | P0 | planned | primitive-bundle-plugin-kind-5 |
+| nl-to-composition-v1 (Milestone 4) | P1 | planned | primitive-bundle-plugin-kind-5, chat-tools-plugin-kind-1, schedules-as-yaml-registry |
+| install-parity-audit (Milestone 5) | P1 | planned | nl-to-composition-v1 |
+
 ## Dependency Graph
 
 Critical path through the MVP:

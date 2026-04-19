@@ -2,6 +2,16 @@
 
 ## 2026-04-18
 
+### Groomed — primitive-bundle-plugin-kind-5 + Self-Extension Platform roadmap section
+
+New P0 post-MVP feature derived from `ideas/self-extending-machine-strategy.md`. This is Milestone 1 of the post-rollback composition-first strategy synthesized from a live architect + frontend-designer + product-manager brainstorm.
+
+- **Feature spec**: `features/primitive-bundle-plugin-kind-5.md` — YAML-based plugin loader that packages a profile + blueprint + table schema as a portable directory under `~/.ainative/plugins/<id>/`. Zero new execution surface; extends existing profile and blueprint registries with a plugin-id namespace.
+- **Roadmap section added**: `Self-Extension Platform` in Post-MVP, between App Marketplace (deferred) and the Dependency Graph. Captures all five milestones from the strategy doc: primitive-bundle-plugin-kind-5 (P0, Milestone 1), schedules-as-yaml-registry (P0, Milestone 2), chat-tools-plugin-kind-1 (P0, Milestone 3), nl-to-composition-v1 (P1, Milestone 4), install-parity-audit (P1, Milestone 5).
+- **Strategy doc**: `ideas/self-extending-machine-strategy.md` — 698-line living strategy artifact. Locks six decisions (D1–D6): ship Kind 5 + Kind 1 only, hard refuse + redirect for npx source writes, JS-direct authoring (no bundler), public slogan *"Describe your business. Ainative builds it, runs it, and grows with it."*, `/apps` authoring-only (no marketplace), install-path parity with `AINATIVE_DEV_MODE` as surfacing flag only.
+- **Deliberate non-goals**: publishing flow, trust tiers, PII sanitizer, Kind 2/3/4 plugins, marketplace distribution, new UI routes via plugin, new DB columns via plugin, orphan writes to `launchCwd` on npx. All explicitly enumerated in `ideas/self-extending-machine-strategy.md` §10 so future scope-creep has a clear "we decided against this" reference.
+- **Post-rollback discipline**: the 2026-04-12 rollback of 21 marketplace commits is named in both the feature spec and strategy doc. This feature deliberately picks up only the directory-scan loader pattern from that work — no publish flow, no trust ladder, no PII sanitizer. Rollback scar is on distribution, not composition; this roadmap section honors that distinction.
+
 ### Groomed — sidebar-ia-route-restructure
 
 New P1 post-MVP feature extracted from a live design session grounding IA fixes in `docs/why-ainative.md` positioning and the `docs/journeys/work-use.md` journey. Captured in `features/sidebar-ia-route-restructure.md` and added to the roadmap's UI Enhancement section.
