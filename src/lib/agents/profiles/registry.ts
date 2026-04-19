@@ -413,6 +413,56 @@ export function deleteProfile(id: string): void {
 }
 
 // ---------------------------------------------------------------------------
+// Plugin profile injection (Kind 5)
+// ---------------------------------------------------------------------------
+
+interface PluginProfileEntry {
+  pluginId: string;
+  profile: AgentProfile;
+}
+
+const pluginProfileIndex: Map<string, Set<string>> = new Map(); // pluginId -> Set<profileId>
+
+/**
+ * Inject namespaced profiles from a Kind 5 plugin into the cache.
+ * Caller is responsible for namespacing the profile.id (e.g. "finance-pack/personal-cfo").
+ * Subsequent calls REPLACE entries for the same (pluginId, profileId) pair.
+ */
+export function mergePluginProfiles(entries: PluginProfileEntry[]): void {
+  const cache = ensureLoaded();
+  for (const entry of entries) {
+    cache.set(entry.profile.id, entry.profile);
+    if (!pluginProfileIndex.has(entry.pluginId)) {
+      pluginProfileIndex.set(entry.pluginId, new Set());
+    }
+    pluginProfileIndex.get(entry.pluginId)!.add(entry.profile.id);
+  }
+}
+
+/** Remove all profiles registered by a single plugin (used during reload). */
+export function clearPluginProfiles(pluginId: string): void {
+  const cache = profileCache; // do not trigger ensureLoaded() — if cache is null, nothing to clear
+  const ids = pluginProfileIndex.get(pluginId);
+  if (!ids) return;
+  if (cache) {
+    for (const id of ids) cache.delete(id);
+  }
+  pluginProfileIndex.delete(pluginId);
+}
+
+/** Remove all plugin-injected profiles (used at full reload + tests). */
+export function clearAllPluginProfiles(): void {
+  for (const pluginId of Array.from(pluginProfileIndex.keys())) {
+    clearPluginProfiles(pluginId);
+  }
+}
+
+/** Test introspection — pluginId → list of namespaced profile ids it owns. */
+export function listPluginProfileIds(pluginId: string): string[] {
+  return Array.from(pluginProfileIndex.get(pluginId) ?? []);
+}
+
+// ---------------------------------------------------------------------------
 // Environment status enrichment
 // ---------------------------------------------------------------------------
 
