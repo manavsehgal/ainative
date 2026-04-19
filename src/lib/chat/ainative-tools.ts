@@ -14,6 +14,7 @@ import { workflowTools } from "./tools/workflow-tools";
 import { scheduleTools } from "./tools/schedule-tools";
 import { documentTools } from "./tools/document-tools";
 import { notificationTools } from "./tools/notification-tools";
+import { pluginTools } from "./tools/plugin-tools";
 import { profileTools } from "./tools/profile-tools";
 import { usageTools } from "./tools/usage-tools";
 import { settingsTools } from "./tools/settings-tools";
@@ -52,6 +53,7 @@ function collectAllTools(ctx: ToolContext): ToolDefinition[] {
     ...scheduleTools(ctx),
     ...documentTools(ctx),
     ...notificationTools(ctx),
+    ...pluginTools(ctx),
     ...profileTools(ctx),
     ...usageTools(ctx),
     ...settingsTools(ctx),
