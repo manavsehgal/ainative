@@ -1,5 +1,6 @@
 import { program } from "commander";
-import { dirname, join } from "path";
+import { basename, dirname, join } from "path";
+import { homedir } from "os";
 import { fileURLToPath } from "url";
 import {
   mkdirSync,
@@ -28,14 +29,40 @@ import {
   markAllMigrationsApplied,
 } from "../src/lib/db/bootstrap";
 import { migrateLegacyData } from "../src/lib/utils/migrate-to-ainative";
+import { isDevMode } from "../src/lib/instance/detect";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const appDir = join(__dirname, "..");
 const launchCwd = process.cwd();
 
-// Load .env.local from launch directory so fix-data-dir settings are picked up.
-// Mirrors Next.js precedence: .env.local never overrides existing env vars.
+// Auto-write .env.local on first run in a non-dev launch folder. This gives
+// new npx users a per-folder isolated DB by default — no red sidebar badge,
+// no manual Fix click. Skipped in the main dev repo (isDevMode) and skipped
+// when the user has already set AINATIVE_DATA_DIR in their shell.
 const _envLocalPath = join(launchCwd, ".env.local");
+const _firstRunNeedsEnv =
+  !existsSync(_envLocalPath) &&
+  !process.env.AINATIVE_DATA_DIR &&
+  !isDevMode(launchCwd);
+
+if (_firstRunNeedsEnv) {
+  const folderName = basename(launchCwd);
+  const autoDataDir = join(homedir(), `.${folderName}`);
+  writeFileSync(
+    _envLocalPath,
+    `# Auto-created by ainative-business on first run.\n` +
+      `# Points this folder's install at an isolated data directory.\n` +
+      `AINATIVE_DATA_DIR=${autoDataDir}\n`,
+    "utf-8",
+  );
+  console.log(`First run — wrote ${_envLocalPath} (AINATIVE_DATA_DIR=${autoDataDir}).`);
+}
+
+// Load .env.local from the launch directory. For a local CLI launcher the
+// user's .env.local is the authoritative source of runtime config — it wins
+// over shell env so the `Fix` sidebar action actually takes effect on the
+// very next `npx ainative-business` invocation, regardless of stale exports
+// from earlier experiments or direnv-style tools.
 if (existsSync(_envLocalPath)) {
   for (const line of readFileSync(_envLocalPath, "utf-8").split("\n")) {
     const trimmed = line.trim();
@@ -47,7 +74,7 @@ if (existsSync(_envLocalPath)) {
       .slice(eqIdx + 1)
       .trim()
       .replace(/^(['"])(.*)\1$/, "$2");
-    if (key && !(key in process.env)) {
+    if (key) {
       process.env[key] = val;
     }
   }
