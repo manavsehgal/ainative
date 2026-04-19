@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { db } from "@/lib/db";
 import { schedules as schedulesTable } from "@/lib/db/schema";
 import { eq, like, getTableColumns } from "drizzle-orm";
-import { installSchedulesFromSpecs } from "../installer";
+import { installSchedulesFromSpecs, installPluginSchedules, removePluginSchedules, listInstalledPluginScheduleIds } from "../installer";
 import type { ScheduleSpec } from "@/lib/validators/schedule-spec";
 
 const fakeScheduled = (id: string, overrides: Partial<ScheduleSpec> = {}): ScheduleSpec => ({
@@ -227,6 +227,43 @@ describe("installSchedulesFromSpecs — state preservation", () => {
     expect(row?.turnBudgetBreachStreak).toBe(1);
     // createdAt preserved
     expect(row?.createdAt.getTime()).toBe(staleCreatedAt.getTime());
+  });
+});
+
+describe("plugin schedule helpers", () => {
+  beforeEach(() => {
+    db.delete(schedulesTable).where(like(schedulesTable.id, "plugin:test-%:%")).run();
+  });
+
+  it("installs as DB rows with composite ids", () => {
+    installPluginSchedules("test-pack", [fakeScheduled("monthly-close")]);
+    const row = db.select().from(schedulesTable).where(eq(schedulesTable.id, "plugin:test-pack:monthly-close")).get();
+    expect(row).toBeTruthy();
+    expect(row?.name).toBe("Test monthly-close (test-pack)");
+  });
+
+  it("upserts on second install (no duplicate row)", () => {
+    installPluginSchedules("test-pack", [fakeScheduled("weekly")]);
+    installPluginSchedules("test-pack", [fakeScheduled("weekly", { name: "Renamed" })]);
+    const rows = db.select().from(schedulesTable).where(like(schedulesTable.id, "plugin:test-pack:%")).all();
+    expect(rows.length).toBe(1);
+    expect(rows[0].name).toBe("Renamed (test-pack)");
+  });
+
+  it("removePluginSchedules deletes only that plugin's rows", () => {
+    installPluginSchedules("test-pack-a", [fakeScheduled("a")]);
+    installPluginSchedules("test-pack-b", [fakeScheduled("b")]);
+    removePluginSchedules("test-pack-a");
+    const remaining = db.select().from(schedulesTable).where(like(schedulesTable.id, "plugin:test-pack-%:%")).all();
+    expect(remaining.map((r: { id: string }) => r.id)).toEqual(["plugin:test-pack-b:b"]);
+  });
+
+  it("listInstalledPluginScheduleIds returns ids for the given plugin only", () => {
+    installPluginSchedules("test-pack-a", [fakeScheduled("a"), fakeScheduled("b")]);
+    installPluginSchedules("test-pack-c", [fakeScheduled("c")]);
+    expect(listInstalledPluginScheduleIds("test-pack-a").sort()).toEqual(["plugin:test-pack-a:a", "plugin:test-pack-a:b"]);
+    expect(listInstalledPluginScheduleIds("test-pack-c")).toEqual(["plugin:test-pack-c:c"]);
+    expect(listInstalledPluginScheduleIds("no-such-plugin")).toEqual([]);
   });
 });
 

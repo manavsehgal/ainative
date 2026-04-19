@@ -25,8 +25,15 @@
 
 import { db } from "@/lib/db";
 import { schedules as schedulesTable } from "@/lib/db/schema";
+import { like } from "drizzle-orm";
 import { parseInterval, computeNextFireTime } from "./interval-parser";
 import type { ScheduleSpec } from "@/lib/validators/schedule-spec";
+
+const PLUGIN_SCHEDULE_PREFIX = "plugin:";
+
+function pluginScheduleId(pluginId: string, scheduleId: string): string {
+  return `${PLUGIN_SCHEDULE_PREFIX}${pluginId}:${scheduleId}`;
+}
 
 /**
  * Resolve the cron expression from a spec.
@@ -53,19 +60,18 @@ export function installSchedulesFromSpecs(
   specs: ScheduleSpec[],
   opts?: { pluginId?: string }
 ): void {
-  // opts.pluginId is accepted in signature for T9 compatibility; not yet used.
-  void opts;
-
   const now = new Date();
+  const pluginId = opts?.pluginId;
 
   for (const spec of specs) {
-    const id = spec.id; // T9 will transform this for plugin composite ids
+    const id = pluginId ? pluginScheduleId(pluginId, spec.id) : spec.id;
+    const displayName = pluginId ? `${spec.name} (${pluginId})` : spec.name;
     const resolvedCron = resolveCron(spec);
 
     db.insert(schedulesTable)
       .values({
         id,
-        name: spec.name,
+        name: displayName,
         prompt: spec.prompt,
         cronExpression: resolvedCron,
         agentProfile: spec.agentProfile ?? null,
@@ -101,7 +107,7 @@ export function installSchedulesFromSpecs(
           // turnBudgetBreachStreak, avgTurnsPerFiring, lastTurnCount,
           // lastFailureReason, lastActionAt, heartbeatBudgetResetAt,
           // maxTurnsSetAt, createdAt, STATUS) is preserved.
-          name: spec.name,
+          name: displayName,
           prompt: spec.prompt,
           cronExpression: resolvedCron,
           agentProfile: spec.agentProfile ?? null,
@@ -129,4 +135,35 @@ export function installSchedulesFromSpecs(
       })
       .run();
   }
+}
+
+/**
+ * Install (or reconcile) a plugin's schedule specs, namespacing each id as
+ * `plugin:<pluginId>:<spec.id>` and suffixing the display name with `(<pluginId>)`.
+ */
+export function installPluginSchedules(pluginId: string, specs: ScheduleSpec[]): void {
+  installSchedulesFromSpecs(specs, { pluginId });
+}
+
+/**
+ * Remove all DB rows whose id starts with `plugin:<pluginId>:`.
+ * Only touches rows owned by this plugin; other plugins and user rows are unaffected.
+ */
+export function removePluginSchedules(pluginId: string): void {
+  const pattern = `${PLUGIN_SCHEDULE_PREFIX}${pluginId}:%`;
+  db.delete(schedulesTable).where(like(schedulesTable.id, pattern)).run();
+}
+
+/**
+ * Return all composite ids currently installed for the given plugin.
+ * Used for introspection and testing.
+ */
+export function listInstalledPluginScheduleIds(pluginId: string): string[] {
+  const pattern = `${PLUGIN_SCHEDULE_PREFIX}${pluginId}:%`;
+  return db
+    .select({ id: schedulesTable.id })
+    .from(schedulesTable)
+    .where(like(schedulesTable.id, pattern))
+    .all()
+    .map((r: { id: string }) => r.id);
 }
