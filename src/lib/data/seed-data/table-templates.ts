@@ -1,7 +1,8 @@
 import { randomUUID } from "crypto";
 import { db } from "@/lib/db";
 import { userTableTemplates } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, like } from "drizzle-orm";
+import type { PluginTableTemplate } from "@/lib/plugins/sdk/types";
 
 interface TemplateSeed {
   name: string;
@@ -231,4 +232,80 @@ export async function seedTableTemplates(): Promise<number> {
   }
 
   return created;
+}
+
+const PLUGIN_TABLE_PREFIX = "plugin:";
+
+function pluginTableId(pluginId: string, tableId: string): string {
+  return `${PLUGIN_TABLE_PREFIX}${pluginId}:${tableId}`;
+}
+
+const MAX_PLUGIN_SAMPLE_ROWS = 10_000;
+
+/**
+ * Install (or replace) a plugin's table templates as user_table_templates rows.
+ * Idempotent — running twice with the same pluginId leaves the same row count.
+ * Plugin tables ride scope: "system" with a composite id "plugin:<id>:<table>".
+ */
+export function installPluginTables(pluginId: string, tables: PluginTableTemplate[]): void {
+  const now = new Date();
+  for (const t of tables) {
+    const id = pluginTableId(pluginId, t.id);
+    const columnsWithPositions = t.columns.map((col, i) => ({ ...col, position: i }));
+    const sampleData = t.sampleRows && t.sampleRows.length > 0
+      ? JSON.stringify(t.sampleRows.slice(0, MAX_PLUGIN_SAMPLE_ROWS))
+      : null;
+    // Suffix the display name with the plugin id so a plugin shipping a
+    // table whose name collides with a builtin (e.g., "Customer List")
+    // doesn't produce two indistinguishable rows in the picker UI.
+    // The builtin row stays untouched; the plugin row is visually disambiguated.
+    const displayName = `${t.name} (${pluginId})`;
+    const existing = db.select({ id: userTableTemplates.id }).from(userTableTemplates).where(eq(userTableTemplates.id, id)).get();
+    if (existing) {
+      db.update(userTableTemplates)
+        .set({
+          name: displayName,
+          description: t.description,
+          category: t.category,
+          columnSchema: JSON.stringify(columnsWithPositions),
+          sampleData,
+          icon: t.icon,
+          updatedAt: now,
+        })
+        .where(eq(userTableTemplates.id, id))
+        .run();
+    } else {
+      db.insert(userTableTemplates)
+        .values({
+          id,
+          name: displayName,
+          description: t.description,
+          category: t.category,
+          columnSchema: JSON.stringify(columnsWithPositions),
+          sampleData,
+          scope: "system",
+          icon: t.icon,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .run();
+    }
+  }
+}
+
+/** Delete all DB rows that belong to this plugin. */
+export function removePluginTables(pluginId: string): void {
+  const prefix = `${PLUGIN_TABLE_PREFIX}${pluginId}:%`;
+  db.delete(userTableTemplates).where(like(userTableTemplates.id, prefix)).run();
+}
+
+/** Test/introspection — list plugin-owned table ids for a given plugin. */
+export function listPluginTableIds(pluginId: string): string[] {
+  const prefix = `${PLUGIN_TABLE_PREFIX}${pluginId}:%`;
+  return db
+    .select({ id: userTableTemplates.id })
+    .from(userTableTemplates)
+    .where(like(userTableTemplates.id, prefix))
+    .all()
+    .map((r) => r.id);
 }
