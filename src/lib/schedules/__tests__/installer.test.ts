@@ -16,17 +16,6 @@ const fakeScheduled = (id: string, overrides: Partial<ScheduleSpec> = {}): Sched
   ...overrides,
 } as ScheduleSpec);
 
-const fakeHeartbeat = (id: string, overrides: Partial<ScheduleSpec> = {}): ScheduleSpec => ({
-  type: "heartbeat",
-  id,
-  name: `HB ${id}`,
-  version: "1.0.0",
-  prompt: "Check the thing",
-  cronExpression: "*/15 * * * *",
-  recurs: true,
-  ...overrides,
-} as ScheduleSpec);
-
 describe("installSchedulesFromSpecs — state preservation", () => {
   beforeEach(() => {
     db.delete(schedulesTable).where(like(schedulesTable.id, "test-%")).run();

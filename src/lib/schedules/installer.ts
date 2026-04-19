@@ -25,17 +25,8 @@
 
 import { db } from "@/lib/db";
 import { schedules as schedulesTable } from "@/lib/db/schema";
-import { CronExpressionParser } from "cron-parser";
-import { parseInterval } from "./interval-parser";
+import { parseInterval, computeNextFireTime } from "./interval-parser";
 import type { ScheduleSpec } from "@/lib/validators/schedule-spec";
-
-/**
- * Compute the first fire time for the given cron expression.
- * Returns the Date of the next occurrence after now.
- */
-function computeNextFire(cronExpression: string): Date {
-  return CronExpressionParser.parse(cronExpression).next().toDate();
-}
 
 /**
  * Resolve the cron expression from a spec.
@@ -98,7 +89,7 @@ export function installSchedulesFromSpecs(
         failureStreak: 0,
         heartbeatSpentToday: 0,
         turnBudgetBreachStreak: 0,
-        nextFireAt: computeNextFire(resolvedCron),
+        nextFireAt: computeNextFireTime(resolvedCron),
         createdAt: now,
         updatedAt: now,
       })
