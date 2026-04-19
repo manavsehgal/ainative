@@ -31,6 +31,7 @@ interface UpgradeState {
 
 interface ConfigResponse {
   devMode: boolean;
+  skippedReason?: "no_git" | string;
   config: InstanceConfig | null;
   guardrails: Guardrails | null;
   upgrade: UpgradeState | null;
@@ -189,6 +190,29 @@ export function InstanceSection() {
             AINATIVE_INSTANCE_MODE=true
           </code>{" "}
           to test.
+        </p>
+      </section>
+    );
+  }
+
+  // npx install: no git repo, so upgrade machinery doesn't apply.
+  // Users upgrade via `npx ainative-business@latest`, not via git merge.
+  if (state?.skippedReason === "no_git") {
+    return (
+      <section className="rounded-xl border bg-card px-5 py-3 flex items-start justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-3 flex-wrap">
+          <h2 className="text-base font-semibold">Instance</h2>
+          <Badge variant="outline" className="text-xs font-normal">
+            npx install
+          </Badge>
+        </div>
+        <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">
+          This folder has no <code className="font-mono text-[11px] px-1 py-0.5 rounded bg-muted">.git</code> directory.
+          To upgrade, run{" "}
+          <code className="font-mono text-[11px] px-1 py-0.5 rounded bg-muted">
+            npx ainative-business@latest
+          </code>
+          . Git-based upgrades (upstream merges, pre-push hooks) only apply to cloned repos.
         </p>
       </section>
     );

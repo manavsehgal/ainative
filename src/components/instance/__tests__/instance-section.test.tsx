@@ -79,6 +79,46 @@ describe("instance section", () => {
     expect(screen.queryByText("Pre-push hook")).not.toBeInTheDocument();
   });
 
+  it("shows an npx-install notice instead of the setup warning when skippedReason=no_git", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        const method = init?.method ?? "GET";
+
+        if (url === "/api/instance/config" && method === "GET") {
+          return {
+            ok: true,
+            json: async () => ({
+              devMode: false,
+              skippedReason: "no_git",
+              config: null,
+              guardrails: null,
+              upgrade: null,
+            }),
+          };
+        }
+
+        throw new Error(`Unexpected fetch: ${method} ${url}`);
+      })
+    );
+
+    render(<InstanceSection />);
+
+    expect(await screen.findByText("npx install")).toBeInTheDocument();
+    // The explanatory paragraph wraps .git + the upgrade command in <code>
+    // elements, so matchers must work around the split text nodes.
+    expect(screen.getByText(/This folder has no/i)).toBeInTheDocument();
+    expect(
+      screen.getByText("npx ainative-business@latest")
+    ).toBeInTheDocument();
+    // Critical: the scary "setup incomplete" warning must NOT appear here.
+    expect(
+      screen.queryByText("Instance setup incomplete. Run setup to initialize this workspace.")
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Run setup" })).not.toBeInTheDocument();
+  });
+
   it("uses the shorter setup CTA when the instance is not initialized", async () => {
     vi.stubGlobal(
       "fetch",

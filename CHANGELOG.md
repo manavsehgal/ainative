@@ -4,6 +4,12 @@
 
 This project was formerly published as `stagent` on npm and hosted at `github.com/manavsehgal/stagent`. As of 2026-04-17 it is `ainative`. The old GitHub URL redirects permanently; `stagent` on npm is deprecated with an upgrade pointer to `ainative`.
 
+## [0.13.3] — 2026-04-18
+
+### Fixed
+
+- **Settings → Instance no longer shows a false "setup incomplete" warning on npx installs.** The bootstrap correctly skips when there's no `.git/` directory (per `ensureInstance()`'s decision tree), but the Settings UI was treating that skip as a failure. `GET /api/instance/config` now returns `skippedReason: "no_git"` in the npx case, and the `InstanceSection` component renders an accurate "npx install — upgrade via `npx ainative-business@latest`" notice instead of the amber warning and dead-end "Run setup" button.
+
 ## [0.13.2] — 2026-04-18
 
 ### Fixed
