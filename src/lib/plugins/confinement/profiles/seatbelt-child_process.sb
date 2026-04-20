@@ -1,0 +1,9 @@
+;; ainative plugin [child_process] capability — seatbelt profile stub (M3)
+;;
+;; Minimal baseline: allow fork + exec. Real exec-path allowlist corpus
+;; (per-plugin binary whitelist) is M3.5 follow-up.
+;; TODO(M3.5): narrow process-exec to explicit literal paths per plugin.
+
+(allow process-fork)
+(allow process-exec)
+(allow signal (target self))

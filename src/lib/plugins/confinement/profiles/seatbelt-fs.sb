@@ -1,0 +1,10 @@
+;; ainative plugin [fs] capability — seatbelt profile stub (M3)
+;;
+;; Minimal baseline: allow read everywhere, write only to /tmp. Real per-plugin
+;; allow-path corpus (scoped to PLUGIN_DIR + PLUGIN_STATE) is M3.5 follow-up.
+;; TODO(M3.5): narrow file-write* to ${PLUGIN_DIR}/state subpath only.
+
+(allow file-read*)
+(allow file-write* (subpath "/tmp"))
+(allow file-write* (subpath "/private/tmp"))
+(allow file-write* (subpath "/var/folders"))

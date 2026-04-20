@@ -917,3 +917,110 @@ describe("T12 — listAcceptedInProcessEntriesForPlugin", () => {
     expect(entries).toEqual([]);
   });
 });
+
+// ---------------------------------------------------------------------------
+// T14: confinement mode integration
+// ---------------------------------------------------------------------------
+
+describe("T14 — confinementMode integration (wrap → mcp-loader)", () => {
+  it("confinementMode:'seatbelt' on non-macOS surfaces confinement_unsupported_on_platform", async () => {
+    // Force linux platform via Object.defineProperty so wrap.ts sees linux
+    // regardless of the host running the test.
+    const realPlatform = process.platform;
+    Object.defineProperty(process, "platform", { value: "linux", configurable: true });
+    try {
+      const pluginId = "seatbelt-on-linux";
+      const yaml = writePluginYaml(pluginId, {
+        capabilities: ["net"],
+        confinementMode: "seatbelt",
+      });
+      const serverScriptPath = path.join(pluginsDir, pluginId, "bin", "server.js");
+      writeFakeMcpServerFile(serverScriptPath);
+      writeMcpJson(pluginId, {
+        svc: { command: process.execPath, args: [serverScriptPath] },
+      });
+      acceptPlugin(pluginId, yaml);
+
+      const regs = await listPluginMcpRegistrations();
+      const reg = regs.find((r) => r.pluginId === pluginId);
+      expect(reg).toBeDefined();
+      expect(reg!.status).toBe("disabled");
+      expect(reg!.disabledReason).toBe("confinement_unsupported_on_platform");
+      expect(reg!.disabledDetail).toContain("macOS");
+    } finally {
+      Object.defineProperty(process, "platform", {
+        value: realPlatform,
+        configurable: true,
+      });
+    }
+  }, 15_000);
+
+  it("confinementMode:'apparmor' on macOS surfaces confinement_unsupported_on_platform", async () => {
+    const realPlatform = process.platform;
+    Object.defineProperty(process, "platform", { value: "darwin", configurable: true });
+    try {
+      const pluginId = "apparmor-on-mac";
+      const yaml = writePluginYaml(pluginId, {
+        capabilities: ["fs"],
+        confinementMode: "apparmor",
+      });
+      const serverScriptPath = path.join(pluginsDir, pluginId, "bin", "server.js");
+      writeFakeMcpServerFile(serverScriptPath);
+      writeMcpJson(pluginId, {
+        svc: { command: process.execPath, args: [serverScriptPath] },
+      });
+      acceptPlugin(pluginId, yaml);
+
+      const regs = await listPluginMcpRegistrations();
+      const reg = regs.find((r) => r.pluginId === pluginId);
+      expect(reg).toBeDefined();
+      expect(reg!.status).toBe("disabled");
+      expect(reg!.disabledReason).toBe("confinement_unsupported_on_platform");
+      expect(reg!.disabledDetail).toContain("Linux");
+    } finally {
+      Object.defineProperty(process, "platform", {
+        value: realPlatform,
+        configurable: true,
+      });
+    }
+  }, 15_000);
+
+  it("confinementMode:'docker' without dockerImage surfaces confinement_unsupported_on_platform", async () => {
+    const pluginId = "docker-no-image";
+    const yaml = writePluginYaml(pluginId, {
+      capabilities: ["net"],
+      confinementMode: "docker",
+      // Deliberately NO dockerImage.
+    });
+    const serverScriptPath = path.join(pluginsDir, pluginId, "bin", "server.js");
+    writeFakeMcpServerFile(serverScriptPath);
+    writeMcpJson(pluginId, {
+      svc: { command: process.execPath, args: [serverScriptPath] },
+    });
+    acceptPlugin(pluginId, yaml);
+
+    const regs = await listPluginMcpRegistrations();
+    const reg = regs.find((r) => r.pluginId === pluginId);
+    expect(reg).toBeDefined();
+    expect(reg!.status).toBe("disabled");
+    expect(reg!.disabledReason).toBe("confinement_unsupported_on_platform");
+    expect(reg!.disabledDetail).toContain("dockerImage");
+  }, 15_000);
+
+  it("confinementMode:'none' (default) passes through unchanged — existing happy path still works", async () => {
+    // Sanity check: a plugin with no confinementMode declared (= "none") still
+    // accepts cleanly. Equivalent to test 1 but confirms the new code path.
+    const pluginId = "no-confinement";
+    const yaml = writePluginYaml(pluginId); // no confinementMode override
+    const serverScriptPath = path.join(pluginsDir, pluginId, "bin", "server.js");
+    writeFakeMcpServerFile(serverScriptPath);
+    writeMcpJson(pluginId, {
+      svc: { command: process.execPath, args: [serverScriptPath] },
+    });
+    acceptPlugin(pluginId, yaml);
+
+    const result = await loadPluginMcpServers();
+    expect(result).toHaveProperty("svc");
+    expect(result["svc"].command).toBe(process.execPath);
+  }, 15_000);
+});

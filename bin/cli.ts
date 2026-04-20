@@ -100,6 +100,7 @@ Environment variables:
 Examples:
   node dist/cli.js --port 3210 --no-open
   node dist/cli.js --data-dir ~/.ainative-dogfood --port 3100
+  node dist/cli.js plugin dry-run my-plugin    # print confinement policy
 `;
 }
 
@@ -113,6 +114,40 @@ program
   .option("--reset", "delete the local database before starting")
   .option("--no-open", "don't auto-open browser")
   .option("--safe-mode", "disable Kind-1 plugin MCP servers; Kind-5 primitives bundles still load");
+
+/**
+ * T14: `ainative plugin dry-run <pluginId>` — print the computed confinement
+ * policy (mode, platform support, expanded sandbox-exec/aa-exec/docker args)
+ * for a given plugin without actually spawning anything.
+ *
+ * We detect subcommand invocation BEFORE program.parse() so the subcommand
+ * path can short-circuit the default server-launch flow (DB migration,
+ * Next.js spawn, etc.). The dry-run command does its own minimal setup.
+ */
+const firstArg = process.argv[2];
+const isPluginSubcommand = firstArg === "plugin";
+
+if (isPluginSubcommand) {
+  const action = process.argv[3];
+  const pluginId = process.argv[4];
+  if (action !== "dry-run") {
+    console.error(`Unknown plugin action: ${action ?? "(none)"}`);
+    console.error("Available actions: dry-run");
+    process.exit(1);
+  }
+  if (!pluginId) {
+    console.error("Usage: ainative plugin dry-run <pluginId>");
+    process.exit(1);
+  }
+  // Dynamic import keeps the confinement module + its dependency chain out of
+  // the default CLI startup path.
+  const { dryRunConfinement } = await import(
+    "../src/lib/plugins/confinement/wrap"
+  );
+  const result = await dryRunConfinement(pluginId);
+  console.log(result);
+  process.exit(0);
+}
 
 program.parse();
 

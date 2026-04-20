@@ -1,0 +1,9 @@
+;; ainative plugin [net] capability — seatbelt profile stub (M3)
+;;
+;; Minimal baseline: allow outbound network + process basics so MCP stdio
+;; children can open sockets. Real per-host allowlist corpus is M3.5 follow-up.
+;; TODO(M3.5): narrow network* to explicit allow-host rules per plugin.
+
+(allow network*)
+(allow mach-lookup)
+(allow sysctl-read)

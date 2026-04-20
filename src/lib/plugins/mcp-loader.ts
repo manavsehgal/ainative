@@ -36,6 +36,12 @@ import {
   validateStdioMcp,
   validateInProcessSdk,
 } from "@/lib/plugins/transport-dispatch";
+import {
+  wrapStdioSpawn,
+  dockerBootSweep,
+  type ConfinementMode,
+  type WrapInput,
+} from "@/lib/plugins/confinement/wrap";
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -71,8 +77,11 @@ export interface PluginMcpRegistration {
     | "safe_mode"
     | "stdio_init_timeout"
     | "stdio_init_malformed"
-    | "sdk_invalid_export";
+    | "sdk_invalid_export"
+    | "confinement_unsupported_on_platform";
   manifestHash?: string;
+  /** Populated for disabledReason=confinement_unsupported_on_platform so the UI/logs can show WHY. */
+  disabledDetail?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -81,6 +90,24 @@ export interface PluginMcpRegistration {
 
 /** Once-per-session dedup set for Ollama runtime skip logs: "<pluginId>@<runtime>" */
 const ollamaSkipLogged = new Set<string>();
+
+/**
+ * Gate the Docker boot sweep to once per process. listPluginMcpRegistrations
+ * is called per-request by the Claude SDK adapter; re-sweeping on every
+ * request would spam docker ps. The sweep is a best-effort cleanup for
+ * containers left from the previous process — running it once at first
+ * invocation is sufficient.
+ */
+let dockerBootSweepDone = false;
+
+/**
+ * Test-only hook: reset the once-per-process boot-sweep flag. Exported so
+ * test suites can assert the sweep runs on each fresh configuration.
+ * Production callers must not use this.
+ */
+export function __resetDockerBootSweepForTests(): void {
+  dockerBootSweepDone = false;
+}
 
 // ---------------------------------------------------------------------------
 // Logging — third use of this pattern; extracted inline per DRY rule (extract
@@ -266,6 +293,12 @@ async function scanPlugin(pluginDir: string, pluginId: string): Promise<ScanResu
   // --- Process each server entry ---
   const context = { rootDir: pluginDir };
 
+  // Only chat-tools manifests have these fields; the discriminated union
+  // narrows `manifest` here via the kind:"chat-tools" check above.
+  const confinementMode: ConfinementMode = manifest.confinementMode ?? "none";
+  const capabilities = manifest.capabilities ?? [];
+  const dockerImage = manifest.dockerImage;
+
   for (const [serverName, rawEntry] of Object.entries(mcpServers)) {
     const hasCommand = typeof rawEntry.command === "string" && rawEntry.command.length > 0;
     const isAinativeSdk = rawEntry.transport === "ainative-sdk";
@@ -310,7 +343,8 @@ async function scanPlugin(pluginDir: string, pluginId: string): Promise<ScanResu
       const resolvedArgs = resolveArgsTemplates(rawEntry.args, context);
       const resolvedEnv = resolveEnvTemplates(rawEntry.env, context);
 
-      // Existence check for relative commands only
+      // Resolve relative commands to absolute paths + existence-check.
+      let resolvedCommand: string;
       if (isRelativeCommand(rawCommand)) {
         const absCommand = path.resolve(pluginDir, rawCommand);
         if (!fs.existsSync(absCommand)) {
@@ -328,70 +362,76 @@ async function scanPlugin(pluginDir: string, pluginId: string): Promise<ScanResu
           });
           continue;
         }
-        // Use absolute path in normalized config
-        const config: NormalizedMcpConfig = {
-          command: absCommand,
-          ...(resolvedArgs !== undefined && { args: resolvedArgs }),
-          ...(resolvedEnv !== undefined && { env: resolvedEnv }),
-        };
-        // T4: validate before accepting — pre-flight MCP handshake (Option A)
-        const stdioValidation = await validateStdioMcp(config, pluginId, serverName);
-        if (!stdioValidation.ok) {
-          logToFile(
-            `[mcp-loader] plugin ${pluginId} server "${serverName}": stdio validation failed (${stdioValidation.reason})${stdioValidation.detail ? ": " + stdioValidation.detail : ""}`
-          );
-          registrations.push({
-            pluginId,
-            serverName,
-            transport: "stdio",
-            config: {},
-            status: "disabled",
-            disabledReason: stdioValidation.reason,
-            manifestHash,
-          });
-          continue;
-        }
-        registrations.push({
-          pluginId,
-          serverName,
-          transport: "stdio",
-          config,
-          status: "accepted",
-          manifestHash,
-        });
+        resolvedCommand = absCommand;
       } else {
-        // PATH-only or absolute command — assume present; still validate
-        const config: NormalizedMcpConfig = {
-          command: rawCommand,
-          ...(resolvedArgs !== undefined && { args: resolvedArgs }),
-          ...(resolvedEnv !== undefined && { env: resolvedEnv }),
-        };
-        // T4: validate before accepting — pre-flight MCP handshake (Option A)
-        const stdioValidation = await validateStdioMcp(config, pluginId, serverName);
-        if (!stdioValidation.ok) {
-          logToFile(
-            `[mcp-loader] plugin ${pluginId} server "${serverName}": stdio validation failed (${stdioValidation.reason})${stdioValidation.detail ? ": " + stdioValidation.detail : ""}`
-          );
-          registrations.push({
-            pluginId,
-            serverName,
-            transport: "stdio",
-            config: {},
-            status: "disabled",
-            disabledReason: stdioValidation.reason,
-            manifestHash,
-          });
-          continue;
-        }
+        // PATH-only or absolute command — assume present.
+        resolvedCommand = rawCommand;
+      }
+
+      // T14: apply confinement wrap (confinementMode "none" → no-op pass-through).
+      const wrapInput: WrapInput = {
+        command: resolvedCommand,
+        args: resolvedArgs ?? [],
+        env: resolvedEnv,
+        pluginId,
+        pluginDir,
+        confinementMode,
+        capabilities,
+        ...(dockerImage !== undefined ? { dockerImage } : {}),
+      };
+      const wrap = wrapStdioSpawn(wrapInput);
+      if (!wrap.ok) {
+        logToFile(
+          `[mcp-loader] plugin ${pluginId} server "${serverName}": confinement unsupported — ${wrap.detail}`
+        );
         registrations.push({
           pluginId,
           serverName,
           transport: "stdio",
-          config,
-          status: "accepted",
+          config: {},
+          status: "disabled",
+          disabledReason: "confinement_unsupported_on_platform",
+          disabledDetail: wrap.detail,
           manifestHash,
         });
+        continue;
       }
+
+      // Normalized config uses the WRAPPED command/args so downstream spawns
+      // launch the sandbox-exec / aa-exec / docker run wrapper, not the bare binary.
+      const config: NormalizedMcpConfig = {
+        command: wrap.wrapped.command,
+        args: wrap.wrapped.args,
+        ...(wrap.wrapped.env !== undefined && { env: wrap.wrapped.env }),
+      };
+
+      // T4: validate before accepting — pre-flight MCP handshake (Option A).
+      // Validation runs through the wrapped command so a broken seatbelt
+      // profile / missing docker image surfaces during scan, not first request.
+      const stdioValidation = await validateStdioMcp(config, pluginId, serverName);
+      if (!stdioValidation.ok) {
+        logToFile(
+          `[mcp-loader] plugin ${pluginId} server "${serverName}": stdio validation failed (${stdioValidation.reason})${stdioValidation.detail ? ": " + stdioValidation.detail : ""}`
+        );
+        registrations.push({
+          pluginId,
+          serverName,
+          transport: "stdio",
+          config: {},
+          status: "disabled",
+          disabledReason: stdioValidation.reason,
+          manifestHash,
+        });
+        continue;
+      }
+      registrations.push({
+        pluginId,
+        serverName,
+        transport: "stdio",
+        config,
+        status: "accepted",
+        manifestHash,
+      });
       continue;
     }
 
@@ -486,6 +526,22 @@ export async function listPluginMcpRegistrations(opts?: {
   // lives in src/lib/plugins/registry.ts and is not affected by safe-mode.
   if (process.env.AINATIVE_SAFE_MODE === "true") {
     return buildSafeModeRegistrations();
+  }
+
+  // T14: once-per-process Docker boot sweep. Only triggered when at least one
+  // plugin manifest declares confinementMode: "docker" — avoids spinning up
+  // docker ps probes on machines with no docker-confined plugins.
+  if (!dockerBootSweepDone) {
+    dockerBootSweepDone = true;
+    if (hasAnyDockerConfinedPlugin()) {
+      try {
+        dockerBootSweep();
+      } catch (err) {
+        logToFile(
+          `[mcp-loader] dockerBootSweep threw unexpectedly — ${err instanceof Error ? err.message : String(err)}`
+        );
+      }
+    }
   }
 
   // Short-circuit: runtime that doesn't support plugin MCP servers.
@@ -589,6 +645,49 @@ export async function loadPluginMcpServers(opts?: {
       .filter((r) => r.status === "accepted")
       .map((r) => [r.serverName, r.config])
   );
+}
+
+/**
+ * Scan plugin manifests for any chat-tools plugin declaring
+ * confinementMode: "docker". Used to gate the boot sweep so non-docker
+ * installs don't pay the docker ps probe cost.
+ *
+ * Swallows all errors — a broken manifest must not prevent the sweep.
+ */
+function hasAnyDockerConfinedPlugin(): boolean {
+  const pluginsDir = getAinativePluginsDir();
+  if (!fs.existsSync(pluginsDir)) return false;
+
+  let entries: string[];
+  try {
+    entries = fs.readdirSync(pluginsDir);
+  } catch {
+    return false;
+  }
+
+  for (const entry of entries) {
+    const pluginYamlPath = path.join(pluginsDir, entry, "plugin.yaml");
+    let content: string;
+    try {
+      content = fs.readFileSync(pluginYamlPath, "utf-8");
+    } catch {
+      continue;
+    }
+
+    let raw: unknown;
+    try {
+      raw = yaml.load(content);
+    } catch {
+      continue;
+    }
+
+    const parsed = PluginManifestSchema.safeParse(raw);
+    if (!parsed.success) continue;
+    if (parsed.data.kind !== "chat-tools") continue;
+    if (parsed.data.confinementMode === "docker") return true;
+  }
+
+  return false;
 }
 
 /**

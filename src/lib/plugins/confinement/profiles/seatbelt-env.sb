@@ -1,0 +1,8 @@
+;; ainative plugin [env] capability — seatbelt profile stub (M3)
+;;
+;; Minimal baseline: allow env reads that macOS CLIs commonly touch.
+;; Real env allowlist (per-plugin declared vars only) is M3.5 follow-up.
+;; TODO(M3.5): enforce at wrap layer via env filtering, not seatbelt.
+
+(allow sysctl-read)
+(allow mach-lookup)
