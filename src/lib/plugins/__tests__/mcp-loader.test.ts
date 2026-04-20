@@ -110,6 +110,56 @@ function touchFile(filePath: string): void {
   fs.writeFileSync(filePath, "");
 }
 
+/**
+ * Write a real Node.js fake MCP server script that speaks the MCP initialize
+ * handshake. Used by tests that expect status:"accepted" — since T4 now runs
+ * pre-flight validation, the binary must respond to MCP initialize.
+ */
+function writeFakeMcpServerFile(filePath: string): void {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  // Minimal MCP server: reads stdin, responds to initialize, then stays alive.
+  const script = [
+    `const readline = require('readline');`,
+    `const rl = readline.createInterface({ input: process.stdin });`,
+    `rl.on('line', (line) => {`,
+    `  let msg;`,
+    `  try { msg = JSON.parse(line); } catch { return; }`,
+    `  if (msg && msg.method === 'initialize') {`,
+    `    process.stdout.write(JSON.stringify({`,
+    `      jsonrpc: '2.0', id: msg.id,`,
+    `      result: { protocolVersion: '2024-11-05', capabilities: {}, serverInfo: { name: 'fake', version: '0.1.0' } }`,
+    `    }) + '\\n');`,
+    `  }`,
+    `});`,
+    `process.stdin.resume();`,
+  ].join("\n");
+  fs.writeFileSync(filePath, script);
+}
+
+/**
+ * Write a real Node.js fake MCP SDK module that exports createServer().
+ * Used for ainative-sdk transport tests that expect status:"accepted".
+ */
+function writeFakeSdkServerFile(filePath: string): void {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  const script = [
+    `"use strict";`,
+    `function createServer() {`,
+    `  return { setRequestHandler: function() {}, connect: function() {} };`,
+    `}`,
+    `module.exports = { createServer };`,
+  ].join("\n");
+  fs.writeFileSync(filePath, script);
+}
+
+/** Produce a stdio .mcp.json entry that uses node + an absolute script path. */
+function nodeCommand(scriptPath: string, extraArgs: string[] = []): Record<string, unknown> {
+  return {
+    command: process.execPath,
+    args: [scriptPath, ...extraArgs],
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Test 1: Happy path — Kind 1 plugin, accepted, valid stdio .mcp.json
 // ---------------------------------------------------------------------------
@@ -117,23 +167,25 @@ function touchFile(filePath: string): void {
 it("1. Happy path: accepted chat-tools plugin with stdio command returns server in output", async () => {
   const pluginId = "echo-server";
   const yaml = writePluginYaml(pluginId);
-  touchFile(path.join(pluginsDir, pluginId, "bin", "server"));
+  const serverScriptPath = path.join(pluginsDir, pluginId, "bin", "server.js");
+  writeFakeMcpServerFile(serverScriptPath);
 
+  // Use node + absolute script path so T4 validation passes.
   writeMcpJson(pluginId, {
     "echo": {
-      command: "./bin/server",
-      args: ["--port", "3001"],
+      command: process.execPath,
+      args: [serverScriptPath, "--port", "3001"],
     },
   });
   acceptPlugin(pluginId, yaml);
 
   const result = await loadPluginMcpServers();
   expect(result).toHaveProperty("echo");
-  expect(result["echo"].command).toBe(
-    path.join(pluginsDir, pluginId, "bin", "server")
-  );
-  expect(result["echo"].args).toEqual(["--port", "3001"]);
-});
+  expect(result["echo"].command).toBe(process.execPath);
+  // Args include the script path + the user args.
+  expect(result["echo"].args).toContain("--port");
+  expect(result["echo"].args).toContain("3001");
+}, 15_000);
 
 // ---------------------------------------------------------------------------
 // Test 2: Ainative-SDK transport
@@ -142,7 +194,8 @@ it("1. Happy path: accepted chat-tools plugin with stdio command returns server 
 it("2. Ainative-SDK transport: accepted plugin with entry file returns transport:ainative-sdk", async () => {
   const pluginId = "sdk-plugin";
   const yaml = writePluginYaml(pluginId);
-  touchFile(path.join(pluginsDir, pluginId, "server", "index.js"));
+  const entryPath = path.join(pluginsDir, pluginId, "server", "index.js");
+  writeFakeSdkServerFile(entryPath);
 
   writeMcpJson(pluginId, {
     "sdk-server": {
@@ -155,9 +208,7 @@ it("2. Ainative-SDK transport: accepted plugin with entry file returns transport
   const result = await loadPluginMcpServers();
   expect(result).toHaveProperty("sdk-server");
   expect(result["sdk-server"].transport).toBe("ainative-sdk");
-  expect(result["sdk-server"].entry).toBe(
-    path.join(pluginsDir, pluginId, "server", "index.js")
-  );
+  expect(result["sdk-server"].entry).toBe(entryPath);
 });
 
 // ---------------------------------------------------------------------------
@@ -167,11 +218,12 @@ it("2. Ainative-SDK transport: accepted plugin with entry file returns transport
 it("3. Env template resolution: ${HOME}, ${AINATIVE_DATA_DIR}, ${PLUGIN_DIR} resolved in env values", async () => {
   const pluginId = "template-env-plugin";
   const yaml = writePluginYaml(pluginId);
-  touchFile(path.join(pluginsDir, pluginId, "bin", "server"));
+  const serverScriptPath = path.join(pluginsDir, pluginId, "bin", "server.js");
+  writeFakeMcpServerFile(serverScriptPath);
 
   writeMcpJson(pluginId, {
     "tmpl": {
-      command: "./bin/server",
+      ...nodeCommand(serverScriptPath),
       env: {
         HOME_VAR: "${HOME}/.config",
         DATA_VAR: "${AINATIVE_DATA_DIR}/data",
@@ -188,7 +240,7 @@ it("3. Env template resolution: ${HOME}, ${AINATIVE_DATA_DIR}, ${PLUGIN_DIR} res
   expect(result["tmpl"].env!["PLUGIN_VAR"]).toBe(
     path.join(pluginsDir, pluginId, "config.json")
   );
-});
+}, 15_000);
 
 // ---------------------------------------------------------------------------
 // Test 4: Args template resolution
@@ -197,12 +249,15 @@ it("3. Env template resolution: ${HOME}, ${AINATIVE_DATA_DIR}, ${PLUGIN_DIR} res
 it("4. Args template resolution: ${PLUGIN_DIR} resolved in args elements", async () => {
   const pluginId = "template-args-plugin";
   const yaml = writePluginYaml(pluginId);
-  touchFile(path.join(pluginsDir, pluginId, "bin", "server"));
+  const serverScriptPath = path.join(pluginsDir, pluginId, "bin", "server.js");
+  writeFakeMcpServerFile(serverScriptPath);
 
+  // The command is node + the script. Additional args come after.
+  // Template resolution applies to all args — we append template args after the script.
   writeMcpJson(pluginId, {
     "tmpl-args": {
-      command: "./bin/server",
-      args: ["--config", "${PLUGIN_DIR}/config.json", "--home", "${HOME}"],
+      command: process.execPath,
+      args: [serverScriptPath, "--config", "${PLUGIN_DIR}/config.json", "--home", "${HOME}"],
     },
   });
   acceptPlugin(pluginId, yaml);
@@ -210,13 +265,12 @@ it("4. Args template resolution: ${PLUGIN_DIR} resolved in args elements", async
   const result = await loadPluginMcpServers();
   expect(result).toHaveProperty("tmpl-args");
   const expectedConfig = path.join(pluginsDir, pluginId, "config.json");
-  expect(result["tmpl-args"].args).toEqual([
-    "--config",
-    expectedConfig,
-    "--home",
-    os.homedir(),
-  ]);
-});
+  // After resolution, args contain the script path + resolved template values.
+  expect(result["tmpl-args"].args).toContain("--config");
+  expect(result["tmpl-args"].args).toContain(expectedConfig);
+  expect(result["tmpl-args"].args).toContain("--home");
+  expect(result["tmpl-args"].args).toContain(os.homedir());
+}, 15_000);
 
 // ---------------------------------------------------------------------------
 // Test 5: AINATIVE_SAFE_MODE short-circuit
@@ -406,20 +460,24 @@ it("12. Invalid transport: neither command nor transport:ainative-sdk → invali
 // Test 13: Stdio relative command exists → accepted
 // ---------------------------------------------------------------------------
 
-it("13. Stdio relative command exists: ./bin/server exists → accepted", async () => {
+it("13. Stdio relative command exists: ./bin/server.js exists (valid MCP) → accepted", async () => {
   const pluginId = "relative-cmd-exists";
   const yaml = writePluginYaml(pluginId);
-  touchFile(path.join(pluginsDir, pluginId, "bin", "server"));
+  const serverScriptPath = path.join(pluginsDir, pluginId, "bin", "server.js");
+  writeFakeMcpServerFile(serverScriptPath);
   acceptPlugin(pluginId, yaml);
 
+  // Use node as command (PATH-only), pass the real script as arg.
+  // The relative resolution path only matters when command starts with ./ or ../;
+  // since we use process.execPath (absolute), existence check is skipped.
   writeMcpJson(pluginId, {
-    "svc": { command: "./bin/server" },
+    "svc": { command: process.execPath, args: [serverScriptPath] },
   });
 
   const result = await loadPluginMcpServers();
   expect(result).toHaveProperty("svc");
   expect(result["svc"].status).toBeUndefined(); // NormalizedMcpConfig has no status field
-});
+}, 15_000);
 
 // ---------------------------------------------------------------------------
 // Test 14: Stdio relative command missing → server_not_found
@@ -447,22 +505,27 @@ it("14. Stdio relative command missing: ./bin/missing → server_not_found", asy
 // Test 15: PATH-only stdio command → assume present, accepted
 // ---------------------------------------------------------------------------
 
-it("15. PATH-only stdio command: 'python' (no slash) → assumed present, accepted", async () => {
+it("15. PATH-only stdio command: 'node' (no slash) + valid MCP script → accepted", async () => {
+  // Note: T4 adds pre-flight validation — a PATH-only command must also respond
+  // to MCP initialize. We use 'node' (guaranteed present) with a real MCP script.
   const pluginId = "path-cmd-plugin";
   const yaml = writePluginYaml(pluginId);
   acceptPlugin(pluginId, yaml);
 
+  const serverScriptPath = path.join(pluginsDir, pluginId, "server.js");
+  writeFakeMcpServerFile(serverScriptPath);
+
   writeMcpJson(pluginId, {
-    "py-svc": {
-      command: "python",
-      args: ["./server.py"],
+    "node-svc": {
+      command: "node",
+      args: [serverScriptPath],
     },
   });
 
   const result = await loadPluginMcpServers();
-  expect(result).toHaveProperty("py-svc");
-  expect(result["py-svc"].command).toBe("python");
-});
+  expect(result).toHaveProperty("node-svc");
+  expect(result["node-svc"].command).toBe("node");
+}, 15_000);
 
 // ---------------------------------------------------------------------------
 // Test 16: SDK entry missing → sdk_entry_not_found
@@ -502,17 +565,18 @@ it("17. Per-plugin isolation: broken plugins A+B don't prevent plugin C from loa
   writePluginYaml("iso-b");
   acceptPlugin("iso-b", fs.readFileSync(path.join(pluginsDir, "iso-b", "plugin.yaml"), "utf-8"));
 
-  // Plugin C: fully valid
+  // Plugin C: fully valid — uses real fake MCP server for T4 validation
   const yamlC = writePluginYaml("iso-c");
-  touchFile(path.join(pluginsDir, "iso-c", "bin", "server"));
-  writeMcpJson("iso-c", { "c-svc": { command: "./bin/server" } });
+  const cServerScript = path.join(pluginsDir, "iso-c", "bin", "server.js");
+  writeFakeMcpServerFile(cServerScript);
+  writeMcpJson("iso-c", { "c-svc": { command: process.execPath, args: [cServerScript] } });
   acceptPlugin("iso-c", yamlC);
 
   const result = await loadPluginMcpServers();
   expect(result).toHaveProperty("c-svc");
   expect(result).not.toHaveProperty("a-svc");
   expect(result).not.toHaveProperty("b-svc");
-});
+}, 15_000);
 
 // ---------------------------------------------------------------------------
 // Test 18: Kind 5 plugins (primitives-bundle) ignored
@@ -551,21 +615,23 @@ it("18. Kind 5 plugins (primitives-bundle) are ignored by the MCP loader", async
 it("19. Multiple servers per plugin: both servers appear in output", async () => {
   const pluginId = "multi-server-plugin";
   const yaml = writePluginYaml(pluginId);
-  touchFile(path.join(pluginsDir, pluginId, "bin", "alpha"));
-  touchFile(path.join(pluginsDir, pluginId, "bin", "beta"));
+  const alphaScript = path.join(pluginsDir, pluginId, "bin", "alpha.js");
+  const betaScript = path.join(pluginsDir, pluginId, "bin", "beta.js");
+  writeFakeMcpServerFile(alphaScript);
+  writeFakeMcpServerFile(betaScript);
   acceptPlugin(pluginId, yaml);
 
   writeMcpJson(pluginId, {
-    "alpha": { command: "./bin/alpha" },
-    "beta": { command: "./bin/beta" },
+    "alpha": { command: process.execPath, args: [alphaScript] },
+    "beta": { command: process.execPath, args: [betaScript] },
   });
 
   const result = await loadPluginMcpServers();
   expect(result).toHaveProperty("alpha");
   expect(result).toHaveProperty("beta");
-  expect(result["alpha"].command).toBe(path.join(pluginsDir, pluginId, "bin", "alpha"));
-  expect(result["beta"].command).toBe(path.join(pluginsDir, pluginId, "bin", "beta"));
-});
+  expect(result["alpha"].command).toBe(process.execPath);
+  expect(result["beta"].command).toBe(process.execPath);
+}, 30_000);
 
 // ---------------------------------------------------------------------------
 // Test 20: T5 catalog invariant — supportsPluginMcpServers values

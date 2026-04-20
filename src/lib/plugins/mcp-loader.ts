@@ -32,6 +32,10 @@ import {
   getAinativeDataDir,
   getAinativeLogsDir,
 } from "@/lib/utils/ainative-paths";
+import {
+  validateStdioMcp,
+  validateInProcessSdk,
+} from "@/lib/plugins/transport-dispatch";
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -63,7 +67,10 @@ export interface PluginMcpRegistration {
     | "capability_accept_stale"
     | "invalid_mcp_transport"
     | "ambiguous_mcp_transport"
-    | "safe_mode";
+    | "safe_mode"
+    | "stdio_init_timeout"
+    | "stdio_init_malformed"
+    | "sdk_invalid_export";
   manifestHash?: string;
 }
 
@@ -148,7 +155,7 @@ interface ScanResult {
   registrations: PluginMcpRegistration[];
 }
 
-function scanPlugin(pluginDir: string, pluginId: string): ScanResult {
+async function scanPlugin(pluginDir: string, pluginId: string): Promise<ScanResult> {
   const registrations: PluginMcpRegistration[] = [];
 
   // --- Read plugin.yaml ---
@@ -317,6 +324,23 @@ function scanPlugin(pluginDir: string, pluginId: string): ScanResult {
           ...(resolvedArgs !== undefined && { args: resolvedArgs }),
           ...(resolvedEnv !== undefined && { env: resolvedEnv }),
         };
+        // T4: validate before accepting — pre-flight MCP handshake (Option A)
+        const stdioValidation = await validateStdioMcp(config, pluginId, serverName);
+        if (!stdioValidation.ok) {
+          logToFile(
+            `[mcp-loader] plugin ${pluginId} server "${serverName}": stdio validation failed (${stdioValidation.reason})${stdioValidation.detail ? ": " + stdioValidation.detail : ""}`
+          );
+          registrations.push({
+            pluginId,
+            serverName,
+            transport: "stdio",
+            config: {},
+            status: "disabled",
+            disabledReason: stdioValidation.reason,
+            manifestHash,
+          });
+          continue;
+        }
         registrations.push({
           pluginId,
           serverName,
@@ -326,12 +350,29 @@ function scanPlugin(pluginDir: string, pluginId: string): ScanResult {
           manifestHash,
         });
       } else {
-        // PATH-only or absolute command — assume present
+        // PATH-only or absolute command — assume present; still validate
         const config: NormalizedMcpConfig = {
           command: rawCommand,
           ...(resolvedArgs !== undefined && { args: resolvedArgs }),
           ...(resolvedEnv !== undefined && { env: resolvedEnv }),
         };
+        // T4: validate before accepting — pre-flight MCP handshake (Option A)
+        const stdioValidation = await validateStdioMcp(config, pluginId, serverName);
+        if (!stdioValidation.ok) {
+          logToFile(
+            `[mcp-loader] plugin ${pluginId} server "${serverName}": stdio validation failed (${stdioValidation.reason})${stdioValidation.detail ? ": " + stdioValidation.detail : ""}`
+          );
+          registrations.push({
+            pluginId,
+            serverName,
+            transport: "stdio",
+            config: {},
+            status: "disabled",
+            disabledReason: stdioValidation.reason,
+            manifestHash,
+          });
+          continue;
+        }
         registrations.push({
           pluginId,
           serverName,
@@ -386,6 +427,23 @@ function scanPlugin(pluginDir: string, pluginId: string): ScanResult {
         entry: absEntry,
         ...(resolvedEnv !== undefined && { env: resolvedEnv }),
       };
+      // T4: validate in-process SDK before accepting (Option A pre-flight)
+      const sdkValidation = await validateInProcessSdk(config, pluginId, serverName);
+      if (!sdkValidation.ok) {
+        logToFile(
+          `[mcp-loader] plugin ${pluginId} server "${serverName}": SDK validation failed (${sdkValidation.reason})${sdkValidation.detail ? ": " + sdkValidation.detail : ""}`
+        );
+        registrations.push({
+          pluginId,
+          serverName,
+          transport: "ainative-sdk",
+          config: {},
+          status: "disabled",
+          disabledReason: sdkValidation.reason,
+          manifestHash,
+        });
+        continue;
+      }
       registrations.push({
         pluginId,
         serverName,
@@ -483,7 +541,7 @@ export async function listPluginMcpRegistrations(opts?: {
     const pluginId = entry;
 
     try {
-      const result = scanPlugin(pluginDir, pluginId);
+      const result = await scanPlugin(pluginDir, pluginId);
       allRegistrations.push(...result.registrations);
     } catch (err) {
       // Per-plugin isolation: one broken plugin cannot crash the loader.
