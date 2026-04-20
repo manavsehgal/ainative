@@ -57,6 +57,18 @@ export class CodexAppServerClient {
   static async connect(
     options: CodexAppServerClientOptions = {}
   ): Promise<CodexAppServerClient> {
+    // Sync plugin MCP servers into ~/.codex/config.toml before spawning so
+    // the new Codex session picks up the current plugin set (TDR-035 §1 Codex row).
+    // Dynamic import is required per TDR-032 (avoids module-load cycles).
+    try {
+      const { syncPluginMcpToCodex } = await import(
+        "@/lib/environment/sync/mcp-sync"
+      );
+      await syncPluginMcpToCodex();
+    } catch {
+      // Non-fatal: plugin sync failure must not block Codex from starting.
+    }
+
     const port = await reservePort();
     const listenUrl = `ws://127.0.0.1:${port}`;
     const env: NodeJS.ProcessEnv = { ...process.env };
