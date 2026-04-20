@@ -1,0 +1,15 @@
+id: echo-server
+version: 0.1.0
+apiVersion: "0.14"
+kind: chat-tools
+name: Echo Server
+description: |
+  Minimal stdio MCP server exposing a single "echo" tool that returns
+  its input verbatim. No external dependencies, no network, no file
+  system access — the reference plugin for validating ainative's
+  Kind-1 plugin surface end-to-end.
+author: ainative
+tags:
+  - dogfood
+  - mcp-reference
+capabilities: []

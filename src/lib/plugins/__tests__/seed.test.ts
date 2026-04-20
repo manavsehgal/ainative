@@ -21,12 +21,22 @@ describe("seedExamplePluginsIfEmpty", () => {
     expect(fs.existsSync(path.join(tmpDir, "plugins", "finance-pack", "plugin.yaml"))).toBe(true);
   });
 
+  it("copies echo-server dogfood plugin on first-boot", () => {
+    seedExamplePluginsIfEmpty();
+    const echoDir = path.join(tmpDir, "plugins", "echo-server");
+    expect(fs.existsSync(echoDir)).toBe(true);
+    expect(fs.existsSync(path.join(echoDir, "plugin.yaml"))).toBe(true);
+    expect(fs.existsSync(path.join(echoDir, ".mcp.json"))).toBe(true);
+    expect(fs.existsSync(path.join(echoDir, "server.py"))).toBe(true);
+  });
+
   it("does NOT overwrite when plugins/ already has a subdirectory", () => {
     const existing = path.join(tmpDir, "plugins", "user-pack");
     fs.mkdirSync(existing, { recursive: true });
     fs.writeFileSync(path.join(existing, "plugin.yaml"), "existing");
     seedExamplePluginsIfEmpty();
     expect(fs.existsSync(path.join(tmpDir, "plugins", "finance-pack"))).toBe(false);
+    expect(fs.existsSync(path.join(tmpDir, "plugins", "echo-server"))).toBe(false);
     expect(fs.readFileSync(path.join(existing, "plugin.yaml"), "utf-8")).toBe("existing");
   });
 
@@ -34,6 +44,6 @@ describe("seedExamplePluginsIfEmpty", () => {
     seedExamplePluginsIfEmpty();
     seedExamplePluginsIfEmpty();
     const items = fs.readdirSync(path.join(tmpDir, "plugins"));
-    expect(items.sort()).toEqual(["finance-pack"]);
+    expect(items.sort()).toEqual(["echo-server", "finance-pack"]);
   });
 });
