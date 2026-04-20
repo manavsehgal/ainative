@@ -45,6 +45,39 @@ import {
   buildTaskOutputInstructions,
 } from "@/lib/documents/output-scanner";
 
+// ── 5-source MCP merge ───────────────────────────────────────────────
+
+/**
+ * Five-source MCP merge for the Anthropic direct runtime per TDR-035 §1.
+ * Order: profile → browser → external → plugin → ainative (last, non-negotiable).
+ *
+ * Async + dynamic import of @/lib/chat/ainative-tools per TDR-032 dynamic-import
+ * discipline — the helper form matches withAinativeMcpServer in claude-agent.ts:70
+ * so the pattern copies cleanly across adapters.
+ *
+ * pluginServers is passed as a pure arg (caller responsibility) — the helper
+ * does NOT call loadPluginMcpServers directly; callers load it once per
+ * request and pass the result here so the full task lifecycle uses a
+ * single consistent snapshot.
+ */
+export async function withAnthropicDirectMcpServers(
+  profileServers: Record<string, unknown>,
+  browserServers: Record<string, unknown>,
+  externalServers: Record<string, unknown>,
+  pluginServers: Record<string, unknown>,
+  projectId?: string | null,
+): Promise<Record<string, unknown>> {
+  const { createToolServer } = await import("@/lib/chat/ainative-tools");
+  const ainativeServer = createToolServer(projectId).asMcpServer();
+  return {
+    ...profileServers,
+    ...browserServers,
+    ...externalServers,
+    ...pluginServers,
+    ainative: ainativeServer,
+  };
+}
+
 // ── SDK lazy import ──────────────────────────────────────────────────
 
 type AnthropicSDK = typeof import("@anthropic-ai/sdk");
@@ -94,6 +127,14 @@ interface AnthropicCallOptions {
   profileInstructions?: string;
   /** Extended thinking config (Anthropic only). */
   extendedThinking?: { enabled: boolean; budgetTokens?: number };
+  /**
+   * Five-source merged MCP servers (TDR-035 §1).
+   * Passed as `mcp_servers` in the Anthropic Messages API request body.
+   * The Anthropic SDK mcp_servers field is in beta; typed as unknown to
+   * avoid SDK version skew. The `params` object is already typed as `any`
+   * so no ts-expect-error is needed.
+   */
+  mcpServers?: Record<string, unknown>;
 }
 
 /**
@@ -171,6 +212,13 @@ async function callAnthropicModel(
       type: "enabled",
       budget_tokens: options.extendedThinking.budgetTokens ?? 10000,
     };
+  }
+
+  // Inject five-source merged MCP servers (TDR-035 §1).
+  // mcp_servers is a beta Anthropic Messages API field; params is typed as
+  // any above so no extra assertion is needed here.
+  if (options.mcpServers && Object.keys(options.mcpServers).length > 0) {
+    params.mcp_servers = options.mcpServers;
   }
 
   const stream = client.messages.stream(params, { signal });
@@ -304,6 +352,21 @@ async function executeAnthropicDirectTask(taskId: string, isResume = false): Pro
     const toolServer = createToolServer(task.projectId);
     const { tools, executeHandler } = toolServer.forProvider("anthropic");
 
+    // Merge all five MCP server sources (TDR-035 §1).
+    // Browser/external MCP are not yet wired in this adapter; pass {} for those
+    // sources. pluginServers is loaded dynamically to avoid module-load cycles.
+    const pluginServers = await (async () => {
+      const { loadPluginMcpServers } = await import("@/lib/plugins/mcp-loader");
+      return loadPluginMcpServers({ runtime: "anthropic-direct" });
+    })();
+    const mergedMcpServers = await withAnthropicDirectMcpServers(
+      {},
+      {},
+      {},
+      pluginServers,
+      task.projectId,
+    );
+
     // Build initial messages or restore from snapshot
     let initialMessages: LoopMessage[];
     if (isResume) {
@@ -361,6 +424,7 @@ async function executeAnthropicDirectTask(taskId: string, isResume = false): Pro
             enableCaching: true,
             profileInstructions: profile?.skillMd,
             extendedThinking: capOverrides?.extendedThinking,
+            mcpServers: mergedMcpServers,
           },
         );
 
