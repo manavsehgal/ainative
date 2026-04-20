@@ -290,6 +290,98 @@ it("5. Safe mode: AINATIVE_SAFE_MODE=true returns {} even with accepted plugins"
 });
 
 // ---------------------------------------------------------------------------
+// T13: safe-mode with visible disabled plugin registrations
+// ---------------------------------------------------------------------------
+
+describe("T13 — safe-mode (AINATIVE_SAFE_MODE=true) with visible disabled plugins", () => {
+  it("listPluginMcpRegistrations emits one disabled+safe_mode registration per Kind 1 plugin", async () => {
+    // Kind 1 plugin (alpha) — would normally be accepted+loaded
+    writePluginYaml("alpha");
+    touchFile(path.join(pluginsDir, "alpha", "bin", "server"));
+    writeMcpJson("alpha", { "svc": { command: "./bin/server" } });
+
+    // Kind 5 plugin (beta) — should NOT appear in safe-mode output
+    const betaDir = path.join(pluginsDir, "beta");
+    fs.mkdirSync(betaDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(betaDir, "plugin.yaml"),
+      [
+        "id: beta",
+        'version: "1.0.0"',
+        'apiVersion: "0.15"',
+        "kind: primitives-bundle",
+      ].join("\n") + "\n",
+    );
+
+    // Another Kind 1 plugin (gamma) to confirm multiple plugins are enumerated
+    writePluginYaml("gamma");
+    touchFile(path.join(pluginsDir, "gamma", "bin", "server"));
+    writeMcpJson("gamma", { "svc": { command: "./bin/server" } });
+
+    process.env.AINATIVE_SAFE_MODE = "true";
+    const regs = await listPluginMcpRegistrations();
+
+    // Exactly two entries (alpha + gamma), beta is filtered out as Kind 5.
+    expect(regs).toHaveLength(2);
+
+    const alphaReg = regs.find((r) => r.pluginId === "alpha");
+    expect(alphaReg).toBeDefined();
+    expect(alphaReg!.status).toBe("disabled");
+    expect(alphaReg!.disabledReason).toBe("safe_mode");
+    expect(alphaReg!.serverName).toBe("");
+    expect(alphaReg!.transport).toBe("stdio");
+    expect(alphaReg!.config).toEqual({});
+
+    const gammaReg = regs.find((r) => r.pluginId === "gamma");
+    expect(gammaReg).toBeDefined();
+    expect(gammaReg!.status).toBe("disabled");
+    expect(gammaReg!.disabledReason).toBe("safe_mode");
+
+    // Kind 5 (beta) MUST NOT appear
+    expect(regs.find((r) => r.pluginId === "beta")).toBeUndefined();
+  });
+
+  it("loadPluginMcpServers still returns {} in safe-mode (projection excludes disabled entries)", async () => {
+    writePluginYaml("alpha");
+    touchFile(path.join(pluginsDir, "alpha", "bin", "server"));
+    writeMcpJson("alpha", { "svc": { command: "./bin/server" } });
+
+    process.env.AINATIVE_SAFE_MODE = "true";
+    const result = await loadPluginMcpServers();
+    expect(result).toEqual({});
+  });
+
+  it("plugins with no plugin.yaml or invalid manifest are silently skipped in safe-mode enumeration", async () => {
+    // Directory with no plugin.yaml at all
+    fs.mkdirSync(path.join(pluginsDir, "no-manifest"), { recursive: true });
+
+    // Directory with an invalid (unparseable) plugin.yaml
+    const badDir = path.join(pluginsDir, "bad-manifest");
+    fs.mkdirSync(badDir, { recursive: true });
+    fs.writeFileSync(path.join(badDir, "plugin.yaml"), "not: valid: yaml: {[}");
+
+    // Directory with a schema-invalid plugin.yaml (missing required fields)
+    const badSchemaDir = path.join(pluginsDir, "bad-schema");
+    fs.mkdirSync(badSchemaDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(badSchemaDir, "plugin.yaml"),
+      "id: bad-schema\n",
+    );
+
+    // One valid Kind 1 plugin
+    writePluginYaml("valid-alpha");
+    writeMcpJson("valid-alpha", { "svc": { command: "./bin/server" } });
+
+    process.env.AINATIVE_SAFE_MODE = "true";
+    const regs = await listPluginMcpRegistrations();
+
+    expect(regs).toHaveLength(1);
+    expect(regs[0].pluginId).toBe("valid-alpha");
+    expect(regs[0].disabledReason).toBe("safe_mode");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Test 6: Ollama runtime filter
 // ---------------------------------------------------------------------------
 

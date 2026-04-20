@@ -111,7 +111,8 @@ program
   .option("-p, --port <number>", "port to start on", "3000")
   .option("--data-dir <path>", "custom data directory (overrides AINATIVE_DATA_DIR)")
   .option("--reset", "delete the local database before starting")
-  .option("--no-open", "don't auto-open browser");
+  .option("--no-open", "don't auto-open browser")
+  .option("--safe-mode", "disable Kind-1 plugin MCP servers; Kind-5 primitives bundles still load");
 
 program.parse();
 
@@ -120,6 +121,14 @@ const opts = program.opts();
 // Apply --data-dir before resolving paths
 if (opts.dataDir) {
   process.env.AINATIVE_DATA_DIR = opts.dataDir;
+}
+
+// Apply --safe-mode: export AINATIVE_SAFE_MODE=true so mcp-loader short-circuits
+// Kind-1 plugin MCP servers. Kind-5 primitives bundles are managed separately
+// (src/lib/plugins/registry.ts) and are not affected by this flag.
+if (opts.safeMode) {
+  process.env.AINATIVE_SAFE_MODE = "true";
+  console.log("Safe mode: Kind-1 plugin MCP servers disabled for this session.");
 }
 
 // Migrate any legacy ~/.stagent/ layout to ~/.ainative/ before resolving any
@@ -259,6 +268,7 @@ async function main() {
       AINATIVE_DATA_DIR: DATA_DIR,
       AINATIVE_LAUNCH_CWD: launchCwd,
       PORT: String(actualPort),
+      ...(opts.safeMode ? { AINATIVE_SAFE_MODE: "true" } : {}),
     },
   });
 

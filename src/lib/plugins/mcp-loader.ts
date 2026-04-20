@@ -479,9 +479,13 @@ async function scanPlugin(pluginDir: string, pluginId: string): Promise<ScanResu
 export async function listPluginMcpRegistrations(opts?: {
   runtime?: AgentRuntimeId;
 }): Promise<PluginMcpRegistration[]> {
-  // Short-circuit: safe mode
+  // Short-circuit: safe mode. Instead of returning [], enumerate kind:chat-tools
+  // plugins and emit one disabled+safe_mode registration per plugin so the
+  // /api/plugins surface can SHOW the user what is being blocked. Kind 5
+  // (primitives-bundle) plugins are not part of this loader — their registry
+  // lives in src/lib/plugins/registry.ts and is not affected by safe-mode.
   if (process.env.AINATIVE_SAFE_MODE === "true") {
-    return [];
+    return buildSafeModeRegistrations();
   }
 
   // Short-circuit: runtime that doesn't support plugin MCP servers.
@@ -585,6 +589,68 @@ export async function loadPluginMcpServers(opts?: {
       .filter((r) => r.status === "accepted")
       .map((r) => [r.serverName, r.config])
   );
+}
+
+/**
+ * Safe-mode projection: enumerate kind:chat-tools plugins and emit one
+ * disabled+safe_mode registration per plugin so /api/plugins surfaces what is
+ * being blocked. Does not parse .mcp.json, does not spawn anything, does not
+ * consult plugins.lock (safe-mode is a global kill-switch independent of
+ * capability state). Kind 5 (primitives-bundle) plugins are skipped — they
+ * are managed by src/lib/plugins/registry.ts and are not affected.
+ */
+function buildSafeModeRegistrations(): PluginMcpRegistration[] {
+  const out: PluginMcpRegistration[] = [];
+  const pluginsDir = getAinativePluginsDir();
+  if (!fs.existsSync(pluginsDir)) return out;
+
+  let entries: string[];
+  try {
+    entries = fs.readdirSync(pluginsDir).sort();
+  } catch {
+    return out;
+  }
+
+  for (const entry of entries) {
+    const pluginDir = path.join(pluginsDir, entry);
+    let stat: fs.Stats;
+    try {
+      stat = fs.statSync(pluginDir);
+    } catch {
+      continue;
+    }
+    if (!stat.isDirectory()) continue;
+
+    const pluginYamlPath = path.join(pluginDir, "plugin.yaml");
+    let content: string;
+    try {
+      content = fs.readFileSync(pluginYamlPath, "utf-8");
+    } catch {
+      continue; // no manifest — skip
+    }
+
+    let raw: unknown;
+    try {
+      raw = yaml.load(content);
+    } catch {
+      continue;
+    }
+
+    const parsed = PluginManifestSchema.safeParse(raw);
+    if (!parsed.success) continue;
+    if (parsed.data.kind !== "chat-tools") continue;
+
+    out.push({
+      pluginId: entry,
+      serverName: "",
+      transport: "stdio",
+      config: {},
+      status: "disabled",
+      disabledReason: "safe_mode",
+    });
+  }
+
+  return out;
 }
 
 /**
