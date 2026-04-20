@@ -315,6 +315,119 @@ describe("capability-check — isCapabilityAccepted", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Section 5b: TDR-037 two-path trust model — self-extension bypass
+// ---------------------------------------------------------------------------
+
+describe("capability-check — isCapabilityAccepted self-extension bypass (TDR-037)", () => {
+  const chatToolsManifest = (overrides: Record<string, unknown> = {}) => ({
+    id: "test-plugin",
+    version: "0.1.0",
+    apiVersion: "0.14",
+    kind: "chat-tools" as const,
+    capabilities: ["net"],
+    ...overrides,
+  });
+
+  const pluginRoot = () => path.join(tmpDir, "plugins", "test-plugin");
+
+  it("Self-extension: origin='ainative-internal' returns accepted: true with trustPath='self' and never reads lockfile", () => {
+    // Deliberately write a lockfile with the WRONG hash to prove the bypass
+    // does not consult it. If the classifier misfires, the hash_drift branch
+    // would flag it.
+    writePluginsLock("test-plugin", makeEntry({ manifestHash: "sha256:" + "z".repeat(64) }));
+
+    const manifest = chatToolsManifest({
+      origin: "ainative-internal",
+      capabilities: ["fs", "net"],
+    });
+    const result = isCapabilityAccepted("test-plugin", "sha256:" + "a".repeat(64), {
+      manifest,
+      rootDir: pluginRoot(),
+    });
+
+    expect(result).toEqual({ accepted: true, trustPath: "self" });
+  });
+
+  it("Self-extension: author='ainative' returns accepted: true with trustPath='self'", () => {
+    const manifest = chatToolsManifest({ author: "ainative", capabilities: ["fs"] });
+    const result = isCapabilityAccepted("test-plugin", "sha256:any", {
+      manifest,
+      rootDir: pluginRoot(),
+    });
+    expect(result).toEqual({ accepted: true, trustPath: "self" });
+  });
+
+  it("Self-extension: empty capabilities returns accepted: true with trustPath='self'", () => {
+    const manifest = chatToolsManifest({ capabilities: [] });
+    const result = isCapabilityAccepted("test-plugin", "sha256:any", {
+      manifest,
+      rootDir: pluginRoot(),
+    });
+    expect(result).toEqual({ accepted: true, trustPath: "self" });
+  });
+
+  it("Third-party path: omitted manifest → legacy lockfile behavior (no trustPath field)", () => {
+    // No manifest → classifier cannot run → fall through to the original
+    // lockfile-based path. Backward-compat for any legacy callers that don't
+    // pass the new opts.
+    const result = isCapabilityAccepted("test-plugin", "sha256:" + "a".repeat(64));
+    expect(result).toEqual({ accepted: false, reason: "not_accepted" });
+    expect(result).not.toHaveProperty("trustPath");
+  });
+
+  it("Third-party path: foreign author + non-empty caps + no origin → lockfile consulted", () => {
+    const manifest = chatToolsManifest({
+      author: "untrusted-dev",
+      capabilities: ["fs", "net"],
+    });
+    const result = isCapabilityAccepted("test-plugin", "sha256:any", {
+      manifest,
+      rootDir: pluginRoot(),
+      userIdentity: "alice@example.com",
+    });
+    // Lockfile has no entry → not_accepted. Importantly, no trustPath field.
+    expect(result).toEqual({ accepted: false, reason: "not_accepted" });
+  });
+
+  it("Settings 'strict' mode forces lockfile consultation even for self-extension manifests", () => {
+    const manifest = chatToolsManifest({ origin: "ainative-internal" });
+    const result = isCapabilityAccepted("test-plugin", "sha256:any", {
+      manifest,
+      rootDir: pluginRoot(),
+      trustModelSetting: "strict",
+    });
+    // Strict mode bypasses the classifier — lockfile is empty so not_accepted.
+    expect(result).toEqual({ accepted: false, reason: "not_accepted" });
+  });
+
+  it("Settings 'off' mode accepts all plugins with trustPath='self' (trust-on-first-use)", () => {
+    const manifest = chatToolsManifest({
+      author: "untrusted-dev",
+      capabilities: ["fs", "net", "child_process"],
+    });
+    const result = isCapabilityAccepted("test-plugin", "sha256:any", {
+      manifest,
+      rootDir: pluginRoot(),
+      userIdentity: "alice@example.com",
+      trustModelSetting: "off",
+    });
+    expect(result).toEqual({ accepted: true, trustPath: "self" });
+  });
+
+  it("Self-extension bypass does NOT write to plugins.lock (file remains absent)", () => {
+    // Assert lockfile untouched per TDR-037 — self-extension skips lockfile I/O.
+    expect(fs.existsSync(lockPath())).toBe(false);
+    const manifest = chatToolsManifest({ origin: "ainative-internal" });
+    isCapabilityAccepted("test-plugin", "sha256:any", {
+      manifest,
+      rootDir: pluginRoot(),
+    });
+    // Still absent after the check — no write occurred.
+    expect(fs.existsSync(lockPath())).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Section 6: T10 per-tool approval overlay
 // ---------------------------------------------------------------------------
 

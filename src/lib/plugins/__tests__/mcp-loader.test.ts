@@ -921,9 +921,18 @@ describe("T12 — listAcceptedInProcessEntriesForPlugin", () => {
 
 // ---------------------------------------------------------------------------
 // T14: confinement mode integration
+// (TDR-037 — these tests require AINATIVE_PLUGIN_CONFINEMENT=1 because
+// confinement is parked by default. Each test sets the flag in a try/finally.)
 // ---------------------------------------------------------------------------
 
 describe("T14 — confinementMode integration (wrap → mcp-loader)", () => {
+  beforeEach(() => {
+    process.env.AINATIVE_PLUGIN_CONFINEMENT = "1";
+  });
+  afterEach(() => {
+    delete process.env.AINATIVE_PLUGIN_CONFINEMENT;
+  });
+
   it("confinementMode:'seatbelt' on non-macOS surfaces confinement_unsupported_on_platform", async () => {
     // Force linux platform via Object.defineProperty so wrap.ts sees linux
     // regardless of the host running the test.

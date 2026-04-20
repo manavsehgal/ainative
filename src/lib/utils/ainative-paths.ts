@@ -62,6 +62,16 @@ export function getAinativePluginsDir(): string {
   return join(getAinativeDataDir(), "plugins");
 }
 
+/**
+ * Composition-bundle directory — where ainative-emitted apps (profile +
+ * blueprint + table + schedule compositions) live, as distinct from
+ * Kind 1 MCP plugins under plugins/. Consumed by classifyPluginTrust()
+ * as a self-extension signal and by the future /apps registry.
+ */
+export function getAinativeAppsDir(): string {
+  return join(getAinativeDataDir(), "apps");
+}
+
 /** Path to the plugins.lock file — sibling of the plugins/ directory. */
 export function getAinativePluginsLockPath(): string {
   return join(getAinativeDataDir(), "plugins.lock");

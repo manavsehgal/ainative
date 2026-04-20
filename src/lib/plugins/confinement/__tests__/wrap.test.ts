@@ -46,12 +46,17 @@ let tmpDir: string;
 beforeEach(() => {
   tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "wrap-test-"));
   process.env.AINATIVE_DATA_DIR = tmpDir;
+  // TDR-037 — confinement is PARKED behind the flag by default. These
+  // tests exercise the wrap logic when the flag is ON. A separate describe
+  // block below asserts the parked (OFF) behavior.
+  process.env.AINATIVE_PLUGIN_CONFINEMENT = "1";
   execFileSyncMock.mockReset();
 });
 
 afterEach(() => {
   fs.rmSync(tmpDir, { recursive: true, force: true });
   delete process.env.AINATIVE_DATA_DIR;
+  delete process.env.AINATIVE_PLUGIN_CONFINEMENT;
 });
 
 function makeInput(overrides: Partial<WrapInput> = {}): WrapInput {
@@ -444,5 +449,61 @@ describe("dockerBootSweep", () => {
     dockerBootSweep();
     // Just the ps call, no kill calls.
     expect(execFileSyncMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TDR-037 — confinement parked by default (AINATIVE_PLUGIN_CONFINEMENT unset)
+// ---------------------------------------------------------------------------
+
+describe("confinement parked by default (TDR-037)", () => {
+  beforeEach(() => {
+    // These tests simulate a fresh process with no flag set.
+    delete process.env.AINATIVE_PLUGIN_CONFINEMENT;
+    execFileSyncMock.mockReset();
+  });
+
+  it("wrapStdioSpawn falls through to unconfined spawn when flag is unset (mode: seatbelt)", () => {
+    const input: WrapInput = {
+      command: "/usr/bin/node",
+      args: ["server.js"],
+      env: { FOO: "bar" },
+      pluginId: "test-plugin",
+      pluginDir: "/tmp/plugins/test",
+      confinementMode: "seatbelt",
+      capabilities: ["fs"],
+    };
+    const result = wrapStdioSpawn(input, "darwin");
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      // Command passes through unchanged — no sandbox-exec wrap applied.
+      expect(result.wrapped.command).toBe("/usr/bin/node");
+      expect(result.wrapped.args).toEqual(["server.js"]);
+      expect(result.describe).toContain("confinement parked");
+    }
+  });
+
+  it("wrapStdioSpawn falls through for docker mode too — no docker binary invoked", () => {
+    const input: WrapInput = {
+      command: "/usr/bin/node",
+      args: ["server.js"],
+      env: {},
+      pluginId: "test-plugin",
+      pluginDir: "/tmp/plugins/test",
+      confinementMode: "docker",
+      capabilities: ["net"],
+      dockerImage: "python:3.12-slim",
+    };
+    const result = wrapStdioSpawn(input);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.wrapped.command).toBe("/usr/bin/node");
+      expect(result.describe).toContain("confinement parked");
+    }
+  });
+
+  it("dockerBootSweep is a no-op when flag is unset (never invokes docker ps)", () => {
+    dockerBootSweep();
+    expect(execFileSyncMock).not.toHaveBeenCalled();
   });
 });

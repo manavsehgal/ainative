@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 vi.mock("@/lib/db", () => ({
   db: {
@@ -71,6 +71,14 @@ describe("handleToolPermission — T10 plugin-MCP per-tool approval overlay (Lay
     clearPermissionCache("t10-task");
     vi.mocked(resolvePluginToolApproval).mockReset();
     vi.mocked(resolvePluginToolApproval).mockResolvedValue(null);
+    // TDR-037 — Layer 1.8 is OFF by default. These tests exercise the
+    // layer's behavior when operators opt in via the env flag. The layer
+    // is parked until third-party plugin distribution is actually shipped.
+    process.env.AINATIVE_PER_TOOL_APPROVAL = "1";
+  });
+
+  afterEach(() => {
+    delete process.env.AINATIVE_PER_TOOL_APPROVAL;
   });
 
   it("'never' mode auto-allows the plugin tool without a notification", async () => {
@@ -135,6 +143,28 @@ describe("handleToolPermission — T10 plugin-MCP per-tool approval overlay (Lay
 
     // Read auto-allows at Layer 1.75 — still a valid happy path.
     await handleToolPermission("t10-task", "Read", { file_path: "/tmp/x" });
+
+    expect(vi.mocked(resolvePluginToolApproval)).not.toHaveBeenCalled();
+  });
+});
+
+describe("handleToolPermission — Layer 1.8 parked by default (TDR-037)", () => {
+  beforeEach(() => {
+    clearPermissionCache("parked-task");
+    vi.mocked(resolvePluginToolApproval).mockReset();
+    // Explicitly DO NOT set AINATIVE_PER_TOOL_APPROVAL — assert it's OFF.
+    delete process.env.AINATIVE_PER_TOOL_APPROVAL;
+  });
+
+  it("skips Layer 1.8 resolution when AINATIVE_PER_TOOL_APPROVAL is unset (self-extension-first posture)", async () => {
+    vi.mocked(resolvePluginToolApproval).mockResolvedValueOnce("never");
+
+    // Without the flag, the 'never' override is not consulted and the
+    // request falls through to the notification path. We don't await the
+    // full result here (it would block on the notification); we just assert
+    // the resolver wasn't called.
+    handleToolPermission("parked-task", "mcp__echo-server__echo", { text: "hi" });
+    await new Promise((r) => setTimeout(r, 10));
 
     expect(vi.mocked(resolvePluginToolApproval)).not.toHaveBeenCalled();
   });

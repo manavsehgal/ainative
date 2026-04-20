@@ -1,248 +1,128 @@
 ---
 title: "Plugin Security Model"
 category: "security"
-lastUpdated: "2026-04-19"
+lastUpdated: "2026-04-20"
 ---
 
 # Plugin Security Model
 
-`ainative-business` loads third-party `kind: chat-tools` plugins that can ship
-MCP servers with real capabilities — filesystem, network, child processes.
-This doc is the engineer-to-engineer account of how plugins are contained:
-what each layer does, what it does **not** do, and the trade-offs behind
-those choices. Read before accepting capabilities, and before shipping a
-plugin.
+Ainative distinguishes **self-extension** (the user's own code, or code ainative wrote on the user's behalf) from **third-party plugins** (foreign code installed locally). Different posture, different surface, different ceremony.
 
-## 1. The layered security model
+See TDR-037 for the full decision record. Strategy §10 reference: marketplace / publish / trust-ladder lanes remain rolled back.
 
-The posture is ten layers deep. No single layer is sufficient; they are
-stacked so that a failure at one level still leaves meaningful gates before a
-plugin can cause harm.
-
-1. **Stdio transport process isolation** — OS-level, free with stdio. Plugins
-   run in a separate OS process and cannot touch ainative's Node heap. See
-   `src/lib/plugins/transport-dispatch.ts:9` — `detached: false` is a
-   TDR-035 §6 invariant.
-2. **Capability declaration + click-accept + lockfile pinning** —
-   `plugins.lock` records a SHA-256 of the manifest at accept time. Any drift
-   suspends the plugin. See `src/lib/plugins/capability-check.ts:143`.
-3. **Per-tool approval overlay** — Codex-style `never` / `prompt` / `approve`
-   per tool, resolved inside the chat permission pipeline at
-   `src/lib/agents/tool-permissions.ts:156` (Layer 1.8).
-4. **Confinement modes** — opt-in OS enforcement via seatbelt (macOS),
-   AppArmor (Linux), or Docker. See `src/lib/plugins/confinement/wrap.ts:153`.
-5. **Namespacing is mandatory** — every plugin tool becomes
-   `mcp__<server>__<tool>`. Collision with the ~91 builtin chat tools is
-   prevented by spread order (ainative wins — last in the 5-source merge).
-6. **`--safe-mode`** — boot-time kill switch. Kind-1 plugins are disabled
-   globally; Kind-5 primitive bundles still load.
-7. **MCP elicitation (SEP-1036)** — form and url modes are ready on the SDK
-   side. In ainative v1 the user-facing surface is the existing approval
-   notification; richer forms land in a follow-up.
-8. **Revocation** — `revoke_plugin_capabilities` removes the lockfile entry,
-   busts in-process module caches, and emits an Inbox notification. Stdio
-   children die naturally when the SDK session ends.
-9. **Optional capability expiry** — opt-in. A plugin accepted today can be
-   forced into re-prompt in 30 / 90 / 180 / 365 days.
-10. **Log trail** — every load, reload, disable, accept, revoke, safe-mode,
-    and confinement-unsupported event is appended to `plugins.log`.
-
-## 2. Capability declarations
-
-A plugin's `plugin.yaml` declares one or more capabilities from the closed
-set `fs`, `net`, `child_process`, `env` (see
-`src/lib/plugins/sdk/types.ts:6`). Each label describes what the plugin
-**intends to do**; with `confinementMode: "none"` (the default) the labels
-drive UI, audit, and review — they do NOT enforce at runtime. Only with a
-confinement mode set do the labels become OS-level constraints.
-
-- **`fs`** — Reads and writes under the plugin's own directory
-  (`<pluginDir>/state/`). Under `confinementMode: docker` that path is
-  bind-mounted to `/state`. Without confinement, `[fs]` is intent, not a
-  fence.
-- **`net`** — Outbound network. Under Docker: `--network bridge`; absent
-  this capability: `--network none` (`wrap.ts:331`).
-- **`child_process`** — The plugin spawns subprocesses. Highest-risk; also
-  the off-ramp trigger for mandatory Docker on external plugins (strategy
-  §11 Risk D).
-- **`env`** — Reads process env. A future pass will scrub
-  `ANTHROPIC_API_KEY` and OAuth tokens from inherited env
-  (`transport-dispatch.ts:127` TODO).
-
-A capability declaration does not grant tool permission. Every invocation
-still passes Layer 1.8 and (for `prompt` / `approve`) the standard
-approval pipeline.
-
-## 3. Click-accept and the lockfile
-
-`$AINATIVE_DATA_DIR/plugins.lock` is a YAML v1 file (see
-`src/lib/utils/ainative-paths.ts:66`) that pins the accepted state of every
-Kind-1 plugin. Writes are atomic: tempfile → `rename`, with a `.bak` copy
-taken first (`capability-check.ts:216`) and chmod 0600 on POSIX.
-
-**What the hash covers.** `deriveManifestHash` canonicalises `plugin.yaml`
-before SHA-256 (`capability-check.ts:143`). Cosmetic fields — `name`,
-`description`, `tags`, `author` — are excluded. A description typo does not
-invalidate the accept; a change to `capabilities`, `transport`, entry
-paths, or `confinementMode` does. Capability arrays are canonicalised so
-`[net, fs]` and `[fs, net]` hash identically — no false drift on reorder.
-
-**Drift detection.** At every boot `isCapabilityAccepted` recomputes the
-hash (`capability-check.ts:310`). The four states —
-`accepted` / `hash_drift` / `expired` / `not_accepted` — map one-to-one to
-lifecycle transitions. Drift suspends to `capability_accept_stale` with a
-re-accept prompt in the Inbox.
-
-**Why cosmetic fields are excluded.** A README typo fix should not
-invalidate every user's lockfile. The security boundary is about what the
-plugin *does*, not what it *says*.
-
-## 4. Per-tool approval
-
-Capability accept is install-time trust. Per-tool approval is the
-second gate, applied at every invocation. For each MCP-prefixed tool name
-(`mcp__<server>__<tool>`), the lockfile entry carries a mode:
-
-- **`never`** — auto-allow. Used once a user has exercised the tool enough
-  to trust it unconditionally. Hits the fast path at
-  `tool-permissions.ts:171`.
-- **`prompt`** — default on first install (or the plugin's
-  `defaultToolApproval` if declared). Falls through to the standard DB
-  notification → modal path.
-- **`approve`** — same as `prompt` today; reserved for a future elicitation
-  shape that demands a blocking approval before any argument is revealed
-  to the plugin.
-
-**Trust ramp pattern.** New plugin → leave all tools on `prompt`. After a
-few invocations where the user sees what arguments the tool was called
-with and what it returned, flip frequently-approved tools to `never` via
-`set_plugin_tool_approval({ pluginId, toolName, mode: "never" })`. Anything
-destructive stays on `prompt` forever.
-
-First install defaults are chosen deliberately pessimistic: a plugin the
-user has never seen before can do nothing without an explicit click.
-
-## 5. Confinement modes
-
-`plugin.yaml` accepts `confinementMode: "none" | "seatbelt" | "apparmor" |
-"docker"` (see `src/lib/plugins/sdk/types.ts:33`). Default is `"none"`.
-
-| Mode        | Platform    | Mechanism                          | Use when                          |
-|-------------|-------------|------------------------------------|-----------------------------------|
-| `none`      | all         | direct `spawn`                      | trusted first-party plugins       |
-| `seatbelt`  | macOS       | `sandbox-exec -p <policy>`          | you are on macOS and want FS/net narrowing |
-| `apparmor`  | Linux       | `aa-exec -p <profile>`              | you are on Linux with AppArmor loaded |
-| `docker`    | any (Docker required) | `docker run --rm -i --network <scope> --label ainative-plugin=<id>` | external plugins with `child_process`, or anything you do not fully trust |
-
-**Profile authoring — M3 ships stubs.** The files under
-`src/lib/plugins/confinement/profiles/` (four `.sb` and four `.profile`,
-one per capability) are deliberately minimal policy skeletons. The real
-per-capability policy corpus is an M3.5 task. If you write your own
-profile, drop it in at the same path with the same naming convention
-(`seatbelt-<cap>.sb`, `apparmor-<cap>.profile`) and the loader will pick
-it up.
-
-**Platform mismatch.** Requesting `seatbelt` on Linux, `apparmor` on
-macOS, or `docker` without Docker installed yields `disabled, reason:
-confinement_unsupported_on_platform` and an Inbox message — the plugin
-never loads. See `wrap.ts:196`.
-
-**Dry-run.** Before accepting, run
-
-```bash
-node dist/cli.js plugin dry-run <pluginId>
-```
-
-to print the computed wrap policy (full `sandbox-exec` argv or the exact
-`docker run` command) without spawning the plugin. See `bin/cli.ts:119`.
-
-## 6. Revocation and safe mode
-
-**Revoke a single plugin.** From chat:
+## Two paths
 
 ```
-revoke_plugin_capabilities({ pluginId: "my-plugin" })
+plugin.yaml loaded
+  → classifyPluginTrust(manifest, rootDir, userIdentity) = 'self' | 'third-party'
+    → 'self'         — zero ceremony, no lockfile, load directly
+    → 'third-party'  — lockfile-gated, full M3 machinery
 ```
 
-This removes the `plugins.lock` entry, busts `require.cache` for in-process
-SDK plugins, emits an Inbox `agent_message` notification, and appends to
-`plugins.log` (see `capability-check.ts:545`). Stdio children die naturally
-when the next SDK session ends — ainative does not manage stdio lifetimes
-directly (Option A per `transport-dispatch.ts:18`). Double-revoke is a
-graceful no-op.
+**Self-extension signals — any one flips to `self`:**
 
-**Safe mode.** Start with `npx ainative-business --safe-mode`. The CLI
-exports `AINATIVE_SAFE_MODE=true` into the Next.js child env
-(`bin/cli.ts:161`). The loader short-circuits and emits a
-`disabled, reason: safe_mode` registration for every Kind-1 plugin, so
-`GET /api/plugins` still surfaces what is blocked. Kind-5 plugins are
-unaffected — they carry no capability risk. Safe-mode is deliberately a
-boot-time switch for audit and incident response; there is no runtime
-Settings toggle in v1.
+- `origin: ainative-internal` in manifest (set by ainative chat tools + `ainative-app` skill)
+- `author: ainative` (builtin convention, e.g. `echo-server`)
+- `author` matches current user identity (hand-authored plugins)
+- bundle under `~/.ainative/apps/*` (composition surface)
+- `capabilities: []` (nothing to gate)
 
-## 7. Trust model rationale
+**Kind 5 (primitives-bundle)** is always self-extension — data-only, no executable surface beyond Zod-validated loaders.
 
-**Capabilities without confinement are declarative.** If you accept
-`[child_process]` for a plugin with `confinementMode: "none"`, the plugin
-can call `spawn('/bin/bash', ['-c', '...'])` and nothing at the ainative
-layer stops it. The label drove the click-accept sheet, the Inbox review,
-and the audit log — but not the syscall. If that matters, set
-`confinementMode` to `seatbelt`, `apparmor`, or `docker`.
+## Self-extension posture
 
-**Why we do not sandbox by default.** Claude Code and Codex both trust the
-install-time accept and do not sandbox plugin code at run time. Matching
-their convention keeps ainative plugins portable and keeps the surface
-debuggable. Forcing confinement during iteration would slow the ecosystem
-without shifting the main risk (install-time trust).
+When a bundle classifies as self-extension:
+- `isCapabilityAccepted` returns `{ accepted: true, trustPath: 'self' }` immediately
+- `plugins.lock` is never written or consulted
+- No click-accept, no modal, no hash-drift re-prompt
+- Plugin loads on first reload
 
-**Why Node `vm` is rejected.** Node's own documentation states `vm` is not
-a security boundary (strategy §10). Stdio spawn gives a real OS boundary;
-`vm` would be theatre.
+Matches the CLI freedom users expect from Claude Code / Codex. Users who want stricter posture on their own code can flip the Settings toggle (below).
 
-**Alignment with the ecosystem.** The 5-source MCP merge contract
-(TDR-035 §1) with ainative-as-last-wins is shared across adapters — Claude
-SDK (`src/lib/agents/claude-agent.ts:77`), Anthropic direct
-(`src/lib/agents/runtime/anthropic-direct.ts:63`), OpenAI direct
-(`src/lib/agents/runtime/openai-direct.ts:65`), Codex App Server. A plugin
-declaring `mcpServers: { ainative: ... }` is dropped by JS spread
-semantics. Namespacing is enforced by the protocol, not by bespoke checks.
+## Third-party posture
 
-## 8. What we don't protect against
+When classification falls through to `third-party`, the full M3 machinery engages:
 
-Being honest about the edges keeps plugin authors and users from building
-false expectations.
+1. **Canonical manifest hash** — SHA-256 of `plugin.yaml` with cosmetic fields excluded (`name`, `description`, `tags`, `author`). See `src/lib/plugins/capability-check.ts` `deriveManifestHash`.
+2. **Click-accept + `plugins.lock`** — user explicitly grants the declared capabilities. Lockfile pins the hash.
+3. **Silent-swap guard** — `grant_plugin_capabilities({ expectedHash })` rejects if the on-disk manifest changed since the user saw it.
+4. **Hash-drift re-prompt** — manifest edited after accept → `capability_accept_stale` → plugin disabled until user re-grants.
+5. **Revocation** — `revoke_plugin_capabilities` removes the lockfile entry, busts caches, posts Inbox notification.
 
-- **Docker kernel escape.** `confinementMode: "docker"` is not a
-  kernel-level sandbox-escape guarantee. The Docker privilege boundary is
-  publicly documented; a rooted container or kernel CVE is outside the
-  threat model.
-- **SHA-256 collision.** Out of scope. If SHA-256 breaks we will swap
-  algorithms.
-- **Plugin author malice at trust-before-install time.** The click-accept
-  is the sole gate that stops a user from installing a known-hostile
-  plugin. If a user accepts a plugin that advertises `[net]` and it then
-  exfiltrates, that is the trust model operating as designed. Read the
-  manifest. Inspect the source.
-- **PII sanitization.** Plugins may see anything the user passes to them,
-  including chat fragments, file paths, and env vars (with `[env]`). Users
-  sanitize or they don't.
-- **Supply-chain attacks on plugin dependencies.** Ainative does not audit
-  the contents of a plugin's `npm install` tree.
-- **Timing and side-channel attacks.** Not in scope.
+## Capabilities
+
+`plugin.yaml` declares what a plugin wants (read only — declarative, not enforced without confinement):
+
+| Capability | Meaning |
+|---|---|
+| `fs` | Filesystem read/write beyond the plugin's own dir |
+| `net` | Outbound network |
+| `child_process` | Spawn subprocesses |
+| `env` | Read non-public environment variables |
+
+Declaring a capability is a contract with the user, not a runtime gate. OS-level enforcement is opt-in via confinement modes (see below).
+
+## `--safe-mode`
+
+`node dist/cli.js --safe-mode` boots with all Kind 1 plugins disabled globally. Kind 5 primitives bundles still load (they have no executable surface). `/api/plugins` surfaces each disabled plugin with `disabledReason: "safe_mode"` so incident responders can see what's blocked.
+
+Mirrors Claude Code's `--no-plugins` posture. Incident-response tool; not a daily flag.
+
+## Parked mechanisms
+
+The following shipped in M3 but are **OFF by default** per TDR-037 §4. They activate only with an explicit env flag or Settings override, and only when third-party plugin distribution is genuinely needed.
+
+| Mechanism | Flag | Why parked |
+|---|---|---|
+| Per-tool approval Layer 1.8 (`never` / `prompt` / `approve`) | `AINATIVE_PER_TOOL_APPROVAL=1` | MCP elicitation (SEP-1036) is the strategy-sanctioned runtime consent primitive per Amendment II. Keeping Layer 1.8 active duplicated it. |
+| Seatbelt / AppArmor / Docker confinement wraps | `AINATIVE_PLUGIN_CONFINEMENT=1` | §11 Risk D off-ramp: "opt-in hardening layer, NOT a default". Activates when first external `child_process`-declaring plugin arrives. |
+| Capability expiry TTL (`set_plugin_accept_expiry`) | DEPRECATED, scheduled for removal | Self-authored code doesn't age. Claude Code / Codex CLI have no TTL. |
+
+When these flags are OFF, the wrap paths fall through to unconfined spawn, Layer 1.8 is skipped, and expiry is ignored. Code paths remain compiled for fast re-activation when a real external plugin arrives.
+
+## Settings toggle — user autonomy
+
+`Settings → Advanced → Plugin trust model`:
+
+- **`auto`** (default) — path split per classifier
+- **`strict`** — force third-party path for everything (forces lockfile even for ainative-internal bundles — training wheels over own code)
+- **`off`** — trust-on-first-use for everything (Claude Code-grade freedom)
+
+## Non-goals
+
+These are explicitly out of scope. Not "deferred," not "future work" — **refused**:
+
+- **Marketplace / publish flow / creator portal / trust ladder** — rolled back 2026-04-12, reinforced by §15 amendment.
+- **PII sanitization pipeline** — premature; no seed data is published.
+- **Plugins altering system DB tables** — Drizzle migrations are versioned; plugins never write them.
+- **Plugins registering Next.js routes** — compile-time routing; source-mod only.
+- **Node `vm.Module` sandboxing** — not a security boundary (CVE-class escapes). We don't pretend.
+- **Feature gating by install method** — capability is identical on npx vs. git-clone.
+
+## What we don't protect against
+
+- Docker kernel escape (when `AINATIVE_PLUGIN_CONFINEMENT=1` and a plugin uses Docker mode). Sandbox-strong ≠ escape-proof.
+- SHA-256 preimage / collision attacks. When the algorithm breaks, so does the hash pin.
+- Plugin-author malice at install time. If a bundle is hostile before the first accept, the accept confirms the hostility.
+- PII in plugin-sent logs. Plugins write their own log output; ainative doesn't inspect it.
+- Timing side-channels in tool execution.
+
+## Where to look
+
+| What | Path |
+|---|---|
+| Classifier | `src/lib/plugins/classify-trust.ts` |
+| Capability check + lockfile I/O | `src/lib/plugins/capability-check.ts` |
+| MCP loader + registration | `src/lib/plugins/mcp-loader.ts` |
+| Confinement wrap (parked) | `src/lib/plugins/confinement/wrap.ts` |
+| Layer 1.8 per-tool approval (parked) | `src/lib/agents/tool-permissions.ts` |
+| Chat tools (grant/revoke/list/reload/set-approval) | `src/lib/chat/tools/plugin-tools.ts` |
+| CLI flags (`--safe-mode`, `plugin dry-run`) | `bin/cli.ts` |
 
 ## References
 
-- Spec: `features/chat-tools-plugin-kind-1.md` — see "Core security posture
-  (summary)" at lines 294-307 and the capability-accept flow at
-  lines 156-178.
-- Architecture record: `.claude/skills/architect/references/tdr-035-plugin-mcp-cross-runtime-contract.md`
-  — the cross-runtime registration contract, drift heuristics, and process-
-  ownership invariants.
-- Chat-tools module boundary: `.claude/skills/architect/references/tdr-032-*.md`
-  (chat-tools static-import ban that keeps plugin code out of the runtime
-  registry import graph).
-- Source anchors cited above are in `src/lib/plugins/` (capability-check,
-  transport-dispatch, mcp-loader, confinement/wrap) and
-  `src/lib/agents/tool-permissions.ts`.
-- Log trail: `$AINATIVE_DATA_DIR/logs/plugins.log`.
-- Lockfile: `$AINATIVE_DATA_DIR/plugins.lock` (YAML v1, 0600).
+- TDR-037 — Two-Path Plugin Trust Model (primary authority)
+- TDR-035 — Loader-Authority Cross-Runtime Contract
+- TDR-032 — Runtime-AiNative MCP Injection (dynamic-import discipline)
+- `ideas/self-extending-machine-strategy.md` §5, §10, §11 Risk D, §15 Amendment 2026-04-20
+- `features/chat-tools-plugin-kind-1.md`

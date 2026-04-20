@@ -21,7 +21,8 @@ import os from "node:os";
 import path from "node:path";
 import yaml from "js-yaml";
 import { z } from "zod";
-import { CAPABILITY_VALUES, type Capability } from "@/lib/plugins/sdk/types";
+import { CAPABILITY_VALUES, type Capability, type PluginManifest } from "@/lib/plugins/sdk/types";
+import { classifyPluginTrust } from "@/lib/plugins/classify-trust";
 import {
   getAinativePluginsLockPath,
   getAinativePluginsDir,
@@ -307,15 +308,59 @@ export function removePluginsLockEntry(pluginId: string): void {
  *   { accepted: false, reason: "expired", expiresAt: "..." }
  *     — T11: entry exists, hash matches, but `expiresAt` is in the past.
  */
+/**
+ * Optional inputs that activate the two-path trust model (TDR-037). When
+ * `manifest` + `rootDir` are provided AND the classifier returns "self",
+ * this function early-returns `{ accepted: true }` without touching the
+ * lockfile — self-extension bundles never write to or read from
+ * plugins.lock. Legacy callers that omit these inputs fall through to the
+ * original lockfile-based check unchanged (backward-compatible).
+ *
+ * The `trustModelSetting` parameter lets the Settings toggle force a path:
+ *   - "auto" (default): classifier decides
+ *   - "strict": treat everything as third-party (forces lockfile path even
+ *     for ainative-internal bundles — for users who want training wheels)
+ *   - "off":    treat everything as self (trust-on-first-use for all)
+ */
+export interface CapabilityAcceptOpts {
+  manifest?: PluginManifest;
+  rootDir?: string;
+  trustModelSetting?: "auto" | "strict" | "off";
+  userIdentity?: string;
+}
+
 export function isCapabilityAccepted(
   pluginId: string,
-  currentHash: string
+  currentHash: string,
+  opts: CapabilityAcceptOpts = {},
 ): {
   accepted: boolean;
   reason?: "not_accepted" | "hash_drift" | "expired";
   acceptedHash?: string;
   expiresAt?: string;
+  /**
+   * Populated with "self" ONLY when the self-extension fast-path fired
+   * (TDR-037). Absent on lockfile-based returns so legacy callers that
+   * compare shapes strictly are unaffected. UI/logs that need the
+   * distinction check for `trustPath === "self"` explicitly.
+   */
+  trustPath?: "self";
 } {
+  // Two-path trust model (TDR-037). When manifest + rootDir are provided,
+  // classify the bundle; if "self" and setting allows, bypass the lockfile.
+  const setting = opts.trustModelSetting ?? "auto";
+  if (setting !== "strict" && opts.manifest && opts.rootDir) {
+    if (setting === "off") {
+      return { accepted: true, trustPath: "self" };
+    }
+    const path_ = classifyPluginTrust(opts.manifest, opts.rootDir, {
+      userIdentity: opts.userIdentity,
+    });
+    if (path_ === "self") {
+      return { accepted: true, trustPath: "self" };
+    }
+  }
+
   const lock = readPluginsLock();
   const entry = lock.accepted[pluginId];
 
@@ -330,6 +375,9 @@ export function isCapabilityAccepted(
   }
 
   // T11: Expiry check (opt-in). Only applies when expiresAt is present.
+  // DEPRECATED per TDR-037 §5 — scheduled for removal once set_plugin_accept_expiry
+  // chat tool is retired. Behavior preserved until then for backward compat
+  // with any hand-edited lockfiles that still set expiresAt.
   if (entry.expiresAt) {
     const expiresMs = Date.parse(entry.expiresAt);
     // Guard against invalid dates — treat an unparseable expiresAt as

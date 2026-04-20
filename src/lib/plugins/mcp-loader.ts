@@ -239,8 +239,25 @@ async function scanPlugin(pluginDir: string, pluginId: string): Promise<ScanResu
   }
 
   // --- Capability check ---
+  // TDR-037: pass manifest + rootDir so the classifier can early-return for
+  // self-extension bundles (author: ainative, origin: ainative-internal,
+  // empty capabilities, or under apps/). Self-extension bundles skip lockfile
+  // entirely and load at zero ceremony — same posture as Claude Code / Codex.
+  // The Settings `plugin-trust-model` (auto | strict | off) overrides classifier
+  // behavior when the user opts into training wheels or full freedom.
   const manifestHash = deriveManifestHash(pluginYamlContent);
-  const capCheck = isCapabilityAccepted(pluginId, manifestHash);
+  let trustModelSetting: "auto" | "strict" | "off" = "auto";
+  try {
+    const { getPluginTrustModelSync } = await import("@/lib/settings/helpers");
+    trustModelSetting = getPluginTrustModelSync();
+  } catch {
+    // Settings DB unavailable (fresh install, test env) — fall back to auto.
+  }
+  const capCheck = isCapabilityAccepted(pluginId, manifestHash, {
+    manifest,
+    rootDir: pluginDir,
+    trustModelSetting,
+  });
 
   if (!capCheck.accepted) {
     const reason = capCheck.reason;

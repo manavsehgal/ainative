@@ -6,8 +6,16 @@
  *   Kind-5 primitive bundles: list_plugins, reload_plugins, reload_plugin
  *     (list_plugins / reload_plugin now ALSO cover Kind-1 chat-tools plugins)
  *   Kind-1 capability controls: set_plugin_tool_approval (T10),
- *     set_plugin_accept_expiry (T11), revoke_plugin_capabilities (T12),
+ *     set_plugin_accept_expiry (T11, DEPRECATED per TDR-037),
+ *     revoke_plugin_capabilities (T12),
  *     grant_plugin_capabilities (T15)
+ *
+ * Post-TDR-037: grant/revoke/set-tool-approval/set-expiry chat tools are
+ * only meaningful on the third-party plugin path. For self-extension
+ * bundles (origin: ainative-internal, author matches user, empty caps, or
+ * path under ~/.ainative/apps/), isCapabilityAccepted fast-paths to
+ * accepted:true without consulting the lockfile — these tools become
+ * no-ops in the self-extension case.
  *
  * TDR-032 / CLAUDE.md NON-NEGOTIABLE: every handler MUST import
  * `@/lib/plugins/*` via dynamic `await import()` inside the function
@@ -37,11 +45,13 @@ export function pluginTools(_ctx: ToolContext) {
             { listPluginMcpRegistrations },
             { deriveManifestHash, isCapabilityAccepted },
             { getAinativePluginsDir },
+            { PluginManifestSchema },
           ] = await Promise.all([
             import("@/lib/plugins/registry"),
             import("@/lib/plugins/mcp-loader"),
             import("@/lib/plugins/capability-check"),
             import("@/lib/utils/ainative-paths"),
+            import("@/lib/plugins/sdk/types"),
           ]);
           const fs = await import("node:fs");
           const path = await import("node:path");
@@ -95,9 +105,19 @@ export function pluginTools(_ctx: ToolContext) {
                   }
                   try {
                     manifestHash = deriveManifestHash(content);
+                    // TDR-037: validate manifest through Zod so the
+                    // classifier inside isCapabilityAccepted can early-return
+                    // for self-extension bundles. Falls through to the
+                    // lockfile-based check for any manifest that doesn't
+                    // parse (legacy/corrupted bundles).
+                    const parsed = PluginManifestSchema.safeParse(rawManifest);
+                    const pluginRootDir = path.join(pluginsDir, pluginId);
                     const check = isCapabilityAccepted(
                       pluginId,
                       manifestHash,
+                      parsed.success
+                        ? { manifest: parsed.data, rootDir: pluginRootDir }
+                        : {},
                     );
                     if (check.accepted) {
                       capabilityAcceptStatus = "accepted";
@@ -252,7 +272,7 @@ export function pluginTools(_ctx: ToolContext) {
 
     defineTool(
       "set_plugin_accept_expiry",
-      "Set an expiration date for a plugin's capability acceptance. After the expiry date, the plugin transitions to pending_capability_reaccept and must be re-granted. Supported day values: 30, 90, 180, 365. The plugin must already be capability-accepted. Default behavior (no expiry) is preserved — this tool is opt-in.",
+      "DEPRECATED (TDR-037) — capability acceptance TTLs served the third-party plugin distribution lane that strategy §10 refused. Self-authored plugins do not age; re-accepting your own code on a timer is friction, not security. This tool remains callable for backward compatibility with any lockfiles that still carry `expiresAt`, but new grants should not set expiry. Scheduled for removal once no callers remain. Reference Claude Code / Codex CLI: neither tool has acceptance TTLs.",
       {
         pluginId: z.string().describe("The plugin id"),
         days: z
@@ -268,6 +288,9 @@ export function pluginTools(_ctx: ToolContext) {
             pluginId: args.pluginId,
             days: args.days,
             expiresAt,
+            deprecated: true,
+            deprecationReason:
+              "Acceptance TTLs are deprecated per TDR-037. Self-extension plugins auto-accept without lockfile entries; third-party plugins should re-accept only on hash drift, not on a timer.",
           });
         } catch (e) {
           return err(

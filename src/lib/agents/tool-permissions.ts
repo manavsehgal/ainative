@@ -155,6 +155,13 @@ export async function handleToolPermission(
 
   // Layer 1.8: Plugin-MCP per-tool approval overlay (T10).
   //
+  // TDR-037 PARK — this layer is OFF by default because MCP elicitation
+  // (SEP-1036) is the strategy-sanctioned runtime consent primitive per
+  // strategy Amendment II. Keeping it active duplicated the elicitation
+  // surface and was scope creep for the self-extension-first posture.
+  // Opt in via `AINATIVE_PER_TOOL_APPROVAL=1` only when exercising the
+  // third-party plugin path (runtime consent UI not yet shipped).
+  //
   // Plugin tool names follow the canonical MCP form `mcp__<serverName>__<toolName>`.
   // Only plugin-shipped MCP tools hit this layer; all other tools pass through.
   //
@@ -165,7 +172,11 @@ export async function handleToolPermission(
   //
   // Dynamic import — see CLAUDE.md "Smoke-test budget" rule: never import
   // `@/lib/plugins/*` statically from runtime-registry-adjacent modules.
-  if (!isQuestion && toolName.startsWith("mcp__")) {
+  if (
+    !isQuestion &&
+    toolName.startsWith("mcp__") &&
+    process.env.AINATIVE_PER_TOOL_APPROVAL === "1"
+  ) {
     const { resolvePluginToolApproval } = await import("@/lib/plugins/capability-check");
     const decision = await resolvePluginToolApproval(toolName);
     if (decision === "never") {

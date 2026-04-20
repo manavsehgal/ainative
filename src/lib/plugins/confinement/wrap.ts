@@ -154,6 +154,27 @@ export function wrapStdioSpawn(
   input: WrapInput,
   platform?: NodeJS.Platform,
 ): WrapDecision {
+  // TDR-037 PARK — confinement modes are OFF by default. The seatbelt /
+  // apparmor / docker wrap paths are retained as a §11 Risk D off-ramp
+  // for the third-party plugin distribution lane that strategy §10
+  // refused; they don't activate until the first external plugin with
+  // child_process or fs capabilities demands isolation. Opt in via
+  // AINATIVE_PLUGIN_CONFINEMENT=1 to exercise the wrap path. When OFF,
+  // all confinementMode values fall through to unconfined spawn — the
+  // self-extension posture expected by users habituated to Claude Code /
+  // Codex CLI freedom.
+  if (process.env.AINATIVE_PLUGIN_CONFINEMENT !== "1") {
+    return {
+      ok: true,
+      wrapped: {
+        command: input.command,
+        args: input.args,
+        ...(input.env !== undefined ? { env: input.env } : {}),
+      },
+      describe: `confinement parked (AINATIVE_PLUGIN_CONFINEMENT not set) — direct spawn ${input.command} ${input.args.join(" ")}`,
+    };
+  }
+
   const effectivePlatform = platform ?? process.platform;
   switch (input.confinementMode) {
     case "none":
@@ -398,6 +419,13 @@ function wrapDocker(input: WrapInput): WrapDecision {
  * ids returned by docker ps.
  */
 export function dockerBootSweep(): void {
+  // TDR-037 PARK — see wrapStdioSpawn header. Don't probe `docker ps`
+  // when confinement is off; nothing could have created labeled
+  // containers in the first place.
+  if (process.env.AINATIVE_PLUGIN_CONFINEMENT !== "1") {
+    return;
+  }
+
   let output: string;
   try {
     const buf = execFileSync(

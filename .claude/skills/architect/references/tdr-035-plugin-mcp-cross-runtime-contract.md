@@ -1,12 +1,15 @@
 ---
 id: TDR-035
-title: Plugin-MCP Cross-Runtime Registration Contract
+title: Loader-Authority Cross-Runtime Contract (née Plugin-MCP Cross-Runtime Registration)
 status: proposed
 date: 2026-04-19
+updated: 2026-04-20
 category: runtime
 ---
 
-# TDR-035: Plugin-MCP Cross-Runtime Registration Contract
+# TDR-035: Loader-Authority Cross-Runtime Contract
+
+> **Title-rescope 2026-04-20 (TDR-037):** Originally "Plugin-MCP Cross-Runtime Registration Contract". The six load-bearing decisions below apply to loader/adapter separation regardless of which trust path (self-extension or third-party) a plugin takes. The drift heuristic tests codify **loader authority** — that only `src/lib/plugins/*` reads `plugin.yaml` / `plugins.lock`, that adapters merge servers without parsing manifests — which remains true whether or not a given bundle has a lockfile entry. Existing content below preserved verbatim; see TDR-037 for the two-path trust model that sits on top of this contract.
 
 ## Context
 
