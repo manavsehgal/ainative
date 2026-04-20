@@ -45,6 +45,70 @@ import {
   buildTaskOutputInstructions,
 } from "@/lib/documents/output-scanner";
 
+// ── Five-source MCP merge (TDR-035 §1) ──────────────────────────────
+
+/**
+ * Five-source MCP merge for the OpenAI direct runtime per TDR-035 §1.
+ * Order: profile → browser → external → plugin → ainative (last, non-negotiable).
+ *
+ * Returns an object map (Record<serverName, config>) — the caller transforms
+ * to OpenAI's tools: [{ type: "mcp", ... }] array shape at the request level
+ * via mcpServersToOpenAiTools.
+ *
+ * Async + dynamic import of @/lib/chat/ainative-tools per TDR-032.
+ *
+ * pluginServers is passed as a pure arg (caller responsibility) — the helper
+ * does NOT call loadPluginMcpServers directly; callers load it once per
+ * request and pass the result here so the full task lifecycle uses a
+ * single consistent snapshot.
+ */
+export async function withOpenAiDirectMcpServers(
+  profileServers: Record<string, unknown>,
+  browserServers: Record<string, unknown>,
+  externalServers: Record<string, unknown>,
+  pluginServers: Record<string, unknown>,
+  projectId?: string | null,
+): Promise<Record<string, unknown>> {
+  const { createToolServer } = await import("@/lib/chat/ainative-tools");
+  const ainativeServer = createToolServer(projectId).asMcpServer();
+  return {
+    ...profileServers,
+    ...browserServers,
+    ...externalServers,
+    ...pluginServers,
+    ainative: ainativeServer,
+  };
+}
+
+/**
+ * Transform a merged MCP server map into OpenAI's Responses API tools shape.
+ * Each entry becomes { type: "mcp", server_label, ... } in the tools array.
+ *
+ * The "ainative" in-process server is NOT emitted — OpenAI direct uses its own
+ * function-calling tools path for ainative (existing createToolServer flow).
+ * Plugin servers (stdio or ainative-sdk) are emitted as MCP entries.
+ */
+export function mcpServersToOpenAiTools(
+  mergedServers: Record<string, unknown>,
+): Array<{ type: "mcp"; server_label: string; [key: string]: unknown }> {
+  const tools: Array<{ type: "mcp"; server_label: string; [key: string]: unknown }> = [];
+  for (const [name, config] of Object.entries(mergedServers)) {
+    if (name === "ainative") continue; // ainative handled via function-calling, not MCP path
+    const cfg = config as Record<string, unknown>;
+    const entry: { type: "mcp"; server_label: string; [key: string]: unknown } = {
+      type: "mcp",
+      server_label: name,
+    };
+    // Pass through known fields; schema conformance is the plugin author's responsibility.
+    if (typeof cfg.command === "string") entry.command = cfg.command;
+    if (Array.isArray(cfg.args)) entry.args = cfg.args;
+    if (cfg.env && typeof cfg.env === "object") entry.env = cfg.env;
+    if (typeof cfg.url === "string") entry.server_url = cfg.url;
+    tools.push(entry);
+  }
+  return tools;
+}
+
 // ── SDK lazy import ──────────────────────────────────────────────────
 
 type OpenAISDK = typeof import("openai");
@@ -74,6 +138,12 @@ interface OpenAICallOptions {
   previousResponseId?: string | null;
   /** Server-side tools to enable (e.g., { web_search_preview: true, code_interpreter: true }). */
   serverTools?: Record<string, boolean>;
+  /**
+   * Plugin MCP tool entries from the five-source merge (TDR-035 §1).
+   * Already transformed to OpenAI { type: "mcp", server_label, ... } shape.
+   * Appended to the tools array at request time.
+   */
+  pluginMcpTools?: Array<{ type: "mcp"; server_label: string; [key: string]: unknown }>;
 }
 
 async function callOpenAIModel(
@@ -87,12 +157,16 @@ async function callOpenAIModel(
 ): Promise<ModelTurnResult & { responseId?: string }> {
   const modelId = options.modelId ?? getRuntimeCatalogEntry("openai-direct").models.default;
 
-  // Build tool array: ainative function tools + enabled server-side tools
+  // Build tool array: ainative function tools + enabled server-side tools + plugin MCP tools
   const serverToolConfig = options.serverTools ?? { web_search_preview: true };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const allTools: any[] = [...tools];
   for (const [toolType, enabled] of Object.entries(serverToolConfig)) {
     if (enabled) allTools.push({ type: toolType });
+  }
+  // Append plugin MCP tools from five-source merge (TDR-035 §1)
+  if (options.pluginMcpTools && options.pluginMcpTools.length > 0) {
+    allTools.push(...options.pluginMcpTools);
   }
 
   const response = await client.responses.create({
@@ -229,6 +303,22 @@ async function executeOpenAIDirectTask(taskId: string, isResume = false): Promis
     const toolServer = createToolServer(task.projectId);
     const { tools, executeHandler } = toolServer.forProvider("openai");
 
+    // Merge all five MCP server sources (TDR-035 §1).
+    // Browser/external MCP are not yet wired in this adapter; pass {} for those
+    // sources. pluginServers is loaded dynamically to avoid module-load cycles.
+    const pluginServers = await (async () => {
+      const { loadPluginMcpServers } = await import("@/lib/plugins/mcp-loader");
+      return loadPluginMcpServers({ runtime: "openai-direct" });
+    })();
+    const mergedMcpServers = await withOpenAiDirectMcpServers(
+      {},
+      {},
+      {},
+      pluginServers,
+      task.projectId,
+    );
+    const pluginMcpTools = mcpServersToOpenAiTools(mergedMcpServers);
+
     // Resolve model
     const { getSetting } = await import("@/lib/settings/helpers");
     const modelId = (await getSetting("openai_direct_model")) ?? getRuntimeCatalogEntry("openai-direct").models.default;
@@ -287,6 +377,7 @@ async function executeOpenAIDirectTask(taskId: string, isResume = false): Promis
             modelId: capOverrides?.modelId ?? modelId,
             previousResponseId: lastResponseId,
             serverTools: capOverrides?.serverTools,
+            pluginMcpTools,
           },
         );
 
