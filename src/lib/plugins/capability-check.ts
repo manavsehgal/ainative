@@ -17,6 +17,7 @@
 
 import crypto from "node:crypto";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import yaml from "js-yaml";
 import { z } from "zod";
@@ -509,6 +510,128 @@ export async function resolvePluginToolApproval(
 
   const manifestDefault = readManifestDefaultApproval(match.pluginId);
   return getPluginToolApprovalMode(match.pluginId, toolName, manifestDefault);
+}
+
+// ---------------------------------------------------------------------------
+// T12: Revocation flow
+// ---------------------------------------------------------------------------
+
+/**
+ * Revoke a plugin's capabilities.
+ *
+ * Effects:
+ *  - Removes the plugins.lock entry (future task runs treat it as not_accepted).
+ *  - Busts Node's require.cache for any accepted in-process SDK registrations
+ *    so the stale module is dropped when a revoke is immediately followed by
+ *    re-install + re-accept.
+ *  - Emits an Inbox notification (type: agent_message) confirming revocation
+ *    and inviting re-acceptance.
+ *  - Logs to plugins.log.
+ *
+ * Note on stdio children: M3's Option A model (see transport-dispatch.ts:18-20
+ * and TDR-035 §5) does NOT maintain long-lived stdio children at the loader
+ * level — adapters spawn per-request. Stdio children die naturally when the
+ * SDK session ends; revoke does not kill them directly. The plan's original
+ * wording of "SIGTERMs stdio child if running" was aspirational for a future
+ * long-lived model and is intentionally out of scope for M3 Phase C.
+ *
+ * Graceful no-op: if the plugin has no lockfile entry, returns
+ * { revoked: false, reason: "no_entry" } without throwing. Users may double-
+ * click revoke; the spec explicitly allows this.
+ *
+ * All cross-module imports are dynamic per TDR-032 discipline to avoid
+ * module-load cycles with @/lib/agents/runtime/catalog.ts.
+ */
+export async function revokePluginCapabilities(
+  pluginId: string,
+): Promise<
+  | { revoked: true; bustedEntries: string[] }
+  | { revoked: false; reason: "no_entry" }
+> {
+  // Step 1 — Check for existing entry. If none, no-op gracefully.
+  const lock = readPluginsLock();
+  if (!lock.accepted[pluginId]) {
+    return { revoked: false, reason: "no_entry" };
+  }
+
+  // Step 2 — Collect in-process SDK entry paths for cache-bust BEFORE removing
+  // the lock entry. `listAcceptedInProcessEntriesForPlugin` re-reads the lock
+  // to determine "accepted" status, so removing first would give an empty list.
+  let bustedEntries: string[] = [];
+  try {
+    const { listAcceptedInProcessEntriesForPlugin } = await import(
+      "@/lib/plugins/mcp-loader"
+    );
+    bustedEntries = await listAcceptedInProcessEntriesForPlugin(pluginId);
+  } catch (err) {
+    // Cache-bust is best-effort — log and continue. Removing the lock entry
+    // is the authoritative revoke effect; a stale require.cache only matters
+    // if the plugin is immediately re-installed and re-accepted, in which
+    // case the user can reload_plugin explicitly.
+    logToFile(
+      `[capability-check] WARN: failed to list in-process entries for ${pluginId} during revoke: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
+  if (bustedEntries.length > 0) {
+    try {
+      const { bustInProcessServerCache } = await import(
+        "@/lib/plugins/transport-dispatch"
+      );
+      for (const entryPath of bustedEntries) {
+        bustInProcessServerCache(entryPath);
+      }
+    } catch (err) {
+      logToFile(
+        `[capability-check] WARN: failed to bust require.cache for ${pluginId} during revoke: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  }
+
+  // Step 3 — Remove the lockfile entry. This is the authoritative effect.
+  removePluginsLockEntry(pluginId);
+
+  // Step 4 — Log the revocation.
+  const username = (() => {
+    try {
+      return os.userInfo().username;
+    } catch {
+      return "unknown";
+    }
+  })();
+  logToFile(
+    `[capability-check] plugin ${pluginId} capabilities revoked by ${username}`,
+  );
+
+  // Step 5 — Emit an Inbox notification. DB insert is best-effort: if the
+  // notifications table isn't available (e.g. running outside a Next.js
+  // request context during tests that don't mock the DB), log and continue.
+  try {
+    const [{ db }, { notifications }] = await Promise.all([
+      import("@/lib/db"),
+      import("@/lib/db/schema"),
+    ]);
+    await db.insert(notifications).values({
+      id: crypto.randomUUID(),
+      taskId: null,
+      type: "agent_message",
+      title: `Plugin capabilities revoked: ${pluginId}`,
+      body: JSON.stringify({
+        pluginId,
+        action: "revoked",
+        reAcceptHint:
+          "Use grant_plugin_capabilities to re-accept.",
+      }),
+      read: false,
+      createdAt: new Date(),
+    });
+  } catch (err) {
+    logToFile(
+      `[capability-check] WARN: failed to insert revoke notification for ${pluginId}: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
+  return { revoked: true, bustedEntries };
 }
 
 // Re-export for consumers that import everything from this module.

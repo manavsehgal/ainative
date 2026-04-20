@@ -20,6 +20,7 @@ import {
   getPluginToolApprovalMode,
   resolvePluginToolApproval,
   setPluginAcceptExpiry,
+  revokePluginCapabilities,
   type PluginsLockEntry,
 } from "../capability-check";
 
@@ -671,5 +672,168 @@ describe("capability-check — setPluginAcceptExpiry", () => {
     const parsed = Date.parse(expiresAt);
     expect(parsed).toBeGreaterThanOrEqual(before + 30 * 86_400_000);
     expect(parsed).toBeLessThanOrEqual(after + 30 * 86_400_000);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Section 8: T12 revocation flow
+// ---------------------------------------------------------------------------
+
+describe("capability-check — revokePluginCapabilities (T12)", () => {
+  afterEach(() => {
+    vi.doUnmock("@/lib/plugins/mcp-loader");
+    vi.doUnmock("@/lib/plugins/transport-dispatch");
+    vi.doUnmock("@/lib/db");
+    vi.doUnmock("@/lib/db/schema");
+    vi.resetModules();
+  });
+
+  it("removes the lockfile entry for the target plugin", async () => {
+    // No DB mocks needed — the DB insert is best-effort and errors are
+    // caught; the assertion here is about the lockfile effect.
+    vi.doMock("@/lib/db", () => ({ db: {} }));
+    vi.doMock("@/lib/db/schema", () => ({ notifications: {} }));
+
+    writePluginsLock("echo", makeEntry());
+    expect(readPluginsLock().accepted.echo).toBeDefined();
+
+    const { revokePluginCapabilities: reImported } = await import(
+      "../capability-check"
+    );
+    const result = await reImported("echo");
+
+    expect(result).toEqual({ revoked: true, bustedEntries: [] });
+    expect(readPluginsLock().accepted.echo).toBeUndefined();
+  });
+
+  it("is a no-op returning { revoked: false, reason: 'no_entry' } when plugin has no lockfile entry", async () => {
+    const result = await revokePluginCapabilities("never-installed");
+    expect(result).toEqual({ revoked: false, reason: "no_entry" });
+    // And the lockfile is still empty — no side effects.
+    expect(readPluginsLock().accepted).toEqual({});
+  });
+
+  it("does not affect other plugins' lockfile entries", async () => {
+    vi.doMock("@/lib/db", () => ({ db: {} }));
+    vi.doMock("@/lib/db/schema", () => ({ notifications: {} }));
+
+    writePluginsLock("a", makeEntry({ capabilities: ["net"] }));
+    writePluginsLock("b", makeEntry({ capabilities: ["fs"] }));
+
+    const { revokePluginCapabilities: reImported } = await import(
+      "../capability-check"
+    );
+    await reImported("a");
+
+    const lock = readPluginsLock();
+    expect(lock.accepted.a).toBeUndefined();
+    expect(lock.accepted.b).toBeDefined();
+    expect(lock.accepted.b.capabilities).toEqual(["fs"]);
+  });
+
+  it("inserts an Inbox notification (type: agent_message) confirming the revoke", async () => {
+    const valuesSpy = vi.fn().mockResolvedValue(undefined);
+    const insertSpy = vi.fn(() => ({ values: valuesSpy }));
+    vi.doMock("@/lib/db", () => ({
+      db: { insert: insertSpy },
+    }));
+    const notificationsSentinel = { __table: "notifications" };
+    vi.doMock("@/lib/db/schema", () => ({
+      notifications: notificationsSentinel,
+    }));
+
+    writePluginsLock("echo", makeEntry());
+
+    const { revokePluginCapabilities: reImported } = await import(
+      "../capability-check"
+    );
+    await reImported("echo");
+
+    expect(insertSpy).toHaveBeenCalledTimes(1);
+    expect(insertSpy).toHaveBeenCalledWith(notificationsSentinel);
+    expect(valuesSpy).toHaveBeenCalledTimes(1);
+
+    const row = valuesSpy.mock.calls[0][0];
+    expect(row.type).toBe("agent_message");
+    expect(row.title).toBe("Plugin capabilities revoked: echo");
+    expect(row.read).toBe(false);
+    expect(row.taskId).toBeNull();
+    expect(typeof row.id).toBe("string");
+    expect(row.createdAt).toBeInstanceOf(Date);
+
+    const body = JSON.parse(row.body);
+    expect(body.pluginId).toBe("echo");
+    expect(body.action).toBe("revoked");
+    expect(typeof body.reAcceptHint).toBe("string");
+    expect(body.reAcceptHint).toMatch(/grant_plugin_capabilities/);
+  });
+
+  it("busts require.cache for in-process SDK registrations of the revoked plugin", async () => {
+    const mockedEntryPath = "/abs/path/to/sdk-entry.js";
+    vi.doMock("@/lib/plugins/mcp-loader", () => ({
+      listAcceptedInProcessEntriesForPlugin: vi
+        .fn()
+        .mockResolvedValue([mockedEntryPath]),
+    }));
+    const bustSpy = vi.fn();
+    vi.doMock("@/lib/plugins/transport-dispatch", () => ({
+      bustInProcessServerCache: bustSpy,
+    }));
+    vi.doMock("@/lib/db", () => ({ db: {} }));
+    vi.doMock("@/lib/db/schema", () => ({ notifications: {} }));
+
+    writePluginsLock("echo", makeEntry());
+
+    const { revokePluginCapabilities: reImported } = await import(
+      "../capability-check"
+    );
+    const result = await reImported("echo");
+
+    expect(result).toEqual({
+      revoked: true,
+      bustedEntries: [mockedEntryPath],
+    });
+    expect(bustSpy).toHaveBeenCalledTimes(1);
+    expect(bustSpy).toHaveBeenCalledWith(mockedEntryPath);
+  });
+
+  it("does not call bustInProcessServerCache when plugin has no in-process entries", async () => {
+    vi.doMock("@/lib/plugins/mcp-loader", () => ({
+      listAcceptedInProcessEntriesForPlugin: vi.fn().mockResolvedValue([]),
+    }));
+    const bustSpy = vi.fn();
+    vi.doMock("@/lib/plugins/transport-dispatch", () => ({
+      bustInProcessServerCache: bustSpy,
+    }));
+    vi.doMock("@/lib/db", () => ({ db: {} }));
+    vi.doMock("@/lib/db/schema", () => ({ notifications: {} }));
+
+    writePluginsLock("echo", makeEntry());
+
+    const { revokePluginCapabilities: reImported } = await import(
+      "../capability-check"
+    );
+    const result = await reImported("echo");
+
+    expect(result).toEqual({ revoked: true, bustedEntries: [] });
+    expect(bustSpy).not.toHaveBeenCalled();
+  });
+
+  it("logs the revocation to plugins.log", async () => {
+    vi.doMock("@/lib/db", () => ({ db: {} }));
+    vi.doMock("@/lib/db/schema", () => ({ notifications: {} }));
+
+    writePluginsLock("echo", makeEntry());
+
+    const { revokePluginCapabilities: reImported } = await import(
+      "../capability-check"
+    );
+    await reImported("echo");
+
+    expect(fs.existsSync(logsPath())).toBe(true);
+    const log = fs.readFileSync(logsPath(), "utf-8");
+    expect(log).toMatch(
+      /\[capability-check\] plugin echo capabilities revoked by /,
+    );
   });
 });

@@ -139,5 +139,25 @@ export function pluginTools(_ctx: ToolContext) {
         }
       }
     ),
+
+    defineTool(
+      "revoke_plugin_capabilities",
+      "Revoke a plugin's capability acceptance. Removes the plugins.lock entry so the plugin is not loaded on future task runs. For in-process SDK plugins, busts Node's require.cache so stale modules are dropped. Creates an Inbox notification confirming the revoke with a re-accept hint. Returns { revoked: true, bustedEntries } on success, or { revoked: false, reason: 'no_entry' } if the plugin had no accepted capabilities (graceful no-op — users may double-click revoke).",
+      {
+        pluginId: z.string().describe("The plugin id to revoke"),
+      },
+      async (args) => {
+        try {
+          // Dynamic import — see TDR-032 note at top of file.
+          const { revokePluginCapabilities } = await import("@/lib/plugins/capability-check");
+          const result = await revokePluginCapabilities(args.pluginId);
+          return ok(result);
+        } catch (e) {
+          return err(
+            e instanceof Error ? e.message : "Failed to revoke plugin capabilities"
+          );
+        }
+      }
+    ),
   ];
 }

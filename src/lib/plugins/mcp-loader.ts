@@ -586,3 +586,32 @@ export async function loadPluginMcpServers(opts?: {
       .map((r) => [r.serverName, r.config])
   );
 }
+
+/**
+ * Return the absolute entry paths of all accepted in-process SDK registrations
+ * for a given pluginId. Used by the T12 revoke flow to bust require.cache
+ * entries so a stale in-process SDK module is dropped on revoke + re-accept.
+ *
+ * Returns an empty array when:
+ *   - pluginId is unknown,
+ *   - the plugin has no accepted registrations,
+ *   - all of the plugin's registrations use stdio transport (no entry field).
+ */
+export async function listAcceptedInProcessEntriesForPlugin(
+  pluginId: string,
+): Promise<string[]> {
+  const regs = await listPluginMcpRegistrations();
+  const entries: string[] = [];
+  for (const r of regs) {
+    if (
+      r.pluginId === pluginId &&
+      r.status === "accepted" &&
+      r.transport === "ainative-sdk" &&
+      typeof r.config.entry === "string" &&
+      r.config.entry.length > 0
+    ) {
+      entries.push(r.config.entry);
+    }
+  }
+  return entries;
+}

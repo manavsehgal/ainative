@@ -18,6 +18,7 @@ import os from "node:os";
 import {
   loadPluginMcpServers,
   listPluginMcpRegistrations,
+  listAcceptedInProcessEntriesForPlugin,
 } from "../mcp-loader";
 import { writePluginsLock } from "../capability-check";
 import { deriveManifestHash } from "../capability-check";
@@ -760,3 +761,67 @@ it("T11. Future expiresAt loads normally (accepted)", async () => {
   expect(reg).toBeDefined();
   expect(reg!.status).toBe("accepted");
 }, 15_000);
+
+// ---------------------------------------------------------------------------
+// T12: listAcceptedInProcessEntriesForPlugin
+// ---------------------------------------------------------------------------
+
+describe("T12 — listAcceptedInProcessEntriesForPlugin", () => {
+  it("returns [absEntry] for an accepted in-process SDK plugin", async () => {
+    const pluginId = "sdk-in-process";
+    const yaml = writePluginYaml(pluginId);
+    const entryPath = path.join(pluginsDir, pluginId, "server", "index.js");
+    writeFakeSdkServerFile(entryPath);
+
+    writeMcpJson(pluginId, {
+      "sdk-server": {
+        transport: "ainative-sdk",
+        entry: "./server/index.js",
+      },
+    });
+    acceptPlugin(pluginId, yaml);
+
+    const entries = await listAcceptedInProcessEntriesForPlugin(pluginId);
+    expect(entries).toEqual([entryPath]);
+  });
+
+  it("returns [] for a stdio-only plugin (no in-process entries)", async () => {
+    const pluginId = "stdio-only";
+    const yaml = writePluginYaml(pluginId);
+    const serverScriptPath = path.join(pluginsDir, pluginId, "bin", "server.js");
+    writeFakeMcpServerFile(serverScriptPath);
+
+    writeMcpJson(pluginId, {
+      "svc": { command: process.execPath, args: [serverScriptPath] },
+    });
+    acceptPlugin(pluginId, yaml);
+
+    const entries = await listAcceptedInProcessEntriesForPlugin(pluginId);
+    expect(entries).toEqual([]);
+  }, 15_000);
+
+  it("returns [] for an unknown pluginId", async () => {
+    // Plugins dir is empty — no registrations exist.
+    const entries = await listAcceptedInProcessEntriesForPlugin("ghost-plugin");
+    expect(entries).toEqual([]);
+  });
+
+  it("excludes disabled/pending in-process registrations", async () => {
+    // Un-accepted SDK plugin — registration is pending, not accepted.
+    const pluginId = "unaccepted-sdk";
+    writePluginYaml(pluginId);
+    const entryPath = path.join(pluginsDir, pluginId, "server", "index.js");
+    writeFakeSdkServerFile(entryPath);
+
+    writeMcpJson(pluginId, {
+      "sdk-server": {
+        transport: "ainative-sdk",
+        entry: "./server/index.js",
+      },
+    });
+    // Note: NO acceptPlugin call.
+
+    const entries = await listAcceptedInProcessEntriesForPlugin(pluginId);
+    expect(entries).toEqual([]);
+  });
+});
