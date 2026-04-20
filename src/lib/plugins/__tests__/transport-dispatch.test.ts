@@ -43,7 +43,6 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  vi.restoreAllMocks();
   fs.rmSync(tmpDir, { recursive: true, force: true });
   delete process.env.AINATIVE_DATA_DIR;
 });

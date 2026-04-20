@@ -124,6 +124,10 @@ export async function validateStdioMcp(
 
   const cmd = config.command;
   const args = config.args ?? [];
+  // TODO(T14 confinement): strip sensitive env vars (ANTHROPIC_API_KEY, OAuth
+  // tokens, AINATIVE_DATA_DIR) unless the plugin's declared env references
+  // them via ${VAR} templates. M3 pre-flight validation passes full env;
+  // confinement task will narrow.
   const env: NodeJS.ProcessEnv = config.env
     ? { ...process.env, ...config.env }
     : { ...process.env };
