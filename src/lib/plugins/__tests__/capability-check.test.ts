@@ -5,7 +5,7 @@
  * Uses real fs (tmpdir) — no mocked fs.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
@@ -16,6 +16,9 @@ import {
   writePluginsLock,
   removePluginsLockEntry,
   isCapabilityAccepted,
+  setPluginToolApproval,
+  getPluginToolApprovalMode,
+  resolvePluginToolApproval,
   type PluginsLockEntry,
 } from "../capability-check";
 
@@ -305,5 +308,225 @@ describe("capability-check — isCapabilityAccepted", () => {
       reason: "hash_drift",
       acceptedHash: oldHash,
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Section 6: T10 per-tool approval overlay
+// ---------------------------------------------------------------------------
+
+describe("capability-check — setPluginToolApproval", () => {
+  it("round-trips a per-tool approval through the lockfile", () => {
+    writePluginsLock("echo", makeEntry());
+    setPluginToolApproval("echo", "mcp__echo-server__echo", "never");
+    const lock = readPluginsLock();
+    expect(lock.accepted.echo.toolApprovals).toEqual({
+      "mcp__echo-server__echo": "never",
+    });
+  });
+
+  it("preserves manifestHash/capabilities/acceptedAt/acceptedBy", () => {
+    const entry = makeEntry({
+      manifestHash: "sha256:" + "c".repeat(64),
+      capabilities: ["fs", "net"],
+      acceptedAt: "2026-04-01T00:00:00Z",
+      acceptedBy: "alice",
+    });
+    writePluginsLock("echo", entry);
+    setPluginToolApproval("echo", "mcp__echo-server__echo", "approve");
+    const lock = readPluginsLock();
+    expect(lock.accepted.echo.manifestHash).toBe(entry.manifestHash);
+    expect(lock.accepted.echo.capabilities).toEqual(entry.capabilities);
+    expect(lock.accepted.echo.acceptedAt).toBe(entry.acceptedAt);
+    expect(lock.accepted.echo.acceptedBy).toBe(entry.acceptedBy);
+    expect(lock.accepted.echo.toolApprovals).toEqual({
+      "mcp__echo-server__echo": "approve",
+    });
+  });
+
+  it("merges repeated calls into a single toolApprovals map", () => {
+    writePluginsLock("echo", makeEntry());
+    setPluginToolApproval("echo", "mcp__echo-server__echo", "never");
+    setPluginToolApproval("echo", "mcp__echo-server__shout", "approve");
+    setPluginToolApproval("echo", "mcp__echo-server__echo", "prompt"); // overwrite
+    const lock = readPluginsLock();
+    expect(lock.accepted.echo.toolApprovals).toEqual({
+      "mcp__echo-server__echo": "prompt",
+      "mcp__echo-server__shout": "approve",
+    });
+  });
+
+  it("throws when the plugin has no lockfile entry", () => {
+    expect(() =>
+      setPluginToolApproval("not-installed", "mcp__x__y", "never"),
+    ).toThrow(/not in plugins\.lock/);
+  });
+});
+
+describe("capability-check — getPluginToolApprovalMode", () => {
+  it("returns null for a missing plugin entry", () => {
+    expect(getPluginToolApprovalMode("missing", "mcp__x__y")).toBeNull();
+  });
+
+  it("returns 'prompt' default when no override and no manifest default", () => {
+    writePluginsLock("echo", makeEntry());
+    const mode = getPluginToolApprovalMode("echo", "mcp__echo-server__echo");
+    expect(mode).toBe("prompt");
+  });
+
+  it("returns lockfile override when present", () => {
+    writePluginsLock("echo", makeEntry());
+    setPluginToolApproval("echo", "mcp__echo-server__echo", "never");
+    const mode = getPluginToolApprovalMode(
+      "echo",
+      "mcp__echo-server__echo",
+      "approve", // manifest default should be ignored in favour of override
+    );
+    expect(mode).toBe("never");
+  });
+
+  it("returns manifest default when no override is set", () => {
+    writePluginsLock("echo", makeEntry());
+    const mode = getPluginToolApprovalMode(
+      "echo",
+      "mcp__echo-server__echo",
+      "never",
+    );
+    expect(mode).toBe("never");
+  });
+});
+
+describe("capability-check — resolvePluginToolApproval", () => {
+  afterEach(() => {
+    vi.doUnmock("@/lib/plugins/mcp-loader");
+    vi.resetModules();
+  });
+
+  it("returns null for non-mcp tool names", async () => {
+    expect(await resolvePluginToolApproval("Read")).toBeNull();
+    expect(await resolvePluginToolApproval("Bash")).toBeNull();
+  });
+
+  it("returns null for malformed mcp names (no separator after server)", async () => {
+    expect(await resolvePluginToolApproval("mcp__bare")).toBeNull();
+    expect(await resolvePluginToolApproval("mcp__")).toBeNull();
+  });
+
+  it("returns null when no registration matches", async () => {
+    // No mocks — the real mcp-loader will return [] (empty plugins dir).
+    const mode = await resolvePluginToolApproval("mcp__nonexistent__tool");
+    expect(mode).toBeNull();
+  });
+
+  it("resolves to lockfile override for an accepted plugin", async () => {
+    // Mock listPluginMcpRegistrations to simulate an accepted plugin/server.
+    vi.doMock("@/lib/plugins/mcp-loader", () => ({
+      listPluginMcpRegistrations: vi.fn().mockResolvedValue([
+        {
+          pluginId: "echo",
+          serverName: "echo-server",
+          transport: "stdio",
+          config: { command: "node" },
+          status: "accepted",
+        },
+      ]),
+    }));
+
+    writePluginsLock("echo", makeEntry());
+    setPluginToolApproval("echo", "mcp__echo-server__echo", "never");
+
+    // Re-import via the moduleId after vi.doMock (ESM-friendly).
+    const { resolvePluginToolApproval: reImported } = await import(
+      "../capability-check"
+    );
+    const mode = await reImported("mcp__echo-server__echo");
+    expect(mode).toBe("never");
+  });
+
+  it("falls back to 'prompt' default when no override and no manifest default", async () => {
+    vi.doMock("@/lib/plugins/mcp-loader", () => ({
+      listPluginMcpRegistrations: vi.fn().mockResolvedValue([
+        {
+          pluginId: "echo",
+          serverName: "echo-server",
+          transport: "stdio",
+          config: { command: "node" },
+          status: "accepted",
+        },
+      ]),
+    }));
+
+    writePluginsLock("echo", makeEntry());
+    // No plugin.yaml on disk → no manifest default → falls back to "prompt".
+
+    const { resolvePluginToolApproval: reImported } = await import(
+      "../capability-check"
+    );
+    const mode = await reImported("mcp__echo-server__fresh-tool");
+    expect(mode).toBe("prompt");
+  });
+
+  it("reads manifest defaultToolApproval when no override is set", async () => {
+    vi.doMock("@/lib/plugins/mcp-loader", () => ({
+      listPluginMcpRegistrations: vi.fn().mockResolvedValue([
+        {
+          pluginId: "echo",
+          serverName: "echo-server",
+          transport: "stdio",
+          config: { command: "node" },
+          status: "accepted",
+        },
+      ]),
+    }));
+
+    // Write a plugin.yaml with defaultToolApproval: never.
+    const pluginDir = path.join(tmpDir, "plugins", "echo");
+    fs.mkdirSync(pluginDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(pluginDir, "plugin.yaml"),
+      [
+        "id: echo",
+        'version: "1.0.0"',
+        'apiVersion: "0.15"',
+        "kind: chat-tools",
+        "capabilities:",
+        "  - net",
+        "defaultToolApproval: never",
+        "",
+      ].join("\n"),
+    );
+
+    writePluginsLock("echo", makeEntry());
+    // No override set — the manifest's defaultToolApproval should win.
+
+    const { resolvePluginToolApproval: reImported } = await import(
+      "../capability-check"
+    );
+    const mode = await reImported("mcp__echo-server__echo");
+    expect(mode).toBe("never");
+  });
+
+  it("ignores registrations whose status is not 'accepted'", async () => {
+    vi.doMock("@/lib/plugins/mcp-loader", () => ({
+      listPluginMcpRegistrations: vi.fn().mockResolvedValue([
+        {
+          pluginId: "echo",
+          serverName: "echo-server",
+          transport: "stdio",
+          config: {},
+          status: "disabled",
+          disabledReason: "server_not_found",
+        },
+      ]),
+    }));
+
+    writePluginsLock("echo", makeEntry());
+    setPluginToolApproval("echo", "mcp__echo-server__echo", "never");
+
+    const { resolvePluginToolApproval: reImported } = await import(
+      "../capability-check"
+    );
+    const mode = await reImported("mcp__echo-server__echo");
+    expect(mode).toBeNull();
   });
 });

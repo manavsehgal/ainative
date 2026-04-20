@@ -109,6 +109,9 @@ export async function waitForToolPermissionResponse(
  * Permission layers:
  * 1. Profile canUseToolPolicy (autoApprove / autoDeny)
  * 1.5. External MCP read-only tools (Exa search)
+ * 1.75. SDK filesystem read-only tools + Skill auto-approve
+ * 1.8. Plugin-MCP per-tool approval overlay (T10) — `never` auto-allows;
+ *      `prompt` and `approve` fall through to Layer 2+.
  * 2. Saved user permissions (settings-based patterns)
  * 3. Request deduplication cache
  * 4. DB notification + polling (HITL)
@@ -148,6 +151,27 @@ export async function handleToolPermission(
   // & Rescue Registry row "settingSources loads hostile skill."
   if (!isQuestion && (CLAUDE_SDK_READ_ONLY_FS_TOOLS.has(toolName) || toolName === "Skill")) {
     return buildAllowedToolPermissionResponse(input);
+  }
+
+  // Layer 1.8: Plugin-MCP per-tool approval overlay (T10).
+  //
+  // Plugin tool names follow the canonical MCP form `mcp__<serverName>__<toolName>`.
+  // Only plugin-shipped MCP tools hit this layer; all other tools pass through.
+  //
+  // - `never`   → auto-allow (user has pre-trusted this tool)
+  // - `prompt`  → fall through to Layer 2+ (existing notification path)
+  // - `approve` → fall through to Layer 2+ (existing blocking modal path)
+  // - `null`    → plugin not accepted / non-plugin MCP tool → fall through
+  //
+  // Dynamic import — see CLAUDE.md "Smoke-test budget" rule: never import
+  // `@/lib/plugins/*` statically from runtime-registry-adjacent modules.
+  if (!isQuestion && toolName.startsWith("mcp__")) {
+    const { resolvePluginToolApproval } = await import("@/lib/plugins/capability-check");
+    const decision = await resolvePluginToolApproval(toolName);
+    if (decision === "never") {
+      return buildAllowedToolPermissionResponse(input);
+    }
+    // "prompt" / "approve" / null → continue through the pipeline.
   }
 
   // Layer 2: Saved user permissions — skip notification for pre-approved tools

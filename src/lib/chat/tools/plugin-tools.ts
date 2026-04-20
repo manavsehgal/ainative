@@ -86,5 +86,31 @@ export function pluginTools(_ctx: ToolContext) {
         }
       }
     ),
+
+    defineTool(
+      "set_plugin_tool_approval",
+      "Set the per-tool approval mode for a plugin-shipped MCP tool. Modes: 'never' (auto-allow, trusted), 'prompt' (ask each time via MCP elicitation / notification), 'approve' (blocking permission modal). The plugin must already be capability-accepted. The tool name should be the full MCP-prefixed form, e.g. mcp__echo-server__echo.",
+      {
+        pluginId: z.string().describe("The plugin id"),
+        toolName: z.string().describe("The full MCP-prefixed tool name, e.g. mcp__echo-server__echo"),
+        mode: z.enum(["never", "prompt", "approve"]).describe("Approval mode"),
+      },
+      async (args) => {
+        try {
+          // Dynamic import — see TDR-032 note at top of file.
+          const { setPluginToolApproval } = await import("@/lib/plugins/capability-check");
+          setPluginToolApproval(args.pluginId, args.toolName, args.mode);
+          return ok({
+            pluginId: args.pluginId,
+            toolName: args.toolName,
+            mode: args.mode,
+          });
+        } catch (e) {
+          return err(
+            e instanceof Error ? e.message : "Failed to set tool approval"
+          );
+        }
+      }
+    ),
   ];
 }

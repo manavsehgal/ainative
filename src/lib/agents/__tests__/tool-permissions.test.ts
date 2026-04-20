@@ -11,7 +11,14 @@ vi.mock("@/lib/settings/permissions", () => ({
   isToolAllowed: vi.fn().mockResolvedValue(false),
 }));
 
+// Default: no plugin registered → resolvePluginToolApproval returns null.
+// Individual tests override with vi.mocked(...).mockResolvedValueOnce(...).
+vi.mock("@/lib/plugins/capability-check", () => ({
+  resolvePluginToolApproval: vi.fn().mockResolvedValue(null),
+}));
+
 import { handleToolPermission, clearPermissionCache } from "@/lib/agents/tool-permissions";
+import { resolvePluginToolApproval } from "@/lib/plugins/capability-check";
 
 describe("handleToolPermission — SDK filesystem and Skill auto-allow", () => {
   beforeEach(() => {
@@ -56,5 +63,79 @@ describe("handleToolPermission — SDK filesystem and Skill auto-allow", () => {
       { autoApprove: [], autoDeny: ["Read"] },
     );
     expect(result.behavior).toBe("deny");
+  });
+});
+
+describe("handleToolPermission — T10 plugin-MCP per-tool approval overlay (Layer 1.8)", () => {
+  beforeEach(() => {
+    clearPermissionCache("t10-task");
+    vi.mocked(resolvePluginToolApproval).mockReset();
+    vi.mocked(resolvePluginToolApproval).mockResolvedValue(null);
+  });
+
+  it("'never' mode auto-allows the plugin tool without a notification", async () => {
+    vi.mocked(resolvePluginToolApproval).mockResolvedValueOnce("never");
+    const { db } = await import("@/lib/db");
+    const insertSpy = vi.spyOn(db, "insert");
+    insertSpy.mockClear();
+
+    const result = await handleToolPermission(
+      "t10-task",
+      "mcp__echo-server__echo",
+      { text: "hi" },
+    );
+
+    expect(result.behavior).toBe("allow");
+    expect(result.updatedInput).toEqual({ text: "hi" });
+    expect(vi.mocked(resolvePluginToolApproval)).toHaveBeenCalledWith(
+      "mcp__echo-server__echo",
+    );
+    expect(insertSpy).not.toHaveBeenCalled();
+  });
+
+  it("'prompt' mode falls through to the notification path", async () => {
+    vi.mocked(resolvePluginToolApproval).mockResolvedValueOnce("prompt");
+    const { db } = await import("@/lib/db");
+    const insertSpy = vi.spyOn(db, "insert");
+    insertSpy.mockClear();
+
+    handleToolPermission("t10-task", "mcp__echo-server__echo", { text: "x" });
+    // Let the async insertion + polling kick off.
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(insertSpy).toHaveBeenCalled();
+  });
+
+  it("'approve' mode falls through to the notification path", async () => {
+    vi.mocked(resolvePluginToolApproval).mockResolvedValueOnce("approve");
+    const { db } = await import("@/lib/db");
+    const insertSpy = vi.spyOn(db, "insert");
+    insertSpy.mockClear();
+
+    handleToolPermission("t10-task", "mcp__echo-server__shout", { text: "y" });
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(insertSpy).toHaveBeenCalled();
+  });
+
+  it("null decision (non-plugin or not accepted) falls through", async () => {
+    vi.mocked(resolvePluginToolApproval).mockResolvedValueOnce(null);
+    const { db } = await import("@/lib/db");
+    const insertSpy = vi.spyOn(db, "insert");
+    insertSpy.mockClear();
+
+    handleToolPermission("t10-task", "mcp__unknown__tool", { text: "z" });
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(insertSpy).toHaveBeenCalled();
+  });
+
+  it("does NOT invoke resolvePluginToolApproval for ordinary (non-mcp__) tools", async () => {
+    vi.mocked(resolvePluginToolApproval).mockClear();
+
+    // Read auto-allows at Layer 1.75 — still a valid happy path.
+    await handleToolPermission("t10-task", "Read", { file_path: "/tmp/x" });
+
+    expect(vi.mocked(resolvePluginToolApproval)).not.toHaveBeenCalled();
   });
 });

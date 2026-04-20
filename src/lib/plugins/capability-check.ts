@@ -10,6 +10,9 @@
  *   writePluginsLock(pluginId, entry)
  *   removePluginsLockEntry(pluginId)
  *   isCapabilityAccepted(pluginId, currentHash)
+ *   setPluginToolApproval(pluginId, toolName, mode)   — T10 per-tool overlay
+ *   getPluginToolApprovalMode(pluginId, toolName, defaultFromManifest?)
+ *   resolvePluginToolApproval(toolName)               — T10 tool-name → mode
  */
 
 import crypto from "node:crypto";
@@ -20,6 +23,7 @@ import { z } from "zod";
 import { CAPABILITY_VALUES, type Capability } from "@/lib/plugins/sdk/types";
 import {
   getAinativePluginsLockPath,
+  getAinativePluginsDir,
   getAinativeLogsDir,
 } from "@/lib/utils/ainative-paths";
 
@@ -27,11 +31,19 @@ import {
 // Types
 // ---------------------------------------------------------------------------
 
+export type ToolApprovalMode = "never" | "prompt" | "approve";
+
 export interface PluginsLockEntry {
   manifestHash: string;
   capabilities: Capability[];
   acceptedAt: string;   // ISO 8601
   acceptedBy: string;   // os.userInfo().username
+  /**
+   * T10: Per-tool approval overrides. Keys are the full MCP-prefixed tool
+   * name (e.g. "mcp__echo-server__echo"). Missing entries fall back to the
+   * plugin manifest's `defaultToolApproval`, and finally to `"prompt"`.
+   */
+  toolApprovals?: Record<string, ToolApprovalMode>;
 }
 
 export interface PluginsLockFile {
@@ -43,11 +55,14 @@ export interface PluginsLockFile {
 // Zod schema for plugins.lock — used for "fails-closed" validation
 // ---------------------------------------------------------------------------
 
+const ToolApprovalModeSchema = z.enum(["never", "prompt", "approve"]);
+
 const PluginsLockEntrySchema = z.object({
   manifestHash: z.string().startsWith("sha256:"),
   capabilities: z.array(z.enum(CAPABILITY_VALUES)),
   acceptedAt: z.string(),
   acceptedBy: z.string(),
+  toolApprovals: z.record(z.string(), ToolApprovalModeSchema).optional(),
 });
 
 const PluginsLockFileSchema = z.object({
@@ -295,6 +310,137 @@ export function isCapabilityAccepted(
   }
 
   return { accepted: true };
+}
+
+// ---------------------------------------------------------------------------
+// T10: Per-tool approval overlay
+// ---------------------------------------------------------------------------
+
+/**
+ * Set a per-tool approval mode for a plugin's tool. Preserves existing entry
+ * fields (manifestHash, capabilities, acceptedAt, acceptedBy) — merges into
+ * `toolApprovals`. Throws if the plugin has no lockfile entry (the plugin
+ * must be capability-accepted first).
+ */
+export function setPluginToolApproval(
+  pluginId: string,
+  toolName: string,
+  mode: ToolApprovalMode,
+): void {
+  const lock = readPluginsLock();
+  const existing = lock.accepted[pluginId];
+  if (!existing) {
+    throw new Error(
+      `[capability-check] setPluginToolApproval: plugin "${pluginId}" is not in plugins.lock (must be capability-accepted first)`,
+    );
+  }
+
+  const nextApprovals: Record<string, ToolApprovalMode> = {
+    ...(existing.toolApprovals ?? {}),
+    [toolName]: mode,
+  };
+
+  const nextEntry: PluginsLockEntry = {
+    manifestHash: existing.manifestHash,
+    capabilities: existing.capabilities,
+    acceptedAt: existing.acceptedAt,
+    acceptedBy: existing.acceptedBy,
+    toolApprovals: nextApprovals,
+  };
+
+  writePluginsLock(pluginId, nextEntry);
+}
+
+/**
+ * Look up the effective per-tool approval mode for a plugin's tool.
+ *
+ * Resolution order:
+ *   1. lockfile `toolApprovals[toolName]` override, if present
+ *   2. manifest `defaultToolApproval`, if the caller provides one
+ *   3. `"prompt"` (safe default)
+ *
+ * Returns null if the plugin is not in the lockfile (not capability-accepted).
+ */
+export function getPluginToolApprovalMode(
+  pluginId: string,
+  toolName: string,
+  defaultFromManifest?: ToolApprovalMode,
+): ToolApprovalMode | null {
+  const lock = readPluginsLock();
+  const entry = lock.accepted[pluginId];
+  if (!entry) return null;
+
+  const override = entry.toolApprovals?.[toolName];
+  if (override) return override;
+
+  if (defaultFromManifest) return defaultFromManifest;
+
+  return "prompt";
+}
+
+/**
+ * Read `plugin.yaml` for a plugin id and extract its optional
+ * `defaultToolApproval` field. Returns undefined if the file is missing,
+ * unparseable, or the field is absent.
+ *
+ * Kept intentionally inline (no shared `getPluginManifest` helper) per the
+ * DRY-on-3rd-use rule. If a third reader emerges, promote to mcp-loader.
+ */
+function readManifestDefaultApproval(pluginId: string): ToolApprovalMode | undefined {
+  try {
+    const pluginYamlPath = path.join(getAinativePluginsDir(), pluginId, "plugin.yaml");
+    if (!fs.existsSync(pluginYamlPath)) return undefined;
+    const content = fs.readFileSync(pluginYamlPath, "utf-8");
+    const raw = yaml.load(content);
+    if (raw === null || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+    const record = raw as Record<string, unknown>;
+    const value = record.defaultToolApproval;
+    if (value === "never" || value === "prompt" || value === "approve") {
+      return value;
+    }
+    return undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Given a canonical MCP tool name of shape `mcp__<serverName>__<toolName>`,
+ * find the matching plugin registration and return the effective approval
+ * mode.
+ *
+ * Returns null if:
+ *   - `toolName` doesn't match the `mcp__` prefix pattern
+ *   - no registration matches (plugin not loaded / unknown server)
+ *   - the plugin is not in plugins.lock (not capability-accepted)
+ *
+ * Dynamic import of `@/lib/plugins/mcp-loader` keeps this module decoupled
+ * from the loader's validation chain (per TDR-032 discipline).
+ */
+export async function resolvePluginToolApproval(
+  toolName: string,
+): Promise<ToolApprovalMode | null> {
+  if (!toolName.startsWith("mcp__")) return null;
+
+  // Parse: mcp__<serverName>__<rest>. `rest` is the tool name as the MCP
+  // server sees it; we only need the serverName to find the registration.
+  const afterPrefix = toolName.slice("mcp__".length);
+  const sepIdx = afterPrefix.indexOf("__");
+  if (sepIdx <= 0) return null;
+  const serverName = afterPrefix.slice(0, sepIdx);
+
+  // Dynamic import per TDR-032 — mcp-loader pulls in transport-dispatch and
+  // other modules we don't want to statically couple to the permission layer.
+  const { listPluginMcpRegistrations } = await import("@/lib/plugins/mcp-loader");
+  const registrations = await listPluginMcpRegistrations();
+
+  const match = registrations.find(
+    (r) => r.status === "accepted" && r.serverName === serverName,
+  );
+  if (!match) return null;
+
+  const manifestDefault = readManifestDefaultApproval(match.pluginId);
+  return getPluginToolApprovalMode(match.pluginId, toolName, manifestDefault);
 }
 
 // Re-export for consumers that import everything from this module.
