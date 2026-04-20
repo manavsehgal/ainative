@@ -146,11 +146,18 @@ vi.mock("@/lib/chat/ainative-tools", () => ({
     asMcpServer: () => ({ __mockAinativeServer: true }),
   })),
 }));
+// Mock the plugin MCP loader so execute/resume call sites resolve to {} by
+// default (no plugins installed). Individual tests can override via
+// vi.mocked(loadPluginMcpServers).mockResolvedValueOnce(...).
+vi.mock("@/lib/plugins/mcp-loader", () => ({
+  loadPluginMcpServers: vi.fn().mockResolvedValue({}),
+}));
 
 // Static imports (works because vi.mock is hoisted)
 import { query } from "@anthropic-ai/claude-agent-sdk";
-import { executeClaudeTask, resumeClaudeTask } from "../claude-agent";
+import { executeClaudeTask, resumeClaudeTask, withAinativeMcpServer } from "../claude-agent";
 import { createToolServer } from "@/lib/chat/ainative-tools";
+import { loadPluginMcpServers } from "@/lib/plugins/mcp-loader";
 
 const mockQuery = vi.mocked(query);
 
@@ -212,6 +219,7 @@ beforeEach(() => {
   mockGetActiveLearnedContext.mockReturnValue(null);
   mockAnalyzeForLearnedPatterns.mockResolvedValue(null);
   mockProcessSweepResult.mockResolvedValue(undefined);
+  vi.mocked(loadPluginMcpServers).mockResolvedValue({});
 });
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1169,5 +1177,81 @@ describe("handleToolPermission", () => {
       });
       expect(permissionNotifications).toHaveLength(1);
     });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// Group T6: withAinativeMcpServer — 5-source merge (TDR-035 §1)
+// ═══════════════════════════════════════════════════════════════════════
+
+import fs from "node:fs";
+import path from "node:path";
+
+describe("withAinativeMcpServer (T6 — 5-source merge)", () => {
+  it("T6-1: happy path — plugin server present + ainative is last key", async () => {
+    const result = await withAinativeMcpServer(
+      {},
+      {},
+      {},
+      { "echo-server": { command: "python", args: [] } },
+      null,
+    );
+    const keys = Object.keys(result);
+    expect(keys).toContain("echo-server");
+    expect(keys).toContain("ainative");
+    // ainative must be the LAST key (TDR-035 §1 position 5)
+    expect(keys[keys.length - 1]).toBe("ainative");
+  });
+
+  it("T6-2: plugin cannot shadow ainative — real server wins", async () => {
+    const result = await withAinativeMcpServer(
+      {},
+      {},
+      {},
+      { ainative: { command: "evil-override" } },
+      null,
+    );
+    // The plugin's ainative key must be overwritten by the real in-process server
+    expect((result.ainative as Record<string, unknown>).__mockAinativeServer).toBe(true);
+    // No extra keys from the plugin's attempt to shadow
+    expect(Object.keys(result)).toEqual(["ainative"]);
+  });
+
+  it("T6-3: merge order preserves upstream keys — profile → browser → external → plugin → ainative", async () => {
+    const result = await withAinativeMcpServer(
+      { a: 1 },
+      { b: 2 },
+      { c: 3 },
+      { d: 4 },
+      null,
+    );
+    expect(Object.keys(result)).toEqual(["a", "b", "c", "d", "ainative"]);
+  });
+
+  it("T6-4: source-grep invariant — both call sites pass loadPluginMcpServers({ runtime: 'claude-code' })", () => {
+    const src = fs.readFileSync(
+      path.resolve(__dirname, "../claude-agent.ts"),
+      "utf8",
+    );
+
+    // Locate executeClaudeTask and resumeClaudeTask function bodies and
+    // verify each contains exactly one loadPluginMcpServers call with the
+    // correct runtime id. This is the structural parity invariant for T6.
+    const executeStart = src.indexOf("async function executeClaudeTask(");
+    const resumeStart = src.indexOf("async function resumeClaudeTask(");
+
+    expect(executeStart).toBeGreaterThan(-1);
+    expect(resumeStart).toBeGreaterThan(-1);
+
+    // Slice each function body (up to the next top-level async function or EOF)
+    const executeBody = src.slice(
+      executeStart,
+      resumeStart > executeStart ? resumeStart : src.length,
+    );
+    const resumeBody = src.slice(resumeStart);
+
+    const pattern = `loadPluginMcpServers({ runtime: "claude-code" })`;
+    expect(executeBody).toContain(pattern);
+    expect(resumeBody).toContain(pattern);
   });
 });

@@ -53,9 +53,11 @@ import {
 // fixes — do not duplicate these patterns inline.
 
 /**
- * Merge the in-process ainative MCP server into a profile/browser/external
- * MCP server map. ainative is spread LAST so no upstream source can shadow
- * the `ainative` key with its own server.
+ * Merge the in-process ainative MCP server into a five-source MCP server map.
+ * Spread order: profile → browser → external → plugin → ainative (TDR-035 §1).
+ * ainative is spread LAST so no upstream source can shadow the `ainative` key
+ * with its own server. A plugin declaring `mcpServers: { ainative: ... }` in
+ * its `.mcp.json` will be silently overwritten by the real in-process server.
  *
  * `@/lib/chat/ainative-tools` is loaded via dynamic `import()` to avoid a
  * circular-dependency crash: that module transitively pulls in the chat
@@ -66,11 +68,17 @@ import {
  * at module-load time. The dynamic import defers the ainative-tools module
  * until `executeClaudeTask` / `resumeClaudeTask` actually run, by which
  * time every module in the graph has finished initializing.
+ *
+ * pluginServers is passed as a pure arg (caller responsibility) — the helper
+ * does NOT call loadPluginMcpServers directly; callers load it once per
+ * request and pass the result here so both executeClaudeTask and resumeClaudeTask
+ * use a single consistent snapshot for the full task lifecycle.
  */
-async function withAinativeMcpServer(
+export async function withAinativeMcpServer(
   profileServers: Record<string, unknown>,
   browserServers: Record<string, unknown>,
   externalServers: Record<string, unknown>,
+  pluginServers: Record<string, unknown>,
   projectId?: string | null,
 ): Promise<Record<string, unknown>> {
   const { createToolServer } = await import("@/lib/chat/ainative-tools");
@@ -79,6 +87,7 @@ async function withAinativeMcpServer(
     ...profileServers,
     ...browserServers,
     ...externalServers,
+    ...pluginServers,
     ainative: ainativeServer,
   };
 }
@@ -555,18 +564,23 @@ export async function executeClaudeTask(taskId: string): Promise<void> {
     // profile default. This is the runtime-enforced budget cap.
     const effectiveMaxTurns = task.maxTurns ?? ctx.maxTurns;
 
-    // Merge browser + external MCP servers, then inject the in-process
-    // ainative server via the shared helper (see withAinativeMcpServer above).
-    // The helper is async because it dynamically imports @/lib/chat/ainative-tools
-    // to break a module-load cycle with the runtime registry.
-    const [browserServers, externalServers] = await Promise.all([
+    // Merge all five MCP server sources (TDR-035 §1) in parallel, then inject
+    // into the in-process ainative server via the shared helper.
+    // loadPluginMcpServers is imported dynamically to avoid a module-load cycle
+    // (same reason as withAinativeMcpServer's dynamic import of ainative-tools).
+    const [browserServers, externalServers, pluginServers] = await Promise.all([
       getBrowserMcpServers(),
       getExternalMcpServers(),
+      (async () => {
+        const { loadPluginMcpServers } = await import("@/lib/plugins/mcp-loader");
+        return loadPluginMcpServers({ runtime: "claude-code" });
+      })(),
     ]);
     const mergedMcpServers = await withAinativeMcpServer(
       ctx.payload?.mcpServers ?? {},
       browserServers,
       externalServers,
+      pluginServers,
       task.projectId,
     );
     // Capability gate: only pass settingSources + CLAUDE_SDK tools when the
@@ -714,17 +728,23 @@ export async function resumeClaudeTask(taskId: string): Promise<void> {
     // profile default. This is the runtime-enforced budget cap.
     const effectiveMaxTurns = task.maxTurns ?? ctx.maxTurns;
 
-    // Merge browser + external MCP servers, then inject the in-process
-    // ainative server via the shared helper (see withAinativeMcpServer).
-    // Async for the same cycle-breaking reason as executeClaudeTask above.
-    const [browserServers, externalServers] = await Promise.all([
+    // Merge all five MCP server sources (TDR-035 §1) in parallel, then inject
+    // into the in-process ainative server via the shared helper.
+    // Same dynamic-import pattern as executeClaudeTask — fresh load per resume
+    // request is correct; consistency within a single request is the invariant.
+    const [browserServers, externalServers, pluginServers] = await Promise.all([
       getBrowserMcpServers(),
       getExternalMcpServers(),
+      (async () => {
+        const { loadPluginMcpServers } = await import("@/lib/plugins/mcp-loader");
+        return loadPluginMcpServers({ runtime: "claude-code" });
+      })(),
     ]);
     const mergedMcpServers = await withAinativeMcpServer(
       ctx.payload?.mcpServers ?? {},
       browserServers,
       externalServers,
+      pluginServers,
       task.projectId,
     );
     // Capability gate: same logic as executeClaudeTask. Resumed tasks must
