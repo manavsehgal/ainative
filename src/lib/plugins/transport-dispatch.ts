@@ -240,9 +240,17 @@ export async function validateStdioMcp(
 }
 
 /**
- * Kill a child after validation — SIGTERM first, SIGKILL after 5s if still alive.
- * This is fire-and-collect: we wait for the exit event to close cleanly,
- * but the caller's promise resolves immediately with the validation result.
+ * Kill a child after validation.
+ *
+ * Timeout case (`stdio_init_timeout`): direct SIGKILL per TDR-035 §5 —
+ * the child is already unresponsive, so SIGTERM would waste 5s on a
+ * handshake it never answered.
+ *
+ * All other cases (success, malformed, crash): graceful SIGTERM with
+ * 5s SIGKILL fallback so a well-behaved server can flush logs.
+ *
+ * Fire-and-collect: caller's promise resolves immediately; kill proceeds
+ * asynchronously.
  */
 function killChild(
   child: ReturnType<typeof spawn>,
@@ -251,6 +259,17 @@ function killChild(
   resolve: (r: StdioValidationResult) => void
 ): void {
   resolve(result);
+
+  const forceKill = result.ok === false && result.reason === "stdio_init_timeout";
+
+  if (forceKill) {
+    try {
+      child.kill("SIGKILL");
+    } catch {
+      /* already dead */
+    }
+    return;
+  }
 
   let sigkillTimer: ReturnType<typeof setTimeout> | null = null;
 
