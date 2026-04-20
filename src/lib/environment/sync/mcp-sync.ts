@@ -3,11 +3,10 @@
  * Adds/removes MCP server entries across tool configs.
  */
 
-import { existsSync, readFileSync, writeFileSync } from "fs";
+import { writeFileSync } from "fs";
 import { join } from "path";
 import { homedir } from "os";
 import { safeReadFile } from "../parsers/utils";
-import { parseTOML } from "../parsers/toml";
 import type { EnvironmentArtifactRow } from "@/lib/db/schema";
 import type { SyncOperation } from "./skill-sync";
 import { getLaunchCwd } from "../workspace-context";
@@ -156,20 +155,43 @@ export function preparePluginMcpCodexSync(
     registrations.map((r) => `${r.pluginId}-${r.serverName}`)
   );
 
-  // Strip all existing plugin-owned sections from the config.
-  // Each section spans from [mcp_servers.<key>] up to the next `[` header or EOF.
-  let content = existing;
-  for (const key of pluginKeys) {
-    // Escape dots (none expected in this namespace, but be safe)
-    const escapedKey = key.replace(/\./g, "\\.");
-    content = content.replace(
-      new RegExp(`\\[mcp_servers\\.${escapedKey}\\][^\\[]*`, "g"),
-      ""
-    );
+  // Strip all existing plugin-owned sections from the config using a line-based
+  // approach. The previous regex `[^\[]*` stopped at the first `[` character,
+  // which broke on inline TOML arrays (e.g. `args = ["a.js"]`) and on
+  // `[mcp_servers.<key>.env]` sub-tables (orphaned child table bug, C1).
+  //
+  // Algorithm: iterate lines; when a section header belonging to a plugin-owned
+  // key is encountered (parent or .env child), enter "skip mode" and drop lines
+  // until the next section header or EOF; any other section header ends skip mode.
+  const lines = existing.split("\n");
+  const kept: string[] = [];
+  let skipping = false;
+
+  for (const line of lines) {
+    // Match any TOML section header: `[something]` on its own line.
+    const headerMatch = line.match(/^\[([^\]]+)\]\s*$/);
+    if (headerMatch) {
+      const header = headerMatch[1];
+      if (header.startsWith("mcp_servers.")) {
+        // Could be `mcp_servers.<key>` or `mcp_servers.<key>.env` (or other sub-table).
+        const rest = header.slice("mcp_servers.".length);
+        const dotIdx = rest.indexOf(".");
+        const baseKey = dotIdx === -1 ? rest : rest.slice(0, dotIdx);
+        if (pluginKeys.has(baseKey)) {
+          skipping = true;
+          continue;
+        }
+      }
+      // Any other section header ends skip mode.
+      skipping = false;
+    }
+    if (!skipping) {
+      kept.push(line);
+    }
   }
 
   // Trim trailing whitespace/blank lines left by stripping, keep a tidy file.
-  content = content.trimEnd();
+  let content = kept.join("\n").trimEnd();
 
   // Append fresh sections for each accepted stdio registration.
   for (const reg of registrations) {

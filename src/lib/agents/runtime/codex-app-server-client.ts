@@ -65,8 +65,20 @@ export class CodexAppServerClient {
         "@/lib/environment/sync/mcp-sync"
       );
       await syncPluginMcpToCodex();
-    } catch {
+    } catch (err) {
       // Non-fatal: plugin sync failure must not block Codex from starting.
+      // Log to plugins.log so operators can discover sync issues.
+      try {
+        const fs = await import("node:fs");
+        const path = await import("node:path");
+        const { getAinativeLogsDir } = await import("@/lib/utils/ainative-paths");
+        const dir = getAinativeLogsDir();
+        fs.mkdirSync(dir, { recursive: true });
+        fs.appendFileSync(
+          path.join(dir, "plugins.log"),
+          `${new Date().toISOString()} codex-sync-failed: ${err instanceof Error ? err.message : String(err)}\n`
+        );
+      } catch { /* logging best-effort */ }
     }
 
     const port = await reservePort();

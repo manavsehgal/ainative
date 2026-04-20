@@ -186,6 +186,53 @@ command = "/usr/bin/existing"
     expect(op.content).toContain('BAZ = "qux"');
   });
 
+  it("is idempotent across two consecutive syncs with same registrations", () => {
+    const regs = [
+      makeReg({
+        pluginId: "p",
+        serverName: "s",
+        status: "accepted",
+        transport: "stdio",
+        config: { command: "/bin/node", args: ["a.js", "--port", "3000"], env: { FOO: "bar" } },
+      }),
+    ];
+    const run1 = preparePluginMcpCodexSync(regs, configPath);
+    fs.writeFileSync(configPath, run1.content, "utf8");
+    const run2 = preparePluginMcpCodexSync(regs, configPath);
+    expect(run2.content).toBe(run1.content);
+  });
+
+  it("strips plugin parent section AND its .env sub-section", () => {
+    const seed = [
+      "[mcp_servers.p-s]",
+      "command = \"/bin/old\"",
+      "",
+      "[mcp_servers.p-s.env]",
+      "STALE = \"value\"",
+      "",
+      "[mcp_servers.user-external]",
+      "command = \"/bin/user\"",
+      "",
+    ].join("\n");
+    fs.writeFileSync(configPath, seed, "utf8");
+
+    const regs = [makeReg({
+      pluginId: "p",
+      serverName: "s",
+      status: "accepted",
+      transport: "stdio",
+      config: { command: "/bin/new" },
+    })];
+    const op = preparePluginMcpCodexSync(regs, configPath);
+    // Old parent section is replaced, old .env sub-section must NOT persist
+    expect(op.content).not.toContain("STALE");
+    expect(op.content).not.toContain("/bin/old");
+    expect(op.content).toContain("/bin/new");
+    // Non-plugin section survives
+    expect(op.content).toContain("[mcp_servers.user-external]");
+    expect(op.content).toContain("/bin/user");
+  });
+
   it("8. five-source conceptual check: existing non-plugin sections coexist with plugin sections", () => {
     // Simulate config.toml that already has profile, browser, external sections.
     const seed = `[profile]
