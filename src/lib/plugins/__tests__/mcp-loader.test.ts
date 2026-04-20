@@ -19,6 +19,7 @@ import {
   loadPluginMcpServers,
   listPluginMcpRegistrations,
   listAcceptedInProcessEntriesForPlugin,
+  reloadPluginMcpRegistrations,
 } from "../mcp-loader";
 import { writePluginsLock } from "../capability-check";
 import { deriveManifestHash } from "../capability-check";
@@ -1023,4 +1024,43 @@ describe("T14 — confinementMode integration (wrap → mcp-loader)", () => {
     expect(result).toHaveProperty("svc");
     expect(result["svc"].command).toBe(process.execPath);
   }, 15_000);
+});
+
+// ---------------------------------------------------------------------------
+// T15: reloadPluginMcpRegistrations
+// ---------------------------------------------------------------------------
+
+describe("T15 — reloadPluginMcpRegistrations", () => {
+  it("returns { bustedInProcessEntries: [], registrations: [] } for an unknown pluginId", async () => {
+    const result = await reloadPluginMcpRegistrations("ghost-plugin");
+    expect(result).toEqual({
+      bustedInProcessEntries: [],
+      registrations: [],
+    });
+  });
+
+  it("returns busted entry paths and fresh registrations for an accepted in-process SDK plugin", async () => {
+    const pluginId = "reload-sdk-plugin";
+    const yaml = writePluginYaml(pluginId);
+    const entryPath = path.join(pluginsDir, pluginId, "server", "index.js");
+    writeFakeSdkServerFile(entryPath);
+
+    writeMcpJson(pluginId, {
+      "sdk-server": {
+        transport: "ainative-sdk",
+        entry: "./server/index.js",
+      },
+    });
+    acceptPlugin(pluginId, yaml);
+
+    const result = await reloadPluginMcpRegistrations(pluginId);
+
+    expect(result.bustedInProcessEntries).toEqual([entryPath]);
+    // Fresh registrations must contain the accepted SDK server.
+    expect(result.registrations).toHaveLength(1);
+    expect(result.registrations[0].pluginId).toBe(pluginId);
+    expect(result.registrations[0].serverName).toBe("sdk-server");
+    expect(result.registrations[0].status).toBe("accepted");
+    expect(result.registrations[0].transport).toBe("ainative-sdk");
+  });
 });

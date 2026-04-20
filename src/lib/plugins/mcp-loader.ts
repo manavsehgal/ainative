@@ -780,3 +780,69 @@ export async function listAcceptedInProcessEntriesForPlugin(
   }
   return entries;
 }
+
+/**
+ * T15 — Transport-aware reload for a single Kind-1 plugin.
+ *
+ * Effects:
+ *  - For each accepted in-process SDK registration of this plugin, bust
+ *    Node's require.cache so the next request re-imports fresh module
+ *    code. The list of busted absolute entry paths is returned so callers
+ *    (chat tool, UI) can see exactly what was invalidated.
+ *  - Re-scans the plugin dir and returns fresh registrations filtered to
+ *    pluginId. A newly-dropped plugin yields `registrations: []`; a plugin
+ *    that moved from accepted → pending after a manifest edit shows up
+ *    with its new status/disabledReason.
+ *
+ * TDR-035 §5 note: stdio children are NOT owned by the loader (Option A —
+ * see transport-dispatch.ts:18-20). The spec's "SIGTERM + respawn" is
+ * effectively handled by adapters spawning fresh children at next request
+ * against refreshed `.mcp.json`; no per-plugin SIGTERM wiring is needed
+ * here. If a future milestone introduces long-lived loader-owned children,
+ * this is the hook to extend.
+ *
+ * Graceful: unknown pluginId yields `{ bustedInProcessEntries: [], registrations: [] }`.
+ * Failures in cache-bust are logged but do not abort the reload (the fresh
+ * registration list is still returned).
+ *
+ * All cross-module imports are dynamic per TDR-032 discipline.
+ */
+export async function reloadPluginMcpRegistrations(
+  pluginId: string,
+): Promise<{
+  bustedInProcessEntries: string[];
+  registrations: PluginMcpRegistration[];
+}> {
+  // Step 1 — Collect in-process entries to bust BEFORE re-scanning, so a
+  // manifest edit that moves the plugin from accepted → pending doesn't
+  // hide the stale cached entry that still needs clearing.
+  let bustedInProcessEntries: string[] = [];
+  try {
+    bustedInProcessEntries = await listAcceptedInProcessEntriesForPlugin(pluginId);
+  } catch (err) {
+    logToFile(
+      `[mcp-loader] WARN: failed to list in-process entries for ${pluginId} during reload: ${err instanceof Error ? err.message : String(err)}`
+    );
+  }
+
+  if (bustedInProcessEntries.length > 0) {
+    try {
+      const { bustInProcessServerCache } = await import(
+        "@/lib/plugins/transport-dispatch"
+      );
+      for (const entryPath of bustedInProcessEntries) {
+        bustInProcessServerCache(entryPath);
+      }
+    } catch (err) {
+      logToFile(
+        `[mcp-loader] WARN: failed to bust require.cache for ${pluginId} during reload: ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
+  }
+
+  // Step 2 — Re-scan and return the fresh slice for this plugin.
+  const allRegs = await listPluginMcpRegistrations();
+  const registrations = allRegs.filter((r) => r.pluginId === pluginId);
+
+  return { bustedInProcessEntries, registrations };
+}

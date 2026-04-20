@@ -634,6 +634,208 @@ export async function revokePluginCapabilities(
   return { revoked: true, bustedEntries };
 }
 
+// ---------------------------------------------------------------------------
+// T15: Grant flow (inverse of T12 revoke)
+// ---------------------------------------------------------------------------
+
+/**
+ * Grant capabilities to a Kind-1 plugin.
+ *
+ * Effects:
+ *  - Reads plugin.yaml, parses the manifest, verifies kind: chat-tools.
+ *  - Computes the current canonical manifest hash.
+ *  - If `opts.expectedHash` is provided and differs from the current hash,
+ *    rejects with `reason: "hash_drift"` — guards against silent-swap
+ *    attacks where plugin.yaml is modified between a user reviewing it
+ *    and clicking Accept.
+ *  - Writes the plugins.lock entry pinning the current hash. Preserves any
+ *    pre-existing `toolApprovals` and `expiresAt` so re-grant after a
+ *    manifest update doesn't silently wipe per-tool overrides or expiry
+ *    settings the user previously set.
+ *  - Busts require.cache for any accepted in-process SDK registrations
+ *    of this plugin (via reloadPluginMcpRegistrations), so a grant
+ *    immediately following a manifest edit sees the fresh module code.
+ *  - Emits an Inbox notification (type: agent_message) confirming the grant.
+ *  - Logs to plugins.log.
+ *
+ * Graceful failure modes:
+ *   - plugin.yaml missing → { granted: false, reason: "not_found" }
+ *   - Manifest unparseable or wrong kind → { granted: false, reason: "not_chat_tools" }
+ *   - Hash drift vs. expectedHash → { granted: false, reason: "hash_drift", currentHash }
+ *
+ * All cross-module imports are dynamic per TDR-032 discipline to avoid
+ * module-load cycles with @/lib/agents/runtime/catalog.ts.
+ */
+export async function grantPluginCapabilities(
+  pluginId: string,
+  opts?: { expectedHash?: string },
+): Promise<
+  | { granted: true; hash: string; bustedInProcessEntries: string[] }
+  | {
+      granted: false;
+      reason: "not_found" | "hash_drift" | "not_chat_tools";
+      detail?: string;
+      currentHash?: string;
+    }
+> {
+  // Step 1 — Read plugin.yaml. Dynamic import of paths helper keeps this
+  // module free of any static dependency that could grow a module-load
+  // cycle later; see TDR-032.
+  const { getAinativePluginsDir: getDir } = await import(
+    "@/lib/utils/ainative-paths"
+  );
+  const pluginYamlPath = path.join(getDir(), pluginId, "plugin.yaml");
+
+  if (!fs.existsSync(pluginYamlPath)) {
+    return { granted: false, reason: "not_found" };
+  }
+
+  let content: string;
+  try {
+    content = fs.readFileSync(pluginYamlPath, "utf-8");
+  } catch (err) {
+    return {
+      granted: false,
+      reason: "not_found",
+      detail: err instanceof Error ? err.message : String(err),
+    };
+  }
+
+  // Step 2 — Parse manifest and verify kind.
+  let raw: unknown;
+  try {
+    raw = yaml.load(content);
+  } catch (err) {
+    return {
+      granted: false,
+      reason: "not_chat_tools",
+      detail: `plugin.yaml is not valid YAML: ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
+
+  if (raw === null || typeof raw !== "object" || Array.isArray(raw)) {
+    return {
+      granted: false,
+      reason: "not_chat_tools",
+      detail: "plugin.yaml is not a YAML mapping",
+    };
+  }
+
+  const manifestRecord = raw as Record<string, unknown>;
+  if (manifestRecord.kind !== "chat-tools") {
+    return {
+      granted: false,
+      reason: "not_chat_tools",
+      detail: `plugin kind is "${String(manifestRecord.kind ?? "missing")}", expected "chat-tools"`,
+    };
+  }
+
+  const capabilities = Array.isArray(manifestRecord.capabilities)
+    ? (manifestRecord.capabilities.filter(
+        (c): c is Capability =>
+          typeof c === "string" &&
+          (CAPABILITY_VALUES as readonly string[]).includes(c),
+      ) as Capability[])
+    : [];
+
+  // Step 3 — Compute hash and check silent-swap guard.
+  let currentHash: string;
+  try {
+    currentHash = deriveManifestHash(content);
+  } catch (err) {
+    return {
+      granted: false,
+      reason: "not_chat_tools",
+      detail: `failed to derive manifest hash: ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
+
+  if (opts?.expectedHash && opts.expectedHash !== currentHash) {
+    return {
+      granted: false,
+      reason: "hash_drift",
+      currentHash,
+    };
+  }
+
+  // Step 4 — Preserve pre-existing toolApprovals / expiresAt from a prior
+  // lockfile entry. Re-grant after a manifest update should not clobber
+  // user-set per-tool overrides or expiry.
+  const existing = readPluginsLock().accepted[pluginId];
+  const username = (() => {
+    try {
+      return os.userInfo().username;
+    } catch {
+      return "unknown";
+    }
+  })();
+
+  const nextEntry: PluginsLockEntry = {
+    manifestHash: currentHash,
+    capabilities,
+    acceptedAt: new Date().toISOString(),
+    acceptedBy: username,
+    ...(existing?.toolApprovals !== undefined && {
+      toolApprovals: existing.toolApprovals,
+    }),
+    ...(existing?.expiresAt !== undefined && {
+      expiresAt: existing.expiresAt,
+    }),
+  };
+
+  writePluginsLock(pluginId, nextEntry);
+
+  // Step 5 — Transport-aware reload: bust require.cache for in-process SDK
+  // registrations so a grant immediately after a manifest edit sees fresh
+  // module code. Errors here are best-effort — the authoritative effect
+  // (lockfile write) has already landed.
+  let bustedInProcessEntries: string[] = [];
+  try {
+    const { reloadPluginMcpRegistrations } = await import(
+      "@/lib/plugins/mcp-loader"
+    );
+    const reloaded = await reloadPluginMcpRegistrations(pluginId);
+    bustedInProcessEntries = reloaded.bustedInProcessEntries;
+  } catch (err) {
+    logToFile(
+      `[capability-check] WARN: failed to reload plugin ${pluginId} after grant: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
+  // Step 6 — Log the grant.
+  logToFile(
+    `[capability-check] plugin ${pluginId} capabilities granted by ${username}`,
+  );
+
+  // Step 7 — Emit Inbox notification. Best-effort — never fail the grant.
+  try {
+    const [{ db }, { notifications }] = await Promise.all([
+      import("@/lib/db"),
+      import("@/lib/db/schema"),
+    ]);
+    await db.insert(notifications).values({
+      id: crypto.randomUUID(),
+      taskId: null,
+      type: "agent_message",
+      title: `Plugin capabilities granted: ${pluginId}`,
+      body: JSON.stringify({
+        pluginId,
+        action: "granted",
+        hash: currentHash,
+        capabilities,
+      }),
+      read: false,
+      createdAt: new Date(),
+    });
+  } catch (err) {
+    logToFile(
+      `[capability-check] WARN: failed to insert grant notification for ${pluginId}: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
+  return { granted: true, hash: currentHash, bustedInProcessEntries };
+}
+
 // Re-export for consumers that import everything from this module.
 export { CAPABILITY_VALUES };
 export type { Capability };

@@ -21,6 +21,7 @@ import {
   resolvePluginToolApproval,
   setPluginAcceptExpiry,
   revokePluginCapabilities,
+  grantPluginCapabilities,
   type PluginsLockEntry,
 } from "../capability-check";
 
@@ -834,6 +835,280 @@ describe("capability-check — revokePluginCapabilities (T12)", () => {
     const log = fs.readFileSync(logsPath(), "utf-8");
     expect(log).toMatch(
       /\[capability-check\] plugin echo capabilities revoked by /,
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Section 9: T15 grantPluginCapabilities
+// ---------------------------------------------------------------------------
+
+describe("capability-check — grantPluginCapabilities (T15)", () => {
+  afterEach(() => {
+    vi.doUnmock("@/lib/plugins/mcp-loader");
+    vi.doUnmock("@/lib/db");
+    vi.doUnmock("@/lib/db/schema");
+    vi.resetModules();
+  });
+
+  // Helper: write a plugin.yaml to <tmpDir>/plugins/<id>/plugin.yaml
+  function writePluginYamlOnDisk(
+    id: string,
+    overrides: Record<string, unknown> = {},
+  ): string {
+    const pluginDir = path.join(tmpDir, "plugins", id);
+    fs.mkdirSync(pluginDir, { recursive: true });
+    const manifest: Record<string, unknown> = {
+      id,
+      version: "1.0.0",
+      apiVersion: "0.15",
+      kind: "chat-tools",
+      capabilities: ["net"],
+      ...overrides,
+    };
+    const lines: string[] = [];
+    for (const [key, val] of Object.entries(manifest)) {
+      if (Array.isArray(val)) {
+        lines.push(`${key}:`);
+        for (const item of val) lines.push(`  - ${item}`);
+      } else if (
+        typeof val === "string" &&
+        /^\d+(\.\d+)+$/.test(val)
+      ) {
+        lines.push(`${key}: "${val}"`);
+      } else {
+        lines.push(`${key}: ${val}`);
+      }
+    }
+    const content = lines.join("\n") + "\n";
+    fs.writeFileSync(path.join(pluginDir, "plugin.yaml"), content);
+    return content;
+  }
+
+  it("returns { granted: false, reason: 'not_found' } when plugin.yaml is missing", async () => {
+    const result = await grantPluginCapabilities("nonexistent");
+    expect(result).toEqual({ granted: false, reason: "not_found" });
+  });
+
+  it("returns { granted: false, reason: 'not_chat_tools' } when manifest kind is primitives-bundle", async () => {
+    const pluginDir = path.join(tmpDir, "plugins", "kind5-bundle");
+    fs.mkdirSync(pluginDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(pluginDir, "plugin.yaml"),
+      [
+        "id: kind5-bundle",
+        'version: "1.0.0"',
+        'apiVersion: "0.15"',
+        "kind: primitives-bundle",
+        "",
+      ].join("\n"),
+    );
+
+    const result = await grantPluginCapabilities("kind5-bundle");
+    expect(result).toEqual({
+      granted: false,
+      reason: "not_chat_tools",
+      detail: expect.stringContaining("primitives-bundle"),
+    });
+  });
+
+  it("writes a lockfile entry with the correct hash + capabilities on a valid chat-tools plugin", async () => {
+    vi.doMock("@/lib/plugins/mcp-loader", () => ({
+      reloadPluginMcpRegistrations: vi
+        .fn()
+        .mockResolvedValue({ bustedInProcessEntries: [], registrations: [] }),
+    }));
+    vi.doMock("@/lib/db", () => ({ db: {} }));
+    vi.doMock("@/lib/db/schema", () => ({ notifications: {} }));
+
+    const content = writePluginYamlOnDisk("alpha", {
+      capabilities: ["net", "fs"],
+    });
+    const expectedHash = deriveManifestHash(content);
+
+    const { grantPluginCapabilities: reImported } = await import(
+      "../capability-check"
+    );
+    const result = await reImported("alpha");
+
+    expect(result).toEqual({
+      granted: true,
+      hash: expectedHash,
+      bustedInProcessEntries: [],
+    });
+
+    const lock = readPluginsLock();
+    expect(lock.accepted.alpha.manifestHash).toBe(expectedHash);
+    expect(lock.accepted.alpha.capabilities).toEqual(["net", "fs"]);
+    expect(typeof lock.accepted.alpha.acceptedAt).toBe("string");
+    expect(typeof lock.accepted.alpha.acceptedBy).toBe("string");
+  });
+
+  it("succeeds when expectedHash matches the current manifest hash", async () => {
+    vi.doMock("@/lib/plugins/mcp-loader", () => ({
+      reloadPluginMcpRegistrations: vi
+        .fn()
+        .mockResolvedValue({ bustedInProcessEntries: [], registrations: [] }),
+    }));
+    vi.doMock("@/lib/db", () => ({ db: {} }));
+    vi.doMock("@/lib/db/schema", () => ({ notifications: {} }));
+
+    const content = writePluginYamlOnDisk("beta");
+    const currentHash = deriveManifestHash(content);
+
+    const { grantPluginCapabilities: reImported } = await import(
+      "../capability-check"
+    );
+    const result = await reImported("beta", { expectedHash: currentHash });
+
+    expect(result).toMatchObject({ granted: true, hash: currentHash });
+  });
+
+  it("rejects with { granted: false, reason: 'hash_drift', currentHash } when expectedHash differs", async () => {
+    const content = writePluginYamlOnDisk("gamma");
+    const currentHash = deriveManifestHash(content);
+    const staleHash = "sha256:" + "0".repeat(64);
+
+    const result = await grantPluginCapabilities("gamma", {
+      expectedHash: staleHash,
+    });
+    expect(result).toEqual({
+      granted: false,
+      reason: "hash_drift",
+      currentHash,
+    });
+    // Lockfile should NOT have been written.
+    expect(readPluginsLock().accepted.gamma).toBeUndefined();
+  });
+
+  it("preserves pre-existing toolApprovals and expiresAt from a prior lockfile entry", async () => {
+    vi.doMock("@/lib/plugins/mcp-loader", () => ({
+      reloadPluginMcpRegistrations: vi
+        .fn()
+        .mockResolvedValue({ bustedInProcessEntries: [], registrations: [] }),
+    }));
+    vi.doMock("@/lib/db", () => ({ db: {} }));
+    vi.doMock("@/lib/db/schema", () => ({ notifications: {} }));
+
+    const content = writePluginYamlOnDisk("delta");
+    const priorExpiry = new Date(Date.now() + 30 * 86_400_000).toISOString();
+    const priorToolApprovals = {
+      "mcp__delta-server__tool": "never" as const,
+    };
+
+    // Seed a prior entry (e.g. a previous grant that had user-set overrides).
+    writePluginsLock("delta", {
+      manifestHash: "sha256:" + "9".repeat(64), // doesn't matter — grant overwrites
+      capabilities: ["fs"], // doesn't matter — grant overwrites
+      acceptedAt: "2026-01-01T00:00:00Z",
+      acceptedBy: "earlier-user",
+      toolApprovals: priorToolApprovals,
+      expiresAt: priorExpiry,
+    });
+
+    const { grantPluginCapabilities: reImported } = await import(
+      "../capability-check"
+    );
+    const result = await reImported("delta");
+    expect(result.granted).toBe(true);
+
+    const lock = readPluginsLock();
+    expect(lock.accepted.delta.manifestHash).toBe(deriveManifestHash(content));
+    // Capabilities reflect the NEW manifest, not the prior one.
+    expect(lock.accepted.delta.capabilities).toEqual(["net"]);
+    // toolApprovals + expiresAt SURVIVED the re-grant.
+    expect(lock.accepted.delta.toolApprovals).toEqual(priorToolApprovals);
+    expect(lock.accepted.delta.expiresAt).toBe(priorExpiry);
+  });
+
+  it("inserts an Inbox notification (type: agent_message) confirming the grant", async () => {
+    vi.doMock("@/lib/plugins/mcp-loader", () => ({
+      reloadPluginMcpRegistrations: vi
+        .fn()
+        .mockResolvedValue({ bustedInProcessEntries: [], registrations: [] }),
+    }));
+    const valuesSpy = vi.fn().mockResolvedValue(undefined);
+    const insertSpy = vi.fn(() => ({ values: valuesSpy }));
+    vi.doMock("@/lib/db", () => ({ db: { insert: insertSpy } }));
+    const notificationsSentinel = { __table: "notifications" };
+    vi.doMock("@/lib/db/schema", () => ({
+      notifications: notificationsSentinel,
+    }));
+
+    const content = writePluginYamlOnDisk("epsilon", { capabilities: ["env"] });
+    const expectedHash = deriveManifestHash(content);
+
+    const { grantPluginCapabilities: reImported } = await import(
+      "../capability-check"
+    );
+    await reImported("epsilon");
+
+    expect(insertSpy).toHaveBeenCalledTimes(1);
+    expect(insertSpy).toHaveBeenCalledWith(notificationsSentinel);
+    expect(valuesSpy).toHaveBeenCalledTimes(1);
+
+    const row = valuesSpy.mock.calls[0][0];
+    expect(row.type).toBe("agent_message");
+    expect(row.title).toBe("Plugin capabilities granted: epsilon");
+    expect(row.read).toBe(false);
+    expect(row.taskId).toBeNull();
+    expect(typeof row.id).toBe("string");
+    expect(row.createdAt).toBeInstanceOf(Date);
+
+    const body = JSON.parse(row.body);
+    expect(body.pluginId).toBe("epsilon");
+    expect(body.action).toBe("granted");
+    expect(body.hash).toBe(expectedHash);
+    expect(body.capabilities).toEqual(["env"]);
+  });
+
+  it("calls reloadPluginMcpRegistrations and surfaces bustedInProcessEntries in the result", async () => {
+    const bustedPath = "/abs/path/to/entry.js";
+    const reloadSpy = vi.fn().mockResolvedValue({
+      bustedInProcessEntries: [bustedPath],
+      registrations: [],
+    });
+    vi.doMock("@/lib/plugins/mcp-loader", () => ({
+      reloadPluginMcpRegistrations: reloadSpy,
+    }));
+    vi.doMock("@/lib/db", () => ({ db: {} }));
+    vi.doMock("@/lib/db/schema", () => ({ notifications: {} }));
+
+    writePluginYamlOnDisk("zeta");
+
+    const { grantPluginCapabilities: reImported } = await import(
+      "../capability-check"
+    );
+    const result = await reImported("zeta");
+
+    expect(reloadSpy).toHaveBeenCalledTimes(1);
+    expect(reloadSpy).toHaveBeenCalledWith("zeta");
+    expect(result).toMatchObject({
+      granted: true,
+      bustedInProcessEntries: [bustedPath],
+    });
+  });
+
+  it("logs the grant to plugins.log", async () => {
+    vi.doMock("@/lib/plugins/mcp-loader", () => ({
+      reloadPluginMcpRegistrations: vi
+        .fn()
+        .mockResolvedValue({ bustedInProcessEntries: [], registrations: [] }),
+    }));
+    vi.doMock("@/lib/db", () => ({ db: {} }));
+    vi.doMock("@/lib/db/schema", () => ({ notifications: {} }));
+
+    writePluginYamlOnDisk("eta");
+
+    const { grantPluginCapabilities: reImported } = await import(
+      "../capability-check"
+    );
+    await reImported("eta");
+
+    expect(fs.existsSync(logsPath())).toBe(true);
+    const log = fs.readFileSync(logsPath(), "utf-8");
+    expect(log).toMatch(
+      /\[capability-check\] plugin eta capabilities granted by /,
     );
   });
 });
