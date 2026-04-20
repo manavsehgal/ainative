@@ -19,6 +19,7 @@ import {
   setPluginToolApproval,
   getPluginToolApprovalMode,
   resolvePluginToolApproval,
+  setPluginAcceptExpiry,
   type PluginsLockEntry,
 } from "../capability-check";
 
@@ -528,5 +529,147 @@ describe("capability-check — resolvePluginToolApproval", () => {
     );
     const mode = await reImported("mcp__echo-server__echo");
     expect(mode).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Section 7: T11 capability expiry (opt-in)
+// ---------------------------------------------------------------------------
+
+describe("capability-check — T11 expiry / isCapabilityAccepted", () => {
+  const yamlContent = makeYaml({ capabilities: ["net"] });
+  const currentHash = () => deriveManifestHash(yamlContent);
+
+  it("returns accepted: true when expiresAt is in the future and hash matches", () => {
+    const hash = currentHash();
+    const future = new Date(Date.now() + 60 * 86_400_000).toISOString();
+    writePluginsLock("echo", makeEntry({ manifestHash: hash, expiresAt: future }));
+
+    const result = isCapabilityAccepted("echo", hash);
+    expect(result).toEqual({ accepted: true });
+  });
+
+  it("returns accepted: true when no expiresAt is set (default behavior)", () => {
+    const hash = currentHash();
+    // makeEntry() by default has no expiresAt.
+    writePluginsLock("echo", makeEntry({ manifestHash: hash }));
+
+    const result = isCapabilityAccepted("echo", hash);
+    expect(result).toEqual({ accepted: true });
+  });
+
+  it("returns { accepted: false, reason: 'expired', expiresAt } when expiresAt is in the past", () => {
+    const hash = currentHash();
+    const past = new Date(Date.now() - 1_000).toISOString();
+    writePluginsLock("echo", makeEntry({ manifestHash: hash, expiresAt: past }));
+
+    const result = isCapabilityAccepted("echo", hash);
+    expect(result).toEqual({
+      accepted: false,
+      reason: "expired",
+      expiresAt: past,
+    });
+  });
+
+  it("hash_drift takes precedence over expired when BOTH conditions trigger", () => {
+    // Entry has an old hash AND an expired expiresAt — hash_drift should win
+    // because it's the more actionable re-accept signal.
+    const oldHash = "sha256:" + "e".repeat(64);
+    const newHash = currentHash();
+    const past = new Date(Date.now() - 1_000).toISOString();
+
+    writePluginsLock("echo", makeEntry({ manifestHash: oldHash, expiresAt: past }));
+    const result = isCapabilityAccepted("echo", newHash);
+
+    expect(result).toEqual({
+      accepted: false,
+      reason: "hash_drift",
+      acceptedHash: oldHash,
+    });
+  });
+
+  it("treats an unparseable expiresAt as 'no expiry' (belt-and-suspenders guard)", () => {
+    const hash = currentHash();
+    // Simulate a hand-edited lock with a bogus expiresAt string.
+    writePluginsLock(
+      "echo",
+      makeEntry({ manifestHash: hash, expiresAt: "not-a-date" }),
+    );
+
+    const result = isCapabilityAccepted("echo", hash);
+    expect(result).toEqual({ accepted: true });
+  });
+});
+
+describe("capability-check — setPluginAcceptExpiry", () => {
+  it("writes expiresAt ≈ now + days*86400_000 (ISO 8601) and returns the same string", () => {
+    writePluginsLock("echo", makeEntry());
+
+    const before = Date.now();
+    const returned = setPluginAcceptExpiry("echo", 30);
+    const after = Date.now();
+
+    const lock = readPluginsLock();
+    expect(lock.accepted.echo.expiresAt).toBe(returned);
+    // ISO 8601 sanity.
+    expect(returned).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+
+    const parsed = Date.parse(returned);
+    // Must fall within the [before+30d, after+30d] window.
+    expect(parsed).toBeGreaterThanOrEqual(before + 30 * 86_400_000);
+    expect(parsed).toBeLessThanOrEqual(after + 30 * 86_400_000);
+  });
+
+  it("preserves manifestHash, capabilities, acceptedAt, acceptedBy, and toolApprovals", () => {
+    const entry = makeEntry({
+      manifestHash: "sha256:" + "f".repeat(64),
+      capabilities: ["fs", "net"],
+      acceptedAt: "2026-04-01T00:00:00Z",
+      acceptedBy: "alice",
+    });
+    writePluginsLock("echo", entry);
+    // Add a tool approval first — setPluginAcceptExpiry must not clobber it.
+    setPluginToolApproval("echo", "mcp__echo-server__echo", "never");
+
+    setPluginAcceptExpiry("echo", 90);
+
+    const lock = readPluginsLock();
+    expect(lock.accepted.echo.manifestHash).toBe(entry.manifestHash);
+    expect(lock.accepted.echo.capabilities).toEqual(entry.capabilities);
+    expect(lock.accepted.echo.acceptedAt).toBe(entry.acceptedAt);
+    expect(lock.accepted.echo.acceptedBy).toBe(entry.acceptedBy);
+    expect(lock.accepted.echo.toolApprovals).toEqual({
+      "mcp__echo-server__echo": "never",
+    });
+    expect(lock.accepted.echo.expiresAt).toBeDefined();
+  });
+
+  it("throws when the plugin has no lockfile entry (must accept first)", () => {
+    expect(() => setPluginAcceptExpiry("not-installed", 30)).toThrow(
+      /not in plugins\.lock/,
+    );
+  });
+
+  it("accepts all four allowed day values (30, 90, 180, 365)", () => {
+    writePluginsLock("echo", makeEntry());
+    // Each call overwrites expiresAt; just assert no throw.
+    for (const days of [30, 90, 180, 365] as const) {
+      const expiresAt = setPluginAcceptExpiry("echo", days);
+      expect(expiresAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    }
+  });
+
+  it("round-trip via lockfile: days: 30 → expiresAt ≈ now + 30d", () => {
+    writePluginsLock("echo", makeEntry());
+    const before = Date.now();
+    setPluginAcceptExpiry("echo", 30);
+    const after = Date.now();
+
+    // Re-read lock from disk to prove persistence.
+    const lock = readPluginsLock();
+    const expiresAt = lock.accepted.echo.expiresAt!;
+    const parsed = Date.parse(expiresAt);
+    expect(parsed).toBeGreaterThanOrEqual(before + 30 * 86_400_000);
+    expect(parsed).toBeLessThanOrEqual(after + 30 * 86_400_000);
   });
 });

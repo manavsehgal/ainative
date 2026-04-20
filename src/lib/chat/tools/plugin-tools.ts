@@ -112,5 +112,32 @@ export function pluginTools(_ctx: ToolContext) {
         }
       }
     ),
+
+    defineTool(
+      "set_plugin_accept_expiry",
+      "Set an expiration date for a plugin's capability acceptance. After the expiry date, the plugin transitions to pending_capability_reaccept and must be re-granted. Supported day values: 30, 90, 180, 365. The plugin must already be capability-accepted. Default behavior (no expiry) is preserved — this tool is opt-in.",
+      {
+        pluginId: z.string().describe("The plugin id"),
+        days: z
+          .union([z.literal(30), z.literal(90), z.literal(180), z.literal(365)])
+          .describe("Days until the acceptance expires (30, 90, 180, or 365)"),
+      },
+      async (args) => {
+        try {
+          // Dynamic import — see TDR-032 note at top of file.
+          const { setPluginAcceptExpiry } = await import("@/lib/plugins/capability-check");
+          const expiresAt = setPluginAcceptExpiry(args.pluginId, args.days);
+          return ok({
+            pluginId: args.pluginId,
+            days: args.days,
+            expiresAt,
+          });
+        } catch (e) {
+          return err(
+            e instanceof Error ? e.message : "Failed to set accept expiry"
+          );
+        }
+      }
+    ),
   ];
 }

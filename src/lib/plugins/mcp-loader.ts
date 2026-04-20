@@ -65,6 +65,7 @@ export interface PluginMcpRegistration {
     | "sdk_entry_not_found"
     | "capability_not_accepted"
     | "capability_accept_stale"
+    | "capability_accept_expired"
     | "invalid_mcp_transport"
     | "ambiguous_mcp_transport"
     | "safe_mode"
@@ -216,10 +217,19 @@ async function scanPlugin(pluginDir: string, pluginId: string): Promise<ScanResu
 
   if (!capCheck.accepted) {
     const reason = capCheck.reason;
+    // Both "hash_drift" and "expired" surface the same re-accept UX
+    // (pending_capability_reaccept); they differ only in disabledReason so
+    // logs/API can tell the user *why* re-acceptance is required.
     const status =
-      reason === "hash_drift" ? "pending_capability_reaccept" : "pending_capability_accept";
-    const disabledReason =
-      reason === "hash_drift" ? "capability_accept_stale" : "capability_not_accepted";
+      reason === "hash_drift" || reason === "expired"
+        ? "pending_capability_reaccept"
+        : "pending_capability_accept";
+    const disabledReason: PluginMcpRegistration["disabledReason"] =
+      reason === "hash_drift"
+        ? "capability_accept_stale"
+        : reason === "expired"
+          ? "capability_accept_expired"
+          : "capability_not_accepted";
 
     logToFile(
       `[mcp-loader] plugin ${pluginId}: capability check failed (${disabledReason})`

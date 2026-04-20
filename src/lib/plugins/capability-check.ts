@@ -44,6 +44,13 @@ export interface PluginsLockEntry {
    * plugin manifest's `defaultToolApproval`, and finally to `"prompt"`.
    */
   toolApprovals?: Record<string, ToolApprovalMode>;
+  /**
+   * T11: Optional capability-acceptance expiry. ISO 8601 timestamp.
+   * When set and `Date.now() >= Date.parse(expiresAt)`, the plugin is
+   * treated as pending_capability_reaccept (same as hash drift). Absent
+   * means no expiry — matches Claude Code / Codex default behavior.
+   */
+  expiresAt?: string;
 }
 
 export interface PluginsLockFile {
@@ -63,6 +70,7 @@ const PluginsLockEntrySchema = z.object({
   acceptedAt: z.string(),
   acceptedBy: z.string(),
   toolApprovals: z.record(z.string(), ToolApprovalModeSchema).optional(),
+  expiresAt: z.string().optional(),
 });
 
 const PluginsLockFileSchema = z.object({
@@ -289,15 +297,24 @@ export function removePluginsLockEntry(pluginId: string): void {
  * Check whether a plugin's capabilities have been accepted by the user.
  *
  * Returns:
- *   { accepted: true }  — entry exists and hash matches
+ *   { accepted: true }  — entry exists, hash matches, and (if set) not expired
  *   { accepted: false, reason: "not_accepted" }  — no entry in lock
  *   { accepted: false, reason: "hash_drift", acceptedHash: "sha256:..." }
- *     — entry exists but hash has changed (manifest was modified)
+ *     — entry exists but hash has changed (manifest was modified).
+ *     Takes precedence over expiry — a drifted manifest is the more
+ *     actionable signal for the re-accept prompt.
+ *   { accepted: false, reason: "expired", expiresAt: "..." }
+ *     — T11: entry exists, hash matches, but `expiresAt` is in the past.
  */
 export function isCapabilityAccepted(
   pluginId: string,
   currentHash: string
-): { accepted: boolean; reason?: "not_accepted" | "hash_drift"; acceptedHash?: string } {
+): {
+  accepted: boolean;
+  reason?: "not_accepted" | "hash_drift" | "expired";
+  acceptedHash?: string;
+  expiresAt?: string;
+} {
   const lock = readPluginsLock();
   const entry = lock.accepted[pluginId];
 
@@ -305,8 +322,22 @@ export function isCapabilityAccepted(
     return { accepted: false, reason: "not_accepted" };
   }
 
+  // Hash drift takes precedence over expiry — both are re-accept prompts,
+  // but a drifted manifest is the more informative/actionable signal.
   if (entry.manifestHash !== currentHash) {
     return { accepted: false, reason: "hash_drift", acceptedHash: entry.manifestHash };
+  }
+
+  // T11: Expiry check (opt-in). Only applies when expiresAt is present.
+  if (entry.expiresAt) {
+    const expiresMs = Date.parse(entry.expiresAt);
+    // Guard against invalid dates — treat an unparseable expiresAt as
+    // "no expiry" rather than failing closed, since the user's intent
+    // is ambiguous. The write path validates format, so this is a belt-
+    // and-suspenders guard against hand-edited lock files.
+    if (!Number.isNaN(expiresMs) && Date.now() >= expiresMs) {
+      return { accepted: false, reason: "expired", expiresAt: entry.expiresAt };
+    }
   }
 
   return { accepted: true };
@@ -318,9 +349,9 @@ export function isCapabilityAccepted(
 
 /**
  * Set a per-tool approval mode for a plugin's tool. Preserves existing entry
- * fields (manifestHash, capabilities, acceptedAt, acceptedBy) — merges into
- * `toolApprovals`. Throws if the plugin has no lockfile entry (the plugin
- * must be capability-accepted first).
+ * fields (manifestHash, capabilities, acceptedAt, acceptedBy, expiresAt) —
+ * merges into `toolApprovals`. Throws if the plugin has no lockfile entry
+ * (the plugin must be capability-accepted first).
  */
 export function setPluginToolApproval(
   pluginId: string,
@@ -346,9 +377,46 @@ export function setPluginToolApproval(
     acceptedAt: existing.acceptedAt,
     acceptedBy: existing.acceptedBy,
     toolApprovals: nextApprovals,
+    ...(existing.expiresAt !== undefined && { expiresAt: existing.expiresAt }),
   };
 
   writePluginsLock(pluginId, nextEntry);
+}
+
+/**
+ * T11: Set an expiration date on a plugin's capability acceptance.
+ *
+ * Preserves existing entry fields (manifestHash, capabilities, acceptedAt,
+ * acceptedBy, toolApprovals) — merges in `expiresAt`. Throws if the plugin
+ * has no lockfile entry (the plugin must be capability-accepted first).
+ *
+ * Returns the computed ISO 8601 expiry timestamp for test/UI verifiability.
+ */
+export function setPluginAcceptExpiry(
+  pluginId: string,
+  days: 30 | 90 | 180 | 365,
+): string {
+  const lock = readPluginsLock();
+  const existing = lock.accepted[pluginId];
+  if (!existing) {
+    throw new Error(
+      `[capability-check] setPluginAcceptExpiry: plugin "${pluginId}" is not in plugins.lock (must be capability-accepted first)`,
+    );
+  }
+
+  const expiresAt = new Date(Date.now() + days * 86_400_000).toISOString();
+
+  const nextEntry: PluginsLockEntry = {
+    manifestHash: existing.manifestHash,
+    capabilities: existing.capabilities,
+    acceptedAt: existing.acceptedAt,
+    acceptedBy: existing.acceptedBy,
+    ...(existing.toolApprovals !== undefined && { toolApprovals: existing.toolApprovals }),
+    expiresAt,
+  };
+
+  writePluginsLock(pluginId, nextEntry);
+  return expiresAt;
 }
 
 /**

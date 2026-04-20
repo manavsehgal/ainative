@@ -699,3 +699,64 @@ it("Bonus: plugins.log contains plugin id and reason after mcp_parse_error", asy
   expect(logContent).toMatch(new RegExp(pluginId));
   expect(logContent).toMatch(/mcp_parse_error/);
 });
+
+// ---------------------------------------------------------------------------
+// T11: Capability expiry (opt-in)
+// ---------------------------------------------------------------------------
+
+it("T11. Expired capability: plugin accepted with past expiresAt → pending_capability_reaccept + capability_accept_expired", async () => {
+  const pluginId = "expired-plugin";
+  const yaml = writePluginYaml(pluginId);
+  const hash = deriveManifestHash(yaml);
+  touchFile(path.join(pluginsDir, pluginId, "bin", "server"));
+  writeMcpJson(pluginId, { "svc": { command: "./bin/server" } });
+
+  // Write lock with an expiresAt 1 second in the past.
+  const past = new Date(Date.now() - 1_000).toISOString();
+  writePluginsLock(pluginId, {
+    manifestHash: hash,
+    capabilities: ["net"],
+    acceptedAt: new Date().toISOString(),
+    acceptedBy: "test",
+    expiresAt: past,
+  });
+
+  const result = await loadPluginMcpServers();
+  expect(result).not.toHaveProperty("svc");
+
+  const regs = await listPluginMcpRegistrations();
+  const reg = regs.find((r) => r.pluginId === pluginId);
+  expect(reg).toBeDefined();
+  expect(reg!.status).toBe("pending_capability_reaccept");
+  expect(reg!.disabledReason).toBe("capability_accept_expired");
+});
+
+it("T11. Future expiresAt loads normally (accepted)", async () => {
+  const pluginId = "future-expiry-plugin";
+  const yaml = writePluginYaml(pluginId);
+  const hash = deriveManifestHash(yaml);
+  const serverScriptPath = path.join(pluginsDir, pluginId, "bin", "server.js");
+  writeFakeMcpServerFile(serverScriptPath);
+
+  writeMcpJson(pluginId, {
+    "svc": { command: process.execPath, args: [serverScriptPath] },
+  });
+
+  // Write lock with an expiresAt 60 days in the future.
+  const future = new Date(Date.now() + 60 * 86_400_000).toISOString();
+  writePluginsLock(pluginId, {
+    manifestHash: hash,
+    capabilities: ["net"],
+    acceptedAt: new Date().toISOString(),
+    acceptedBy: "test",
+    expiresAt: future,
+  });
+
+  const result = await loadPluginMcpServers();
+  expect(result).toHaveProperty("svc");
+
+  const regs = await listPluginMcpRegistrations();
+  const reg = regs.find((r) => r.pluginId === pluginId);
+  expect(reg).toBeDefined();
+  expect(reg!.status).toBe("accepted");
+}, 15_000);
