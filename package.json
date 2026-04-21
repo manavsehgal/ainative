@@ -29,6 +29,8 @@
     "dist/",
     "docs/",
     "src/",
+    "book/chapters/",
+    "ai-native-notes/*.md",
     "public/icon-512.png",
     "public/ainative-s-64.png",
     "public/ainative-s-128.png",
