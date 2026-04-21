@@ -1,5 +1,21 @@
 # Feature Changelog
 
+## 2026-04-21
+
+### Shipped — M4.5 `nl-to-composition-v1`
+
+Restores the original M4 scope (silently displaced when strategy §15 renamed M4 to Phase 6 on 2026-04-20). A user typing *"build me a weekly portfolio check-in"* in chat today fires `AppMaterializedCard` automatically; *"I need a tool that pulls my GitHub issues"* fires `ExtensionFallbackCard` with pre-inferred scaffold inputs. The signature demo strategy §6 has been pointing at since day one.
+
+- **Chat planner** (`src/lib/chat/planner/`): pure, total, pattern-based 3-verdict classifier (`compose | scaffold | conversation`). Scaffold-first ordering; compose fallback; conversation default. 12 classifier tests + 6 composition-hint builder tests + 4 primitive-map registry-validation tests + 3 engine-planner contract tests. 25 green.
+- **Composition-path nudge**: `engine.sendMessage` augments the system prompt with `buildCompositionHint(plan)` when the classifier returns `compose`. The existing `detectComposedApp` detector (Phase 2+3) picks up the LLM's tool-call sequence and drives `AppMaterializedCard` rendering. Zero new card code.
+- **Scaffold-path short-circuit**: when classifier returns `scaffold`, `engine.sendMessage` skips `query()`, streams a canned preamble ("I can scaffold a plugin for that..."), persists the assistant message with `extensionFallback` metadata, and returns. `chat-message.tsx` renders `ExtensionFallbackCard` from metadata. Saves one LLM turn per plugin-shaped ask; makes the card-fire deterministic.
+- **Card wiring**: `POST /api/plugins/scaffold` wraps Phase 6's `scaffoldPluginSpec`; maps `PluginSpecInvalidIdError → 400`, `PluginSpecAlreadyExistsError → 409`, `PluginSpecWriteError → 500` with `code`-keyed bodies. 6 route tests green. Card's `onScaffold` default handler posts to this route; `onTryAlt` dispatches a `ainative-chat-submit` CustomEvent the chat shell listens for (new listener in `chat-shell.tsx`).
+- **Primitive map**: 15 keyword → `{ profileId, blueprintId, tables? }` entries covering portfolio/investment/stocks, research/reading list, code review/PR, content marketing, customer support, meal/recipe, lead research, briefing, documentation, travel. Registry-validation test ensures every value references a live builtin; a future rename of `wealth-manager` → anything else fails CI loudly.
+- **No new TDR**: planner consumes existing contracts (`classifyPluginTrust`, `create_plugin_spec`, `detectComposedApp`, chat-tool registry). No runtime-catalog reachability — verified via `rg "runtime/catalog" src/lib/chat/planner/ src/app/api/plugins/scaffold/` → zero matches.
+- **Rollout**: not flag-gated. Classifier is ~1ms synchronous; scaffold path is negative-latency (skips one LLM turn); compose path adds ~400 chars to the system prompt. Codex + Ollama engines unchanged in v1 — deferred to M4.6.
+- **Chat tool count**: unchanged at 92. LOC: ~460 production + ~420 tests + 9 new files + 3 modified.
+- **Test totals**: 309/309 green across `src/lib/chat/`, `src/components/chat/`, and `src/app/api/plugins/` suites (up from 273 pre-M4.5). `npx tsc --noEmit` clean on M4.5 surface.
+
 ## 2026-04-20
 
 ### Shipped — chat-tools-plugin-kind-1 (Milestone 3, two-path trust model)
