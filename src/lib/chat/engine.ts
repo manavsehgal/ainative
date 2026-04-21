@@ -545,7 +545,22 @@ export async function* sendMessage(
           // assumption here is identical to using `claude` directly; no new attack
           // surface is introduced. See: features/chat-claude-sdk-skills.md, Error
           // & Rescue Registry row "settingSources loads hostile skill".
+          //
+          // EXCEPTION: when the M4.5 classifier returns a compose verdict, deny
+          // Skill invocations for this turn. The compose-path is a deterministic
+          // routing decision that wants direct create_profile/create_blueprint
+          // tool calls — not a brainstorming session. Skills like brainstorming
+          // + ainative-app have hard "MUST USE" triggers that match "build me an
+          // app" and shadow the composition-hint's advisory. Denying Skill here
+          // forces the model through the composition-hint's action list.
           if (toolName === "Skill") {
+            if (verdict.kind === "compose") {
+              const skillName = (input as { skill?: string }).skill ?? "unknown";
+              return {
+                behavior: "deny",
+                message: `Skill '${skillName}' is disabled for this turn. This is an app-composition request — call list_profiles/list_blueprints/create_profile/create_blueprint directly.`,
+              };
+            }
             emitSideChannelEvent(conversationId, {
               type: "status",
               phase: "tool_use",

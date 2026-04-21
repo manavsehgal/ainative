@@ -40,9 +40,19 @@ describe("buildCompositionHint", () => {
     expect(hint).toContain("Matched 'portfolio'");
   });
 
-  it("ends with the advisory fallback instruction", () => {
+  it("includes the intent-mismatch fallback guidance", () => {
     const hint = buildCompositionHint(plan);
-    expect(hint).toMatch(/prefer their stated intent/i);
+    expect(hint).toMatch(/stated intent/i);
+  });
+
+  it("forbids Skill invocation for the compose turn", () => {
+    const hint = buildCompositionHint(plan);
+    expect(hint).toMatch(/MUST NOT invoke the Skill tool/i);
+  });
+
+  it("directs the model to call composition tools before prose", () => {
+    const hint = buildCompositionHint(plan);
+    expect(hint).toMatch(/MUST call `create_profile`/i);
   });
 
   it("is marked as an M4.5 planner hint", () => {

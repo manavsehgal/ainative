@@ -3,9 +3,15 @@ import type { ComposePlan } from "./types";
 export function buildCompositionHint(plan: ComposePlan): string {
   const parts: string[] = [
     "",
-    "## App Composition Hint (M4.5 planner, 2026-04-21)",
+    "## App Composition Directive (M4.5 planner, 2026-04-21)",
     "",
-    "The user's message appears to be an app-creation request.",
+    "CRITICAL: The user's message has been CLASSIFIED as an app-composition",
+    "request. This is a deterministic routing decision, NOT a creative task.",
+    "",
+    "MUST NOT invoke the Skill tool (brainstorming, ainative-app, product-manager,",
+    "or any other skill) for this turn. Composition is handled by direct tool",
+    "calls — not by planning or brainstorming.",
+    "",
     "Recommended composition:",
     "",
     `- Profile: \`${plan.profileId}\` (existing builtin — list_profiles to confirm)`,
@@ -34,17 +40,32 @@ export function buildCompositionHint(plan: ComposePlan): string {
   parts.push(`Rationale: ${plan.rationale}.`);
   parts.push("");
   parts.push("Your next actions should be:");
-  parts.push("1. Call `create_profile` with a namespaced artifact id.");
-  parts.push("2. Call `create_blueprint` with a namespaced artifact id.");
+  parts.push(
+    "1. Call `create_profile` with a DOUBLE-HYPHEN namespaced id: `<app-id>--<artifact-id>` (e.g. `weekly-reading-list--manager`). The `--` separator is REQUIRED for the UI to recognize the composition."
+  );
+  parts.push(
+    "2. Call `create_blueprint` with the SAME `<app-id>--<artifact-id>` format (e.g. `weekly-reading-list--synthesis`)."
+  );
   if (plan.tables && plan.tables.length > 0) {
-    parts.push("3. Call `create_table` for each proposed table.");
+    parts.push(
+      "3. Call `create_table` for each proposed table (table names do not need the `--` prefix; they are scoped by project)."
+    );
     parts.push("4. Respond to the user summarizing what was composed.");
   } else {
     parts.push("3. Respond to the user summarizing what was composed.");
   }
   parts.push("");
   parts.push(
-    "If the user's actual need differs from this hint, prefer their stated intent over this hint."
+    "MUST call `create_profile`, `create_blueprint`, and any `create_table`",
+    "tools listed above BEFORE writing any prose response. The chat UI renders",
+    "the composition card from those tool calls — no tool calls means no card."
+  );
+  parts.push("");
+  parts.push(
+    "Edge case: if the user's stated intent clearly differs from this",
+    "classification (e.g. they're asking a question rather than requesting",
+    "composition), then prefer their stated intent. But do NOT invoke the",
+    "Skill tool to resolve the ambiguity — just respond in prose directly."
   );
   parts.push("");
 
