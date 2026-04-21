@@ -9,9 +9,20 @@ import { ChatQuestionInline } from "./chat-question";
 import { ChatQuickAccess } from "./chat-quick-access";
 import { ScreenshotGallery } from "./screenshot-gallery";
 import { AppMaterializedCard } from "./app-materialized-card";
+import {
+  ExtensionFallbackCard,
+  type CreatePluginSpecInputForCard,
+} from "./extension-fallback-card";
 import { AlertCircle } from "lucide-react";
 import { resolveModelLabel, type ChatQuestion, type QuickAccessItem, type ScreenshotAttachment } from "@/lib/chat/types";
 import type { ComposedAppSummary } from "@/lib/apps/composition-detector";
+
+interface ExtensionFallbackSummary {
+  plugin: CreatePluginSpecInputForCard;
+  rationale: string;
+  composeAltPrompt: string;
+  explanation: string;
+}
 
 interface ChatMessageProps {
   message: ChatMessageRow;
@@ -54,6 +65,50 @@ function ComposedAppCard({ app }: { app: ComposedAppSummary }) {
       primitives={app.primitives}
       status={appStatus}
       onUndo={handleUndo}
+      className="mt-2"
+    />
+  );
+}
+
+function ExtensionFallbackWrapper({
+  summary,
+}: {
+  summary: ExtensionFallbackSummary;
+}) {
+  const handleScaffold = async (inputs: CreatePluginSpecInputForCard) => {
+    const res = await fetch("/api/plugins/scaffold", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(inputs),
+    });
+    if (!res.ok) {
+      const err = await res
+        .json()
+        .catch(() => ({ error: "Unknown error" }));
+      throw new Error(err.error ?? `HTTP ${res.status}`);
+    }
+    return res.json() as Promise<{
+      ok: true;
+      id: string;
+      pluginDir: string;
+      tools: string[];
+    }>;
+  };
+
+  const handleTryAlt = (prompt: string) => {
+    window.dispatchEvent(
+      new CustomEvent("ainative-chat-submit", { detail: { content: prompt } })
+    );
+  };
+
+  return (
+    <ExtensionFallbackCard
+      explanation={summary.explanation}
+      composeAltPrompt={summary.composeAltPrompt}
+      pluginSlug={summary.plugin.id}
+      pluginInputs={summary.plugin}
+      onScaffold={handleScaffold}
+      onTryAlt={handleTryAlt}
       className="mt-2"
     />
   );
@@ -109,6 +164,7 @@ export function ChatMessage({ message, isStreaming, conversationId, onStatusChan
   let modelLabel: string | null = null;
   let fallbackReason: string | null = null;
   let composedApp: ComposedAppSummary | null = null;
+  let extensionFallback: ExtensionFallbackSummary | null = null;
   if (!isUser && message.metadata) {
     try {
       const meta = JSON.parse(message.metadata);
@@ -118,6 +174,12 @@ export function ChatMessage({ message, isStreaming, conversationId, onStatusChan
       if (meta.fallbackReason) fallbackReason = meta.fallbackReason;
       if (meta.composedApp && typeof meta.composedApp === "object") {
         composedApp = meta.composedApp as ComposedAppSummary;
+      }
+      if (
+        meta.extensionFallback &&
+        typeof meta.extensionFallback === "object"
+      ) {
+        extensionFallback = meta.extensionFallback as ExtensionFallbackSummary;
       }
     } catch {
       // Invalid metadata
@@ -180,6 +242,9 @@ export function ChatMessage({ message, isStreaming, conversationId, onStatusChan
         )}
       </div>
       {composedApp && <ComposedAppCard app={composedApp} />}
+      {extensionFallback && (
+        <ExtensionFallbackWrapper summary={extensionFallback} />
+      )}
       {/* Model label for completed assistant messages */}
       {!isUser && !isStreaming && modelLabel && (
         <div className="mt-0.5 ml-1 space-y-0.5">
