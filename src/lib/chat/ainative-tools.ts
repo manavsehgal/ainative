@@ -25,6 +25,7 @@ import { runtimeTools } from "./tools/runtime-tools";
 import { blueprintTools } from "./tools/blueprint-tools";
 import { skillTools } from "./tools/skill-tools";
 import { scheduleSpecTools } from "./tools/schedule-spec-tools";
+import { pluginSpecTools } from "./tools/plugin-spec-tools";
 
 
 // ── Tool server types ────────────────────────────────────────────────
@@ -55,6 +56,7 @@ function collectAllTools(ctx: ToolContext): ToolDefinition[] {
     ...documentTools(ctx),
     ...notificationTools(ctx),
     ...pluginTools(ctx),
+    ...pluginSpecTools(ctx),
     ...profileTools(ctx),
     ...usageTools(ctx),
     ...settingsTools(ctx),

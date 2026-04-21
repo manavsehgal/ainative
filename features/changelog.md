@@ -18,6 +18,14 @@ Pre-task fix shipped in the same commit: `ainative-app` skill SKILL.md updated t
 
 `.claude/skills/architect/references/tdr-037-two-path-plugin-trust-model.md` status flipped `proposed` → `accepted`. The classifier signals, self-extension bypass, feature-flag gates, Settings toggle (`auto | strict | off`), and per-feature disposition table are now the authoritative reference for any future plugin-trust work. Re-entering the marketplace / trust-tier lane (strategy §10 refused) requires a successor TDR that explicitly supersedes this one.
 
+### Shipped — Phase 6 (`create_plugin_spec` + `ainative-app` fall-through + `ExtensionFallbackCard`)
+
+- **New chat tool `create_plugin_spec`** (`src/lib/chat/tools/plugin-spec-tools.ts`): scaffolds Kind 1 MCP plugins under `~/.ainative/plugins/<id>/` with `author: "ainative"` AND `origin: "ainative-internal"` baked in — belt-and-suspenders (signals 1 + 2 from `classifyPluginTrust`) so future refactors can't accidentally flip the scaffold to the third-party trust path. Chat tool count: 91 → 92. v1 scaffolds Python + stdio bodies; `language: "node"` or `transport: "inprocess"` writes a TODO-stub with a Phase 6.5 pointer. Atomic write via temp-dir + rename; refuses to overwrite existing plugin dirs.
+- **`ainative-app` skill fall-through**: Phase 2 now falls through to `create_plugin_spec` when composition can't express the ask; Phase 3 emits dual-target artifacts (plugin dir + `~/.ainative/apps/<app-id>/manifest.yaml` with a `plugins:` reference).
+- **`ExtensionFallbackCard`** (`src/components/chat/extension-fallback-card.tsx`): renderable-only chat card with three states (`prompt`, `scaffolded`, `failed`), two paths not three (compose-alt vs. scaffold). Planner wiring deferred to Phase 6.5 per the `app-materialized-card` precedent. Includes `role="alert"` on the failed state for WCAG 4.1.3 compliance.
+- **Tests**: 15 Vitest cases for `plugin-spec-tools` (scaffold, atomicity, collision, invalid id, reserved id, TODO stub, classifier integration asserting `scaffold → classifyPluginTrust → "self"`, empty-tools defensive set() render, chat tool ok/error wrapping, `PluginSpecWriteError` type assertion); 7 Testing Library cases for `ExtensionFallbackCard` (render, click handlers, state transitions, retry, `initialState` honoring, double-click re-entrancy guard).
+- **No CLAUDE.md smoke-test budget triggered** — verified `plugin-spec-tools.ts` has no static imports transitively reachable from `@/lib/agents/runtime/catalog.ts`.
+
 ## 2026-04-19
 
 ### Design-hardened — chat-tools-plugin-kind-1

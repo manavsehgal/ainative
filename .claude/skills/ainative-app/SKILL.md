@@ -79,6 +79,34 @@ For each key task from Phase 1:
 
 Always **namespace every artifact id with `<app-id>--`** (two hyphens) so two apps can ship profiles or blueprints with similar names without colliding. Per `features/app-package-format.md:125`, this is the single-source namespacing convention for apps.
 
+### Fall-through: when composition can't express the ask
+
+If any required primitive can't be composed from the existing kit (profiles,
+blueprints, tables, schedules), **do not** declare the app incomplete. Instead,
+call the `create_plugin_spec` chat tool to scaffold a Kind 1 MCP plugin that
+fills the gap, then compose around it.
+
+Examples of asks that need a plugin fall-through:
+
+- External HTTP API reads (GitHub, Linear, Notion) — composition has no
+  outbound HTTP primitive.
+- Custom file parsers or non-PDF document extractors.
+- Domain-specific CLI wrappers (git, kubectl) that aren't in the built-in
+  tool set.
+
+When you invoke `create_plugin_spec`, always pass:
+
+- `id`: kebab-case, derived from the app slug with a suffix (e.g. for
+  `wealth-tracker`, plugin might be `wealth-tracker-tools`).
+- `language: "python"`, `transport: "stdio"` — v1 scaffolds these only;
+  `node` or `inprocess` writes a TODO stub until Phase 6.5.
+- `tools: [...]` — one entry per gap-filling tool; each gets a handler
+  stub in `server.py` the user (or a follow-up chat turn) fills in.
+
+The scaffold carries `author: ainative` AND `origin: ainative-internal`,
+routing it onto the TDR-037 self-extension trust path — **no
+capability-accept prompt, no `plugins.lock` entry**.
+
 ### Phase 3 — Emit Artifacts
 
 Write these files (absolute paths from repo root, unless noted):
@@ -103,6 +131,36 @@ Write these files (absolute paths from repo root, unless noted):
 
 - **A short human README:**
   `~/.ainative/apps/<app-id>/README.md` — persona, purpose, install instructions, inventory of artifacts.
+
+### Dual-target emit when a plugin is scaffolded
+
+When Phase 2 fall-through invoked `create_plugin_spec`, the app emits **two**
+artifact targets:
+
+1. **Plugin dir** — `~/.ainative/plugins/<plugin-id>/{plugin.yaml,.mcp.json,server.py,README.md}`
+   (written by `create_plugin_spec`; do not duplicate).
+
+2. **App manifest** — `~/.ainative/apps/<app-id>/manifest.yaml` that *references*
+   the plugin id under a `plugins:` key, so the `/apps` registry surfaces the
+   composed app (not just the bare plugin).
+
+Example app manifest with a plugin reference:
+
+```yaml
+id: wealth-tracker
+name: Wealth Tracker
+description: Weekly portfolio check-in with external API data.
+profiles: [wealth-analyst]
+blueprints: [weekly-checkin]
+tables: [positions, holdings]
+schedules: [monday-7am]
+plugins:
+  - wealth-tracker-tools   # scaffolded by create_plugin_spec
+```
+
+**Do NOT** collapse plugins and apps into a single directory —
+`~/.ainative/plugins/` is for executable code, `~/.ainative/apps/` is for
+composition manifests. The `/apps` registry scan only reads from `apps/`.
 
 ### Phase 4 — Wire + Verify
 
