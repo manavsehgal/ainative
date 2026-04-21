@@ -35,6 +35,7 @@ import {
   deduplicateByEntityId,
   type ToolResultCapture,
 } from "./entity-detector";
+import { detectComposedApp } from "@/lib/apps/composition-detector";
 import type { ChatStreamEvent, ChatQuestion, ScreenshotAttachment } from "./types";
 import { getProviderForRuntime, DEFAULT_CHAT_MODEL } from "./types";
 import { persistScreenshot, SCREENSHOT_TOOL_NAMES } from "@/lib/screenshots/persist";
@@ -703,6 +704,9 @@ export async function* sendMessage(
     const textEntities = await detectEntities(fullText, conversation.projectId);
     const quickAccess = deduplicateByEntityId([...toolEntities, ...textEntities]);
 
+    // Detect ainative-app composition (TDR-037 self-extension surface)
+    const composedApp = detectComposedApp(toolResults);
+
     // Save usage metadata + quick access links + screenshot attachments
     const metadata = JSON.stringify({
       modelId: usage.modelId ?? target.effectiveModelId ?? conversation.modelId,
@@ -714,6 +718,7 @@ export async function* sendMessage(
       outputTokens: usage.outputTokens,
       ...(quickAccess.length > 0 ? { quickAccess } : {}),
       ...(screenshotAttachments.length > 0 ? { attachments: screenshotAttachments } : {}),
+      ...(composedApp ? { composedApp } : {}),
     });
     await db
       .update(chatMessages)

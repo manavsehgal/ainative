@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback, useState } from "react";
 import type { ChatMessageRow } from "@/lib/db/schema";
 import { cn } from "@/lib/utils";
 import { ChatMessageMarkdown } from "./chat-message-markdown";
@@ -7,8 +8,10 @@ import { ChatPermissionRequest } from "./chat-permission-request";
 import { ChatQuestionInline } from "./chat-question";
 import { ChatQuickAccess } from "./chat-quick-access";
 import { ScreenshotGallery } from "./screenshot-gallery";
+import { AppMaterializedCard } from "./app-materialized-card";
 import { AlertCircle } from "lucide-react";
 import { resolveModelLabel, type ChatQuestion, type QuickAccessItem, type ScreenshotAttachment } from "@/lib/chat/types";
+import type { ComposedAppSummary } from "@/lib/apps/composition-detector";
 
 interface ChatMessageProps {
   message: ChatMessageRow;
@@ -31,6 +34,30 @@ interface QuestionMetadata {
 }
 
 type SystemMetadata = PermissionMetadata | QuestionMetadata;
+
+function ComposedAppCard({ app }: { app: ComposedAppSummary }) {
+  const [appStatus, setAppStatus] = useState<"running" | "undone">("running");
+  const handleUndo = useCallback(async () => {
+    const res = await fetch(`/api/apps/${encodeURIComponent(app.appId)}`, {
+      method: "DELETE",
+    });
+    if (res.ok) {
+      setAppStatus("undone");
+      window.dispatchEvent(new CustomEvent("ainative-apps-changed"));
+    }
+  }, [app.appId]);
+
+  return (
+    <AppMaterializedCard
+      appId={app.appId}
+      name={app.displayName}
+      primitives={app.primitives}
+      status={appStatus}
+      onUndo={handleUndo}
+      className="mt-2"
+    />
+  );
+}
 
 export function ChatMessage({ message, isStreaming, conversationId, onStatusChange }: ChatMessageProps) {
   const isUser = message.role === "user";
@@ -81,6 +108,7 @@ export function ChatMessage({ message, isStreaming, conversationId, onStatusChan
   let attachments: ScreenshotAttachment[] = [];
   let modelLabel: string | null = null;
   let fallbackReason: string | null = null;
+  let composedApp: ComposedAppSummary | null = null;
   if (!isUser && message.metadata) {
     try {
       const meta = JSON.parse(message.metadata);
@@ -88,6 +116,9 @@ export function ChatMessage({ message, isStreaming, conversationId, onStatusChan
       if (Array.isArray(meta.attachments)) attachments = meta.attachments;
       if (meta.modelId) modelLabel = resolveModelLabel(meta.modelId);
       if (meta.fallbackReason) fallbackReason = meta.fallbackReason;
+      if (meta.composedApp && typeof meta.composedApp === "object") {
+        composedApp = meta.composedApp as ComposedAppSummary;
+      }
     } catch {
       // Invalid metadata
     }
@@ -148,6 +179,7 @@ export function ChatMessage({ message, isStreaming, conversationId, onStatusChan
           </div>
         )}
       </div>
+      {composedApp && <ComposedAppCard app={composedApp} />}
       {/* Model label for completed assistant messages */}
       {!isUser && !isStreaming && modelLabel && (
         <div className="mt-0.5 ml-1 space-y-0.5">

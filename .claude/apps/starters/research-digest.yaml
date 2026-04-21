@@ -1,0 +1,21 @@
+id: research-digest
+name: Research digest
+description: Fan out reads across sources and compose a single document-view digest for the topic you track.
+persona: analyst
+icon: library
+starterPrompt: |
+  Build me a research digest app.
+
+  - Persona: someone who tracks a specific topic (a market, a domain, a company)
+    and wants a weekly synthesized digest
+  - Every Friday at 5pm, fan out reads across 3-5 configured sources, summarize
+    the 3 most important developments, and compose a single document-view
+    "Digest for <topic>" into the shared documents library
+  - Data in: a sources table (name, url, cadence) — user maintains the list
+
+  Tone: concise, news-desk energy, one-sentence-per-insight. Surface surprises.
+preview:
+  profiles: 1
+  blueprints: 1
+  tables: 1
+  schedules: 1

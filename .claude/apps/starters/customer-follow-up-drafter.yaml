@@ -1,0 +1,22 @@
+id: customer-follow-up-drafter
+name: Customer follow-up drafter
+description: Event-triggered follow-up drafter that turns customer interactions into ready-to-review replies.
+persona: solo-operator
+icon: mail
+starterPrompt: |
+  Build me a customer follow-up drafter.
+
+  - Persona: solo operator or founder handling their own customer comms
+  - When a new row is added to the "customer-touchpoints" table (channel,
+    customer, summary, sentiment), draft a follow-up email sized to the
+    sentiment — thank-you for positive, acknowledgment + plan for negative,
+    lightweight check-in for neutral
+  - Data in: customer-touchpoints table (feed me the shape). Output: a draft
+    document in the shared library, not auto-sent
+
+  Never send anything without my review — always leave in draft state.
+preview:
+  profiles: 1
+  blueprints: 1
+  tables: 1
+  schedules: 0

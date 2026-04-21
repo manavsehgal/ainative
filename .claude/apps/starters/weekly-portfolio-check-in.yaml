@@ -1,0 +1,20 @@
+id: weekly-portfolio-check-in
+name: Weekly portfolio check-in
+description: Summarize portfolio performance and surface watchlist candidates on a Monday cadence.
+persona: individual-investor
+icon: trending-up
+starterPrompt: |
+  Build me a weekly portfolio check-in app.
+
+  - Persona: individual investor managing a self-directed portfolio
+  - Every Monday at 8am, summarize last week's performance and surface 3-5
+    watchlist candidates for the coming week
+  - Data in: positions table (ticker, qty, cost basis, account), updated on
+    demand from a broker CSV
+
+  Keep explanations plain-language. Never give buy/sell advice.
+preview:
+  profiles: 1
+  blueprints: 1
+  tables: 1
+  schedules: 1

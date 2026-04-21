@@ -23,6 +23,7 @@ import {
   Table2,
   BarChart3,
   ChevronDown,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -35,11 +36,15 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarHeader,
   SidebarTrigger,
   SidebarRail,
   SidebarSeparator,
 } from "@/components/ui/sidebar";
+import { useApps } from "@/lib/apps/use-apps";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { TrustTierBadge } from "@/components/shared/trust-tier-badge";
 import { UnreadBadge } from "@/components/notifications/unread-badge";
@@ -69,6 +74,7 @@ const homeItems: NavItem[] = [
 
 const composeItems: NavItem[] = [
   { title: "Projects", href: "/projects", icon: FolderKanban, description: "Group work by project" },
+  { title: "Apps", href: "/apps", icon: Sparkles, description: "Composed apps you've built", alsoMatches: ["/apps/"] },
   { title: "Workflows", href: "/workflows", icon: Workflow, description: "Multi-step agent pipelines" },
   { title: "Profiles", href: "/profiles", icon: Bot, description: "Tune agent behavior" },
   { title: "Schedules", href: "/schedules", icon: Clock, description: "Recurring automated runs" },
@@ -114,6 +120,32 @@ function buildSubtext(items: NavItem[]): string {
   const shown = items.slice(0, maxShow).map((i) => i.title).join(", ");
   const overflow = items.length - maxShow;
   return overflow > 0 ? `${shown}, +${overflow}` : shown;
+}
+
+function AppsSubMenu({ pathname }: { pathname: string }) {
+  const { apps } = useApps();
+  if (apps.length === 0) return null;
+
+  return (
+    <SidebarMenuSub className="group-data-[collapsible=icon]:hidden">
+      {apps.map((app) => {
+        const href = `/apps/${app.id}`;
+        const isActive = pathname === href;
+        return (
+          <SidebarMenuSubItem
+            key={app.id}
+            className="animate-in fade-in slide-in-from-left-2 duration-200"
+          >
+            <SidebarMenuSubButton asChild isActive={isActive}>
+              <Link href={href}>
+                <span className="truncate">{app.name}</span>
+              </Link>
+            </SidebarMenuSubButton>
+          </SidebarMenuSubItem>
+        );
+      })}
+    </SidebarMenuSub>
+  );
 }
 
 function NavGroup({
@@ -200,6 +232,7 @@ function NavGroup({
                       )}
                     </Link>
                   </SidebarMenuButton>
+                  {item.href === "/apps" && <AppsSubMenu pathname={pathname} />}
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>

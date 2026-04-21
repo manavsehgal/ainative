@@ -1,0 +1,114 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useCallback } from "react";
+import {
+  TrendingUp,
+  Library,
+  Mail,
+  Sparkles,
+  Bot,
+  Workflow,
+  Table2,
+  Clock,
+} from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import type { StarterTemplate } from "@/lib/apps/starters";
+
+const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  "trending-up": TrendingUp,
+  "library": Library,
+  "mail": Mail,
+  "sparkles": Sparkles,
+};
+
+interface Props {
+  starter: StarterTemplate;
+  className?: string;
+}
+
+/**
+ * StarterTemplateCard — repo-shipped starter compositions (wealth-tracker-
+ * style, research-digest, customer-follow-up). Clicking seeds the chat
+ * composer via existing `chat:prefill:pending` sessionStorage channel,
+ * then routes to /chat. Zero chat-input changes required.
+ */
+export function StarterTemplateCard({ starter, className }: Props) {
+  const router = useRouter();
+  const Icon = ICONS[starter.icon] ?? Sparkles;
+
+  const onPick = useCallback(() => {
+    try {
+      window.sessionStorage.setItem("chat:prefill:pending", starter.starterPrompt);
+    } catch {
+      // sessionStorage unavailable — still navigate; user pastes manually.
+    }
+    router.push("/chat");
+  }, [starter.starterPrompt, router]);
+
+  const onKey = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        onPick();
+      }
+    },
+    [onPick]
+  );
+
+  return (
+    <Card
+      role="button"
+      tabIndex={0}
+      onClick={onPick}
+      onKeyDown={onKey}
+      aria-label={`Start ${starter.name} in chat`}
+      data-starter-id={starter.id}
+      className={cn(
+        "cursor-pointer transition-colors hover:border-primary/50",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        "rounded-lg",
+        className
+      )}
+    >
+      <CardContent className="p-4 space-y-3">
+        <div className="flex items-start gap-3">
+          <div className="shrink-0 rounded-md bg-muted/50 p-2">
+            <Icon className="h-4 w-4 text-primary" aria-hidden="true" />
+          </div>
+          <div className="min-w-0 flex-1 space-y-1">
+            <p className="text-sm font-medium leading-tight">{starter.name}</p>
+            {starter.description && (
+              <p className="text-xs text-muted-foreground line-clamp-2">
+                {starter.description}
+              </p>
+            )}
+          </div>
+        </div>
+        <PreviewRow preview={starter.preview} />
+      </CardContent>
+    </Card>
+  );
+}
+
+function PreviewRow({ preview }: { preview: StarterTemplate["preview"] }) {
+  const pills: { icon: React.ComponentType<{ className?: string }>; label: string }[] = [];
+  if (preview.profiles > 0) pills.push({ icon: Bot, label: preview.profiles === 1 ? "Profile" : `${preview.profiles} profiles` });
+  if (preview.blueprints > 0) pills.push({ icon: Workflow, label: preview.blueprints === 1 ? "Blueprint" : `${preview.blueprints} blueprints` });
+  if (preview.tables > 0) pills.push({ icon: Table2, label: preview.tables === 1 ? "1 table" : `${preview.tables} tables` });
+  if (preview.schedules > 0) pills.push({ icon: Clock, label: preview.schedules === 1 ? "Schedule" : `${preview.schedules} schedules` });
+
+  if (pills.length === 0) return null;
+
+  return (
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
+      {pills.map((p, i) => (
+        <span key={i} className="inline-flex items-center gap-1">
+          <p.icon className="h-3 w-3" aria-hidden="true" />
+          {p.label}
+        </span>
+      ))}
+    </div>
+  );
+}
