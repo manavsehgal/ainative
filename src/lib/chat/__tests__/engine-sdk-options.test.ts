@@ -42,7 +42,7 @@ describe("Claude SDK options (Phase 1a)", () => {
   });
 });
 
-import { canUseToolForTest } from "@/lib/chat/engine";
+import { canUseToolForTest, composeSkillPolicyForTest } from "@/lib/chat/engine";
 
 describe("canUseTool auto-allow policy for SDK filesystem tools", () => {
   it("auto-allows Read without a permission request", async () => {
@@ -73,6 +73,41 @@ describe("canUseTool auto-allow policy for SDK filesystem tools", () => {
   it("does NOT auto-allow Bash", async () => {
     const result = await canUseToolForTest("Bash", { command: "ls" });
     expect(result.behavior).not.toBe("allow");
+  });
+});
+
+describe("M4.5 compose-path Skill denial (composeSkillPolicyForTest)", () => {
+  it("denies Skill when verdictKind is compose", () => {
+    const result = composeSkillPolicyForTest("brainstorming", "compose");
+    expect(result.behavior).toBe("deny");
+  });
+
+  it("includes the skill name in the deny message so the model knows what was blocked", () => {
+    const result = composeSkillPolicyForTest("brainstorming", "compose");
+    if (result.behavior !== "deny") throw new Error("expected deny");
+    expect(result.message).toContain("brainstorming");
+  });
+
+  it("explains the alternative (direct composition tool calls) in the deny message", () => {
+    const result = composeSkillPolicyForTest("product-manager", "compose");
+    if (result.behavior !== "deny") throw new Error("expected deny");
+    expect(result.message).toMatch(/create_profile|create_blueprint/);
+  });
+
+  it("allows Skill when verdictKind is conversation (no compose routing)", () => {
+    const result = composeSkillPolicyForTest("brainstorming", "conversation");
+    expect(result.behavior).toBe("allow");
+  });
+
+  it("allows Skill when verdictKind is scaffold (scaffold short-circuits the LLM anyway)", () => {
+    const result = composeSkillPolicyForTest("brainstorming", "scaffold");
+    expect(result.behavior).toBe("allow");
+  });
+
+  it("denies regardless of skill name when in compose — no allow-list escape hatch", () => {
+    // A skill named "create_profile" shouldn't trick the policy into allowing
+    const result = composeSkillPolicyForTest("create_profile", "compose");
+    expect(result.behavior).toBe("deny");
   });
 });
 

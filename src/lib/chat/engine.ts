@@ -92,6 +92,29 @@ export async function canUseToolForTest(
   return { behavior: "pending" };
 }
 
+/**
+ * M4.5 compose-path Skill denial. Pure function exposing the deny branch
+ * so it can be unit-tested without running the full SDK query loop.
+ * Mirrors the logic in canUseTool at the Skill-tool branch.
+ *
+ * When verdictKind is "compose", the planner has routed this turn to
+ * composition — the model must call create_profile/create_blueprint/
+ * create_table directly rather than invoke a skill (which would shadow
+ * the composition hint via hard-directive skill trigger language).
+ */
+export function composeSkillPolicyForTest(
+  skillName: string,
+  verdictKind: "compose" | "scaffold" | "conversation"
+): ToolPermissionResponse {
+  if (verdictKind === "compose") {
+    return {
+      behavior: "deny",
+      message: `Skill '${skillName}' is disabled for this turn. This is an app-composition request — call list_profiles/list_blueprints/create_profile/create_blueprint directly.`,
+    };
+  }
+  return { behavior: "allow", updatedInput: {} };
+}
+
 // ── Streaming input wrapper (required for MCP tools) ─────────────────
 
 async function* generatePrompt(text: string) {
@@ -556,6 +579,9 @@ export async function* sendMessage(
           if (toolName === "Skill") {
             if (verdict.kind === "compose") {
               const skillName = (input as { skill?: string }).skill ?? "unknown";
+              console.log(
+                `[chat:compose-deny] Skill='${skillName}' conversationId=${conversationId}`
+              );
               return {
                 behavior: "deny",
                 message: `Skill '${skillName}' is disabled for this turn. This is an app-composition request — call list_profiles/list_blueprints/create_profile/create_blueprint directly.`,
