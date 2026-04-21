@@ -1,11 +1,19 @@
 ---
 id: TDR-037
 title: Two-Path Plugin Trust Model — Self-Extension First, Third-Party Opt-In
-status: proposed
+status: accepted
 date: 2026-04-20
+accepted-date: 2026-04-20
 category: security
 supersedes-scope-of: TDR-035 acceptance criteria, M3 Phases C+D+E shipped semantics
 ---
+
+> **Status: accepted (2026-04-20).** Promoted from `proposed` after Phase 4
+> live smokes (T19 echo-server classifier + MCP registration, T20 confinement
+> flag activation, T21 safe-mode + Settings toggles) all passed against the
+> live `npm run dev` runtime. Strategy §15 Amendment becomes authoritative.
+> See `handoff/2026-04-20-tdr-037-phase-4-shipped-handoff.md` for the
+> verification trace.
 
 # TDR-037: Two-Path Plugin Trust Model
 

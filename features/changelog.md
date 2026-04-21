@@ -1,5 +1,23 @@
 # Feature Changelog
 
+## 2026-04-20
+
+### Shipped — chat-tools-plugin-kind-1 (Milestone 3, two-path trust model)
+
+M3 final-acceptance gate passed. Phase 4 live smokes verified the two-path plugin trust model end-to-end against `npm run dev` with the real echo-server bundle and an isolated `AINATIVE_DATA_DIR=~/.ainative-smoke-m3` data dir. TDR-037 promoted from `proposed` to `accepted` in the same session. Strategy §15 Amendment 2026-04-20 becomes authoritative. Per-feature disposition (parked behind flags vs. retained vs. scheduled-for-removal) frozen.
+
+- **T19 — echo-server self-extension classifier + MCP registration.** Live `loadPluginMcpServers()` returned echo-server with `status: "accepted"` (NOT `pending_capability_accept`); `~/.ainative-smoke-m3/plugins.lock` not created; zero `ReferenceError: Cannot access 'claudeRuntimeAdapter' before initialization` or related module-load-cycle errors in dev logs. Confirms classifier Signal 2 (`author: ainative`) + Signal 5 (`capabilities: []`) both fire and the `isCapabilityAccepted` self-extension fast-path skips lockfile entirely (TDR-037 §2 contract).
+- **T20 — confinement flag activates seatbelt wrap on macOS.** With `confinementMode: seatbelt` declared in the smoke fixture, `wrapStdioSpawn(...)` returns `command: "python3"` + direct args when `AINATIVE_PLUGIN_CONFINEMENT` is unset (parked path), and `command: "sandbox-exec"` + policy-prefixed args (`(version 1) (deny default) (allow process-fork) (allow signal (target self))`) when `AINATIVE_PLUGIN_CONFINEMENT=1`. Proves the §11 Risk D off-ramp mechanism works on demand without authoring real policy corpus.
+- **T21(a) — `--safe-mode` kill switch.** With `AINATIVE_SAFE_MODE=true`, `listPluginMcpRegistrations()` returns echo-server as `status: "disabled", disabledReason: "safe_mode"`. Mirrors Claude Code `--no-plugins` semantics independent of trust classification.
+- **T21(b) — `plugin-trust-model = "strict"` Settings override.** Even though echo-server's manifest hits two self-extension signals, setting `plugin-trust-model` to `"strict"` correctly forces the lockfile path: registration becomes `status: "pending_capability_accept", disabledReason: "capability_not_accepted"`. The user's "training wheels" escape hatch works as TDR-037 §5 specifies.
+- **T21(c) — `plugin-trust-model = "off"` Settings override.** With setting `"off"`, `isCapabilityAccepted` accepts every plugin without lockfile consultation: registration returns `status: "accepted"`, no `plugins.lock` file. Matches Claude Code / Codex CLI "trust your own code" posture.
+
+Pre-task fix shipped in the same commit: `ainative-app` skill SKILL.md updated to write app manifests to `~/.ainative/apps/<app-id>/manifest.yaml` (canonical per `getAinativeAppsDir()` and `src/lib/apps/registry.ts`) instead of `.claude/apps/<app-id>/`. Without this fix, apps composed via the skill would scaffold to a path the registry never scans, breaking the sidebar dynamic-entry promise of Phase 2.
+
+### Accepted — TDR-037 (two-path plugin trust model)
+
+`.claude/skills/architect/references/tdr-037-two-path-plugin-trust-model.md` status flipped `proposed` → `accepted`. The classifier signals, self-extension bypass, feature-flag gates, Settings toggle (`auto | strict | off`), and per-feature disposition table are now the authoritative reference for any future plugin-trust work. Re-entering the marketplace / trust-tier lane (strategy §10 refused) requires a successor TDR that explicitly supersedes this one.
+
 ## 2026-04-19
 
 ### Design-hardened — chat-tools-plugin-kind-1

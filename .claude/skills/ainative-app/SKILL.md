@@ -92,13 +92,17 @@ Write these files (absolute paths from repo root, unless noted):
   (Absolute home-dir path. Do NOT write into `src/lib/workflows/blueprints/builtins/` — that's reserved for upstream ainative itself. User blueprints load via `getStagentBlueprintsDir()`.)
 
 - **One app-level manifest:**
-  `.claude/apps/<app-id>/manifest.yaml` — see schema below.
+  `~/.ainative/apps/<app-id>/manifest.yaml` — see schema below.
+  (Absolute home-dir path — this is the canonical apps location per
+  TDR-037 and the registry scan in `src/lib/apps/registry.ts`. Do NOT
+  write to `.claude/apps/<app-id>/` — the registry only sees
+  `getAinativeAppsDir()`.)
 
 - **Optional seed data:**
-  `.claude/apps/<app-id>/seed/<table-id>.csv` per seeded table.
+  `~/.ainative/apps/<app-id>/seed/<table-id>.csv` per seeded table.
 
 - **A short human README:**
-  `.claude/apps/<app-id>/README.md` — persona, purpose, install instructions, inventory of artifacts.
+  `~/.ainative/apps/<app-id>/README.md` — persona, purpose, install instructions, inventory of artifacts.
 
 ### Phase 4 — Wire + Verify
 
@@ -118,7 +122,7 @@ Do NOT auto-run the app. The user decides when to trigger the first task.
 
 ## Manifest Schema
 
-`.claude/apps/<app-id>/manifest.yaml`:
+`~/.ainative/apps/<app-id>/manifest.yaml`:
 
 ```yaml
 id: wealth-tracker                  # unique app id, kebab-case
@@ -139,7 +143,7 @@ blueprints:
 tables:
   - id: wealth-tracker--positions
     columns: [ticker, qty, cost_basis, account]
-    seed: .claude/apps/wealth-tracker/seed/positions.csv
+    seed: ~/.ainative/apps/wealth-tracker/seed/positions.csv
 
 schedules:
   - id: wealth-tracker--monday-8am
@@ -271,7 +275,7 @@ steps:
       - Plain-language summary paragraph
 ```
 
-`.claude/apps/wealth-tracker/manifest.yaml`:
+`~/.ainative/apps/wealth-tracker/manifest.yaml`:
 
 ```yaml
 id: wealth-tracker
@@ -292,7 +296,7 @@ blueprints:
 tables:
   - id: wealth-tracker--positions
     columns: [ticker, qty, cost_basis, account, last_price]
-    seed: .claude/apps/wealth-tracker/seed/positions.csv
+    seed: ~/.ainative/apps/wealth-tracker/seed/positions.csv
 
 schedules:
   - id: wealth-tracker--monday-8am
@@ -303,7 +307,7 @@ permissions:
   preset: read-only
 ```
 
-`.claude/apps/wealth-tracker/seed/positions.csv`:
+`~/.ainative/apps/wealth-tracker/seed/positions.csv`:
 
 ```csv
 ticker,qty,cost_basis,account,last_price
@@ -312,7 +316,7 @@ MSFT,30,12000,brokerage,0
 VTI,100,22000,ira,0
 ```
 
-`.claude/apps/wealth-tracker/README.md`:
+`~/.ainative/apps/wealth-tracker/README.md`:
 
 ```markdown
 # Wealth Tracker

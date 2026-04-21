@@ -1,11 +1,21 @@
 ---
 title: Chat Tools Plugin (Kind 1) — MCP as Extension Surface
-status: planned
+status: shipped
+shipped-date: 2026-04-20
 priority: P0
 milestone: post-mvp
 source: ideas/self-extending-machine-strategy.md
 dependencies: [primitive-bundle-plugin-kind-5, schedules-as-yaml-registry, chat-engine, provider-runtime-abstraction, runtime-capability-matrix]
 ---
+
+> **Status: shipped (2026-04-20).** Milestone 3 final-acceptance gate passed.
+> Phase 4 live smokes (`handoff/2026-04-20-tdr-037-phase-4-shipped-handoff.md`)
+> verified the two-path trust model end-to-end: echo-server self-extension
+> classification (T19), `AINATIVE_PLUGIN_CONFINEMENT=1` seatbelt wrap
+> activation (T20), `--safe-mode` + `plugin-trust-model = strict|off`
+> Settings overrides (T21). TDR-037 promoted to `accepted` in the same
+> session. See strategy §15 Amendment 2026-04-20 for the per-feature
+> disposition (parked behind flags vs. retained vs. scheduled-for-removal).
 
 # Chat Tools Plugin (Kind 1) — MCP as Extension Surface
 
