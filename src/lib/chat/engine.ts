@@ -60,6 +60,8 @@ import {
   isExaReadOnly,
 } from "@/lib/agents/browser-mcp";
 import { resolveChatExecutionTarget } from "@/lib/agents/runtime/execution-target";
+import { classifyMessage } from "./planner/classifier";
+import { buildCompositionHint } from "./planner/composition-hint";
 
 // Re-exported from runtime/claude-sdk.ts so chat/engine.ts remains a stable
 // import surface for the Phase 1a test suite. The canonical definitions
@@ -297,11 +299,26 @@ export async function* sendMessage(
         .join("\n\n")
     : "";
 
-  const fullPrompt = [
-    context.systemPrompt + historyBlock,
-    "",
-    userContent,
-  ].join("\n");
+  // M4.5 planner: classify inbound message pre-dispatch. Compose verdicts
+  // augment the system prompt with an advisory hint; scaffold verdicts are
+  // handled after placeholder creation (short-circuits the LLM call —
+  // see block below `registerChatStream`).
+  const verdict = classifyMessage(userContent, {
+    projectId: conversation.projectId,
+    history: context.history
+      .filter(
+        (m): m is { role: "user" | "assistant"; content: string } =>
+          m.role !== "system"
+      )
+      .map((m) => ({ role: m.role, content: m.content })),
+  });
+
+  let systemPreamble = context.systemPrompt + historyBlock;
+  if (verdict.kind === "compose") {
+    systemPreamble += buildCompositionHint(verdict.plan);
+  }
+
+  const fullPrompt = [systemPreamble, "", userContent].join("\n");
 
   // Create placeholder assistant message
   const assistantMsg = await addMessage({
