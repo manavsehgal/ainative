@@ -2,6 +2,17 @@
 
 ## 2026-04-21
 
+### Shipped — M5 `install-parity-audit` (release gate)
+
+Final release gate for the Self-Extending Machine cluster (M1 + M2 + M3 + M4 + M4.5). Audit verified fresh-clone → `npm run build:cli` → `node dist/cli.js` from scratch dir boots cleanly, auto `.env.local` writes correctly for non-dev launch folders, dev-mode gates differentiate repo vs. npx, and M4.5 planner + scaffold API route are npx-safe.
+
+- **One finding, fixed**: `book/chapters/` + `ai-native-notes/*.md` were runtime-read by `src/lib/book/content.ts` + `chapter-generator.ts` but missing from `package.json`'s `files` array. Book UI silently degraded to stub content on npx installs (graceful `existsSync` fallback masked the drift). Fixed: added both to `files`, scoped ai-native-notes to `*.md` to exclude 4.7MB of internal strategy-doc PNGs the runtime never reads.
+- **Regression test**: `src/lib/__tests__/npm-pack-files.test.ts` (5 tests) asserts the publish contract. Guards against future additions of runtime-read directories that skip the `files` update.
+- **M4.5 surface clean**: planner + scaffold API route use only data-dir paths and pure logic. Zero `process.cwd()` usage, zero `import.meta.dirname`, zero static file reads from `appRoot`. No M4.5 fixes needed.
+- **Package size**: packed tarball 1.8MB → 4.5MB (+2.7MB of markdown content). Unpacked 7MB → 7.4MB (delta is small because `src/` was always the bulk).
+- **Test totals**: 338/338 green across `src/lib/__tests__/`, `src/lib/chat/`, `src/components/chat/`, `src/app/api/plugins/` (up from 333 pre-M5 +5 npm-pack-files).
+- **Publish readiness**: next step is version bump + `npm publish --access public` as `manavsehgal` maintainer per strategy amendment 2026-04-19.
+
 ### Shipped — M4.5 `nl-to-composition-v1`
 
 Restores the original M4 scope (silently displaced when strategy §15 renamed M4 to Phase 6 on 2026-04-20). A user typing *"build me a weekly portfolio check-in"* in chat today fires `AppMaterializedCard` automatically; *"I need a tool that pulls my GitHub issues"* fires `ExtensionFallbackCard` with pre-inferred scaffold inputs. The signature demo strategy §6 has been pointing at since day one.
