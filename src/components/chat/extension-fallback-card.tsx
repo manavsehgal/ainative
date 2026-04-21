@@ -82,7 +82,12 @@ export function ExtensionFallbackCard({
     setScaffolding(true);
     try {
       const result = await onScaffold(pluginInputs);
-      setState({ kind: "scaffolded", pluginDir: result.pluginDir });
+      setState({
+        kind: "scaffolded",
+        pluginDir: result.pluginDir.endsWith("/")
+          ? result.pluginDir
+          : result.pluginDir + "/",
+      });
     } catch (e) {
       setState({
         kind: "failed",

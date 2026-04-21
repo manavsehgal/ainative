@@ -29,7 +29,7 @@ Three independent pieces, one thematic goal. All three rely on TDR-037 classific
 ```
 ┌──────────────────────────────────────────────────────────────────┐
 │ 1. create_plugin_spec chat tool                                  │
-│    src/lib/chat/tools/create-plugin-spec-tool.ts                 │
+│    src/lib/chat/tools/plugin-spec-tools.ts                 │
 │    ─ scaffolds ~/.ainative/plugins/<id>/ with 4 files            │
 │    ─ returns summary to chat                                     │
 │    ─ registered in src/lib/chat/ainative-tools.ts                │
@@ -119,7 +119,7 @@ Brief onboarding — how to reload ainative to register, how to edit `server.py`
   ok: true,
   id: string,
   pluginDir: string,        // absolute path
-  files: { pluginYaml, mcpJson, serverPy, readme },  // relative paths
+  files: { pluginYaml, mcpJson, serverPy, readme },  // absolute paths
   tools: string[],          // tool names scaffolded
   message: string           // "Scaffolded <id>. Reload ainative to register."
 }
@@ -249,7 +249,7 @@ user: "I need a tool that pulls my GitHub issues assigned to me"
 
 ## Tests
 
-### `src/lib/chat/tools/__tests__/create-plugin-spec-tool.test.ts` (new)
+### `src/lib/chat/tools/__tests__/plugin-spec-tools.test.ts` (new)
 
 - Happy path: scaffold writes all 4 files at `~/.ainative/plugins/<id>/`
 - `plugin.yaml` contains `author: ainative` AND `origin: ainative-internal`
@@ -288,14 +288,14 @@ Skill is a Markdown instruction document. Verification is inline review — mani
 npx tsc --noEmit
 
 # 2. New test suites green
-npm test -- src/lib/chat/tools/__tests__/create-plugin-spec-tool.test.ts
+npm test -- src/lib/chat/tools/__tests__/plugin-spec-tools.test.ts
 npm test -- src/components/chat/__tests__/extension-fallback-card.test.tsx
 
 # 3. Chat tool count regression — should be 92, was 91
 rg -l "buildMcpTool|ainativeTools" src/lib/chat/ | xargs -I{} echo {} | wc -l
 
 # 4. No runtime-registry imports from new files — verify Phase 6 additions stay out of the catalog chain
-rg "from\s+['\"].*runtime/catalog" src/lib/chat/tools/create-plugin-spec-tool.ts \
+rg "from\s+['\"].*runtime/catalog" src/lib/chat/tools/plugin-spec-tools.ts \
   src/components/chat/extension-fallback-card.tsx
 # Expect: zero matches. (Phase 6 must not trigger the CLAUDE.md smoke-test budget.)
 
@@ -307,7 +307,7 @@ rg "from\s+['\"].*runtime/catalog" src/lib/chat/tools/create-plugin-spec-tool.ts
 ### CLAUDE.md smoke-test budget
 
 Not triggered. Phase 6 adds imports only in:
-- `src/lib/chat/tools/create-plugin-spec-tool.ts` (new; imports `node:fs`, `node:path`, Zod, manifest types)
+- `src/lib/chat/tools/plugin-spec-tools.ts` (new; imports `node:fs`, `node:path`, Zod, manifest types)
 - `src/lib/chat/ainative-tools.ts` (tool registration)
 - `src/components/chat/extension-fallback-card.tsx` (new; imports React, lucide icons, shadcn primitives)
 - `.claude/skills/ainative-app/SKILL.md` (Markdown only)
@@ -320,10 +320,10 @@ None of these are transitively reachable from `@/lib/agents/runtime/catalog.ts`.
 
 | Purpose | Path | Action |
 |---|---|---|
-| New chat tool | `src/lib/chat/tools/create-plugin-spec-tool.ts` | create |
+| New chat tool | `src/lib/chat/tools/plugin-spec-tools.ts` | create |
 | Chat tool registration | `src/lib/chat/ainative-tools.ts` | modify (add tool) |
 | Plugin path util (may need extension) | `src/lib/utils/ainative-paths.ts` | modify if `getAinativePluginsDir()` missing |
-| Chat tool tests | `src/lib/chat/tools/__tests__/create-plugin-spec-tool.test.ts` | create |
+| Chat tool tests | `src/lib/chat/tools/__tests__/plugin-spec-tools.test.ts` | create |
 | Skill extension | `.claude/skills/ainative-app/SKILL.md` | modify |
 | Fallback card component | `src/components/chat/extension-fallback-card.tsx` | create |
 | Fallback card tests | `src/components/chat/__tests__/extension-fallback-card.test.tsx` | create |
@@ -379,7 +379,7 @@ If a power-user already has `~/.ainative/plugins/github-mine/` hand-written and 
 Phase 6 is complete when:
 
 1. `create_plugin_spec` chat tool is registered and scaffolds a valid runnable plugin on disk.
-2. Tests green: `npm test -- src/lib/chat/tools/__tests__/create-plugin-spec-tool.test.ts` and `npm test -- src/components/chat/__tests__/extension-fallback-card.test.tsx`.
+2. Tests green: `npm test -- src/lib/chat/tools/__tests__/plugin-spec-tools.test.ts` and `npm test -- src/components/chat/__tests__/extension-fallback-card.test.tsx`.
 3. `.claude/skills/ainative-app/SKILL.md` describes the fall-through to `create_plugin_spec` with dual-target emit.
 4. `ExtensionFallbackCard` component renders with its three states (`prompt`, `scaffolded`, `failed`).
 5. `npx tsc --noEmit` clean.

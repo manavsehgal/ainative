@@ -76,6 +76,11 @@ describe("ExtensionFallbackCard", () => {
       expect(screen.getByText(/Scaffolded/)).toBeInTheDocument()
     );
     expect(screen.getByText(/server\.py/)).toBeInTheDocument();
+    // Guard against the trailing-slash bug: ensure the displayed path has a
+    // separator between the plugin dir and server.py (otherwise "github-mineserver.py").
+    expect(
+      screen.getByText(/github-mine\/server\.py/)
+    ).toBeInTheDocument();
   });
 
   it("transitions to failed state on scaffold error and shows retry", async () => {
