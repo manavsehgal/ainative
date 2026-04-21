@@ -330,10 +330,87 @@ export async function* sendMessage(
 
   registerChatStream(conversationId);
 
+  const startedAt = new Date();
+  const runtimeIdForScaffold = runtimeId;
+  const providerIdForScaffold = providerId;
+
+  // M4.5 scaffold-path short-circuit. The classifier has pre-inferred a
+  // plugin scaffold; skip the LLM call, stream a canned preamble, and
+  // persist extensionFallback metadata. chat-message.tsx renders
+  // ExtensionFallbackCard from the metadata; its default onScaffold
+  // posts to /api/plugins/scaffold.
+  if (verdict.kind === "scaffold") {
+    try {
+      const preamble = [
+        "I can scaffold a plugin for that. Here's what I'd generate:",
+        "",
+        verdict.plan.rationale,
+      ].join("\n");
+
+      yield {
+        type: "status",
+        phase: "generating",
+        message: "Planning scaffold...",
+      };
+      yield { type: "delta", content: preamble };
+
+      await updateMessageContent(assistantMsg.id, preamble);
+      await updateMessageStatus(assistantMsg.id, "complete");
+
+      const metadata = JSON.stringify({
+        modelId: target.effectiveModelId ?? conversation.modelId,
+        runtimeId: runtimeIdForScaffold,
+        requestedRuntimeId:
+          target.requestedRuntimeId ?? conversation.runtimeId,
+        requestedModelId: target.requestedModelId ?? conversation.modelId,
+        extensionFallback: {
+          plugin: verdict.plan.plugin,
+          rationale: verdict.plan.rationale,
+          composeAltPrompt: verdict.plan.composeAltPrompt,
+          explanation: verdict.plan.explanation,
+        },
+      });
+      await db
+        .update(chatMessages)
+        .set({ metadata })
+        .where(eq(chatMessages.id, assistantMsg.id));
+
+      await recordUsageLedgerEntry({
+        projectId: conversation.projectId,
+        activityType: "chat_turn",
+        runtimeId: runtimeIdForScaffold,
+        providerId: providerIdForScaffold,
+        modelId:
+          target.effectiveModelId ?? conversation.modelId ?? null,
+        inputTokens: null,
+        outputTokens: null,
+        totalTokens: null,
+        status: "completed",
+        startedAt,
+        finishedAt: new Date(),
+      });
+
+      recordTermination({
+        reason: "stream.completed",
+        conversationId,
+        messageId: assistantMsg.id,
+        durationMs: Date.now() - startedAt.getTime(),
+      });
+
+      yield {
+        type: "done",
+        messageId: assistantMsg.id,
+        quickAccess: [],
+      };
+      return;
+    } finally {
+      unregisterChatStream(conversationId);
+      cleanupConversation(conversationId);
+    }
+  }
+
   // Create side channel for canUseTool → SSE bridge communication
   const sideChannel = createSideChannel(conversationId);
-
-  const startedAt = new Date();
   let usage: UsageSnapshot = {};
   let fullText = "";
   // Capture stderr for diagnostics when the Claude Code process fails
