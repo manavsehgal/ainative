@@ -37,6 +37,7 @@ describe("seedExamplePluginsIfEmpty", () => {
     seedExamplePluginsIfEmpty();
     expect(fs.existsSync(path.join(tmpDir, "plugins", "finance-pack"))).toBe(false);
     expect(fs.existsSync(path.join(tmpDir, "plugins", "echo-server"))).toBe(false);
+    expect(fs.existsSync(path.join(tmpDir, "plugins", "reading-radar"))).toBe(false);
     expect(fs.readFileSync(path.join(existing, "plugin.yaml"), "utf-8")).toBe("existing");
   });
 
@@ -44,6 +45,6 @@ describe("seedExamplePluginsIfEmpty", () => {
     seedExamplePluginsIfEmpty();
     seedExamplePluginsIfEmpty();
     const items = fs.readdirSync(path.join(tmpDir, "plugins"));
-    expect(items.sort()).toEqual(["echo-server", "finance-pack"]);
+    expect(items.sort()).toEqual(["echo-server", "finance-pack", "reading-radar"]);
   });
 });

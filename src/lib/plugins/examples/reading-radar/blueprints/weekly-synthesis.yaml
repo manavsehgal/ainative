@@ -1,0 +1,42 @@
+id: weekly-synthesis
+name: Weekly Reading Synthesis
+description: Three-step weekly synthesis — cluster takeaways, find the week's motifs, draft an email-ready digest.
+version: "0.1.0"
+domain: personal
+pattern: sequence
+tags:
+  - reading
+  - personal
+  - synthesis
+difficulty: beginner
+estimatedDuration: "10m"
+author: ainative
+variables:
+  - id: week
+    type: text
+    label: Week
+    description: ISO week identifier (e.g. "2026-W17")
+    required: true
+    placeholder: "2026-W17"
+steps:
+  - name: Cluster takeaways
+    profileId: reading-radar/reader-coach
+    promptTemplate: |
+      Read every row in the `readings` table where `week == {{week}}`.
+      Cluster the `takeaway` field into 2-3 themes. For each theme, list
+      the contributing readings by `title`.
+    requiresApproval: false
+  - name: Find the motifs
+    profileId: reading-radar/reader-coach
+    promptTemplate: |
+      Looking at the {{week}} clusters, name the 2-3 motifs that cut
+      across themes. A motif is a *pattern of attention* — what did
+      this week show up as, not just what was it about?
+    requiresApproval: false
+  - name: Draft an email digest
+    profileId: reading-radar/reader-coach
+    promptTemplate: |
+      Draft a short email digest (<= 200 words) for {{week}} using the
+      motifs. Open with one sentence on the week's dominant motif.
+      Close with a one-line question the reader could sit with.
+    requiresApproval: false

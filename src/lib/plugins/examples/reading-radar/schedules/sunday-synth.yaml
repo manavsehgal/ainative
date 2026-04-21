@@ -1,0 +1,15 @@
+id: sunday-synth
+name: Sunday Reading Synthesis
+description: Runs the weekly-synthesis blueprint Sunday mornings at 9am local.
+version: "1.0.0"
+type: scheduled
+cronExpression: "0 9 * * 0"
+prompt: |
+  It's Sunday morning. Run the weekly-synthesis blueprint for this week:
+  1. Cluster this week's readings by theme.
+  2. Name the 2-3 motifs cutting across themes.
+  3. Draft a short email digest — under 200 words — that opens with the
+     dominant motif and closes with one question worth sitting with.
+
+agentProfile: reading-radar/reader-coach
+recurs: true

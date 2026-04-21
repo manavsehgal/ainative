@@ -1,0 +1,49 @@
+id: readings
+name: Readings
+description: Weekly reading log — one row per article, paper, or post
+category: personal
+icon: BookOpen
+columns:
+  - name: date
+    displayName: Date
+    dataType: date
+  - name: title
+    displayName: Title
+    dataType: text
+  - name: url
+    displayName: URL
+    dataType: text
+  - name: takeaway
+    displayName: Takeaway
+    dataType: text
+  - name: tags
+    displayName: Tags
+    dataType: text
+  - name: rating
+    displayName: Rating
+    dataType: number
+  - name: week
+    displayName: Week
+    dataType: text
+sampleRows:
+  - date: "2026-04-14"
+    title: "Situational Awareness — Leopold Aschenbrenner"
+    url: "https://situational-awareness.ai"
+    takeaway: "The compounding of algorithmic unhobblings compresses the next order-of-magnitude more than raw compute alone."
+    tags: "ai, forecasting, strategy"
+    rating: 5
+    week: "2026-W16"
+  - date: "2026-04-15"
+    title: "The Bitter Lesson — Rich Sutton"
+    url: "http://www.incompleteideas.net/IncIdeas/BitterLesson.html"
+    takeaway: "Generality scales; clever priors don't. Every AI advance re-learns this."
+    tags: "ai, foundational, scaling"
+    rating: 5
+    week: "2026-W16"
+  - date: "2026-04-16"
+    title: "Building AI Native Businesses — Situational Notes"
+    url: ""
+    takeaway: "The cheapest unit of competitive advantage now is a well-chosen prompt library, not a model."
+    tags: "business, strategy, ai-native"
+    rating: 4
+    week: "2026-W16"

@@ -1,0 +1,14 @@
+id: reading-radar
+version: 0.1.0
+apiVersion: "0.14"
+kind: primitives-bundle
+name: Reading Radar
+description: |
+  Reader Coach profile with a weekly-synthesis blueprint, a readings table
+  schema, and a Sunday morning synthesis schedule. Turns what you read
+  each week into a single takeaway digest.
+author: ainative
+tags:
+  - reading
+  - personal
+  - synthesis

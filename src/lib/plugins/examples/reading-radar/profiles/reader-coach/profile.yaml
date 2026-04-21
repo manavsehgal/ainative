@@ -1,0 +1,17 @@
+id: reader-coach
+name: Reader Coach
+version: "0.1.0"
+domain: personal
+tags: [reading, personal, synthesis, notes]
+supportedRuntimes: [claude-code, anthropic-direct, openai-direct, ollama]
+preferredRuntime: anthropic-direct
+allowedTools:
+  - Read
+
+canUseToolPolicy:
+  autoApprove: [Read]
+  autoDeny: [Bash, Write, Edit]
+
+maxTurns: 20
+
+author: ainative
