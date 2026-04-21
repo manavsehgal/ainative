@@ -71,6 +71,21 @@ export function ChatShell({
       window.removeEventListener("ainative.chat.openTemplatePicker", onOpen);
   }, []);
 
+  // M4.5: re-submit handler for ExtensionFallbackCard's "Try this" button.
+  // The card dispatches a CustomEvent with the compose-alt prompt; we
+  // forward it to the session's sendMessage as a new user turn.
+  useEffect(() => {
+    function onSubmit(e: Event) {
+      const ce = e as CustomEvent<{ content: string }>;
+      const content = ce.detail?.content;
+      if (typeof content === "string" && content.trim()) {
+        void sendMessage(content);
+      }
+    }
+    window.addEventListener("ainative-chat-submit", onSubmit);
+    return () => window.removeEventListener("ainative-chat-submit", onSubmit);
+  }, [sendMessage]);
+
   // Track streaming state + activeId in refs so the unmount cleanup sees the
   // values at unmount time, not at effect-setup time (closure-capture bug).
   // If ChatShell unmounts while a stream is in flight (user navigated away),
