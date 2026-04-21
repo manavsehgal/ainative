@@ -59,4 +59,14 @@ describe("buildCompositionHint", () => {
     const hint = buildCompositionHint(plan);
     expect(hint).toContain("M4.5");
   });
+
+  it("instructs the model to pass appId on create_table", () => {
+    const hint = buildCompositionHint(plan);
+    expect(hint).toMatch(/pass `appId: '<app-id>'`/);
+  });
+
+  it("instructs the model to pass appId on create_schedule when tables are absent", () => {
+    const hint = buildCompositionHint({ ...plan, tables: undefined });
+    expect(hint).toMatch(/create_schedule.*appId/s);
+  });
 });

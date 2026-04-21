@@ -41,18 +41,24 @@ export function buildCompositionHint(plan: ComposePlan): string {
   parts.push("");
   parts.push("Your next actions should be:");
   parts.push(
-    "1. Call `create_profile` with a DOUBLE-HYPHEN namespaced id: `<app-id>--<artifact-id>` (e.g. `weekly-reading-list--manager`). The `--` separator is REQUIRED for the UI to recognize the composition."
+    "1. Call `create_profile` with a DOUBLE-HYPHEN namespaced id: `<app-id>--<artifact-id>` (e.g. `weekly-reading-list--manager`). The `--` separator is REQUIRED for the UI to recognize the composition and for the profile to be stored in the data-dir-scoped location."
   );
   parts.push(
     "2. Call `create_blueprint` with the SAME `<app-id>--<artifact-id>` format (e.g. `weekly-reading-list--synthesis`)."
   );
   if (plan.tables && plan.tables.length > 0) {
     parts.push(
-      "3. Call `create_table` for each proposed table (table names do not need the `--` prefix; they are scoped by project)."
+      "3. Call `create_table` for each proposed table. Table names do not need the `--` prefix, BUT you MUST pass `appId: '<app-id>'` (same slug as step 1) so the table is linked to the app's project and joined to the manifest."
+    );
+    parts.push(
+      "4. If a schedule is listed below, call `create_schedule` and ALSO pass `appId: '<app-id>'` so the schedule joins the app."
+    );
+    parts.push("5. Respond to the user summarizing what was composed.");
+  } else {
+    parts.push(
+      "3. If a schedule is listed below, call `create_schedule` and pass `appId: '<app-id>'` so the schedule joins the app."
     );
     parts.push("4. Respond to the user summarizing what was composed.");
-  } else {
-    parts.push("3. Respond to the user summarizing what was composed.");
   }
   parts.push("");
   parts.push(

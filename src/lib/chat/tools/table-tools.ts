@@ -376,11 +376,17 @@ Returns the workflowId so the caller can poll status, plus the rowCount that wil
 
     defineTool(
       "create_table",
-      "Create a new empty table with specified columns.",
+      "Create a new empty table with specified columns. When creating a table as part of an app composition, pass appId so the table is linked to the app's project and listed in the app manifest.",
       {
         name: z.string().min(1).max(256).describe("Table name"),
         description: z.string().max(1024).optional().describe("Table description"),
         projectId: z.string().optional().describe("Project ID. Omit for active project."),
+        appId: z
+          .string()
+          .optional()
+          .describe(
+            "App composition ID — when provided, the table is linked to the app's project and added to the app manifest. Use the same '<app-id>' slug that prefixes the composed profile/blueprint ids."
+          ),
         columns: z
           .array(
             z.object({
@@ -397,7 +403,15 @@ Returns the workflowId so the caller can poll status, plus the rowCount that wil
       },
       async (args) => {
         try {
-          const effectiveProjectId = args.projectId ?? ctx.projectId ?? undefined;
+          let effectiveProjectId = args.projectId ?? ctx.projectId ?? undefined;
+          if (args.appId) {
+            const { ensureAppProject } = await import(
+              "@/lib/apps/compose-integration"
+            );
+            const { projectId } = await ensureAppProject(args.appId, args.name);
+            effectiveProjectId = projectId;
+          }
+
           const table = await createTable({
             name: args.name,
             description: args.description,
@@ -408,7 +422,23 @@ Returns the workflowId so the caller can poll status, plus the rowCount that wil
             })),
             source: "agent",
           });
-          return ok({ id: table.id, name: table.name });
+
+          if (args.appId) {
+            const { upsertAppManifest } = await import(
+              "@/lib/apps/compose-integration"
+            );
+            upsertAppManifest(args.appId, {
+              kind: "table",
+              id: table.id,
+              columns: args.columns.map((c) => c.name),
+            });
+          }
+
+          return ok({
+            id: table.id,
+            name: table.name,
+            ...(args.appId ? { appId: args.appId } : {}),
+          });
         } catch (e) {
           return err(e instanceof Error ? e.message : "Failed to create table");
         }

@@ -136,7 +136,7 @@ export function blueprintTools(ctx: ToolContext) {
 
     defineTool(
       "create_blueprint",
-      "Create a custom workflow blueprint from YAML content. The YAML must include id, name, description, version, domain, tags, pattern, variables, and steps. Use get_blueprint on an existing blueprint to see the expected structure.",
+      "Create a custom workflow blueprint from YAML content. The YAML must include id, name, description, version, domain, tags, pattern, variables, and steps. When the blueprint id contains '--' (shape: '<app-id>--<artifact-id>'), the blueprint is also joined to the app's manifest. Use get_blueprint on an existing blueprint to see the expected structure.",
       {
         yaml: z
           .string()
@@ -150,11 +150,25 @@ export function blueprintTools(ctx: ToolContext) {
             "@/lib/workflows/blueprints/registry"
           );
           const blueprint = createBlueprint(args.yaml);
+
+          const { extractAppIdFromArtifactId, ensureAppProject, upsertAppManifest } =
+            await import("@/lib/apps/compose-integration");
+          const appId = extractAppIdFromArtifactId(blueprint.id);
+          if (appId) {
+            await ensureAppProject(appId, blueprint.name);
+            upsertAppManifest(appId, {
+              kind: "blueprint",
+              id: blueprint.id,
+              source: `$AINATIVE_DATA_DIR/blueprints/${blueprint.id}.yaml`,
+            });
+          }
+
           ctx.onToolResult?.("create_blueprint", blueprint);
           return ok({
             id: blueprint.id,
             name: blueprint.name,
             message: "Blueprint created successfully",
+            ...(appId ? { appId } : {}),
           });
         } catch (e) {
           return err(

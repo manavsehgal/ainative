@@ -45,7 +45,7 @@ export function scheduleTools(ctx: ToolContext) {
 
     defineTool(
       "create_schedule",
-      'Create a new scheduled recurring task. Accepts human-friendly intervals like "every 30 minutes", "hourly", "daily at 9am".',
+      'Create a new scheduled recurring task. Accepts human-friendly intervals like "every 30 minutes", "hourly", "daily at 9am". When creating a schedule as part of an app composition, pass appId so the schedule is linked to the app project and listed in the app manifest.',
       {
         name: z.string().min(1).max(200).describe("Schedule name"),
         prompt: z.string().min(1).max(2000).describe("The prompt to execute on each firing"),
@@ -59,6 +59,12 @@ export function scheduleTools(ctx: ToolContext) {
           .string()
           .optional()
           .describe("Project ID. Omit to use the active project."),
+        appId: z
+          .string()
+          .optional()
+          .describe(
+            "App composition ID — when provided, the schedule is linked to the app's project and added to the app manifest. Use the same '<app-id>' slug that prefixes the composed profile/blueprint ids."
+          ),
         assignedAgent: z.string().optional().describe("Runtime ID (e.g. 'claude')"),
         agentProfile: z.string().optional().describe("Agent profile ID to use"),
         maxFirings: z
@@ -102,7 +108,14 @@ export function scheduleTools(ctx: ToolContext) {
             }
           }
 
-          const effectiveProjectId = args.projectId ?? ctx.projectId ?? null;
+          let effectiveProjectId: string | null = args.projectId ?? ctx.projectId ?? null;
+          if (args.appId) {
+            const { ensureAppProject } = await import(
+              "@/lib/apps/compose-integration"
+            );
+            const { projectId } = await ensureAppProject(args.appId, args.name);
+            effectiveProjectId = projectId;
+          }
           const now = new Date();
           const id = crypto.randomUUID();
 
@@ -168,6 +181,20 @@ export function scheduleTools(ctx: ToolContext) {
             .from(schedules)
             .where(eq(schedules.id, id));
 
+          if (args.appId) {
+            const { upsertAppManifest } = await import(
+              "@/lib/apps/compose-integration"
+            );
+            upsertAppManifest(args.appId, {
+              kind: "schedule",
+              id,
+              cron: cronExpression,
+              runs: args.agentProfile
+                ? `profile:${args.agentProfile}`
+                : undefined,
+            });
+          }
+
           ctx.onToolResult?.("create_schedule", schedule);
           return ok({
             schedule,
@@ -178,6 +205,7 @@ export function scheduleTools(ctx: ToolContext) {
                   originalCron: staggerResult.collided ? args.interval : undefined,
                 }
               : undefined,
+            ...(args.appId ? { appId: args.appId } : {}),
           });
         } catch (e) {
           return err(e instanceof Error ? e.message : "Failed to create schedule");

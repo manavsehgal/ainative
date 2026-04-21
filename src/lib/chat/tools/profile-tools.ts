@@ -59,10 +59,10 @@ export function profileTools(ctx: ToolContext) {
 
     defineTool(
       "create_profile",
-      "Create a new agent profile with a configuration and system prompt (SKILL.md). The profile is saved to ~/.claude/skills/ and becomes immediately available. Use get_profile on an existing profile to see the expected config structure.",
+      "Create a new agent profile with a configuration and system prompt (SKILL.md). Standalone profiles are saved to ~/.claude/skills/; composed profiles (id containing '--') are saved to $AINATIVE_DATA_DIR/profiles/ to respect data-dir isolation and joined to an app manifest. Use get_profile on an existing profile to see the expected config structure.",
       {
         config: z.object({
-          id: z.string().min(1).describe("Unique profile ID (kebab-case, e.g. 'my-analyst')"),
+          id: z.string().min(1).describe("Unique profile ID (kebab-case, e.g. 'my-analyst'). For an app composition, prefix with the app-id: '<app-id>--<artifact-id>'."),
           name: z.string().min(1).describe("Human-readable profile name"),
           version: z.string().regex(/^\d+\.\d+\.\d+$/).describe("Semver version, e.g. '1.0.0'"),
           domain: z.enum(["work", "personal"]).describe("Profile domain"),
@@ -77,13 +77,31 @@ export function profileTools(ctx: ToolContext) {
       },
       async (args) => {
         try {
-          const { createProfile } = await import("@/lib/agents/profiles/registry");
-          createProfile(args.config, args.skillMd);
+          const { createProfile, createPromotedProfile } = await import(
+            "@/lib/agents/profiles/registry"
+          );
+          const { extractAppIdFromArtifactId, ensureAppProject, upsertAppManifest } =
+            await import("@/lib/apps/compose-integration");
+
+          const appId = extractAppIdFromArtifactId(args.config.id);
+          if (appId) {
+            createPromotedProfile(args.config, args.skillMd);
+            await ensureAppProject(appId, args.config.name);
+            upsertAppManifest(appId, {
+              kind: "profile",
+              id: args.config.id,
+              source: `$AINATIVE_DATA_DIR/profiles/${args.config.id}/`,
+            });
+          } else {
+            createProfile(args.config, args.skillMd);
+          }
+
           ctx.onToolResult?.("create_profile", { id: args.config.id, name: args.config.name });
           return ok({
             id: args.config.id,
             name: args.config.name,
             message: "Profile created successfully",
+            ...(appId ? { appId } : {}),
           });
         } catch (e) {
           return err(e instanceof Error ? e.message : "Failed to create profile");
