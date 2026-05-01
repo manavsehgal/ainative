@@ -1,7 +1,11 @@
 # Handoff: Delete-app feature shipped + UX-aligned across detail and card surfaces
 
 **Created:** 2026-05-01 (afternoon, post-delete-feature ship)
-**Status:** Task #1 complete (9 commits, 76+/76+ tests). Task #2 (smoke-artifact cleanup) and Task #3 (Phase 2 compose-hint) are unblocked and pending.
+**Status:** Task #1 + Task #2 complete. Task #3 (Phase 2 compose-hint) is unblocked and pending.
+
+**Cleanup result (Task #2):** All 7 leftover apps deleted via the new `DELETE /api/apps/[id]` endpoint — 6 with full cascade (`projectRemoved:true, filesRemoved:true`), 1 with split-manifest result (`portfolio-manager` → `projectRemoved:false, filesRemoved:true` — its DB project had a UUID id, not the slug, so the manifest was the only artifact). DB went from `19 projects / 16 user_tables / 17 schedules` → `13 / 11 / 12` — exactly what the cascade math predicts (6 projects + 5 tables + 5 schedules cleaned). `~/.ainative/apps/` is now empty and `/apps` shows the empty-state hero with 3 starter templates intact. The morning's "Habit Tracker" UUID orphan project was already cleaned in a prior sweep — no SQL needed.
+
+**Real-data cascade smoke validated** the orphan-dir test case from commit `6e0e05d6` end-to-end — `portfolio-manager` had no matching DB project, the API returned `{projectRemoved:false, filesRemoved:true}`, and the route correctly mapped that to a 200 (not 404) so the toast read "Deleted Portfolio Manager" rather than "App not found". Browser verification: `/tmp/ainative-apps-empty-state.png`.
 **Author:** Manav Sehgal (with Claude Opus 4.7 assist)
 **Predecessor:** `.archive/handoff/2026-05-01-phase1-shipped-pre-delete-feature.md` (Phase 1 appId validator + Phase 2 framing)
 
@@ -77,29 +81,6 @@ Screenshots saved at `/tmp/ainative-apps-list-with-delete.png`, `/tmp/ainative-a
 ---
 
 ## Pickup for next session
-
-### Task #2 — Smoke-artifact cleanup (now one-click instead of SQL)
-
-The new feature converts most of this from SQL into a UI flow. Open `/apps`, click trash on each smoke leftover, confirm. Audit before deleting:
-
-| App dir | Likely smoke leftover? | Notes |
-|---|---|---|
-| `~/.ainative/apps/habit-loop/` | YES | Split-manifest (profile only) from prior session |
-| `~/.ainative/apps/habit-loop--coach/` | YES | Split-manifest (table + schedule) — has DB project; cascade will fire |
-| `~/.ainative/apps/daily-journal/` | TBD — confirm with user | Looks intentional; intact manifest with table + schedule |
-| `~/.ainative/apps/meal-planner/` | TBD | Same |
-| `~/.ainative/apps/portfolio-checkin/` | TBD | Same |
-| `~/.ainative/apps/portfolio-manager/` | DOESN'T RENDER | Manifest may be malformed — not in /apps UI listing; would need `rm -rf` directly |
-| `~/.ainative/apps/weekly-reading-list/` | TBD | Same |
-
-**Plus the orphaned UUID-id "Habit Tracker" project from the morning smoke** — has NO manifest, so the new feature can't reach it. SQL cleanup still needed (per `.archive/handoff/2026-05-01-phase1-shipped-pre-delete-feature.md` §Step 3):
-```sql
-DELETE FROM schedules WHERE id = '1aa46a79-a032-4127-b7dc-362d0bcb4319';
-DELETE FROM user_table_triggers WHERE id = '70310b11-7343-4030-9b79-2d022f691fc3';
-DELETE FROM user_tables WHERE id IN ('f98445ea-773a-4c35-a9a0-18ba9af1f49d', '900fcae1-ac6e-4110-8807-2fb27e35d174');
-DELETE FROM projects WHERE id = '7d65288c-5cc4-4f47-849c-e0f6156e1497';
-```
-Or — easier — use the existing `/projects/7d65288c-...` UI's Delete button (already cascades via `deleteProjectCascade`).
 
 ### Task #3 — Phase 2: Generic compose-hint for unmatched COMPOSE_TRIGGERS
 
