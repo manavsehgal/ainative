@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { deleteApp, getApp } from "@/lib/apps/registry";
+import { deleteAppCascade, getApp } from "@/lib/apps/registry";
 
 export async function GET(
   _req: NextRequest,
@@ -16,9 +16,22 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const removed = deleteApp(id);
-  if (!removed) {
-    return NextResponse.json({ error: "App not found" }, { status: 404 });
+
+  try {
+    const result = await deleteAppCascade(id);
+    if (!result.filesRemoved && !result.projectRemoved) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    return NextResponse.json({
+      success: true,
+      filesRemoved: result.filesRemoved,
+      projectRemoved: result.projectRemoved,
+    });
+  } catch (err) {
+    console.error("App delete failed:", err);
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Delete failed" },
+      { status: 500 }
+    );
   }
-  return NextResponse.json({ ok: true });
 }
