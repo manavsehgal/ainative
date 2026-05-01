@@ -61,9 +61,13 @@ export function scheduleTools(ctx: ToolContext) {
           .describe("Project ID. Omit to use the active project."),
         appId: z
           .string()
+          .refine((v) => !v.includes("--"), {
+            message:
+              "appId must be the app slug only (e.g., 'habit-loop'), not an artifact id like 'habit-loop--coach'. Strip everything from '--' onward — the appId is the prefix before '--'.",
+          })
           .optional()
           .describe(
-            "App composition ID — when provided, the schedule is linked to the app's project and added to the app manifest. Use the same '<app-id>' slug that prefixes the composed profile/blueprint ids."
+            "App composition ID — the app's slug, e.g. 'wealth-tracker'. Must NOT contain '--'. If you have an artifact id like 'wealth-tracker--coach', the appId is everything before '--' (i.e. 'wealth-tracker'). When provided, the schedule is linked to the app's project and added to the app manifest."
           ),
         assignedAgent: z.string().optional().describe("Runtime ID (e.g. 'claude')"),
         agentProfile: z.string().optional().describe("Agent profile ID to use"),

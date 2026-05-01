@@ -210,6 +210,43 @@ describe("create_schedule maxTurns persistence", () => {
   });
 });
 
+describe("create_schedule appId discipline", () => {
+  const base = {
+    name: "weekly check",
+    prompt: "do thing",
+    interval: "every 30 minutes",
+  };
+
+  it("accepts a clean app slug appId", () => {
+    const result = parseArgs("create_schedule", {
+      ...base,
+      appId: "habit-loop",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts omitted appId (non-app-composition schedule)", () => {
+    const result = parseArgs("create_schedule", base);
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects an artifact id passed as appId (contains '--')", () => {
+    const result = parseArgs("create_schedule", {
+      ...base,
+      appId: "habit-loop--coach",
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const message = result.error.issues
+        .map((iss) => iss.message)
+        .join(" ");
+      expect(message).toMatch(/appId/);
+      expect(message).toMatch(/--/);
+      expect(message).toMatch(/slug/i);
+    }
+  });
+});
+
 describe("update_schedule maxTurns persistence", () => {
   beforeEach(() => {
     mockState.rows = [{
