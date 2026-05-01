@@ -21,7 +21,7 @@ export function createUsageLedgerSeeds(input: {
   const DAY = 86_400_000;
 
   // Runtimes
-  const claude = { runtimeId: "claude-agent-sdk", providerId: "anthropic", modelId: "claude-sonnet-4-5-20250514" };
+  const claude = { runtimeId: "claude-agent-sdk", providerId: "anthropic", modelId: "sonnet" };
   const codex = { runtimeId: "openai-codex-app-server", providerId: "openai", modelId: "codex-mini-latest" };
   const ollama = { runtimeId: "ollama", providerId: "local", modelId: "llama-3.1-8b" };
 
