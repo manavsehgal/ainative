@@ -3,6 +3,7 @@ import { PageShell } from "@/components/shared/page-shell";
 import { StatusChip } from "@/components/shared/status-chip";
 import { Card, CardContent } from "@/components/ui/card";
 import { Bot, Workflow, Table2, Clock } from "lucide-react";
+import { AppDetailActions } from "@/components/apps/app-detail-actions";
 import { getApp } from "@/lib/apps/registry";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +25,18 @@ export default async function AppDetailPage({
       description={app.description ?? "Composed app"}
       backHref="/apps"
       backLabel="All apps"
-      actions={<StatusChip status="running" size="md" />}
+      actions={
+        <div className="flex items-center gap-2">
+          <StatusChip status="running" size="md" />
+          <AppDetailActions
+            appId={app.id}
+            appName={app.name}
+            tableCount={app.tableCount}
+            scheduleCount={app.scheduleCount}
+            fileCount={app.files.length}
+          />
+        </div>
+      }
     >
       <div className="space-y-6">
         <Section title="Composition" icon={Bot}>
