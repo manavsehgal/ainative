@@ -20,7 +20,7 @@ export async function DELETE(
   try {
     const result = await deleteAppCascade(id);
     if (!result.filesRemoved && !result.projectRemoved) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+      return NextResponse.json({ error: "App not found" }, { status: 404 });
     }
     return NextResponse.json({
       success: true,

@@ -2,7 +2,6 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/apps/registry", () => ({
   deleteAppCascade: vi.fn(),
-  deleteApp: vi.fn(),
   getApp: vi.fn(),
 }));
 
@@ -74,7 +73,7 @@ describe("DELETE /api/apps/[id]", () => {
       params: Promise.resolve({ id: "ghost" }),
     });
     expect(res.status).toBe(404);
-    expect(await res.json()).toEqual({ error: "Not found" });
+    expect(await res.json()).toEqual({ error: "App not found" });
   });
 
   it("returns 500 when the cascade throws", async () => {
