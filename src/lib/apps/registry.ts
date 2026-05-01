@@ -213,3 +213,49 @@ export function deleteApp(
   fs.rmSync(rootDir, { recursive: true, force: true });
   return true;
 }
+
+export interface DeleteAppCascadeResult {
+  /** True if the manifest directory was successfully removed. */
+  filesRemoved: boolean;
+  /** True if a DB project with id === appId existed and its rows were cascaded. */
+  projectRemoved: boolean;
+}
+
+export interface DeleteAppCascadeOptions {
+  appsDir?: string;
+  /** Injected for tests; defaults to the real DB-backed deleteProjectCascade. */
+  deleteProjectFn?: (projectId: string) => boolean;
+}
+
+/**
+ * Cascade-delete an app: removes its DB project (and all FK-dependent rows)
+ * via deleteProjectCascade, then removes the manifest dir on disk.
+ *
+ * Both halves are independent — a missing DB project is not an error
+ * (split-manifest case), and a missing dir is not an error (DB cleanup
+ * already happened). The result reports which half succeeded.
+ */
+export async function deleteAppCascade(
+  appId: string,
+  options: DeleteAppCascadeOptions = {}
+): Promise<DeleteAppCascadeResult> {
+  const appsDir = options.appsDir ?? getAinativeAppsDir();
+
+  const resolvedApps = path.resolve(appsDir);
+  const rootDir = path.resolve(appsDir, appId);
+  if (!rootDir.startsWith(resolvedApps + path.sep)) {
+    return { filesRemoved: false, projectRemoved: false };
+  }
+
+  let projectRemoved = false;
+  if (options.deleteProjectFn) {
+    projectRemoved = options.deleteProjectFn(appId);
+  } else {
+    const mod = await import("@/lib/data/delete-project");
+    projectRemoved = mod.deleteProjectCascade(appId);
+  }
+
+  const filesRemoved = deleteApp(appId, appsDir);
+
+  return { projectRemoved, filesRemoved };
+}

@@ -5,6 +5,7 @@ import path from "node:path";
 import {
   buildPrimitivesSummary,
   deleteApp,
+  deleteAppCascade,
   getApp,
   listApps,
   parseAppManifest,
@@ -206,5 +207,48 @@ describe("deleteApp", () => {
     fs.writeFileSync(path.join(sibling, "secret.txt"), "keep me", "utf-8");
     expect(deleteApp("../other", appsDir)).toBe(false);
     expect(fs.existsSync(path.join(sibling, "secret.txt"))).toBe(true);
+  });
+});
+
+describe("deleteAppCascade", () => {
+  let tmp: string;
+  beforeEach(() => { tmp = makeTmp(); });
+  afterEach(() => { fs.rmSync(tmp, { recursive: true, force: true }); });
+
+  it("removes the manifest dir and reports project=false when no DB project exists", async () => {
+    writeManifest(tmp, "wealth-tracker", WEALTH_MANIFEST);
+    const result = await deleteAppCascade("wealth-tracker", { appsDir: tmp });
+    expect(result.filesRemoved).toBe(true);
+    expect(result.projectRemoved).toBe(false);
+    expect(fs.existsSync(path.join(tmp, "wealth-tracker"))).toBe(false);
+  });
+
+  it("returns filesRemoved=false projectRemoved=false for an unknown app id", async () => {
+    const result = await deleteAppCascade("does-not-exist", { appsDir: tmp });
+    expect(result.filesRemoved).toBe(false);
+    expect(result.projectRemoved).toBe(false);
+  });
+
+  it("refuses path-traversal ids and removes nothing", async () => {
+    const appsDir = path.join(tmp, "apps");
+    fs.mkdirSync(appsDir, { recursive: true });
+    const sibling = path.join(tmp, "other");
+    fs.mkdirSync(sibling, { recursive: true });
+    fs.writeFileSync(path.join(sibling, "secret.txt"), "keep me", "utf-8");
+    const result = await deleteAppCascade("../other", { appsDir });
+    expect(result.filesRemoved).toBe(false);
+    expect(fs.existsSync(path.join(sibling, "secret.txt"))).toBe(true);
+  });
+
+  it("calls deleteProjectCascade with the app id (verified via injected fn)", async () => {
+    writeManifest(tmp, "wealth-tracker", WEALTH_MANIFEST);
+    const calls: string[] = [];
+    const result = await deleteAppCascade("wealth-tracker", {
+      appsDir: tmp,
+      deleteProjectFn: (id) => { calls.push(id); return true; },
+    });
+    expect(calls).toEqual(["wealth-tracker"]);
+    expect(result.projectRemoved).toBe(true);
+    expect(result.filesRemoved).toBe(true);
   });
 });
