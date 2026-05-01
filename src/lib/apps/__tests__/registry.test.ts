@@ -251,4 +251,14 @@ describe("deleteAppCascade", () => {
     expect(result.projectRemoved).toBe(true);
     expect(result.filesRemoved).toBe(true);
   });
+
+  it("reports projectRemoved=true filesRemoved=false when only the DB row exists (orphaned)", async () => {
+    // No manifest dir written — only the injected DB cascade succeeds
+    const result = await deleteAppCascade("orphaned-row", {
+      appsDir: tmp,
+      deleteProjectFn: () => true,
+    });
+    expect(result.projectRemoved).toBe(true);
+    expect(result.filesRemoved).toBe(false);
+  });
 });
