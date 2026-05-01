@@ -34,7 +34,7 @@ export function AppDetailActions({
 
   const summary = [
     tableCount > 0
-      ? `${tableCount} table${tableCount === 1 ? "" : "s"} (and their rows, columns, triggers)`
+      ? `${tableCount} ${tableCount === 1 ? "table (and its rows, columns, triggers)" : "tables (and their rows, columns, triggers)"}`
       : null,
     scheduleCount > 0
       ? `${scheduleCount} schedule${scheduleCount === 1 ? "" : "s"}`
@@ -50,6 +50,10 @@ export function AppDetailActions({
     `This will remove ${appName} and ${summary || "its manifest"}. ` +
     `Profiles and blueprints stay available for reuse. This cannot be undone.`;
 
+  // The Radix AlertDialog overlay blocks pointer events on the trigger while
+  // open, and `onOpenChange` is gated by `!pending` — so a second click cannot
+  // fire while the delete is in flight. `useTransition` gives us the pending
+  // signal but does NOT serialize on its own.
   function handleConfirm() {
     startTransition(async () => {
       try {
@@ -75,7 +79,7 @@ export function AppDetailActions({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="icon" aria-label="App actions">
-            <MoreHorizontal className="h-4 w-4" />
+            <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
@@ -86,7 +90,7 @@ export function AppDetailActions({
               setConfirmOpen(true);
             }}
           >
-            <Trash2 className="h-4 w-4 mr-2" />
+            <Trash2 className="h-4 w-4 mr-2" aria-hidden="true" />
             Delete app
           </DropdownMenuItem>
         </DropdownMenuContent>
