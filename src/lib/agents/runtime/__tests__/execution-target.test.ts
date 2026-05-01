@@ -167,6 +167,40 @@ describe("execution target resolver", () => {
     ).rejects.toThrow("Claude Code process exited with code 1");
   });
 
+  it("substitutes DEFAULT_CHAT_MODEL when the requested model is an unrecognized raw ID", async () => {
+    // Make claude-code healthy so the loop returns immediately.
+    mockTestRuntimeConnection.mockImplementation((runtimeId: AgentRuntimeId) => {
+      if (runtimeId === "claude-code") return Promise.resolve({ connected: true });
+      return Promise.resolve({ connected: true });
+    });
+
+    // Stale full model ID from deprecated SDK era — not in CHAT_MODELS.
+    const target = await resolveChatExecutionTarget({
+      requestedRuntimeId: "claude-code",
+      requestedModelId: "claude-sonnet-4-5-20250514",
+    });
+
+    expect(target.effectiveModelId).toBe("haiku"); // DEFAULT_CHAT_MODEL alias
+    expect(target.fallbackApplied).toBe(true);
+    expect(target.fallbackReason).toContain("claude-sonnet-4-5-20250514");
+    expect(target.fallbackReason).toContain("not a recognized model");
+  });
+
+  it("does not substitute when the requested model is a known alias", async () => {
+    mockTestRuntimeConnection.mockImplementation(() =>
+      Promise.resolve({ connected: true })
+    );
+
+    const target = await resolveChatExecutionTarget({
+      requestedRuntimeId: "claude-code",
+      requestedModelId: "sonnet",
+    });
+
+    expect(target.effectiveModelId).toBe("sonnet");
+    expect(target.fallbackApplied).toBe(false);
+    expect(target.fallbackReason).toBeNull();
+  });
+
   it("throws a named error when no chat runtime is healthy", async () => {
     mockTestRuntimeConnection.mockResolvedValue({
       connected: false,

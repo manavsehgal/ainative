@@ -11,7 +11,7 @@ import {
 import { testRuntimeConnection } from "./index";
 import { getRoutingPreference } from "@/lib/settings/routing";
 import { getRuntimeSetupStates, listConfiguredRuntimeIds } from "@/lib/settings/runtime-setup";
-import { DEFAULT_CHAT_MODEL, getRuntimeForModel } from "@/lib/chat/types";
+import { CHAT_MODELS, DEFAULT_CHAT_MODEL, getRuntimeForModel } from "@/lib/chat/types";
 
 const FILESYSTEM_TOOL_NAMES = new Set([
   "Read",
@@ -392,21 +392,42 @@ function buildChatFallbackReason(input: {
   return `${reason}. Using ${effectiveLabel} for this turn.`;
 }
 
+function isRecognizedChatModelId(modelId: string): boolean {
+  if (CHAT_MODELS.some((m) => m.id === modelId)) return true;
+  if (modelId.startsWith("ollama:")) return true;
+  return false;
+}
+
 export async function resolveChatExecutionTarget(input: {
   requestedRuntimeId?: string | null;
   requestedModelId?: string | null;
 }): Promise<ResolvedExecutionTarget> {
-  const requestedModelId =
+  const rawRequestedModelId =
     input.requestedModelId ??
     (input.requestedRuntimeId
       ? getRuntimeCatalogEntry(resolveAgentRuntime(input.requestedRuntimeId)).models.default
       : DEFAULT_CHAT_MODEL);
+
+  // If the requested model isn't a recognized alias (e.g. a stale raw ID
+  // like "claude-sonnet-4-5-20250514" left over from a deprecated SDK
+  // version), substitute the default and let the fallback-reason chip
+  // surface the swap to the user. Without this guard, the loop below
+  // would happily return the raw ID and the SDK call would fail with
+  // "model may not exist" — bypassing the fallback machinery entirely.
+  const modelRecognized = isRecognizedChatModelId(rawRequestedModelId);
+  const requestedModelId = modelRecognized ? rawRequestedModelId : DEFAULT_CHAT_MODEL;
+  const unknownModelReason = modelRecognized
+    ? null
+    : `${rawRequestedModelId} is not a recognized model`;
+
   const requestedRuntimeId = resolveAgentRuntime(
     input.requestedRuntimeId ?? getRuntimeForModel(requestedModelId)
   );
 
   const modelOrder = buildChatFallbackOrder(requestedModelId);
-  let requestedAvailability: RuntimeAvailability | null = null;
+  let requestedAvailability: RuntimeAvailability | null = unknownModelReason
+    ? { available: false, reason: unknownModelReason }
+    : null;
 
   for (const candidateModelId of modelOrder) {
     const candidateRuntimeId = resolveAgentRuntime(
@@ -431,18 +452,25 @@ export async function resolveChatExecutionTarget(input: {
       continue;
     }
 
+    // Surface the original raw model ID in the fallback chip when we
+    // substituted an unrecognized one above. requestedModelId already
+    // points at the substituted alias for fallback-order purposes.
+    const reportedRequestedModelId = unknownModelReason
+      ? rawRequestedModelId
+      : requestedModelId;
     return {
       requestedRuntimeId,
       effectiveRuntimeId: candidateRuntimeId,
-      requestedModelId,
+      requestedModelId: reportedRequestedModelId,
       effectiveModelId: candidateModelId,
       fallbackApplied:
+        unknownModelReason !== null ||
         candidateRuntimeId !== requestedRuntimeId ||
         candidateModelId !== requestedModelId,
       fallbackReason: buildChatFallbackReason({
         requestedRuntimeId,
         effectiveRuntimeId: candidateRuntimeId,
-        requestedModelId,
+        requestedModelId: reportedRequestedModelId,
         effectiveModelId: candidateModelId,
         unavailableReason: requestedAvailability?.reason ?? null,
       }),
