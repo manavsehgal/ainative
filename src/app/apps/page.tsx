@@ -6,6 +6,7 @@ import { Sparkles, Package } from "lucide-react";
 import { listApps } from "@/lib/apps/registry";
 import { listStarters } from "@/lib/apps/starters";
 import { StarterTemplateCard } from "@/components/apps/starter-template-card";
+import { AppCardDeleteButton } from "@/components/apps/app-card-delete-button";
 
 export const dynamic = "force-dynamic";
 
@@ -26,29 +27,40 @@ export default function AppsPage() {
           <section>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {apps.map((app) => (
-                <Link key={app.id} href={`/apps/${app.id}`} className="block">
-                  <Card className="hover:border-primary/50 transition-colors h-full">
-                    <CardContent className="p-4 space-y-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <Package className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden="true" />
-                          <span className="text-sm font-medium truncate">{app.name}</span>
+                <div key={app.id} className="relative">
+                  <Link href={`/apps/${app.id}`} className="block">
+                    <Card className="hover:border-primary/50 transition-colors h-full">
+                      <CardContent className="p-4 space-y-2">
+                        <div className="flex items-start justify-between gap-2 pr-8">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Package className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden="true" />
+                            <span className="text-sm font-medium truncate">{app.name}</span>
+                          </div>
+                          <StatusChip status="running" size="sm" />
                         </div>
-                        <StatusChip status="running" size="sm" />
-                      </div>
-                      {app.description && (
-                        <p className="text-xs text-muted-foreground line-clamp-2">
-                          {app.description}
-                        </p>
-                      )}
-                      {app.primitivesSummary && (
-                        <p className="text-[11px] text-muted-foreground/70">
-                          {app.primitivesSummary}
-                        </p>
-                      )}
-                    </CardContent>
-                  </Card>
-                </Link>
+                        {app.description && (
+                          <p className="text-xs text-muted-foreground line-clamp-2">
+                            {app.description}
+                          </p>
+                        )}
+                        {app.primitivesSummary && (
+                          <p className="text-[11px] text-muted-foreground/70">
+                            {app.primitivesSummary}
+                          </p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </Link>
+                  <div className="absolute top-1.5 right-1.5 z-10">
+                    <AppCardDeleteButton
+                      appId={app.id}
+                      appName={app.name}
+                      tableCount={app.tableCount}
+                      scheduleCount={app.scheduleCount}
+                      fileCount={app.files.length}
+                    />
+                  </div>
+                </div>
               ))}
             </div>
           </section>

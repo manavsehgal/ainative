@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
-interface AppDetailActionsProps {
+interface AppCardDeleteButtonProps {
   appId: string;
   appName: string;
   tableCount: number;
@@ -15,13 +15,13 @@ interface AppDetailActionsProps {
   fileCount: number;
 }
 
-export function AppDetailActions({
+export function AppCardDeleteButton({
   appId,
   appName,
   tableCount,
   scheduleCount,
   fileCount,
-}: AppDetailActionsProps) {
+}: AppCardDeleteButtonProps) {
   const router = useRouter();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -44,10 +44,6 @@ export function AppDetailActions({
     `This will remove ${appName} and ${summary || "its manifest"}. ` +
     `Profiles and blueprints stay available for reuse. This cannot be undone.`;
 
-  // The AlertDialog blocks pointer events while open, and `onOpenChange` is
-  // gated by `!pending` — so a second click cannot fire while the delete is
-  // in flight. `useTransition` gives us the pending signal but does NOT
-  // serialize on its own.
   function handleConfirm() {
     startTransition(async () => {
       try {
@@ -60,7 +56,6 @@ export function AppDetailActions({
         }
         toast.success(`Deleted ${appName}`);
         setConfirmOpen(false);
-        router.push("/apps");
         router.refresh();
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Delete failed");
@@ -71,13 +66,20 @@ export function AppDetailActions({
   return (
     <>
       <Button
-        variant="outline"
-        size="sm"
-        onClick={() => setConfirmOpen(true)}
-        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7 text-destructive"
+        aria-label={`Delete ${appName}`}
+        onClick={(e) => {
+          // Defensive: although the button is rendered as a sibling of the
+          // Link (not inside it), stopPropagation guards against future DOM
+          // restructuring that might place it inside an interactive ancestor.
+          e.preventDefault();
+          e.stopPropagation();
+          setConfirmOpen(true);
+        }}
       >
-        <Trash2 className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
-        Delete app
+        <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
       </Button>
 
       <ConfirmDialog
