@@ -2,6 +2,13 @@
 
 This file captures evolving project facts, decisions, and recurring gotchas that are useful across sessions for both Codex and Claude Code.
 
+## Session Handoff Convention
+
+- `HANDOFF.md` at the repo root is the single living session-handoff file. Read it first at session start to pick up where the prior session left off; it always carries a "Pickup for next session" section.
+- Historical dated handoffs are archived under `.archive/handoff/` (git-tracked, preserved via `git mv` on 2026-05-01).
+- Overwrite `HANDOFF.md` with a fresh handoff when ANY of these triggers fires: (1) during a commit workflow with substantial changes, (2) after a large feature completion, or (3) when the current session is >30% context-filled. Archive the prior `HANDOFF.md` to `.archive/handoff/YYYY-MM-DD-<slug>.md` before overwriting if it carries audit value.
+- Good handoff structure: headline, what was smoked/verified, bugs/features, live verifications, tests, diff inventory, pickup for next session, net confidence table.
+
 ## Current State
 
 - Core ainative app is on Next.js 16, React 19, TypeScript, Tailwind v4, shadcn/ui, and SQLite via Drizzle.

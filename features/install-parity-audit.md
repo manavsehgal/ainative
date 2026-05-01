@@ -7,7 +7,7 @@ milestone: M5
 dependencies:
   - nl-to-composition-v1 (M4.5, shipped 2026-04-21)
   - chat-tools-plugin-kind-1 (M3, shipped 2026-04-20)
-handoff: handoff/2026-04-21-m5-shipped-handoff.md
+handoff: .archive/handoff/2026-04-21-m5-shipped-handoff.md
 ---
 
 # Install Parity Audit (Milestone 5)

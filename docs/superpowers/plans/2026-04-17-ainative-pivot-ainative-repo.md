@@ -9,7 +9,7 @@
 **Tech Stack:** TypeScript, Next.js 16, better-sqlite3, Drizzle ORM, Vitest, tsup, Zod, Claude Agent SDK, Codex App Server client.
 
 **Companion spec:** [`docs/superpowers/specs/2026-04-17-ainative-pivot-ainative-repo-design.md`](../specs/2026-04-17-ainative-pivot-ainative-repo-design.md)
-**Inbound handoff:** [`handoff/2026-04-17-ainative-pivot-ainative-repo.md`](../../../handoff/2026-04-17-ainative-pivot-ainative-repo.md)
+**Inbound handoff:** [`.archive/handoff/2026-04-17-ainative-pivot-ainative-repo.md`](../../../.archive/handoff/2026-04-17-ainative-pivot-ainative-repo.md)
 
 ---
 
@@ -39,7 +39,7 @@ Files heavily modified (contents rewritten, path unchanged):
 - `src/lib/agents/claude-agent.ts` (MCP server key + allowed-tools prefix)
 - `src/lib/agents/runtime/openai-codex.ts`, `src/lib/chat/codex-engine.ts` (keychain serviceName)
 - Every `.ts`/`.tsx` in `src/` with a `ainative`/`ainative` identifier (~30 files)
-- Every `.md` in `docs/`, `handoff/`, `features/`, `book/`, `ai-native-notes/` (~100 files)
+- Every `.md` in `docs/`, `.archive/handoff/`, `features/`, `book/`, `ai-native-notes/` (~100 files)
 - `.env.local` (project-local)
 
 ---
@@ -1307,7 +1307,7 @@ Expected: zero.
 git add -A
 git commit -m "refactor(docs): rename historical ainative markdown filenames
 
-Includes handoff/, features/, docs/superpowers/plans/, and TDR references.
+Includes .archive/handoff/, features/, docs/superpowers/plans/, and TDR references.
 Contents rewritten in prior phases; this commit is pure rename."
 ```
 
@@ -1560,12 +1560,12 @@ git commit -m "docs(skills): sweep .claude/skills/ for ainative"
 
 ---
 
-### Task 23: Sweep `features/` and `handoff/` content
+### Task 23: Sweep `features/` and `.archive/handoff/` content
 
 - [ ] **Step 1: Rewrite**
 
 ```bash
-for f in $(rg -l -i ainative features/ handoff/); do
+for f in $(rg -l -i ainative features/ .archive/handoff/); do
   sd '\bStagent\b' 'ainative' "$f"
   sd '\bstagent\b' 'ainative' "$f"
 done
@@ -1574,9 +1574,9 @@ done
 - [ ] **Step 2: Verify + commit**
 
 ```bash
-rg -i ainative features/ handoff/
-git add features/ handoff/
-git commit -m "docs: sweep features/ and handoff/ for ainative"
+rg -i ainative features/ .archive/handoff/
+git add features/ .archive/handoff/
+git commit -m "docs: sweep features/ and .archive/handoff/ for ainative"
 ```
 
 ---

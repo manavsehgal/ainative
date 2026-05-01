@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-17
 **Author:** Manav Sehgal (via brainstorming session)
-**Companion:** `handoff/2026-04-17-ainative-pivot-ainative-repo.md` (inbound contract)
+**Companion:** `.archive/handoff/2026-04-17-ainative-pivot-ainative-repo.md` (inbound contract)
 **Companion (website):** `docs/superpowers/specs/2026-04-17-ainative-pivot-design.md` in `../ainative.github.io/`
 **Status:** Draft — pending implementation plan
 
@@ -30,7 +30,7 @@ Open decisions settled during brainstorming:
 - **User data migration:** one-shot automatic on first boot (option A).
 - **Env var rename:** clean break, no fallback (option A).
 - **Internal protocol identifiers:** full clean rename + DB + keychain migration; retain external-YAML alias for `sourceFormat: "ainative"` (option A).
-- **Historical markdown filenames:** rename all, including dated handoff/features/plans (option A).
+- **Historical markdown filenames:** rename all, including dated .archive/handoff/features/plans (option A).
 - **Book prose:** mechanical pass + proofreading pass in two commits (option B).
 - **Version bump:** `0.12.0` (continuing ainative's numbering).
 - **npm deprecation:** yes, deprecate `ainative@*` after `ainative@0.12.0` publishes.
@@ -176,9 +176,9 @@ All `ainative`-bearing filenames rename via `git mv`. Per handoff verification s
 - Update `package.json` `files[]` entries to match.
 
 **Historical markdown:**
-- `handoff/bug-task-execution-missing-ainative-mcp.md`
+- `.archive/handoff/bug-task-execution-missing-ainative-mcp.md`
 - `features/task-runtime-ainative-mcp-injection.md`
-- `handoff/ainative-app-marketplace-spec.md`
+- `.archive/handoff/ainative-app-marketplace-spec.md`
 - `docs/superpowers/plans/2026-04-11-task-runtime-ainative-mcp-injection.md`
 - `.claude/skills/architect/references/tdr-032-runtime-ainative-mcp-injection.md`
 - All other `*ainative*.md` under tracked folders.
@@ -322,7 +322,7 @@ Per handoff §Cross-repo coordination, within a single hour:
 
 ## References
 
-- Inbound handoff: `handoff/2026-04-17-ainative-pivot-ainative-repo.md`
+- Inbound handoff: `.archive/handoff/2026-04-17-ainative-pivot-ainative-repo.md`
 - Website spec: `../ainative.github.io/docs/superpowers/specs/2026-04-17-ainative-pivot-design.md`
 - Website plan: `../ainative.github.io/docs/superpowers/plans/2026-04-17-ainative-pivot.md`
 - CLAUDE.md runtime-registry smoke-test mandate (in this repo).

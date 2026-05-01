@@ -9,7 +9,7 @@ dependencies: [primitive-bundle-plugin-kind-5, schedules-as-yaml-registry, chat-
 ---
 
 > **Status: shipped (2026-04-20).** Milestone 3 final-acceptance gate passed.
-> Phase 4 live smokes (`handoff/2026-04-20-tdr-037-phase-4-shipped-handoff.md`)
+> Phase 4 live smokes (`.archive/handoff/2026-04-20-tdr-037-phase-4-shipped-handoff.md`)
 > verified the two-path trust model end-to-end: echo-server self-extension
 > classification (T19), `AINATIVE_PLUGIN_CONFINEMENT=1` seatbelt wrap
 > activation (T20), `--safe-mode` + `plugin-trust-model = strict|off`

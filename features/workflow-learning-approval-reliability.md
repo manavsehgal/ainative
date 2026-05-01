@@ -3,7 +3,7 @@ title: Workflow Learning Approval Reliability
 status: planned
 priority: P1
 milestone: post-mvp
-source: handoff/table-enrich-context-approval-noise.md
+source: .archive/handoff/table-enrich-context-approval-noise.md
 dependencies:
   - workflow-context-batching
   - inbox-notifications
@@ -65,5 +65,5 @@ As an operator running multi-row enrichments or other child-task workflows, I wa
 
 ## References
 
-- Source: `handoff/table-enrich-context-approval-noise.md`
+- Source: `.archive/handoff/table-enrich-context-approval-noise.md`
 - Related features: `workflow-context-batching`, `inbox-notifications`, `learned-context-ux-completion`, `tables-enrichment-planner-ux`

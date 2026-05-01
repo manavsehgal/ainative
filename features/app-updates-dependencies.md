@@ -3,7 +3,7 @@ title: App Updates & Dependencies
 status: deferred
 priority: P2
 milestone: post-mvp
-source: handoff/ainative-app-marketplace-spec.md
+source: .archive/handoff/ainative-app-marketplace-spec.md
 dependencies: [app-conflict-resolution, app-cli-tools]
 ---
 
@@ -276,7 +276,7 @@ and may be picked up by a future successful update.
 
 ## References
 
-- Source: handoff/ainative-app-marketplace-spec.md §11 Phase 3
+- Source: .archive/handoff/ainative-app-marketplace-spec.md §11 Phase 3
 - Related: `app-conflict-resolution` (namespace + version compat checks),
   `app-cli-tools` (CLI commands), `app-distribution-channels` (source
   channel resolution for update checks)

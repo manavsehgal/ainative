@@ -609,7 +609,7 @@ New feature: `my-apps-lifecycle` (P1). Consulted `/product-manager`, `/architect
 
 ### Groomed — Sidebar Bug Fixes (3 features)
 
-Groomed 3 bugs from `handoff/` into feature specs:
+Groomed 3 bugs from `.archive/handoff/` into feature specs:
 - `fix-exported-bundle-registration` (P1) — exported bundles via export_app_bundle MCP tool don't get DB records, so they never appear in sidebar
 - `fix-sidebar-reactive-update` (P1) — sidebar doesn't re-fetch app data after install, requires full page refresh
 - `fix-sidebar-accordion-behavior` (P2) — app sidebar menus always expanded, missing accordion pattern from native groups
@@ -636,7 +636,7 @@ Key decisions locked during brainstorm:
 - Trust ceiling: declarative + MCP protocol (no sandboxed JS execution)
 - Trust → execution tier mapping: community=Tier A (declarative), verified=Tier A+B (MCP/channels/tools), official=full access
 
-Source: handoff/ainative-app-marketplace-spec.md + brainstorm session with /architect, /product-manager, /frontend-designer
+Source: .archive/handoff/ainative-app-marketplace-spec.md + brainstorm session with /architect, /product-manager, /frontend-designer
 Plan: .claude/plans/flickering-petting-hammock.md
 
 ### Completed — app-seed-data-generation (P1)
@@ -774,14 +774,14 @@ A code-quality follow-up (commit `ddd58fd`) switched from the deprecated `create
 
 ### Groomed — handoff batch from wealth-mgr branch
 
-Groomed four handoff docs from `handoff/` into feature specs under the Platform Hardening milestone. Two are bug fixes on the scheduled/task execution path, two are observability and control features uncovered while operating those schedules. Code paths were verified against the live codebase via an Explore pass before specs were written; one handoff's root-cause theory ("task was deleted") was corrected — the codebase has no task deletion code anywhere, so the groomed spec frames the work as "add validation + investigate scoping mismatch" rather than "stop deleting tasks."
+Groomed four handoff docs from `.archive/handoff/` into feature specs under the Platform Hardening milestone. Two are bug fixes on the scheduled/task execution path, two are observability and control features uncovered while operating those schedules. Code paths were verified against the live codebase via an Explore pass before specs were written; one handoff's root-cause theory ("task was deleted") was corrected — the codebase has no task deletion code anywhere, so the groomed spec frames the work as "add validation + investigate scoping mismatch" rather than "stop deleting tasks."
 
 - **`task-runtime-ainative-mcp-injection`** (P0) — wires `createStagentMcpServer` into `executeClaudeTask` and `resumeClaudeTask` in `src/lib/agents/claude-agent.ts` and adds `mcp__stagent__*` to the `claude-code` runtime's `allowedTools`, matching the chat engine, `openai-direct`, and `anthropic-direct` runtimes. This is the root cause of schedule-fired agents silently reporting "No ainative table MCP tools are available in this session" in News Sentinel, Price Monitor, and Daily Briefing. A follow-up TDR under `agent-system` will codify "All runtime entry points must inject the in-process ainative MCP server consistently" so the gap cannot recur when a new runtime adapter is added.
 - **`task-create-profile-validation`** (P1) — rejects invalid `agentProfile` values at `create_task` (today, `anthropic-direct` — a runtime, not a profile — is accepted as if it were a profile). Also carries a time-boxed investigation spike for the reported "task disappears after creation" symptom; the codebase audit found no DELETE on tasks anywhere and traced the likely cause to data-dir (`STAGENT_DATA_DIR`) or `projectId` scoping mismatch between the creating and querying contexts.
 - **`schedule-maxturns-api-control`** (P2) — exposes the existing `schedules.maxTurns` column on `create_schedule` / `update_schedule` MCP input schemas in `src/lib/chat/tools/schedule-tools.ts`. The column, the scheduler plumbing, and the handoff from schedule to task firing already exist; only the Zod schemas are missing.
 - **`task-turn-observability`** (P2) — adds `turnCount` / `tokenCount` columns to the `tasks` table, surfaces them on `get_task` / `list_tasks`, and commits to a written definition of what the turn-count metric measures. Observed schedule turn counts of 700–2,900 far exceed any plausible "reasoning round" interpretation and currently mislead both users and AI assistants into wrong diagnoses. The spec requires the metric definition to be written down before any columns are added so the codebase doesn't persist a misnamed field.
 
-Source handoff docs remain in `handoff/` as source-of-record; each spec references its source via frontmatter `source:`.
+Source handoff docs remain in `.archive/handoff/` as source-of-record; each spec references its source via frontmatter `source:`.
 
 ## 2026-04-10
 
@@ -789,7 +789,7 @@ Source handoff docs remain in `handoff/` as source-of-record; each spec referenc
 
 Audited the 2026-04-09 and 2026-04-10 releases through a product-manager, code-review, architect, and frontend-designer lens and groomed four follow-up features into `features/` + Platform Hardening roadmap. The primary driver was a user-reported regression where switching sidebar views mid-stream causes chat conversations to lose turn history and errors to replace prior responses — reproducible across both Claude and GPT runtimes.
 
-- **`chat-session-persistence-provider`** (P0) — root-cause fix for the chat session regression. Hoists chat state from `ChatShell` into a layout-level `ChatSessionProvider` so streaming survives sidebar navigation, and removes the two `setMessages([])` catch-all branches that wipe visible turn history on any fetch hiccup. Source: `handoff/bug-chat-session-view-switch-regression.md`. Follow-up to the `chat-stream-resilience-telemetry` escalation trigger — the telemetry commits (89316c4, a131402) measured this scenario and the user's report is now the evidence for the follow-up.
+- **`chat-session-persistence-provider`** (P0) — root-cause fix for the chat session regression. Hoists chat state from `ChatShell` into a layout-level `ChatSessionProvider` so streaming survives sidebar navigation, and removes the two `setMessages([])` catch-all branches that wipe visible turn history on any fetch hiccup. Source: `.archive/handoff/bug-chat-session-view-switch-regression.md`. Follow-up to the `chat-stream-resilience-telemetry` escalation trigger — the telemetry commits (89316c4, a131402) measured this scenario and the user's report is now the evidence for the follow-up.
 - **`marketplace-install-hardening`** (P1) — guards the unguarded `JSON.parse` in `hydrateInstance`, adds a UNIQUE index on `app_instances(app_id)` to close a check-then-insert race, and introduces an end-to-end install→provision→uninstall fixture test so the new marketplace foundation shipped in commit 56e2839 is no longer scaffolding-with-code-islands.
 - **`enrichment-planner-test-hardening`** (P2) — reorders validation-before-cast in `buildEnrichmentPlan`, adds route tests for `POST /api/tables/[id]/enrich/plan`, and raises the `enrichment-planner.ts` test-to-code ratio from ~27% to 50%+ by covering `buildReasoning`, `selectStrategy` edge cases, all six normalized data types, and null-input paths.
 - **`chat-dedup-variant-tolerance`** (P3) — adds regression tests for legitimate-variant workflow creation (e.g., "Enrich contacts" vs "Enrich accounts") and, if the tests expose false positives at the current 0.7 Jaccard threshold, introduces a weighted similarity scheme that downweights shared verbs in workflow names.
@@ -827,7 +827,7 @@ Codex App Server inside ainative no longer requires an API key. OpenAI provider 
 
 ### Groomed — workflow-learning-approval-reliability
 
-Converted `handoff/table-enrich-context-approval-noise.md` into a bounded shared follow-up feature instead of reopening completed table-enrichment or Inbox specs.
+Converted `.archive/handoff/table-enrich-context-approval-noise.md` into a bounded shared follow-up feature instead of reopening completed table-enrichment or Inbox specs.
 
 - **`workflow-learning-approval-reliability`** — plans a shared runtime and Inbox reliability slice so workflow child-task learned-context extraction stays inside the learning-session lifecycle, row-heavy enrichment runs collapse to one workflow-level learning batch instead of many standalone approvals, and responded `context_proposal` / `context_proposal_batch` notifications disappear from the active Inbox queue without deleting historical rows.
 
@@ -837,7 +837,7 @@ This was filed as a base-product follow-up because the regression lives in share
 
 ### Completed — chat-stream-resilience-telemetry
 
-Shipped as the second half of the handoff/ grooming session. Lightweight termination telemetry now observes every exit path of the chat SSE lifecycle so we can decide whether to invest in an SSE resume protocol — or confidently close the risk as already-mitigated.
+Shipped as the second half of the .archive/handoff/ grooming session. Lightweight termination telemetry now observes every exit path of the chat SSE lifecycle so we can decide whether to invest in an SSE resume protocol — or confidently close the risk as already-mitigated.
 
 **All 9 acceptance criteria met:**
 
@@ -907,13 +907,13 @@ Shipped in the same session as grooming. Duplicate workflow creation in long cha
 **Verification run:**
 - `npx vitest run` → **712 passed, 11 skipped (e2e), 0 failures**. Baseline was 687; delta +25 matches the 25 new tests added.
 - `npx tsc --noEmit` → **exit 0**, fully clean.
-- `git diff --stat` → 5 files modified (+149/-54), 3 new files (similarity.ts, similarity.test.ts, workflow-tools-dedup.test.ts). `handoff/` untouched.
+- `git diff --stat` → 5 files modified (+149/-54), 3 new files (similarity.ts, similarity.test.ts, workflow-tools-dedup.test.ts). `.archive/handoff/` untouched.
 
 **Files:**
 - Created: `src/lib/util/similarity.ts`, `src/lib/util/__tests__/similarity.test.ts`, `src/lib/chat/tools/__tests__/workflow-tools-dedup.test.ts`
 - Modified: `src/lib/import/dedup.ts`, `src/lib/chat/tools/workflow-tools.ts`, `src/lib/chat/system-prompt.ts`
 
-### Groomed — handoff/ bug reports into two Platform Hardening specs
+### Groomed — .archive/handoff/ bug reports into two Platform Hardening specs
 
 Two bug reports from a sibling ainative instance (written against a different `src/features/` / `src/db/` file layout) were validated against this repo's actual structure and groomed into feature specs under the Platform Hardening section of the roadmap.
 
@@ -923,7 +923,7 @@ Two bug reports from a sibling ainative instance (written against a different `s
 
 Both features land in the **Platform Hardening** section. No new TDR was created — the dedup feature reuses an existing pattern, and the telemetry feature defers the architectural decision (SSE resume protocol) until evidence exists to support it. A follow-up `chat-stream-resume-protocol` feature with a supporting api-design TDR would be filed only if telemetry shows >1% abnormal terminations in normal use.
 
-Source handoff docs remain in `handoff/` as archive — the spec `source:` frontmatter references them so traceability is preserved.
+Source handoff docs remain in `.archive/handoff/` as archive — the spec `source:` frontmatter references them so traceability is preserved.
 
 ### Completed — workflow-status-view-pattern-router (full refactor)
 

@@ -3,7 +3,7 @@ title: Task Turn Count Observability
 status: planned
 priority: P2
 milestone: post-mvp
-source: handoff/feature-task-turn-observability.md
+source: .archive/handoff/feature-task-turn-observability.md
 dependencies: [agent-integration, scheduled-prompt-loops]
 ---
 
@@ -81,7 +81,7 @@ Before adding any columns, a short investigation subtask: trace `turnCount++` at
 
 ## References
 
-- Source: `handoff/feature-task-turn-observability.md`
+- Source: `.archive/handoff/feature-task-turn-observability.md`
 - `src/lib/db/schema.ts:57` — existing `maxTurns` column on `tasks` (new columns land nearby)
 - `src/lib/agents/claude-agent.ts:225` — existing `turnCount++` counter in stream processing
 - `src/lib/agents/claude-agent.ts:300-309` — result-frame handler (target for persist-on-completion)

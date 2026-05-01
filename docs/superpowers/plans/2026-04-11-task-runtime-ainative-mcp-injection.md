@@ -9,7 +9,7 @@
 **Tech Stack:** TypeScript, `@anthropic-ai/claude-agent-sdk`, Vitest (hoisted mocks), better-sqlite3 via Drizzle (untouched here).
 
 **Spec:** `features/task-runtime-ainative-mcp-injection.md`
-**Source handoff:** `handoff/bug-task-execution-missing-ainative-mcp.md`
+**Source handoff:** `.archive/handoff/bug-task-execution-missing-ainative-mcp.md`
 
 ---
 
@@ -309,7 +309,7 @@ Tests A-ainative-1/2/3 cover the three branches. resumeClaudeTask
 will receive the same treatment in the next commit.
 
 Refs: features/task-runtime-ainative-mcp-injection.md
-      handoff/bug-task-execution-missing-ainative-mcp.md
+      .archive/handoff/bug-task-execution-missing-ainative-mcp.md
 
 Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
 EOF
