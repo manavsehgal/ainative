@@ -434,6 +434,11 @@ Returns the workflowId so the caller can poll status, plus the rowCount that wil
             });
           }
 
+          ctx.onToolResult?.("create_table", {
+            id: table.id,
+            name: table.name,
+            ...(args.appId ? { appId: args.appId } : {}),
+          });
           return ok({
             id: table.id,
             name: table.name,

@@ -424,6 +424,12 @@ export async function* sendMessage(
         type: "done",
         messageId: assistantMsg.id,
         quickAccess: [],
+        extensionFallback: {
+          plugin: verdict.plan.plugin,
+          rationale: verdict.plan.rationale,
+          composeAltPrompt: verdict.plan.composeAltPrompt,
+          explanation: verdict.plan.explanation,
+        },
       };
       return;
     } finally {
@@ -882,11 +888,18 @@ export async function* sendMessage(
       durationMs: Date.now() - startedAt.getTime(),
     });
 
-    yield {
-      type: "done",
-      messageId: assistantMsg.id,
-      quickAccess,
-    };
+    {
+      const effectiveModelId =
+        usage.modelId ?? target.effectiveModelId ?? conversation.modelId ?? null;
+      yield {
+        type: "done",
+        messageId: assistantMsg.id,
+        quickAccess,
+        ...(composedApp ? { composedApp } : {}),
+        ...(target.fallbackReason ? { fallbackReason: target.fallbackReason } : {}),
+        ...(effectiveModelId ? { modelId: effectiveModelId } : {}),
+      };
+    }
   } catch (error) {
     const rawMessage =
       error instanceof Error ? error.message : "Unknown error";

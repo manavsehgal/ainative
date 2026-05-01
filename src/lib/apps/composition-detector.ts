@@ -48,6 +48,13 @@ function emptyGroup(): Group {
 function appIdFromResult(result: unknown): string | null {
   if (!result || typeof result !== "object") return null;
   const rec = result as Record<string, unknown>;
+  // create_table and create_schedule use UUID primary keys for row identity,
+  // so they echo back the appId argument as a separate field. Profile and
+  // blueprint use the `<app-id>--<artifact-id>` slug convention, so their
+  // appId can be parsed from `id`. Try the explicit field first, then fall
+  // back to slug parsing.
+  const explicit = typeof rec.appId === "string" ? rec.appId : null;
+  if (explicit) return explicit;
   const id = typeof rec.id === "string" ? rec.id : null;
   return extractAppIdFromArtifactId(id);
 }

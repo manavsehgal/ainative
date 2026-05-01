@@ -17,7 +17,15 @@ export interface ScreenshotAttachment {
 export type ChatStreamEvent =
   | { type: "delta"; content: string }
   | { type: "status"; phase: string; message: string }
-  | { type: "done"; messageId: string; quickAccess: QuickAccessItem[] }
+  | {
+      type: "done";
+      messageId: string;
+      quickAccess: QuickAccessItem[];
+      composedApp?: unknown;
+      extensionFallback?: unknown;
+      fallbackReason?: string;
+      modelId?: string;
+    }
   | { type: "error"; message: string }
   | { type: "permission_request"; requestId: string; messageId: string; toolName: string; toolInput: Record<string, unknown> }
   | { type: "question"; requestId: string; messageId: string; questions: ChatQuestion[] }

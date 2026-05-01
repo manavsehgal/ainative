@@ -195,7 +195,10 @@ export function scheduleTools(ctx: ToolContext) {
             });
           }
 
-          ctx.onToolResult?.("create_schedule", schedule);
+          ctx.onToolResult?.("create_schedule", {
+            ...schedule,
+            ...(args.appId ? { appId: args.appId } : {}),
+          });
           return ok({
             schedule,
             warnings,

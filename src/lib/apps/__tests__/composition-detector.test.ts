@@ -108,4 +108,21 @@ describe("detectComposedApp", () => {
     const app = detectComposedApp([p, b, t]);
     expect(app?.displayName).toBe("Reading List");
   });
+
+  it("reads appId from result.appId when id is a UUID (real create_table/create_schedule shape)", () => {
+    const tableUuid = call("create_table", {
+      id: "bd402645-c22b-424b-96a1-be809d217ba4",
+      name: "Positions",
+      appId: "wealth-tracker",
+    });
+    const scheduleUuid = call("create_schedule", {
+      id: "e0cbadb4-74d6-4788-9f5c-27379e26d64f",
+      name: "Monday 8am",
+      appId: "wealth-tracker",
+    });
+    const app = detectComposedApp([profileCall, blueprintCall, tableUuid, scheduleUuid]);
+    expect(app?.appId).toBe("wealth-tracker");
+    expect(app?.tableCount).toBe(1);
+    expect(app?.scheduleCount).toBe(1);
+  });
 });

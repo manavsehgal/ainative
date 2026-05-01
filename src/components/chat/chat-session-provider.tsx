@@ -602,6 +602,25 @@ export function ChatSessionProvider({ children }: { children: ReactNode }) {
                   if (event.quickAccess?.length) {
                     existing.quickAccess = event.quickAccess;
                   }
+                  // Forward composedApp / extensionFallback metadata so the
+                  // matching cards (ComposedAppCard, ExtensionFallbackCard)
+                  // render on stream completion without requiring a reload.
+                  // Server has already persisted these to chat_messages.metadata.
+                  if (event.composedApp) {
+                    existing.composedApp = event.composedApp;
+                  }
+                  if (event.extensionFallback) {
+                    existing.extensionFallback = event.extensionFallback;
+                  }
+                  if (event.fallbackReason) {
+                    existing.fallbackReason = event.fallbackReason;
+                  }
+                  // Effective model ID drives the model-label rendering and is
+                  // the gate for the fallback chip block. Without it, the chip
+                  // stays hidden even when fallbackReason is set.
+                  if (event.modelId) {
+                    existing.modelId = event.modelId;
+                  }
                   return {
                     ...m,
                     id: event.messageId,
