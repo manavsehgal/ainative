@@ -222,6 +222,12 @@ ls ~/.ainative/blueprints/                                          # expect jus
 
 **Extract shared `useDeleteApp(args)` hook.** Premature today (only 2 consumers; CLAUDE.md DRY-with-judgment says extract on third). Wait until a third surface needs delete.
 
+**Apps card UI: relocate trash + status (~10 min).** On `/apps` (`src/app/apps/page.tsx:33-54`), the card today has the title + Package icon on the left of the top row, the `Running` StatusChip on the right of the top row, and the trash icon absolutely positioned on top of the StatusChip (`top-1.5 right-1.5 z-10`). Replace with:
+- **Top row:** `<Package /> <name>` on the left, trash icon on the right (drop the absolute positioning; render `AppCardDeleteButton` as the right-side flex child where StatusChip is today, and remove the `pr-8` clearance + the outer `<div className="absolute top-1.5 right-1.5 z-10">` wrapper)
+- **Bottom row:** `<StatusChip status="running" size="sm" />` on its own line below the primitives summary
+
+The existing `e.preventDefault() + e.stopPropagation()` guards on `AppCardDeleteButton` already keep clicks from bubbling to the surrounding `<Link>`, so moving it inside the flex row is safe. The RTL "stopPropagation" test in `app-card-delete-button.test.tsx:67` covers it.
+
 ---
 
 ## Key patterns to remember (carryover + new)
