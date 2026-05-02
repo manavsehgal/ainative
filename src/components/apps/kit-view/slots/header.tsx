@@ -1,5 +1,7 @@
 import { StatusChip } from "@/components/shared/status-chip";
 import { ManifestSheet } from "./manifest-sheet";
+import { ScheduleCadenceChip } from "@/components/apps/schedule-cadence-chip";
+import { RunNowButton } from "@/components/apps/run-now-button";
 import type { HeaderSlot, ManifestPaneSlot } from "@/lib/apps/view-kits/types";
 
 interface HeaderSlotProps {
@@ -16,7 +18,7 @@ interface HeaderSlotProps {
  * chip + caller-supplied actions + "View manifest ▾" trigger on the right.
  */
 export function HeaderSlotView({ slot, manifestPane }: HeaderSlotProps) {
-  const { title, description, status, actions } = slot;
+  const { title, description, status, actions, cadenceChip, runNowBlueprintId } = slot;
   return (
     <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
@@ -31,6 +33,13 @@ export function HeaderSlotView({ slot, manifestPane }: HeaderSlotProps) {
       </div>
       <div className="flex flex-wrap items-center gap-2 mt-2 sm:mt-0">
         {status && <StatusChip status={status} size="md" />}
+        {cadenceChip && (
+          <ScheduleCadenceChip
+            humanLabel={cadenceChip.humanLabel}
+            nextFireMs={cadenceChip.nextFireMs}
+          />
+        )}
+        {runNowBlueprintId && <RunNowButton blueprintId={runNowBlueprintId} />}
         {actions}
         {manifestPane && (
           <ManifestSheet

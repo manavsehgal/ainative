@@ -20,9 +20,12 @@ describe("resolveKit — KitId to KitDefinition lookup", () => {
     expect(resolveKit("placeholder")).toBe(placeholderKit);
   });
 
-  it("falls back to placeholderKit when a kit id has no implementation yet", () => {
-    expect(resolveKit("tracker")).toBe(placeholderKit);
-    expect(resolveKit("workflow-hub")).toBe(placeholderKit);
+  it("returns the registered kit for tracker and workflow-hub (Phase 2)", () => {
+    expect(resolveKit("tracker").id).toBe("tracker");
+    expect(resolveKit("workflow-hub").id).toBe("workflow-hub");
+  });
+
+  it("falls back to placeholderKit for kit ids reserved for later phases", () => {
     expect(resolveKit("ledger")).toBe(placeholderKit);
     expect(resolveKit("coach")).toBe(placeholderKit);
     expect(resolveKit("inbox")).toBe(placeholderKit);

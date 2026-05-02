@@ -2,6 +2,33 @@
 
 ## 2026-05-02
 
+### Shipped — `composed-app-kit-tracker-and-hub` (Phase 2)
+
+Lands the first two real view kits — Tracker (table-as-hero) and Workflow Hub (catch-all fallback) — plus four shared primitives and a 5-branch KPI evaluation engine. With Phase 1.1 + 1.2 + 2 in place, every composed app now renders a real domain-aware UI; `placeholderKit` only ships for the four still-unimplemented kits (Coach, Ledger, Inbox, Research).
+
+- **KPI engine (`src/lib/apps/view-kits/evaluate-kpi.ts`)**: pure switch over `KpiSpec.source.kind` with injected `KpiContext` for testability. Five branches map to five evaluator functions — `tableCount`, `tableSum`, `tableLatest`, `blueprintRunCount`, `scheduleNextFire`. New source kinds require both a Zod arm in `KpiSpecSchema` and a switch case here — no formula escape hatch.
+- **KPI formatters (`src/lib/apps/view-kits/format-kpi.ts`)**: 5 format adapters (`int`, `currency`, `percent`, `duration`, `relative`); null/undefined render as em-dash per design system convention.
+- **Default KPI synthesis (`src/lib/apps/view-kits/default-kpis.ts`)**: `defaultTrackerKpis(heroTableId, columns)` synthesizes 1-4 KpiSpecs when a tracker app doesn't declare `view.bindings.kpis` — always emits "Total entries", optionally emits "Active" (when an `active` boolean column exists) and "Current streak" (when a `*_streak` column exists). Phase 5 (`composed-app-auto-inference-hardening`) tightens.
+- **DB-backed KPI context (`src/lib/apps/view-kits/kpi-context.ts`)**: concrete `createKpiContext()` implementation using SQLite `json_extract` for table sums/latest, `schedules.nextFireAt` for cadence. Failures swallowed and returned as `null` (engine renders em-dash).
+- **Kits (`src/lib/apps/view-kits/kits/{tracker,workflow-hub}.ts`)**: pure projection definitions. Tracker: hero = `TableSpreadsheet` of entries table, KPI strip above, schedule cadence chip + Run Now in header. Workflow Hub: catch-all fallback; KPI strip + per-blueprint `LastRunCard` cards in `secondary` slot + `ErrorTimeline` for failed tasks. Both kits import zero React hooks. The Tracker hero uses `React.createElement(TableSpreadsheet, ...)` (not function-call) because `TableSpreadsheet` is a client component with `useState` — function-call would invoke hooks outside React's render cycle.
+- **Shared primitives (`src/components/apps/{kpi-strip,last-run-card,schedule-cadence-chip,run-now-button}.tsx`)**: each used by ≥2 kits per the spec's reuse rule. `KPIStrip` clips at 6 tiles; `ScheduleCadenceChip` shows "humanLabel · in 2d 4h" / "overdue"; `RunNowButton` posts to `/api/blueprints/[id]/instantiate` with empty variables and surfaces input-required cases via toast (full inputs sheet deferred to Phase 3); `LastRunCard` shows blueprint label + status badge + relative time + 30d run count.
+- **Type extensions (`src/lib/apps/view-kits/types.ts`)**: `RuntimeState` gains optional Phase 2 fields (`heroTable`, `cadence`, `evaluatedKpis`, `blueprintLastRuns`, `blueprintRunCounts`, `failedTasks`); `HeaderSlot` gains `cadenceChip` + `runNowBlueprintId`; `KpiTile` gains optional `spark`. New types: `CadenceChipData`, `HeroTableData`, `RuntimeTaskSummary`. All additive — Phase 1.1 contract preserved.
+- **Kit-aware data layer (`src/lib/apps/view-kits/data.ts`)**: `loadRuntimeState(app, bindings, kitId, projection)` now dispatches on `kitId`. Tracker path loads cadence + heroTable + evaluatedKpis; Workflow Hub path loads cadence + blueprintLastRuns + blueprintRunCounts + failedTasks + evaluatedKpis. Cache key includes `kitId` so different kits don't collide during inference rollouts.
+- **Registry update (`src/lib/apps/view-kits/index.ts`)**: `tracker` and `workflow-hub` entries replace the Phase 1.2 `undefined` slots. Coach/Ledger/Inbox/Research still degrade to `placeholderKit` until Phases 3-4.
+- **Slot renderers**: `KpisSlotView` delegates to the new `KPIStrip` primitive (Phase 1.1 inline grid removed); `HeaderSlotView` renders the new `cadenceChip` + `runNowBlueprintId` fields when present; other slot views unchanged (their content already passes through as `ReactNode`).
+- **Route (`src/app/apps/[id]/page.tsx`)**: threads `kit.id` + `projection` through to `loadRuntimeState`. Single line of change versus Phase 1.2.
+- **Tests (~67 new across 9 files)**: `format-kpi.test.ts` (7), `evaluate-kpi.test.ts` (6), `default-kpis.test.ts` (6), `workflow-hub.test.ts` (7), `tracker.test.ts` (7), `kpi-strip.test.tsx` (5), `schedule-cadence-chip.test.tsx` (4), `run-now-button.test.tsx` (4), `last-run-card.test.tsx` (3); plus `dispatcher.test.ts` updated to assert tracker/workflow-hub now resolve to real kits. Full apps suite: 201/201 (1 informational skip), tsc clean. Pre-existing `router.test.ts` + `settings.test.ts` failures unchanged from `main`.
+- **Browser smoke**: `/apps/habit-tracker` renders Tracker layout end-to-end — header shows "daily 8pm · in 20h" cadence chip + "Run now" button + "View manifest" trigger; KPI strip shows 3 synthesized tiles ("Total entries: 5", "Active: 5", "Current streak: 0"); `TableSpreadsheet` hero shows all 5 habit rows with full toolbar (Column/Row/Import/Enrich/Export). Screenshot at `output/phase-2-tracker-smoke.png`.
+
+**Deferred to later phases:**
+- `RunNowButton` inputs sheet (when blueprint declares `variables`) — Phase 3 will fetch the blueprint def + open `WorkflowFormView`-style sheet
+- Coach + Ledger kits — Phase 3 (`composed-app-kit-coach-and-ledger`)
+- Inbox + Research kits — Phase 4
+- Browser smoke for Workflow Hub — no multi-blueprint app currently installed in `~/.ainative/apps/`; covered by `workflow-hub.test.ts`'s "populates secondary cards" assertion
+- Default KPI hardening + first-class `blueprintId` column on `tasks` (today the run count is approximated by matching `assignedAgent`/`agentProfile`) — Phase 5
+
+**Status changes**: `composed-app-kit-tracker-and-hub` flips planned → completed in `roadmap.md`; spec frontmatter updated.
+
 ### Shipped — `composed-app-manifest-view-field` (Phase 1.2)
 
 Lands the manifest contract that drives kit selection. The `view:` field is the only place where layout intent enters the manifest, and it's the only `.strict()` schema in `registry.ts` (every other manifest schema stays `.passthrough()`); KPI sources are an enumerated discriminated union, not formula strings — no expression escape hatch.

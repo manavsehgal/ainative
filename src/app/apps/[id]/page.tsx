@@ -22,7 +22,7 @@ export default async function AppDetailPage({
   const kit = pickKit(app.manifest, columns);
   const bindings = resolveBindings(app.manifest);
   const projection = kit.resolve({ manifest: app.manifest, columns });
-  const runtime = await loadRuntimeState(app, bindings);
+  const runtime = await loadRuntimeState(app, bindings, kit.id, projection);
   const model = kit.buildModel(projection, runtime);
 
   model.header.actions = (

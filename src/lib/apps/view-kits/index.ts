@@ -1,17 +1,20 @@
 import type { AppManifest } from "@/lib/apps/registry";
 import { pickKit as pickKitId } from "./inference";
 import { placeholderKit } from "./kits/placeholder";
+import { trackerKit } from "./kits/tracker";
+import { workflowHubKit } from "./kits/workflow-hub";
 import type { ColumnSchemaRef, KitDefinition, KitId } from "./types";
 
 /**
- * View-kit registry. Phase 1.2 ships only `placeholder`. Phase 2+ populates
- * `tracker`, `workflow-hub`, etc.; until then any non-placeholder id resolves
- * to `placeholderKit` (graceful degradation per the strategy doc).
+ * View-kit registry. Phase 2 ships `tracker` + `workflow-hub` alongside the
+ * Phase 1.1 `placeholder`. Phase 3 (`coach`/`ledger`) and Phase 4 (`inbox`/
+ * `research`) remain undefined here and degrade to `placeholderKit` via
+ * `resolveKit`.
  */
 export const viewKits: Record<KitId, KitDefinition | undefined> = {
   placeholder: placeholderKit,
-  tracker: undefined,
-  "workflow-hub": undefined,
+  tracker: trackerKit,
+  "workflow-hub": workflowHubKit,
   coach: undefined,
   ledger: undefined,
   inbox: undefined,

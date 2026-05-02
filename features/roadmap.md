@@ -446,7 +446,7 @@ Per-app view redesign so that composed apps render domain-aware dashboards drive
 |---------|----------|--------|--------------|
 | [composed-app-view-shell](composed-app-view-shell.md) (Phase 1) | P1 | completed | app-shell, agent-profile-catalog, workflow-blueprints, scheduled-prompt-loops, tables-data-layer |
 | [composed-app-manifest-view-field](composed-app-manifest-view-field.md) (Phase 1) | P1 | completed | composed-app-view-shell |
-| [composed-app-kit-tracker-and-hub](composed-app-kit-tracker-and-hub.md) (Phase 2) | P1 | planned | composed-app-view-shell, composed-app-manifest-view-field, tables-spreadsheet-editor, micro-visualizations |
+| [composed-app-kit-tracker-and-hub](composed-app-kit-tracker-and-hub.md) (Phase 2) | P1 | completed | composed-app-view-shell, composed-app-manifest-view-field, tables-spreadsheet-editor, micro-visualizations |
 | [composed-app-kit-coach-and-ledger](composed-app-kit-coach-and-ledger.md) (Phase 3) | P2 | planned | composed-app-kit-tracker-and-hub |
 | [composed-app-kit-inbox-and-research](composed-app-kit-inbox-and-research.md) (Phase 4) | P2 | planned | composed-app-kit-coach-and-ledger |
 | [composed-app-auto-inference-hardening](composed-app-auto-inference-hardening.md) (Phase 5) | P2 | planned | composed-app-kit-inbox-and-research |

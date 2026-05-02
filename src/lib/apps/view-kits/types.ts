@@ -1,5 +1,8 @@
 import type { ReactNode } from "react";
 import type { AppDetail, AppManifest } from "@/lib/apps/registry";
+import type { ColumnDef } from "@/lib/tables/types";
+import type { UserTableRowRow } from "@/lib/db/schema";
+import type { TaskStatus } from "@/lib/constants/task-status";
 
 /**
  * Frozen contracts for the composed-app view-kit registry.
@@ -50,6 +53,40 @@ export interface RuntimeState {
   app: AppDetail;
   recentTaskCount?: number;
   scheduleCadence?: string | null;
+  /** Phase 2: hero table content for Tracker kit (columns + last-N rows). */
+  heroTable?: HeroTableData | null;
+  /** Phase 2: schedule cadence chip data for Tracker / Workflow Hub headers. */
+  cadence?: CadenceChipData | null;
+  /** Phase 2: KPI tiles already evaluated from declared/synthesized specs. */
+  evaluatedKpis?: KpiTile[];
+  /** Phase 2: per-blueprint last-run summary (Workflow Hub `secondary`). */
+  blueprintLastRuns?: Record<string, RuntimeTaskSummary | null>;
+  /** Phase 2: per-blueprint run count over last 30 days. */
+  blueprintRunCounts?: Record<string, number>;
+  /** Phase 2: recent failed tasks for Workflow Hub `error-timeline`. */
+  failedTasks?: RuntimeTaskSummary[];
+}
+
+/** Phase 2: cadence chip data for `HeaderSlot.cadenceChip`. */
+export interface CadenceChipData {
+  humanLabel: string | null;
+  nextFireMs: number | null;
+}
+
+/** Phase 2: hero-table payload for the Tracker kit's hero slot. */
+export interface HeroTableData {
+  tableId: string;
+  columns: ColumnDef[];
+  rows: UserTableRowRow[];
+}
+
+/** Phase 2: minimal task summary used by Workflow Hub's secondary + activity. */
+export interface RuntimeTaskSummary {
+  id: string;
+  title: string;
+  status: TaskStatus;
+  createdAt: number;
+  result: string | null;
 }
 
 // --- Slot types (consumed by `<KitView/>`) -----------------------------------
@@ -60,6 +97,10 @@ export interface HeaderSlot {
   status?: "running" | "queued" | "completed" | "failed" | "planned";
   /** Right-aligned actions; rendered as ReactNode so kits can compose. */
   actions?: ReactNode;
+  /** Phase 2: render a ScheduleCadenceChip when present. */
+  cadenceChip?: CadenceChipData;
+  /** Phase 2: render a RunNowButton with this blueprint id when present. */
+  runNowBlueprintId?: string;
 }
 
 export interface KpiTile {
@@ -68,6 +109,8 @@ export interface KpiTile {
   value: string;
   hint?: string;
   trend?: "up" | "down" | "flat";
+  /** Phase 2: optional sparkline data for the tile (max 30 points). */
+  spark?: number[];
 }
 
 export interface HeroSlot {
