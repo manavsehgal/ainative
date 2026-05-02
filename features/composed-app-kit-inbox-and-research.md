@@ -1,6 +1,6 @@
 ---
 title: Composed App Kits — Inbox & Research
-status: planned
+status: completed
 priority: P2
 milestone: post-mvp
 source: ideas/composed-apps-domain-aware-view.md
@@ -176,3 +176,6 @@ The synthesis hero's `DocumentChipBar` reads the latest synthesis task's `docume
 - Related features: `composed-app-kit-coach-and-ledger` (preceding phase, established patterns), `composed-app-auto-inference-hardening` (next phase, hardens probes)
 - Reference primitives: `src/components/dashboard/priority-queue.tsx`, `src/components/documents/document-detail-view.tsx`, `src/components/documents/document-chip-bar.tsx`, `src/components/shared/detail-pane.tsx`
 - Anti-pattern reminders: kits never own state; the inbox-split layout uses the existing `DetailPane` URL-driven pattern; synthesis citation chips don't open a new route, they highlight in place
+- Implementation plan: `docs/superpowers/plans/2026-05-02-composed-app-kit-inbox-and-research.md`
+- Design spec: `docs/superpowers/specs/2026-05-02-inbox-and-research-design.md`
+- Verification: 340+ unit tests + 11 KitView integration tests covering all 6 kits all green; tsc clean. Browser smoke deferred — manifests and DB seeds prepared at `~/.ainative/apps/{customer-follow-up-drafter,research-digest}/`. See HANDOFF.md for next-session smoke commands.

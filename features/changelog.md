@@ -1,5 +1,15 @@
 # Feature Changelog
 
+## 2026-05-02 — Phase 4 (`composed-app-kit-inbox-and-research`) shipped
+
+- 2 new kits: InboxKit, ResearchKit
+- 1 new shared primitive: RunHistoryTimeline
+- 1 additive DB column: tasks.context_row_id (links row-triggered tasks to user_table_rows)
+- 1 additive Zod field: BlueprintBase.trigger?: { kind: "row-insert", table: string } (metadata-only; engine wiring deferred)
+- KitView integration tests retroactively applied to all 6 kits (HOLD-mode investment)
+- Closes wiring-bug class exposed in Phase 3 handoff
+- Browser smoke prepared (manifests + seeds at ~/.ainative/apps/) but deferred to next session
+
 ## 2026-05-02 (later)
 
 ### Shipped — `composed-app-kit-coach-and-ledger` (Phase 3)
