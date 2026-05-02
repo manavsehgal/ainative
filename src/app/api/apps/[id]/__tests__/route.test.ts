@@ -17,10 +17,12 @@ describe("DELETE /api/apps/[id]", () => {
     vi.mocked(deleteAppCascade).mockReset();
   });
 
-  it("returns 200 with cascade result when both halves succeed", async () => {
+  it("returns 200 with cascade result when all halves succeed", async () => {
     vi.mocked(deleteAppCascade).mockResolvedValue({
       filesRemoved: true,
       projectRemoved: true,
+      profilesRemoved: 1,
+      blueprintsRemoved: 1,
     });
     const res = await DELETE(makeRequest(), {
       params: Promise.resolve({ id: "wealth-tracker" }),
@@ -30,6 +32,8 @@ describe("DELETE /api/apps/[id]", () => {
       success: true,
       filesRemoved: true,
       projectRemoved: true,
+      profilesRemoved: 1,
+      blueprintsRemoved: 1,
     });
     expect(deleteAppCascade).toHaveBeenCalledWith("wealth-tracker");
   });
@@ -38,6 +42,8 @@ describe("DELETE /api/apps/[id]", () => {
     vi.mocked(deleteAppCascade).mockResolvedValue({
       filesRemoved: true,
       projectRemoved: false,
+      profilesRemoved: 0,
+      blueprintsRemoved: 0,
     });
     const res = await DELETE(makeRequest(), {
       params: Promise.resolve({ id: "habit-loop" }),
@@ -47,12 +53,16 @@ describe("DELETE /api/apps/[id]", () => {
     expect(body.success).toBe(true);
     expect(body.filesRemoved).toBe(true);
     expect(body.projectRemoved).toBe(false);
+    expect(body.profilesRemoved).toBe(0);
+    expect(body.blueprintsRemoved).toBe(0);
   });
 
   it("returns 200 when only the DB project was removed (orphaned-dir case)", async () => {
     vi.mocked(deleteAppCascade).mockResolvedValue({
       filesRemoved: false,
       projectRemoved: true,
+      profilesRemoved: 0,
+      blueprintsRemoved: 0,
     });
     const res = await DELETE(makeRequest(), {
       params: Promise.resolve({ id: "orphan" }),
@@ -64,10 +74,29 @@ describe("DELETE /api/apps/[id]", () => {
     expect(body.projectRemoved).toBe(true);
   });
 
-  it("returns 404 when both halves report nothing removed", async () => {
+  it("returns 200 when only namespaced profiles/blueprints existed (zombie cleanup)", async () => {
     vi.mocked(deleteAppCascade).mockResolvedValue({
       filesRemoved: false,
       projectRemoved: false,
+      profilesRemoved: 2,
+      blueprintsRemoved: 1,
+    });
+    const res = await DELETE(makeRequest(), {
+      params: Promise.resolve({ id: "ghost-with-leftovers" }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.success).toBe(true);
+    expect(body.profilesRemoved).toBe(2);
+    expect(body.blueprintsRemoved).toBe(1);
+  });
+
+  it("returns 404 when all halves report nothing removed", async () => {
+    vi.mocked(deleteAppCascade).mockResolvedValue({
+      filesRemoved: false,
+      projectRemoved: false,
+      profilesRemoved: 0,
+      blueprintsRemoved: 0,
     });
     const res = await DELETE(makeRequest(), {
       params: Promise.resolve({ id: "ghost" }),

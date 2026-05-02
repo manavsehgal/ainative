@@ -212,39 +212,68 @@ describe("deleteApp", () => {
 
 describe("deleteAppCascade", () => {
   let tmp: string;
-  beforeEach(() => { tmp = makeTmp(); });
+  let appsDir: string;
+  let profilesDir: string;
+  let blueprintsDir: string;
+
+  beforeEach(() => {
+    tmp = makeTmp();
+    appsDir = path.join(tmp, "apps");
+    profilesDir = path.join(tmp, "profiles");
+    blueprintsDir = path.join(tmp, "blueprints");
+    fs.mkdirSync(appsDir, { recursive: true });
+    fs.mkdirSync(profilesDir, { recursive: true });
+    fs.mkdirSync(blueprintsDir, { recursive: true });
+  });
   afterEach(() => { fs.rmSync(tmp, { recursive: true, force: true }); });
 
   it("removes the manifest dir and reports project=false when no DB project exists", async () => {
-    writeManifest(tmp, "wealth-tracker", WEALTH_MANIFEST);
-    const result = await deleteAppCascade("wealth-tracker", { appsDir: tmp });
+    writeManifest(appsDir, "wealth-tracker", WEALTH_MANIFEST);
+    const result = await deleteAppCascade("wealth-tracker", {
+      appsDir,
+      profilesDir,
+      blueprintsDir,
+      deleteProjectFn: () => false,
+    });
     expect(result.filesRemoved).toBe(true);
     expect(result.projectRemoved).toBe(false);
-    expect(fs.existsSync(path.join(tmp, "wealth-tracker"))).toBe(false);
+    expect(fs.existsSync(path.join(appsDir, "wealth-tracker"))).toBe(false);
   });
 
   it("returns filesRemoved=false projectRemoved=false for an unknown app id", async () => {
-    const result = await deleteAppCascade("does-not-exist", { appsDir: tmp });
+    const result = await deleteAppCascade("does-not-exist", {
+      appsDir,
+      profilesDir,
+      blueprintsDir,
+      deleteProjectFn: () => false,
+    });
     expect(result.filesRemoved).toBe(false);
     expect(result.projectRemoved).toBe(false);
+    expect(result.profilesRemoved).toBe(0);
+    expect(result.blueprintsRemoved).toBe(0);
   });
 
   it("refuses path-traversal ids and removes nothing", async () => {
-    const appsDir = path.join(tmp, "apps");
-    fs.mkdirSync(appsDir, { recursive: true });
     const sibling = path.join(tmp, "other");
     fs.mkdirSync(sibling, { recursive: true });
     fs.writeFileSync(path.join(sibling, "secret.txt"), "keep me", "utf-8");
-    const result = await deleteAppCascade("../other", { appsDir });
+    const result = await deleteAppCascade("../other", {
+      appsDir,
+      profilesDir,
+      blueprintsDir,
+      deleteProjectFn: () => false,
+    });
     expect(result.filesRemoved).toBe(false);
     expect(fs.existsSync(path.join(sibling, "secret.txt"))).toBe(true);
   });
 
   it("calls deleteProjectCascade with the app id (verified via injected fn)", async () => {
-    writeManifest(tmp, "wealth-tracker", WEALTH_MANIFEST);
+    writeManifest(appsDir, "wealth-tracker", WEALTH_MANIFEST);
     const calls: string[] = [];
     const result = await deleteAppCascade("wealth-tracker", {
-      appsDir: tmp,
+      appsDir,
+      profilesDir,
+      blueprintsDir,
       deleteProjectFn: (id) => { calls.push(id); return true; },
     });
     expect(calls).toEqual(["wealth-tracker"]);
@@ -253,12 +282,73 @@ describe("deleteAppCascade", () => {
   });
 
   it("reports projectRemoved=true filesRemoved=false when only the DB row exists (orphaned)", async () => {
-    // No manifest dir written — only the injected DB cascade succeeds
     const result = await deleteAppCascade("orphaned-row", {
-      appsDir: tmp,
+      appsDir,
+      profilesDir,
+      blueprintsDir,
       deleteProjectFn: () => true,
     });
     expect(result.projectRemoved).toBe(true);
     expect(result.filesRemoved).toBe(false);
+  });
+
+  it("sweeps `<appId>--*` profile dirs from the shared profiles dir", async () => {
+    writeManifest(appsDir, "wealth-tracker", WEALTH_MANIFEST);
+    // Two namespaced + one unrelated + one ambiguous prefix
+    fs.mkdirSync(path.join(profilesDir, "wealth-tracker--portfolio-coach"), { recursive: true });
+    fs.writeFileSync(path.join(profilesDir, "wealth-tracker--portfolio-coach", "SKILL.md"), "x", "utf-8");
+    fs.mkdirSync(path.join(profilesDir, "wealth-tracker--auditor"), { recursive: true });
+    fs.mkdirSync(path.join(profilesDir, "habit-loop--coach"), { recursive: true });
+    fs.mkdirSync(path.join(profilesDir, "wealth-tracker"), { recursive: true }); // no `--`, must NOT match
+
+    const result = await deleteAppCascade("wealth-tracker", {
+      appsDir,
+      profilesDir,
+      blueprintsDir,
+      deleteProjectFn: () => false,
+    });
+    expect(result.profilesRemoved).toBe(2);
+    expect(fs.existsSync(path.join(profilesDir, "wealth-tracker--portfolio-coach"))).toBe(false);
+    expect(fs.existsSync(path.join(profilesDir, "wealth-tracker--auditor"))).toBe(false);
+    expect(fs.existsSync(path.join(profilesDir, "habit-loop--coach"))).toBe(true);
+    expect(fs.existsSync(path.join(profilesDir, "wealth-tracker"))).toBe(true);
+  });
+
+  it("sweeps `<appId>--*.yaml` blueprint files from the shared blueprints dir", async () => {
+    writeManifest(appsDir, "wealth-tracker", WEALTH_MANIFEST);
+    fs.writeFileSync(path.join(blueprintsDir, "wealth-tracker--weekly-review.yaml"), "id: a\n", "utf-8");
+    fs.writeFileSync(path.join(blueprintsDir, "wealth-tracker--quarterly.yaml"), "id: a\n", "utf-8");
+    fs.writeFileSync(path.join(blueprintsDir, "wealth-tracker--notes.txt"), "x", "utf-8"); // wrong ext, must NOT match
+    fs.writeFileSync(path.join(blueprintsDir, "habit-loop--coach.yaml"), "id: a\n", "utf-8");
+
+    const result = await deleteAppCascade("wealth-tracker", {
+      appsDir,
+      profilesDir,
+      blueprintsDir,
+      deleteProjectFn: () => false,
+    });
+    expect(result.blueprintsRemoved).toBe(2);
+    expect(fs.existsSync(path.join(blueprintsDir, "wealth-tracker--weekly-review.yaml"))).toBe(false);
+    expect(fs.existsSync(path.join(blueprintsDir, "wealth-tracker--quarterly.yaml"))).toBe(false);
+    expect(fs.existsSync(path.join(blueprintsDir, "wealth-tracker--notes.txt"))).toBe(true);
+    expect(fs.existsSync(path.join(blueprintsDir, "habit-loop--coach.yaml"))).toBe(true);
+  });
+
+  it("is a no-op for namespaced sweeps when no profile/blueprint matches the appId", async () => {
+    writeManifest(appsDir, "wealth-tracker", WEALTH_MANIFEST);
+    fs.mkdirSync(path.join(profilesDir, "habit-loop--coach"), { recursive: true });
+    fs.writeFileSync(path.join(blueprintsDir, "habit-loop--coach.yaml"), "id: a\n", "utf-8");
+
+    const result = await deleteAppCascade("wealth-tracker", {
+      appsDir,
+      profilesDir,
+      blueprintsDir,
+      deleteProjectFn: () => false,
+    });
+    expect(result.profilesRemoved).toBe(0);
+    expect(result.blueprintsRemoved).toBe(0);
+    expect(result.filesRemoved).toBe(true);
+    expect(fs.existsSync(path.join(profilesDir, "habit-loop--coach"))).toBe(true);
+    expect(fs.existsSync(path.join(blueprintsDir, "habit-loop--coach.yaml"))).toBe(true);
   });
 });

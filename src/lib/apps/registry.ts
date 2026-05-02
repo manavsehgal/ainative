@@ -2,7 +2,11 @@ import fs from "node:fs";
 import path from "node:path";
 import yaml from "js-yaml";
 import { z } from "zod";
-import { getAinativeAppsDir } from "@/lib/utils/ainative-paths";
+import {
+  getAinativeAppsDir,
+  getAinativeBlueprintsDir,
+  getAinativeProfilesDir,
+} from "@/lib/utils/ainative-paths";
 
 const AppArtifactRefSchema = z
   .object({
@@ -219,32 +223,87 @@ export interface DeleteAppCascadeResult {
   filesRemoved: boolean;
   /** True if a DB project with id === appId existed and its rows were cascaded. */
   projectRemoved: boolean;
+  /** Number of `<appId>--*` profile dirs removed from the profiles dir. */
+  profilesRemoved: number;
+  /** Number of `<appId>--*.yaml` blueprint files removed from the blueprints dir. */
+  blueprintsRemoved: number;
 }
 
 export interface DeleteAppCascadeOptions {
   appsDir?: string;
+  profilesDir?: string;
+  blueprintsDir?: string;
   /** Injected for tests; defaults to the real DB-backed deleteProjectCascade. */
   deleteProjectFn?: (projectId: string) => boolean;
 }
 
+const SLUG_RE = /^[a-z0-9][a-z0-9-]*$/;
+
+function sweepNamespacedProfiles(profilesDir: string, appId: string): number {
+  if (!fs.existsSync(profilesDir)) return 0;
+  const resolvedProfiles = path.resolve(profilesDir);
+  const prefix = `${appId}--`;
+  let removed = 0;
+  for (const entry of fs.readdirSync(profilesDir, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    if (!entry.name.startsWith(prefix)) continue;
+    const target = path.resolve(profilesDir, entry.name);
+    if (!target.startsWith(resolvedProfiles + path.sep)) continue;
+    fs.rmSync(target, { recursive: true, force: true });
+    removed += 1;
+  }
+  return removed;
+}
+
+function sweepNamespacedBlueprints(blueprintsDir: string, appId: string): number {
+  if (!fs.existsSync(blueprintsDir)) return 0;
+  const resolvedBlueprints = path.resolve(blueprintsDir);
+  const prefix = `${appId}--`;
+  let removed = 0;
+  for (const entry of fs.readdirSync(blueprintsDir, { withFileTypes: true })) {
+    if (!entry.isFile()) continue;
+    if (!entry.name.startsWith(prefix)) continue;
+    if (!entry.name.endsWith(".yaml")) continue;
+    const target = path.resolve(blueprintsDir, entry.name);
+    if (!target.startsWith(resolvedBlueprints + path.sep)) continue;
+    fs.rmSync(target, { force: true });
+    removed += 1;
+  }
+  return removed;
+}
+
 /**
  * Cascade-delete an app: removes its DB project (and all FK-dependent rows)
- * via deleteProjectCascade, then removes the manifest dir on disk.
+ * via deleteProjectCascade, removes the manifest dir on disk, then sweeps
+ * `<appId>--*` profile dirs and `<appId>--*.yaml` blueprint files from the
+ * shared `~/.ainative/profiles/` and `~/.ainative/blueprints/` directories.
  *
- * Both halves are independent — a missing DB project is not an error
- * (split-manifest case), and a missing dir is not an error (DB cleanup
- * already happened). The result reports which half succeeded.
+ * All four halves are independent — a missing piece is not an error. The
+ * result reports which halves removed something.
  */
 export async function deleteAppCascade(
   appId: string,
   options: DeleteAppCascadeOptions = {}
 ): Promise<DeleteAppCascadeResult> {
   const appsDir = options.appsDir ?? getAinativeAppsDir();
+  const profilesDir = options.profilesDir ?? getAinativeProfilesDir();
+  const blueprintsDir = options.blueprintsDir ?? getAinativeBlueprintsDir();
+
+  const empty: DeleteAppCascadeResult = {
+    filesRemoved: false,
+    projectRemoved: false,
+    profilesRemoved: 0,
+    blueprintsRemoved: 0,
+  };
 
   const resolvedApps = path.resolve(appsDir);
   const rootDir = path.resolve(appsDir, appId);
   if (!rootDir.startsWith(resolvedApps + path.sep)) {
-    return { filesRemoved: false, projectRemoved: false };
+    return empty;
+  }
+  // Defense-in-depth: only sweep namespaced files when appId is a clean slug.
+  if (!SLUG_RE.test(appId)) {
+    return empty;
   }
 
   let projectRemoved = false;
@@ -256,6 +315,8 @@ export async function deleteAppCascade(
   }
 
   const filesRemoved = deleteApp(appId, appsDir);
+  const profilesRemoved = sweepNamespacedProfiles(profilesDir, appId);
+  const blueprintsRemoved = sweepNamespacedBlueprints(blueprintsDir, appId);
 
-  return { projectRemoved, filesRemoved };
+  return { projectRemoved, filesRemoved, profilesRemoved, blueprintsRemoved };
 }

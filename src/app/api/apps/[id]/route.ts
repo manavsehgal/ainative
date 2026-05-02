@@ -22,13 +22,20 @@ export async function DELETE(
 
   try {
     const result = await deleteAppCascade(id);
-    if (!result.filesRemoved && !result.projectRemoved) {
+    const removedAnything =
+      result.filesRemoved ||
+      result.projectRemoved ||
+      result.profilesRemoved > 0 ||
+      result.blueprintsRemoved > 0;
+    if (!removedAnything) {
       return NextResponse.json({ error: "App not found" }, { status: 404 });
     }
     return NextResponse.json({
       success: true,
       filesRemoved: result.filesRemoved,
       projectRemoved: result.projectRemoved,
+      profilesRemoved: result.profilesRemoved,
+      blueprintsRemoved: result.blueprintsRemoved,
     });
   } catch (err) {
     console.error("App delete failed:", err);
