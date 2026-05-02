@@ -17,6 +17,11 @@ vi.mock("@/lib/workflows/engine", () => ({
   executeWorkflow: vi.fn(),
 }));
 
+vi.mock("@/lib/workflows/blueprints/registry", () => ({
+  getBlueprint: vi.fn(),
+}));
+import * as bpRegistry from "@/lib/workflows/blueprints/registry";
+
 describe("evaluateManifestTriggers — happy path", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -122,5 +127,60 @@ describe("evaluateManifestTriggers — match counts", () => {
 
     await evaluateManifestTriggers("tbl-x", "row-1", {});
     expect(instantiator.instantiateBlueprint).not.toHaveBeenCalled();
+  });
+});
+
+describe("evaluateManifestTriggers — variable substitution", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("resolves {{row.<col>}} placeholders from row data into instantiate variables", async () => {
+    vi.mocked(registry.listAppsCached).mockReturnValue([
+      {
+        id: "app-x",
+        manifest: {
+          id: "app-x",
+          blueprints: [
+            { id: "app-x--bp", trigger: { kind: "row-insert", table: "tbl-x" } },
+          ],
+        },
+      } as any,
+    ]);
+
+    // Blueprint declares variables with {{row.<col>}} defaults
+    vi.mocked(bpRegistry.getBlueprint).mockReturnValue({
+      id: "app-x--bp",
+      name: "Test BP",
+      pattern: "sequence",
+      variables: [
+        { id: "customer", type: "text", label: "Customer", required: true, default: "{{row.customer}}" },
+        { id: "summary", type: "text", label: "Summary", required: true, default: "{{row.summary}}" },
+        { id: "sentiment", type: "text", label: "Sentiment", required: false, default: "{{row.sentiment}}" },
+      ],
+      steps: [],
+    } as any);
+
+    vi.mocked(instantiator.instantiateBlueprint).mockResolvedValue({
+      workflowId: "wf-1",
+      name: "T",
+      stepsCount: 1,
+      skippedSteps: [],
+    });
+
+    await evaluateManifestTriggers("tbl-x", "row-1", {
+      customer: "Acme Corp",
+      summary: "Bug report",
+      sentiment: "negative",
+    });
+
+    expect(instantiator.instantiateBlueprint).toHaveBeenCalledWith(
+      "app-x--bp",
+      expect.objectContaining({
+        customer: "Acme Corp",
+        summary: "Bug report",
+        sentiment: "negative",
+      }),
+      "app-x",
+      { _contextRowId: "row-1" }
+    );
   });
 });

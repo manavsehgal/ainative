@@ -20,6 +20,7 @@
 
 import { listAppsCached } from "./registry";
 import type { AppManifest } from "./registry";
+import { getBlueprint } from "@/lib/workflows/blueprints/registry";
 
 export async function evaluateManifestTriggers(
   tableId: string,
@@ -40,7 +41,7 @@ export async function evaluateManifestTriggers(
       );
       const { executeWorkflow } = await import("@/lib/workflows/engine");
 
-      const variables = { ...rowData };
+      const variables = buildVariables(blueprintId, rowData);
 
       const { workflowId } = await instantiateBlueprint(
         blueprintId,
@@ -84,4 +85,40 @@ function findMatchingSubscriptions(
     }
   }
   return out;
+}
+
+const ROW_PLACEHOLDER = /^\{\{\s*row\.([a-zA-Z0-9_-]+)\s*\}\}$/;
+
+/**
+ * Build the variables object passed to `instantiateBlueprint`:
+ *   1. Start with provided `rowData` (each column becomes a variable named after the column).
+ *   2. For each blueprint variable whose `default` is `{{row.<col>}}`,
+ *      resolve to `rowData[col]` so the variable has a concrete value
+ *      even if `rowData[col]` is missing from step 1's column-name passthrough.
+ *   3. Required variables left unresolved → instantiator throws → caller catches.
+ */
+function buildVariables(
+  blueprintId: string,
+  rowData: Record<string, unknown>
+): Record<string, unknown> {
+  const blueprint = getBlueprint(blueprintId);
+  const vars: Record<string, unknown> = { ...rowData };
+
+  if (!blueprint) {
+    return vars; // unknown blueprint case; instantiator will throw
+  }
+
+  for (const varDef of blueprint.variables) {
+    const defStr = typeof varDef.default === "string" ? varDef.default : null;
+    if (!defStr) continue;
+    const m = ROW_PLACEHOLDER.exec(defStr);
+    if (m) {
+      const col = m[1];
+      if (vars[varDef.id] === undefined && rowData[col] !== undefined) {
+        vars[varDef.id] = rowData[col];
+      }
+    }
+  }
+
+  return vars;
 }
