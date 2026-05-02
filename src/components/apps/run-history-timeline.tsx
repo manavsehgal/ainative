@@ -1,5 +1,6 @@
-import { CheckCircle2, AlertTriangle, Loader2, Clock } from "lucide-react";
+import { CheckCircle, XCircle, Loader2, Clock } from "lucide-react";
 import type { TimelineRun } from "@/lib/apps/view-kits/types";
+import { formatTimestamp } from "@/lib/utils/format-timestamp";
 
 interface RunHistoryTimelineProps {
   runs: TimelineRun[];
@@ -7,17 +8,17 @@ interface RunHistoryTimelineProps {
   emptyHint?: string;
 }
 
-const STATUS_ICON: Record<TimelineRun["status"], typeof CheckCircle2> = {
-  completed: CheckCircle2,
-  failed: AlertTriangle,
+const STATUS_ICON: Record<TimelineRun["status"], typeof CheckCircle> = {
+  completed: CheckCircle,
+  failed: XCircle,
   running: Loader2,
   queued: Clock,
 };
 
 const STATUS_COLOR: Record<TimelineRun["status"], string> = {
-  completed: "text-emerald-600",
-  failed: "text-destructive",
-  running: "text-primary",
+  completed: "text-status-completed",
+  failed: "text-status-failed",
+  running: "text-status-running",
   queued: "text-muted-foreground",
 };
 
@@ -27,13 +28,6 @@ function formatDuration(ms: number): string {
   return `${Math.round(ms / 60_000)}m`;
 }
 
-function formatRelative(iso: string): string {
-  const ms = Date.now() - new Date(iso).getTime();
-  if (ms < 60_000) return "just now";
-  if (ms < 3_600_000) return `${Math.round(ms / 60_000)}m ago`;
-  if (ms < 86_400_000) return `${Math.round(ms / 3_600_000)}h ago`;
-  return `${Math.round(ms / 86_400_000)}d ago`;
-}
 
 export function RunHistoryTimeline({
   runs,
@@ -67,7 +61,7 @@ export function RunHistoryTimeline({
               </span>
             </span>
             <span className="text-xs text-muted-foreground tabular-nums">
-              {formatRelative(run.startedAt)}
+              {formatTimestamp(run.startedAt)}
             </span>
             {run.durationMs !== undefined && (
               <span className="text-xs text-muted-foreground tabular-nums">
@@ -88,7 +82,7 @@ export function RunHistoryTimeline({
             {onSelect ? (
               <button
                 type="button"
-                className="w-full"
+                className="w-full text-left hover:bg-accent/30 focus-visible:ring-2 focus-visible:ring-ring rounded-md transition-colors"
                 onClick={() => onSelect(run.id)}
               >
                 {inner}
