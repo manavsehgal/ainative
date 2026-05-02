@@ -19,6 +19,12 @@ export interface KpiContext {
   tableLatest(table: string, column: string): Promise<KpiPrimitive>;
   blueprintRunCount(blueprint: string, window: "7d" | "30d"): Promise<KpiPrimitive>;
   scheduleNextFire(schedule: string): Promise<KpiPrimitive>;
+  tableSumWindowed(
+    table: string,
+    column: string,
+    sign: "positive" | "negative" | undefined,
+    window: "mtd" | "qtd" | "ytd" | undefined
+  ): Promise<KpiPrimitive>;
 }
 
 /**
@@ -43,6 +49,14 @@ export async function evaluateKpi(spec: KpiSpec, ctx: KpiContext): Promise<KpiTi
       break;
     case "scheduleNextFire":
       raw = await ctx.scheduleNextFire(spec.source.schedule);
+      break;
+    case "tableSumWindowed":
+      raw = await ctx.tableSumWindowed(
+        spec.source.table,
+        spec.source.column,
+        spec.source.sign,
+        spec.source.window
+      );
       break;
   }
   return {

@@ -7,6 +7,7 @@ import {
   deleteApp,
   deleteAppCascade,
   getApp,
+  KpiSpecSchema,
   listApps,
   parseAppManifest,
 } from "../registry";
@@ -350,5 +351,76 @@ describe("deleteAppCascade", () => {
     expect(result.filesRemoved).toBe(true);
     expect(fs.existsSync(path.join(profilesDir, "habit-loop--coach"))).toBe(true);
     expect(fs.existsSync(path.join(blueprintsDir, "habit-loop--coach.yaml"))).toBe(true);
+  });
+});
+
+describe("KpiSpecSchema — tableSumWindowed arm", () => {
+  it("accepts a windowed sign-filtered sum spec", () => {
+    const spec = {
+      id: "inflow",
+      label: "Inflow (MTD)",
+      format: "currency",
+      source: {
+        kind: "tableSumWindowed",
+        table: "transactions",
+        column: "amount",
+        sign: "positive",
+        window: "mtd",
+      },
+    };
+    expect(() => KpiSpecSchema.parse(spec)).not.toThrow();
+  });
+
+  it("accepts a windowed unsigned sum (Net)", () => {
+    const spec = {
+      id: "net",
+      label: "Net",
+      format: "currency",
+      source: {
+        kind: "tableSumWindowed",
+        table: "transactions",
+        column: "amount",
+        window: "mtd",
+      },
+    };
+    expect(() => KpiSpecSchema.parse(spec)).not.toThrow();
+  });
+
+  it("accepts an unwindowed sum (defaults to all-time)", () => {
+    const spec = {
+      id: "total",
+      label: "Total",
+      format: "currency",
+      source: {
+        kind: "tableSumWindowed",
+        table: "transactions",
+        column: "amount",
+      },
+    };
+    expect(() => KpiSpecSchema.parse(spec)).not.toThrow();
+  });
+
+  it("rejects an invalid window value", () => {
+    const spec = {
+      id: "x", label: "x", format: "currency",
+      source: {
+        kind: "tableSumWindowed",
+        table: "t", column: "c",
+        window: "weekly",
+      },
+    };
+    expect(() => KpiSpecSchema.parse(spec)).toThrow();
+  });
+
+  it("rejects an invalid sign value", () => {
+    const spec = {
+      id: "x", label: "x", format: "currency",
+      source: {
+        kind: "tableSumWindowed",
+        table: "t", column: "c",
+        sign: "neutral",
+      },
+    };
+    expect(() => KpiSpecSchema.parse(spec)).toThrow();
   });
 });

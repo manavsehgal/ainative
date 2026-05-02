@@ -6,6 +6,27 @@ import type { KpiContext } from "./evaluate-kpi";
 import type { KpiPrimitive } from "./format-kpi";
 
 /**
+ * Returns the inclusive start-of-window Date for `mtd`/`qtd`/`ytd`. Computed
+ * in local time so windows align with calendar boundaries the user sees.
+ *
+ * Exported because Phase 3 `data.ts` and Phase 5 reporting tiles reuse the
+ * same boundary logic — a single source of truth keeps Inflow/Outflow/Net
+ * tiles consistent across surfaces.
+ */
+export function windowStart(window: "mtd" | "qtd" | "ytd"): Date {
+  const now = new Date();
+  if (window === "mtd") {
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  }
+  if (window === "qtd") {
+    const q = Math.floor(now.getMonth() / 3) * 3;
+    return new Date(now.getFullYear(), q, 1);
+  }
+  // ytd
+  return new Date(now.getFullYear(), 0, 1);
+}
+
+/**
  * DB-backed KpiContext used by `loadRuntimeState` in production. Tests inject
  * mock contexts directly into `evaluateKpi`. Kept separate from the engine so
  * the engine stays runtime-agnostic.
@@ -55,6 +76,39 @@ export function createKpiContext(): KpiContext {
           })
           .from(userTableRows)
           .where(eq(userTableRows.tableId, tableId))
+          .all();
+        return rows[0]?.value ?? 0;
+      } catch {
+        return null;
+      }
+    },
+
+    async tableSumWindowed(tableId, column, sign, window) {
+      try {
+        const path = "$." + column;
+        const conditions = [eq(userTableRows.tableId, tableId)];
+
+        if (sign === "positive") {
+          conditions.push(
+            sql`CAST(json_extract(${userTableRows.data}, ${path}) AS REAL) > 0`
+          );
+        } else if (sign === "negative") {
+          conditions.push(
+            sql`CAST(json_extract(${userTableRows.data}, ${path}) AS REAL) < 0`
+          );
+        }
+
+        if (window) {
+          const since = windowStart(window);
+          conditions.push(gte(userTableRows.createdAt, since));
+        }
+
+        const rows = db
+          .select({
+            value: sql<number>`COALESCE(SUM(CAST(json_extract(${userTableRows.data}, ${path}) AS REAL)), 0)`,
+          })
+          .from(userTableRows)
+          .where(and(...conditions))
           .all();
         return rows[0]?.value ?? 0;
       } catch {

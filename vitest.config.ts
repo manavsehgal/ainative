@@ -7,6 +7,13 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Next.js's `server-only` marker package isn't resolvable from vitest's
+      // Node environment. Alias to its empty stub so server-only modules can
+      // be imported and tested directly.
+      "server-only": path.resolve(
+        __dirname,
+        "./node_modules/next/dist/compiled/server-only/empty.js"
+      ),
     },
   },
   test: {

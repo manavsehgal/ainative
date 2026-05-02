@@ -94,3 +94,64 @@ describe("evaluateKpi — pure switch over KpiSpec.source.kind", () => {
     expect(tile.value).toBe("—");
   });
 });
+
+describe("evaluateKpi — tableSumWindowed", () => {
+  it("evaluates Net (no sign, with window)", async () => {
+    const spec: KpiSpec = {
+      id: "net",
+      label: "Net",
+      format: "currency",
+      source: {
+        kind: "tableSumWindowed",
+        table: "transactions",
+        column: "amount",
+        window: "mtd",
+      },
+    };
+    const ctx: KpiContext = {
+      tableCount: async () => 0,
+      tableSum: async () => 0,
+      tableLatest: async () => 0,
+      blueprintRunCount: async () => 0,
+      scheduleNextFire: async () => 0,
+      tableSumWindowed: async (t, c, s, w) => {
+        expect(t).toBe("transactions");
+        expect(c).toBe("amount");
+        expect(s).toBeUndefined();
+        expect(w).toBe("mtd");
+        return 1234.56;
+      },
+    };
+    const tile = await evaluateKpi(spec, ctx);
+    expect(tile.value).toBe("$1,234.56");
+  });
+
+  it("passes sign='positive' for Inflow", async () => {
+    const spec: KpiSpec = {
+      id: "inflow",
+      label: "Inflow",
+      format: "currency",
+      source: {
+        kind: "tableSumWindowed",
+        table: "transactions",
+        column: "amount",
+        sign: "positive",
+        window: "mtd",
+      },
+    };
+    let captured: string | undefined;
+    const ctx: KpiContext = {
+      tableCount: async () => 0,
+      tableSum: async () => 0,
+      tableLatest: async () => 0,
+      blueprintRunCount: async () => 0,
+      scheduleNextFire: async () => 0,
+      tableSumWindowed: async (_t, _c, sign) => {
+        captured = sign;
+        return 100;
+      },
+    };
+    await evaluateKpi(spec, ctx);
+    expect(captured).toBe("positive");
+  });
+});

@@ -42,7 +42,7 @@ const BindingRefSchema = z.union([
   z.object({ profile: z.string() }).strict(),
 ]);
 
-const KpiSpecSchema = z.object({
+export const KpiSpecSchema = z.object({
   id: z.string(),
   label: z.string(),
   source: z.discriminatedUnion("kind", [
@@ -69,6 +69,13 @@ const KpiSpecSchema = z.object({
     z.object({
       kind: z.literal("scheduleNextFire"),
       schedule: z.string(),
+    }),
+    z.object({
+      kind: z.literal("tableSumWindowed"),
+      table: z.string().min(1),
+      column: z.string().min(1),
+      sign: z.enum(["positive", "negative"]).optional(),
+      window: z.enum(["mtd", "qtd", "ytd"]).optional(),
     }),
   ]),
   format: z.enum(["int", "currency", "percent", "duration", "relative"]).default("int"),
