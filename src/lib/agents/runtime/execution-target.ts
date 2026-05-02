@@ -1,5 +1,6 @@
 import { getProfile } from "@/lib/agents/profiles/registry";
 import { profileSupportsRuntime } from "@/lib/agents/profiles/compatibility";
+import type { AgentProfile } from "@/lib/agents/profiles/types";
 import { suggestRuntime } from "@/lib/agents/router";
 import {
   DEFAULT_AGENT_RUNTIME,
@@ -50,6 +51,32 @@ export class NoCompatibleRuntimeError extends Error {
     super(message);
     this.name = "NoCompatibleRuntimeError";
   }
+}
+
+export function buildNoCompatibleRuntimeError(input: {
+  profileId: string | null | undefined;
+  profile: AgentProfile | undefined;
+  configuredRuntimeIds: AgentRuntimeId[];
+}): NoCompatibleRuntimeError {
+  const configured =
+    input.configuredRuntimeIds.length > 0
+      ? `[${input.configuredRuntimeIds.join(", ")}]`
+      : "(none)";
+
+  if (!input.profile) {
+    return new NoCompatibleRuntimeError(
+      `No profile registered for id \`${input.profileId ?? "(unknown)"}\`. ` +
+        `If this profile is referenced from an app manifest, ensure the app is ` +
+        `installed; otherwise author the profile.yaml. Configured runtimes: ${configured}.`
+    );
+  }
+
+  return new NoCompatibleRuntimeError(
+    `Profile \`${input.profile.id}\` expects ` +
+      `[${input.profile.supportedRuntimes.join(", ")}]. ` +
+      `You have ${configured} configured. ` +
+      `Configure one of the expected runtimes or update the profile.`
+  );
 }
 
 export interface ResolvedExecutionTarget {
@@ -240,9 +267,12 @@ export async function resolveTaskExecutionTarget(input: {
   );
 
   if (compatibleCandidates.length === 0) {
-    throw new NoCompatibleRuntimeError(
-      "No compatible configured runtime is available for this task."
-    );
+    const profile = input.profileId ? getProfile(input.profileId) : undefined;
+    throw buildNoCompatibleRuntimeError({
+      profileId: input.profileId,
+      profile,
+      configuredRuntimeIds: configuredCandidates,
+    });
   }
 
   if (requestedRuntimeId) {
@@ -300,10 +330,12 @@ export async function resolveTaskExecutionTarget(input: {
       }
     }
 
-    throw new NoCompatibleRuntimeError(
-      availability.reason ??
-        `No healthy alternate runtime is available for ${getRuntimeLabel(requestedRuntimeId)}.`
-    );
+    const profile = input.profileId ? getProfile(input.profileId) : undefined;
+    throw buildNoCompatibleRuntimeError({
+      profileId: input.profileId,
+      profile,
+      configuredRuntimeIds: configuredCandidates,
+    });
   }
 
   const routingPreference = await getRoutingPreference();

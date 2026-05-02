@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AgentRuntimeId } from "@/lib/agents/runtime/catalog";
+import { buildNoCompatibleRuntimeError } from "../execution-target";
 
 const {
   mockGetRuntimeSetupStates,
@@ -213,5 +214,51 @@ describe("execution target resolver", () => {
         requestedModelId: "sonnet",
       })
     ).rejects.toBeInstanceOf(RequestedModelUnavailableError);
+  });
+});
+
+describe("NoCompatibleRuntimeError messages", () => {
+  it("names profile id, expected runtimes, and configured runtimes when profile exists", () => {
+    const err = buildNoCompatibleRuntimeError({
+      profileId: "cs-coach",
+      profile: {
+        id: "cs-coach",
+        name: "CS coach",
+        description: "",
+        domain: "work",
+        tags: [],
+        systemPrompt: "",
+        skillMd: "",
+        supportedRuntimes: ["claude-code", "anthropic-direct"],
+      } as never,
+      configuredRuntimeIds: ["openai-direct"],
+    });
+    expect(err.message).toContain("cs-coach");
+    expect(err.message).toContain("claude-code");
+    expect(err.message).toContain("anthropic-direct");
+    expect(err.message).toContain("openai-direct");
+    expect(err.message).toMatch(/Configure one of the expected runtimes/);
+  });
+
+  it("names the unknown profile id and suggests authoring profile.yaml when profile is absent", () => {
+    const err = buildNoCompatibleRuntimeError({
+      profileId: "ghost-profile",
+      profile: undefined,
+      configuredRuntimeIds: ["claude-code"],
+    });
+    expect(err.message).toContain("ghost-profile");
+    expect(err.message).toMatch(/profile\.yaml|app manifest/i);
+  });
+
+  it("renders empty configured-runtimes list as (none)", () => {
+    const err = buildNoCompatibleRuntimeError({
+      profileId: "cs-coach",
+      profile: {
+        id: "cs-coach",
+        supportedRuntimes: ["claude-code"],
+      } as never,
+      configuredRuntimeIds: [],
+    });
+    expect(err.message).toContain("(none)");
   });
 });
