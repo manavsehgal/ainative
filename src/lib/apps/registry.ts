@@ -15,6 +15,84 @@ const AppArtifactRefSchema = z
   })
   .passthrough();
 
+/**
+ * `view:` is the only place where layout intent enters the manifest. Every
+ * other manifest schema is `.passthrough()`; this one is `.strict()` so it
+ * cannot drift into an HTML/styling escape hatch. KPI sources are an
+ * enumerated discriminated union, not formula strings — new kinds require a
+ * code change, not a manifest hack. No formula strings, no HTML, no component
+ * refs — kit-specific binding shapes go in the kit's resolver, not here.
+ */
+export const KitIdSchema = z.enum([
+  "auto",
+  "tracker",
+  "coach",
+  "inbox",
+  "research",
+  "ledger",
+  "workflow-hub",
+]);
+
+export type ManifestKitId = z.infer<typeof KitIdSchema>;
+
+const BindingRefSchema = z.union([
+  z.object({ table: z.string() }).strict(),
+  z.object({ blueprint: z.string() }).strict(),
+  z.object({ schedule: z.string() }).strict(),
+  z.object({ profile: z.string() }).strict(),
+]);
+
+const KpiSpecSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  source: z.discriminatedUnion("kind", [
+    z.object({
+      kind: z.literal("tableCount"),
+      table: z.string(),
+      where: z.string().optional(),
+    }),
+    z.object({
+      kind: z.literal("tableSum"),
+      table: z.string(),
+      column: z.string(),
+    }),
+    z.object({
+      kind: z.literal("tableLatest"),
+      table: z.string(),
+      column: z.string(),
+    }),
+    z.object({
+      kind: z.literal("blueprintRunCount"),
+      blueprint: z.string(),
+      window: z.enum(["7d", "30d"]).default("7d"),
+    }),
+    z.object({
+      kind: z.literal("scheduleNextFire"),
+      schedule: z.string(),
+    }),
+  ]),
+  format: z.enum(["int", "currency", "percent", "duration", "relative"]).default("int"),
+});
+
+export const ViewSchema = z
+  .object({
+    kit: KitIdSchema.default("auto"),
+    bindings: z
+      .object({
+        hero: BindingRefSchema.optional(),
+        secondary: z.array(BindingRefSchema).optional(),
+        cadence: BindingRefSchema.optional(),
+        runs: BindingRefSchema.optional(),
+        kpis: z.array(KpiSpecSchema).optional(),
+      })
+      .strict()
+      .default({}),
+    hideManifestPane: z.boolean().default(false),
+  })
+  .strict();
+
+export type ViewConfig = z.infer<typeof ViewSchema>;
+
 const AppTableRefSchema = z
   .object({
     id: z.string(),
@@ -47,6 +125,7 @@ export const AppManifestSchema = z
       .object({ preset: z.string().optional() })
       .passthrough()
       .optional(),
+    view: ViewSchema.optional(),
   })
   .passthrough();
 

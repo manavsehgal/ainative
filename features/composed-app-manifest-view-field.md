@@ -1,6 +1,6 @@
 ---
 title: Composed App Manifest — view: Field & Kit Inference
-status: planned
+status: completed
 priority: P1
 milestone: post-mvp
 source: ideas/composed-apps-domain-aware-view.md

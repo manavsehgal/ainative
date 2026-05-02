@@ -1,0 +1,360 @@
+import { describe, expect, it } from "vitest";
+import type { AppManifest } from "@/lib/apps/registry";
+import {
+  hasBoolean,
+  hasCurrency,
+  hasDate,
+  pickKit,
+  rule1_ledger,
+  rule2_tracker,
+  rule3_research,
+  rule4_coach,
+  rule5_inbox,
+  rule6_multiBlueprint,
+} from "../inference";
+import type { ColumnSchemaRef } from "../types";
+
+function makeManifest(over: Partial<AppManifest> = {}): AppManifest {
+  return {
+    id: "x",
+    name: "X",
+    profiles: [],
+    blueprints: [],
+    tables: [],
+    schedules: [],
+    ...over,
+  } as AppManifest;
+}
+
+function cols(tableId: string, columns: ColumnSchemaRef["columns"]): ColumnSchemaRef[] {
+  return [{ tableId, columns }];
+}
+
+describe("column-shape probes", () => {
+  it("hasCurrency: matches semantic=currency", () => {
+    expect(hasCurrency([{ name: "x", semantic: "currency" }])).toBe(true);
+  });
+  it("hasCurrency: matches name patterns", () => {
+    expect(hasCurrency([{ name: "amount" }])).toBe(true);
+    expect(hasCurrency([{ name: "balance_usd" }])).toBe(true);
+    expect(hasCurrency([{ name: "monthly_revenue" }])).toBe(true);
+  });
+  it("hasCurrency: ignores neutral columns", () => {
+    expect(hasCurrency([{ name: "ticker" }, { name: "qty" }])).toBe(false);
+  });
+
+  it("hasDate: matches type=date and date-shaped names", () => {
+    expect(hasDate([{ name: "x", type: "date" }])).toBe(true);
+    expect(hasDate([{ name: "start_date" }])).toBe(true);
+    expect(hasDate([{ name: "created_at" }])).toBe(true);
+  });
+  it("hasDate: ignores neutral columns", () => {
+    expect(hasDate([{ name: "title" }, { name: "qty" }])).toBe(false);
+  });
+
+  it("hasBoolean: matches type=boolean and boolean-shaped names", () => {
+    expect(hasBoolean([{ name: "x", type: "boolean" }])).toBe(true);
+    expect(hasBoolean([{ name: "active" }])).toBe(true);
+    expect(hasBoolean([{ name: "completed" }])).toBe(true);
+    expect(hasBoolean([{ name: "is_done" }])).toBe(true);
+  });
+  it("hasBoolean: ignores neutral columns", () => {
+    expect(hasBoolean([{ name: "title" }, { name: "amount" }])).toBe(false);
+  });
+});
+
+describe("rule1_ledger — currency hero + ≥1 blueprint", () => {
+  it("fires when hero table has a currency column AND ≥1 blueprint", () => {
+    const m = makeManifest({
+      tables: [{ id: "t1" }],
+      blueprints: [{ id: "bp" }],
+    });
+    expect(rule1_ledger(m, cols("t1", [{ name: "amount" }]))).toBe(true);
+  });
+  it("does not fire without a blueprint", () => {
+    const m = makeManifest({ tables: [{ id: "t1" }] });
+    expect(rule1_ledger(m, cols("t1", [{ name: "amount" }]))).toBe(false);
+  });
+  it("does not fire without a currency column", () => {
+    const m = makeManifest({
+      tables: [{ id: "t1" }],
+      blueprints: [{ id: "bp" }],
+    });
+    expect(rule1_ledger(m, cols("t1", [{ name: "title" }]))).toBe(false);
+  });
+  it("does not fire when no tables exist", () => {
+    expect(rule1_ledger(makeManifest({ blueprints: [{ id: "bp" }] }), [])).toBe(false);
+  });
+});
+
+describe("rule2_tracker — boolean+date hero + ≥1 schedule", () => {
+  it("fires when hero table has boolean+date AND ≥1 schedule", () => {
+    const m = makeManifest({
+      tables: [{ id: "t1" }],
+      schedules: [{ id: "s" }],
+    });
+    expect(
+      rule2_tracker(m, cols("t1", [{ name: "completed" }, { name: "date" }]))
+    ).toBe(true);
+  });
+  it("does not fire without a schedule", () => {
+    const m = makeManifest({ tables: [{ id: "t1" }] });
+    expect(
+      rule2_tracker(m, cols("t1", [{ name: "completed" }, { name: "date" }]))
+    ).toBe(false);
+  });
+  it("does not fire without a boolean column", () => {
+    const m = makeManifest({
+      tables: [{ id: "t1" }],
+      schedules: [{ id: "s" }],
+    });
+    expect(rule2_tracker(m, cols("t1", [{ name: "date" }]))).toBe(false);
+  });
+});
+
+describe("rule3_research — schedule + digest/report blueprint", () => {
+  it("fires when blueprint id matches digest/report and schedule exists", () => {
+    const m = makeManifest({
+      blueprints: [{ id: "weekly-digest" }],
+      schedules: [{ id: "s" }],
+    });
+    expect(rule3_research(m)).toBe(true);
+  });
+  it("does not fire without schedule", () => {
+    const m = makeManifest({ blueprints: [{ id: "weekly-digest" }] });
+    expect(rule3_research(m)).toBe(false);
+  });
+  it("does not fire when blueprint has no document signals", () => {
+    const m = makeManifest({
+      blueprints: [{ id: "process-rows" }],
+      schedules: [{ id: "s" }],
+    });
+    expect(rule3_research(m)).toBe(false);
+  });
+});
+
+describe("rule4_coach — schedule + *-coach profile", () => {
+  it("fires when a profile id ends in -coach AND schedule exists", () => {
+    const m = makeManifest({
+      profiles: [{ id: "habit-tracker--habit-coach" }],
+      schedules: [{ id: "s" }],
+    });
+    expect(rule4_coach(m)).toBe(true);
+  });
+  it("fires when a schedule.runs targets a *-coach profile", () => {
+    const m = makeManifest({
+      profiles: [],
+      schedules: [{ id: "s", runs: "profile:portfolio-coach" }],
+    });
+    expect(rule4_coach(m)).toBe(true);
+  });
+  it("does not fire without schedule", () => {
+    const m = makeManifest({ profiles: [{ id: "x--coach" }] });
+    expect(rule4_coach(m)).toBe(false);
+  });
+  it("does not fire when no coach signals are present", () => {
+    const m = makeManifest({
+      profiles: [{ id: "researcher" }],
+      schedules: [{ id: "s" }],
+    });
+    expect(rule4_coach(m)).toBe(false);
+  });
+});
+
+describe("rule5_inbox — drafter / follow-up / inbox blueprint", () => {
+  it("fires when blueprint id matches drafter/inbox/follow-up/notification", () => {
+    expect(rule5_inbox(makeManifest({ blueprints: [{ id: "follow-up-drafter" }] }))).toBe(true);
+    expect(rule5_inbox(makeManifest({ blueprints: [{ id: "inbox-triage" }] }))).toBe(true);
+    expect(rule5_inbox(makeManifest({ blueprints: [{ id: "notification-router" }] }))).toBe(true);
+  });
+  it("does not fire when no inbox signals", () => {
+    expect(rule5_inbox(makeManifest({ blueprints: [{ id: "weekly-review" }] }))).toBe(false);
+  });
+});
+
+describe("rule6_multiBlueprint — ≥2 blueprints, no clear hero table", () => {
+  it("fires when ≥2 blueprints AND 0 tables", () => {
+    expect(
+      rule6_multiBlueprint(makeManifest({ blueprints: [{ id: "a" }, { id: "b" }] }))
+    ).toBe(true);
+  });
+  it("does not fire with 1 blueprint", () => {
+    expect(
+      rule6_multiBlueprint(makeManifest({ blueprints: [{ id: "a" }], tables: [] }))
+    ).toBe(false);
+  });
+});
+
+describe("pickKit — explicit declaration overrides inference", () => {
+  it("returns the declared kit when view.kit is set and not 'auto'", () => {
+    const m = {
+      ...makeManifest(),
+      view: { kit: "ledger" as const, bindings: {}, hideManifestPane: false },
+    };
+    expect(pickKit(m, [])).toBe("ledger");
+  });
+  it("falls through to inference when view.kit is 'auto'", () => {
+    const m = {
+      ...makeManifest({ blueprints: [{ id: "a" }, { id: "b" }] }),
+      view: { kit: "auto" as const, bindings: {}, hideManifestPane: false },
+    };
+    expect(pickKit(m, [])).toBe("workflow-hub");
+  });
+  it("falls through to inference when view is omitted entirely", () => {
+    const m = makeManifest({ blueprints: [{ id: "a" }, { id: "b" }] });
+    expect(pickKit(m, [])).toBe("workflow-hub");
+  });
+});
+
+describe("pickKit — first-match-wins decision table", () => {
+  it("ledger wins when both ledger and tracker would otherwise match", () => {
+    const m = makeManifest({
+      tables: [{ id: "t1" }],
+      blueprints: [{ id: "bp" }],
+      schedules: [{ id: "s" }],
+    });
+    // hero has currency AND boolean+date — rule 1 (ledger) fires first
+    expect(
+      pickKit(
+        m,
+        cols("t1", [{ name: "amount" }, { name: "completed" }, { name: "date" }])
+      )
+    ).toBe("ledger");
+  });
+  it("tracker wins over coach when both could fire", () => {
+    const m = makeManifest({
+      tables: [{ id: "t1" }],
+      profiles: [{ id: "habit-coach" }],
+      schedules: [{ id: "s" }],
+    });
+    expect(pickKit(m, cols("t1", [{ name: "completed" }, { name: "date" }]))).toBe(
+      "tracker"
+    );
+  });
+  it("returns workflow-hub as fallback when no rule matches", () => {
+    expect(pickKit(makeManifest(), [])).toBe("workflow-hub");
+  });
+});
+
+describe("pickKit — starter intent fixtures (acceptance criteria)", () => {
+  it("habit-tracker → tracker", () => {
+    const m = makeManifest({
+      id: "habit-tracker",
+      profiles: [{ id: "habit-tracker--habit-coach" }],
+      blueprints: [{ id: "habit-tracker--weekly-review" }],
+      tables: [{ id: "t-habits" }, { id: "t-entries" }],
+      schedules: [{ id: "s", cron: "0 20 * * *" }],
+    });
+    const colMap: ColumnSchemaRef[] = [
+      {
+        tableId: "t-habits",
+        columns: [
+          { name: "habit" }, { name: "category" }, { name: "frequency" },
+          { name: "current_streak" }, { name: "best_streak" },
+          { name: "start_date" }, { name: "active" },
+        ],
+      },
+      {
+        tableId: "t-entries",
+        columns: [
+          { name: "date" }, { name: "habit" }, { name: "completed" },
+          { name: "difficulty" }, { name: "notes" }, { name: "mood" },
+        ],
+      },
+    ];
+    expect(pickKit(m, colMap)).toBe("tracker");
+  });
+
+  it("weekly-portfolio-check-in → coach", () => {
+    const m = makeManifest({
+      id: "weekly-portfolio-check-in",
+      profiles: [{ id: "portfolio-coach" }],
+      blueprints: [{ id: "weekly-review" }],
+      tables: [{ id: "t-pos" }],
+      schedules: [{ id: "s", cron: "0 8 * * 1" }],
+    });
+    const colMap: ColumnSchemaRef[] = [
+      {
+        tableId: "t-pos",
+        columns: [
+          { name: "ticker" }, { name: "qty" }, { name: "account" },
+        ],
+      },
+    ];
+    expect(pickKit(m, colMap)).toBe("coach");
+  });
+
+  it("customer-follow-up-drafter → inbox", () => {
+    const m = makeManifest({
+      id: "customer-follow-up-drafter",
+      profiles: [{ id: "drafter" }],
+      blueprints: [{ id: "follow-up-drafter" }],
+      tables: [{ id: "t-touch" }],
+    });
+    const colMap: ColumnSchemaRef[] = [
+      {
+        tableId: "t-touch",
+        columns: [
+          { name: "channel" }, { name: "customer" },
+          { name: "summary" }, { name: "sentiment" },
+        ],
+      },
+    ];
+    expect(pickKit(m, colMap)).toBe("inbox");
+  });
+
+  it("research-digest → research", () => {
+    const m = makeManifest({
+      id: "research-digest",
+      profiles: [{ id: "researcher" }],
+      blueprints: [{ id: "weekly-digest" }],
+      tables: [{ id: "t-src" }],
+      schedules: [{ id: "s", cron: "0 17 * * 5" }],
+    });
+    const colMap: ColumnSchemaRef[] = [
+      {
+        tableId: "t-src",
+        columns: [{ name: "name" }, { name: "url" }, { name: "cadence" }],
+      },
+    ];
+    expect(pickKit(m, colMap)).toBe("research");
+  });
+
+  it("finance-pack → ledger", () => {
+    const m = makeManifest({
+      id: "finance-pack",
+      profiles: [{ id: "personal-cfo" }],
+      blueprints: [{ id: "monthly-close" }],
+      tables: [{ id: "t-txn" }],
+    });
+    const colMap: ColumnSchemaRef[] = [
+      {
+        tableId: "t-txn",
+        columns: [
+          { name: "date" }, { name: "amount" }, { name: "category" },
+        ],
+      },
+    ];
+    expect(pickKit(m, colMap)).toBe("ledger");
+  });
+
+  it("reading-radar → tracker", () => {
+    const m = makeManifest({
+      id: "reading-radar",
+      profiles: [{ id: "reader-coach" }],
+      blueprints: [{ id: "weekly-synthesis" }],
+      tables: [{ id: "t-read" }],
+      schedules: [{ id: "s", cron: "0 8 * * 0" }],
+    });
+    const colMap: ColumnSchemaRef[] = [
+      {
+        tableId: "t-read",
+        columns: [
+          { name: "title" }, { name: "url" }, { name: "date" },
+          { name: "completed" }, { name: "notes" },
+        ],
+      },
+    ];
+    expect(pickKit(m, colMap)).toBe("tracker");
+  });
+});

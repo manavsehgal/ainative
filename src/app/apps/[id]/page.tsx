@@ -3,7 +3,7 @@ import { PageShell } from "@/components/shared/page-shell";
 import { AppDetailActions } from "@/components/apps/app-detail-actions";
 import { KitView } from "@/components/apps/kit-view/kit-view";
 import { getApp } from "@/lib/apps/registry";
-import { pickKit } from "@/lib/apps/view-kits";
+import { loadColumnSchemas, pickKit } from "@/lib/apps/view-kits";
 import { resolveBindings } from "@/lib/apps/view-kits/resolve";
 import { loadRuntimeState } from "@/lib/apps/view-kits/data";
 
@@ -18,9 +18,10 @@ export default async function AppDetailPage({
   const app = getApp(id);
   if (!app) notFound();
 
-  const kit = pickKit(app.manifest, []);
+  const columns = await loadColumnSchemas(app.manifest);
+  const kit = pickKit(app.manifest, columns);
   const bindings = resolveBindings(app.manifest);
-  const projection = kit.resolve({ manifest: app.manifest, columns: [] });
+  const projection = kit.resolve({ manifest: app.manifest, columns });
   const runtime = await loadRuntimeState(app, bindings);
   const model = kit.buildModel(projection, runtime);
 
