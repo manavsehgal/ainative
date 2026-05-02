@@ -1,69 +1,78 @@
-# Handoff: Orphan sweep complete + cascade-gap closed → no blocking work open
+# Handoff: Cascade gap + orphan sweep + apps card relayout shipped → only compose hardening + 1 review item open
 
 **Created:** 2026-05-01 (evening)
-**Status:** Step 0 (cascade gap fix) shipped to `main`. Steps 1–5 (orphan sweep) executed end-to-end. **No blocking item open.** Working tree clean. The substantive remaining work is the optional follow-ups documented under "Other future work."
+**Status:** All 4 orphan-sweep follow-ups completed and pushed (5 commits). Working tree clean, in sync with `origin/main`. **No blocking work open.** Two carryover items remain: the `GitHub Issue Sync` REVIEW (your judgment) and the free-form compose hardening (~2-3 hr).
 **Author:** Manav Sehgal (with Claude Opus 4.7 assist)
-**Predecessor:** `.archive/handoff/2026-05-01-orphan-sweep-pre-execution.md`
+**Predecessor:** `.archive/handoff/2026-05-01-orphan-sweep-cascade-gap-shipped.md`
 
 ---
 
 ## TL;DR for the next agent
 
-1. **Cascade-gap closed.** `deleteAppCascade` (in `src/lib/apps/registry.ts`) now sweeps `~/.ainative/profiles/<appId>--*/` dirs and `~/.ainative/blueprints/<appId>--*.yaml` files alongside the manifest dir + DB project. `DeleteAppCascadeResult` carries new `profilesRemoved: number` + `blueprintsRemoved: number` counts; the DELETE `/api/apps/[id]` route surfaces them. Defense-in-depth: namespaced sweeps only run when `appId` matches a clean slug regex (`^[a-z0-9][a-z0-9-]*$`). Future compose+delete cycles will not regrow orphans.
-2. **Orphan sweep done.** Deleted `Daily Journal` + `Habit Loop` projects via `deleteProjectCascade` (cascade-safe path, not raw SQL). Deleted 5 orphan profile dirs (`daily-journal--coach`, `habit-loop--coach`, `meal-planner--coach`, `portfolio-checkin--coach`, `weekly-reading-list--manager`) and 4 orphan blueprint files (`meal-planner--weekly-plan.yaml`, `portfolio-checkin--weekly-review.yaml`, `portfolio-manager--weekly-review.yaml`, `weekly-reading-list--synthesis.yaml`) via per-primitive DELETE routes. `GitHub Issue Sync` (REVIEW-flagged in prior handoff) preserved — has 1 table + 1 schedule but no tasks/workflows; needs human eyes before deciding.
-3. **Final state matches the target.** `~/.ainative/apps/` = `habit-tracker/` only. `~/.ainative/profiles/` = `habit-tracker--habit-coach/` only. `~/.ainative/blueprints/` = `habit-tracker--weekly-review.yaml` only. DB: 12 projects (was 14), 13 user_tables, 13 schedules. No new FK orphans introduced.
+1. **`deleteAppCascade` now reaches profiles + blueprints.** The cascade closes the gap where `~/.ainative/profiles/<appId>--*/` dirs and `~/.ainative/blueprints/<appId>--*.yaml` files were leaking on delete. Result type carries `profilesRemoved` + `blueprintsRemoved` counts; DELETE `/api/apps/[id]` surfaces them. Smoke-verified live (synthetic app delete returned `{filesRemoved:true, profilesRemoved:1, blueprintsRemoved:1}`, all three locations clean).
+2. **Orphan sweep done.** 5 orphan profile dirs + 4 orphan blueprint files removed; 2 orphan projects deleted via `deleteProjectCascade`. Final disk: only `habit-tracker/` artifacts across `apps/`, `profiles/`, `blueprints/`. DB: 12 projects, 13 user_tables, 13 schedules.
+3. **Apps card relayout shipped.** Trash on the title row, "Running" StatusChip right-aligned on its own row. Used a positioned-link overlay pattern (transparent Link covers `inset-0`, CardContent uses `pointer-events-none`) instead of button-inside-anchor to avoid Firefox auto-closing the anchor. Polished card padding from `p-4 space-y-2` → `p-3 space-y-1.5` + `items-center` to reclaim ~14-18px the new bottom row added.
+4. **Next move (in order):** decide on the `GitHub Issue Sync` REVIEW (5 min — see "Outstanding state"), then if you want a substantive feature push, free-form compose hardening (~2-3 hr — see "Other future work"). The compose hardening has 3 sub-items; **`INTEGRATION_NOUNS` check** is the cleanest concrete starting point.
 
 ---
 
-## What shipped this session (1 commit)
+## What shipped this session (5 commits)
 
 ```
+306ccff4 docs(handoff): orphan-sweep follow-ups #1-#4 complete
+08af35c3 polish(apps): tighten card, right-align status chip
+a22b3822 refactor(apps): trash on title row, status on its own row
+c2a5a5bb docs(handoff): orphan sweep complete + cascade gap closed
 0cfff7d5 feat(apps): cascade delete reaches namespaced profiles + blueprints
 ```
 
-### Code
+### `0cfff7d5` — cascade gap
 
 - **`registry.ts`** (`src/lib/apps/registry.ts:217-262`)
-  - `DeleteAppCascadeResult` gained `profilesRemoved` + `blueprintsRemoved` (numbers, not booleans — counts can be > 1 for apps with multiple profiles/blueprints).
+  - `DeleteAppCascadeResult` gained `profilesRemoved: number` + `blueprintsRemoved: number` (counts, not booleans — apps can have multiple of each).
   - `DeleteAppCascadeOptions` gained `profilesDir` + `blueprintsDir` for hermetic tests; defaults pull from `getAinativeProfilesDir()` / `getAinativeBlueprintsDir()`.
-  - `sweepNamespacedProfiles` / `sweepNamespacedBlueprints` are local helpers — iterate the shared dir, match `<appId>--` prefix, `rmSync` matching entries. Re-resolves each target inside the helper for path-traversal defense in case the helper is reused later.
-  - `SLUG_RE = /^[a-z0-9][a-z0-9-]*$/` gate before any sweep — protects against e.g. an `appId` of `"."` matching every namespaced entry.
+  - `sweepNamespacedProfiles` / `sweepNamespacedBlueprints` are local helpers — iterate the shared dir, match `<appId>--` prefix, `rmSync` matching entries.
+  - `SLUG_RE = /^[a-z0-9][a-z0-9-]*$/` gate before any sweep — defense-in-depth against e.g. an `appId` of `""` matching every namespaced entry.
 - **`route.ts`** (`src/app/api/apps/[id]/route.ts:24-39`) — 404 logic now treats any of the four halves removing something as "found"; success body carries all four counts.
 
-### Tests (94/94 across apps + components/apps; tsc clean)
+### `a22b3822` + `08af35c3` — apps card relayout
 
-- **`registry.test.ts`** — existing `deleteAppCascade` block refactored to be hermetic (each test creates its own `appsDir`, `profilesDir`, `blueprintsDir` under `tmp` and injects `deleteProjectFn` instead of touching the real DB). 3 new tests:
-  - `"sweeps `<appId>--*` profile dirs from the shared profiles dir"` — verifies prefix matching, leaves unrelated namespaces alone, and rejects bare `wealth-tracker` (no `--`)
-  - `"sweeps `<appId>--*.yaml` blueprint files from the shared blueprints dir"` — verifies extension filter (`.txt` ignored) and prefix matching
-  - `"is a no-op for namespaced sweeps when no profile/blueprint matches the appId"` — confirms the no-op shape returns 0/0 counts
-- **`route.test.ts`** — 1 new test (`"returns 200 when only namespaced profiles/blueprints existed (zombie cleanup)"`); existing tests updated to include the two new fields.
+- **Card structure** (`src/app/apps/page.tsx:29-69`):
+  - `<Card relative>` — was a `<div relative>` wrapping a `<Link><Card>` before
+  - `<Link absolute inset-0 z-0>` — transparent overlay, captures click-through
+  - `<CardContent pointer-events-none relative p-3 space-y-1.5>` — non-interactive children pass clicks to the Link
+  - Title row: `flex items-center justify-between` with `<Package /> <name>` left, `AppCardDeleteButton` (in `<div pointer-events-auto -my-1 -mr-1>`) right
+  - Description + primitives summary unchanged
+  - StatusChip in `<div className="flex justify-end">` for right alignment
 
-### Smoke
+- **Why not button-inside-anchor:** Firefox's HTML5 parser auto-closes the `<a>` at the `<button>` start tag. That breaks click-through for the description, primitives, and status sections below the title row. The positioned-link overlay sidesteps this entirely — button is OUTSIDE the anchor in DOM order, so no Firefox quirk.
 
-- Did NOT compose a new app to test the full happy path — the existing test coverage is structurally sufficient (the helpers are exercised on real fs ops in tmp dirs, no mocks). A live compose+delete-with-orphans smoke is recommended next time someone touches this code path.
-- Did smoke the 404 path against `npm run dev` (`curl -X DELETE /api/apps/does-not-exist-test → 404 {"error":"App not found"}`), confirming the route picks up the new shape.
+### Tests
+
+- 94/94 across `src/lib/apps`, `src/app/api/apps`, `src/components/apps` (unchanged tests + 4 new — 3 cascade-helper coverage + 1 zombie-cleanup case for the route).
+- `npx tsc --noEmit` clean.
 
 ---
 
-## Sweep results (audit numbers)
+## Outstanding state (audited 2026-05-01 18:15 PT)
 
-```
-~/.ainative/apps/                   1 entry  (habit-tracker — kept)
-~/.ainative/profiles/               1 entry  (habit-tracker--habit-coach — kept; 5 orphans removed)
-~/.ainative/blueprints/             1 entry  (habit-tracker--weekly-review.yaml — kept; 4 orphans removed)
+### Repo
+- `main` is in sync with `origin/main` after the 5-commit push. Working tree clean.
 
-projects                           12 rows   (was 14; deleted Daily Journal, Habit Loop)
-user_tables                        13 rows   (unchanged — both deletes had 0 tables)
-schedules                          13 rows   (unchanged — both deletes had 0 schedules)
+### Database
+- 12 projects, 13 user_tables, 13 schedules, 4 user_table_triggers, 19 documents, 12 workflows, 59 tasks, 35 notifications.
+- **`GitHub Issue Sync` (`a5a436b0…`) — REVIEW pending your judgment.** Audit findings: project description is a real intent ("Automated daily sync of GitHub issues assigned to me"), table schema is well-formed (10 columns), schedule is active and a complete agent prompt — BUT `firing_count = 0`, `last_fired_at = NULL`, 0 rows in 3 weeks. Two reasonable paths:
+  - **Keep** if you still want to use it (just needs `GITHUB_TOKEN` and a manual first run)
+  - **Delete** via `curl -X DELETE http://localhost:3000/api/projects/a5a436b0-6278-4e3f-a3c8-516803ad5009` if it was a planning exercise that didn't pan out
 
-FK orphans (user_tables, schedules, triggers w/ missing parent): 0 new
-```
-
-The Step 3 cross-FK query returned 2 rows, but both are pre-existing **plugin schedules** (`plugin:finance-pack:monthly-close`, `plugin:reading-radar:sunday-synth`) with intentionally-empty `project_id` — they belong to plugins, not projects, and the original LEFT JOIN flagged them because `''` doesn't match any project id. Not caused by this sweep, and not real orphans. The corrected query (canonical recipe for future sweeps) is below.
+### Disk (`~/.ainative/`)
+- `apps/` — `habit-tracker/` only
+- `profiles/` — `habit-tracker--habit-coach/` only
+- `blueprints/` — `habit-tracker--weekly-review.yaml` only
 
 ### FK-orphan audit recipe (canonical, plugin-aware)
 
-Use this in place of the prior-handoff Step 3 query — it ignores rows with empty `project_id` (plugin-owned) and only flags real FK breaks:
+The original Step 3 query flagged plugin schedules with empty `project_id` as orphans (false positive). The corrected version below is the one to use:
 
 ```bash
 sqlite3 ~/.ainative/ainative.db "
@@ -85,53 +94,39 @@ Verified 0 rows on 2026-05-01 post-sweep.
 
 ---
 
-## Outstanding state (audited 2026-05-01 18:10 PT)
+## Other future work
 
-### Repo
-- `main` is 4 commits ahead of `origin/main` (this session): `0cfff7d5` (cascade gap), `c2a5a5bb` (sweep handoff), `a22b3822` (apps card layout), `08af35c3` (apps card polish). Working tree clean.
+### Free-form compose hardening (~2-3 hr)
 
-### Database
-- 12 projects, 13 user_tables, 13 schedules, 4 user_table_triggers, 19 documents, 12 workflows, 59 tasks, 35 notifications.
-- `GitHub Issue Sync` (`a5a436b0…`) still present — REVIEW completed: schema is well-formed (10-column GitHub Issues table) but `firing_count = 0`, `last_fired_at = NULL`, 0 rows. Schedule is active but never used. User judgment: keep (real intent) or delete (3 weeks idle); not auto-deleted.
+Carryover from prior handoffs. Phase 2 (committed `9ecdda3f`) covered the `COMPOSE_TRIGGERS`-but-no-`PRIMITIVE_MAP` branch with a generic compose hint. Three sub-items remain:
 
-### Disk (`~/.ainative/`)
-- Confirmed clean: only `habit-tracker` artifacts remain across `apps/`, `profiles/`, `blueprints/`.
+1. **`INTEGRATION_NOUNS` check in the generic hint** — best concrete starting point. Today, `"build me a github habit tracker"` would match `COMPOSE_TRIGGERS` ("build me") but the LLM may still scaffold a GitHub plugin instead of composing. The `primitive_matched` branch checks `INTEGRATION_NOUNS` (it's part of the routing logic in `src/lib/chat/planner/classifier.ts`), but the generic branch doesn't carry the same guard. ~30 min plus a smoke. The fix is plumbing the same noun check into the generic-hint emit path.
 
----
+2. **"Extend existing app" affordance.** The Phase 2 smoke saw the LLM narrate "I'll wire the app into the existing Habit Loop project" but actually create a fresh `habit-tracker` project. Today the planner has no `extend_app` mode — every compose creates a new app. If a user says `"add to my Habit Loop app"`, there's no path. New planner mode + chat-tool + classifier branch. ~1.5-2 hr including tests.
 
-## Done this session (orphan-sweep follow-ups)
+3. **30-day soak on the 440-char generic hint.** The hint includes "MUST NOT invoke the Skill tool" because of a Phase 2 smoke where the LLM tried to call the Skill before composing. If 30 days of real chat traffic show the LLM never tries to invoke Skill anyway, the guard line could shrink to ~250 chars. Not actionable today; needs telemetry from compose conversations.
 
-| # | Task | Status |
-|---|---|---|
-| 1 | `GitHub Issue Sync` REVIEW | Reported findings; user judgment pending |
-| 2 | Tighten orphan-check query | Canonical recipe embedded in "FK-orphan audit recipe" section above; verified 0 rows post-sweep |
-| 3 | Apps card: trash on title row + status on its own row | Shipped (`a22b3822` + `08af35c3`); used positioned-link overlay pattern (HTML-valid alternative to button-in-anchor) |
-| 4 | Live cascade smoke | Verified — synthetic app + profile + blueprint, DELETE returned `{filesRemoved:true, profilesRemoved:1, blueprintsRemoved:1}`, all three locations swept clean |
+### Apps consumers — extract `useDeleteApp(args)` hook
+
+Premature today (only 2 consumers: `app-detail-actions.tsx` + `app-card-delete-button.tsx`). CLAUDE.md DRY-with-judgment says extract on third. Wait until a third surface needs delete.
+
+### Soak validation for cascade gap (passive)
+
+Step 0 is unit-tested + live-smoked, but real-world coverage will only come from organic compose+delete cycles over the next few weeks. If `profilesRemoved` or `blueprintsRemoved` ever shows up as 0 when the user expected non-zero, the heuristic (slug prefix match) needs revisiting. The current contract: **only `<appId>--*` named profiles/blueprints are app-owned.** A profile named without the `--<artifact>` suffix is treated as standalone (manual) and not swept. That's intentional.
 
 ---
 
-## Other future work (carryover only)
+## Key patterns to remember (carryover + new from this session)
 
-**Free-form compose hardening (~2-3 hr).** Carryover from prior handoff. Phase 2 covers the `COMPOSE_TRIGGERS`-but-no-`PRIMITIVE_MAP` branch. Some hardening worth considering:
-- The generic hint doesn't include the `INTEGRATION_NOUNS` check, so `"build me a github habit tracker"` would still scaffold a GitHub plugin instead of composing.
-- The Phase 2 smoke showed the LLM narrated "I'll wire the app into the existing Habit Loop project" but actually created a fresh `habit-tracker` project. If a user asks `"add to my Habit Loop app"` the planner has no path for that. Affordances for "extend an existing app" would close that gap.
-- 30-day soak on whether the generic hint's 440 chars is pulling its weight.
-
-**Extract shared `useDeleteApp(args)` hook.** Premature today (only 2 consumers; CLAUDE.md DRY-with-judgment says extract on third). Wait until a third surface needs delete.
-
----
-
-## Key patterns to remember (carryover + new)
-
-- **Existing-test refactors carry hidden risks.** When extending `DeleteAppCascadeOptions`, the existing `"removes the manifest dir and reports project=false when no DB project exists"` test was implicitly hitting the real DB (`deleteProjectCascade("wealth-tracker")` against the user's actual DB) because it didn't inject `deleteProjectFn`. Pre-existing fragility, but my Step 0 change extended the same fragility to profiles/blueprints. I made the tests hermetic (every test now passes all three dirs + injects `deleteProjectFn`). Pattern to remember: when adding new I/O surfaces to a function, audit whether existing tests are silently touching real-world state.
-- **Path-traversal guards must compose with regex slug guards.** The new `SLUG_RE` check is redundant with the existing `path.resolve` guard for `..` cases, but catches edge cases the path resolver wouldn't (e.g. `appId === ""` matching all `--` files via the prefix). Belt + suspenders is correct here because the cost of an over-broad sweep is destroying user data.
-- **`{"ok":true}` is not the same as "the file is gone."** During Step 4, the first listing after the DELETE call showed `weekly-reading-list--manager` still present even though the API returned ok. Re-listing 30s later showed it gone. The DELETE was async-ish (file removal raced with the response). Always re-verify with a fresh `ls` before declaring victory.
+- **Existing-test refactors carry hidden risks.** When extending `DeleteAppCascadeOptions`, the existing "removes the manifest dir" test was implicitly hitting the real DB (no `deleteProjectFn` injection) — pre-existing fragility, but my Step 0 change extended it to profiles/blueprints. I made the tests hermetic (every test now passes all three dirs + injects `deleteProjectFn`). When adding new I/O surfaces, audit whether existing tests are silently touching real-world state.
+- **Path-traversal guards must compose with regex slug guards.** The new `SLUG_RE` check in `deleteAppCascade` is redundant with `path.resolve` for `..` cases, but catches edges the resolver wouldn't (e.g. `appId === ""` matching all `--` files via the prefix). Belt + suspenders is correct here because the cost of an over-broad sweep is destroying user data.
+- **`{"ok":true}` is not the same as "the file is gone."** During Step 4 of the sweep, the first `ls` after a DELETE call still showed `weekly-reading-list--manager`. Re-listing later showed it gone. The DELETE was async-ish (file removal raced with the response). Always re-verify with a fresh `ls` before declaring victory.
+- **`<button>` inside `<a>` is invalid HTML and Firefox auto-closes the anchor.** The original handoff suggestion (button-inside-anchor + stopPropagation) breaks click-through to content after the button in Firefox. Use the positioned-link overlay pattern instead: Card is `relative`, an absolute Link covers `inset-0`, CardContent uses `pointer-events-none` so non-interactive children pass clicks to the Link, and only the trash wrapper has `pointer-events-auto` to capture its own clicks.
+- **Adding a new card row visibly grows the card.** Going from 3 rows (title-with-status) to 4 rows (title-with-trash + status-on-its-own) added ~36px of card height. Reclaim some via `p-4 → p-3`, `space-y-2 → space-y-1.5`, and `items-center` (so a tall trash button doesn't push the title row taller than the text). Wrap small-button overlays with negative margins (`-my-1 -mr-1`) to bleed into the card padding rather than dominate the row.
+- **Turbopack HMR can silently get stuck.** During the apps-card change, the dev server kept serving the old layout despite file edits and `touch`es. `find .next -newer page.tsx` showed no recompile. Fix: kill the `:3000` PID **and** its parent (`next dev` wrapper), wait 2s, `npm run dev`. Worth checking `find .next -newer <file> | head -5` before assuming HMR works.
 - **The Step 3 orphan-check query had a false-positive surface (now corrected).** Plugin schedules with empty `project_id` aren't orphans; they're plugin-owned. The "FK-orphan audit recipe" section above is now the canonical query.
-- **Spec-driven scope can drift from the audit.** The prior handoff said "5 profile dirs and 4 blueprint files on disk have no matching app." Today's count agrees with the file count but the disposition is more subtle: `weekly-reading-list--manager` had a corresponding `~/.codex/skills/reading-list-manager` (the original Codex skill it was forked from). Deleting the ainative profile didn't touch the Codex skill. If a future session wants to "delete everything related to weekly-reading-list," it should check both surfaces.
-- **`<button>` inside `<a>` is invalid HTML and Firefox auto-closes the anchor.** The prior handoff suggested rendering the trash button inside the wrapping `<Link>` with stopPropagation guards. That breaks click-through to content after the button in Firefox (the parser auto-closes the anchor at the button start tag). The right pattern: positioned-link overlay — Card is `relative`, an absolute Link covers `inset-0`, CardContent is `pointer-events-none` to let clicks pass through to the Link, and only the trash wrapper has `pointer-events-auto` to capture its own clicks. Valid HTML, accessible (Link has aria-label), and click-through works in all browsers.
-- **Adding a new card row visibly grows the card.** Going from 3 rows (title-with-status) to 4 rows (title-with-trash + status-on-its-own) added ~36px of card height. Reclaim some via `p-4 → p-3`, `space-y-2 → space-y-1.5`, and `items-center` (so a tall trash button doesn't push the title row taller than the text). Also wrap small-button overlays with negative margins (`-my-1 -mr-1`) to bleed into the card padding rather than dominate the row.
-- **Turbopack HMR can silently get stuck.** During the apps-card change, the dev server kept serving the old layout despite file edits and `touch`es. `find .next -newer page.tsx` showed no recompile. Restarting the dev server (`pkill -f next-server` after `kill <:3000-pid>`, then `npm run dev`) is the only reliable fix. Worth checking `find .next -newer <file> | head -5` before assuming HMR works.
+- **Spec-driven scope can drift from the audit.** The pre-sweep handoff said "5 profile dirs and 4 blueprint files on disk have no matching app." The file count agreed, but disposition was subtler: `weekly-reading-list--manager` had a corresponding `~/.codex/skills/reading-list-manager` (the original Codex skill it was forked from). Deleting the ainative profile didn't touch the Codex skill. If a future session wants to "delete everything related to weekly-reading-list," it should check both surfaces.
 
 ---
 
-*End of handoff. Working tree clean. 4 commits ahead of `origin/main` — push when ready.*
+*End of handoff. Working tree clean. `main` in sync with `origin/main`. Recommended next move: `GitHub Issue Sync` REVIEW decision (5 min), then start on `INTEGRATION_NOUNS` check in the generic compose hint (the cleanest sub-item of free-form compose hardening, ~30 min).*
