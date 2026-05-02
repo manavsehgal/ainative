@@ -11,7 +11,8 @@ import { invalidateLatestScan, getLatestScan } from "@/lib/environment/data";
 import { db } from "@/lib/db";
 import { environmentArtifacts } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
-import { getAinativeProfilesDir } from "@/lib/utils/ainative-paths";
+import { getAinativeProfilesDir, getAinativeAppsDir } from "@/lib/utils/ainative-paths";
+import { loadAppManifestProfiles } from "./app-manifest-source";
 
 /**
  * Builtins ship inside the repo at src/lib/agents/profiles/builtins/.
@@ -81,13 +82,43 @@ function getDirectorySignatureParts(baseDir: string): string[] {
   return parts;
 }
 
+function getAppsDirectorySignature(): string {
+  const appsDir = getAinativeAppsDir();
+  if (!fs.existsSync(appsDir)) return "no-apps";
+
+  const parts: string[] = [];
+  const entries = fs
+    .readdirSync(appsDir, { withFileTypes: true })
+    .filter((e) => e.isDirectory())
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  for (const entry of entries) {
+    const manifestPath = path.join(appsDir, entry.name, "manifest.yaml");
+    parts.push(entry.name);
+    if (fs.existsSync(manifestPath)) {
+      const stats = fs.statSync(manifestPath);
+      parts.push(`manifest:${stats.mtimeMs}:${stats.size}`);
+    }
+  }
+  return parts.join("|");
+}
+
 function getSkillsDirectorySignature(): string {
   const skillsParts = getDirectorySignatureParts(SKILLS_DIR);
   const promotedParts = getDirectorySignatureParts(PROMOTED_PROFILES_DIR);
+  const appsSignature = getAppsDirectorySignature();
 
-  if (skillsParts.length === 0 && promotedParts.length === 0) return "missing";
+  if (skillsParts.length === 0 && promotedParts.length === 0 && appsSignature === "no-apps") {
+    return "missing";
+  }
 
-  return [...skillsParts, "||promoted||", ...promotedParts].join("|");
+  return [
+    ...skillsParts,
+    "||promoted||",
+    ...promotedParts,
+    "||apps||",
+    appsSignature,
+  ].join("|");
 }
 
 // ---------------------------------------------------------------------------
@@ -274,6 +305,18 @@ export function scanProfilesIntoMap(
 
 function scanProfiles(): Map<string, AgentProfile> {
   const profiles = new Map<string, AgentProfile>();
+
+  // Synthesize FIRST so file-based scans below shadow synthesized entries
+  // with the same id (Map last-write-wins).
+  const synthesized = loadAppManifestProfiles(
+    getAinativeAppsDir(),
+    PROMOTED_PROFILES_DIR,
+    getBuiltinsDir()
+  );
+  for (const profile of synthesized) {
+    profiles.set(profile.id, profile);
+  }
+
   scanProfilesFromDir(SKILLS_DIR, profiles);
   scanProfilesFromDir(PROMOTED_PROFILES_DIR, profiles);
   return profiles;

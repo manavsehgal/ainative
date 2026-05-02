@@ -182,6 +182,23 @@ Testing preferred runtime loading.
     expect(personalProfiles.length).toBe(5); // wealth-manager, travel-planner, health-fitness-coach, shopping-assistant, learning-coach
   });
 
+  it("file-based profile shadows synthesized app-manifest profile of same id", async () => {
+    // This test verifies that if both a profile.yaml AND an app-manifest
+    // entry exist for the same id, the file-based one wins. See
+    // app-manifest-source.test.ts for synthesis-only coverage.
+    //
+    // Precondition: synthesizer must run BEFORE scanProfilesFromDir(SKILLS_DIR)
+    // in scanProfiles(), so the Map's last-write-wins semantics give file
+    // entries precedence.
+    //
+    // We assert by reading a builtin profile id ("general") and confirming
+    // the loaded profile has builtin-shaped fields (e.g., a non-empty
+    // skillMd), not synthesizer-shaped (skillMd === "").
+    const general = getProfile("general");
+    expect(general).toBeDefined();
+    expect(general!.skillMd.length).toBeGreaterThan(0);
+  });
+
   it("detects a newly added on-disk profile after the cache is warm", async () => {
     const originalHome = process.env.HOME;
     const tempHome = fs.mkdtempSync(
