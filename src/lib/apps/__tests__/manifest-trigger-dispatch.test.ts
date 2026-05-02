@@ -59,3 +59,68 @@ describe("evaluateManifestTriggers — happy path", () => {
     expect(engine.executeWorkflow).toHaveBeenCalledWith("wf-1");
   });
 });
+
+describe("evaluateManifestTriggers — match counts", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("does nothing when no manifest subscribes to the table", async () => {
+    vi.mocked(registry.listAppsCached).mockReturnValue([]);
+    await evaluateManifestTriggers("tbl-other", "row-1", {});
+    expect(instantiator.instantiateBlueprint).not.toHaveBeenCalled();
+    expect(engine.executeWorkflow).not.toHaveBeenCalled();
+  });
+
+  it("fires both apps when 2 manifests subscribe to the same table", async () => {
+    vi.mocked(registry.listAppsCached).mockReturnValue([
+      {
+        id: "app-a",
+        manifest: {
+          id: "app-a",
+          blueprints: [
+            { id: "app-a--bp", trigger: { kind: "row-insert", table: "tbl-x" } },
+          ],
+        },
+      } as any,
+      {
+        id: "app-b",
+        manifest: {
+          id: "app-b",
+          blueprints: [
+            { id: "app-b--bp", trigger: { kind: "row-insert", table: "tbl-x" } },
+          ],
+        },
+      } as any,
+    ]);
+
+    vi.mocked(instantiator.instantiateBlueprint)
+      .mockResolvedValueOnce({ workflowId: "wf-a", name: "A", stepsCount: 1, skippedSteps: [] })
+      .mockResolvedValueOnce({ workflowId: "wf-b", name: "B", stepsCount: 1, skippedSteps: [] });
+
+    await evaluateManifestTriggers("tbl-x", "row-1", {});
+
+    expect(instantiator.instantiateBlueprint).toHaveBeenCalledTimes(2);
+    expect(instantiator.instantiateBlueprint).toHaveBeenNthCalledWith(
+      1, "app-a--bp", expect.any(Object), "app-a", { _contextRowId: "row-1" }
+    );
+    expect(instantiator.instantiateBlueprint).toHaveBeenNthCalledWith(
+      2, "app-b--bp", expect.any(Object), "app-b", { _contextRowId: "row-1" }
+    );
+  });
+
+  it("ignores manifests that subscribe to a different table", async () => {
+    vi.mocked(registry.listAppsCached).mockReturnValue([
+      {
+        id: "app-a",
+        manifest: {
+          id: "app-a",
+          blueprints: [
+            { id: "app-a--bp", trigger: { kind: "row-insert", table: "tbl-other" } },
+          ],
+        },
+      } as any,
+    ]);
+
+    await evaluateManifestTriggers("tbl-x", "row-1", {});
+    expect(instantiator.instantiateBlueprint).not.toHaveBeenCalled();
+  });
+});
