@@ -1,6 +1,8 @@
 import { createElement } from "react";
 import yaml from "js-yaml";
 import { LedgerHeroPanel } from "@/components/apps/ledger-hero-panel";
+import { TransactionsTable } from "@/components/apps/transactions-table";
+import { MonthlyCloseSummary } from "@/components/apps/monthly-close-summary";
 import { ManifestPaneBody } from "@/components/apps/kit-view/manifest-pane-body";
 import { defaultLedgerKpis } from "../default-kpis";
 import type { ViewConfig } from "@/lib/apps/registry";
@@ -99,6 +101,24 @@ export const ledgerKit: KitDefinition = {
       }),
     };
 
+    const transactionRows = runtime.ledgerTransactions ?? [];
+    const secondary = [
+      {
+        id: "transactions",
+        title: "Recent transactions",
+        content: createElement(TransactionsTable, {
+          rows: transactionRows,
+          format: "currency" as const,
+        }),
+      },
+    ];
+
+    const activity = {
+      content: createElement(MonthlyCloseSummary, {
+        task: runtime.ledgerMonthlyClose ?? null,
+      }),
+    };
+
     return {
       header: {
         title: app.name,
@@ -110,6 +130,8 @@ export const ledgerKit: KitDefinition = {
       },
       kpis: runtime.evaluatedKpis ?? [],
       hero,
+      secondary,
+      activity,
       footer: {
         appId: app.id,
         appName: app.name,

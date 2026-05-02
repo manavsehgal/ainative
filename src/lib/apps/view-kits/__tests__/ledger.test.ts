@@ -112,4 +112,59 @@ describe("ledgerKit.buildModel", () => {
     const model = ledgerKit.buildModel(proj, runtime as any);
     expect(model.footer?.appId).toBe("fp1");
   });
+
+  it("populates secondary slot with a transactions card and activity slot with monthly close", () => {
+    const proj = ledgerKit.resolve({
+      manifest: baseManifest as any,
+      columns: baseColumns,
+      period: "mtd",
+    });
+    const runtime = {
+      app: { id: "fp1", name: "Finance", description: null, manifest: baseManifest, files: [] },
+      recentTaskCount: 0,
+      scheduleCadence: null,
+      ledgerSeries: [],
+      ledgerCategories: [],
+      ledgerTransactions: [
+        { id: "r1", date: "2026-04-01", label: "Salary", amount: 5000, category: "income" },
+      ],
+      ledgerMonthlyClose: {
+        id: "t1",
+        title: "Monthly Close — April",
+        status: "completed" as const,
+        createdAt: 0,
+        result: "## Summary\n\nNet positive month.",
+      },
+      ledgerPeriod: "mtd" as const,
+    };
+    const model = ledgerKit.buildModel(proj, runtime as any);
+
+    expect(model.secondary).toBeDefined();
+    expect(model.secondary).toHaveLength(1);
+    expect(model.secondary?.[0]?.id).toBe("transactions");
+    expect(model.secondary?.[0]?.title).toBe("Recent transactions");
+    expect(model.secondary?.[0]?.content).toBeDefined();
+
+    expect(model.activity).toBeDefined();
+    expect(model.activity?.content).toBeDefined();
+  });
+
+  it("renders empty-friendly secondary + activity when runtime lists are empty/null", () => {
+    const proj = ledgerKit.resolve({
+      manifest: baseManifest as any,
+      columns: baseColumns,
+      period: "mtd",
+    });
+    const runtime = {
+      app: { id: "fp1", name: "Finance", description: null, manifest: baseManifest, files: [] },
+      recentTaskCount: 0,
+      scheduleCadence: null,
+      ledgerPeriod: "mtd" as const,
+    };
+    const model = ledgerKit.buildModel(proj, runtime as any);
+    // secondary still renders the card (TransactionsTable handles empty internally)
+    expect(model.secondary?.[0]?.id).toBe("transactions");
+    // activity still renders (MonthlyCloseSummary handles null task internally)
+    expect(model.activity?.content).toBeDefined();
+  });
 });
