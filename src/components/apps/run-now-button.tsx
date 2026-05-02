@@ -4,9 +4,17 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Play } from "lucide-react";
 import { toast } from "sonner";
+import { RunNowSheet } from "./run-now-sheet";
+import type { BlueprintVariable } from "@/lib/workflows/blueprints/types";
 
 interface RunNowButtonProps {
   blueprintId: string | null | undefined;
+  /**
+   * If the blueprint declares input variables, the button delegates to
+   * `RunNowSheet` which collects values via an inline form before posting.
+   * When null/undefined/empty, the Phase 2 direct-POST behavior is used.
+   */
+  variables?: BlueprintVariable[] | null;
   /**
    * Defaults to a label of "Run now". Tracker uses the default; future kits
    * may pass a domain-specific label like "Synthesize now".
@@ -15,21 +23,35 @@ interface RunNowButtonProps {
 }
 
 /**
- * Posts to the blueprint instantiate endpoint with empty variables. If the
- * blueprint declares `variables` requiring user input, the API will return
- * 400 with an error message — Phase 2 surfaces this via toast and defers
- * the inline-form sheet to Phase 3.
+ * Posts to the blueprint instantiate endpoint with empty variables when the
+ * blueprint declares no inputs. When `variables` is non-empty, delegates to
+ * `RunNowSheet` so the user can fill in the inputs before the request.
  *
- * Why no inputs sheet yet: the spec mentions opening a `WorkflowFormView`
- * sheet when the blueprint has declared inputs, but that path requires
- * fetching the blueprint definition client-side first. Phase 2 ships the
- * happy path (no inputs) with a clear error toast for the inputs case.
+ * Phase 2 contract preserved: with no/empty `variables`, this behaves exactly
+ * like the previous direct-POST button — clicking issues the instantiate POST
+ * and toasts the result.
  */
-export function RunNowButton({ blueprintId, label = "Run now" }: RunNowButtonProps) {
+export function RunNowButton({
+  blueprintId,
+  variables,
+  label = "Run now",
+}: RunNowButtonProps) {
   const [pending, setPending] = useState(false);
 
   if (!blueprintId) return null;
 
+  // Delegate to sheet when blueprint declares variables
+  if (variables && variables.length > 0) {
+    return (
+      <RunNowSheet
+        blueprintId={blueprintId}
+        variables={variables}
+        label={label}
+      />
+    );
+  }
+
+  // Fallback: direct POST (existing Phase 2 behavior)
   async function handleClick() {
     if (!blueprintId) return;
     setPending(true);
