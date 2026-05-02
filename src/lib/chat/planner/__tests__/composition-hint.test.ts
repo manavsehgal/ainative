@@ -4,6 +4,7 @@ import type { ComposePlan } from "../types";
 
 describe("buildCompositionHint", () => {
   const plan: ComposePlan = {
+    kind: "primitive_matched",
     profileId: "wealth-manager",
     blueprintId: "investment-research",
     rationale: "Matched 'portfolio'",
@@ -68,5 +69,25 @@ describe("buildCompositionHint", () => {
   it("instructs the model to pass appId on create_schedule when tables are absent", () => {
     const hint = buildCompositionHint({ ...plan, tables: undefined });
     expect(hint).toMatch(/create_schedule.*appId/s);
+  });
+
+  describe("generic plan", () => {
+    const generic: ComposePlan = {
+      kind: "generic",
+      rationale: "Matched compose trigger 'build me' with no known primitive",
+    };
+
+    it("emits a compact hint covering slug/appId/-- rules and forbids Skill", () => {
+      const hint = buildCompositionHint(generic);
+      expect(hint).toMatch(/kebab-case slug/);
+      expect(hint).toMatch(/appId/);
+      expect(hint).toMatch(/create_table/);
+      expect(hint).toMatch(/create_schedule/);
+      expect(hint).toMatch(/MUST NOT contain `--`/);
+      expect(hint).toMatch(/MUST NOT invoke the Skill tool/i);
+      expect(hint).toContain(generic.rationale);
+      // "compact" relative to the primitive_matched hint (~2000 chars).
+      expect(hint.length).toBeLessThan(700);
+    });
   });
 });

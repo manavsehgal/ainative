@@ -1,8 +1,9 @@
 import type { CreatePluginSpecInput } from "@/lib/chat/tools/plugin-spec-tools";
 
 export interface ComposePlan {
-  profileId: string;
-  blueprintId: string;
+  kind: "primitive_matched" | "generic";
+  profileId?: string;
+  blueprintId?: string;
   tables?: Array<{
     name: string;
     columns: Array<{

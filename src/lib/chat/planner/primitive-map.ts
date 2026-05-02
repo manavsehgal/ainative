@@ -1,6 +1,8 @@
 import type { ComposePlan } from "./types";
 
-export const PRIMITIVE_MAP: Record<string, ComposePlan> = {
+export type PrimitiveMapEntry = Omit<ComposePlan, "kind">;
+
+export const PRIMITIVE_MAP: Record<string, PrimitiveMapEntry> = {
   portfolio: {
     profileId: "wealth-manager",
     blueprintId: "investment-research",

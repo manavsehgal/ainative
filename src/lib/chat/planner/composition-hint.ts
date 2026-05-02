@@ -1,6 +1,17 @@
 import type { ComposePlan } from "./types";
 
-export function buildCompositionHint(plan: ComposePlan): string {
+function buildGenericHint(plan: ComposePlan): string {
+  return [
+    "",
+    "## App Compose Hint (M4.5 generic, 2026-05-01)",
+    "This is a compose request — MUST NOT invoke the Skill tool (no brainstorming, ainative-app, product-manager). Compose directly via primitive tools.",
+    'Pick a kebab-case slug (e.g. "habit-tracker"). Use `<slug>--<artifact>` ids for create_profile/create_blueprint. Pass `appId: "<slug>"` on every create_table/create_schedule — the appId MUST NOT contain `--`.',
+    `Rationale: ${plan.rationale}.`,
+    "",
+  ].join("\n");
+}
+
+function buildPrimitiveMatchedHint(plan: ComposePlan): string {
   const parts: string[] = [
     "",
     "## App Composition Directive (M4.5 planner, 2026-04-21)",
@@ -76,4 +87,9 @@ export function buildCompositionHint(plan: ComposePlan): string {
   parts.push("");
 
   return parts.join("\n");
+}
+
+export function buildCompositionHint(plan: ComposePlan): string {
+  if (plan.kind === "generic") return buildGenericHint(plan);
+  return buildPrimitiveMatchedHint(plan);
 }

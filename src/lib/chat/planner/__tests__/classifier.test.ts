@@ -25,9 +25,22 @@ describe("classifyMessage — compose path", () => {
     expect(v.kind).toBe("compose");
   });
 
-  it("falls through to conversation when trigger matches but no keyword", () => {
-    const v = classifyMessage("build me a list of books", ctx);
-    expect(v.kind).toBe("conversation");
+  it("returns a primitive_matched plan when a PRIMITIVE_MAP keyword hits", () => {
+    const v = classifyMessage("build me a portfolio app", ctx);
+    expect(v.kind).toBe("compose");
+    if (v.kind !== "compose") return;
+    expect(v.plan.kind).toBe("primitive_matched");
+    expect(v.plan.profileId).toBe("wealth-manager");
+  });
+
+  it("returns a generic compose plan when COMPOSE_TRIGGERS matches but no PRIMITIVE_MAP entry does", () => {
+    const v = classifyMessage("build me a habit tracker app", ctx);
+    expect(v.kind).toBe("compose");
+    if (v.kind !== "compose") return;
+    expect(v.plan.kind).toBe("generic");
+    expect(v.plan.profileId).toBeUndefined();
+    expect(v.plan.blueprintId).toBeUndefined();
+    expect(v.plan.rationale).toMatch(/build me/);
   });
 });
 

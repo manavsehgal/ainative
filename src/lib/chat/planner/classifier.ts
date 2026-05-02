@@ -121,7 +121,14 @@ function inferScaffoldPlan(
 function inferComposePlan(normalized: string): ComposePlan | null {
   const key = findPrimitiveKey(normalized);
   if (!key) return null;
-  return { ...PRIMITIVE_MAP[key] };
+  return { kind: "primitive_matched", ...PRIMITIVE_MAP[key] };
+}
+
+function genericComposePlan(triggerPhrase: string): ComposePlan {
+  return {
+    kind: "generic",
+    rationale: `Matched compose trigger '${triggerPhrase}' with no known primitive — generic composition`,
+  };
 }
 
 export function classifyMessage(
@@ -150,6 +157,7 @@ export function classifyMessage(
   if (composeTrigger) {
     const plan = inferComposePlan(normalized);
     if (plan) return { kind: "compose", plan };
+    return { kind: "compose", plan: genericComposePlan(composeTrigger) };
   }
 
   return { kind: "conversation" };
