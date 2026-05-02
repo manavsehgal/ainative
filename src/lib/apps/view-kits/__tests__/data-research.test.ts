@@ -99,10 +99,11 @@ describe("loadLatestSynthesis", () => {
         title: "weekly digest",
         status: "completed",
         projectId: appId,
+        assignedAgent: blueprintId,
         result: "Synthesis body",
         createdAt: now,
         updatedAt: now,
-      })
+      } as any)
       .run();
     db.insert(documents)
       .values({
@@ -136,6 +137,7 @@ describe("loadRecentRuns", () => {
           title: "run a",
           status: "completed",
           projectId: appId,
+          assignedAgent: blueprintId,
           createdAt: t1,
           updatedAt: t1,
         },
@@ -144,10 +146,11 @@ describe("loadRecentRuns", () => {
           title: "run b",
           status: "failed",
           projectId: appId,
+          assignedAgent: blueprintId,
           createdAt: t2,
           updatedAt: t2,
         },
-      ])
+      ] as any[])
       .run();
 
     const runs = await loadRecentRuns(appId, blueprintId, 5);

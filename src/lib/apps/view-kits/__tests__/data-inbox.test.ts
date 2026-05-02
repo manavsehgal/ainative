@@ -1,8 +1,14 @@
-import { describe, expect, it, beforeEach } from "vitest";
+import { describe, expect, it, beforeEach, vi } from "vitest";
 import { db } from "@/lib/db";
 import { projects, userTables, userTableColumns, userTableRows, tasks, documents } from "@/lib/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { loadInboxQueue, loadInboxDraft } from "../data";
+
+// unstable_cache requires Next.js cache infrastructure absent in Vitest.
+// Make it a simple passthrough so loadInboxDraft exercises the real fetch logic.
+vi.mock("next/cache", () => ({
+  unstable_cache: <T extends (...args: unknown[]) => unknown>(fn: T) => fn,
+}));
 
 // ---------------------------------------------------------------------------
 // Task 21: loadInboxQueue

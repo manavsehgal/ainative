@@ -663,29 +663,24 @@ async function _inboxDraftFetch(appId: string, rowId: string) {
   };
 }
 
+const _loadInboxDraft = (appId: string, rowId: string) =>
+  unstable_cache(
+    () => _inboxDraftFetch(appId, rowId),
+    ["inbox-draft", appId, rowId],
+    { revalidate: 60 }
+  );
+
 /**
  * Returns the most recent document drafted for the given row in an Inbox app,
  * or `null` when no matching task + document exists. Uses `unstable_cache`
- * (60s TTL, keyed by appId + rowId) in production; falls back gracefully in
- * test environments where the Next.js cache infrastructure is absent.
+ * (60s TTL, keyed by appId + rowId).
  */
 export async function loadInboxDraft(
   appId: string,
   rowId: string | null | undefined
 ) {
   if (!rowId) return null;
-  try {
-    const cached = unstable_cache(
-      () => _inboxDraftFetch(appId, rowId),
-      ["inbox-draft", appId, rowId],
-      { revalidate: 60 }
-    );
-    return await cached();
-  } catch {
-    // unstable_cache requires Next.js cache context (not available in tests);
-    // fall back to direct DB call.
-    return _inboxDraftFetch(appId, rowId);
-  }
+  return _loadInboxDraft(appId, rowId)();
 }
 
 // --- Phase 4: Research loaders -----------------------------------------------
@@ -721,10 +716,14 @@ export async function loadLatestSynthesis(
   blueprintId: string | undefined
 ): Promise<{ docId: string; content: string; taskId: string; ageMs: number } | null> {
   if (!blueprintId) return null;
+  const conditions = [eq(tasks.projectId, appId), eq(tasks.status, "completed")];
+  if (blueprintId) {
+    conditions.push(eq(tasks.assignedAgent, blueprintId));
+  }
   const task = db
     .select()
     .from(tasks)
-    .where(and(eq(tasks.projectId, appId), eq(tasks.status, "completed")))
+    .where(and(...conditions))
     .orderBy(desc(tasks.createdAt))
     .limit(1)
     .get();
@@ -754,13 +753,17 @@ export async function loadLatestSynthesis(
  */
 export async function loadRecentRuns(
   appId: string,
-  _blueprintId: string | undefined,
+  blueprintId: string | undefined,
   limit: number = 10
 ) {
+  const conditions = [eq(tasks.projectId, appId)];
+  if (blueprintId) {
+    conditions.push(eq(tasks.assignedAgent, blueprintId));
+  }
   const rows = db
     .select()
     .from(tasks)
-    .where(eq(tasks.projectId, appId))
+    .where(and(...conditions))
     .orderBy(desc(tasks.createdAt))
     .limit(limit)
     .all();
