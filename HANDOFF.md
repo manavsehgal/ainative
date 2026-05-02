@@ -59,7 +59,29 @@ schedules                          13 rows   (unchanged — both deletes had 0 s
 FK orphans (user_tables, schedules, triggers w/ missing parent): 0 new
 ```
 
-The Step 3 cross-FK query returned 2 rows, but both are pre-existing **plugin schedules** (`plugin:finance-pack:monthly-close`, `plugin:reading-radar:sunday-synth`) with intentionally-empty `project_id` — they belong to plugins, not projects, and the LEFT JOIN flags them because `''` doesn't match any project id. Not caused by this sweep. Worth a follow-up: the orphan-check query in the prior handoff treats empty `project_id` as orphaned, but plugin schedules legitimately have no project. Consider tightening the query to `WHERE project_id IS NOT NULL AND project_id != ''` before next sweep.
+The Step 3 cross-FK query returned 2 rows, but both are pre-existing **plugin schedules** (`plugin:finance-pack:monthly-close`, `plugin:reading-radar:sunday-synth`) with intentionally-empty `project_id` — they belong to plugins, not projects, and the original LEFT JOIN flagged them because `''` doesn't match any project id. Not caused by this sweep, and not real orphans. The corrected query (canonical recipe for future sweeps) is below.
+
+### FK-orphan audit recipe (canonical, plugin-aware)
+
+Use this in place of the prior-handoff Step 3 query — it ignores rows with empty `project_id` (plugin-owned) and only flags real FK breaks:
+
+```bash
+sqlite3 ~/.ainative/ainative.db "
+  SELECT 'tables' as kind, t.id FROM user_tables t
+    LEFT JOIN projects p ON p.id = t.project_id
+    WHERE t.project_id IS NOT NULL AND t.project_id != '' AND p.id IS NULL
+  UNION ALL
+  SELECT 'schedules', s.id FROM schedules s
+    LEFT JOIN projects p ON p.id = s.project_id
+    WHERE s.project_id IS NOT NULL AND s.project_id != '' AND p.id IS NULL
+  UNION ALL
+  SELECT 'triggers', tr.id FROM user_table_triggers tr
+    LEFT JOIN user_tables t ON t.id = tr.table_id
+    WHERE tr.table_id IS NOT NULL AND tr.table_id != '' AND t.id IS NULL;
+"
+```
+
+Verified 0 rows on 2026-05-01 post-sweep.
 
 ---
 
@@ -80,8 +102,6 @@ The Step 3 cross-FK query returned 2 rows, but both are pre-existing **plugin sc
 ## Other future work (separate from the sweep)
 
 **`GitHub Issue Sync` REVIEW (~5 min).** Audit `~/.ainative/ainative.db` table contents for the 1 user_table belonging to project `a5a436b0…`. If it's empty or stub data, delete the project; if it has real data the user wants to keep, leave it. The schedule's cron + active state should also factor into the decision.
-
-**Orphan-check query refinement (~10 min).** The Step 3 query in the prior handoff flags plugin schedules as orphans. Replace `LEFT JOIN ... WHERE p.id IS NULL` with `WHERE s.project_id IS NOT NULL AND s.project_id != '' AND p.id IS NULL` to respect plugin-owned rows.
 
 **Free-form compose hardening (~2-3 hr).** Carryover from prior handoff. Phase 2 covers the `COMPOSE_TRIGGERS`-but-no-`PRIMITIVE_MAP` branch. Some hardening worth considering:
 - The generic hint doesn't include the `INTEGRATION_NOUNS` check, so `"build me a github habit tracker"` would still scaffold a GitHub plugin instead of composing.
@@ -105,7 +125,7 @@ The existing `e.preventDefault() + e.stopPropagation()` guards on `AppCardDelete
 - **Existing-test refactors carry hidden risks.** When extending `DeleteAppCascadeOptions`, the existing `"removes the manifest dir and reports project=false when no DB project exists"` test was implicitly hitting the real DB (`deleteProjectCascade("wealth-tracker")` against the user's actual DB) because it didn't inject `deleteProjectFn`. Pre-existing fragility, but my Step 0 change extended the same fragility to profiles/blueprints. I made the tests hermetic (every test now passes all three dirs + injects `deleteProjectFn`). Pattern to remember: when adding new I/O surfaces to a function, audit whether existing tests are silently touching real-world state.
 - **Path-traversal guards must compose with regex slug guards.** The new `SLUG_RE` check is redundant with the existing `path.resolve` guard for `..` cases, but catches edge cases the path resolver wouldn't (e.g. `appId === ""` matching all `--` files via the prefix). Belt + suspenders is correct here because the cost of an over-broad sweep is destroying user data.
 - **`{"ok":true}` is not the same as "the file is gone."** During Step 4, the first listing after the DELETE call showed `weekly-reading-list--manager` still present even though the API returned ok. Re-listing 30s later showed it gone. The DELETE was async-ish (file removal raced with the response). Always re-verify with a fresh `ls` before declaring victory.
-- **The Step 3 orphan-check query has a false-positive surface.** Plugin schedules with empty `project_id` aren't orphans; they're plugin-owned. Worth fixing the query before the next sweep — see "Other future work."
+- **The Step 3 orphan-check query had a false-positive surface (now corrected).** Plugin schedules with empty `project_id` aren't orphans; they're plugin-owned. The "FK-orphan audit recipe" section above is now the canonical query.
 - **Spec-driven scope can drift from the audit.** The prior handoff said "5 profile dirs and 4 blueprint files on disk have no matching app." Today's count agrees with the file count but the disposition is more subtle: `weekly-reading-list--manager` had a corresponding `~/.codex/skills/reading-list-manager` (the original Codex skill it was forked from). Deleting the ainative profile didn't touch the Codex skill. If a future session wants to "delete everything related to weekly-reading-list," it should check both surfaces. Carryover-noting because the disposition isn't obvious.
 
 ---

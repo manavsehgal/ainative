@@ -27,40 +27,46 @@ export default function AppsPage() {
           <section>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {apps.map((app) => (
-                <div key={app.id} className="relative">
-                  <Link href={`/apps/${app.id}`} className="block">
-                    <Card className="hover:border-primary/50 transition-colors h-full">
-                      <CardContent className="p-4 space-y-2">
-                        <div className="flex items-start justify-between gap-2 pr-8">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <Package className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden="true" />
-                            <span className="text-sm font-medium truncate">{app.name}</span>
-                          </div>
-                          <StatusChip status="running" size="sm" />
-                        </div>
-                        {app.description && (
-                          <p className="text-xs text-muted-foreground line-clamp-2">
-                            {app.description}
-                          </p>
-                        )}
-                        {app.primitivesSummary && (
-                          <p className="text-[11px] text-muted-foreground/70">
-                            {app.primitivesSummary}
-                          </p>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </Link>
-                  <div className="absolute top-1.5 right-1.5 z-10">
-                    <AppCardDeleteButton
-                      appId={app.id}
-                      appName={app.name}
-                      tableCount={app.tableCount}
-                      scheduleCount={app.scheduleCount}
-                      fileCount={app.files.length}
-                    />
-                  </div>
-                </div>
+                <Card
+                  key={app.id}
+                  className="relative hover:border-primary/50 transition-colors h-full"
+                >
+                  <Link
+                    href={`/apps/${app.id}`}
+                    aria-label={`Open ${app.name}`}
+                    className="absolute inset-0 z-0 rounded-[inherit] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  />
+                  <CardContent className="pointer-events-none relative p-4 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Package className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden="true" />
+                        <span className="text-sm font-medium truncate">{app.name}</span>
+                      </div>
+                      <div className="pointer-events-auto">
+                        <AppCardDeleteButton
+                          appId={app.id}
+                          appName={app.name}
+                          tableCount={app.tableCount}
+                          scheduleCount={app.scheduleCount}
+                          fileCount={app.files.length}
+                        />
+                      </div>
+                    </div>
+                    {app.description && (
+                      <p className="text-xs text-muted-foreground line-clamp-2">
+                        {app.description}
+                      </p>
+                    )}
+                    {app.primitivesSummary && (
+                      <p className="text-[11px] text-muted-foreground/70">
+                        {app.primitivesSummary}
+                      </p>
+                    )}
+                    <div>
+                      <StatusChip status="running" size="sm" />
+                    </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           </section>
