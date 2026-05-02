@@ -1,78 +1,75 @@
-# Handoff: Cascade gap + orphan sweep + apps card relayout shipped → only compose hardening + 1 review item open
+# Handoff: GitHub Issue Sync deleted + noun-aware compose hint shipped → 2 compose-hardening sub-items left
 
-**Created:** 2026-05-01 (evening)
-**Status:** All 4 orphan-sweep follow-ups completed and pushed (5 commits). Working tree clean, in sync with `origin/main`. **No blocking work open.** Two carryover items remain: the `GitHub Issue Sync` REVIEW (your judgment) and the free-form compose hardening (~2-3 hr).
+**Created:** 2026-05-01 (late evening)
+**Status:** Both carryover items from the prior handoff cleared. `GitHub Issue Sync` project deleted; noun-aware generic compose hint shipped (commit `8acc55fa`). Working tree clean. **`main` is 1 commit ahead of `origin/main`** — push not done (user hasn't asked).
 **Author:** Manav Sehgal (with Claude Opus 4.7 assist)
-**Predecessor:** `.archive/handoff/2026-05-01-orphan-sweep-cascade-gap-shipped.md`
+**Predecessor:** `.archive/handoff/2026-05-01-handoff-only-compose-and-issue-sync-review-pre-shipped.md`
 
 ---
 
 ## TL;DR for the next agent
 
-1. **`deleteAppCascade` now reaches profiles + blueprints.** The cascade closes the gap where `~/.ainative/profiles/<appId>--*/` dirs and `~/.ainative/blueprints/<appId>--*.yaml` files were leaking on delete. Result type carries `profilesRemoved` + `blueprintsRemoved` counts; DELETE `/api/apps/[id]` surfaces them. Smoke-verified live (synthetic app delete returned `{filesRemoved:true, profilesRemoved:1, blueprintsRemoved:1}`, all three locations clean).
-2. **Orphan sweep done.** 5 orphan profile dirs + 4 orphan blueprint files removed; 2 orphan projects deleted via `deleteProjectCascade`. Final disk: only `habit-tracker/` artifacts across `apps/`, `profiles/`, `blueprints/`. DB: 12 projects, 13 user_tables, 13 schedules.
-3. **Apps card relayout shipped.** Trash on the title row, "Running" StatusChip right-aligned on its own row. Used a positioned-link overlay pattern (transparent Link covers `inset-0`, CardContent uses `pointer-events-none`) instead of button-inside-anchor to avoid Firefox auto-closing the anchor. Polished card padding from `p-4 space-y-2` → `p-3 space-y-1.5` + `items-center` to reclaim ~14-18px the new bottom row added.
-4. **Next move (in order):** decide on the `GitHub Issue Sync` REVIEW (5 min — see "Outstanding state"), then if you want a substantive feature push, free-form compose hardening (~2-3 hr — see "Other future work"). The compose hardening has 3 sub-items; **`INTEGRATION_NOUNS` check** is the cleanest concrete starting point.
+1. **`GitHub Issue Sync` project deleted** via `DELETE /api/projects/a5a436b0-6278-4e3f-a3c8-516803ad5009` → `{"success":true}`. Cascade reached the active schedule, table, and project row. Disk + DB still clean (12 → 11 projects; everything else untouched).
+
+2. **Noun-aware generic compose hint shipped** (commit `8acc55fa`). `"build me a github habit tracker"` now routes to compose generic (was scaffold) with `integrationNoun: "github"` carried into the plan and surfaced as a warning in the hint: "Composition primitives can't make external API calls — compose the structure and tell the user to scaffold a separate plugin if they need github access. Do NOT scaffold a plugin in this turn." The scaffold-first test (`"build me a tool that pulls my github issues"`) still passes — the noun-guard only short-circuits to scaffold when no app-intent word ("app", "tracker", "dashboard", "workflow") is present.
+
+3. **Tests:** 32/32 planner (4 new — 2 classifier, 2 hint) + 289/289 chat. tsc clean.
+
+4. **Next move (in order):** push the 1-commit lead to `origin/main` (one-liner if the user okays it), then either of the two remaining compose-hardening sub-items: **"Extend existing app" affordance (~1.5-2 hr)** is the substantive one; the **30-day soak on the 440-char generic hint** is passive (telemetry-gated, not actionable today).
 
 ---
 
-## What shipped this session (5 commits)
+## What shipped this session (1 commit, 1 deletion)
 
 ```
-306ccff4 docs(handoff): orphan-sweep follow-ups #1-#4 complete
-08af35c3 polish(apps): tighten card, right-align status chip
-a22b3822 refactor(apps): trash on title row, status on its own row
-c2a5a5bb docs(handoff): orphan sweep complete + cascade gap closed
-0cfff7d5 feat(apps): cascade delete reaches namespaced profiles + blueprints
+8acc55fa feat(planner): noun-aware generic compose hint — github habit tracker no longer scaffolds
 ```
 
-### `0cfff7d5` — cascade gap
+### Routing change (`src/lib/chat/planner/classifier.ts`)
 
-- **`registry.ts`** (`src/lib/apps/registry.ts:217-262`)
-  - `DeleteAppCascadeResult` gained `profilesRemoved: number` + `blueprintsRemoved: number` (counts, not booleans — apps can have multiple of each).
-  - `DeleteAppCascadeOptions` gained `profilesDir` + `blueprintsDir` for hermetic tests; defaults pull from `getAinativeProfilesDir()` / `getAinativeBlueprintsDir()`.
-  - `sweepNamespacedProfiles` / `sweepNamespacedBlueprints` are local helpers — iterate the shared dir, match `<appId>--` prefix, `rmSync` matching entries.
-  - `SLUG_RE = /^[a-z0-9][a-z0-9-]*$/` gate before any sweep — defense-in-depth against e.g. an `appId` of `""` matching every namespaced entry.
-- **`route.ts`** (`src/app/api/apps/[id]/route.ts:24-39`) — 404 logic now treats any of the four halves removing something as "found"; success body carries all four counts.
+- New `APP_INTENT_WORDS` const: `["app", "tracker", "dashboard", "workflow"]`.
+- The noun-guard at lines 147-154 (now lines 159-170 with the new conditional comment) only short-circuits to scaffold when `!hasAppIntent(normalized)`. With app-intent present, the guard falls through to the compose path.
+- Both `inferComposePlan` (primitive_matched) and `genericComposePlan` paths now receive the detected noun. The classifier spreads `integrationNoun: noun` into the returned plan so the hint can branch on it.
 
-### `a22b3822` + `08af35c3` — apps card relayout
+### Hint change (`src/lib/chat/planner/composition-hint.ts`)
 
-- **Card structure** (`src/app/apps/page.tsx:29-69`):
-  - `<Card relative>` — was a `<div relative>` wrapping a `<Link><Card>` before
-  - `<Link absolute inset-0 z-0>` — transparent overlay, captures click-through
-  - `<CardContent pointer-events-none relative p-3 space-y-1.5>` — non-interactive children pass clicks to the Link
-  - Title row: `flex items-center justify-between` with `<Package /> <name>` left, `AppCardDeleteButton` (in `<div pointer-events-auto -my-1 -mr-1>`) right
-  - Description + primitives summary unchanged
-  - StatusChip in `<div className="flex justify-end">` for right alignment
+- `buildGenericHint` checks `plan.integrationNoun` and appends a 4th line when present:
+  > Note: the user mentioned `<noun>`. Composition primitives can't make external API calls — compose the app structure (profile + blueprint + tables + schedule) and tell the user to scaffold a separate plugin (e.g. "i need a tool that pulls my <noun> data") if they need <noun> access. Do NOT scaffold a plugin in this turn.
 
-- **Why not button-inside-anchor:** Firefox's HTML5 parser auto-closes the `<a>` at the `<button>` start tag. That breaks click-through for the description, primitives, and status sections below the title row. The positioned-link overlay sidesteps this entirely — button is OUTSIDE the anchor in DOM order, so no Firefox quirk.
+### Type change (`src/lib/chat/planner/types.ts`)
 
-### Tests
+- `ComposePlan` gained `integrationNoun?: string` (optional, applies to both `primitive_matched` and `generic` kinds).
 
-- 94/94 across `src/lib/apps`, `src/app/api/apps`, `src/components/apps` (unchanged tests + 4 new — 3 cascade-helper coverage + 1 zombie-cleanup case for the route).
-- `npx tsc --noEmit` clean.
+### Verification
+
+Verified deterministically via direct `tsx --eval` invocation across 4 canonical prompts:
+
+| Input | Verdict | `integrationNoun` |
+|---|---|---|
+| `build me a github habit tracker` | compose generic | `github` (warning emitted) |
+| `build me a tool that pulls my github issues` | scaffold | n/a (preserved) |
+| `build me a notion portfolio app` | compose primitive_matched | `notion` |
+| `build me a habit tracker app` | compose generic | none (no warning) |
+
+**LLM smoke not run** — Claude in Chrome extension wasn't connected (returned "Browser extension is not connected"). The deterministic part is fully covered by tests; the LLM-side observation (does the model actually compose without scaffolding when given the new hint?) is the soak/observation step that was waived this session.
 
 ---
 
-## Outstanding state (audited 2026-05-01 18:15 PT)
+## Outstanding state (audited 2026-05-01 ~22:05 PT)
 
 ### Repo
-- `main` is in sync with `origin/main` after the 5-commit push. Working tree clean.
+- `main` is **1 commit ahead of `origin/main`**. `8acc55fa` is local-only. Working tree clean.
 
 ### Database
-- 12 projects, 13 user_tables, 13 schedules, 4 user_table_triggers, 19 documents, 12 workflows, 59 tasks, 35 notifications.
-- **`GitHub Issue Sync` (`a5a436b0…`) — REVIEW pending your judgment.** Audit findings: project description is a real intent ("Automated daily sync of GitHub issues assigned to me"), table schema is well-formed (10 columns), schedule is active and a complete agent prompt — BUT `firing_count = 0`, `last_fired_at = NULL`, 0 rows in 3 weeks. Two reasonable paths:
-  - **Keep** if you still want to use it (just needs `GITHUB_TOKEN` and a manual first run)
-  - **Delete** via `curl -X DELETE http://localhost:3000/api/projects/a5a436b0-6278-4e3f-a3c8-516803ad5009` if it was a planning exercise that didn't pan out
+- 11 projects (was 12 — `GitHub Issue Sync` deleted).
+- 13 user_tables, 13 schedules, 4 user_table_triggers — these still match per the FK-orphan audit recipe; no orphans introduced.
 
 ### Disk (`~/.ainative/`)
-- `apps/` — `habit-tracker/` only
-- `profiles/` — `habit-tracker--habit-coach/` only
-- `blueprints/` — `habit-tracker--weekly-review.yaml` only
+- `apps/` — `habit-tracker/` only (unchanged).
+- `profiles/` — `habit-tracker--habit-coach/` only (unchanged).
+- `blueprints/` — `habit-tracker--weekly-review.yaml` only (unchanged).
 
 ### FK-orphan audit recipe (canonical, plugin-aware)
-
-The original Step 3 query flagged plugin schedules with empty `project_id` as orphans (false positive). The corrected version below is the one to use:
 
 ```bash
 sqlite3 ~/.ainative/ainative.db "
@@ -90,21 +87,27 @@ sqlite3 ~/.ainative/ainative.db "
 "
 ```
 
-Verified 0 rows on 2026-05-01 post-sweep.
+Verified 0 rows on 2026-05-01 post-delete. (The `GitHub Issue Sync` schedule + table cascaded cleanly.)
 
 ---
 
 ## Other future work
 
-### Free-form compose hardening (~2-3 hr)
+### Free-form compose hardening (2 sub-items left, ~2 hr)
 
-Carryover from prior handoffs. Phase 2 (committed `9ecdda3f`) covered the `COMPOSE_TRIGGERS`-but-no-`PRIMITIVE_MAP` branch with a generic compose hint. Three sub-items remain:
+1. **"Extend existing app" affordance (~1.5-2 hr).** Carryover. Today the planner has no `extend_app` mode — every compose creates a new app. If a user says `"add to my Habit Loop app"` there's no path. Needs a new planner mode + chat-tool + classifier branch + tests. Phase 2 smoke caught the LLM narrating "I'll wire the app into the existing Habit Loop project" but actually creating a fresh `habit-tracker` project — that's the symptom this would fix.
 
-1. **`INTEGRATION_NOUNS` check in the generic hint** — best concrete starting point. Today, `"build me a github habit tracker"` would match `COMPOSE_TRIGGERS` ("build me") but the LLM may still scaffold a GitHub plugin instead of composing. The `primitive_matched` branch checks `INTEGRATION_NOUNS` (it's part of the routing logic in `src/lib/chat/planner/classifier.ts`), but the generic branch doesn't carry the same guard. ~30 min plus a smoke. The fix is plumbing the same noun check into the generic-hint emit path.
+2. **30-day soak on the 440-char generic hint.** Passive. The hint includes "MUST NOT invoke the Skill tool" because of a Phase 2 smoke where the LLM tried to call Skill before composing. If 30 days of real chat traffic show the LLM never tries to invoke Skill anyway, the guard line could shrink to ~250 chars. Not actionable today; needs telemetry from compose conversations.
 
-2. **"Extend existing app" affordance.** The Phase 2 smoke saw the LLM narrate "I'll wire the app into the existing Habit Loop project" but actually create a fresh `habit-tracker` project. Today the planner has no `extend_app` mode — every compose creates a new app. If a user says `"add to my Habit Loop app"`, there's no path. New planner mode + chat-tool + classifier branch. ~1.5-2 hr including tests.
+### LLM smoke for the noun-aware hint (~5 min when extension is up)
 
-3. **30-day soak on the 440-char generic hint.** The hint includes "MUST NOT invoke the Skill tool" because of a Phase 2 smoke where the LLM tried to call the Skill before composing. If 30 days of real chat traffic show the LLM never tries to invoke Skill anyway, the guard line could shrink to ~250 chars. Not actionable today; needs telemetry from compose conversations.
+The deterministic side of `8acc55fa` is fully covered by unit tests. The LLM-side observation is the only thing not yet verified:
+
+- Send `"build me a github habit tracker"` in chat (with the dev server up).
+- Expected: a compose card titled "Habit Tracker" with profile + blueprint + tables, AND a prose mention of "you'll need to scaffold a separate plugin to access github."
+- Negative signal: a scaffold card ("I can scaffold a github plugin for that") would mean the routing change didn't land OR the LLM ignored the new hint.
+
+The Claude in Chrome extension was offline this session; rerun when it's back. Browser fallback chain per project memory: Claude in Chrome → retry once → Chrome DevTools → Playwright.
 
 ### Apps consumers — extract `useDeleteApp(args)` hook
 
@@ -112,21 +115,18 @@ Premature today (only 2 consumers: `app-detail-actions.tsx` + `app-card-delete-b
 
 ### Soak validation for cascade gap (passive)
 
-Step 0 is unit-tested + live-smoked, but real-world coverage will only come from organic compose+delete cycles over the next few weeks. If `profilesRemoved` or `blueprintsRemoved` ever shows up as 0 when the user expected non-zero, the heuristic (slug prefix match) needs revisiting. The current contract: **only `<appId>--*` named profiles/blueprints are app-owned.** A profile named without the `--<artifact>` suffix is treated as standalone (manual) and not swept. That's intentional.
+Step 0 from the prior session is unit-tested + live-smoked, but real-world coverage will only come from organic compose+delete cycles. If `profilesRemoved` or `blueprintsRemoved` ever shows up as 0 when the user expected non-zero, the heuristic (slug prefix match) needs revisiting.
 
 ---
 
 ## Key patterns to remember (carryover + new from this session)
 
-- **Existing-test refactors carry hidden risks.** When extending `DeleteAppCascadeOptions`, the existing "removes the manifest dir" test was implicitly hitting the real DB (no `deleteProjectFn` injection) — pre-existing fragility, but my Step 0 change extended it to profiles/blueprints. I made the tests hermetic (every test now passes all three dirs + injects `deleteProjectFn`). When adding new I/O surfaces, audit whether existing tests are silently touching real-world state.
-- **Path-traversal guards must compose with regex slug guards.** The new `SLUG_RE` check in `deleteAppCascade` is redundant with `path.resolve` for `..` cases, but catches edges the resolver wouldn't (e.g. `appId === ""` matching all `--` files via the prefix). Belt + suspenders is correct here because the cost of an over-broad sweep is destroying user data.
-- **`{"ok":true}` is not the same as "the file is gone."** During Step 4 of the sweep, the first `ls` after a DELETE call still showed `weekly-reading-list--manager`. Re-listing later showed it gone. The DELETE was async-ish (file removal raced with the response). Always re-verify with a fresh `ls` before declaring victory.
-- **`<button>` inside `<a>` is invalid HTML and Firefox auto-closes the anchor.** The original handoff suggestion (button-inside-anchor + stopPropagation) breaks click-through to content after the button in Firefox. Use the positioned-link overlay pattern instead: Card is `relative`, an absolute Link covers `inset-0`, CardContent uses `pointer-events-none` so non-interactive children pass clicks to the Link, and only the trash wrapper has `pointer-events-auto` to capture its own clicks.
-- **Adding a new card row visibly grows the card.** Going from 3 rows (title-with-status) to 4 rows (title-with-trash + status-on-its-own) added ~36px of card height. Reclaim some via `p-4 → p-3`, `space-y-2 → space-y-1.5`, and `items-center` (so a tall trash button doesn't push the title row taller than the text). Wrap small-button overlays with negative margins (`-my-1 -mr-1`) to bleed into the card padding rather than dominate the row.
-- **Turbopack HMR can silently get stuck.** During the apps-card change, the dev server kept serving the old layout despite file edits and `touch`es. `find .next -newer page.tsx` showed no recompile. Fix: kill the `:3000` PID **and** its parent (`next dev` wrapper), wait 2s, `npm run dev`. Worth checking `find .next -newer <file> | head -5` before assuming HMR works.
-- **The Step 3 orphan-check query had a false-positive surface (now corrected).** Plugin schedules with empty `project_id` aren't orphans; they're plugin-owned. The "FK-orphan audit recipe" section above is now the canonical query.
-- **Spec-driven scope can drift from the audit.** The pre-sweep handoff said "5 profile dirs and 4 blueprint files on disk have no matching app." The file count agreed, but disposition was subtler: `weekly-reading-list--manager` had a corresponding `~/.codex/skills/reading-list-manager` (the original Codex skill it was forked from). Deleting the ainative profile didn't touch the Codex skill. If a future session wants to "delete everything related to weekly-reading-list," it should check both surfaces.
+- **Browser-smoke gap is real but bounded.** When the Claude in Chrome extension isn't connected, you can still verify deterministic prompt-construction via a one-shot `npx tsx --eval` invocation that imports the classifier + hint builder. That covers everything except actual LLM behavior, which is empirical and needs an A/B chat run anyway. Don't block the commit on the LLM smoke if the deterministic path is fully tested — note the gap in the handoff and move on.
+- **`APP_INTENT_WORDS` is the cleavage line between scaffold and compose for noun-bearing prompts.** Strong-tool requests ("a tool that pulls X") have no app-intent word and route to scaffold via the noun-guard short-circuit. App-y requests ("a github habit tracker") have an app-intent word and route to compose with the noun carried into the hint. If a future case feels miscategorized, check whether the user's phrasing matches an app-intent word — that's the routing pivot.
+- **The noun-guard is now defense-in-depth, not the primary scaffold trigger.** Primary scaffold signals are the explicit `SCAFFOLD_TRIGGERS` list (e.g. `"i need a tool that pulls"`, `"integrate with"`). The noun-guard catches ambiguous cases that don't match any scaffold trigger but do mention an integration. Don't add new scaffold patterns to the noun-guard branch — add them to `SCAFFOLD_TRIGGERS` instead.
+- **HANDOFF interpretation is itself a skill.** The prior handoff's text "the LLM may still scaffold a GitHub plugin instead of composing" was technically wrong (it was the *classifier*, not the LLM, that scaffolded), but the *intent* — get this case to compose with a noun warning — was correct. When a handoff description is technically muddy, fall back to: what does the user actually want to happen? Then build to that, not the literal text.
+- **`{"success":true}` for the project DELETE was sufficient — no need to also check the projects table.** `deleteProjectCascade` is the canonical path; if it returns success, the row + cascade are gone. Skip the verification `sqlite3` query unless you see contradicting evidence (e.g. orphan schedules in the audit recipe).
 
 ---
 
-*End of handoff. Working tree clean. `main` in sync with `origin/main`. Recommended next move: `GitHub Issue Sync` REVIEW decision (5 min), then start on `INTEGRATION_NOUNS` check in the generic compose hint (the cleanest sub-item of free-form compose hardening, ~30 min).*
+*End of handoff. `main` 1 commit ahead of `origin/main`. Working tree clean. Recommended next move: push the lead to remote (one-liner if user okays), then start on `extend_app` affordance — the substantive sub-item of free-form compose hardening (~1.5-2 hr).*
