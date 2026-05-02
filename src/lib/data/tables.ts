@@ -225,6 +225,7 @@ async function syncColumnSchema(tableId: string) {
 // ── Row History & Triggers ──────────────────────────────────────────
 import { snapshotBeforeUpdate, snapshotBeforeDelete } from "@/lib/tables/history";
 import { evaluateTriggers } from "@/lib/tables/trigger-evaluator";
+import { evaluateManifestTriggers } from "@/lib/apps/manifest-trigger-dispatch";
 
 // ── Row CRUD ─────────────────────────────────────────────────────────
 
@@ -260,6 +261,7 @@ export async function addRows(tableId: string, rows: AddRowInput[]) {
   // Fire triggers for new rows (fire-and-forget)
   for (const [i] of rows.entries()) {
     evaluateTriggers(tableId, "row_added", rows[i].data).catch(() => {});
+    evaluateManifestTriggers(tableId, ids[i], rows[i].data).catch(() => {});
   }
 
   return ids;
