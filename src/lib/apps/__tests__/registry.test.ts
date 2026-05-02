@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -7,8 +7,10 @@ import {
   deleteApp,
   deleteAppCascade,
   getApp,
+  invalidateAppsCache,
   KpiSpecSchema,
   listApps,
+  listAppsCached,
   parseAppManifest,
 } from "../registry";
 
@@ -353,6 +355,67 @@ describe("deleteAppCascade", () => {
     expect(fs.existsSync(path.join(blueprintsDir, "habit-loop--coach.yaml"))).toBe(true);
   });
 });
+
+describe("listAppsCached", () => {
+  beforeEach(() => {
+    invalidateAppsCache();
+    vi.useFakeTimers();
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it("returns the same result within 5s without re-reading the filesystem", () => {
+    const tmp = makeTmpAppsDir([{ id: "app-a" }]);
+    const first = listAppsCached(tmp);
+    expect(first.map((a) => a.id)).toEqual(["app-a"]);
+
+    fs.mkdirSync(path.join(tmp, "app-b"));
+    fs.writeFileSync(path.join(tmp, "app-b", "manifest.yaml"), "id: app-b\nname: B\n");
+
+    vi.advanceTimersByTime(4000);
+    const second = listAppsCached(tmp);
+    expect(second.map((a) => a.id)).toEqual(["app-a"]);
+  });
+
+  it("re-reads after TTL expires", () => {
+    const tmp = makeTmpAppsDir([{ id: "app-a" }]);
+    listAppsCached(tmp);
+
+    fs.mkdirSync(path.join(tmp, "app-b"));
+    fs.writeFileSync(path.join(tmp, "app-b", "manifest.yaml"), "id: app-b\nname: B\n");
+
+    vi.advanceTimersByTime(5001);
+    const fresh = listAppsCached(tmp);
+    expect(fresh.map((a) => a.id).sort()).toEqual(["app-a", "app-b"]);
+  });
+
+  it("invalidateAppsCache forces a re-read on next call", () => {
+    const tmp = makeTmpAppsDir([{ id: "app-a" }]);
+    listAppsCached(tmp);
+
+    fs.mkdirSync(path.join(tmp, "app-b"));
+    fs.writeFileSync(path.join(tmp, "app-b", "manifest.yaml"), "id: app-b\nname: B\n");
+
+    invalidateAppsCache();
+    const fresh = listAppsCached(tmp);
+    expect(fresh.map((a) => a.id).sort()).toEqual(["app-a", "app-b"]);
+  });
+
+  it("scopes cache by appsDir argument", () => {
+    const dirA = makeTmpAppsDir([{ id: "in-a" }]);
+    const dirB = makeTmpAppsDir([{ id: "in-b" }]);
+    expect(listAppsCached(dirA).map((a) => a.id)).toEqual(["in-a"]);
+    expect(listAppsCached(dirB).map((a) => a.id)).toEqual(["in-b"]);
+  });
+});
+
+function makeTmpAppsDir(apps: Array<{ id: string }>): string {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "list-apps-cache-"));
+  for (const a of apps) {
+    fs.mkdirSync(path.join(tmp, a.id));
+    fs.writeFileSync(path.join(tmp, a.id, "manifest.yaml"), `id: ${a.id}\nname: ${a.id}\n`);
+  }
+  return tmp;
+}
 
 describe("KpiSpecSchema — tableSumWindowed arm", () => {
   it("accepts a windowed sign-filtered sum spec", () => {

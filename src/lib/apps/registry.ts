@@ -297,6 +297,44 @@ export function listApps(appsDir: string = getAinativeAppsDir()): AppSummary[] {
   return out.sort((a, b) => b.createdAt - a.createdAt);
 }
 
+const APPS_CACHE_TTL_MS = 5_000;
+
+interface AppsCacheEntry {
+  apps: AppSummary[];
+  expiresAt: number;
+}
+
+const appsCache = new Map<string, AppsCacheEntry>();
+
+/**
+ * Cached listApps() with a 5-second TTL, scoped per appsDir.
+ *
+ * Used by row-insert dispatch on the hot path. Invalidate via
+ * `invalidateAppsCache()` from `upsertAppManifest` and `deleteApp`
+ * so structural changes aren't masked.
+ */
+export function listAppsCached(
+  appsDir: string = getAinativeAppsDir()
+): AppSummary[] {
+  const now = Date.now();
+  const cached = appsCache.get(appsDir);
+  if (cached && cached.expiresAt > now) {
+    return cached.apps;
+  }
+  const apps = listApps(appsDir);
+  appsCache.set(appsDir, { apps, expiresAt: now + APPS_CACHE_TTL_MS });
+  return apps;
+}
+
+/**
+ * Drops all cached entries. Call after any manifest mutation
+ * (`upsertAppManifest`, `deleteApp`) so the next `listAppsCached`
+ * returns fresh data.
+ */
+export function invalidateAppsCache(): void {
+  appsCache.clear();
+}
+
 export function getApp(
   id: string,
   appsDir: string = getAinativeAppsDir()
