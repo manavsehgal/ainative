@@ -1,0 +1,44 @@
+import { StatusChip } from "@/components/shared/status-chip";
+import { ManifestSheet } from "./manifest-sheet";
+import type { HeaderSlot, ManifestPaneSlot } from "@/lib/apps/view-kits/types";
+
+interface HeaderSlotProps {
+  slot: HeaderSlot;
+  /**
+   * When provided, the header surfaces a "View manifest ▾" trigger that
+   * opens the manifest sheet. Sourced from `model.footer` by `<KitView/>`.
+   */
+  manifestPane?: ManifestPaneSlot;
+}
+
+/**
+ * Renders the header row for a kit. Title + description on the left, status
+ * chip + caller-supplied actions + "View manifest ▾" trigger on the right.
+ */
+export function HeaderSlotView({ slot, manifestPane }: HeaderSlotProps) {
+  const { title, description, status, actions } = slot;
+  return (
+    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
+        <h1 className="text-xl font-semibold tracking-tight truncate" title={title}>
+          {title}
+        </h1>
+        {description && (
+          <p className="text-sm text-muted-foreground mt-0.5 truncate" title={description}>
+            {description}
+          </p>
+        )}
+      </div>
+      <div className="flex flex-wrap items-center gap-2 mt-2 sm:mt-0">
+        {status && <StatusChip status={status} size="md" />}
+        {actions}
+        {manifestPane && (
+          <ManifestSheet
+            appName={manifestPane.appName}
+            body={manifestPane.body}
+          />
+        )}
+      </div>
+    </div>
+  );
+}

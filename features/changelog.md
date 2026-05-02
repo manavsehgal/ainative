@@ -1,5 +1,18 @@
 # Feature Changelog
 
+## 2026-05-02
+
+### Shipped — `composed-app-view-shell` (Phase 1.1)
+
+Lands the seam for the Composed Apps Domain-Aware View. The per-app screen at `/apps/[id]` is now a thin dispatcher: `getApp → pickKit → resolve → loadRuntimeState → buildModel → <KitView/>` (route reduced 143 → 42 lines). The previous four-card composition view + files list moves into a "View manifest ▾" sliding sheet accessible from the page header. `pickKit` is a stub that always returns the placeholder kit until Phase 1.2 lands the real decision table.
+
+- **New module**: `src/lib/apps/view-kits/` with `types.ts` (frozen `KitDefinition` / `ViewModel` / slot contracts), `resolve.ts` (manifest → resolved bindings), `data.ts` (server-only `loadRuntimeState` wrapped in `unstable_cache` with 30s revalidate + `app-runtime:<id>` tag), `index.ts` (registry + `pickKit` stub), and `kits/placeholder.ts` (the only kit shipped this phase).
+- **New shared component**: `src/components/apps/kit-view/kit-view.tsx` (server component dispatcher) + six slot components under `slots/` (header, kpis, hero, secondary, activity, footer) + `manifest-pane-body.tsx` (preserved composition + files cards moved out of the route) + `manifest-sheet.tsx` (client wrapper for the trigger + sheet).
+- **Frozen contract**: kits are pure projection functions — `resolve(input) → projection`, `buildModel(projection, runtime) → ViewModel`. Kits never own React state and never fetch data themselves; `data.ts` builds `RuntimeState` once per request and passes it in. This is the "kits are pure projection functions, not stateful components" TDR landing in code.
+- **Deferred decision (Option A)**: `userTableColumns.config.semantic` (Phase 5 inference hardening) will live inside the existing JSON `column.config` blob rather than a real column. No DB migration in Phase 1. Reasoning: spec scope explicitly excludes migrations, the strategy doc avoids schema work across all 7 phases, and inference is render-time only (≤6 reads per page, all cached).
+- **Tests**: 4 new unit tests covering empty + full manifest cases for `resolveBindings` and `placeholderKit`; 91/91 apps tests pass; tsc clean. Browser smoke via Playwright (Claude in Chrome was offline) confirmed the dispatcher path renders, the manifest sheet opens, all four composition cards + files list + YAML show up cleanly with no console errors.
+- **Status changes**: `composed-app-view-shell` flips planned → completed in `roadmap.md`; spec frontmatter updated.
+
 ## 2026-05-01
 
 ### Groomed — Composed Apps Domain-Aware View (7 features extracted)

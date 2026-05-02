@@ -1,6 +1,6 @@
 ---
 title: Composed App View — Shell & Dispatcher
-status: planned
+status: completed
 priority: P1
 milestone: post-mvp
 source: ideas/composed-apps-domain-aware-view.md
