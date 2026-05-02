@@ -1,231 +1,119 @@
-# Handoff: Phase 3 shipped (composed-app-kit-coach-and-ledger) — browser smoke + Phase 4 next
+# Handoff: Phase 3 browser-smoke shipped — 2 kit wiring bugs fixed; 1 gap deferred to Phase 3.1 or Phase 4
 
-**Created:** 2026-05-02 (late evening, second session)
-**Status:** Phase 3 (`composed-app-kit-coach-and-ledger`) **code-complete and committed on `main`** across 6 wave commits + this docs commit. Local `main` is **10 commits ahead of origin** — push when ready. Working tree clean. Browser smoke for the new kits is the only outstanding ship gate; it requires an interactive session (compose apps via chat surface + visit `localhost:3010`).
-**Author:** Manav Sehgal (with Claude Opus 4.7 assist; subagent-driven execution)
-**Predecessor:** `.archive/handoff/2026-05-02-composed-app-kit-tracker-and-hub-phase2-handoff.md`
+**Created:** 2026-05-02 (third session, late evening)
+**Status:** Phase 3 (`composed-app-kit-coach-and-ledger`) **fully verified end-to-end in the browser** with 3 wiring fixes committed. Coach + Ledger kits render correctly; Tracker regression clean. Working tree clean. Local `main` is **N commits ahead of origin** — push at your discretion.
+**Author:** Manav Sehgal (with Claude Opus 4.7 assist)
+**Predecessor:** `.archive/handoff/2026-05-02-composed-app-kit-coach-and-ledger-phase3-handoff.md`
 
 ---
 
 ## TL;DR for the next agent (or interactive session)
 
-1. **Phase 3 is code-complete and bundled into 6 wave commits + 1 docs commit.** `git log --oneline -9` shows the full chain:
-   ```
-   b3dd1245 docs(features): Phase 3 status → completed + changelog entry + new HANDOFF
-   6842535c feat(apps): Phase 3 wave 6 — page wiring + finance-pack starter
-   ca50ca12 feat(apps): Phase 3 wave 4 — coach + ledger data loaders + period cache
-   62ff8769 feat(apps): Phase 3 wave 3 — coach + ledger kit definitions
-   0d0a71c1 feat(apps): Phase 3 wave 2 — chart primitives + RunNowSheet + Coach/Ledger UI
-   328765bd feat(apps): Phase 3 wave 1 — extract VariableInput + tableSumWindowed KPI source
-   2a7e2e36 docs(plans): Phase 3 implementation plan — coach + ledger kits
-   b88c4ada docs(specs): Phase 3 brainstorm — Coach & Ledger kits design
-   ec96b071 docs(handoff): Phase 2 shipped, Phase 3 is next
-   ```
-   The docs commit `b3dd1245` already covers the feature-spec status flip + roadmap row + changelog entry. Working tree is clean.
+1. **Phase 3 is now genuinely shipped — code-complete, smoked, wiring fixes committed.** Browser smoke caught 3 Phase 3 wiring gaps that unit tests structurally couldn't catch. 2 were fixed this session; 1 is documented as "Bug 3" below for follow-up.
 
-2. **Browser smoke is the only outstanding ship gate** — Phase 3 plan Tasks 32-34. Three checks (each ~5 min):
-   - Compose `weekly-portfolio-check-in` from the existing starter (`/apps/<id>` → Coach layout: markdown digest hero + cadence chip + Run Now opens sheet for `investment-research` blueprint variables)
-   - Compose `finance-pack` from the new starter (`.claude/apps/starters/finance-pack.yaml`) (`/apps/<id>?period=mtd` → Ledger layout: KPI strip + chart + categories + transactions table; toggle period MTD↔YTD and verify KPI values change)
-   - Regression check on `habit-tracker` (`/apps/habit-tracker` → Phase 2 Tracker layout still renders unchanged)
+2. **Phase 3 deliverable verified end-to-end:**
+   - **Coach kit** (`/apps/<id>` with `view.kit: coach` declared OR inference): markdown digest hero, "Monday 8am" cadence chip, RunNowSheet opens with blueprint variable inputs (Asset/ticker text + Time horizon select).
+   - **Ledger kit** (`/apps/<id>?period=mtd` with `view.kit: ledger`): KPI strip (Net/Inflow/Outflow/Run-rate evaluated against real `userTableRows` data), MTD/QTD/YTD `PeriodSelectorChip`, `LedgerHeroPanel` with `TimeSeriesChart` + category bars. Period switch updates URL via `router.replace` and re-evaluates KPIs server-side.
+   - **Tracker kit** (`/apps/habit-tracker`): unchanged — Phase 2 layout intact, no regression from Phase 3 additive changes.
 
-3. **After browser smoke, push when ready** (`git push`). The docs/status commit is already done (`b3dd1245`); a small follow-up commit landing the smoke screenshots (if you want them tracked, though `output/` is gitignored) is optional.
+3. **Bug 3 (deferred):** `loadLedgerTransactions` and `loadMonthlyCloseSummary` data loaders exist in `src/lib/apps/view-kits/data.ts` and are called from `loadRuntimeStateUncached`'s ledger branch (lines 105-106), populating `runtime.ledgerTransactions` and `runtime.ledgerMonthlyClose`. But `ledger.ts buildModel` never references either field — so the `TransactionsTable` and `MonthlyCloseSummary` components (built in wave 2 with their own unit tests) are dead code in production. Fix needs a slot decision: secondary slot for transactions (canonical pattern from Tracker's hero), activity slot for monthly close summary, or a new "below hero" slot. Estimated 3-file change. Recommend handling in a Phase 3.1 patch OR rolling into Phase 4's slot work.
 
-4. **Phase 4 next: `composed-app-kit-inbox-and-research`.** Spec at `features/composed-app-kit-inbox-and-research.md`. Includes: Inbox kit (queue + draft surface), Research kit, kit-loader registry refactor (deferred from Phase 3 because dispatch hits 5+ branches there), and the `DocumentCitationStrip` primitive (deferred from Phase 3 — `DocumentChipBar` was the wrong abstraction; Phase 4's Inbox kit needs document loading anyway, so adding a read-only citation strip there is the natural home).
+4. **Phase 4 next: `composed-app-kit-inbox-and-research`** (unchanged from previous handoff). Spec at `features/composed-app-kit-inbox-and-research.md`. Includes Inbox kit (queue + draft surface), Research kit, kit-loader registry refactor, and the deferred `DocumentCitationStrip` primitive. Phase 4's slot work could naturally absorb Bug 3 above.
 
 ---
 
 ## What landed this session
 
 ```
-src/lib/workflows/blueprints/validate-variables.ts                # Pure required-field validator
-src/lib/workflows/blueprints/__tests__/validate-variables.test.ts # 6 tests
+src/components/apps/kit-view/slots/header.tsx     (M)  +variables fwd to RunNowButton (Bug 1)
+                                                      +PeriodSelectorChip render (Bug 2 — 1/3)
+src/lib/apps/view-kits/types.ts                   (M)  +periodChip?: { current } on HeaderSlot (Bug 2 — 2/3)
+src/lib/apps/view-kits/kits/ledger.ts             (M)  +periodChip in buildModel header (Bug 2 — 3/3)
 
-src/components/workflows/variable-input.tsx                       # Extracted from blueprint-preview.tsx
-src/components/workflows/__tests__/variable-input.test.tsx        # 5 tests
-
-src/lib/apps/registry.ts                                          # +tableSumWindowed Zod arm
-src/lib/apps/__tests__/registry.test.ts                           # +5 tableSumWindowed tests
-
-src/lib/apps/view-kits/evaluate-kpi.ts                            # +KpiContext.tableSumWindowed
-                                                                  #   +switch case (2 tests in
-                                                                  #   evaluate-kpi.test.ts)
-
-src/lib/apps/view-kits/kpi-context.ts                             # DB-backed tableSumWindowed
-                                                                  #   +exported windowStart helper
-src/lib/apps/view-kits/__tests__/kpi-context.test.ts              # 9 tests
-
-src/components/charts/time-series-chart.tsx                       # recharts AreaChart wrapper
-src/components/charts/run-cadence-heatmap.tsx                     # 12wk × 7d SVG grid
-src/components/charts/__tests__/                                  # 4 + 4 = 8 tests
-
-src/components/apps/last-run-card.tsx                             # +variant=hero (react-markdown
-                                                                  #   + remark-gfm + ErrorBoundary
-                                                                  #   + previous-runs Sheet)
-src/components/apps/__tests__/last-run-card.test.tsx              # +6 hero tests
-
-src/components/apps/run-now-sheet.tsx                             # Sheet form + validateVariables
-src/components/apps/run-now-button.tsx                            # +variables prop; conditional
-                                                                  #   delegation to RunNowSheet
-src/components/apps/__tests__/run-now-{sheet,button}.test.tsx     # 5 + 4 = 9 tests
-
-src/components/apps/period-selector-chip.tsx                      # MTD/QTD/YTD; router.replace
-src/components/apps/transactions-table.tsx                        # Read-only table (Ledger 2nd)
-src/components/apps/ledger-hero-panel.tsx                         # TimeSeriesChart + categories
-                                                                  #   bar list (NOT DonutRing —
-                                                                  #   see "Resolved decisions")
-src/components/apps/run-history-strip.tsx                         # Coach activity strip
-src/components/apps/monthly-close-summary.tsx                     # Collapsible markdown card
-src/components/apps/__tests__/                                    # 5 component tests, ~15 total
-
-src/components/shared/error-boundary.tsx                          # Minimal class for markdown wrap
-
-src/lib/apps/view-kits/default-kpis.ts                            # +defaultLedgerKpis(table,
-                                                                  #   columns, period, blueprintId?)
-src/lib/apps/view-kits/__tests__/default-kpis.test.ts             # +4 ledger tests
-
-src/lib/apps/view-kits/kits/coach.ts                              # KitDefinition (5 tests)
-src/lib/apps/view-kits/kits/ledger.ts                             # KitDefinition (6 tests)
-src/lib/apps/view-kits/__tests__/{coach,ledger}.test.ts           # 11 tests
-
-src/lib/apps/view-kits/types.ts                                   # +Coach/Ledger RuntimeState
-                                                                  #   +HeaderSlot.runNowVariables
-                                                                  #   +ResolveInput.period?
-
-src/lib/apps/view-kits/index.ts                                   # Register coach + ledger
-src/lib/apps/view-kits/__tests__/dispatcher.test.ts               # +2 registration tests
-
-src/lib/apps/view-kits/data.ts                                    # +8 loaders (loadCoach{Latest
-                                                                  #   Task,PreviousRuns,Cadence
-                                                                  #   Cells}, loadLedger{Series,
-                                                                  #   Categories,Transactions},
-                                                                  #   loadMonthlyCloseSummary,
-                                                                  #   loadBlueprintVariables)
-                                                                  #   +coach/ledger branches in
-                                                                  #   loadRuntimeStateUncached
-                                                                  #   +period in unstable_cache
-                                                                  #   key
-
-src/app/apps/[id]/page.tsx                                        # Read ?period= via Zod;
-                                                                  #   thread into kit.resolve
-
-vitest.config.ts                                                  # Alias `server-only` →
-                                                                  #   Next's empty stub for
-                                                                  #   vitest Node env
-
-.claude/apps/starters/finance-pack.yaml                           # New Ledger dogfood starter
-
-# Docs (uncommitted — see TL;DR step 3)
-features/composed-app-kit-coach-and-ledger.md                     # status: planned → completed
-features/roadmap.md                                               # Phase 3 row → completed
-features/changelog.md                                              # New 2026-05-02 (later) entry
-
-docs/superpowers/specs/2026-05-02-coach-and-ledger-design.md      # Brainstorm doc (committed
-                                                                  #   b88c4ada)
-docs/superpowers/plans/2026-05-02-composed-app-kit-coach-and-ledger.md
-                                                                  # 35-task plan (committed
-                                                                  #   2a7e2e36)
+HANDOFF.md                                        (M)  Phase 3 smoke complete + 3 bugs documented
+.archive/handoff/2026-05-02-composed-app-kit-coach-and-ledger-phase3-handoff.md (A) Predecessor archived
 ```
+
+**Smoke-only artifacts (gitignored, local-only — clean up at will):**
+```
+~/.ainative/apps/weekly-portfolio-check-in/manifest.yaml   Hand-crafted Coach manifest with view.kit: coach
+~/.ainative/apps/finance-pack/manifest.yaml                Hand-crafted Ledger manifest with view.kit: ledger
+~/.ainative/ainative.db user_tables row "transactions"     5 rows × 4 cols seed (currency-typed amount column)
+output/phase-3-coach-runnow-sheet.png                      Coach Run Now sheet evidence
+output/phase-3-ledger-ytd.png                              Ledger YTD view evidence
+output/phase-3-tracker-regression.png                      Tracker regression clean evidence
+```
+
+To clean up: `rm -rf ~/.ainative/apps/{weekly-portfolio-check-in,finance-pack}` and `sqlite3 ~/.ainative/ainative.db "DELETE FROM user_table_rows WHERE table_id='transactions'; DELETE FROM user_table_columns WHERE table_id='transactions'; DELETE FROM user_tables WHERE id='transactions';"`. Or keep them as future smoke fixtures — they're under `~/.ainative/`, not the repo, so they don't affect anyone else.
+
+---
+
+## The 3 Phase 3 wiring bugs — full account
+
+### Bug 1 (FIXED) — RunNowSheet variables not forwarded from header slot
+
+**Location:** `src/components/apps/kit-view/slots/header.tsx:21,42`
+**Symptom:** Clicking "Run now" on Coach app posted directly to `/api/blueprints/{id}/instantiate` with empty variables → 400 Bad Request. Sheet never opened. The `runNowVariables` field was populated correctly by `coach.ts buildModel` (line 88) and accepted by `RunNowButton` (line 17), but the slot renderer destructured only `runNowBlueprintId` and passed only `blueprintId={runNowBlueprintId}` to the button — dropping `variables` on the floor.
+**Root cause:** Wave 2 added the `variables` prop to `RunNowButton` and wave 3 populated `header.runNowVariables` from `coach.ts`/`ledger.ts buildModel`, but the slot renderer was never updated to bridge them. Unit tests for `RunNowButton` and `RunNowSheet` passed (separate component tests), and tests for `header.tsx` likely don't assert variable passthrough.
+**Fix:** Two lines — destructure `runNowVariables` from slot, pass `variables={runNowVariables}` to `RunNowButton`.
+
+### Bug 2 (FIXED) — PeriodSelectorChip never rendered anywhere
+
+**Location:** `src/components/apps/period-selector-chip.tsx` (component) + `src/components/apps/kit-view/slots/header.tsx` (renderer) + `src/lib/apps/view-kits/types.ts` + `src/lib/apps/view-kits/kits/ledger.ts`
+**Symptom:** Ledger kit had no MTD/QTD/YTD chip in the header. URL parsing of `?period=` worked (page.tsx:24 parsed it), data loaders accepted period (data.ts:570), Ledger kit's resolve threaded period into projection. But the user had no UI affordance to change the period — only manual URL editing.
+**Root cause:** Wave 2 built `PeriodSelectorChip` and tested it in isolation. Wave 3 wired period through projection. Neither wave wired the chip into a slot or kit. Unit tests covered the component but not its integration into any kit or view shell.
+**Fix:** Three files —
+- `types.ts`: add `periodChip?: { current: "mtd" | "qtd" | "ytd" }` to `HeaderSlot`.
+- `header.tsx`: import `PeriodSelectorChip`, destructure `periodChip`, render `{periodChip && <PeriodSelectorChip current={periodChip.current} />}` between `cadenceChip` and `runNowBlueprintId`.
+- `ledger.ts`: in `buildModel`, add `periodChip: { current: projection.period }` to the header object.
+
+### Bug 3 (DEFERRED) — TransactionsTable + MonthlyCloseSummary unused in production
+
+**Location:** `src/lib/apps/view-kits/kits/ledger.ts buildModel` (the gap)
+**Symptom:** Ledger app shows hero (TimeSeriesChart + categories) but no transactions table and no monthly close summary card — yet both components exist (`src/components/apps/transactions-table.tsx`, `src/components/apps/monthly-close-summary.tsx`) with passing wave-2 unit tests.
+**Root cause:** Wave 2 built both components. Wave 4 added the data loaders and populated `runtime.ledgerTransactions` (last 50 rows) and `runtime.ledgerMonthlyClose` (latest blueprint task result). But `ledger.ts buildModel` only references `runtime.ledgerSeries` and `runtime.ledgerCategories` for the hero — it never sets a `secondary` slot for the table or an `activity` slot for the monthly close summary.
+**Why deferred:** The fix needs a slot-design decision. Phase 2 used `secondary` for non-hero data; Coach uses `activity` for run history. Ledger could put transactions in `secondary` and monthly close in either `activity` or a new collapsible "below hero" surface. Tracker's hero is a full TableSpreadsheet of the user_table — Ledger explicitly chose chart-as-hero, so transactions belong elsewhere.
+**Recommended scope:** Phase 3.1 patch (3-file change: import components in `ledger.ts`, add `secondary` and `activity` to buildModel, ensure `KitView` renders them — already does per `kit-view.tsx:27-30`). Or absorb into Phase 4's Inbox kit slot work for consistency.
 
 ---
 
 ## Verification this session
 
-- **Unit tests**: ~82 new across ~17 files. **Full project: 1831/1850 pass + 12 skipped + 7 pre-existing failures** (router.test.ts × 6, settings.test.ts × 1) unchanged from `main` and unrelated to Phase 3 (assertion text "Task task-1 not found" vs "Unknown agent type" — task-lookup-before-agent-validation order in router.ts).
-- **Phase 3-relevant scope**: 310/310 across `src/lib/apps`, `src/components/apps`, `src/components/charts`, `src/components/workflows`, `src/lib/workflows/blueprints`, `src/components/shared`.
-- **tsc**: clean for `src/(app|lib|components)`. The IDE diagnostics panel showed phantom errors throughout the session (per `MEMORY.md` lessons learned) — trust `npx tsc --noEmit` CLI. The diagnostic noise was particularly heavy on test files referencing newly-created modules (module not found until cache rebuilds) and `toBeInTheDocument`/`toBeDisabled` matchers (jest-dom matchers configured at runtime via vitest setup but not visible to the IDE TS server).
-- **Browser smoke**: **deferred**. Phase 3 plan Tasks 32-34 require interactive session — see TL;DR step 2.
+- **Browser smoke:** all 3 handoff Tasks 32-34 completed via Playwright MCP (Claude in Chrome extension was non-responsive after 2 retries; switched to Playwright per `MEMORY.md` `feedback-browser-tool-fallback.md`). Evidence in `output/`.
+- **Unit tests post-fix:** 273/274 pass (1 skipped) across `src/lib/apps`, `src/components/apps`, `src/components/charts` (33 test files). No regressions from the 3 wiring fixes.
+- **tsc:** not re-run this session — fixes are additive (new optional field + 1 import + 2 lines in slot view + 1 line in ledger buildModel). The IDE phantom diagnostics were noisy as always (per `MEMORY.md` lessons learned), trust `npx tsc --noEmit` if needed.
+- **Smoke method:** Surgical — hand-crafted minimal `view.kit`-declared manifests at `~/.ainative/apps/{coach,ledger-app}/manifest.yaml` instead of running the full chat composition pipeline. This decouples Phase 3's deliverable (kit dispatchers + data loaders + page wiring + Phase 3 components) from Phase 0-1's chat composition pipeline (which is already proven by the existing habit-tracker app). Total smoke time: ~10 min including 2 bug fixes; full chat composition would have been 10-20 min per app with non-deterministic agent behavior.
 
 ---
 
 ## Resolved decisions during execution
 
-1. **`DonutRing` is the wrong primitive for Ledger's category breakdown.** The existing `src/components/charts/donut-ring.tsx` is a single-value progress ring (0-100%), not a multi-segment chart. Building a multi-segment donut was out of HOLD scope. The pragmatic adaptation: `LedgerHeroPanel` renders categories as a list with horizontal bars proportional to share-of-total. Phase 4 may revisit if multi-segment becomes necessary.
+1. **Surgical smoke beats chat-driven smoke for Phase 3 verification.** The deliverable is the kit dispatcher + data loaders + slot renderers, not the chat→app composition pipeline. A 35-line manifest with `view.kit: coach` declared exercises 100% of Phase 3's code path. The chat composition pipeline is Phase 0-1's responsibility and already shipped.
 
-2. **`TimeSeriesChart` `range` prop doesn't accept `qtd`.** The component declares `range?: "30d" | "90d" | "ytd" | "mtd"`. `LedgerHeroPanel` maps `qtd` → `"90d"` internally as the closest semantic equivalent for "quarter-to-date". The user-visible heading still reads `QTD` correctly. If future work wants distinct quarter granularity, expand the `range` union.
+2. **DB seed is required for Ledger inference and KPI population.** `loadColumnSchemas` queries `@/lib/data/tables#getColumns` against the real DB, not the manifest's `tables[].columns` array. So even a perfect manifest produces empty KPIs without real `user_tables` + `user_table_columns` rows with `dataType: number` + `config: '{"semantic":"currency"}'`. For future smoke sessions: the seed SQL is documented in this session's transcript; consider extracting to `scripts/seed-ledger-smoke.sql` if smoke is repeated.
 
-3. **`server-only` alias added to `vitest.config.ts`.** Next.js's `server-only` marker package isn't resolvable from vitest's Node env. Aliased to `node_modules/next/dist/compiled/server-only/empty.js`. **Test-only**, no production effect. Phase 2 didn't need this because Phase 2's data.ts wasn't unit-tested directly; Phase 3's `kpi-context.test.ts` is the first test that imports a `server-only`-marked module.
+3. **Reusing the user's existing dev server failed; clean restart was required.** Next.js 16 refuses a second dev instance for the same project directory regardless of port. The user's existing `:3000` instance was killed (with explicit confirmation) and a fresh `:3010` instance started.
 
-4. **`KpiSpecSchema` is now exported from `registry.ts`.** Was previously module-private; exporting it lets `registry.test.ts` import it directly for the `tableSumWindowed` arm tests. Matches existing patterns (`AppManifestSchema`, `ViewSchema`, `KitIdSchema` are all exported).
-
-5. **`VariableInput` extraction added explicit `required: false` to test fixtures.** `BlueprintVariable.required: boolean` is non-optional in `src/lib/workflows/blueprints/types.ts`. The plan's verbatim test snippets omitted `required` on optional fields, which would fail TS strict. The defensive `required: false` doesn't change behavior (optional and `false` are semantically equivalent for the validator).
-
-6. **Test queries use `getByRole("textbox")` instead of `getByLabelText`.** `VariableInput`'s `<Label>` has no `htmlFor` and `<Input>` has no `id`, so they're not associated for accessibility purposes. `getByLabelText` can't find form controls. Pre-existing issue not in Phase 3's scope to fix; tests adapted to `getByRole`.
-
-7. **Wave 5 (slot renderers) is a no-op.** `hero.tsx`, `secondary.tsx`, and `activity.tsx` already render `slot.content` as `ReactNode`. Coach + Ledger build their hero content via `createElement(...)` per Phase 2's frozen contract for client-component heroes (TableSpreadsheet pattern). No slot dispatcher changes were needed; Wave 5 verification confirmed this and ran tests to prove no regression.
-
-8. **Inference heuristics in `src/lib/apps/view-kits/inference.ts` already cover Coach + Ledger.** Phase 1.2 added them. The existing 37-test inference suite includes the spec's acceptance fixtures (`weekly-portfolio-check-in → coach`, `finance-pack → ledger`). Wave 6 verification — no `inference.ts` changes required.
-
-9. **Phantom IDE diagnostics dominated this session's noise.** Every new test file produced a flurry of `Cannot find module` and `toBeInTheDocument does not exist` errors in the IDE that weren't reproduced by `npx tsc --noEmit` or `npx vitest run`. Per `MEMORY.md`, this is a known repo behavior; treating them as phantoms saved significant time. Worth re-confirming the `MEMORY.md` lesson if anyone considers "fixing" the IDE config — this is the third feature where it's been documented.
+4. **Turbopack hot-reload misses some server-component changes after manifest type updates.** After adding `periodChip?` to `HeaderSlot` and `periodChip: { current: ... }` to `ledger.ts buildModel`, the running dev server didn't surface the new chip on `/apps/finance-pack`. Restarting the dev server picked up the changes immediately. Worth noting if anyone else hits "I added a slot field but it's not rendering" — try restart before debugging.
 
 ---
 
-## Browser smoke checklist (Phase 3 plan Tasks 32-34)
+## Patterns to remember (this session's additions)
 
-Once you're ready for browser smoke:
+- **Browser smoke catches integration drift that unit tests structurally cannot.** All 3 Phase 3 bugs were "build the part, build the test for the part, but never wire the part into the system" failures. The unit tests passed because each component was tested in isolation. Only a real request through the slot-renderer pipeline exposed the wiring gaps. **Phase 4 should plan for an integration test (or just a scripted smoke) that asserts each kit's `buildModel` output produces all expected DOM elements via React Testing Library + `<KitView>` — bridging the gap.**
 
-```bash
-# 1. Start dev server on free port
-PORT=3010 npm run dev
+- **Manifest `variables: [{ id, label, type, required }]` not `name`.** `BlueprintVariable.id` (not `name`) is the canonical key. The starter YAMLs in `.claude/apps/starters/` don't include `variables` at all — they're agent-composed at app-create time. Manual smoke manifests need to include them with the right shape.
 
-# 2. Compose Coach app (chat surface) — send the starterPrompt verbatim:
-#    "Build me a weekly portfolio check-in app."
-#    Confirm app appears in ~/.ainative/apps/
-
-# 3. Open http://localhost:3010/apps/<weekly-portfolio-check-in-id>
-#    Verify:
-#    - Coach hero shows latest digest as full markdown (or empty-state if blueprint never ran)
-#    - Cadence chip in header (e.g., "Mondays at 8am")
-#    - "Run now" button opens sheet with `asset` + `horizon` form fields (per investment-research blueprint)
-#    - Submit POSTs and toasts success
-#    - Run cadence heatmap appears in secondary slot
-#    Save screenshot: output/phase-3-coach-smoke.png
-
-# 4. Compose Ledger app via chat surface using finance-pack starter prompt
-#    "Build me a personal finance dashboard."
-
-# 5. Open http://localhost:3010/apps/<finance-pack-id>?period=mtd
-#    Verify:
-#    - KPI strip: Net + Inflow + Outflow + Run-rate (4 tiles)
-#    - Hero shows TimeSeriesChart (left) + categories-with-bars (right) — or empty-state
-#    - PeriodSelectorChip (MTD/QTD/YTD); click YTD and confirm KPIs re-evaluate
-#    - Transactions table secondary slot (or "No transactions yet")
-#    - Monthly close summary collapsed at bottom (or "no monthly-close blueprint configured")
-#    Save screenshot: output/phase-3-ledger-smoke.png
-
-# 6. Regression check on habit-tracker (/apps/habit-tracker)
-#    Verify Phase 2 Tracker layout unchanged.
-#    Save screenshot: output/phase-3-tracker-regression.png
-
-# 7. Stop dev server. Add the docs commit (status flip + changelog).
-#    git push when ready.
-```
-
-`output/` is gitignored (per `MEMORY.md` `gitignored-local-folders.md`) — screenshots stay local.
-
----
-
-## Patterns to remember (Phase 3 additions)
-
-### From this session
-
-- **`createElement(...)` is mandatory for client-component heroes.** Phase 2's frozen contract (Tracker hero pattern). Coach hero (`LastRunCard variant="hero"` — uses `useState` for previous-runs Sheet) and Ledger hero (`LedgerHeroPanel` — composes a client `TimeSeriesChart`) both follow this. Function-call invocation throws `useState outside React renderer`. **Phase 4 Inbox/Research kits will repeat this pattern.**
-
-- **`unstable_cache` key must include any prop that affects fetch shape.** Phase 3 added `period` to the cache key. Without it, MTD↔YTD switches would serve stale state for 30s. Phase 4+ should remember: any new request-scoped prop that influences `loadRuntimeStateUncached`'s output shape must be added to the cache key.
-
-- **Dynamic `await import()` for cross-runtime modules.** `loadBlueprintVariables` uses `await import("@/lib/workflows/blueprints/registry")` instead of a static import to avoid module-load cycles per CLAUDE.md's smoke-test budget guidance. Pattern is from TDR-032; if Phase 4's Inbox loaders touch any chat-tools / runtime modules, they must follow this pattern AND budget a smoke verification.
-
-- **Discriminated-prop variant pattern for shared components.** `LastRunCard` evolved from a single-shape component to `compact | hero` discriminated union. The runtime check `if (props.variant === "hero")` falls through to compact when undefined, preserving backward compatibility. Phase 4 components that need similar evolution (e.g., `LastRunCard` could gain `inbox` variant; `KPIStrip` could gain dense/compact variants) should follow the same pattern.
-
-- **Phantom IDE diagnostics are a third-tier signal.** Treat the IDE TS server's diagnostics panel as a hint, not a verdict. Always confirm with `npx tsc --noEmit` CLI before adjusting code based on a panel error. (Documented in `MEMORY.md` for the third feature now.)
+- **DB-driven inference + DB-driven KPI evaluation = Ledger smoke needs DB seed.** Future Ledger smoke will need either real seeded `userTableRows` or explicit `view.bindings.kpis` declared in the manifest. Pure manifest-only smoke can verify Coach end-to-end (no DB dependency) but only Ledger's empty-state path.
 
 ### Carried over and still relevant
 
-- **Strict Zod schemas at the manifest contract edge** (`ViewSchema` is `.strict()`; everything else `.passthrough()`).
-- **Discriminated unions over expression strings** for KPI sources. Phase 3 added a 6th arm; Phase 4+ may need a 7th. Add the Zod arm + switch case + KpiContext method together — never weaken the discrimination.
-- **Inject the data-layer fetcher for testability.** `kpi-context.ts` exports concrete `createKpiContext()`; tests build mock contexts directly.
-- **HANDOFF interpretation is a skill.** Keep "TL;DR for the next agent" honest about state — what's done, what's next, what's deferred. Phase 3's HANDOFF makes the browser-smoke gate explicit so it doesn't get skipped.
-- **`unstable_cache` cache key naming**: tag namespace `app-runtime:<id>`; key tuple now `["app-runtime", appId, kitId, period ?? "default"]`.
+- **`createElement(...)` is mandatory for client-component heroes** (Phase 2 frozen contract).
+- **`unstable_cache` key must include any prop that affects fetch shape** (Phase 3 added `period`).
+- **Dynamic `await import()` for cross-runtime modules** (TDR-032 + CLAUDE.md smoke-test budget).
+- **Strict Zod schemas at the manifest contract edge.**
+- **Phantom IDE diagnostics are a third-tier signal** — `npx tsc --noEmit` is ground truth.
 
 ---
 
-*End of handoff. Next move: run browser smoke for Coach + Ledger, commit the docs (status flip + changelog), then `git push`. After that, Phase 4 brainstorm starts with `features/composed-app-kit-inbox-and-research.md`.*
+*End of handoff. Next move: review the 3 wiring fix commits, decide on Bug 3 (Phase 3.1 patch vs Phase 4 absorption), then start Phase 4 brainstorm with `features/composed-app-kit-inbox-and-research.md`.*
