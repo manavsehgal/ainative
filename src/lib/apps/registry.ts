@@ -326,6 +326,56 @@ export function listAppsCached(
   return apps;
 }
 
+interface AppsDetailCacheEntry {
+  apps: AppDetail[];
+  expiresAt: number;
+}
+
+const appsDetailCache = new Map<string, AppsDetailCacheEntry>();
+
+/**
+ * Like `listAppsCached` but returns `AppDetail` entries with the parsed
+ * `manifest` field hydrated. Used by row-insert dispatch which needs to
+ * inspect `manifest.blueprints` to find subscriptions.
+ *
+ * Cached separately from `listAppsCached` because the AppDetail shape is
+ * heavier; both caches are cleared by `invalidateAppsCache()`.
+ */
+export function listAppsWithManifestsCached(
+  appsDir: string = getAinativeAppsDir()
+): AppDetail[] {
+  const now = Date.now();
+  const cached = appsDetailCache.get(appsDir);
+  if (cached && cached.expiresAt > now) {
+    return cached.apps;
+  }
+
+  const apps: AppDetail[] = [];
+  if (!fs.existsSync(appsDir)) {
+    appsDetailCache.set(appsDir, { apps, expiresAt: now + APPS_CACHE_TTL_MS });
+    return apps;
+  }
+
+  for (const entry of fs.readdirSync(appsDir, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const rootDir = path.join(appsDir, entry.name);
+    const manifestPath = path.join(rootDir, "manifest.yaml");
+    if (!fs.existsSync(manifestPath)) continue;
+    try {
+      const text = fs.readFileSync(manifestPath, "utf-8");
+      const manifest = parseAppManifest(text);
+      if (!manifest) continue;
+      apps.push({ ...manifestToSummary(manifest, rootDir), manifest });
+    } catch {
+      continue;
+    }
+  }
+
+  apps.sort((a, b) => b.createdAt - a.createdAt);
+  appsDetailCache.set(appsDir, { apps, expiresAt: now + APPS_CACHE_TTL_MS });
+  return apps;
+}
+
 /**
  * Drops all cached entries. Call after any manifest mutation
  * (`upsertAppManifest`, `deleteApp`) so the next `listAppsCached`
@@ -333,6 +383,7 @@ export function listAppsCached(
  */
 export function invalidateAppsCache(): void {
   appsCache.clear();
+  appsDetailCache.clear();
 }
 
 export function getApp(

@@ -18,7 +18,7 @@
  * CLAUDE.md "smoke-test budget" rule.
  */
 
-import { listAppsCached } from "./registry";
+import { listAppsWithManifestsCached } from "./registry";
 import type { AppManifest } from "./registry";
 import { getBlueprint } from "@/lib/workflows/blueprints/registry";
 
@@ -27,11 +27,9 @@ export async function evaluateManifestTriggers(
   rowId: string,
   rowData: Record<string, unknown>
 ): Promise<void> {
-  // Cached entries are AppSummary[] which doesn't include `manifest`.
-  // findMatchingSubscriptions tolerates a missing `manifest` (returns []),
-  // and the test path mocks the cache to return shapes with `manifest`.
-  // Wave 6+ may extend the cache to include manifests on the hot path.
-  const apps = listAppsCached() as ReadonlyArray<{ id: string; manifest?: AppManifest }>;
+  // listAppsWithManifestsCached returns AppDetail[] with `manifest` hydrated,
+  // so findMatchingSubscriptions can read manifest.blueprints at runtime.
+  const apps = listAppsWithManifestsCached();
   const matches = findMatchingSubscriptions(apps, tableId);
 
   for (const { appId, blueprintId } of matches) {

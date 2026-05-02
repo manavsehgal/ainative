@@ -11,6 +11,7 @@ import {
   KpiSpecSchema,
   listApps,
   listAppsCached,
+  listAppsWithManifestsCached,
   parseAppManifest,
 } from "../registry";
 
@@ -426,6 +427,54 @@ describe("cache invalidation on mutations", () => {
 
     deleteApp("app-x", tmp);
     expect(listAppsCached(tmp).map((a) => a.id)).toEqual([]);
+  });
+});
+
+describe("listAppsWithManifestsCached", () => {
+  beforeEach(() => {
+    invalidateAppsCache();
+    vi.useFakeTimers();
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it("returns AppDetail entries with .manifest hydrated", () => {
+    const tmp = makeTmpAppsDir([{ id: "app-a" }]);
+    const result = listAppsWithManifestsCached(tmp);
+    expect(result.length).toBe(1);
+    expect(result[0].id).toBe("app-a");
+    expect(result[0].manifest).toBeDefined();
+    expect(result[0].manifest.id).toBe("app-a");
+  });
+
+  it("caches within 5s TTL", () => {
+    const tmp = makeTmpAppsDir([{ id: "app-a" }]);
+    const first = listAppsWithManifestsCached(tmp);
+    fs.mkdirSync(path.join(tmp, "app-b"));
+    fs.writeFileSync(path.join(tmp, "app-b", "manifest.yaml"), "id: app-b\nname: B\n");
+    vi.advanceTimersByTime(4000);
+    const second = listAppsWithManifestsCached(tmp);
+    expect(second.length).toBe(first.length);
+  });
+
+  it("re-reads after TTL expires", () => {
+    const tmp = makeTmpAppsDir([{ id: "app-a" }]);
+    listAppsWithManifestsCached(tmp);
+    fs.mkdirSync(path.join(tmp, "app-b"));
+    fs.writeFileSync(path.join(tmp, "app-b", "manifest.yaml"), "id: app-b\nname: B\n");
+    vi.advanceTimersByTime(5001);
+    const fresh = listAppsWithManifestsCached(tmp);
+    expect(fresh.length).toBe(2);
+  });
+
+  it("invalidateAppsCache clears both summary AND with-manifests caches", () => {
+    const tmp = makeTmpAppsDir([{ id: "app-a" }]);
+    listAppsCached(tmp);              // populates summary cache
+    listAppsWithManifestsCached(tmp); // populates manifest cache
+    fs.mkdirSync(path.join(tmp, "app-b"));
+    fs.writeFileSync(path.join(tmp, "app-b", "manifest.yaml"), "id: app-b\nname: B\n");
+    invalidateAppsCache();
+    expect(listAppsCached(tmp).length).toBe(2);
+    expect(listAppsWithManifestsCached(tmp).length).toBe(2);
   });
 });
 

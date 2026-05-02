@@ -6,7 +6,7 @@ import * as engine from "@/lib/workflows/engine";
 
 vi.mock("../registry", async () => {
   const actual = await vi.importActual<typeof import("../registry")>("../registry");
-  return { ...actual, listAppsCached: vi.fn() };
+  return { ...actual, listAppsWithManifestsCached: vi.fn() };
 });
 
 vi.mock("@/lib/workflows/blueprints/instantiator", () => ({
@@ -28,7 +28,7 @@ describe("evaluateManifestTriggers — happy path", () => {
   });
 
   it("instantiates and runs one blueprint when one manifest subscribes", async () => {
-    vi.mocked(registry.listAppsCached).mockReturnValue([
+    vi.mocked(registry.listAppsWithManifestsCached).mockReturnValue([
       {
         id: "test-app",
         manifest: {
@@ -69,14 +69,14 @@ describe("evaluateManifestTriggers — match counts", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("does nothing when no manifest subscribes to the table", async () => {
-    vi.mocked(registry.listAppsCached).mockReturnValue([]);
+    vi.mocked(registry.listAppsWithManifestsCached).mockReturnValue([]);
     await evaluateManifestTriggers("tbl-other", "row-1", {});
     expect(instantiator.instantiateBlueprint).not.toHaveBeenCalled();
     expect(engine.executeWorkflow).not.toHaveBeenCalled();
   });
 
   it("fires both apps when 2 manifests subscribe to the same table", async () => {
-    vi.mocked(registry.listAppsCached).mockReturnValue([
+    vi.mocked(registry.listAppsWithManifestsCached).mockReturnValue([
       {
         id: "app-a",
         manifest: {
@@ -113,7 +113,7 @@ describe("evaluateManifestTriggers — match counts", () => {
   });
 
   it("ignores manifests that subscribe to a different table", async () => {
-    vi.mocked(registry.listAppsCached).mockReturnValue([
+    vi.mocked(registry.listAppsWithManifestsCached).mockReturnValue([
       {
         id: "app-a",
         manifest: {
@@ -134,7 +134,7 @@ describe("evaluateManifestTriggers — variable substitution", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("resolves {{row.<col>}} placeholders from row data into instantiate variables", async () => {
-    vi.mocked(registry.listAppsCached).mockReturnValue([
+    vi.mocked(registry.listAppsWithManifestsCached).mockReturnValue([
       {
         id: "app-x",
         manifest: {
