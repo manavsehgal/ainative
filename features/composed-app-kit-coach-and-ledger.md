@@ -1,6 +1,6 @@
 ---
 title: Composed App Kits — Coach & Ledger
-status: planned
+status: completed
 priority: P2
 milestone: post-mvp
 source: ideas/composed-apps-domain-aware-view.md
