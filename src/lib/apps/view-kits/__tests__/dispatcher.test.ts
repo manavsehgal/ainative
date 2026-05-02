@@ -30,9 +30,9 @@ describe("resolveKit — KitId to KitDefinition lookup", () => {
     expect(resolveKit("ledger").id).toBe("ledger");
   });
 
-  it("falls back to placeholderKit for kit ids reserved for later phases", () => {
-    expect(resolveKit("inbox")).toBe(placeholderKit);
-    expect(resolveKit("research")).toBe(placeholderKit);
+  it("returns the registered kit for inbox and research (Phase 4)", () => {
+    expect(resolveKit("inbox").id).toBe("inbox");
+    expect(resolveKit("research").id).toBe("research");
   });
 });
 
@@ -103,5 +103,17 @@ describe("Coach + Ledger registration", () => {
   it("registers ledger kit", () => {
     expect(viewKits.ledger).toBeDefined();
     expect(viewKits.ledger!.id).toBe("ledger");
+  });
+});
+
+describe("viewKits registry — Phase 4", () => {
+  it("registers inbox kit", () => {
+    expect(viewKits.inbox).toBeDefined();
+    expect(viewKits.inbox?.id).toBe("inbox");
+  });
+
+  it("registers research kit", () => {
+    expect(viewKits.research).toBeDefined();
+    expect(viewKits.research?.id).toBe("research");
   });
 });

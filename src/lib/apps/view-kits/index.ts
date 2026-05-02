@@ -1,8 +1,10 @@
 import type { AppManifest } from "@/lib/apps/registry";
 import { pickKit as pickKitId } from "./inference";
 import { coachKit } from "./kits/coach";
+import { inboxKit } from "./kits/inbox";
 import { ledgerKit } from "./kits/ledger";
 import { placeholderKit } from "./kits/placeholder";
+import { researchKit } from "./kits/research";
 import { trackerKit } from "./kits/tracker";
 import { workflowHubKit } from "./kits/workflow-hub";
 import type { ColumnSchemaRef, KitDefinition, KitId } from "./types";
@@ -19,8 +21,8 @@ export const viewKits: Record<KitId, KitDefinition | undefined> = {
   "workflow-hub": workflowHubKit,
   coach: coachKit,
   ledger: ledgerKit,
-  inbox: undefined,
-  research: undefined,
+  inbox: inboxKit,
+  research: researchKit,
 };
 
 /**
