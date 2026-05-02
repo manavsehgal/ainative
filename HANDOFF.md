@@ -1,102 +1,107 @@
-# Handoff: Phase 5 (`row-trigger-blueprint-execution`) shipped — pick the next feature
+# Handoff: `profile-runtime-default-resolution` shipped — pick the next feature
 
-**Created:** 2026-05-02 (Phase 5 implementation + verification session)
-**Status:** Phase 5 fully shipped. End-to-end browser smoke confirmed the engine.ts touch passed CLAUDE.md's runtime-registry-adjacent rule (no ReferenceError, no module-load cycle). 14 commits across 7 waves; 2 bugs found and fixed during implementation; working tree clean after this commit lands.
-**Predecessor:** `.archive/handoff/2026-05-02-row-trigger-blueprint-execution-pre-shipped-handoff.md` (the Phase-4-shipped handoff this one supersedes)
+**Created:** 2026-05-02 (profile-runtime-default-resolution implementation session)
+**Status:** Fully shipped. End-to-end browser smoke confirmed the synthesizer, registry wiring, and task execution completed without error. Working tree clean after this commit lands.
+**Predecessor:** `.archive/handoff/2026-05-02-profile-runtime-default-resolution-pre-shipped-handoff.md` (the Phase 5 shipped handoff this one supersedes)
 
 ---
 
 ## TL;DR for the next agent (or interactive session)
 
-1. **Phase 5 is shipped.** The composed-app-kit feature surface now lights up end-to-end: a row insert into a user_table that an app subscribes to via `trigger.kind: row-insert` produces a workflow with `_contextRowId` and a task with `tasks.context_row_id` populated. Phase 4's Inbox UI now has a real upstream to attribute drafts to.
+1. **`profile-runtime-default-resolution` is shipped.** The `cs-coach` profile (and any other profile referenced inline in an app manifest without a corresponding `profile.yaml`) now synthesizes automatically via `loadAppManifestProfiles()`. The synthesized entry carries `supportedRuntimes: [all 5]`, so the execution-target resolver picks up the configured runtime without a `NoCompatibleRuntimeError`. Row-triggered tasks now reach `status=completed` end-to-end.
 
-2. **Pick the next feature.** Two natural pickups, in priority order:
+2. **Pick the next feature.** In priority order:
+   - **`composed-app-auto-inference-hardening`** — tightens `pickKit`'s 7-rule decision table against ambiguous edge cases. Lower priority since current heuristic works for all 5 seeded apps.
+   - **`document-output-generation`** — roadmap item: generate documents (PDF/DOCX) as outputs from workflow tasks. See `features/roadmap.md`.
+   - **`multi-agent-swarm`** — roadmap item: concurrent agent execution with aggregation.
 
-   - **Runtime configuration to actually run drafts.** During Phase 5 smoke, the row-triggered task failed with `NoCompatibleRuntimeError: No compatible configured runtime is available for this task` because the `cs-coach` agent profile has no runtime registered in this dev env. This isn't a bug — the dispatcher contract is verified — but to see Inbox actually populate with drafted documents end-to-end, the next feature is **profile-runtime-default-resolution** (or similar): make `cs-coach` and other custom profiles resolve to a runtime via setting/inheritance/fallback rather than failing. Worth a short spec session to scope.
-   
-   - **`composed-app-auto-inference-hardening`** — the other deferred Phase 4 follow-up. Tightens `pickKit`'s 7-rule decision table against ambiguous edge cases. Lower priority since current heuristic works for all 5 seeded apps.
-
-3. **Verification artifacts** at `output/phase-5-{inbox-pre-insert,table-with-delta-row,inbox-post-insert}.png` (gitignored). The Delta Industries row at `b5ad153a-9e3a-4eb8-9415-721865daec68` is still in the DB along with one orphaned empty row (`fc8161f2-...`) from the inline UI's Add Row click. Optionally clean up via:
-
-   ```bash
-   sqlite3 ~/.ainative/ainative.db "DELETE FROM user_table_rows WHERE id IN ('b5ad153a-9e3a-4eb8-9415-721865daec68', 'fc8161f2-49e3-40ff-b2d6-70d729706f17');"
-   sqlite3 ~/.ainative/ainative.db "DELETE FROM tasks WHERE context_row_id = 'b5ad153a-9e3a-4eb8-9415-721865daec68';"
-   sqlite3 ~/.ainative/ainative.db "DELETE FROM workflows WHERE id = 'aa9ace67-6fd6-48fb-8350-d9f11dbaea36';"
-   ```
-
-4. **Lessons worth carrying forward** — see "Patterns to remember" below. Two new bugs caught at the Phase 5 layer:
-   - **Code-island bug at the type boundary.** The dispatcher initially imported `listAppsCached` returning `AppSummary[]` (no `.manifest` field). All unit tests passed because mocks returned shapes WITH `.manifest`. The bug was caught by an attentive implementer during self-review, not by tests. Lesson: when a function returns a type that lacks a field your code depends on, mocks that supply that field hide the bug. Mock at the structural boundary, not the type assertion.
-   - **Phase 4 fixture incompleteness.** The Tables UI reads from `user_tables.column_schema` (denormalized JSON), but Phase 4's smoke fixture only inserted rows into `user_table_columns` — the JSON stayed `[]`. Fix: populated the JSON manually before smoke. A future smoke-fixture refactor should use a single source of truth for column metadata.
+3. **Lessons worth carrying forward** — see "Patterns to remember" below.
 
 ---
 
 ## What landed this session
 
-14 wave commits + 4 docs commits = 18 commits since the previous HANDOFF:
+5 commits (4 feature + 1 fix):
 
 ```
-W1  a35c2075  feat(workflows): instantiateBlueprint accepts metadata._contextRowId
-W2  2c0de09e  feat(workflows): engine stamps tasks.context_row_id from workflow definition
-    2eb55d56  test(workflows): malformed-definition fallback for context_row_id
-W3  d00cdf08  test(blueprints): validity tests for Phase 5 blueprints
-W4  8402976e  feat(apps): listAppsCached + invalidateAppsCache (5s TTL)
-    e0b6b798  feat(apps): invalidate apps cache on manifest mutations
-W5  6917aca6  feat(apps): manifest-trigger-dispatch happy path
-    70719b7a  test(apps): manifest-trigger-dispatch match-count cases
-    5014698c  feat(apps): dispatcher resolves {{row.<col>}} blueprint defaults
-    66842782  fix(apps): dispatcher uses listAppsWithManifestsCached, not summaries
-    de5cd49f  feat(apps): dispatcher writes notification on dispatch failure
-    9bad7dec  feat(apps): dispatcher tolerates listAppsWithManifestsCached failures
-W6  af811299  feat(data): wire manifest-trigger-dispatch into addRows
-W7  85d88f6c  test(data): integration test for addRows → manifest dispatch
-W9  2e58270b  docs(features): row-trigger-blueprint-execution shipped
-    (this handoff commit — see below)
+90aa707b  feat(profiles): synthesize profiles from app-manifest inline refs (Task 1)
+57fb3726  fix(profiles): spread SUPPORTED_AGENT_RUNTIMES into mutable array (Task 1 follow-up)
+a476c857  test(profiles): edge cases for app-manifest synthesizer (Task 2)
+31321eb8  feat(profiles): wire app-manifest synthesizer into profile registry (Task 3)
+f7a66b75  feat(runtime): NoCompatibleRuntimeError names profile + runtime gap (Task 4)
 ```
 
-Pre-wave planning commits (already shipped before this session):
+Pre-feature planning commits (already on main before this session):
 ```
-c153605e  docs(specs): row-trigger-blueprint-execution design
-7c8354dc  docs(plans): row-trigger-blueprint-execution implementation plan
+e9cc6d20  docs(specs): profile-runtime-default-resolution design
+ca23f59c  docs(plans): profile-runtime-default-resolution implementation plan
 ```
 
 ---
 
-## Verification this session
+## What shipped (code)
 
-- **Unit tests:** Full suite passes 1935+ tests (Phase 4's 340 + new dispatcher + integration tests + every prior feature). Pre-existing 7 failures on `main` in unrelated files (`e2e/blueprint.test.ts`, `agents/router.test.ts`, `validators/settings.test.ts`) are not Phase 5 regressions.
-- **Browser smoke (mandatory per CLAUDE.md, engine.ts is runtime-registry-adjacent):**
-  - Cold start dev server (PORT=3010) — no `ReferenceError`, no module-load cycle
-  - `POST /api/tables/customer-touchpoints/rows` with Delta Industries row data → workflow `aa9ace67-...` created with `_contextRowId` matching the new row id
-  - `definition.steps[0].prompt` contains the row data substituted in: "...for **Delta Industries**. Touchpoint summary: **Asking about pricing**. Channel: **email**. Detected sentiment: **neutral**."
-  - Task `bd416ffd-...` created with `context_row_id = b5ad153a-...` and `project_id = customer-follow-up-drafter`
-  - Console clean across all visited pages
-  - Task ultimately failed with `NoCompatibleRuntimeError` for `cs-coach` profile — runtime config issue, NOT a Phase 5 bug
-- **`npx tsc --noEmit`:** clean (the diagnostic panel's `Cannot find module '@/lib/db'` etc. is documented flaky stale state per project memory)
-- **Schema deviations from plan, all caught and adapted:**
-  - `notifications.type` is a strict enum that doesn't include `trigger_failure` — adapted to `task_failed` with error class encoded in `title`
-  - `BlueprintSchema.domain` is a strict enum (`work | personal`) — `customer-success` and `research` mapped to `work`
-  - `BlueprintSchema.steps[].requiresApproval` is required — added explicitly to both new blueprints
-  - `listAppsCached` returns `AppSummary[]` (no manifest) — added parallel `listAppsWithManifestsCached` returning `AppDetail[]`
+- **`src/lib/agents/profiles/app-manifest-source.ts`** — new module. `loadAppManifestProfiles(appsDir, profilesDir, builtinsDir)` scans `<appsDir>/*/manifest.yaml`, extracts `agentProfile` refs from `blueprints[].agentProfile`, checks that the id isn't already covered by an on-disk profile (profilesDir or builtinsDir), and synthesizes an in-memory `AgentProfile` with permissive defaults (`supportedRuntimes: SUPPORTED_AGENT_RUNTIMES`, `domain: "work"`, `tags: [appId]`, `origin: "import"`, `readOnly: true`, `skillMd: ""`, `systemPrompt: description`).
+- **`src/lib/agents/profiles/index.ts`** — `scanProfiles()` now calls `loadAppManifestProfiles()` first and then overlays file-based profiles (Map last-write-wins), so on-disk profiles shadow synthesized ones at equal id. Cache signature extended: `getSkillsDirectorySignature()` fingerprints `<appsDir>/*/manifest.yaml` mtimes so app mutations auto-invalidate the profile cache.
+- **`src/lib/agents/runtime/execution-target.ts`** — both throw sites for `NoCompatibleRuntimeError` now produce a message naming the profile id, its `supportedRuntimes`, and the configured runtimes list. Operators can diagnose the gap from logs alone without reading source code.
+- **11 unit tests** in `src/lib/agents/profiles/__tests__/app-manifest-source.test.ts` covering: no apps dir, empty apps dir, manifest without blueprints, manifest without agentProfile field, profile already on disk (skipped), synthesis correctness, multiple apps, multiple blueprints, duplicate ids deduplicated, missing manifest.yaml in subdir.
+
+---
+
+## Verification run — 2026-05-02
+
+Dev server `PORT=3010 npm run dev`, fresh restart after all 5 feature commits. Cold start: no `ReferenceError: Cannot access 'claudeRuntimeAdapter'` (TDR-032 module-load cycle absent).
+
+Smoke flow:
+1. `GET /api/profiles` — returned `cs-coach` with `origin: "import"`, `tags: ["customer-follow-up-drafter"]`, `supportedRuntimes: [all 5]`. Synthesizer registered ✅
+2. `POST /api/tables/customer-touchpoints/rows` with `{customer: "Smoke Test Co", summary: "Smoke verification of profile-runtime-default-resolution", sentiment: "neutral", channel: "email"}`. Returned row id `d77d9ace-5fa2-41ae-b5e8-020be8c3d3a5` ✅
+3. Workflow `4991db0c-77e2-479e-8815-9628bdc3417c` (active) created with `_contextRowId = d77d9ace-...` ✅
+4. Task `ac895f80-4bbd-4180-bf86-3b693c0691cf` created with `agent_profile=cs-coach`, `effective_runtime_id=claude-code` ✅
+5. Task settled to `status=completed`, `failure_reason=(none)` ✅ — first time the full row-trigger chain completes without error.
+6. Dev log scan for `ReferenceError|TypeError|cannot|Cannot access|claudeRuntimeAdapter|NoCompatibleRuntime` → 0 matches ✅
+
+**Critical CLAUDE.md rule check** (profiles/index.ts touches the registry, which is runtime-registry-adjacent): NO `ReferenceError` in cold start. The dynamic-import pattern for engine.ts from the dispatcher (shipped in Phase 5) was already in place; this feature only touches the profile registry, not the agent or engine modules. Zero new module-load cycle risk.
+
+Screenshots: Not captured — DB-level verification was the authoritative signal. No `output/*.png` artifacts.
+
+---
+
+## Unit test suite results — 2026-05-02
+
+- **1947 passed, 7 failed, 13 skipped** across 254 test files.
+- All 7 failures are pre-existing, unrelated to this feature:
+  - `src/__tests__/e2e/blueprint.test.ts` — e2e test requiring live network, pre-existing
+  - `src/lib/agents/__tests__/router.test.ts` — 6 failures, pre-existing (mock shape mismatch)
+  - `src/lib/validators/__tests__/settings.test.ts` — 1 failure, pre-existing (default value assertion)
+- Zero regressions from Tasks 1–4.
+
+---
+
+## Type-check — 2026-05-02
+
+`npx tsc --noEmit` produced no output (exit 0). Clean.
 
 ---
 
 ## Patterns to remember (this session's additions)
 
-- **Mock at the structural boundary, not the type assertion.** The dispatcher's first version mocked `listAppsCached` returning shapes WITH `.manifest` — but the real function returns `AppSummary[]` without it. The unit tests passed; runtime would have silently no-op'd. The fix was a parallel function with the right return type. Lesson: when test mocks return a more permissive shape than the real function, you get green tests + a runtime-broken feature. Read the actual return type signature when writing mocks; don't trust your memory of "it has manifest because I want it to."
-- **Schema enums catch design-spec drift.** Three of Phase 5's spec-to-code deviations were forced by enum constraints in the actual schema (notifications.type, BlueprintSchema.domain, BlueprintSchema.requiresApproval). Lesson: spec-writing should grep the schema for the actual enum values rather than describing conceptual labels. The implementer surfaces drift via NEEDS_CONTEXT or DONE_WITH_CONCERNS reports — listen.
-- **Browser smoke catches what unit tests structurally can't, even when you think it won't.** Wave 7's integration test mocked `executeWorkflow` so it wouldn't see runtime errors — fine for verifying the wiring. Wave 8 ran the full chain in a real Next.js process and surfaced (1) the `column_schema` denormalization gap that blocked the UI, and (2) the `NoCompatibleRuntimeError` that revealed the missing runtime configuration for custom profiles. Neither would have shown up in unit tests.
-- **`await import()` in dispatchers from data-layer modules.** Importing engine.ts statically from `src/lib/data/tables.ts` (via the dispatcher's static import) would have created the documented runtime-registry cycle. The dispatcher uses dynamic imports for `engine.ts` and `instantiator.ts`. Confirmed end-to-end: zero ReferenceError in cold start, route handlers, or row-insert dispatch.
+- **Synthesizer module pattern for bridging registries.** When a registry's consumers reference an id that only exists in a sibling registry (here: agent profiles referenced in app manifests), the cleanest fix is a synthesizer module that reads the sibling registry and emits synthetic entries at lowest precedence — not a fallback inside the consumer, not a join query. The synthesizer is independently testable, the precedence is explicit via Map ordering, and the consumer (execution-target.ts) remains unmodified.
+- **`SUPPORTED_AGENT_RUNTIMES` is a `readonly` tuple.** Assigning it directly to `supportedRuntimes: [...]` (which Drizzle / Zod expects as a mutable array) causes a TypeScript error. Fix: `[...SUPPORTED_AGENT_RUNTIMES]` spread. Caught immediately by tsc; pattern applies to any const-asserted array used as a mutable field.
+- **Named error messages at throw sites pay off fast.** Adding the profile id, `supportedRuntimes`, and configured runtimes to `NoCompatibleRuntimeError` took 3 lines of code. During smoke, the operator (here: the plan agent) could confirm from the log message alone that `cs-coach` was missing from the registry — no source-code dive needed. Name your errors with context, not just a generic label.
+- **Cache invalidation must include all inputs.** The profile cache was keyed on profiles-dir and builtins-dir mtimes but not app-manifest mtimes. Without fingerprinting `<appsDir>/*/manifest.yaml`, adding a new app manifest wouldn't evict the synthesized-profiles cache. Extended `getSkillsDirectorySignature()` to include manifest glob mtimes. Lesson: when a function's output depends on N input sources, the cache key must cover all N.
 
 ---
 
 ## Carried-forward gaps (acknowledged, not blocking)
 
-1. **`cs-coach` and other custom agent profiles have no runtime resolution path** in the dev env — row-triggered drafts complete the full Phase 5 chain but fail at task execution. To see Inbox actually populate with drafted documents, scope a follow-up: `profile-runtime-default-resolution` or similar. The dispatcher contract works.
-2. **Tables UI requires `user_tables.column_schema` JSON to be populated.** Phase 4's smoke fixture left this empty (only `user_table_columns` rows existed). Manually populated for the smoke. Future smoke-fixture refactor: keep both in sync via a shared seed helper.
-3. **Multi-step Inbox loader** — pre-existing from Phase 4. The Phase 4 loader uses `LIMIT 1 + JOIN documents` which works fine for single-step blueprints (Phase 5's two new blueprints). If multi-step row-triggered blueprints become common, the loader needs `ORDER BY` tightening.
-4. **Code-quality reviewer's parameter-threading concern from W2.1** (the `_contextRowId` extraction re-fetches `workflow.definition` after `executeWorkflow` may have mutated state). Documented as theoretical; the field is set once at workflow creation and never modified, so stale reads are harmless today. If a future reader of `workflow.definition` in `executeChildTask` reads a dynamically-mutating field, that future reader gets the bug, not us.
-5. **One orphaned empty row** at `fc8161f2-...` in `user_table_rows` from the inline Add Row click. Optional cleanup SQL in TL;DR §3.
+1. **`composed-app-auto-inference-hardening`** — `pickKit`'s 7-rule decision table is untested against ambiguous edge cases. Lower priority since current heuristic works for all 5 seeded apps.
+2. **Tables UI `user_tables.column_schema` JSON** — Phase 4's smoke fixture left this denormalized column empty. Manually populated for Phase 5 smoke. Future smoke-fixture refactor: keep both `user_table_columns` rows and the JSON in sync via a shared seed helper.
+3. **Multi-step Inbox loader** — pre-existing from Phase 4. Current `LIMIT 1 + JOIN documents` works fine for single-step blueprints. If multi-step row-triggered blueprints become common, the loader needs `ORDER BY` tightening.
+4. **Smoke row cleanup** — `d77d9ace-5fa2-41ae-b5e8-020be8c3d3a5` (this session's smoke row) and `b5ad153a-9e3a-4eb8-9415-721865daec68` (Phase 5's Delta Industries row) remain in the DB. Optional cleanup:
+   ```bash
+   sqlite3 ~/.ainative/ainative.db "DELETE FROM user_table_rows WHERE id IN ('d77d9ace-5fa2-41ae-b5e8-020be8c3d3a5', 'b5ad153a-9e3a-4eb8-9415-721865daec68');"
+   ```
 
 ---
 
-*End of handoff. Next move: scope `profile-runtime-default-resolution` to close the runtime gap, OR pick `composed-app-auto-inference-hardening`. Both are lower-priority than the row-trigger feature that just shipped.*
+*End of handoff. Next move: pick `composed-app-auto-inference-hardening` for a polish pass, or advance to `document-output-generation` / `multi-agent-swarm` from the roadmap.*
