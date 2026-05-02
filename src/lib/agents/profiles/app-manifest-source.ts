@@ -73,7 +73,7 @@ export function loadAppManifestProfiles(
         tags: [appId],
         systemPrompt: description,
         skillMd: "",
-        supportedRuntimes: SUPPORTED_AGENT_RUNTIMES,
+        supportedRuntimes: [...SUPPORTED_AGENT_RUNTIMES],
         scope: "user",
         origin: "import",
         readOnly: true,
