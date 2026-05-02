@@ -438,6 +438,20 @@ Post-rollback composition-first strategy (`ideas/self-extending-machine-strategy
 | [nl-to-composition-v1](nl-to-composition-v1.md) (Milestone 4.5) | P1 | shipped | create-plugin-spec (M4), AppMaterializedCard, ExtensionFallbackCard, chat planner layer |
 | [install-parity-audit](install-parity-audit.md) (Milestone 5) | P1 | shipped | nl-to-composition-v1 |
 
+### Composed Apps — Domain-Aware View
+
+Per-app view redesign so that composed apps render domain-aware dashboards driven by manifest configuration, not per-app TSX. Strategy doc: `ideas/composed-apps-domain-aware-view.md`. Six view kits (Tracker, Coach, Inbox, Research, Ledger, Workflow Hub) selected by a deterministic decision table or by an explicit `view:` field. All visuals composed from existing primitives plus a small set of new shared primitives (≥2-kit reuse rule).
+
+| Feature | Priority | Status | Dependencies |
+|---------|----------|--------|--------------|
+| [composed-app-view-shell](composed-app-view-shell.md) (Phase 1) | P1 | planned | app-shell, agent-profile-catalog, workflow-blueprints, scheduled-prompt-loops, tables-data-layer |
+| [composed-app-manifest-view-field](composed-app-manifest-view-field.md) (Phase 1) | P1 | planned | composed-app-view-shell |
+| [composed-app-kit-tracker-and-hub](composed-app-kit-tracker-and-hub.md) (Phase 2) | P1 | planned | composed-app-view-shell, composed-app-manifest-view-field, tables-spreadsheet-editor, micro-visualizations |
+| [composed-app-kit-coach-and-ledger](composed-app-kit-coach-and-ledger.md) (Phase 3) | P2 | planned | composed-app-kit-tracker-and-hub |
+| [composed-app-kit-inbox-and-research](composed-app-kit-inbox-and-research.md) (Phase 4) | P2 | planned | composed-app-kit-coach-and-ledger |
+| [composed-app-auto-inference-hardening](composed-app-auto-inference-hardening.md) (Phase 5) | P2 | planned | composed-app-kit-inbox-and-research |
+| [composed-app-manifest-authoring-tools](composed-app-manifest-authoring-tools.md) (Phase 5) | P3 | planned | composed-app-manifest-view-field, composed-app-auto-inference-hardening, chat-app-builder |
+
 ## Dependency Graph
 
 Critical path through the MVP:

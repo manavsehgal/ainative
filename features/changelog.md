@@ -1,5 +1,30 @@
 # Feature Changelog
 
+## 2026-05-01
+
+### Groomed — Composed Apps Domain-Aware View (7 features extracted)
+
+Extracted 7 phased feature specs from `ideas/composed-apps-domain-aware-view.md` (the strategy doc co-authored by `/frontend-designer` and `/architect` perspectives). The strategy proposes replacing the current manifest-viewer per-app screen with a kit dispatcher that renders one of six domain-aware view kits (Tracker, Coach, Inbox, Research, Ledger, Workflow Hub) driven by manifest configuration. New shared primitives are gated on a "≥2 kits use it" rule; the dispatcher is one route, not per-app TSX.
+
+Phase ordering preserves a usable surface at every gate: Phase 1 lands the shell + schema (no behavior change beyond the manifest peek moving into a sheet); Phase 2 ships the first two kits (Workflow Hub fallback for everything; Tracker for habit-tracker / reading-radar) so users see real value immediately; Phases 3-4 add the remaining four kits in domain-pair batches; Phase 5 hardens auto-inference and adds chat-driven `view:` authoring for power users.
+
+- **Phase 1 (P1):** `composed-app-view-shell` — dispatcher route, KitDefinition / ViewModel types, manifest sheet preserving current composition + files content.
+- **Phase 1 (P1):** `composed-app-manifest-view-field` — strict Zod `view:` field on `AppManifestSchema`, deterministic `pickKit` decision table, golden-master tests for backward compat across all starter manifests.
+- **Phase 2 (P1):** `composed-app-kit-tracker-and-hub` — first two kits, four shared primitives (KPIStrip, LastRunCard, ScheduleCadenceChip, RunNowButton), KPI evaluation engine.
+- **Phase 3 (P2):** `composed-app-kit-coach-and-ledger` — two kits + TimeSeriesChart + RunCadenceHeatmap + LastRunCard hero variant.
+- **Phase 4 (P2):** `composed-app-kit-inbox-and-research` — two kits + RunHistoryTimeline + trigger-source detection.
+- **Phase 5 (P2):** `composed-app-auto-inference-hardening` — tiered column-shape probes (semantic → format → regex), expanded inference test suite (≥25 cases), gated `/apps/[id]/inference` diagnostics page.
+- **Phase 5 (P3):** `composed-app-manifest-authoring-tools` — three new chat tools (`set_app_view_kit`, `set_app_view_bindings`, `set_app_view_kpis`), AppViewEditorCard chat surface, planner hint for view-editing intents.
+
+TDR queue (5 architecture decisions for `/architect` to capture):
+1. App view is config-driven via kits, not per-app TSX
+2. Kit selection is manifest-declared with deterministic auto-inference fallback
+3. Kits are pure projection functions, not stateful components
+4. KPI sources are an enumerated discriminated union, not expressions
+5. `view` schema is `.strict()`, every other manifest schema is `.passthrough()`
+
+No DB migrations required across the 7 features. No breaking changes to existing manifests — every starter app keeps working through Phase 1's dispatcher refactor and Phase 2's auto-inference.
+
 ## 2026-04-21
 
 ### Shipped — M5 `install-parity-audit` (release gate)
