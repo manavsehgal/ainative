@@ -1,7 +1,7 @@
 # Handoff: Phase 3 shipped (composed-app-kit-coach-and-ledger) — browser smoke + Phase 4 next
 
 **Created:** 2026-05-02 (late evening, second session)
-**Status:** Phase 3 (`composed-app-kit-coach-and-ledger`) **code-complete and committed on `main`** across 6 wave commits. Local `main` is **9 commits ahead of origin** — push when ready. Working tree clean. Browser smoke for the new kits is the only outstanding ship gate; it requires an interactive session (compose apps via chat surface + visit `localhost:3010`).
+**Status:** Phase 3 (`composed-app-kit-coach-and-ledger`) **code-complete and committed on `main`** across 6 wave commits + this docs commit. Local `main` is **10 commits ahead of origin** — push when ready. Working tree clean. Browser smoke for the new kits is the only outstanding ship gate; it requires an interactive session (compose apps via chat surface + visit `localhost:3010`).
 **Author:** Manav Sehgal (with Claude Opus 4.7 assist; subagent-driven execution)
 **Predecessor:** `.archive/handoff/2026-05-02-composed-app-kit-tracker-and-hub-phase2-handoff.md`
 
@@ -9,8 +9,9 @@
 
 ## TL;DR for the next agent (or interactive session)
 
-1. **Phase 3 is code-complete and bundled into 6 wave commits.** `git log --oneline -8` shows the full chain:
+1. **Phase 3 is code-complete and bundled into 6 wave commits + 1 docs commit.** `git log --oneline -9` shows the full chain:
    ```
+   b3dd1245 docs(features): Phase 3 status → completed + changelog entry + new HANDOFF
    6842535c feat(apps): Phase 3 wave 6 — page wiring + finance-pack starter
    ca50ca12 feat(apps): Phase 3 wave 4 — coach + ledger data loaders + period cache
    62ff8769 feat(apps): Phase 3 wave 3 — coach + ledger kit definitions
@@ -20,14 +21,14 @@
    b88c4ada docs(specs): Phase 3 brainstorm — Coach & Ledger kits design
    ec96b071 docs(handoff): Phase 2 shipped, Phase 3 is next
    ```
-   Plus a docs commit you'll want to add covering the feature-spec status flip + roadmap row + changelog entry (uncommitted in working tree right now).
+   The docs commit `b3dd1245` already covers the feature-spec status flip + roadmap row + changelog entry. Working tree is clean.
 
 2. **Browser smoke is the only outstanding ship gate** — Phase 3 plan Tasks 32-34. Three checks (each ~5 min):
    - Compose `weekly-portfolio-check-in` from the existing starter (`/apps/<id>` → Coach layout: markdown digest hero + cadence chip + Run Now opens sheet for `investment-research` blueprint variables)
    - Compose `finance-pack` from the new starter (`.claude/apps/starters/finance-pack.yaml`) (`/apps/<id>?period=mtd` → Ledger layout: KPI strip + chart + categories + transactions table; toggle period MTD↔YTD and verify KPI values change)
    - Regression check on `habit-tracker` (`/apps/habit-tracker` → Phase 2 Tracker layout still renders unchanged)
 
-3. **After browser smoke, finalize ship.** Suggested final commit message: `docs(features): Phase 3 status → completed + changelog entry` (covers the status-flip + roadmap update + changelog entry already in the working tree). Then `git push` when ready.
+3. **After browser smoke, push when ready** (`git push`). The docs/status commit is already done (`b3dd1245`); a small follow-up commit landing the smoke screenshots (if you want them tracked, though `output/` is gitignored) is optional.
 
 4. **Phase 4 next: `composed-app-kit-inbox-and-research`.** Spec at `features/composed-app-kit-inbox-and-research.md`. Includes: Inbox kit (queue + draft surface), Research kit, kit-loader registry refactor (deferred from Phase 3 because dispatch hits 5+ branches there), and the `DocumentCitationStrip` primitive (deferred from Phase 3 — `DocumentChipBar` was the wrong abstraction; Phase 4's Inbox kit needs document loading anyway, so adding a read-only citation strip there is the natural home).
 
