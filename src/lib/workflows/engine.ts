@@ -884,6 +884,21 @@ export async function executeChildTask(
     .from(workflows)
     .where(eq(workflows.id, workflowId));
 
+  // Extract context_row_id from workflow definition (set by row-trigger-blueprint-execution).
+  // Used to attribute the resulting task back to the user-table row that triggered it.
+  let contextRowId: string | null = null;
+  if (workflow?.definition) {
+    try {
+      const def = JSON.parse(workflow.definition) as { _contextRowId?: string };
+      if (typeof def._contextRowId === "string") {
+        contextRowId = def._contextRowId;
+      }
+    } catch {
+      // Malformed definition JSON — log and continue.
+      console.warn(`[workflow-engine] workflow ${workflowId} has unparseable definition`);
+    }
+  }
+
   // Resolve "auto" profile via multi-agent router
   const resolvedProfile =
     !agentProfile || agentProfile === "auto"
@@ -920,6 +935,7 @@ export async function executeChildTask(
     agentProfile: resolvedProfile ?? null,
     workflowRunNumber: workflow?.runNumber ?? null,
     maxBudgetUsd: maxBudgetUsd ?? null,
+    contextRowId,
     createdAt: new Date(),
     updatedAt: new Date(),
   });
