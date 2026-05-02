@@ -85,38 +85,39 @@ Verified 0 rows on 2026-05-01 post-sweep.
 
 ---
 
-## Outstanding state (audited 2026-05-01 17:55 PT)
+## Outstanding state (audited 2026-05-01 18:10 PT)
 
 ### Repo
-- `main` is one commit ahead of `origin/main` after `0cfff7d5`. Working tree clean once this handoff lands. No push attempted yet — leaving for the user to verify and push.
+- `main` is 4 commits ahead of `origin/main` (this session): `0cfff7d5` (cascade gap), `c2a5a5bb` (sweep handoff), `a22b3822` (apps card layout), `08af35c3` (apps card polish). Working tree clean.
 
 ### Database
 - 12 projects, 13 user_tables, 13 schedules, 4 user_table_triggers, 19 documents, 12 workflows, 59 tasks, 35 notifications.
-- `GitHub Issue Sync` (`a5a436b0…`) still present — needs human review (1 table + 1 schedule but 0 tasks/0 workflows; check whether the table contains data before deciding).
+- `GitHub Issue Sync` (`a5a436b0…`) still present — REVIEW completed: schema is well-formed (10-column GitHub Issues table) but `firing_count = 0`, `last_fired_at = NULL`, 0 rows. Schedule is active but never used. User judgment: keep (real intent) or delete (3 weeks idle); not auto-deleted.
 
 ### Disk (`~/.ainative/`)
 - Confirmed clean: only `habit-tracker` artifacts remain across `apps/`, `profiles/`, `blueprints/`.
 
 ---
 
-## Other future work (separate from the sweep)
+## Done this session (orphan-sweep follow-ups)
 
-**`GitHub Issue Sync` REVIEW (~5 min).** Audit `~/.ainative/ainative.db` table contents for the 1 user_table belonging to project `a5a436b0…`. If it's empty or stub data, delete the project; if it has real data the user wants to keep, leave it. The schedule's cron + active state should also factor into the decision.
+| # | Task | Status |
+|---|---|---|
+| 1 | `GitHub Issue Sync` REVIEW | Reported findings; user judgment pending |
+| 2 | Tighten orphan-check query | Canonical recipe embedded in "FK-orphan audit recipe" section above; verified 0 rows post-sweep |
+| 3 | Apps card: trash on title row + status on its own row | Shipped (`a22b3822` + `08af35c3`); used positioned-link overlay pattern (HTML-valid alternative to button-in-anchor) |
+| 4 | Live cascade smoke | Verified — synthetic app + profile + blueprint, DELETE returned `{filesRemoved:true, profilesRemoved:1, blueprintsRemoved:1}`, all three locations swept clean |
+
+---
+
+## Other future work (carryover only)
 
 **Free-form compose hardening (~2-3 hr).** Carryover from prior handoff. Phase 2 covers the `COMPOSE_TRIGGERS`-but-no-`PRIMITIVE_MAP` branch. Some hardening worth considering:
 - The generic hint doesn't include the `INTEGRATION_NOUNS` check, so `"build me a github habit tracker"` would still scaffold a GitHub plugin instead of composing.
 - The Phase 2 smoke showed the LLM narrated "I'll wire the app into the existing Habit Loop project" but actually created a fresh `habit-tracker` project. If a user asks `"add to my Habit Loop app"` the planner has no path for that. Affordances for "extend an existing app" would close that gap.
 - 30-day soak on whether the generic hint's 440 chars is pulling its weight.
 
-**Apps card UI: relocate trash + status (~10 min).** Carryover from prior handoff. On `/apps` (`src/app/apps/page.tsx:33-54`):
-- **Top row:** `<Package /> <name>` on the left, trash icon on the right (drop the absolute positioning; render `AppCardDeleteButton` as the right-side flex child where StatusChip is today, and remove the `pr-8` clearance + the outer `<div className="absolute top-1.5 right-1.5 z-10">` wrapper)
-- **Bottom row:** `<StatusChip status="running" size="sm" />` on its own line below the primitives summary
-
-The existing `e.preventDefault() + e.stopPropagation()` guards on `AppCardDeleteButton` keep clicks from bubbling to the surrounding `<Link>`. The RTL "stopPropagation" test in `app-card-delete-button.test.tsx:67` covers it.
-
 **Extract shared `useDeleteApp(args)` hook.** Premature today (only 2 consumers; CLAUDE.md DRY-with-judgment says extract on third). Wait until a third surface needs delete.
-
-**Live compose+delete-with-orphans smoke for Step 0.** The new tests cover the helpers in tmp dirs, but no smoke has exercised the full path against the dev server. Next time you compose a real app and then delete it, eyeball the `profilesRemoved` + `blueprintsRemoved` counts in the response.
 
 ---
 
@@ -126,8 +127,11 @@ The existing `e.preventDefault() + e.stopPropagation()` guards on `AppCardDelete
 - **Path-traversal guards must compose with regex slug guards.** The new `SLUG_RE` check is redundant with the existing `path.resolve` guard for `..` cases, but catches edge cases the path resolver wouldn't (e.g. `appId === ""` matching all `--` files via the prefix). Belt + suspenders is correct here because the cost of an over-broad sweep is destroying user data.
 - **`{"ok":true}` is not the same as "the file is gone."** During Step 4, the first listing after the DELETE call showed `weekly-reading-list--manager` still present even though the API returned ok. Re-listing 30s later showed it gone. The DELETE was async-ish (file removal raced with the response). Always re-verify with a fresh `ls` before declaring victory.
 - **The Step 3 orphan-check query had a false-positive surface (now corrected).** Plugin schedules with empty `project_id` aren't orphans; they're plugin-owned. The "FK-orphan audit recipe" section above is now the canonical query.
-- **Spec-driven scope can drift from the audit.** The prior handoff said "5 profile dirs and 4 blueprint files on disk have no matching app." Today's count agrees with the file count but the disposition is more subtle: `weekly-reading-list--manager` had a corresponding `~/.codex/skills/reading-list-manager` (the original Codex skill it was forked from). Deleting the ainative profile didn't touch the Codex skill. If a future session wants to "delete everything related to weekly-reading-list," it should check both surfaces. Carryover-noting because the disposition isn't obvious.
+- **Spec-driven scope can drift from the audit.** The prior handoff said "5 profile dirs and 4 blueprint files on disk have no matching app." Today's count agrees with the file count but the disposition is more subtle: `weekly-reading-list--manager` had a corresponding `~/.codex/skills/reading-list-manager` (the original Codex skill it was forked from). Deleting the ainative profile didn't touch the Codex skill. If a future session wants to "delete everything related to weekly-reading-list," it should check both surfaces.
+- **`<button>` inside `<a>` is invalid HTML and Firefox auto-closes the anchor.** The prior handoff suggested rendering the trash button inside the wrapping `<Link>` with stopPropagation guards. That breaks click-through to content after the button in Firefox (the parser auto-closes the anchor at the button start tag). The right pattern: positioned-link overlay — Card is `relative`, an absolute Link covers `inset-0`, CardContent is `pointer-events-none` to let clicks pass through to the Link, and only the trash wrapper has `pointer-events-auto` to capture its own clicks. Valid HTML, accessible (Link has aria-label), and click-through works in all browsers.
+- **Adding a new card row visibly grows the card.** Going from 3 rows (title-with-status) to 4 rows (title-with-trash + status-on-its-own) added ~36px of card height. Reclaim some via `p-4 → p-3`, `space-y-2 → space-y-1.5`, and `items-center` (so a tall trash button doesn't push the title row taller than the text). Also wrap small-button overlays with negative margins (`-my-1 -mr-1`) to bleed into the card padding rather than dominate the row.
+- **Turbopack HMR can silently get stuck.** During the apps-card change, the dev server kept serving the old layout despite file edits and `touch`es. `find .next -newer page.tsx` showed no recompile. Restarting the dev server (`pkill -f next-server` after `kill <:3000-pid>`, then `npm run dev`) is the only reliable fix. Worth checking `find .next -newer <file> | head -5` before assuming HMR works.
 
 ---
 
-*End of handoff. Working tree clean after this file lands. Recommended next move: push `main`, then look at `GitHub Issue Sync` REVIEW or move to one of the carryover items above.*
+*End of handoff. Working tree clean. 4 commits ahead of `origin/main` — push when ready.*
