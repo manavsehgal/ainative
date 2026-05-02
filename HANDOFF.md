@@ -1,134 +1,117 @@
-# Handoff: Delete-app feature + Task #2 cleanup shipped → Phase 2 is next
+# Handoff: Phase 2 generic compose-hint shipped → next is the orphan-project sweep
 
-**Created:** 2026-05-01 (end of afternoon)
-**Status:** Tasks #1 + #2 complete (11 commits on `main`, ahead of `origin/main` until pushed). **Task #3 — Phase 2 generic compose-hint — is the only pending item.**
+**Created:** 2026-05-01 (late afternoon)
+**Status:** Phase 2 shipped on `main` (1 commit ahead of `origin/main` until pushed). Smoke-verified end-to-end against `npm run dev`. **No blocking item open.** Optional follow-up: sweep the 6 UUID-id orphan projects mentioned in the prior handoff.
 **Author:** Manav Sehgal (with Claude Opus 4.7 assist)
-**Predecessor:** `.archive/handoff/2026-05-01-phase1-shipped-pre-delete-feature.md`
+**Predecessor:** `.archive/handoff/2026-05-01-phase2-shipped-pre-orphan-cleanup.md`
 
 ---
 
 ## TL;DR for the next agent
 
-1. **You can now delete any composed app in one click** from either `/apps` (ghost trash icon on each card) or `/apps/[id]` (outlined destructive button in the header). Both surfaces invoke `DELETE /api/apps/[id]` → `deleteAppCascade(appId)` → `deleteProjectCascade(appId)` (DB cascade across 17 FK-related tables) + manifest dir removal. Granular response `{success, filesRemoved, projectRemoved}` lets the route map split-manifest and orphan-dir cases to 200 instead of 404.
-2. **`~/.ainative/apps/` is empty.** All 7 leftover apps were swept via the new endpoint at the end of this session. DB went `19 projects / 16 user_tables / 17 schedules` → `13 / 11 / 12` — exactly the cascade math (6 apps had matching DB projects; `portfolio-manager` had only a manifest dir, which exercised the orphan-dir path on real data).
-3. **Your next move = Task #3 — Phase 2 generic compose-hint.** Spec is below. ~2 hr. Files all under `src/lib/chat/planner/`. After Phase 2 ships, re-smoke `"build me a habit tracker app"`. If anything goes sideways, the new delete button on `/apps` is the one-click reset for the iteration cycle.
+1. **Free-form composition prompts now work end-to-end.** `"build me a habit tracker app"` matches `COMPOSE_TRIGGERS` but misses `PRIMITIVE_MAP` → classifier returns a `compose` verdict with a generic plan (was `conversation` before) → `buildCompositionHint` emits a compact directive that (a) forbids Skill invocation, (b) mandates a kebab-case slug, (c) the `<slug>--<artifact>` id format on `create_profile`/`create_blueprint`, (d) `appId: '<slug>'` (no `--`) on `create_table`/`create_schedule`. Phase 1's appId validator catches the `--` mistake at the tool boundary; Phase 2 prevents the mistake from happening in the first place AND prevents the LLM from sliding off into the `ainative-app` Skill which asks 3 clarifying questions before composing.
+2. **Smoke is clean.** `~/.ainative/apps/habit-tracker/manifest.yaml` has profile + blueprint + 2 tables + schedule all under `appId='habit-tracker'`. `chat_messages.metadata.composedApp` populated. ComposedAppCard renders in chat. `projects` row has `id='habit-tracker'` (slug, not UUID). One commit shipped: `9ecdda3f feat(planner): Phase 2 generic compose-hint for unmatched COMPOSE_TRIGGERS`.
+3. **Next move = optional orphan sweep.** Six UUID-id orphan projects from the pre-Phase-2 era still sit in the DB (see prior handoff "Outstanding state → Database"). They no longer accumulate — Phase 2 stops the bleed — but they're noise on `/projects`. ~10 minutes via the existing `/projects` page Delete buttons (already cascade through `deleteProjectCascade`). Worth checking each one is intentional vs. orphaned before deleting.
 
 ---
 
-## What shipped this session (11 commits)
+## What shipped this session (1 commit)
 
 ```
-bbdf8a54 docs(handoff): mark Task #2 cleanup complete
-a158ff6b docs(handoff): delete-app feature shipped + UX-aligned across surfaces
-97f51bb4 refactor(apps): align delete UI with sibling-page patterns
-422ccbb2 feat(apps): wire AppDetailActions into app detail page header
-4fff422d polish(apps): fix singular table copy, aria-hidden icons, race-guard comment
-5acde3b4 feat(apps): app-detail-actions client island for delete
-4758ce27 chore(api): align DELETE 404 copy with GET, drop unused mock
-c8287c8b feat(api): wire DELETE /api/apps/[id] to deleteAppCascade
-6e0e05d6 test(apps): cover orphaned-DB-row case in deleteAppCascade
-e5e85bb0 feat(apps): deleteAppCascade composes deleteProjectCascade + dir removal
-9213251b docs(plan): delete-app cascade plan with reuse-first scope
+9ecdda3f feat(planner): Phase 2 generic compose-hint for unmatched COMPOSE_TRIGGERS
 ```
 
-All bisectable. Each commit independently revertable.
+### Code
 
-### Backend
-- **`deleteAppCascade(appId, options?)`** — `src/lib/apps/registry.ts:217-261`. Async wrapper that composes the existing `deleteProjectCascade` (DB) and `deleteApp` (FS). Path-traversal guard reused from `deleteApp`. DB cascade runs **before** dir removal so a failed cascade leaves the manifest intact for retry. Returns `{filesRemoved, projectRemoved}` independently.
-- **`DELETE /api/apps/[id]`** — `src/app/api/apps/[id]/route.ts:14-37`. Was previously a manifest-only `deleteApp` call; now wires through to the cascade. 200 with granular `{success, filesRemoved, projectRemoved}` if either half succeeded; 404 only when both halves report nothing; 500 on cascade exception. GET handler unchanged byte-identical.
+- **`types.ts`** (`src/lib/chat/planner/types.ts:3-15`) — `ComposePlan` now has `kind: "primitive_matched" | "generic"` discriminator; `profileId` and `blueprintId` are optional (only present on `primitive_matched`).
+- **`primitive-map.ts`** (`src/lib/chat/planner/primitive-map.ts:1-5`) — `PrimitiveMapEntry = Omit<ComposePlan, "kind">` so the 16 builtin entries stay schema-clean. Classifier wraps with `{ kind: "primitive_matched", ...PRIMITIVE_MAP[key] }`.
+- **`classifier.ts`** (`src/lib/chat/planner/classifier.ts:127-138`) — when `findTriggerMatch(COMPOSE_TRIGGERS)` hits but `findPrimitiveKey()` returns null, returns `{ kind: "compose", plan: { kind: "generic", rationale } }`. Was `{ kind: "conversation" }` before.
+- **`composition-hint.ts`** (`src/lib/chat/planner/composition-hint.ts:3-13`) — `buildCompositionHint` now branches on `plan.kind`. Generic branch emits ~440-char compact directive: forbids Skill invocation, slug rule, `--`-on-profile/blueprint rule, no-`--`-on-appId rule. Primitive-matched branch unchanged.
 
-### Frontend
-- **`AppDetailActions`** — `src/components/apps/app-detail-actions.tsx`. Outlined destructive button in the page header (`<Trash2 /> Delete app`), matching `schedule-detail-view.tsx:159` + `profile-detail-view.tsx:288`. Originally used a kebab `DropdownMenu`; refactored after `/frontend-designer` flagged the inconsistency.
-- **`AppCardDeleteButton`** — `src/components/apps/app-card-delete-button.tsx`. Ghost icon button (`h-7 w-7 text-destructive`) positioned absolute `top-1.5 right-1.5 z-10` as a sibling of the card's `<Link>` (NOT inside it — avoids button-inside-link a11y issue). Defensive `e.preventDefault() + e.stopPropagation()`. Calls `router.refresh()` only.
-- **`apps/page.tsx`** — each card wrapped in `<div className="relative">`; card header gets `pr-8` clearance for the absolutely-positioned trash button.
-- Both surfaces share the same `ConfirmDialog` + same cascade-summary builder. Pluralization correct: `1 table (and its rows…)` vs `2 tables (and their rows…)`.
+### Tests (31/31 green; 351/351 across chat+apps; tsc clean)
 
-### Tests
 ```
-src/lib/apps/__tests__/registry.test.ts                 25/25  (5 new for deleteAppCascade)
-src/lib/apps/__tests__/compose-integration.test.ts      14/14
-src/lib/apps/__tests__/composition-detector.test.ts     20/20
-src/app/api/apps/[id]/__tests__/route.test.ts            5/5   (NEW)
-src/components/apps/__tests__/starter-template-card.test  5/5
-                                                       ───────
-                                                        71/71  in 865ms
-npx tsc --noEmit                                        0 errors
+src/lib/chat/planner/__tests__/classifier.test.ts          13/13   (+2 new)
+src/lib/chat/planner/__tests__/composition-hint.test.ts    11/11   (+1 new for generic)
+src/lib/chat/planner/__tests__/primitive-map.test.ts        4/4
+src/lib/chat/__tests__/engine-planner.test.ts               3/3
+                                                          ──────
+                                                            31/31  in 565ms
+npx tsc --noEmit                                            0 errors
 ```
 
-### Smoke validation (real data)
-- `/apps` UI smoke: kebab→button→dialog wiring verified non-destructively (Cancel before Confirm)
-- `DELETE /api/apps/[id]` mass smoke: 7 curl deletes — 6 returned `{filesRemoved:true, projectRemoved:true}`, 1 returned `{filesRemoved:true, projectRemoved:false}` for `portfolio-manager`. The latter validated the orphan-dir test case from commit `6e0e05d6` end-to-end on real data.
-- Browser screenshots: `/tmp/ainative-apps-list-with-delete.png`, `/tmp/ainative-app-detail-direct-button.png`, `/tmp/ainative-delete-app-dialog.png`, `/tmp/ainative-apps-empty-state.png`.
+Notable test change: the old `"build me a list of books" → conversation` assertion was replaced — that case is now compose-generic by design.
+
+### Smoke validation (real data, npm run dev)
+
+Conversation `73266415-07ff-41b2-95f3-d5c9fe6e910b`:
+- LLM did NOT call Skill — composed directly via 5 primitive tool calls (with one self-correcting retry on the blueprint YAML format)
+- `~/.ainative/apps/habit-tracker/manifest.yaml` — single dir, `id: habit-tracker`, profile `habit-tracker--habit-coach`, blueprint `habit-tracker--weekly-review`, 2 tables (Habits, Habit Log), 1 schedule (`0 20 * * *` Daily Habit Check-in)
+- `chat_messages.metadata.composedApp` = `{appId:"habit-tracker", displayName:"Habit Tracker", hasProfile:true, hasBlueprint:true, tableCount:2, scheduleCount:1, primitives:["Profile","Blueprint","2 tables","Schedule"]}`
+- ComposedAppCard rendered in chat with "Open app · Undo" buttons; sidebar shows new `Habit Tracker` link to `/apps/habit-tracker`
+- `projects` row: `id='habit-tracker'`, `name='Habits'` — slug-id project, not UUID
+
+Note: the LLM noticed an existing `Habit Loop` project (one of the 6 prior-era orphans) and remarked "I'll wire the app into it" — but in fact `ensureAppProject('habit-tracker', ...)` created a fresh `habit-tracker` project. The narration drifted; the actual side effects are clean.
 
 ---
 
-## Next session — Task #3: Phase 2 generic compose-hint for unmatched COMPOSE_TRIGGERS
+## Iteration learning — why the first hint draft failed
 
-**Why this matters:** Free-form prompts like `"build me a habit tracker"` currently match `COMPOSE_TRIGGERS` ("build me") but miss `PRIMITIVE_MAP` (no entry for "habit"). The classifier returns a `conversation` verdict, no compose hint is injected, and the LLM composes from scratch into raw primitives in a UUID-id project — no manifest, no `composedApp` metadata, no `ComposedAppCard`. Phase 1's appId validator (commit `0d08a870`) only catches `--`-bearing artifact ids when the LLM enters the appId path — which it doesn't in this case. **Phase 2 is the structural fix.**
+The original generic-hint draft followed the spec literally — ~150 chars covering only items 1-3 (slug, appId rule, no `--`). It dropped the "MUST NOT invoke the Skill tool" guard the primitive-matched hint carries. Smoke #1 immediately failed: the LLM saw a free-form `"build me a habit tracker app"` and called the `ainative-app` Skill, which asks 3 clarifying questions before composing.
 
-### Files (all under `src/lib/chat/planner/`)
-- `types.ts` — `ComposePlan.profileId` + `.blueprintId` optional; add `kind: "primitive_matched" | "generic"` discriminator
-- `classifier.ts` — return generic plan when `findPrimitiveKey()` returns null but `COMPOSE_TRIGGERS` matches (currently returns `conversation` verdict in that branch)
-- `composition-hint.ts` — generic-plan branch emits a compact hint (~150 chars) directing the LLM to:
-  1. Pick a slug (lowercase kebab-case, e.g. "habit-tracker")
-  2. Pass that slug as `appId` on every `create_table` / `create_schedule` call
-  3. Avoid `--` in the appId (Phase 1 validator enforces; the hint just primes)
+Fix was a one-line addition to the directive: explicit `MUST NOT invoke the Skill tool (no brainstorming, ainative-app, product-manager). Compose directly via primitive tools.` Hint now ~440 chars — still ~5x more compact than the primitive-matched hint (~2000 chars), but no longer underspecified. Test threshold relaxed from 400 → 700 chars.
 
-### Tests
-- 3 cases in `classifier.test.ts`:
-  - `COMPOSE_TRIGGERS` + no `PRIMITIVE_MAP` → generic plan
-  - `PRIMITIVE_MAP` match still returns `primitive_matched`
-  - Neither match still returns `conversation`
-- 1 case in `composition-hint.test.ts`: generic plan emits compact hint with slug/appId/-- rules and stays under ~150 chars
-
-### Verification (per CLAUDE.md "Smoke-test budget for runtime-registry-adjacent features")
-This touches the prompt-construction path that feeds `claude-agent.ts`. **Unit tests are necessary but NOT sufficient.** Must end-to-end smoke `"build me a habit tracker app"` against `npm run dev` and confirm:
-- Single `~/.ainative/apps/habit-tracker/` dir created (no split, no UUID project)
-- `chat_messages.metadata.composedApp` populated
-- `ComposedAppCard` renders in the chat UI
-
-If the smoke creates leftover artifacts (it shouldn't, but Phase 2 is the bug we're fixing), use the new `/apps` trash icons to clean up before re-smoking.
-
-### Plan reference
-`docs/superpowers/plans/2026-05-01-delete-app-cascade.md` covered Tasks #1+#2. There is **no plan yet for Task #3**. Either write one with `superpowers:writing-plans` (recommended for the TDD discipline; ~10 min) or proceed directly if the spec above is enough — it's a small, well-bounded change.
-
-### Estimated effort
-~2 hr including the smoke run.
+**Pattern to remember:** "compact" relative to the existing hint isn't the same as "compact in absolute terms." Spec character budgets are guidance, not contracts — let the smoke decide.
 
 ---
 
 ## Outstanding state
 
 ### Repo
-- `main` is 11 commits ahead of `origin/main` until you push (this handoff session does the push as part of `commit and push`).
+- `main` is 1 commit ahead of `origin/main` until you push.
 - Working tree is clean once this handoff lands.
 
 ### Database
-- 13 projects, 11 user_tables, 12 schedules, 4 user_table_triggers remain.
-- Among the 13 projects: 6 are UUID-id orphans from prior free-form-compose smokes (`GitHub Issue Sync`, `NVIDIA Learning Hub`, `Compliance & Audit Trail`, `Revenue Operations Command`, `Habit Loop` (UUID variant), `Daily Journal` (UUID variant)). The rest look like deliberate dogfood projects (`Client: MedReach Health`, `Customer Success Automation`, `Content Engine`, `Product Launch — AI Copilot v2`, etc.). Don't sweep these without a separate user pass — some are intentional.
-- After Phase 2 ships, the UUID-id orphans should stop accumulating. A natural follow-up is to run `/projects` and use that page's existing Delete buttons (already cascade via the same `deleteProjectCascade`) to sweep the 6 orphans. Worth offering a `/schedule` for ~1 week out so the user has time to check which ones were intentional.
+- 14 projects, 13 user_tables, 13 schedules, 5 user_table_triggers (post-smoke counts).
+- The new `habit-tracker` project is intentional (the smoke artifact). The 6 pre-existing UUID-id orphans flagged in the prior handoff are still present:
+  - `GitHub Issue Sync`
+  - `NVIDIA Learning Hub`
+  - `Compliance & Audit Trail`
+  - `Revenue Operations Command`
+  - `Habit Loop` (UUID variant — separate from the new `habit-tracker`)
+  - `Daily Journal` (UUID variant)
+- These should stop accumulating now that Phase 2 ships. Sweep optional; some may be intentional dogfood projects worth keeping.
 
 ### Disk
-- `~/.ainative/apps/` is empty — clean slate for the Phase 2 re-smoke.
+- `~/.ainative/apps/` contains a single `habit-tracker/` (the smoke artifact). Optional cleanup via `/apps` trash icon if you don't want to keep it.
 
 ---
 
-## Follow-up nits (not blocking Phase 2)
+## Next session — pick one
 
-1. **Test gap on presentation components.** `app-detail-actions.tsx` + `app-card-delete-button.tsx` lack RTL coverage of pluralization branches and toast paths. ~30 min for `vi.spyOn(global, "fetch")` test pairs.
-2. **Server-side error sanitization.** `DELETE /api/apps/[id]` route returns raw `err.message` on 500 — fine for single-user local CLI, leaks home dir paths in multi-user contexts. Replace with generic message, keep `console.error` for diagnostic detail.
-3. **Empty-id validation on the API route.** Today, an empty `id` falls through to `deleteAppCascade("")`, path-resolves to apps dir itself, fails the `startsWith` guard, returns 404 by accident. Add `if (!id) return 400` at the route boundary.
-4. **Extract shared `useDeleteApp(args)` hook** when a third consumer joins. Today there are two; CLAUDE.md DRY-with-judgment says extract on third use.
-5. **Sweep the 6 UUID-id orphan projects** (mentioned in "Outstanding state → Database") after Phase 2 stops creating new ones.
+**Option A: orphan-project sweep (~15 min, low risk).** Visit `/projects`, check each of the 6 UUID-id orphans, delete the truly orphaned ones via the existing Delete buttons (cascade through `deleteProjectCascade`). Keep any that are intentional. Refer to "Outstanding state → Database" for the list.
+
+**Option B: follow-up nits from the prior handoff (~1-2 hr each).** Listed in `.archive/handoff/2026-05-01-phase2-shipped-pre-orphan-cleanup.md` "Follow-up nits" section:
+1. RTL coverage for `app-detail-actions` + `app-card-delete-button` toast/pluralization branches (~30 min)
+2. Server-side error sanitization on `DELETE /api/apps/[id]` (~15 min)
+3. Empty-id validation on the API route (~5 min)
+4. Extract shared `useDeleteApp(args)` hook on third consumer
+5. Sweep the 6 UUID-id orphan projects (= Option A above)
+
+**Option C: free-form compose hardening (~2-3 hr, deeper work).** Phase 2 covers the `COMPOSE_TRIGGERS`-but-no-`PRIMITIVE_MAP` branch. Some additional hardening worth considering:
+- The generic hint doesn't include the `INTEGRATION_NOUNS` check, so `"build me a github habit tracker"` would still scaffold a GitHub plugin instead of composing. That's likely desirable, but worth verifying.
+- The smoke showed the LLM narrated "I'll wire the app into the existing Habit Loop project" but actually created a fresh `habit-tracker` project. If a user asks `"add to my Habit Loop app"` the planner has no path for that — it falls through to compose-generic and creates a new app. Affordances for "extend an existing app" would close that gap.
+- Consider a 30-day soak to see whether the generic hint's 440 chars is actually pulling its weight — if the LLM never tries to invoke Skill anyway, the guard line could be deleted.
 
 ---
 
-## Key patterns to remember
+## Key patterns to remember (carryover + new)
 
-- **`/frontend-designer` consultation was the highest-leverage step in this session.** Code reviews approved the kebab pattern; only the cross-cutting design audit caught that two sibling detail pages (schedules, profiles) used direct destructive buttons. One refactor commit restored visual consistency across three detail pages. **For UX-touching features, schedule a designer pass — code review can't see across features.**
-- **The portfolio-manager cleanup result was an unplanned end-to-end validation gift.** The orphan-dir case is hard to construct in a unit test (needs a manifest-on-disk-with-no-DB-project state); the real-data sweep produced exactly that fixture for free.
-- **Reuse-first scope challenge cut the original plan in half.** Discovering `deleteProjectCascade` already existed (extracted earlier for `/api/projects/[id]`) collapsed Task 1 from "implement 17-table FK cascade" to "compose two existing helpers." **Always grep before scoping.**
+- **Smoke is the only ground truth for prompt-construction changes.** Unit tests pass with mocks; the LLM's actual response to the system prompt is unknowable until you run a real turn. The `vi.mock(...)` pattern fundamentally cannot exercise the LLM. CLAUDE.md "Smoke-test budget for runtime-registry-adjacent features" applies just as strongly to planner/system-prompt code paths.
+- **Spec character budgets are guidance, not contracts.** "Compact hint (~150 chars)" was meant relative to the existing 2000-char hint. Aim for the spirit (concise, focused) and let the smoke validate the absolute size.
+- **Discriminated unions beat optional chaining for compose plans.** Adding `kind` to `ComposePlan` made the `buildCompositionHint` branch obvious and lets future planners (e.g., `extend_app` mode) slot in without breaking primitive_matched assumptions.
+- **The LLM narrates side effects from memory of partial reads.** When the smoke output says "wired into Habit Loop", check the actual files/DB rows — narration ≠ effect.
 
 ---
 
-*End of handoff. Working tree contains 1 changed file (this handoff). After commit + push, `main` and `origin/main` are in sync. Next session: Task #3.*
+*End of handoff. Working tree clean after this file lands. Next session: optional orphan sweep, or one of the carry-over nits.*
