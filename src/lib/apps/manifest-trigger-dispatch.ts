@@ -21,6 +21,8 @@
 import { listAppsWithManifestsCached } from "./registry";
 import type { AppManifest } from "./registry";
 import { getBlueprint } from "@/lib/workflows/blueprints/registry";
+import { db } from "@/lib/db";
+import { notifications } from "@/lib/db/schema";
 
 export async function evaluateManifestTriggers(
   tableId: string,
@@ -56,10 +58,24 @@ export async function evaluateManifestTriggers(
         );
       });
     } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
       console.error(
         `[manifest-trigger-dispatch] dispatch failed for app=${appId} blueprint=${blueprintId}:`,
         err
       );
+      try {
+        await db.insert(notifications).values({
+          id: crypto.randomUUID(),
+          taskId: null,
+          type: "task_failed",
+          title: `Trigger failure in app "${appId}"`,
+          body: `Blueprint "${blueprintId}" failed for table "${tableId}" row "${rowId}": ${message}`,
+          read: false,
+          createdAt: new Date(),
+        });
+      } catch (nerr) {
+        console.error(`[manifest-trigger-dispatch] notification write failed:`, nerr);
+      }
     }
   }
 }

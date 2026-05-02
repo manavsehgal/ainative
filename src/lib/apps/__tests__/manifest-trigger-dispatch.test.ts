@@ -22,6 +22,16 @@ vi.mock("@/lib/workflows/blueprints/registry", () => ({
 }));
 import * as bpRegistry from "@/lib/workflows/blueprints/registry";
 
+vi.mock("@/lib/db", () => {
+  const insertMock = vi.fn(() => ({ values: vi.fn(() => ({ run: vi.fn() })) }));
+  return {
+    db: {
+      insert: insertMock,
+    },
+  };
+});
+import { db } from "@/lib/db";
+
 describe("evaluateManifestTriggers — happy path", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -182,5 +192,68 @@ describe("evaluateManifestTriggers — variable substitution", () => {
       "app-x",
       { _contextRowId: "row-1" }
     );
+  });
+});
+
+describe("evaluateManifestTriggers — error paths", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("writes a notification when the blueprint id is unregistered", async () => {
+    vi.mocked(registry.listAppsWithManifestsCached).mockReturnValue([
+      {
+        id: "broken-app",
+        manifest: {
+          id: "broken-app",
+          blueprints: [
+            {
+              id: "broken-app--missing-bp",
+              trigger: { kind: "row-insert", table: "tbl-x" },
+            },
+          ],
+        },
+      } as any,
+    ]);
+
+    vi.mocked(instantiator.instantiateBlueprint).mockRejectedValue(
+      new Error('Blueprint "broken-app--missing-bp" not found')
+    );
+
+    await evaluateManifestTriggers("tbl-x", "row-1", {});
+
+    expect(db.insert).toHaveBeenCalled();
+    expect(engine.executeWorkflow).not.toHaveBeenCalled();
+  });
+
+  it("continues to other apps when one app's blueprint is missing", async () => {
+    vi.mocked(registry.listAppsWithManifestsCached).mockReturnValue([
+      {
+        id: "broken-app",
+        manifest: {
+          id: "broken-app",
+          blueprints: [
+            { id: "broken-app--missing-bp", trigger: { kind: "row-insert", table: "tbl-x" } },
+          ],
+        },
+      } as any,
+      {
+        id: "ok-app",
+        manifest: {
+          id: "ok-app",
+          blueprints: [
+            { id: "ok-app--bp", trigger: { kind: "row-insert", table: "tbl-x" } },
+          ],
+        },
+      } as any,
+    ]);
+
+    vi.mocked(instantiator.instantiateBlueprint)
+      .mockRejectedValueOnce(new Error("not found"))
+      .mockResolvedValueOnce({ workflowId: "wf-ok", name: "ok", stepsCount: 1, skippedSteps: [] });
+    vi.mocked(engine.executeWorkflow).mockResolvedValue(undefined as any);
+
+    await evaluateManifestTriggers("tbl-x", "row-1", {});
+
+    expect(engine.executeWorkflow).toHaveBeenCalledWith("wf-ok");
+    expect(db.insert).toHaveBeenCalledTimes(1);
   });
 });
