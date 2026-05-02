@@ -46,6 +46,15 @@ export interface ResolveInput {
  */
 export type KitProjection = Record<string, unknown>;
 
+/** Phase 4: per-run summary used by RunHistoryTimeline + Research kit. */
+export interface TimelineRun {
+  id: string;
+  status: "running" | "completed" | "failed" | "queued";
+  startedAt: string;          // ISO
+  durationMs?: number;
+  outputDocumentId?: string;
+}
+
 /**
  * Server-only runtime state assembled by `data.ts` once per request and
  * passed through to `buildModel`. Phase 1.1 keeps this minimal; Phase 2+
@@ -79,6 +88,25 @@ export interface RuntimeState {
   ledgerTransactions?: { id: string; date: string; label: string; amount: number; category?: string }[];
   ledgerMonthlyClose?: RuntimeTaskSummary | null;
   ledgerPeriod?: "mtd" | "qtd" | "ytd";
+
+  /** Phase 4: Inbox kit fields. */
+  inboxQueueRows?: { id: string; tableId: string; values: Record<string, unknown> }[];
+  inboxSelectedRowId?: string | null;
+  inboxDraftDocument?: {
+    id: string;
+    filename: string;
+    content: string;
+    taskId: string;
+  } | null;
+
+  /** Phase 4: Research kit fields. */
+  researchSources?: { id: string; values: Record<string, unknown> }[];
+  latestSynthesisDocId?: string | null;
+  researchSynthesisContent?: string | null;
+  researchCitations?: { docId: string; sourceRowId: string; sourceLabel: string }[];
+  researchRecentRuns?: TimelineRun[];
+  researchSourcesCount?: number;
+  researchLastSynthAge?: string | null;
 }
 
 /** Phase 2: cadence chip data for `HeaderSlot.cadenceChip`. */
@@ -105,6 +133,12 @@ export interface RuntimeTaskSummary {
 
 // --- Slot types (consumed by `<KitView/>`) -----------------------------------
 
+/** Phase 4: discriminated union describing how an app's run blueprint fires. */
+export type TriggerSource =
+  | { kind: "row-insert"; table: string; blueprintId: string }
+  | { kind: "schedule"; scheduleId: string; blueprintId: string }
+  | { kind: "manual"; blueprintId?: string };
+
 export interface HeaderSlot {
   title: string;
   description?: string;
@@ -119,6 +153,8 @@ export interface HeaderSlot {
   runNowVariables?: import("@/lib/workflows/blueprints/types").BlueprintVariable[] | null;
   /** Phase 3: render a PeriodSelectorChip (Ledger kit). */
   periodChip?: { current: "mtd" | "qtd" | "ytd" };
+  /** Phase 4: render a TriggerSourceChip when present (Inbox kit). */
+  triggerSourceChip?: TriggerSource;
 }
 
 export interface KpiTile {
@@ -132,7 +168,11 @@ export interface KpiTile {
 }
 
 export interface HeroSlot {
-  kind: "table" | "markdown" | "list" | "custom";
+  /**
+   * Render-shape annotation. The slot view only renders `slot.content`; this
+   * field is documentation-only for kits to declare intent.
+   */
+  kind: "table" | "markdown" | "list" | "custom" | "inbox-split" | "research-split";
   /** Rendered directly when present; kits may also provide a `data` payload. */
   content: ReactNode;
 }
@@ -144,7 +184,15 @@ export interface SecondarySlot {
 }
 
 export interface ActivityFeedSlot {
-  /** Stub in Phase 1.1; Phase 2+ wires `RunHistoryTimeline`. */
+  /**
+   * Render-shape annotation (documentation only). The slot view renders
+   * `content` opaquely; kits set `kind` to declare intent.
+   */
+  kind?:
+    | "history-list"
+    | "throughput-strip"
+    | "run-history-timeline"
+    | "error-timeline";
   content: ReactNode;
 }
 

@@ -16,6 +16,28 @@ const AppArtifactRefSchema = z
   .passthrough();
 
 /**
+ * Blueprint-specific artifact ref. Extends `AppArtifactRefSchema` with an
+ * optional `trigger` field that describes how the blueprint fires. The trigger
+ * object is strictly validated so unknown kinds or missing required fields are
+ * caught at manifest-parse time rather than at runtime.
+ *
+ * Phase 4: only `row-insert` is supported. Additional kinds (e.g. `webhook`)
+ * require a code change — not a manifest hack.
+ */
+const AppBlueprintRefSchema = z
+  .object({
+    id: z.string(),
+    source: z.string().optional(),
+    trigger: z
+      .object({
+        kind: z.literal("row-insert"),
+        table: z.string().min(1),
+      })
+      .optional(),
+  })
+  .passthrough();
+
+/**
  * `view:` is the only place where layout intent enters the manifest. Every
  * other manifest schema is `.passthrough()`; this one is `.strict()` so it
  * cannot drift into an HTML/styling escape hatch. KPI sources are an
@@ -125,7 +147,7 @@ export const AppManifestSchema = z
     persona: z.string().optional(),
     author: z.string().optional(),
     profiles: z.array(AppArtifactRefSchema).optional().default([]),
-    blueprints: z.array(AppArtifactRefSchema).optional().default([]),
+    blueprints: z.array(AppBlueprintRefSchema).optional().default([]),
     tables: z.array(AppTableRefSchema).optional().default([]),
     schedules: z.array(AppScheduleRefSchema).optional().default([]),
     permissions: z

@@ -29,6 +29,8 @@ export const tasks = sqliteTable(
       .notNull(),
     assignedAgent: text("assigned_agent"),
     agentProfile: text("agent_profile"),
+    /** Phase 4: links a row-triggered task back to its originating user_table_rows row. */
+    contextRowId: text("context_row_id"),
     /** Runtime actually used for the most recent execution attempt. */
     effectiveRuntimeId: text("effective_runtime_id"),
     /** Model actually used for the most recent execution attempt. */

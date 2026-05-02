@@ -73,6 +73,7 @@ export function bootstrapAinativeDatabase(sqlite: Database.Database): void {
       effective_runtime_id TEXT,
       effective_model_id TEXT,
       runtime_fallback_reason TEXT,
+      context_row_id TEXT,
       priority INTEGER DEFAULT 2 NOT NULL,
       result TEXT,
       session_id TEXT,
@@ -606,6 +607,8 @@ export function bootstrapAinativeDatabase(sqlite: Database.Database): void {
   addColumnIfMissing(`ALTER TABLE tasks ADD COLUMN lease_expires_at INTEGER;`);
   addColumnIfMissing(`ALTER TABLE tasks ADD COLUMN failure_reason TEXT;`);
   addColumnIfMissing(`ALTER TABLE tasks ADD COLUMN max_turns INTEGER;`);
+  // Phase 4: link row-triggered tasks back to their originating user_table_rows row
+  addColumnIfMissing(`ALTER TABLE tasks ADD COLUMN context_row_id TEXT;`);
   addColumnIfMissing(`ALTER TABLE schedules ADD COLUMN max_turns INTEGER;`);
   addColumnIfMissing(`ALTER TABLE schedules ADD COLUMN max_turns_set_at INTEGER;`);
   addColumnIfMissing(`ALTER TABLE schedules ADD COLUMN max_run_duration_sec INTEGER;`);
