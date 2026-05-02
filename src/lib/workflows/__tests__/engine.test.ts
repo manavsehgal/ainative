@@ -231,4 +231,49 @@ describe("executeChildTask context_row_id stamping", () => {
     expect(insertedValues).toBeDefined();
     expect(insertedValues.contextRowId).toBeNull();
   });
+
+  it("falls back to null context_row_id when workflow definition JSON is malformed", async () => {
+    const workflowId = "workflow-ctx-3";
+    const workflow = {
+      id: workflowId,
+      name: "Malformed definition test",
+      projectId: null,
+      runNumber: null,
+      definition: "{not valid json",
+      status: "draft",
+    };
+    const completedTask = { id: "anything", status: "completed", result: "ok" };
+
+    mockWhere
+      .mockResolvedValueOnce([workflow])
+      .mockResolvedValueOnce([completedTask]);
+
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    try {
+      const { executeChildTask } = await import("../engine");
+
+      await executeChildTask(
+        workflowId,
+        "Test step",
+        "test prompt",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        "test-runtime-noop"
+      );
+
+      expect(mockInsertValues).toHaveBeenCalled();
+      const insertedValues = mockInsertValues.mock.calls[0]?.[0];
+      expect(insertedValues).toBeDefined();
+      expect(insertedValues.contextRowId).toBeNull();
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining(`workflow ${workflowId} has unparseable definition`)
+      );
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
 });
