@@ -1,0 +1,16 @@
+id: finance-pack
+name: Finance pack
+description: Personal finance dashboard with monthly close summary, transactions table, and category breakdown.
+persona: personal-finance
+icon: wallet
+starterPrompt: |
+  Build me a personal finance dashboard.
+
+  - Track transactions in a table with date, description, amount (currency), category
+  - On the 1st of every month, generate a monthly close summary covering net, top movers, category drift
+  - I'll import from a CSV export from my bank
+preview:
+  profiles: 1
+  blueprints: 1
+  tables: 1
+  schedules: 1
