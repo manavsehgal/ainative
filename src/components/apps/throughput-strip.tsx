@@ -1,5 +1,3 @@
-"use client";
-
 import type { ColumnSchemaRef } from "@/lib/apps/view-kits/types";
 
 interface SentimentBuckets {

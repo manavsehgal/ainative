@@ -178,4 +178,18 @@ The synthesis hero's `DocumentChipBar` reads the latest synthesis task's `docume
 - Anti-pattern reminders: kits never own state; the inbox-split layout uses the existing `DetailPane` URL-driven pattern; synthesis citation chips don't open a new route, they highlight in place
 - Implementation plan: `docs/superpowers/plans/2026-05-02-composed-app-kit-inbox-and-research.md`
 - Design spec: `docs/superpowers/specs/2026-05-02-inbox-and-research-design.md`
-- Verification: 340+ unit tests + 11 KitView integration tests covering all 6 kits all green; tsc clean. Browser smoke deferred — manifests and DB seeds prepared at `~/.ainative/apps/{customer-follow-up-drafter,research-digest}/`. See HANDOFF.md for next-session smoke commands.
+- Verification: 340+ unit tests + 11 KitView integration tests covering all 6 kits all green; tsc clean. Browser smoke completed 2026-05-02 — see "Verification run" below.
+
+## Verification run — 2026-05-02
+
+Dev server `PORT=3010 npm run dev`, captured via chrome-devtools-mcp:
+
+- `/apps/customer-follow-up-drafter` (Inbox) — trigger chip "Triggered by row insert in customer-touchpoints", no Run Now button, 3 queue rows, empty draft pane initially. Click first row → URL becomes `?row=cft-r1`, draft pane shows "Reply to Acme Corp" with markdown body. Console clean. → `output/phase-4-inbox-empty.png`, `output/phase-4-inbox-draft.png`
+- `/apps/research-digest` (Research) — cadence chip "Friday 5pm", Run Now button, KPIs Sources=3 / Last synth "just now", 3 source rows (Hacker News / ArXiv / Stratechery), synthesis markdown ("Digest for week ending Apr 30") with 3 bullets, RunHistoryTimeline showing "Completed / just now". Console clean. → `output/phase-4-research.png`
+- Regression: `/apps/habit-tracker` (tracker), `/apps/weekly-portfolio-check-in` (coach), `/apps/finance-pack` (ledger) — all render, console clean. → `output/phase-4-regression-{tracker,coach,ledger}.png`. Workflow-hub kit has no seeded smoke app; integration tests at `src/lib/apps/view-kits/__tests__/integration/workflow-hub-kit-view.test.tsx` cover its DOM wiring.
+
+### Bug fixed during smoke
+
+Initial Inbox load threw the runtime error `Attempted to call hasSentimentColumn() from the server but hasSentimentColumn is on the client`. Root cause: `src/components/apps/throughput-strip.tsx` was marked `"use client"` despite being a pure SVG component (no state, effects, or handlers), and it exports the non-component helper `hasSentimentColumn` which `inbox.ts` (server-side kit definition) calls inside `resolve()`. Next.js replaces non-component exports of `"use client"` modules with server-side reference shims that throw on call. Fix: dropped the unnecessary `"use client"` directive — the component renders cleanly on either side. Confirmed via re-load (page renders) and unit tests (`throughput-strip.test.tsx` 6/6, `inbox.test.ts` 7/7 still pass).
+
+This is a new instance of the wiring-bug class but at the Next.js Server/Client component boundary, not the runtime registry. Vitest + RTL integration tests structurally cannot catch it because they run everything in a single client runtime; the `"use client"` directive is never enforced. Lesson recorded in this addendum so future kit features remember to either run a real-browser smoke or factor non-component helpers out of `"use client"` modules.
