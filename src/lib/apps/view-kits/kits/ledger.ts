@@ -106,6 +106,7 @@ export const ledgerKit: KitDefinition = {
         status: "running",
         runNowBlueprintId: projection.runsBlueprintId,
         runNowVariables: projection.runsBlueprintVars,
+        periodChip: { current: projection.period },
       },
       kpis: runtime.evaluatedKpis ?? [],
       hero,

@@ -117,6 +117,8 @@ export interface HeaderSlot {
   runNowBlueprintId?: string;
   /** Phase 3: pre-fetched blueprint variables for RunNowButton sheet. */
   runNowVariables?: import("@/lib/workflows/blueprints/types").BlueprintVariable[] | null;
+  /** Phase 3: render a PeriodSelectorChip (Ledger kit). */
+  periodChip?: { current: "mtd" | "qtd" | "ytd" };
 }
 
 export interface KpiTile {
