@@ -1,5 +1,7 @@
 import type { AppManifest } from "@/lib/apps/registry";
 import { pickKit as pickKitId } from "./inference";
+import { coachKit } from "./kits/coach";
+import { ledgerKit } from "./kits/ledger";
 import { placeholderKit } from "./kits/placeholder";
 import { trackerKit } from "./kits/tracker";
 import { workflowHubKit } from "./kits/workflow-hub";
@@ -7,16 +9,16 @@ import type { ColumnSchemaRef, KitDefinition, KitId } from "./types";
 
 /**
  * View-kit registry. Phase 2 ships `tracker` + `workflow-hub` alongside the
- * Phase 1.1 `placeholder`. Phase 3 (`coach`/`ledger`) and Phase 4 (`inbox`/
- * `research`) remain undefined here and degrade to `placeholderKit` via
+ * Phase 1.1 `placeholder`. Phase 3 adds `coach` + `ledger`. Phase 4 (`inbox`/
+ * `research`) remains undefined here and degrades to `placeholderKit` via
  * `resolveKit`.
  */
 export const viewKits: Record<KitId, KitDefinition | undefined> = {
   placeholder: placeholderKit,
   tracker: trackerKit,
   "workflow-hub": workflowHubKit,
-  coach: undefined,
-  ledger: undefined,
+  coach: coachKit,
+  ledger: ledgerKit,
   inbox: undefined,
   research: undefined,
 };

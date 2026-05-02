@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { defaultTrackerKpis } from "../default-kpis";
+import { defaultLedgerKpis, defaultTrackerKpis } from "../default-kpis";
 
 describe("defaultTrackerKpis — synthesizes KpiSpecs from hero columns", () => {
   it("returns empty when no table is provided", () => {
@@ -64,5 +64,37 @@ describe("defaultTrackerKpis — synthesizes KpiSpecs from hero columns", () => 
     ]);
     const ids = kpis.map((k) => k.id);
     expect(new Set(ids).size).toBe(ids.length);
+  });
+});
+
+describe("defaultLedgerKpis", () => {
+  it("synthesizes Net + Inflow + Outflow when currency column present", () => {
+    const cols = [
+      { name: "amount", type: "number", semantic: "currency" },
+      { name: "category", type: "string" },
+    ];
+    const kpis = defaultLedgerKpis("transactions", cols, "mtd");
+    expect(kpis.map((k) => k.id)).toEqual(["net", "inflow", "outflow"]);
+    expect(kpis[0].source.kind).toBe("tableSumWindowed");
+    expect(kpis[1].source).toMatchObject({ sign: "positive", window: "mtd" });
+    expect(kpis[2].source).toMatchObject({ sign: "negative", window: "mtd" });
+  });
+
+  it("appends Run-rate KPI when blueprintId provided", () => {
+    const cols = [{ name: "amount", type: "number", semantic: "currency" }];
+    const kpis = defaultLedgerKpis("transactions", cols, "mtd", "monthly-close");
+    expect(kpis.map((k) => k.id)).toContain("run-rate");
+  });
+
+  it("returns empty array when no currency column", () => {
+    const cols = [{ name: "category", type: "string" }];
+    const kpis = defaultLedgerKpis("transactions", cols, "mtd");
+    expect(kpis).toEqual([]);
+  });
+
+  it("scopes window to whatever period is passed", () => {
+    const cols = [{ name: "amount", type: "number", semantic: "currency" }];
+    const kpis = defaultLedgerKpis("t", cols, "ytd");
+    expect(kpis[0].source).toMatchObject({ window: "ytd" });
   });
 });

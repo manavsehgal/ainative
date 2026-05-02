@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AppManifest } from "@/lib/apps/registry";
-import { loadColumnSchemas, resolveKit } from "../index";
+import { loadColumnSchemas, resolveKit, viewKits } from "../index";
 import { placeholderKit } from "../kits/placeholder";
 
 function makeManifest(over: Partial<AppManifest> = {}): AppManifest {
@@ -25,9 +25,12 @@ describe("resolveKit — KitId to KitDefinition lookup", () => {
     expect(resolveKit("workflow-hub").id).toBe("workflow-hub");
   });
 
+  it("returns the registered kit for coach and ledger (Phase 3)", () => {
+    expect(resolveKit("coach").id).toBe("coach");
+    expect(resolveKit("ledger").id).toBe("ledger");
+  });
+
   it("falls back to placeholderKit for kit ids reserved for later phases", () => {
-    expect(resolveKit("ledger")).toBe(placeholderKit);
-    expect(resolveKit("coach")).toBe(placeholderKit);
     expect(resolveKit("inbox")).toBe(placeholderKit);
     expect(resolveKit("research")).toBe(placeholderKit);
   });
@@ -88,5 +91,17 @@ describe("loadColumnSchemas — reads column data per manifest table", () => {
       { name: "x", dataType: "text", config: "not json" },
     ]);
     expect(out[0].columns[0].semantic).toBeUndefined();
+  });
+});
+
+describe("Coach + Ledger registration", () => {
+  it("registers coach kit", () => {
+    expect(viewKits.coach).toBeDefined();
+    expect(viewKits.coach!.id).toBe("coach");
+  });
+
+  it("registers ledger kit", () => {
+    expect(viewKits.ledger).toBeDefined();
+    expect(viewKits.ledger!.id).toBe("ledger");
   });
 });

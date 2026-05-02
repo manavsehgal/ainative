@@ -58,3 +58,71 @@ export function defaultTrackerKpis(
 
   return specs.slice(0, 4);
 }
+
+interface ColumnHint {
+  name: string;
+  type?: string;
+  semantic?: string;
+}
+
+/**
+ * Synthesize Net / Inflow / Outflow + optional Run-rate KPI specs for a
+ * Ledger app whose hero table has a `currency`-shaped column. Period scopes
+ * all sums by `userTableRows.createdAt`. Run-rate added only when a
+ * blueprint is declared.
+ */
+export function defaultLedgerKpis(
+  table: string,
+  columns: ColumnHint[],
+  period: "mtd" | "qtd" | "ytd",
+  blueprintId?: string
+): KpiSpec[] {
+  const currencyCol = columns.find(
+    (c) => c.semantic === "currency" || /amount|balance|value/i.test(c.name)
+  );
+  if (!currencyCol) return [];
+
+  const specs: KpiSpec[] = [
+    {
+      id: "net",
+      label: "Net",
+      format: "currency",
+      source: { kind: "tableSumWindowed", table, column: currencyCol.name, window: period },
+    },
+    {
+      id: "inflow",
+      label: "Inflow",
+      format: "currency",
+      source: {
+        kind: "tableSumWindowed",
+        table,
+        column: currencyCol.name,
+        sign: "positive",
+        window: period,
+      },
+    },
+    {
+      id: "outflow",
+      label: "Outflow",
+      format: "currency",
+      source: {
+        kind: "tableSumWindowed",
+        table,
+        column: currencyCol.name,
+        sign: "negative",
+        window: period,
+      },
+    },
+  ];
+
+  if (blueprintId) {
+    specs.push({
+      id: "run-rate",
+      label: "Run-rate (30d)",
+      format: "int",
+      source: { kind: "blueprintRunCount", blueprint: blueprintId, window: "30d" },
+    });
+  }
+
+  return specs;
+}

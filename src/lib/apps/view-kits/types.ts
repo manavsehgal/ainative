@@ -35,6 +35,8 @@ export interface ColumnSchemaRef {
 export interface ResolveInput {
   manifest: AppManifest;
   columns: ColumnSchemaRef[];
+  /** Phase 3: period selector value passed by Ledger only. */
+  period?: "mtd" | "qtd" | "ytd";
 }
 
 /**
@@ -65,6 +67,18 @@ export interface RuntimeState {
   blueprintRunCounts?: Record<string, number>;
   /** Phase 2: recent failed tasks for Workflow Hub `error-timeline`. */
   failedTasks?: RuntimeTaskSummary[];
+
+  /** Phase 3: Coach kit fields. */
+  coachLatestTask?: RuntimeTaskSummary | null;
+  coachPreviousRuns?: RuntimeTaskSummary[];
+  coachCadenceCells?: { date: string; runs: number; status?: "success" | "fail" }[];
+
+  /** Phase 3: Ledger kit fields. */
+  ledgerSeries?: { date: string; value: number }[];
+  ledgerCategories?: { label: string; value: number }[];
+  ledgerTransactions?: { id: string; date: string; label: string; amount: number; category?: string }[];
+  ledgerMonthlyClose?: RuntimeTaskSummary | null;
+  ledgerPeriod?: "mtd" | "qtd" | "ytd";
 }
 
 /** Phase 2: cadence chip data for `HeaderSlot.cadenceChip`. */
@@ -101,6 +115,8 @@ export interface HeaderSlot {
   cadenceChip?: CadenceChipData;
   /** Phase 2: render a RunNowButton with this blueprint id when present. */
   runNowBlueprintId?: string;
+  /** Phase 3: pre-fetched blueprint variables for RunNowButton sheet. */
+  runNowVariables?: import("@/lib/workflows/blueprints/types").BlueprintVariable[] | null;
 }
 
 export interface KpiTile {
