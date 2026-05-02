@@ -1,7 +1,7 @@
-# Handoff: Phase 2 generic compose-hint shipped → next is the orphan-project sweep
+# Handoff: Phase 2 + delete-route hardening shipped → orphan sweep is the only thing left
 
 **Created:** 2026-05-01 (late afternoon)
-**Status:** Phase 2 shipped on `main` (1 commit ahead of `origin/main` until pushed). Smoke-verified end-to-end against `npm run dev`. **No blocking item open.** Optional follow-up: sweep the 6 UUID-id orphan projects mentioned in the prior handoff.
+**Status:** Phase 2 + 3 hardening nits shipped on `main` (3 commits ahead of `origin/main` until pushed). Smoke-verified end-to-end against `npm run dev`; 118/118 green across the touched suites; tsc clean. **No blocking item open.** Only outstanding follow-up is the optional orphan-project sweep (needs user judgment on which orphans are intentional).
 **Author:** Manav Sehgal (with Claude Opus 4.7 assist)
 **Predecessor:** `.archive/handoff/2026-05-01-phase2-shipped-pre-orphan-cleanup.md`
 
@@ -15,11 +15,20 @@
 
 ---
 
-## What shipped this session (1 commit)
+## What shipped this session (3 commits)
 
 ```
+e8e7861e chore(apps): harden DELETE /api/apps/[id] + RTL coverage for delete UI
+a5edca1e docs(handoff): Phase 2 generic compose-hint shipped
 9ecdda3f feat(planner): Phase 2 generic compose-hint for unmatched COMPOSE_TRIGGERS
 ```
+
+Commit `e8e7861e` batched three follow-up nits from the prior handoff:
+1. Empty-id 400 short-circuit on `DELETE /api/apps/[id]` (was returning 404 by accident via path-traversal guard)
+2. 500 sanitization — generic "Failed to delete app" body, raw err.message goes to console.error only (no home-dir leak)
+3. RTL coverage for `app-detail-actions` + `app-card-delete-button` — pluralization branches, success/error toast paths, sibling-of-link click isolation, URL-encoded appId
+
+13 new tests; 118/118 across api+apps+planner+components.
 
 ### Code
 
@@ -91,12 +100,12 @@ Fix was a one-line addition to the directive: explicit `MUST NOT invoke the Skil
 
 **Option A: orphan-project sweep (~15 min, low risk).** Visit `/projects`, check each of the 6 UUID-id orphans, delete the truly orphaned ones via the existing Delete buttons (cascade through `deleteProjectCascade`). Keep any that are intentional. Refer to "Outstanding state → Database" for the list.
 
-**Option B: follow-up nits from the prior handoff (~1-2 hr each).** Listed in `.archive/handoff/2026-05-01-phase2-shipped-pre-orphan-cleanup.md` "Follow-up nits" section:
-1. RTL coverage for `app-detail-actions` + `app-card-delete-button` toast/pluralization branches (~30 min)
-2. Server-side error sanitization on `DELETE /api/apps/[id]` (~15 min)
-3. Empty-id validation on the API route (~5 min)
-4. Extract shared `useDeleteApp(args)` hook on third consumer
-5. Sweep the 6 UUID-id orphan projects (= Option A above)
+**Option B: remaining follow-up nits.** Items 1-3 from the prior handoff shipped in `e8e7861e`. Two left:
+1. ~~RTL coverage~~ — done
+2. ~~Server-side error sanitization~~ — done
+3. ~~Empty-id validation~~ — done
+4. Extract shared `useDeleteApp(args)` hook — premature today (only 2 consumers; CLAUDE.md DRY-with-judgment says extract on third). Wait until a third surface needs delete.
+5. Sweep the 6 UUID-id orphan projects — same as Option A.
 
 **Option C: free-form compose hardening (~2-3 hr, deeper work).** Phase 2 covers the `COMPOSE_TRIGGERS`-but-no-`PRIMITIVE_MAP` branch. Some additional hardening worth considering:
 - The generic hint doesn't include the `INTEGRATION_NOUNS` check, so `"build me a github habit tracker"` would still scaffold a GitHub plugin instead of composing. That's likely desirable, but worth verifying.
