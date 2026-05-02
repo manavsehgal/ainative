@@ -36,13 +36,13 @@ export default function AppsPage() {
                     aria-label={`Open ${app.name}`}
                     className="absolute inset-0 z-0 rounded-[inherit] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                   />
-                  <CardContent className="pointer-events-none relative p-4 space-y-2">
-                    <div className="flex items-start justify-between gap-2">
+                  <CardContent className="pointer-events-none relative p-3 space-y-1.5">
+                    <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">
                         <Package className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden="true" />
                         <span className="text-sm font-medium truncate">{app.name}</span>
                       </div>
-                      <div className="pointer-events-auto">
+                      <div className="pointer-events-auto -my-1 -mr-1">
                         <AppCardDeleteButton
                           appId={app.id}
                           appName={app.name}
@@ -62,7 +62,7 @@ export default function AppsPage() {
                         {app.primitivesSummary}
                       </p>
                     )}
-                    <div>
+                    <div className="flex justify-end">
                       <StatusChip status="running" size="sm" />
                     </div>
                   </CardContent>
