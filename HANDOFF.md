@@ -1,98 +1,121 @@
-# Handoff: Phase 3.1 patch landed (Bug 3 fixed) — ready to start Phase 4 (`composed-app-kit-inbox-and-research`)
+# Handoff: Phase 4 (`composed-app-kit-inbox-and-research`) code-complete — browser smoke deferred to next session
 
-**Created:** 2026-05-02 (fourth session, late evening — Phase 3.1 cleanup)
-**Status:** Phase 3 fully closed out. Bug 3 from previous session is fixed and committed: `TransactionsTable` (secondary slot) + `MonthlyCloseSummary` (activity slot) are now wired into `ledgerKit.buildModel`. 275 unit tests pass (+2 new), `tsc` clean. Working tree clean. Ready to start Phase 4.
-**Author:** Manav Sehgal (with Claude Opus 4.7 assist)
-**Predecessor:** `.archive/handoff/2026-05-02-composed-app-kit-ledger-phase3-smoke-handoff.md`
+**Created:** 2026-05-02 (Phase 4 implementation session, subagent-driven)
+**Status:** Phase 4 fully implemented across 8 waves (40 tasks, 19 commits). All unit + integration tests green; tsc clean. Browser smoke is the only remaining verification — manifests + seeds are prepared at `~/.ainative/apps/{customer-follow-up-drafter,research-digest}/`. Working tree clean.
+**Author:** Manav Sehgal (with Claude Opus 4.7 + Sonnet 4.6 implementers)
+**Predecessor:** `.archive/handoff/2026-05-02-composed-app-kit-phase3-1-handoff.md`
 
 ---
 
 ## TL;DR for the next agent (or interactive session)
 
-1. **Phase 3 is now genuinely complete and shipped.** The previous session caught + fixed 2 of 3 wiring gaps via browser smoke; this session closed the third. All four kits (Tracker, Workflow Hub, Coach, Ledger) render the full slot pipeline they were designed for.
+1. **Phase 4 is code-complete and code-reviewed across 8 waves.** Each wave went through implementer (Sonnet) + spec reviewer (Opus) + code-quality reviewer (Opus). All 11 KitView integration tests confirm DOM-level wiring across all 6 kits — Tracker, Workflow Hub, Coach, Ledger, Inbox, Research.
 
-2. **Bug 3 (FIXED this session):** `ledgerKit.buildModel` now references `runtime.ledgerTransactions` and `runtime.ledgerMonthlyClose` to populate the `secondary` (`TransactionsTable` card titled "Recent transactions") and `activity` (`MonthlyCloseSummary` collapsible card) slots. Both components were already built + unit-tested in wave 2; both data loaders were already populating runtime in wave 4. The only gap was the buildModel wiring — a 1-file change to `src/lib/apps/view-kits/kits/ledger.ts` plus 2 new tests in the kit test file.
+2. **The only remaining step is browser smoke.** This is gated on a dev server + Playwright session that's awkward in subagent-driven flow. Resume in interactive session with these steps:
 
-3. **Phase 4 is the next move: `composed-app-kit-inbox-and-research`.** Spec at `features/composed-app-kit-inbox-and-research.md`. Scope:
-   - **`RunHistoryTimeline`** — new shared primitive (vertical timeline of runs with status, timestamp, click-to-open). Used by Research and exposed for Workflow Hub re-skin in a follow-up.
-   - **`InboxKit`** — two-pane queue + draft layout for row-trigger blueprint apps. Header includes a `triggerSourceChip` for event-driven apps (Run Now suppressed when blueprint trigger is `row-insert`).
-   - **`ResearchKit`** — sources `DataTable` + synthesis hero with `DocumentChipBar` citations. Activity slot uses the new `RunHistoryTimeline`. Citation chips highlight matching source rows in place (no route change).
-   - **Slot renderer additions** — `inbox-split` and `research-split` hero kinds; `throughput-strip` and `run-history-timeline` activity kinds; `triggerSourceChip` in header.
-   - **`detectTriggerSource(manifest)`** — pure helper returning `"row-insert" | "schedule" | "manual"`.
+   ```bash
+   PORT=3010 npm run dev &
+   # wait for "Ready in <time>"
+   ```
 
-4. **Bug 3 was deferred from Phase 3 specifically because it needed a slot-design decision.** The choice landed: `secondary` for transactions (canonical pattern), `activity` for monthly close summary (matches Coach's activity-slot convention). Phase 4 inherits clean precedents — both kits will use `activity` for their primary run/throughput surfaces.
+   Then via Playwright (or Claude in Chrome):
+   - Navigate to `http://localhost:3010/apps/customer-follow-up-drafter`
+   - Verify: chip "Triggered by row insert in customer-touchpoints", no Run Now button, 3 queue rows (Acme/Beta/Gamma), empty draft pane initially.
+   - Click Acme row → URL becomes `?row=cft-r1`, draft pane shows "Reply to Acme Corp" markdown.
+   - Save `output/phase-4-inbox-empty.png` and `output/phase-4-inbox-draft.png`.
+   - Navigate to `http://localhost:3010/apps/research-digest`
+   - Verify: cadence chip "Scheduled", Run Now button, KPIs (Sources=3, Last synth ~recent), 3 source rows, synthesis markdown, RunHistoryTimeline.
+   - Save `output/phase-4-research.png`.
+   - Regression check: navigate to `/apps/habit-tracker`, `/apps/<workflow-hub-id>`, `/apps/weekly-portfolio-check-in`, `/apps/finance-pack`. Each should render console-clean.
+   - Save `output/phase-4-regression-<kit>.png`.
+
+3. **After browser smoke is clean**, commit the screenshots + a short addendum to `features/composed-app-kit-inbox-and-research.md` noting the verification run, then update HANDOFF.md to "Phase 4 fully shipped".
+
+4. **Next feature** (per spec References): the locked design decisions in this Phase 4 spec deferred two follow-up features:
+   - `row-trigger-blueprint-execution` — wires the `trigger.kind: row-insert` manifest field through the workflow engine so blueprints actually fire when rows arrive. This wave's `tasks.context_row_id` column is ready to receive engine writes.
+   - `composed-app-auto-inference-hardening` — tightens `pickKit`'s 7-rule decision table against edge cases.
 
 ---
 
-## What landed this session
+## What landed this session (8 waves, 19 commits)
 
 ```
-src/lib/apps/view-kits/kits/ledger.ts                 (M)  +TransactionsTable + MonthlyCloseSummary imports
-                                                            +secondary slot (transactions card)
-                                                            +activity slot (monthly close summary)
-src/lib/apps/view-kits/__tests__/ledger.test.ts       (M)  +2 buildModel tests (populated + empty cases)
-
-HANDOFF.md                                            (M)  Phase 3.1 done, Phase 4 next
-.archive/handoff/2026-05-02-composed-app-kit-ledger-phase3-smoke-handoff.md (A)  Predecessor archived
+W1  bf2e208e  feat(apps): Phase 4 wave 1 — types, manifest trigger field, contextRowId column
+W2  e9bd2903  feat(apps): Phase 4 wave 2 — RunHistoryTimeline primitive
+    f0950898  refactor(apps): Phase 4 wave 2 nits — design tokens + canonical formatter + workflow icons
+W3  ecd6bf90  feat(apps): Phase 4 wave 3 — detectTriggerSource helper
+    1d267c09  refactor(apps): Phase 4 wave 3 nit — drop unnecessary structural casts
+W4  3ed4e97b  feat(apps): Phase 4 wave 4 — slot extensions + Inbox/Research client components
+W5  fbc03ce1  feat(apps): Phase 4 wave 5 — InboxKit + ResearchKit definitions
+W6  f985dfd6  feat(apps): Phase 4 wave 6 — data loaders + page wiring
+    bffc66f6  refactor(apps): Phase 4 wave 6 nits — vitest mock unstable_cache + blueprint filters
+W7  205c1b20  test(apps): Phase 4 wave 7 — KitView integration tests for all 6 kits
+W8  a309fa99  docs(features): Phase 4 status → completed + changelog entry
+    (this handoff commit — see below)
 ```
 
-**Smoke-only artifacts from previous session (gitignored, local-only — clean up at will):**
+Pre-wave planning commits:
 ```
-~/.ainative/apps/weekly-portfolio-check-in/manifest.yaml
-~/.ainative/apps/finance-pack/manifest.yaml
-~/.ainative/ainative.db user_tables row "transactions" + 5-row seed
-output/phase-3-coach-runnow-sheet.png
-output/phase-3-ledger-ytd.png
-output/phase-3-tracker-regression.png
+    b59db6ed  docs(specs): Phase 4 implementation design — composed-app-kit-inbox-and-research
+    eac544bf  docs(plans): Phase 4 implementation plan — composed-app-kit-inbox-and-research
 ```
 
-To clean up: `rm -rf ~/.ainative/apps/{weekly-portfolio-check-in,finance-pack}` and the SQL from the previous handoff. Or keep them as Phase 4 smoke fixtures — Phase 4's Inbox kit will need a row-insert-triggered manifest, and Research will need a sources-table fixture, so the existing seed is half the work for the inbox/research smoke.
+---
+
+## Smoke-only artifacts (gitignored, local-only)
+
+```
+~/.ainative/apps/customer-follow-up-drafter/manifest.yaml   Inbox kit canonical
+~/.ainative/apps/research-digest/manifest.yaml              Research kit canonical
+
+DB seeds in ~/.ainative/ainative.db:
+  - projects: customer-follow-up-drafter, research-digest
+  - user_tables: customer-touchpoints (4 cols, 3 rows), sources (3 cols, 3 rows)
+  - tasks: cfd-draft-1 (linked to cft-r1 via context_row_id), rd-synth-1
+  - documents: cfd-doc-1 (linked to cfd-draft-1 with sample reply markdown)
+```
+
+Note: `tasks.context_row_id` is defined in `bootstrap.ts` (addColumnIfMissing) but was not yet present in the live DB because the dev server had not run after Wave 1. The column was added manually via `ALTER TABLE tasks ADD COLUMN context_row_id TEXT` before seeding. It will be idempotent on next dev server start.
+
+To clean up after smoke: `rm -rf ~/.ainative/apps/{customer-follow-up-drafter,research-digest}` and DELETE statements as needed.
 
 ---
 
 ## Verification this session
 
-- **Unit tests:** 275 passing across `src/lib/apps`, `src/components/apps`, `src/components/charts` (33 test files). Up from 273 — the 2 added tests cover populated + empty `runtime.ledgerTransactions` / `runtime.ledgerMonthlyClose` paths.
-- **`npx tsc --noEmit`:** exit 0, zero errors.
-- **No browser smoke this session.** The fix is *not* runtime-registry-adjacent (no `@/lib/agents/runtime/catalog.ts` lineage), so the CLAUDE.md smoke-test budget rule doesn't apply. The wiring pattern is identical to existing kits (`createElement(Component, props)` against an already-tested slot renderer). Risk surface = limited; cost of regression = one-line revert. If verifying visually before Phase 4, the fastest path is: start `npm run dev`, hit `/apps/finance-pack` (the previous session's seeded manifest), confirm transactions table + collapsible monthly close summary appear below the chart hero.
-
----
-
-## Resolved decisions during execution
-
-1. **Phase 3.1 patch beat absorbing Bug 3 into Phase 4.** The Phase 4 spec adds 4 new slot renderers and a new primitive — bundling Bug 3 into that diff would obscure bisectability. The Bug 3 fix is a pure 1-file addition to an already-working kit; it deserved its own commit.
-
-2. **Slot mapping: transactions → `secondary`, monthly close → `activity`.** Considered putting transactions in `activity` (since it's a stream-like list) but `secondary` is the established pattern for "card with a tabular surface adjacent to the hero" (Phase 2 used it for Workflow Hub's per-blueprint last-run summaries). Monthly close → `activity` matches Coach's "single-collapsible-recent-output" convention.
-
-3. **`format: "currency" as const`** — needed the `as const` because `KpiFormat` is a string-literal union and TS infers plain `string` from a JSX/createElement prop literal otherwise. Same trick used for `kind: "custom" as const` in the hero spec.
+- **Unit tests:** 340 pass (1 skipped) across `src/lib/apps`, `src/components/apps`, `src/lib/db`. Fully green.
+- **KitView integration tests (Wave 7):** 11 tests, 6 kits, all DOM-level — would have caught all 3 of Phase 3's wiring bugs.
+- **`npx tsc --noEmit`:** exit 0 across the project.
+- **Schema deviations from the plan, all caught and adapted:**
+  - `user_table_rows.data` (not `values`) — confirmed correct per Wave 6
+  - `documents` uses `extracted_text` / `storage_path` / `created_at` (not `content` / `file_path` / `uploaded_at`) — confirmed
+  - `user_table_columns` requires `display_name` and `created_at`/`updated_at` (not in plan's seed SQL) — added
+  - `user_tables` requires `created_at`/`updated_at` (not in plan's seed SQL) — added
+  - `tasks.context_row_id` was not yet in live DB — applied manually via ALTER before seeding
+- **No runtime-registry-adjacent files touched** — `claude-agent.ts`, runtime adapters, workflow engine, and chat-tools are all untouched. The CLAUDE.md smoke-test budget rule did not apply, but Wave 8's browser smoke remains valuable for UX-level confidence.
 
 ---
 
 ## Patterns to remember (this session's additions)
 
-- **The kit pattern's "buildModel sees runtime, slot views see model" boundary is the place where wiring drift happens.** All 3 Phase 3 wiring bugs lived at this seam: data loaders populated runtime, components were tested in isolation, but `buildModel` either didn't pull the field through or didn't shape it for the slot. **Phase 4's spec already calls for tests that assert each kit's `buildModel` output produces all expected DOM elements via React Testing Library + `<KitView>`.** Strongly recommend implementing those integration tests as part of Phase 4 — they would have caught all 3 Phase 3 wiring bugs at the unit test layer.
-
-- **`createElement` is mandatory for `.ts` kit files** (not new — Phase 2 frozen contract). When adding `TransactionsTable` and `MonthlyCloseSummary` to `ledger.ts`, the pattern is identical to the existing `LedgerHeroPanel` call: `createElement(Component, props)`. Don't try to introduce JSX into kit files; they're plain TypeScript on purpose so they remain pure data transforms.
-
-### Carried over and still relevant
-
-- **`unstable_cache` key must include any prop that affects fetch shape** (Phase 3 lesson; relevant when Phase 4 adds Inbox's row-selection state to the data loader signature — though Inbox row selection is intra-page client state, not server-cached, so likely no cache key impact).
-- **Dynamic `await import()` for cross-runtime modules** (TDR-032 + CLAUDE.md smoke-test budget) — relevant if Phase 4's `detectTriggerSource` or Research's citation lookup ends up needing chat-tools or runtime catalog access.
-- **Strict Zod schemas at the manifest contract edge** — Phase 4 introduces `trigger: { kind: "row-insert", table: <id> }` on blueprint manifests. The blueprint schema needs an additive `trigger` field; check `src/lib/apps/registry.ts` and `src/lib/workflows/blueprints/types.ts` for the right place.
-- **Phantom IDE diagnostics are noisy after every edit.** During this session, editing `ledger.ts` produced ~30 phantom "Cannot find module" / "Property 'toBeInTheDocument' does not exist" errors that all resolved against `npx tsc --noEmit` with zero real errors. Trust the CLI, not the panel.
+- **The "wiring-bug class" Phase 3 exposed is now closed via integration tests.** 11 tests in `src/lib/apps/view-kits/__tests__/integration/` drive `kit.resolve()` → `kit.buildModel()` → `<KitView>` through React Testing Library, asserting DOM-level slot markers. Future kits should add an integration test as a wave-1 deliverable rather than a final-phase HOLD-mode investment.
+- **`unstable_cache` should NOT be wrapped in runtime try/catch.** Wave 6's first attempt did this to silence Vitest errors; the fix replaced it with `vi.mock("next/cache", () => ({ unstable_cache: <T>(fn: T) => fn }))` in test files. Production code stays clean; tests get a passthrough. This pattern is now established for any future loader using `unstable_cache`.
+- **Schema deviations from plans are common** — always verify column names with `sqlite3 ".schema <table>"` before writing seed SQL or loader queries. The plan's column names came from a draft; only the actual DB tells the truth.
+- **Subagent-driven development with two-stage review (spec + code quality) catches different bug classes.** Spec review caught test-fixture quality issues; code-quality review caught the silent-failure violation in `unstable_cache` and the missing blueprint filter in `loadLatestSynthesis` / `loadRecentRuns`. Single-pass review would have missed at least one.
+- **`addColumnIfMissing` in bootstrap.ts requires a running dev server to execute.** A column can be in schema.ts and bootstrap.ts but absent from the live DB until the first server start. When seeding local DBs for smoke fixtures, always verify with `PRAGMA table_info(<table>)` first and apply manually if needed.
 
 ---
 
-## Phase 4 starter checklist (kicking-off prep)
+## Carried-forward gaps (acknowledged, not blocking)
 
-When you (or the next session) start Phase 4:
+1. **RunNowSheet variable end-to-end coverage gap (Wave 7 review).** The integration tests assert the `Run Now` button renders, but don't click through to assert the sheet opens with the correct `variables` prop. Real coverage exists at the model layer (`coach.test.ts:74`) and the component layer (`run-now-sheet.test.tsx`), but the bridge between them in `<KitView>` isn't exercised end-to-end. Add ~10-line click-through test in a follow-up if RunNow regresses again.
 
-1. **Brainstorm first** (`superpowers:brainstorming` skill) — Phase 4 introduces 1 new primitive + 2 kits + 4 slot renderers + 1 helper. That's net-new creative scope; the spec is detailed but the implementation order matters (primitive → slot renderers → kits → registry registration → page wiring → smoke).
-2. **Read upstream specs first via `/refer` against `.claude/reference/`** if any of Phase 4's deliverables touch SDK contracts (e.g., row-insert trigger semantics in workflow engine).
-3. **Plan via `superpowers:writing-plans`** — 6 numbered waves likely (matching Phase 2/3 structure): types/contract additions → primitive(s) → slot renderers → kit definitions → data loaders → page wiring + smoke fixtures.
-4. **Mind the smoke-test budget** — Phase 4 doesn't touch the runtime catalog directly, but adding `trigger: row-insert` semantics may. If yes, plan a real `npm run dev` smoke step (per CLAUDE.md).
-5. **Phase 4's planned integration test for `<KitView>` would have caught all 3 Phase 3 wiring bugs**, per the pattern note above. Prioritize it.
+2. **Citation linkage ships empty.** `loadRuntimeStateUncached`'s research branch sets `researchCitations: []` per the locked design decision. The actual citation linkage (mapping synthesis tasks back to source rows) needs follow-up data work — likely a separate feature.
+
+3. **`loadLatestSynthesis` `instanceof Date` defensive code is dead** (Wave 6 nit #5). Drizzle's `integer({ mode: "timestamp" })` always returns a Date. The fallback branch is unreachable. Cosmetic.
+
+4. **`data.ts` is now ~798 lines.** Approaching unwieldy. When a future feature adds more loaders, consider splitting per-kit (`data-coach.ts`, `data-ledger.ts`, `data-inbox.ts`, `data-research.ts`) with `data.ts` as the dispatcher.
 
 ---
 
-*End of handoff. Next move: brainstorm Phase 4 (`features/composed-app-kit-inbox-and-research.md`), then write a wave-by-wave implementation plan, then execute.*
+*End of handoff. Next move: run the browser smoke, save screenshots, commit, then start the next feature (`row-trigger-blueprint-execution` or `composed-app-auto-inference-hardening`).*
