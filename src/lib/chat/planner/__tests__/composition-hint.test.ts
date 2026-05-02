@@ -89,5 +89,21 @@ describe("buildCompositionHint", () => {
       // "compact" relative to the primitive_matched hint (~2000 chars).
       expect(hint.length).toBeLessThan(700);
     });
+
+    it("omits the noun warning when integrationNoun is absent", () => {
+      const hint = buildCompositionHint(generic);
+      expect(hint).not.toMatch(/external API calls/);
+    });
+
+    it("includes a noun warning + compose-don't-scaffold guidance when integrationNoun is present", () => {
+      const hint = buildCompositionHint({
+        ...generic,
+        integrationNoun: "github",
+      });
+      expect(hint).toMatch(/`github`/);
+      expect(hint).toMatch(/can't make external API calls/);
+      expect(hint).toMatch(/scaffold a separate plugin/);
+      expect(hint).toMatch(/Do NOT scaffold a plugin in this turn/);
+    });
   });
 });

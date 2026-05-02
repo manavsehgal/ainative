@@ -13,6 +13,7 @@ export interface ComposePlan {
   }>;
   schedule?: { cron: string; description: string };
   rationale: string;
+  integrationNoun?: string;
 }
 
 export interface ScaffoldPlan {

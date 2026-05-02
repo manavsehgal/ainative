@@ -1,14 +1,20 @@
 import type { ComposePlan } from "./types";
 
 function buildGenericHint(plan: ComposePlan): string {
-  return [
+  const lines = [
     "",
     "## App Compose Hint (M4.5 generic, 2026-05-01)",
     "This is a compose request — MUST NOT invoke the Skill tool (no brainstorming, ainative-app, product-manager). Compose directly via primitive tools.",
     'Pick a kebab-case slug (e.g. "habit-tracker"). Use `<slug>--<artifact>` ids for create_profile/create_blueprint. Pass `appId: "<slug>"` on every create_table/create_schedule — the appId MUST NOT contain `--`.',
-    `Rationale: ${plan.rationale}.`,
-    "",
-  ].join("\n");
+  ];
+  if (plan.integrationNoun) {
+    lines.push(
+      `Note: the user mentioned \`${plan.integrationNoun}\`. Composition primitives can't make external API calls — compose the app structure (profile + blueprint + tables + schedule) and tell the user to scaffold a separate plugin (e.g. "i need a tool that pulls my ${plan.integrationNoun} data") if they need ${plan.integrationNoun} access. Do NOT scaffold a plugin in this turn.`
+    );
+  }
+  lines.push(`Rationale: ${plan.rationale}.`);
+  lines.push("");
+  return lines.join("\n");
 }
 
 function buildPrimitiveMatchedHint(plan: ComposePlan): string {

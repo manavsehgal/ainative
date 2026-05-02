@@ -42,6 +42,23 @@ describe("classifyMessage — compose path", () => {
     expect(v.plan.blueprintId).toBeUndefined();
     expect(v.plan.rationale).toMatch(/build me/);
   });
+
+  it("compose+noun with app-intent routes to compose generic and carries the noun", () => {
+    const v = classifyMessage("build me a github habit tracker", ctx);
+    expect(v.kind).toBe("compose");
+    if (v.kind !== "compose") return;
+    expect(v.plan.kind).toBe("generic");
+    expect(v.plan.integrationNoun).toBe("github");
+  });
+
+  it("compose+noun with app-intent + primitive match carries noun on primitive plan", () => {
+    const v = classifyMessage("build me a notion portfolio app", ctx);
+    expect(v.kind).toBe("compose");
+    if (v.kind !== "compose") return;
+    expect(v.plan.kind).toBe("primitive_matched");
+    expect(v.plan.profileId).toBe("wealth-manager");
+    expect(v.plan.integrationNoun).toBe("notion");
+  });
 });
 
 describe("classifyMessage — scaffold path", () => {

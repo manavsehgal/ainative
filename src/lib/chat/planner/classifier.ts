@@ -29,6 +29,13 @@ const INTEGRATION_NOUNS = [
   "hackernews",
 ] as const;
 
+const APP_INTENT_WORDS = [
+  "app",
+  "tracker",
+  "dashboard",
+  "workflow",
+] as const;
+
 const VERB_TO_TOOL: Record<string, string> = {
   pull: "fetch_items",
   fetch: "fetch_items",
@@ -124,10 +131,21 @@ function inferComposePlan(normalized: string): ComposePlan | null {
   return { kind: "primitive_matched", ...PRIMITIVE_MAP[key] };
 }
 
-function genericComposePlan(triggerPhrase: string): ComposePlan {
+function hasAppIntent(normalized: string): boolean {
+  for (const word of APP_INTENT_WORDS) {
+    if (normalized.includes(word)) return true;
+  }
+  return false;
+}
+
+function genericComposePlan(
+  triggerPhrase: string,
+  integrationNoun: string | null
+): ComposePlan {
   return {
     kind: "generic",
     rationale: `Matched compose trigger '${triggerPhrase}' with no known primitive — generic composition`,
+    ...(integrationNoun ? { integrationNoun } : {}),
   };
 }
 
@@ -145,7 +163,15 @@ export function classifyMessage(
   }
 
   const noun = findIntegrationNoun(normalized);
-  if (noun) {
+  const appIntent = hasAppIntent(normalized);
+
+  // Noun + compose-trigger short-circuits to scaffold ONLY when the user
+  // hasn't named an app-y artifact. "build me a github habit tracker" reads
+  // as a compose request that mentions an integration; the LLM gets the
+  // noun warning via the generic hint and tells the user to scaffold a
+  // plugin separately for github access. "build me a tool that pulls my
+  // github issues" still routes here (no app-intent word) and scaffolds.
+  if (noun && !appIntent) {
     const composeTrigger = findTriggerMatch(normalized, COMPOSE_TRIGGERS);
     if (composeTrigger) {
       const plan = inferScaffoldPlan(message, normalized);
@@ -156,8 +182,13 @@ export function classifyMessage(
   const composeTrigger = findTriggerMatch(normalized, COMPOSE_TRIGGERS);
   if (composeTrigger) {
     const plan = inferComposePlan(normalized);
-    if (plan) return { kind: "compose", plan };
-    return { kind: "compose", plan: genericComposePlan(composeTrigger) };
+    if (plan) {
+      return {
+        kind: "compose",
+        plan: noun ? { ...plan, integrationNoun: noun } : plan,
+      };
+    }
+    return { kind: "compose", plan: genericComposePlan(composeTrigger, noun) };
   }
 
   return { kind: "conversation" };
