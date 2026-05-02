@@ -361,6 +361,7 @@ export function deleteApp(
   if (!rootDir.startsWith(resolvedApps + path.sep)) return false;
   if (!fs.existsSync(rootDir)) return false;
   fs.rmSync(rootDir, { recursive: true, force: true });
+  invalidateAppsCache();
   return true;
 }
 

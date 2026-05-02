@@ -11,7 +11,12 @@ import {
   extractAppIdFromArtifactId,
   upsertAppManifest,
 } from "../compose-integration";
-import { listApps, parseAppManifest } from "../registry";
+import {
+  invalidateAppsCache,
+  listApps,
+  listAppsCached,
+  parseAppManifest,
+} from "../registry";
 
 function makeTmp(): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), "ainative-compose-int-test-"));
@@ -227,5 +232,19 @@ describe("upsertAppManifest", () => {
     const loaded = yaml.load(raw) as Record<string, unknown>;
     expect(loaded.id).toBe("trip-app");
     expect(Array.isArray(loaded.profiles)).toBe(true);
+  });
+});
+
+describe("upsertAppManifest invalidates apps cache", () => {
+  it("forces fresh listApps result after a manifest write", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "upsert-cache-"));
+    invalidateAppsCache();
+
+    expect(listAppsCached(tmp)).toEqual([]);
+
+    upsertAppManifest("new-app", { kind: "table", id: "tbl-a" }, "New app", tmp);
+
+    // If the cache hadn't been invalidated, this would still return [].
+    expect(listAppsCached(tmp).map((a) => a.id)).toEqual(["new-app"]);
   });
 });

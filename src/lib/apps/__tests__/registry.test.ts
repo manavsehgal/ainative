@@ -417,6 +417,18 @@ function makeTmpAppsDir(apps: Array<{ id: string }>): string {
   return tmp;
 }
 
+describe("cache invalidation on mutations", () => {
+  beforeEach(() => invalidateAppsCache());
+
+  it("deleteApp() invalidates the cache for its dir", () => {
+    const tmp = makeTmpAppsDir([{ id: "app-x" }]);
+    expect(listAppsCached(tmp).map((a) => a.id)).toEqual(["app-x"]);
+
+    deleteApp("app-x", tmp);
+    expect(listAppsCached(tmp).map((a) => a.id)).toEqual([]);
+  });
+});
+
 describe("KpiSpecSchema — tableSumWindowed arm", () => {
   it("accepts a windowed sign-filtered sum spec", () => {
     const spec = {

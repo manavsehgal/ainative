@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { projects } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { getAinativeAppsDir } from "@/lib/utils/ainative-paths";
-import { AppManifestSchema, type AppManifest } from "./registry";
+import { AppManifestSchema, invalidateAppsCache, type AppManifest } from "./registry";
 import { extractAppIdFromArtifactId } from "./composition-detector";
 
 export { extractAppIdFromArtifactId };
@@ -106,6 +106,7 @@ export function upsertAppManifest(
   }
 
   fs.writeFileSync(manifestPath, yaml.dump(manifest));
+  invalidateAppsCache();
   return manifest;
 }
 
