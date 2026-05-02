@@ -31,7 +31,28 @@ export async function evaluateManifestTriggers(
 ): Promise<void> {
   // listAppsWithManifestsCached returns AppDetail[] with `manifest` hydrated,
   // so findMatchingSubscriptions can read manifest.blueprints at runtime.
-  const apps = listAppsWithManifestsCached();
+  let apps: ReturnType<typeof listAppsWithManifestsCached>;
+  try {
+    apps = listAppsWithManifestsCached();
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`[manifest-trigger-dispatch] listAppsWithManifestsCached failed:`, err);
+    try {
+      await db.insert(notifications).values({
+        id: crypto.randomUUID(),
+        taskId: null,
+        type: "task_failed",
+        title: "Manifest scan failed",
+        body: `Could not read app manifests for row-insert dispatch on table "${tableId}": ${message}`,
+        read: false,
+        createdAt: new Date(),
+      });
+    } catch {
+      // Last-resort: log only
+    }
+    return;
+  }
+
   const matches = findMatchingSubscriptions(apps, tableId);
 
   for (const { appId, blueprintId } of matches) {

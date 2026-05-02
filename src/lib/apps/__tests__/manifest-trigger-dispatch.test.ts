@@ -257,3 +257,29 @@ describe("evaluateManifestTriggers — error paths", () => {
     expect(db.insert).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("evaluateManifestTriggers — listApps fault tolerance", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("does nothing when listAppsWithManifestsCached throws", async () => {
+    vi.mocked(registry.listAppsWithManifestsCached).mockImplementation(() => {
+      throw new Error("EACCES: permission denied");
+    });
+
+    await expect(
+      evaluateManifestTriggers("tbl-x", "row-1", {})
+    ).resolves.toBeUndefined();
+
+    expect(instantiator.instantiateBlueprint).not.toHaveBeenCalled();
+  });
+
+  it("writes a notification on filesystem error", async () => {
+    vi.mocked(registry.listAppsWithManifestsCached).mockImplementation(() => {
+      throw new Error("EACCES: permission denied");
+    });
+
+    await evaluateManifestTriggers("tbl-x", "row-1", {});
+
+    expect(db.insert).toHaveBeenCalled();
+  });
+});
