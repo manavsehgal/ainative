@@ -1,6 +1,6 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
-import { and, count, desc, eq, gte, inArray } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { tasks, schedules, userTableRows } from "@/lib/db/schema";
 import { humanizeCron } from "@/lib/apps/registry";
@@ -16,8 +16,9 @@ import type {
 } from "./types";
 import type { ColumnDef } from "@/lib/tables/types";
 import type { TaskStatus } from "@/lib/constants/task-status";
+import type { BlueprintVariable } from "@/lib/workflows/blueprints/types";
 import { evaluateKpi } from "./evaluate-kpi";
-import { createKpiContext } from "./kpi-context";
+import { createKpiContext, windowStart } from "./kpi-context";
 
 type KpiSpec = NonNullable<ViewConfig["bindings"]["kpis"]>[number];
 
@@ -33,6 +34,11 @@ export interface KitProjectionShape {
   kpiSpecs?: KpiSpec[];
   blueprintIds?: string[];
   scheduleIds?: string[];
+  /** Phase 3: Ledger period; threaded into windowed KPI specs. */
+  period?: "mtd" | "qtd" | "ytd";
+  /** Phase 3: Ledger column inference for data-layer queries. */
+  amountColumn?: string;
+  categoryColumn?: string;
 }
 
 /**
@@ -68,6 +74,37 @@ async function loadRuntimeStateUncached(
       blueprintLastRuns: await loadBlueprintLastRuns(bindings.blueprintIds),
       blueprintRunCounts: await loadBlueprintRunCounts(bindings.blueprintIds),
       failedTasks: await loadFailedTasks(app.id, 10),
+      evaluatedKpis: await loadEvaluatedKpis(projection.kpiSpecs ?? []),
+    };
+  }
+
+  if (kitId === "coach") {
+    return {
+      ...baseline,
+      cadence: await loadCadence(app.manifest, projection.cadenceScheduleId),
+      coachLatestTask: await loadCoachLatestTask(app.id, projection.runsBlueprintId),
+      coachPreviousRuns: await loadCoachPreviousRuns(app.id, projection.runsBlueprintId, 8),
+      coachCadenceCells: await loadCoachCadenceCells(app.id, projection.runsBlueprintId, 12),
+      evaluatedKpis: await loadEvaluatedKpis(projection.kpiSpecs ?? []),
+    };
+  }
+
+  if (kitId === "ledger") {
+    const period = projection.period ?? "mtd";
+    const amountCol = projection.amountColumn ?? "amount";
+    const categoryCol = projection.categoryColumn ?? "category";
+    return {
+      ...baseline,
+      ledgerSeries: await loadLedgerSeries(projection.heroTableId, amountCol, period),
+      ledgerCategories: await loadLedgerCategories(
+        projection.heroTableId,
+        amountCol,
+        categoryCol,
+        period
+      ),
+      ledgerTransactions: await loadLedgerTransactions(projection.heroTableId, period),
+      ledgerMonthlyClose: await loadMonthlyCloseSummary(app.id, projection.runsBlueprintId),
+      ledgerPeriod: period,
       evaluatedKpis: await loadEvaluatedKpis(projection.kpiSpecs ?? []),
     };
   }
@@ -240,9 +277,289 @@ async function loadEvaluatedKpis(specs: KpiSpec[]): Promise<KpiTile[]> {
   return tiles;
 }
 
+// --- Phase 3: Coach loaders ---------------------------------------------------
+
 /**
- * Cached entry point. Cache key includes the app id + kit id so different
- * kits (during inference rollouts) don't collide. 30s revalidate.
+ * Returns the most recent COMPLETED task scoped to the app + (optional)
+ * blueprint, or `null` when nothing has run yet. Used by Coach kit's "latest
+ * run summary" panel and reused by Ledger kit's monthly-close summary.
+ */
+async function loadCoachLatestTask(
+  appId: string,
+  blueprintId: string | undefined
+): Promise<RuntimeTaskSummary | null> {
+  try {
+    const conditions = [
+      eq(tasks.projectId, appId),
+      eq(tasks.status, "completed"),
+    ];
+    if (blueprintId) {
+      conditions.push(eq(tasks.assignedAgent, blueprintId));
+    }
+    const row = db
+      .select()
+      .from(tasks)
+      .where(and(...conditions))
+      .orderBy(desc(tasks.createdAt))
+      .limit(1)
+      .get();
+    if (!row) return null;
+    return {
+      id: row.id,
+      title: row.title,
+      status: row.status as TaskStatus,
+      createdAt: row.createdAt.getTime(),
+      result: row.result,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Returns previous runs (any status) for the Coach kit, skipping the most
+ * recent completed one (which is loaded separately as `coachLatestTask`).
+ */
+async function loadCoachPreviousRuns(
+  appId: string,
+  blueprintId: string | undefined,
+  limit: number
+): Promise<RuntimeTaskSummary[]> {
+  try {
+    const conditions = [eq(tasks.projectId, appId)];
+    if (blueprintId) {
+      conditions.push(eq(tasks.assignedAgent, blueprintId));
+    }
+    // Pull limit+1 so we can drop the most recent (the "latest" entry).
+    const rows = db
+      .select()
+      .from(tasks)
+      .where(and(...conditions))
+      .orderBy(desc(tasks.createdAt))
+      .limit(limit + 1)
+      .all();
+    return rows.slice(1).map((r) => ({
+      id: r.id,
+      title: r.title,
+      status: r.status as TaskStatus,
+      createdAt: r.createdAt.getTime(),
+      result: r.result,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Aggregates tasks by date over the last `weeks * 7` days. Each cell counts
+ * runs and flags `fail` if any task on that day failed, else `success`.
+ * Drives the Coach kit's GitHub-style cadence heatmap.
+ */
+async function loadCoachCadenceCells(
+  appId: string,
+  blueprintId: string | undefined,
+  weeks: number
+): Promise<{ date: string; runs: number; status?: "success" | "fail" }[]> {
+  try {
+    const days = Math.max(1, Math.floor(weeks * 7));
+    const since = new Date(Date.now() - days * 86_400_000);
+    const conditions = [
+      eq(tasks.projectId, appId),
+      gte(tasks.createdAt, since),
+    ];
+    if (blueprintId) {
+      conditions.push(eq(tasks.assignedAgent, blueprintId));
+    }
+    // SQLite stores Drizzle Date columns as ms; date() expects seconds.
+    const rows = db
+      .select({
+        date: sql<string>`date(${tasks.createdAt} / 1000, 'unixepoch')`,
+        runs: count(),
+        failed: sql<number>`SUM(CASE WHEN ${tasks.status} = 'failed' THEN 1 ELSE 0 END)`,
+      })
+      .from(tasks)
+      .where(and(...conditions))
+      .groupBy(sql`date(${tasks.createdAt} / 1000, 'unixepoch')`)
+      .all();
+    return rows.map((r) => ({
+      date: r.date,
+      runs: r.runs,
+      status: (r.failed ?? 0) > 0 ? ("fail" as const) : ("success" as const),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+// --- Phase 3: Ledger loaders --------------------------------------------------
+
+/**
+ * Daily SUM of the amount column from `userTableRows` since `windowStart`.
+ * Returns ascending-by-date series for the Ledger kit's flow chart.
+ */
+async function loadLedgerSeries(
+  tableId: string | undefined,
+  amountColumn: string,
+  period: "mtd" | "qtd" | "ytd"
+): Promise<{ date: string; value: number }[]> {
+  if (!tableId) return [];
+  try {
+    const path = "$." + amountColumn;
+    const since = windowStart(period);
+    const rows = db
+      .select({
+        date: sql<string>`date(${userTableRows.createdAt} / 1000, 'unixepoch')`,
+        value: sql<number>`COALESCE(SUM(CAST(json_extract(${userTableRows.data}, ${path}) AS REAL)), 0)`,
+      })
+      .from(userTableRows)
+      .where(
+        and(
+          eq(userTableRows.tableId, tableId),
+          gte(userTableRows.createdAt, since)
+        )
+      )
+      .groupBy(sql`date(${userTableRows.createdAt} / 1000, 'unixepoch')`)
+      .orderBy(sql`date(${userTableRows.createdAt} / 1000, 'unixepoch') ASC`)
+      .all();
+    return rows.map((r) => ({ date: r.date, value: r.value ?? 0 }));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Period-scoped SUM of |amount| grouped by category column. Powers the
+ * Ledger kit's category breakdown / donut.
+ */
+async function loadLedgerCategories(
+  tableId: string | undefined,
+  amountColumn: string,
+  categoryColumn: string,
+  period: "mtd" | "qtd" | "ytd"
+): Promise<{ label: string; value: number }[]> {
+  if (!tableId) return [];
+  try {
+    const amountPath = "$." + amountColumn;
+    const categoryPath = "$." + categoryColumn;
+    const since = windowStart(period);
+    const rows = db
+      .select({
+        label: sql<string>`COALESCE(json_extract(${userTableRows.data}, ${categoryPath}), 'Uncategorized')`,
+        value: sql<number>`COALESCE(SUM(ABS(CAST(json_extract(${userTableRows.data}, ${amountPath}) AS REAL))), 0)`,
+      })
+      .from(userTableRows)
+      .where(
+        and(
+          eq(userTableRows.tableId, tableId),
+          gte(userTableRows.createdAt, since)
+        )
+      )
+      .groupBy(sql`json_extract(${userTableRows.data}, ${categoryPath})`)
+      .orderBy(
+        sql`COALESCE(SUM(ABS(CAST(json_extract(${userTableRows.data}, ${amountPath}) AS REAL))), 0) DESC`
+      )
+      .all();
+    return rows.map((r) => ({ label: r.label ?? "Uncategorized", value: r.value ?? 0 }));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Most recent N rows scoped to the period. `label` falls back from `label`
+ * to `description`; `category` is optional. Used by the Ledger kit's
+ * transactions list.
+ */
+async function loadLedgerTransactions(
+  tableId: string | undefined,
+  period: "mtd" | "qtd" | "ytd",
+  limit: number = 25
+): Promise<{ id: string; date: string; label: string; amount: number; category?: string }[]> {
+  if (!tableId) return [];
+  try {
+    const since = windowStart(period);
+    const rows = db
+      .select()
+      .from(userTableRows)
+      .where(
+        and(
+          eq(userTableRows.tableId, tableId),
+          gte(userTableRows.createdAt, since)
+        )
+      )
+      .orderBy(desc(userTableRows.createdAt))
+      .limit(limit)
+      .all();
+    return rows.map((r) => {
+      let parsed: Record<string, unknown> = {};
+      try {
+        parsed = r.data ? (JSON.parse(r.data) as Record<string, unknown>) : {};
+      } catch {
+        parsed = {};
+      }
+      const label =
+        (typeof parsed.label === "string" && parsed.label) ||
+        (typeof parsed.description === "string" && parsed.description) ||
+        "(untitled)";
+      const amountRaw = parsed.amount;
+      const amount =
+        typeof amountRaw === "number"
+          ? amountRaw
+          : typeof amountRaw === "string"
+            ? Number.parseFloat(amountRaw) || 0
+            : 0;
+      const category =
+        typeof parsed.category === "string" ? parsed.category : undefined;
+      return {
+        id: r.id,
+        date: r.createdAt.toISOString().slice(0, 10),
+        label,
+        amount,
+        category,
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Ledger's monthly-close summary uses the same "most recent completed task
+ * per blueprint" semantics as Coach's latest task. Thin alias for clarity at
+ * the call site and to keep future divergence cheap.
+ */
+async function loadMonthlyCloseSummary(
+  appId: string,
+  blueprintId: string | undefined
+): Promise<RuntimeTaskSummary | null> {
+  return loadCoachLatestTask(appId, blueprintId);
+}
+
+/**
+ * Looks up a blueprint via the workflow registry and returns its declared
+ * variables. Used as a fallback when the manifest's blueprint stub lacks
+ * variables and we need the registry's full definition.
+ *
+ * Uses dynamic `await import()` to avoid module-load cycles between the
+ * runtime catalog and the apps view-kit data layer (see CLAUDE.md note).
+ */
+export async function loadBlueprintVariables(
+  blueprintId: string | undefined
+): Promise<BlueprintVariable[] | null> {
+  if (!blueprintId) return null;
+  try {
+    const mod = await import("@/lib/workflows/blueprints/registry");
+    const bp = mod.getBlueprint(blueprintId);
+    if (!bp) return null;
+    return bp.variables ?? [];
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Cached entry point. Cache key includes the app id + kit id + period so
+ * different kits / period selections don't collide. 30s revalidate.
  */
 export function loadRuntimeState(
   app: AppDetail,
@@ -250,9 +567,10 @@ export function loadRuntimeState(
   kitId: KitId,
   projection: KitProjectionShape
 ): Promise<RuntimeState> {
+  const period = projection.period ?? "default";
   const cached = unstable_cache(
     () => loadRuntimeStateUncached(app, bindings, kitId, projection),
-    ["app-runtime", app.id, kitId],
+    ["app-runtime", app.id, kitId, period],
     { revalidate: 30, tags: [`app-runtime:${app.id}`] }
   );
   return cached();
