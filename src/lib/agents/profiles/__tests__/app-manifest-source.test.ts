@@ -60,4 +60,105 @@ describe("loadAppManifestProfiles", () => {
     expect(csCoach.origin).toBe("import");
     expect(csCoach.readOnly).toBe(true);
   });
+
+  it("titleCases id when name is missing", () => {
+    writeManifest("habit-tracker", {
+      id: "habit-tracker",
+      name: "Habit tracker",
+      profiles: [{ id: "habit-coach" }],
+      blueprints: [],
+      tables: [],
+      schedules: [],
+    });
+
+    const profiles = loadAppManifestProfiles(appsDir, profilesDir, builtinsDir);
+    expect(profiles[0].name).toBe("Habit Coach");
+    expect(profiles[0].description).toBe("");
+    expect(profiles[0].systemPrompt).toBe("");
+  });
+
+  it("does not synthesize when profile.yaml exists in profilesDir (shadowing)", () => {
+    writeManifest("customer-follow-up-drafter", {
+      id: "customer-follow-up-drafter",
+      name: "Customer follow-up drafter",
+      profiles: [{ id: "cs-coach", name: "CS coach", description: "Stub" }],
+      blueprints: [], tables: [], schedules: [],
+    });
+    // User authored a real profile.yaml at profilesDir/cs-coach/profile.yaml
+    fs.mkdirSync(path.join(profilesDir, "cs-coach"), { recursive: true });
+    fs.writeFileSync(
+      path.join(profilesDir, "cs-coach", "profile.yaml"),
+      "id: cs-coach\nname: User-customized\n"
+    );
+
+    const profiles = loadAppManifestProfiles(appsDir, profilesDir, builtinsDir);
+    expect(profiles).toHaveLength(0);
+  });
+
+  it("does not synthesize when builtin exists for the id", () => {
+    writeManifest("some-app", {
+      id: "some-app", name: "Some app",
+      profiles: [{ id: "general", name: "General override" }],
+      blueprints: [], tables: [], schedules: [],
+    });
+    fs.mkdirSync(path.join(builtinsDir, "general"), { recursive: true });
+    fs.writeFileSync(
+      path.join(builtinsDir, "general", "profile.yaml"),
+      "id: general\nname: Builtin general\n"
+    );
+
+    const profiles = loadAppManifestProfiles(appsDir, profilesDir, builtinsDir);
+    expect(profiles).toHaveLength(0);
+  });
+
+  it("returns empty array when apps directory does not exist", () => {
+    const missingDir = path.join(tmpRoot, "does-not-exist");
+    expect(loadAppManifestProfiles(missingDir, profilesDir, builtinsDir)).toEqual([]);
+  });
+
+  it("skips malformed manifest.yaml without crashing other apps", () => {
+    // App A: malformed
+    fs.mkdirSync(path.join(appsDir, "broken"), { recursive: true });
+    fs.writeFileSync(path.join(appsDir, "broken", "manifest.yaml"), "::: not yaml :::");
+    // App B: valid
+    writeManifest("good-app", {
+      id: "good-app", name: "Good app",
+      profiles: [{ id: "good-profile", name: "Good", description: "Works" }],
+      blueprints: [], tables: [], schedules: [],
+    });
+
+    const profiles = loadAppManifestProfiles(appsDir, profilesDir, builtinsDir);
+    expect(profiles).toHaveLength(1);
+    expect(profiles[0].id).toBe("good-profile");
+  });
+
+  it("first-wins on profile id collision and merges app ids into tags", () => {
+    writeManifest("app-a", {
+      id: "app-a", name: "App A",
+      profiles: [{ id: "shared-coach", name: "Shared coach", description: "First" }],
+      blueprints: [], tables: [], schedules: [],
+    });
+    writeManifest("app-b", {
+      id: "app-b", name: "App B",
+      profiles: [{ id: "shared-coach", name: "Different name", description: "Second" }],
+      blueprints: [], tables: [], schedules: [],
+    });
+
+    const profiles = loadAppManifestProfiles(appsDir, profilesDir, builtinsDir);
+    expect(profiles).toHaveLength(1);
+    // First wins: name + description from app-a
+    expect(profiles[0].name).toBe("Shared coach");
+    expect(profiles[0].description).toBe("First");
+    // Tags include both app ids (order depends on filesystem readdir)
+    expect(profiles[0].tags.sort()).toEqual(["app-a", "app-b"]);
+  });
+
+  it("returns empty array when manifest has no profiles[]", () => {
+    writeManifest("no-profiles-app", {
+      id: "no-profiles-app", name: "No profiles",
+      blueprints: [], tables: [], schedules: [],
+    });
+    const profiles = loadAppManifestProfiles(appsDir, profilesDir, builtinsDir);
+    expect(profiles).toHaveLength(0);
+  });
 });
