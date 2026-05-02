@@ -24,7 +24,8 @@ interface InstantiateResult {
 export async function instantiateBlueprint(
   blueprintId: string,
   variables: Record<string, unknown>,
-  projectId?: string
+  projectId?: string,
+  metadata?: { _contextRowId?: string }
 ): Promise<InstantiateResult> {
   const blueprint = getBlueprint(blueprintId);
   if (!blueprint) {
@@ -92,11 +93,14 @@ export async function instantiateBlueprint(
     resolvedVars
   ) || blueprint.name;
 
-  const definition = {
+  const definition: Record<string, unknown> = {
     pattern: blueprint.pattern,
     steps: resolvedSteps,
     _blueprintId: blueprintId,
   };
+  if (metadata?._contextRowId) {
+    definition._contextRowId = metadata._contextRowId;
+  }
 
   await db.insert(workflows).values({
     id: workflowId,
