@@ -1,181 +1,160 @@
-# Handoff: Composed Apps Domain-Aware View — strategy + 7 feature specs ready for Phase 1
+# Handoff: Phase 1.1 shipped (composed-app view-shell) — Phase 1.2 is next
 
-**Created:** 2026-05-01 (late evening)
-**Status:** Strategy doc and 7 phased feature specs landed. **No code changes yet** — next session starts implementation at Phase 1. Working tree has uncommitted strategy + spec docs; `main` is 2 commits ahead of `origin/main` carrying the noun-aware compose hint + its predecessor handoff (push not done).
+**Created:** 2026-05-02 (early morning)
+**Status:** Phase 1.1 (`composed-app-view-shell`) shipped on `main` as commit `a43aae7d`. Working tree is clean except for this handoff. `main` is **1 commit ahead of `origin/main`** (just today's Phase 1.1) — the predecessor's "2 commits ahead" was stale; that lead was pushed between sessions. Push not done.
 **Author:** Manav Sehgal (with Claude Opus 4.7 assist)
-**Predecessor:** `.archive/handoff/2026-05-01-noun-aware-compose-hint-shipped-handoff.md`
+**Predecessor:** `.archive/handoff/2026-05-01-composed-apps-strategy-and-7-specs-handoff.md`
 
 ---
 
 ## TL;DR for the next agent
 
-1. **Composed apps now have a build plan.** Strategy doc at `ideas/composed-apps-domain-aware-view.md` (from `/frontend-designer` + `/architect` joint brainstorm) replaces today's manifest-viewer per-app screen with a kit dispatcher + 6 domain-aware view kits. `/product-manager` extracted **7 phased feature specs** under `features/composed-app-*.md`. Roadmap section "Composed Apps — Domain-Aware View" added; changelog entry on 2026-05-01.
+1. **Phase 1.1 is done and verified.** The per-app screen at `/apps/[id]` is now a thin kit dispatcher (143 → 42 lines). The four-card composition view + files list moved into a sliding "View manifest ▾" sheet from the page header. `pickKit` is a stub that always returns the placeholder kit. Browser-smoked via Playwright (Claude in Chrome was offline) — sheet opens, all four composition cards + files + YAML render with no console errors.
 
-2. **Start at Phase 1, in this exact order.** Two P1 features must ship first; they're tightly coupled and unblock everything:
-   1. `composed-app-view-shell` — dispatcher route refactor + KitDefinition / ViewModel types + Manifest sheet
-   2. `composed-app-manifest-view-field` — strict Zod `view:` field + 7-rule `pickKit` decision table + golden-master tests
+2. **Start Phase 1.2 next: `composed-app-manifest-view-field`.** This is the second P1 feature in Phase 1. It replaces the stub `pickKit` with the real 7-rule decision table and adds the strict Zod `view:` field on `AppManifestSchema` (plus a golden-master test ensuring every existing starter app still parses). Spec at `features/composed-app-manifest-view-field.md` (141 lines, self-contained).
 
-   Phase 2 (`composed-app-kit-tracker-and-hub`) is the first feature that delivers user-visible value — Workflow Hub becomes the fallback for every existing app, Tracker covers habit-tracker / reading-radar.
+3. **One open question is now resolved.** `userTableColumns.config.semantic` (Phase 5) lives in the existing JSON `column.config` blob — **Option A**, no DB migration in Phase 1. Documented in this handoff and in the `composed-app-view-shell` changelog entry. Phase 1.2 doesn't need to revisit this.
 
-3. **One open question to decide before Phase 1 starts.** `composed-app-auto-inference-hardening` (Phase 5) introduces an optional `userTableColumns.config.semantic` field stored inside the existing JSON `config` blob. **If it should be a real column instead, that decision belongs in Phase 1's schema work, not deferred.** Worth a 5-min think before opening the first PR — see "Open question" section below.
-
-4. **Working tree is dirty with the spec docs.** 7 new feature files + roadmap + changelog modifications + strategy doc in `ideas/`. None committed. Recommend a single docs commit covering all of them ("docs(features): groom composed-apps domain-aware view — strategy + 7 specs") before starting Phase 1 implementation. The strategy doc in `ideas/` is gitignored per project memory; the rest are tracked.
+4. **Push is the user's call.** One local commit ahead of `origin/main` (`a43aae7d` — Phase 1.1). Predecessor handoff's "2 ahead" was stale; the lead was pushed between sessions. Run `git log --oneline origin/main..HEAD` to confirm before pushing.
 
 ---
 
-## What landed this session (no code, just specs)
+## What landed this session
 
 ```
-features/composed-app-view-shell.md                       (Phase 1, P1, 127 lines)
-features/composed-app-manifest-view-field.md              (Phase 1, P1, 141 lines)
-features/composed-app-kit-tracker-and-hub.md              (Phase 2, P1, 177 lines)
-features/composed-app-kit-coach-and-ledger.md             (Phase 3, P2, 189 lines)
-features/composed-app-kit-inbox-and-research.md           (Phase 4, P2, 178 lines)
-features/composed-app-auto-inference-hardening.md         (Phase 5, P2, 138 lines)
-features/composed-app-manifest-authoring-tools.md         (Phase 5, P3, 162 lines)
-features/roadmap.md                                       (modified — new section)
-features/changelog.md                                     (modified — 2026-05-01 entry)
-ideas/composed-apps-domain-aware-view.md                  (strategy, gitignored)
-.claude/plans/the-user-composed-apps-enumerated-island.md (the original plan-mode draft)
+src/lib/apps/view-kits/
+  types.ts            # KitId, KitDefinition, ResolveInput, KitProjection,
+                      #   RuntimeState, ViewModel, slot types (frozen contract)
+  resolve.ts          # resolveBindings(manifest) → resolved IDs + cron
+  data.ts             # server-only loadRuntimeState(app, bindings) wrapped in
+                      #   unstable_cache (30s revalidate, app-runtime:<id> tag)
+  index.ts            # registry + pickKit stub (always returns placeholder)
+  kits/placeholder.ts # the only kit shipped — produces ViewModel with
+                      #   header (title/desc/status) + footer (manifest pane)
+  __tests__/resolve.test.ts       # 2 tests: empty + full manifest
+  __tests__/placeholder.test.ts   # 2 tests: empty + full manifest
+
+src/components/apps/kit-view/
+  kit-view.tsx              # server component dispatcher: maps ViewModel
+                            #   slots to slot views in canonical order
+  manifest-pane-body.tsx    # the previous composition + files cards, moved
+                            #   out of the route into the sheet body
+  slots/header.tsx          # title + description + status chip + actions +
+                            #   "View manifest ▾" trigger
+  slots/manifest-sheet.tsx  # client wrapper: trigger button + sliding sheet
+  slots/kpis.tsx            # placeholder; renders nothing if no tiles
+  slots/hero.tsx            # passthrough; placeholder kit doesn't supply one
+  slots/secondary.tsx       # 0..3 cards; placeholder kit doesn't supply any
+  slots/activity.tsx        # passthrough; Phase 2's RunHistoryTimeline goes here
+  slots/footer.tsx          # currently a no-op (manifest sheet mounts in header)
+
+src/app/apps/[id]/page.tsx  # 143 → 42 lines; pure dispatcher
+
+features/composed-app-view-shell.md  # status: planned → completed
+features/roadmap.md                  # status column updated
+features/changelog.md                # new 2026-05-02 entry
 ```
 
-All 7 spec files are within the 80-400 line target band. Each is self-contained — a developer can pick one up without reading the others.
+**Frozen contract recap:** kits are pure projection functions. `resolve(input) → projection`, `buildModel(projection, runtime) → ViewModel`. Kits never own React state and never fetch data; `data.ts` builds `RuntimeState` once per request and passes it in. This is the "kits are pure projection functions, not stateful components" TDR landing in code — `/architect` should capture it formally when convenient.
 
 ---
 
-## Build order (the part the user asked for)
+## Phase 1.2 brief — `composed-app-manifest-view-field`
 
-The dependency chain is strictly linear from Phase 1 → 5 with one fork in Phase 5. Each row below is one Claude Code session worth of work (1-3 sessions for the larger ones). Sessions stack: do not start Phase N+1 until Phase N's browser smoke passes.
+Spec is self-contained at `features/composed-app-manifest-view-field.md` (141 lines). High-level shape:
 
-### Phase 1 — Foundation (start here)
+- **Add a strict Zod `view:` field** on `AppManifestSchema`. Use `.strict()` only on the inner `view` object — every other manifest schema stays `.passthrough()` (per the 5-TDR queue from the strategy doc).
+- **Replace the `pickKit` stub** in `src/lib/apps/view-kits/index.ts` with a real 7-rule decision table that resolves `view.kit` if present, otherwise falls back to a deterministic auto-inference based on column shapes / cron presence / table count / blueprint presence.
+- **Wire `loadColumnSchemas(app)`** so the route can pass real column data to `pickKit`. Currently the route passes `[]`. The schemas come from the `userTableColumns` table joined to the manifest's `tables[].id`.
+- **Golden-master test**: parse every YAML manifest under `~/.ainative/apps/*/manifest.yaml` and `src/lib/apps/starters/*` and assert each one still validates after the new strict `view:` field is added (it must be optional — every existing app omits it).
 
-| Order | Feature | Priority | Rough sizing | Why first |
-|---|---|---|---|---|
-| 1 | `composed-app-view-shell` | P1 | 1-2 sessions | Lands `KitDefinition` / `ViewModel` types + dispatcher route + Manifest sheet. No behavior change for users (manifest peek moves into a sheet, accessible from header). Unblocks every later feature. |
-| 2 | `composed-app-manifest-view-field` | P1 | 1 session | Adds strict `view:` field to `AppManifestSchema` + the deterministic 7-rule `pickKit` function. Golden-master test ensures every existing starter app still parses. Replaces the `pickKit` stub from feature #1. |
+**Phase 1.2 gate:** unit tests cover all 7 decision-table branches; the route passes real column schemas; every starter app parses; `pickKit` returns the right kit id (still maps to placeholder until Phase 2).
 
-**Phase 1 gate:** browser smoke on `/apps/habit-tracker` — page renders dispatcher path with placeholder kit; "View manifest ▾" sheet opens; no regression on `/apps` index.
-
-### Phase 2 — First two real kits
-
-| Order | Feature | Priority | Rough sizing | Why second |
-|---|---|---|---|---|
-| 3 | `composed-app-kit-tracker-and-hub` | P1 | 2-3 sessions | Ships Workflow Hub (fallback for every app — replaces placeholder immediately) AND Tracker (covers habit-tracker, reading-radar). Lands 4 shared primitives all later kits reuse: `KPIStrip`, `LastRunCard`, `ScheduleCadenceChip`, `RunNowButton`. KPI evaluation engine (`evaluateKpi`) lands here. |
-
-**Phase 2 gate:** `/apps/habit-tracker` shows real Tracker layout (table-spreadsheet hero, KPI strip, cadence chip); any other app falls back to Workflow Hub with run-rate / success / cost KPIs. Manifest auto-inference picks `tracker` for habit-tracker without explicit `view:`.
-
-### Phase 3 — Domain pair: Coach + Ledger
-
-| Order | Feature | Priority | Rough sizing | Notes |
-|---|---|---|---|---|
-| 4 | `composed-app-kit-coach-and-ledger` | P2 | 2-3 sessions | Coach for digest apps (weekly-portfolio-check-in), Ledger for finance-pack. Lands `TimeSeriesChart` (recharts wrapper) and `RunCadenceHeatmap`. Adds `LastRunCard` `hero` variant (markdown body + citations bar). Ledger gets a period selector (MTD/QTD/YTD chip group). |
-
-**Phase 3 gate:** weekly-portfolio-check-in renders Coach (latest digest as hero); finance-pack renders Ledger (KPIs + TimeSeriesChart + DonutRing + transactions table); no regression on Tracker / Hub.
-
-### Phase 4 — Domain pair: Inbox + Research
-
-| Order | Feature | Priority | Rough sizing | Notes |
-|---|---|---|---|---|
-| 5 | `composed-app-kit-inbox-and-research` | P2 | 2-3 sessions | Inbox (queue + draft, two-pane via existing `DetailPane`) for customer-follow-up-drafter; Research (sources + synthesis with citation chips) for research-digest. Lands `RunHistoryTimeline` primitive + `detectTriggerSource` helper. Inbox suppresses Run Now for row-insert apps and shows a passive trigger-source chip. |
-
-**Phase 4 gate:** customer-follow-up-drafter renders queue + draft split with selectable rows; research-digest renders sources + synthesis with citation chips that highlight matching rows.
-
-### Phase 5 — Polish (parallelizable; one P2 + one P3)
-
-| Order | Feature | Priority | Rough sizing | Notes |
-|---|---|---|---|---|
-| 6 | `composed-app-auto-inference-hardening` | P2 | 1-2 sessions | Tiered column-shape probes (semantic → format → regex), expanded inference test suite (≥25 cases), gated `/apps/[id]/inference` diagnostics page with "Copy as `view:` field" generator. **See open question below — may pull schema work earlier into Phase 1.** |
-| 7 | `composed-app-manifest-authoring-tools` | P3 | 1-2 sessions | Three new chat tools (`set_app_view_kit`, `set_app_view_bindings`, `set_app_view_kpis`); chat tool count 92 → 95. `<AppViewEditorCard/>` chat surface. Planner hint for view-editing intents. **Genuinely nice-to-have** — most users will be fine on auto-inference forever. |
-
-Phase 5 features have no dependency on each other; whichever is more interesting can ship first once Phase 4 lands.
-
-### Critical-path sketch
-
-```
-Phase 1.1 (shell) ─► Phase 1.2 (view-field) ─► Phase 2 (tracker + hub)
-                                                  │
-                                                  ├─► Phase 3 (coach + ledger)
-                                                  │     │
-                                                  │     └─► Phase 4 (inbox + research)
-                                                  │           │
-                                                  │           ├─► Phase 5 (inference hardening)
-                                                  │           └─► Phase 5 (authoring tools)
-                                                  │
-                                                  └─ At Phase 2 gate, every existing app
-                                                     already has a usable domain view via
-                                                     Workflow Hub fallback.
-```
-
-The "minimum viable Composed Apps Domain View" ships at the end of Phase 2 — that's the gate worth caring about. Phases 3-5 are domain-pair refinements.
+**Where Phase 1.2 will rub against Phase 1.1's contract:**
+- The `ColumnSchemaRef` type in `src/lib/apps/view-kits/types.ts` already accepts `semantic?: string`. Phase 1.2 will populate it from the JSON `column.config.semantic` field (Option A — see resolved decision below).
+- `pickKit` signature is already `(manifest, columns: ColumnSchemaRef[])` — no change needed at the call site.
 
 ---
 
-## Open question (decide before Phase 1 PR)
+## Resolved decision (was open in predecessor handoff)
 
-**Where does `userTableColumns.config.semantic` live?**
+**`userTableColumns.config.semantic` lives in the JSON `column.config` blob** (Option A, no DB migration in Phase 1).
 
-Phase 5's `composed-app-auto-inference-hardening` introduces an optional `semantic` field on column config (values: `currency | date | boolean-flag | url | email | notification | message-body`). The spec stores it inside the existing JSON `config` blob — **no DB migration**. That's the path of least resistance and Phase 5 plans for it.
+Reasoning recorded in the `composed-app-view-shell` changelog entry and reproduced here:
+- Phase 1.1 spec scope explicitly excludes migrations
+- Strategy doc takes a "no schema changes" stance across all 7 phases
+- `semantic` is read at most ~6 times per page render (all cached)
+- Other column metadata (currency, format, units) already lives in `column.config`
+- If query ergonomics ever bite, lifting to its own column is a one-migration follow-up — much smaller blast radius than baking the wrong shape into Phase 1
 
-But: if `semantic` should be a real, queryable column on `user_table_columns`, that's a migration that belongs in Phase 1's schema work alongside `ViewSchema`, not deferred 4 phases. Migrations are easier to land before kits start consuming the data than retrofitted later.
-
-**Two options, decide before opening the first Phase 1 PR:**
-
-| Option | Where it lives | Cost | Tradeoff |
-|---|---|---|---|
-| **A** (current spec): JSON config field | Inside `column.config` blob | Zero migration; opt-in adoption | Slower querying (json_extract); slightly weaker validation |
-| **B** (alternative): Real column | New nullable column on `user_table_columns` | One migration in Phase 1 | First-class column; type-safe queries; tighter inference probes |
-
-Probably **Option A** — the strategy explicitly avoids DB migrations across all 7 features, the JSON path is consistent with how `column.config` already works, and `semantic` only matters for inference (≤6 reads per page render). But worth a deliberate 5-min think before defaulting.
+Phase 5 (`composed-app-auto-inference-hardening`) should not revisit this without new evidence.
 
 ---
 
-## Carryover from prior session (not superseded by today's work)
+## Verification gap: Claude in Chrome was offline
 
-### Free-form compose hardening (2 sub-items, ~2 hr)
+Phase 1.1 browser smoke ran via **Playwright** as the second-tier fallback. Claude in Chrome extension returned "not connected" twice, so per project memory (`feedback-browser-tool-fallback.md`) we fell through. Playwright captured the rendered dispatcher page, clicked the "View manifest" trigger, and snapshotted the open sheet — composition cards (Profiles 1, Blueprints 1, Tables 2, Schedules 1), files list, and full YAML all rendered correctly. Console error count: 0.
 
-1. **"Extend existing app" affordance (~1.5-2 hr).** Today the planner has no `extend_app` mode — every compose creates a new app. If a user says `"add to my Habit Loop app"` there's no path. Needs a new planner mode + chat-tool + classifier branch + tests. Phase 2 smoke caught the LLM narrating "I'll wire the app into the existing Habit Loop project" but actually creating a fresh `habit-tracker` project. Independent of the Composed Apps Domain View work — could ship interleaved if a session prefers compose-hardening over kit-building.
+Screenshot saved at `output/phase1.1-manifest-sheet-open.png` (gitignored). Safe to delete.
+
+If a quick re-smoke is wanted with Claude in Chrome when the extension is back: visit `/apps/habit-tracker`, click "View manifest", verify the sheet opens with the four composition cards + files list + YAML.
+
+---
+
+## Repo state (audited 2026-05-02 ~early morning)
+
+### Git
+- Working tree clean (this handoff is the only change after staging it).
+- `main` is **1 commit ahead of `origin/main`** — `a43aae7d` (Phase 1.1). Push not done.
+- Run `git log --oneline origin/main..HEAD` before any push to verify the lead.
+
+### Database & disk
+Unchanged from predecessor handoff. 11 projects. 13 user_tables, 13 schedules, 4 user_table_triggers. `~/.ainative/apps/` still has only `habit-tracker/` (so Phase 1.1's spec acceptance criterion #6 — "every starter app renders" — is currently testable only against `habit-tracker` until more starters are installed).
+
+### Tests
+- 91/91 apps tests pass (4 new, 87 preexisting).
+- Full `npx tsc --noEmit` clean.
+- Phase 1.1's own test files: `src/lib/apps/view-kits/__tests__/{resolve,placeholder}.test.ts`.
+
+---
+
+## Carryover from prior session (still valid)
+
+### Free-form compose hardening (~2 hr)
+
+1. **"Extend existing app" affordance (~1.5-2 hr).** Today the planner has no `extend_app` mode — every compose creates a new app. Independent of the Composed Apps Domain View work; could ship interleaved between Phase 1.2 and Phase 2 if a session prefers compose-hardening.
 
 2. **30-day soak on the 440-char generic hint.** Passive. Telemetry-gated, not actionable today.
 
 ### LLM smoke for noun-aware hint (~5 min when extension is up)
 
-Deterministic side of commit `8acc55fa` is fully covered by unit tests. The LLM-side observation — does the model actually compose without scaffolding when given the new hint? — was not run because the Claude in Chrome extension was offline. Quick smoke when extension is back:
+Deterministic side of commit `8acc55fa` is fully covered by unit tests. The LLM-side observation — does the model actually compose without scaffolding when given the new hint? — was not run because Claude in Chrome was offline both sessions. Quick smoke when extension is back:
 
 - Send `"build me a github habit tracker"` in chat (dev server up).
-- Expected: compose card titled "Habit Tracker" with profile + blueprint + tables, AND a prose mention of "you'll need to scaffold a separate plugin to access github."
-- Negative signal: a scaffold card means the routing change didn't land OR the LLM ignored the hint.
-
-Browser fallback chain per project memory: Claude in Chrome → retry once → Chrome DevTools → Playwright.
+- Expected: compose card titled "Habit Tracker" + a prose mention of "you'll need to scaffold a separate plugin to access github."
+- Negative signal: a scaffold card means routing didn't land OR the LLM ignored the hint.
 
 ### Apps consumers — extract `useDeleteApp(args)` hook
 
-Premature today (only 2 consumers). CLAUDE.md DRY-with-judgment says extract on third. Wait until a third surface needs delete.
-
----
-
-## Repo state (audited 2026-05-01 ~late evening)
-
-### Git
-- Working tree dirty: 2 modified files (`features/changelog.md`, `features/roadmap.md`) + 7 new feature spec files. The strategy doc at `ideas/composed-apps-domain-aware-view.md` is gitignored per project memory (`gitignored-local-folders.md`).
-- `main` is **2 commits ahead of `origin/main`** — `8acc55fa` (noun-aware compose hint) + `a88623e3` (the predecessor handoff doc). Push not done.
-
-### Database & disk
-Unchanged from predecessor handoff. 11 projects. 13 user_tables, 13 schedules, 4 user_table_triggers. `~/.ainative/apps/` has only `habit-tracker/`. FK-orphan audit recipe still passes (0 rows on 2026-05-01).
+Premature today (only 2 consumers). Wait until a third surface needs delete. CLAUDE.md DRY-with-judgment.
 
 ---
 
 ## Key patterns to remember
 
 ### From this session
-- **Plan-mode + Skill collaboration produces tight specs.** Spawning `/frontend-designer` and `/architect` in parallel as Plan agents (each given the same exploration findings) yielded two converging recommendations that merged cleanly into one strategy. Worth repeating for any feature that has both UX and architecture surface area.
-- **Phase 2 is the gate that matters.** A strategy with 7 features can demoralize. The build order above is structured so that Phase 2's completion already gives every existing app a domain-aware surface (Workflow Hub fallback). Phases 3-5 are refinements, not blockers. Use the Phase 2 gate as the "is this initiative working?" decision point.
-- **Spec frontmatter dependencies are load-bearing.** Each `composed-app-*.md` has explicit `dependencies:` — those drive the build order in this handoff. Future-you should not start a feature whose deps aren't `completed` in the roadmap.
+
+- **`unstable_cache` cache key naming.** Used `["app-runtime", app.id]` + tag `app-runtime:<id>`. Phase 1.2 should reuse the same tag namespace if it adds new cached loaders (e.g. `app-columns:<id>`). Per Next.js 16, `unstable_cache` is still supported but the long-term direction is the `'use cache'` directive — fine to revisit later, not a blocker.
+- **Preserve, don't delete, when refactoring user-facing surfaces.** The previous composition cards moved into the manifest sheet with zero content loss. Acceptance criterion explicitly called this out — readers/reviewers always check.
+- **Browser-smoke gap is bounded but worth noting in handoffs.** Deterministic side via unit tests + tsc + curl is enough to ship; the live click verification adds last-mile confidence. Note the gap when it exists; don't block the commit.
+- **Frozen contract phrasing matters.** Calling kits "pure projection functions" and writing it into `types.ts` doc comments makes the boundary clear for the next 6 kits to come.
 
 ### Carried over and still relevant
-- **Browser-smoke gap is real but bounded.** Deterministic prompt-construction can be verified via `npx tsx --eval` even when Claude in Chrome is offline. Don't block commits on LLM smoke if the deterministic path is fully tested — note the gap in the handoff and move on.
-- **`APP_INTENT_WORDS` is the cleavage line between scaffold and compose for noun-bearing prompts.** App-intent words ("app", "tracker", "dashboard", "workflow") route to compose; absence routes to scaffold via the noun-guard short-circuit.
+
+- **`APP_INTENT_WORDS` is the cleavage line between scaffold and compose for noun-bearing prompts.**
 - **HANDOFF interpretation is itself a skill.** When predecessor language is technically muddy, fall back to: what does the user actually want? Build to that.
+- **Phase 2 is the gate that matters** for the 7-feature initiative. Phase 1.1 (today) and Phase 1.2 (next) are necessary plumbing; Phase 2 is when users see the first real domain-aware kit (Tracker + Workflow Hub fallback).
 
 ---
 
-*End of handoff. Next move: decide the open question (5 min), commit the spec docs as one squashed docs commit, push the 2-commit lead to `origin/main` if user okays, then start `composed-app-view-shell` (Phase 1.1).*
+*End of handoff. Next move: read `features/composed-app-manifest-view-field.md`, decide whether to push the 5-commit lead first, then start Phase 1.2 with the strict Zod `view:` field + golden-master test.*
