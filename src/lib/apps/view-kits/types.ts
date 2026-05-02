@@ -37,6 +37,8 @@ export interface ResolveInput {
   columns: ColumnSchemaRef[];
   /** Phase 3: period selector value passed by Ledger only. */
   period?: "mtd" | "qtd" | "ytd";
+  /** Phase 4: Inbox-only — selected row id from URL ?row=. Backward-compatible (optional). */
+  rowId?: string | null;
 }
 
 /**

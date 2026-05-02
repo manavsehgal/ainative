@@ -17,19 +17,20 @@ export default async function AppDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ period?: string }>;
+  searchParams: Promise<{ period?: string; row?: string }>;
 }) {
   const { id } = await params;
   const sp = await searchParams;
   const period = PeriodSchema.parse(sp.period ?? "mtd");
+  const rowParam = typeof sp.row === "string" ? sp.row : null;
   const app = getApp(id);
   if (!app) notFound();
 
   const columns = await loadColumnSchemas(app.manifest);
   const kit = pickKit(app.manifest, columns);
   const bindings = resolveBindings(app.manifest);
-  const projection = kit.resolve({ manifest: app.manifest, columns, period });
-  const runtime = await loadRuntimeState(app, bindings, kit.id, projection);
+  const projection = kit.resolve({ manifest: app.manifest, columns, period, rowId: rowParam });
+  const runtime = await loadRuntimeState(app, bindings, kit.id, projection, rowParam);
   const model = kit.buildModel(projection, runtime);
 
   model.header.actions = (

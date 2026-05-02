@@ -1,8 +1,8 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
-import { and, count, desc, eq, gte, inArray, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { tasks, schedules, userTableRows } from "@/lib/db/schema";
+import { documents, tasks, schedules, userTableRows } from "@/lib/db/schema";
 import { humanizeCron } from "@/lib/apps/registry";
 import type { AppDetail, AppManifest, ViewConfig } from "@/lib/apps/registry";
 import type { ResolvedBindings } from "./resolve";
@@ -39,6 +39,12 @@ export interface KitProjectionShape {
   /** Phase 3: Ledger column inference for data-layer queries. */
   amountColumn?: string;
   categoryColumn?: string;
+  /** Phase 4: Inbox kit — table whose rows populate the queue. */
+  queueTableId?: string;
+  /** Phase 4: Research kit — table whose rows are source documents. */
+  sourcesTableId?: string;
+  /** Phase 4: Research kit — blueprint id for synthesis runs. */
+  synthesisBlueprintId?: string;
 }
 
 /**
@@ -54,9 +60,13 @@ async function loadRuntimeStateUncached(
   app: AppDetail,
   bindings: ResolvedBindings,
   kitId: KitId,
-  projection: KitProjectionShape
+  projection: KitProjectionShape,
+  /** Phase 4: Inbox-only — selected row id from URL ?row= */
+  rowId?: string | null
 ): Promise<RuntimeState> {
   const baseline = await loadBaseline(app);
+  // Provide a typed input alias so inbox/research branches can read rowId
+  const input = { rowId };
 
   if (kitId === "tracker") {
     return {
@@ -106,6 +116,37 @@ async function loadRuntimeStateUncached(
       ledgerMonthlyClose: await loadMonthlyCloseSummary(app.id, projection.runsBlueprintId),
       ledgerPeriod: period,
       evaluatedKpis: await loadEvaluatedKpis(projection.kpiSpecs ?? []),
+    };
+  }
+
+  if (kitId === "inbox") {
+    const queue = await loadInboxQueue(projection.queueTableId);
+    return {
+      ...baseline,
+      inboxQueueRows: queue,
+      inboxSelectedRowId: input.rowId ?? null,
+      inboxDraftDocument: input.rowId
+        ? await loadInboxDraft(app.id, input.rowId)
+        : null,
+    };
+  }
+
+  if (kitId === "research") {
+    const sources = await loadResearchSources(projection.sourcesTableId);
+    const synthesis = await loadLatestSynthesis(app.id, projection.synthesisBlueprintId);
+    const runs = await loadRecentRuns(app.id, projection.synthesisBlueprintId, 10);
+    const cadence = await loadCadence(app.manifest, projection.cadenceScheduleId);
+    const lastSynthAge = synthesis ? humanizeAge(synthesis.ageMs) : null;
+    return {
+      ...baseline,
+      cadence,
+      researchSources: sources,
+      latestSynthesisDocId: synthesis?.docId ?? null,
+      researchSynthesisContent: synthesis?.content ?? null,
+      researchCitations: [], // Phase 4: real citation linkage deferred; ship as []
+      researchRecentRuns: runs,
+      researchSourcesCount: sources.length,
+      researchLastSynthAge: lastSynthAge,
     };
   }
 
@@ -557,20 +598,199 @@ export async function loadBlueprintVariables(
   }
 }
 
+// --- Phase 4: helpers ---------------------------------------------------------
+
+/** Converts milliseconds to a human-readable age string. */
+function humanizeAge(ms: number): string {
+  if (ms < 60_000) return "just now";
+  if (ms < 3_600_000) return `${Math.round(ms / 60_000)}m ago`;
+  if (ms < 86_400_000) return `${Math.round(ms / 3_600_000)}h ago`;
+  return `${Math.round(ms / 86_400_000)}d ago`;
+}
+
+// --- Phase 4: Inbox loaders --------------------------------------------------
+
 /**
- * Cached entry point. Cache key includes the app id + kit id + period so
- * different kits / period selections don't collide. 30s revalidate.
+ * Returns up to 50 rows from the given user-table in position order, with
+ * their `data` JSON parsed into a `values` map. Used by the Inbox kit's
+ * queue panel.
+ */
+export async function loadInboxQueue(
+  tableId: string | undefined
+): Promise<{ id: string; tableId: string; values: Record<string, unknown> }[]> {
+  if (!tableId) return [];
+  const rows = db
+    .select()
+    .from(userTableRows)
+    .where(eq(userTableRows.tableId, tableId))
+    .orderBy(asc(userTableRows.position))
+    .limit(50)
+    .all();
+  return rows.map((r) => ({
+    id: r.id,
+    tableId: r.tableId,
+    values: typeof r.data === "string" ? (JSON.parse(r.data) as Record<string, unknown>) : {},
+  }));
+}
+
+/**
+ * Core implementation for loadInboxDraft — separated so it can be called
+ * directly in tests (which lack Next.js cache infrastructure) and wrapped
+ * with `unstable_cache` in production paths.
+ */
+async function _inboxDraftFetch(appId: string, rowId: string) {
+  const task = db
+    .select({ id: tasks.id })
+    .from(tasks)
+    .where(and(eq(tasks.projectId, appId), eq(tasks.contextRowId, rowId)))
+    .orderBy(desc(tasks.createdAt))
+    .limit(1)
+    .get();
+  if (!task) return null;
+  const doc = db
+    .select()
+    .from(documents)
+    .where(eq(documents.taskId, task.id))
+    .orderBy(desc(documents.createdAt))
+    .limit(1)
+    .get();
+  if (!doc) return null;
+  return {
+    id: doc.id,
+    filename: doc.filename ?? doc.originalName,
+    content: typeof doc.extractedText === "string" ? doc.extractedText : "",
+    taskId: task.id,
+  };
+}
+
+/**
+ * Returns the most recent document drafted for the given row in an Inbox app,
+ * or `null` when no matching task + document exists. Uses `unstable_cache`
+ * (60s TTL, keyed by appId + rowId) in production; falls back gracefully in
+ * test environments where the Next.js cache infrastructure is absent.
+ */
+export async function loadInboxDraft(
+  appId: string,
+  rowId: string | null | undefined
+) {
+  if (!rowId) return null;
+  try {
+    const cached = unstable_cache(
+      () => _inboxDraftFetch(appId, rowId),
+      ["inbox-draft", appId, rowId],
+      { revalidate: 60 }
+    );
+    return await cached();
+  } catch {
+    // unstable_cache requires Next.js cache context (not available in tests);
+    // fall back to direct DB call.
+    return _inboxDraftFetch(appId, rowId);
+  }
+}
+
+// --- Phase 4: Research loaders -----------------------------------------------
+
+/**
+ * Returns up to 50 source rows from the research sources table in position
+ * order. Same 50-row cap + JSON parse pattern as `loadInboxQueue`.
+ */
+export async function loadResearchSources(
+  tableId: string | undefined
+): Promise<{ id: string; values: Record<string, unknown> }[]> {
+  if (!tableId) return [];
+  const rows = db
+    .select()
+    .from(userTableRows)
+    .where(eq(userTableRows.tableId, tableId))
+    .orderBy(asc(userTableRows.position))
+    .limit(50)
+    .all();
+  return rows.map((r) => ({
+    id: r.id,
+    values: typeof r.data === "string" ? (JSON.parse(r.data) as Record<string, unknown>) : {},
+  }));
+}
+
+/**
+ * Returns the most recent completed synthesis run for the app, including the
+ * document's content (via `extractedText`) and the elapsed time in ms. Falls
+ * back to `task.result` when no document is attached.
+ */
+export async function loadLatestSynthesis(
+  appId: string,
+  blueprintId: string | undefined
+): Promise<{ docId: string; content: string; taskId: string; ageMs: number } | null> {
+  if (!blueprintId) return null;
+  const task = db
+    .select()
+    .from(tasks)
+    .where(and(eq(tasks.projectId, appId), eq(tasks.status, "completed")))
+    .orderBy(desc(tasks.createdAt))
+    .limit(1)
+    .get();
+  if (!task) return null;
+  const doc = db
+    .select()
+    .from(documents)
+    .where(eq(documents.taskId, task.id))
+    .orderBy(desc(documents.createdAt))
+    .limit(1)
+    .get();
+  const content =
+    doc && typeof doc.extractedText === "string"
+      ? doc.extractedText
+      : (task.result ?? "");
+  const ageMs = Date.now() - (task.createdAt instanceof Date ? task.createdAt.getTime() : task.createdAt ?? Date.now());
+  if (!doc) {
+    // Return a task-only entry — no docId but still useful for age / content.
+    return { docId: task.id, content, taskId: task.id, ageMs };
+  }
+  return { docId: doc.id, content, taskId: task.id, ageMs };
+}
+
+/**
+ * Returns the `limit` most recent runs for the app (any status), shaped as
+ * `TimelineRun` records for the RunHistoryTimeline component.
+ */
+export async function loadRecentRuns(
+  appId: string,
+  _blueprintId: string | undefined,
+  limit: number = 10
+) {
+  const rows = db
+    .select()
+    .from(tasks)
+    .where(eq(tasks.projectId, appId))
+    .orderBy(desc(tasks.createdAt))
+    .limit(limit)
+    .all();
+  return rows.map((t) => ({
+    id: t.id,
+    status: (t.status as "running" | "completed" | "failed" | "queued") ?? "queued",
+    startedAt: (t.createdAt instanceof Date ? t.createdAt : new Date(t.createdAt ?? Date.now())).toISOString(),
+    durationMs: undefined as number | undefined,
+    outputDocumentId: undefined as string | undefined,
+  }));
+}
+
+/**
+ * Cached entry point. Cache key includes the app id + kit id + period (and
+ * row id for Inbox) so different kits / period / row selections don't collide.
+ * 30s revalidate.
  */
 export function loadRuntimeState(
   app: AppDetail,
   bindings: ResolvedBindings,
   kitId: KitId,
-  projection: KitProjectionShape
+  projection: KitProjectionShape,
+  /** Phase 4: Inbox-only — selected row id from URL ?row= */
+  rowId?: string | null
 ): Promise<RuntimeState> {
   const period = projection.period ?? "default";
+  const rowKey = rowId ?? "none";
   const cached = unstable_cache(
-    () => loadRuntimeStateUncached(app, bindings, kitId, projection),
-    ["app-runtime", app.id, kitId, period],
+    () => loadRuntimeStateUncached(app, bindings, kitId, projection, rowId),
+    ["app-runtime", app.id, kitId, period, rowKey],
     { revalidate: 30, tags: [`app-runtime:${app.id}`] }
   );
   return cached();

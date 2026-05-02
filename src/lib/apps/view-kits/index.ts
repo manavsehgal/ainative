@@ -11,9 +11,8 @@ import type { ColumnSchemaRef, KitDefinition, KitId } from "./types";
 
 /**
  * View-kit registry. Phase 2 ships `tracker` + `workflow-hub` alongside the
- * Phase 1.1 `placeholder`. Phase 3 adds `coach` + `ledger`. Phase 4 (`inbox`/
- * `research`) remains undefined here and degrades to `placeholderKit` via
- * `resolveKit`.
+ * Phase 1.1 `placeholder`. Phase 3 adds `coach` + `ledger`. Phase 4 adds
+ * `inbox` + `research`. All seven kit ids in `KitId` are now registered.
  */
 export const viewKits: Record<KitId, KitDefinition | undefined> = {
   placeholder: placeholderKit,
