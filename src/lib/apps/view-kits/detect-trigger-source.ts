@@ -22,9 +22,9 @@ export function detectTriggerSource(
   // Step 1: row-insert pass — find all valid row-insert triggers
   const rowInsertCandidates: TriggerSource[] = [];
   for (const bp of manifest.blueprints) {
-    const trigger = (bp as { trigger?: { kind: string; table?: string } }).trigger;
+    const trigger = bp.trigger;
     if (trigger?.kind !== "row-insert") continue;
-    if (!trigger.table || !knownTableIds.has(trigger.table)) {
+    if (!knownTableIds.has(trigger.table)) {
       console.warn(
         `[detectTriggerSource] blueprint "${bp.id}" declares trigger.table="${trigger.table}" which is not in manifest.tables; ignoring trigger.`
       );
@@ -45,7 +45,7 @@ export function detectTriggerSource(
 
   // Step 2: schedule pass — find a schedule that binds the preferred blueprint
   for (const s of manifest.schedules) {
-    const runsId = (s as { runs?: string }).runs;
+    const runsId = s.runs;
     if (!runsId) continue;
     if (preferredBlueprintId && runsId !== preferredBlueprintId) continue;
     return {
