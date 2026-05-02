@@ -76,15 +76,31 @@ describe("DELETE /api/apps/[id]", () => {
     expect(await res.json()).toEqual({ error: "App not found" });
   });
 
-  it("returns 500 when the cascade throws", async () => {
+  it("returns 500 with a sanitized message when the cascade throws", async () => {
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
     vi.mocked(deleteAppCascade).mockRejectedValue(
-      new Error("FK constraint violated")
+      new Error("ENOENT /Users/alice/.ainative/apps/broken/manifest.yaml")
     );
     const res = await DELETE(makeRequest(), {
       params: Promise.resolve({ id: "broken" }),
     });
     expect(res.status).toBe(500);
     const body = await res.json();
-    expect(body.error).toBe("FK constraint violated");
+    expect(body.error).toBe("Failed to delete app");
+    expect(body.error).not.toMatch(/\/Users\//);
+    // Diagnostic detail still goes to the server log.
+    expect(consoleErrorSpy).toHaveBeenCalled();
+    consoleErrorSpy.mockRestore();
+  });
+
+  it("returns 400 when the id is empty (defensive)", async () => {
+    const res = await DELETE(makeRequest(), {
+      params: Promise.resolve({ id: "" }),
+    });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "App id is required" });
+    expect(deleteAppCascade).not.toHaveBeenCalled();
   });
 });

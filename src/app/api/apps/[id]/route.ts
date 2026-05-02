@@ -16,6 +16,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  if (!id) {
+    return NextResponse.json({ error: "App id is required" }, { status: 400 });
+  }
 
   try {
     const result = await deleteAppCascade(id);
@@ -30,7 +33,7 @@ export async function DELETE(
   } catch (err) {
     console.error("App delete failed:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Delete failed" },
+      { error: "Failed to delete app" },
       { status: 500 }
     );
   }
