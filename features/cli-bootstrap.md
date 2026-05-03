@@ -29,7 +29,7 @@ As a desktop user, I want the ainative app shell to boot its local sidecar autom
 - **Database init**: Open SQLite with better-sqlite3, enable WAL mode and foreign keys, run Drizzle migrations, then close the connection (CLI only bootstraps — the app opens its own connection)
 - **Port allocation**: Try port 3000, increment on conflict using `net.createServer()` probe
 - **Dependency hoisting workaround**: Detect if `next` is missing from local `node_modules/`, walk up the tree to find hoisted root, copy `src/`, `public/`, and config files there
-- **Process management**: Spawn `next dev --turbopack` as a child process with `stdio: "inherit"`, pass `STAGENT_DATA_DIR` and `PORT` as env vars
+- **Process management**: Spawn `next dev --turbopack` as a child process with `stdio: "inherit"`, pass `AINATIVE_DATA_DIR` and `PORT` as env vars
 - **Browser-open suppression**: The desktop wrapper launches the sidecar with `--no-open`, while local development can still use the direct browser path if needed
 - **Shutdown**: Forward SIGINT/SIGTERM to child process, exit with child's exit code
 

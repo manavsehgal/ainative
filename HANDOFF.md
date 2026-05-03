@@ -86,7 +86,7 @@ Plus a one-off cleanup at session start: deleted 2 smoke test rows from `~/.aina
 2. **`Semantic` union type** — current shape is `semantic?: string` (loose). Probes do exact equality (`=== "currency"`). Unknown semantics simply don't match. Tightening to a union forces migration of every callsite for marginal benefit; defer until persistence lands.
 3. **Diagnostics route + trace API + settings toggle + copy-as-view generator** — explicitly deferred to follow-up gated on first reported kit misfire (see TL;DR #3).
 4. **Roadmap drift sweep** — handoff's accuracy rule should apply to the broader roadmap. A grooming pass over `features/*.md` to catch any other shipped-but-listed-as-planned items would prevent future "pick a feature, discover it's shipped" rabbit holes.
-5. **Memory inaccuracy: `~/.stagent/` data dir reference is stale.** MEMORY.md says "Data-layer identifiers (`~/.stagent/`, `stagent.db`) intentionally unchanged" — but the active DB is now `~/.ainative/ainative.db` (last touched May 2; the `~/.stagent/` files haven't been touched since April 18). Memory entry should be updated to reflect the data-dir migration that happened post-folder-rename. Not blocking, but next memory-write turn should fix it.
+5. ~~Memory inaccuracy: `~/.stagent/` data dir reference is stale.~~ **RESOLVED** in this session — MEMORY.md and 4 dependent memory entries updated to reflect the post-2026-04-18 data-layer rename to `AINATIVE_*` env vars and `~/.ainative/` paths. Source of truth is `src/lib/utils/ainative-paths.ts` and `src/lib/instance/detect.ts`.
 
 ---
 

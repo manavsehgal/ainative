@@ -25,7 +25,7 @@ As a developer building ainative features, I want a type-safe, migration-based d
 
 - **Driver**: better-sqlite3 (synchronous, fast, no native addon build issues)
 - **ORM**: drizzle-orm with `drizzle-orm/better-sqlite3` adapter
-- **Location**: `~/.ainative/ainative.db` via `STAGENT_DATA_DIR` env var
+- **Location**: `~/.ainative/ainative.db` via `AINATIVE_DATA_DIR` env var
 - **Journal mode**: WAL (concurrent reads + single writer)
 - **Foreign keys**: Enabled via pragma
 
@@ -55,7 +55,7 @@ import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import * as schema from "./schema";
 
-const dataDir = process.env.STAGENT_DATA_DIR || join(homedir(), ".ainative");
+const dataDir = process.env.AINATIVE_DATA_DIR || join(homedir(), ".ainative");
 const sqlite = new Database(join(dataDir, "ainative.db"));
 sqlite.pragma("journal_mode = WAL");
 sqlite.pragma("foreign_keys = ON");

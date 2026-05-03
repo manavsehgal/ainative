@@ -239,7 +239,7 @@ Riley wants to know why some features show up on one runtime but not another. Th
 4. Three consecutive poll failures escalate to a persistent inbox notification (three-strike dedup prevents notification floods)
 5. The upgrade session uses the `upgrade-assistant` profile, which allowlists **AskUserQuestion** — the assistant can ask direct questions mid-merge without hitting a generic permission prompt
 
-> **Tip:** The Instance card also shows bootstrap status. In dev mode (indicated by `STAGENT_DEV_MODE=true` or the `.git/ainative-dev-mode` sentinel), auto-upgrade machinery is skipped to avoid interfering with contributor workflows.
+> **Tip:** The Instance card also shows bootstrap status. In dev mode (indicated by `AINATIVE_DEV_MODE=true` or the `.git/ainative-dev-mode` sentinel), auto-upgrade machinery is skipped to avoid interfering with contributor workflows.
 
 ### Step 15: Verify Platform Health
 

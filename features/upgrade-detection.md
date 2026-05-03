@@ -111,8 +111,8 @@ As a ainative end user with a customized clone, I want to see a subtle but clear
 - [ ] Badge state changes do not steal focus; parent region has `aria-live="polite"`
 - [ ] Copy matches UX Specification exactly ("N upstream commits ready to merge", "Check now", etc.)
 - [ ] Design metrics verified via `/taste`: DV=3, MI=3, VD=6
-- [ ] **Single-clone user test:** verified to work on a clone with `STAGENT_DATA_DIR` unset (default `~/.ainative`) — badge appears, poller runs, no behavioral difference from private-instance case
-- [ ] **Dev-mode skip test:** scheduled polling task is NOT registered when `STAGENT_DEV_MODE=true` or `.git/ainative-dev-mode` sentinel is present — verified by checking the `schedules` table after first boot in dev mode
+- [ ] **Single-clone user test:** verified to work on a clone with `AINATIVE_DATA_DIR` unset (default `~/.ainative`) — badge appears, poller runs, no behavioral difference from private-instance case
+- [ ] **Dev-mode skip test:** scheduled polling task is NOT registered when `AINATIVE_DEV_MODE=true` or `.git/ainative-dev-mode` sentinel is present — verified by checking the `schedules` table after first boot in dev mode
 - [ ] Badge component renders correctly when `settings.instance` is missing entirely (dev mode case) — returns null, logs no errors
 
 ## Scope Boundaries

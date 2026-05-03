@@ -29,7 +29,7 @@ mode: next-steps
 
 **Planned and ready (deps met):**
 - `workflow-step-delays` (P1) ← recommended
-- `instance-bootstrap` (P1, no deps) — but dev-mode gate friction; building in main repo requires `STAGENT_INSTANCE_MODE=true` overrides (per MEMORY.md)
+- `instance-bootstrap` (P1, no deps) — but dev-mode gate friction; building in main repo requires `AINATIVE_INSTANCE_MODE=true` overrides (per MEMORY.md)
 - `workflow-document-pool` (P1) — 6 deps, all met
 - `workflow-run-history` (P1) — `workflow-editing` status unclear, verify before starting
 - `direct-runtime-prompt-caching`, `direct-runtime-advanced-capabilities` (both P2)

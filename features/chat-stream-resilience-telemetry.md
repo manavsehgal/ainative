@@ -61,7 +61,7 @@ Send these via an existing telemetry path — look for how other client-side eve
 Add `src/app/api/diagnostics/chat-streams/route.ts`:
 
 - `GET` returns counts for each reason code over the last N hours from an in-memory ring buffer (simple — no DB persistence needed for dev).
-- Gate behind `process.env.NODE_ENV !== "production"` or the existing dev-mode sentinel (`STAGENT_DEV_MODE=true`) — this is for maintainer inspection, not user-facing.
+- Gate behind `process.env.NODE_ENV !== "production"` or the existing dev-mode sentinel (`AINATIVE_DEV_MODE=true`) — this is for maintainer inspection, not user-facing.
 - Response shape:
   ```typescript
   {
