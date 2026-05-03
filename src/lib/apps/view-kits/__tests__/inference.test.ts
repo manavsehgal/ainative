@@ -4,6 +4,7 @@ import {
   hasBoolean,
   hasCurrency,
   hasDate,
+  hasNotificationShape,
   pickKit,
   rule1_ledger,
   rule2_tracker,
@@ -60,6 +61,25 @@ describe("column-shape probes", () => {
   });
   it("hasBoolean: ignores neutral columns", () => {
     expect(hasBoolean([{ name: "title" }, { name: "amount" }])).toBe(false);
+  });
+
+  it("hasNotificationShape: matches semantic=notification", () => {
+    expect(hasNotificationShape([{ name: "x", semantic: "notification" }])).toBe(true);
+  });
+  it("hasNotificationShape: matches name patterns", () => {
+    expect(hasNotificationShape([{ name: "read" }])).toBe(true);
+    expect(hasNotificationShape([{ name: "unread" }])).toBe(true);
+    expect(hasNotificationShape([{ name: "seen" }])).toBe(true);
+    expect(hasNotificationShape([{ name: "is_read" }])).toBe(true);
+    expect(hasNotificationShape([{ name: "delivered_at" }])).toBe(false);
+    expect(hasNotificationShape([{ name: "notified" }])).toBe(true);
+  });
+  it("hasNotificationShape: ignores neutral columns", () => {
+    expect(hasNotificationShape([{ name: "title" }, { name: "amount" }])).toBe(false);
+  });
+  it("hasNotificationShape: does NOT match substrings inside larger words", () => {
+    expect(hasNotificationShape([{ name: "ready_state" }])).toBe(false);
+    expect(hasNotificationShape([{ name: "spreadsheet" }])).toBe(false);
   });
 });
 
