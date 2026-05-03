@@ -84,6 +84,7 @@ const CURRENCY_NAME_RE = /(^|[^a-z])(amount|price|cost|balance|total|revenue|inc
 const DATE_NAME_RE = /(^date$|_date$|_at$|^at_)/i;
 const BOOLEAN_NAME_RE = /(^|_)(active|completed|done|enabled|verified|is)(_|$)/i;
 const NOTIFICATION_NAME_RE = /(^|_)(read|unread|seen|notified|notification)(_|$)/i;
+const MESSAGE_NAME_RE = /(^|_)(body|message|subject|summary|content)(_|$)/i;
 const COACH_RE = /(^|[-_])coach($|[-_])/i;
 const DOC_BLUEPRINT_RE = /(digest|report|summary|brief|synthesis)/i;
 const INBOX_BLUEPRINT_RE = /(drafter|inbox|notification|message|follow[-_]?up|triage)/i;
@@ -116,6 +117,12 @@ export function hasBoolean(cols: Col[]): boolean {
 export function hasNotificationShape(cols: Col[]): boolean {
   return cols.some(
     (c) => c.semantic === "notification" || NOTIFICATION_NAME_RE.test(c.name)
+  );
+}
+
+export function hasMessageShape(cols: Col[]): boolean {
+  return cols.some(
+    (c) => c.semantic === "message-body" || MESSAGE_NAME_RE.test(c.name)
   );
 }
 

@@ -4,6 +4,7 @@ import {
   hasBoolean,
   hasCurrency,
   hasDate,
+  hasMessageShape,
   hasNotificationShape,
   pickKit,
   rule1_ledger,
@@ -80,6 +81,25 @@ describe("column-shape probes", () => {
   it("hasNotificationShape: does NOT match substrings inside larger words", () => {
     expect(hasNotificationShape([{ name: "ready_state" }])).toBe(false);
     expect(hasNotificationShape([{ name: "spreadsheet" }])).toBe(false);
+  });
+
+  it("hasMessageShape: matches semantic=message-body", () => {
+    expect(hasMessageShape([{ name: "x", semantic: "message-body" }])).toBe(true);
+  });
+  it("hasMessageShape: matches name patterns", () => {
+    expect(hasMessageShape([{ name: "body" }])).toBe(true);
+    expect(hasMessageShape([{ name: "message" }])).toBe(true);
+    expect(hasMessageShape([{ name: "subject" }])).toBe(true);
+    expect(hasMessageShape([{ name: "summary" }])).toBe(true);
+    expect(hasMessageShape([{ name: "draft_body" }])).toBe(true);
+    expect(hasMessageShape([{ name: "email_subject" }])).toBe(true);
+  });
+  it("hasMessageShape: ignores neutral columns", () => {
+    expect(hasMessageShape([{ name: "title" }, { name: "qty" }])).toBe(false);
+  });
+  it("hasMessageShape: does NOT match substrings inside larger words", () => {
+    expect(hasMessageShape([{ name: "embodied" }])).toBe(false);
+    expect(hasMessageShape([{ name: "anybody" }])).toBe(false);
   });
 });
 
