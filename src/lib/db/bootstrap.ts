@@ -351,6 +351,15 @@ export function bootstrapAinativeDatabase(sqlite: Database.Database): void {
   // chat-skill-composition v1: array of additionally-activated skill IDs
   // beyond the legacy active_skill_id. Default empty JSON array.
   addColumnIfMissing(`ALTER TABLE conversations ADD COLUMN active_skill_ids TEXT DEFAULT '[]';`);
+  // chat-conversation-branches v1: parent + branchedFrom pointers for forward-only
+  // branching, plus rewound_at on chat_messages for ⌘Z/⌘⇧Z. All nullable; root
+  // (linear) conversations leave them NULL and behave identically to today. The
+  // matching index on parent_conversation_id is created inline in the CREATE
+  // TABLE block below — adding it here would run before the table exists on
+  // fresh DBs (addColumnIfMissing precedes the conversations CREATE TABLE).
+  addColumnIfMissing(`ALTER TABLE conversations ADD COLUMN parent_conversation_id TEXT;`);
+  addColumnIfMissing(`ALTER TABLE conversations ADD COLUMN branched_from_message_id TEXT;`);
+  addColumnIfMissing(`ALTER TABLE chat_messages ADD COLUMN rewound_at INTEGER;`);
   // Workflow step delays — resume_at for schedule-based delay resumption.
   // The partial index on resume_at is created by migration 0024 for fresh DBs;
   // existing DBs that don't run migrations will do a small table scan instead.
@@ -475,6 +484,8 @@ export function bootstrapAinativeDatabase(sqlite: Database.Database): void {
       context_scope TEXT,
       active_skill_id TEXT,
       active_skill_ids TEXT DEFAULT '[]',
+      parent_conversation_id TEXT,
+      branched_from_message_id TEXT,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL,
       FOREIGN KEY (project_id) REFERENCES projects(id) ON UPDATE NO ACTION ON DELETE NO ACTION
@@ -483,6 +494,7 @@ export function bootstrapAinativeDatabase(sqlite: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_conversations_project_id ON conversations(project_id);
     CREATE INDEX IF NOT EXISTS idx_conversations_status ON conversations(status);
     CREATE INDEX IF NOT EXISTS idx_conversations_updated_at ON conversations(updated_at);
+    CREATE INDEX IF NOT EXISTS idx_conversations_parent_id ON conversations(parent_conversation_id);
 
     CREATE TABLE IF NOT EXISTS chat_messages (
       id TEXT PRIMARY KEY NOT NULL,
@@ -491,6 +503,7 @@ export function bootstrapAinativeDatabase(sqlite: Database.Database): void {
       content TEXT NOT NULL,
       metadata TEXT,
       status TEXT DEFAULT 'complete' NOT NULL,
+      rewound_at INTEGER,
       created_at INTEGER NOT NULL,
       FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON UPDATE NO ACTION ON DELETE NO ACTION
     );

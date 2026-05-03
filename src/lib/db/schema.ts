@@ -585,6 +585,21 @@ export const conversations = sqliteTable(
     activeSkillIds: text("active_skill_ids", { mode: "json" })
       .$type<string[]>()
       .default([] as unknown as string[]),
+    /**
+     * Branching v1 — parent of this conversation in the branch tree.
+     * NULL for root (linear) conversations. When set, the context builder
+     * walks the ancestor chain to reconstruct the prefix transcript.
+     *
+     * See `features/chat-conversation-branches.md`.
+     */
+    parentConversationId: text("parent_conversation_id"),
+    /**
+     * The assistant message in the parent conversation that this branch
+     * forked from. Messages with `createdAt <= branchedFromMessage.createdAt`
+     * in the parent are included as prefix; later messages are not.
+     * NULL iff `parentConversationId` is NULL.
+     */
+    branchedFromMessageId: text("branched_from_message_id"),
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
   },
@@ -592,6 +607,7 @@ export const conversations = sqliteTable(
     index("idx_conversations_project_id").on(table.projectId),
     index("idx_conversations_status").on(table.status),
     index("idx_conversations_updated_at").on(table.updatedAt),
+    index("idx_conversations_parent_id").on(table.parentConversationId),
   ]
 );
 
@@ -610,6 +626,20 @@ export const chatMessages = sqliteTable(
     })
       .default("complete")
       .notNull(),
+    /**
+     * Branching v1 — when an assistant+user message pair is rewound via
+     * Cmd-Z, both messages get this timestamp set. The context builder
+     * filters `WHERE rewoundAt IS NULL` so the agent never sees the
+     * rewound turns again. NULL for the common (non-rewound) case.
+     *
+     * Stored at millisecond resolution (`timestamp_ms`) — not seconds —
+     * because two rewind actions can fire well within the same second
+     * and `restoreLatestRewoundPair` needs to identify a single pair by
+     * its exact rewoundAt timestamp.
+     *
+     * See `features/chat-conversation-branches.md`.
+     */
+    rewoundAt: integer("rewound_at", { mode: "timestamp_ms" }),
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
   },
   (table) => [

@@ -1,12 +1,13 @@
 ---
 title: Chat — Conversation Branches & Undo/Redo
-status: planned
+status: in-progress
 priority: P3
 milestone: post-mvp
 source: chat-advanced-ux.md §5 (split during grooming, 2026-04-14)
 dependencies:
   - chat-conversation-persistence
   - chat-data-layer
+data-layer-shipped: 2026-05-03
 ---
 
 # Chat — Conversation Branches & Undo/Redo
@@ -90,19 +91,40 @@ Every current runtime consumes the context-builder output; they don't need chang
 
 ## Acceptance Criteria
 
-- [ ] Schema migration adds `parentConversationId` + `branchedFromMessageId` to conversations, `rewoundAt` to messages; both via `addColumnIfMissing` + CREATE TABLE
-- [ ] `bin/cli.ts` bootstrap seeds CREATE TABLE correctly for new installs
+**Phase 1 — data layer (shipped 2026-05-03):**
+
+- [x] Schema migration adds `parentConversationId` + `branchedFromMessageId` to conversations, `rewoundAt` to messages; both via `addColumnIfMissing` + CREATE TABLE — `src/lib/db/schema.ts:567-602`, `src/lib/db/bootstrap.ts:478-512`, `src/lib/db/bootstrap.ts:354-364`
+- [x] `bin/cli.ts` bootstrap seeds CREATE TABLE correctly for new installs (CLI runs the same `bootstrapAinativeDatabase` — bootstrap test pins fresh-DB column presence at `src/lib/db/__tests__/bootstrap.test.ts:57-79`)
+- [x] Child conversation's context includes prefix messages from ancestor chain — `getMessagesWithAncestors` at `src/lib/data/chat.ts:362-437` walks ancestors with rowid-based branch-point cutoff; `buildTier1` at `src/lib/chat/context-builder.ts:177-209` consumes it transparently
+- [x] Rewound messages excluded from context builder (visible to user, invisible to agent) — `markPairRewound` + `restoreLatestRewoundPair` at `src/lib/data/chat.ts:444-548`; ancestor walk filters `WHERE rewoundAt IS NULL`; verified at `src/lib/chat/__tests__/context-builder-branching.test.ts:84-106`
+- [x] Depth cap (8) returns a truncation notice on degenerate chains — `MAX_BRANCH_DEPTH=8` at `src/lib/data/chat.ts:21`; synthetic system note injected at `src/lib/chat/context-builder.ts:201-208`; covered by `src/lib/chat/__tests__/context-builder-branching.test.ts:108-130`
+- [x] Existing linear conversations behave identically — no parent → ancestor walk degenerates to a single-conv read; verified at `src/lib/chat/__tests__/context-builder-branching.test.ts:30-49`
+- [x] Feature flag `chat.branching.enabled` default off — `isBranchingEnabled()` at `src/lib/chat/branching/flag.ts:21`; canonical-true-only check pinned at `src/lib/chat/branching/__tests__/flag.test.ts`
+- [x] POST `/api/chat/conversations` accepts `parentConversationId` + `branchedFromMessageId` with strict pair validation — `src/app/api/chat/conversations/route.ts:46-90`
+
+**Phase 2 — UI + cross-runtime smoke (deferred):**
+
 - [ ] "Branch from here" action on assistant messages creates a child conversation
-- [ ] Child conversation's context includes prefix messages from ancestor chain
 - [ ] Tree view renders on detail sheet when conversation has relatives; hidden otherwise
 - [ ] Clicking a tree node navigates to that conversation
 - [ ] `⌘Z` marks last turn rewound, pre-fills composer; `⌘⇧Z` restores
-- [ ] Rewound messages excluded from context builder (visible to user, invisible to agent)
-- [ ] Depth cap (8) returns a truncation notice on degenerate chains
 - [ ] Smoke test: branch on Claude, continue, verify full prefix reconstruction
 - [ ] Smoke test: branch on Ollama, continue, verify full prefix reconstruction
 - [ ] Existing linear conversations render as single-node trees with no UI regression
-- [ ] Feature flag `chat.branching.enabled` default off; flip on after v1 validation
+
+## Design Decisions (2026-05-03 — Phase 1)
+
+**DD-1. Phased ship: data layer now, UI deferred.** The spec ACs span schema + data + UI + cross-runtime smoke — a 2-3 day surface. The previous handoff scoped this for "a contained chat-data-layer change" and the project's prior pattern (see `composed-app-manifest-authoring-tools` DD-1) supports shipping the standalone foundation with UI deferred when the standalone is itself reusable. The data layer landing is fully tested and gated behind a default-off feature flag (`AINATIVE_CHAT_BRANCHING`) so it's safe to ship without UI: existing linear conversations behave identically; new schema columns are nullable; ancestor walk degenerates to a single-conversation read for non-branched conversations. Spec stays `status: in-progress` to reflect that UI is the next ship.
+
+**DD-2. Branch-point cutoff uses SQLite rowid, not createdAt.** The schema's `chat_messages.createdAt` uses Drizzle `mode: "timestamp"` which rounds to seconds. Same-second insertions can't be ordered reliably by timestamp (caught by tests). SQLite's implicit `rowid` is monotonically assigned at INSERT, unique per row, and exactly the property the cutoff needs ("at-or-before this message in insertion order"). The ancestor walk uses `sql\`rowid <= (SELECT rowid FROM chat_messages WHERE id = …)\`` for the cutoff and `ORDER BY rowid` for output ordering. Production chat naturally spans seconds, so this matches createdAt ordering in practice; for tight test loops it produces correct results too.
+
+**DD-3. `rewoundAt` uses `timestamp_ms`, not `timestamp`.** Pair-marking writes the same timestamp to both messages in a (user, assistant) pair, and `restoreLatestRewoundPair` identifies the most-recent pair by exact timestamp match. Two rewind actions can fire well within the same second; `mode: "timestamp"` (seconds) would collapse them into one pair. `rewoundAt` is a brand-new column with no existing data, so the millisecond precision is safe to choose without a migration. Other datetime columns retain seconds resolution to avoid touching legacy data.
+
+**DD-4. Replace, don't merge, on `markPairRewound` and `restoreLatestRewoundPair`.** Both functions update entire `(user, assistant)` pairs atomically. Partial-pair states ("user rewound, assistant live") would confuse the UI and the agent. The spec frames undo as a turn-level operation, so the data layer enforces turn-level atomicity.
+
+**DD-5. Self-referential FKs declared at the SQL level only, not in Drizzle column refs.** `parent_conversation_id` (self-FK) and `branched_from_message_id` (forward-ref FK to chat_messages) work fine as plain TEXT columns at the SQLite level; the validation that "parent exists" + "branchedFrom belongs to parent" lives in the API route. This matches the existing pattern in this schema (`active_skill_id` has no `.references()` either) and avoids Drizzle's circular-typeref complexity.
+
+**DD-6. Synthetic system note for depth-cap truncation.** When the branch chain exceeds `MAX_BRANCH_DEPTH=8`, the context builder prepends a `role: "system"` note ("…branch ancestry exceeded 8 levels — older context has been truncated. The user is aware."). This is a Tier 1 (history) injection rather than a Tier 0 (system prompt) addition because the note should land at the start of conversation context, not in the persistent system identity.
 
 ## Scope Boundaries
 

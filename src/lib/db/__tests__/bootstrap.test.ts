@@ -53,4 +53,85 @@ describe("database bootstrap recovery", () => {
     expect(migrationCount.count).toBe(12);
     migratedDb.close();
   });
+
+  // chat-conversation-branches v1: schema + bootstrap regression.
+  it("bootstraps branching columns on a fresh DB", () => {
+    const bootstrapDb = new Database(dbPath);
+    bootstrapAinativeDatabase(bootstrapDb);
+
+    const convCols = bootstrapDb
+      .prepare(`PRAGMA table_info(conversations)`)
+      .all() as Array<{ name: string }>;
+    const convColNames = convCols.map((c) => c.name);
+    expect(convColNames).toContain("parent_conversation_id");
+    expect(convColNames).toContain("branched_from_message_id");
+
+    const msgCols = bootstrapDb
+      .prepare(`PRAGMA table_info(chat_messages)`)
+      .all() as Array<{ name: string }>;
+    expect(msgCols.map((c) => c.name)).toContain("rewound_at");
+
+    const idx = bootstrapDb
+      .prepare(`PRAGMA index_list(conversations)`)
+      .all() as Array<{ name: string }>;
+    expect(idx.map((i) => i.name)).toContain("idx_conversations_parent_id");
+
+    bootstrapDb.close();
+  });
+
+  // chat-conversation-branches v1: legacy DB upgrade path. Simulates a DB
+  // bootstrapped before branching columns existed by manually creating the
+  // pre-feature CREATE TABLE shape, then re-running bootstrap and asserting
+  // the addColumnIfMissing ALTERs added the new columns idempotently.
+  it("adds branching columns to a legacy DB via addColumnIfMissing", () => {
+    const legacy = new Database(dbPath);
+    legacy
+      .prepare(
+        `CREATE TABLE conversations (
+          id TEXT PRIMARY KEY NOT NULL,
+          project_id TEXT,
+          title TEXT,
+          runtime_id TEXT NOT NULL,
+          model_id TEXT,
+          status TEXT DEFAULT 'active' NOT NULL,
+          session_id TEXT,
+          context_scope TEXT,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL
+        )`
+      )
+      .run();
+    legacy
+      .prepare(
+        `CREATE TABLE chat_messages (
+          id TEXT PRIMARY KEY NOT NULL,
+          conversation_id TEXT NOT NULL,
+          role TEXT NOT NULL,
+          content TEXT NOT NULL,
+          metadata TEXT,
+          status TEXT DEFAULT 'complete' NOT NULL,
+          created_at INTEGER NOT NULL
+        )`
+      )
+      .run();
+
+    bootstrapAinativeDatabase(legacy);
+
+    const convColNames = (
+      legacy.prepare(`PRAGMA table_info(conversations)`).all() as Array<{
+        name: string;
+      }>
+    ).map((c) => c.name);
+    expect(convColNames).toContain("parent_conversation_id");
+    expect(convColNames).toContain("branched_from_message_id");
+
+    const msgColNames = (
+      legacy.prepare(`PRAGMA table_info(chat_messages)`).all() as Array<{
+        name: string;
+      }>
+    ).map((c) => c.name);
+    expect(msgColNames).toContain("rewound_at");
+
+    legacy.close();
+  });
 });

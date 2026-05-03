@@ -53,6 +53,11 @@ vi.mock("drizzle-orm", () => ({
 
 vi.mock("@/lib/data/chat", () => ({
   getMessages: async () => [],
+  // chat-conversation-branches v1: context-builder now walks ancestors via
+  // this helper. Default to an empty linear conversation, matching the old
+  // getMessages stub.
+  getMessagesWithAncestors: async () => ({ messages: [], depthCapped: false }),
+  MAX_BRANCH_DEPTH: 8,
 }));
 
 vi.mock("@/lib/agents/profiles/registry", () => ({

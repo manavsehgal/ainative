@@ -4,8 +4,8 @@ import {
   listConversations,
 } from "@/lib/data/chat";
 import { db } from "@/lib/db";
-import { projects } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { projects, conversations, chatMessages } from "@/lib/db/schema";
+import { eq, and } from "drizzle-orm";
 import { ensureFreshScan } from "@/lib/environment/auto-scan";
 
 /**
@@ -31,11 +31,18 @@ export async function GET(req: NextRequest) {
 
 /**
  * POST /api/chat/conversations
- * Create a new conversation.
+ * Create a new conversation. Optionally a branch of an existing conversation.
  */
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { projectId, title, runtimeId, modelId } = body;
+  const {
+    projectId,
+    title,
+    runtimeId,
+    modelId,
+    parentConversationId,
+    branchedFromMessageId,
+  } = body;
 
   if (!runtimeId) {
     return NextResponse.json(
@@ -50,6 +57,51 @@ export async function POST(req: NextRequest) {
       { error: `Invalid runtimeId. Must be one of: ${validRuntimes.join(", ")}` },
       { status: 400 }
     );
+  }
+
+  // chat-conversation-branches v1 — validate the (parent, branchedFrom) pair.
+  // Both must be present together; the branched-from message must exist and
+  // belong to the named parent conversation. We reject early so callers don't
+  // get a half-broken branch with a dangling FK.
+  if (parentConversationId || branchedFromMessageId) {
+    if (!parentConversationId || !branchedFromMessageId) {
+      return NextResponse.json(
+        {
+          error:
+            "parentConversationId and branchedFromMessageId must both be provided when creating a branch",
+        },
+        { status: 400 }
+      );
+    }
+    const parent = await db
+      .select({ id: conversations.id })
+      .from(conversations)
+      .where(eq(conversations.id, parentConversationId))
+      .get();
+    if (!parent) {
+      return NextResponse.json(
+        { error: `Parent conversation ${parentConversationId} not found` },
+        { status: 404 }
+      );
+    }
+    const branchPoint = await db
+      .select({ id: chatMessages.id })
+      .from(chatMessages)
+      .where(
+        and(
+          eq(chatMessages.id, branchedFromMessageId),
+          eq(chatMessages.conversationId, parentConversationId)
+        )
+      )
+      .get();
+    if (!branchPoint) {
+      return NextResponse.json(
+        {
+          error: `branchedFromMessageId ${branchedFromMessageId} does not belong to conversation ${parentConversationId}`,
+        },
+        { status: 400 }
+      );
+    }
   }
 
   // Auto-scan environment when starting a conversation for a project
@@ -68,6 +120,8 @@ export async function POST(req: NextRequest) {
     title: title ?? null,
     runtimeId,
     modelId: modelId ?? null,
+    parentConversationId: parentConversationId ?? null,
+    branchedFromMessageId: branchedFromMessageId ?? null,
   });
 
   return NextResponse.json(conversation, { status: 201 });

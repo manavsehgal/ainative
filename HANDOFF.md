@@ -1,116 +1,113 @@
-# Handoff: `composed-app-manifest-authoring-tools` shipped — only 1 P3 spec remains
+# Handoff: `chat-conversation-branches` Phase 1 (data layer) shipped — net-new P3 spec roster is empty
 
-**Created:** 2026-05-03 (build session — `composed-app-manifest-authoring-tools`)
-**Status:** Working tree has uncommitted edits across spec, roadmap, changelog, registry.ts, ainative-tools.ts, engine.ts, ainative-app SKILL.md, plus 4 new files (app-view-tools.ts + view-editing-hint.ts + app-view-editor-card.tsx + bootstrapper) and 4 new test files. 13 files total. Ready to commit.
-**Predecessor:** previous handoff was the `onboarding-runtime-provider-choice` build session (committed in `996a727c`, pushed to `origin/main`).
+**Created:** 2026-05-03 (build session — `chat-conversation-branches` Phase 1)
+**Status:** Working tree has uncommitted edits across 8 modified files + 4 new files (1 module + 4 test files). 12 files total. Ready to commit.
+**Predecessor:** previous handoff was the `composed-app-manifest-authoring-tools` build session (committed in `712fe62c`, pushed to `origin/main`).
 
 ---
 
 ## TL;DR for the next agent
 
-1. **Real build session, ~9 of 10 ACs shipped.** AC #7 ("Apply via chat" affordance from the diagnostics page) deferred because the diagnostics page belongs to `composed-app-auto-inference-hardening` which is `status: in-progress` (one of the 4 deferred ACs on that spec). Cannot wire what doesn't exist. Documented as a follow-up; will be picked up when the diagnostics page lands.
+1. **Real build session, Phase 1 of 2.** All 8 data-layer ACs shipped with file:line evidence; 7 UI/cross-runtime smoke ACs explicitly deferred to Phase 2. Spec moved `planned` → `in-progress` (NOT `completed`) — half the ACs remain. Per CLAUDE.md commit style: `feat(chat)` is correct because the visible end-product (after Phase 2) is a chat-runtime feature.
 
-2. **Net-new spec roster is at its smallest in months — only 1 P3 left:**
+2. **The net-new spec roster is now empty.** Every spec in `features/` is either `completed`, `in-progress` (gap-closure work), or `deferred`. There are no fully-planned greenfield specs left. The next session has 3 reasonable shapes:
 
-   | Spec | Priority | Notes |
+   | Option | Scope | Why pick |
    |---|---|---|
-   | `chat-conversation-branches` | P3 | Focused chat-runtime change. The last fully-planned spec in the backlog. |
+   | **Phase 2 of `chat-conversation-branches`** | UI: Branch action, tree tab, ⌘Z/⌘⇧Z, cross-runtime smoke | Closes the spec we just half-finished. Data layer is fully tested + waiting; flag is wired. |
+   | **An in-progress P1 closeout** | `upgrade-session` (dedicated session sheet, upgrade history, abort confirmation, dev-server restart banner) OR `workflow-document-pool` | Highest priority work. `upgrade-session` was on the predecessor's "in-progress closeouts" list. |
+   | **Roadmap drift cleanup** | Reconcile spec frontmatter vs roadmap rows for the 4 in-progress drift cases (predecessor noted `composed-app-auto-inference-hardening` specifically) | Cheap meta-work that improves later signal. Could be a 30-minute warm-up before a bigger ship. |
 
-   **Recommended next:** Start with bidirectional-staleness grep (still 6 of 7 recent sessions hit it). If it turns out to be already shipped or partly built, close it out fast. If it's genuinely planned, it's a contained chat-data-layer change.
+   **Recommended next:** Phase 2 of `chat-conversation-branches`, while the data layer is fresh. The flag is in place; the data layer is fully tested; the only missing piece is UI wiring. Cross-runtime smoke is one quick run on each of Claude / Codex / Ollama once the UI is in.
 
-3. **After `chat-conversation-branches` ships, the roster shifts to in-progress closeouts.** Per the prior handoff, 4 in-progress features have outstanding gap-closure work:
-   - `direct-runtime-prompt-caching` — needs ledger persistence + cost-dashboard cache hit-rate UI + Batch API for meta-completions.
-   - `direct-runtime-advanced-capabilities` — context compaction, `/v1/models` discovery, and Anthropic server-tool toggles.
-   - `upgrade-session` — dedicated session-sheet UI, upgrade history list, abort confirmation, dev-server restart banner.
-   - `composed-app-auto-inference-hardening` — 4 deferred ACs gated on first reported kit misfire (the diagnostics page that AC #7 of THIS session was waiting on lives here).
+3. **CLAUDE.md runtime-registry smoke gate did not trigger this session.** The chat tools register through the existing `defineTool` pattern via `ainative-tools.ts`. The only runtime-graph touch is `context-builder.ts` swapping `getMessages` for `getMessagesWithAncestors` — same module, same call shape, no imports added/removed under `src/lib/agents/runtime/` or `claude-agent.ts`. Smoke is reasonable to skip until Phase 2 lands UI changes.
 
-   Plus a small one I noticed mid-session:
-   - **Roadmap drift on `composed-app-auto-inference-hardening`**: spec frontmatter says `status: in-progress` but the roadmap row says `planned`. Worth flipping next session for consistency. Not done this session because the focus was on the new spec; the drift doesn't affect functionality.
-
-4. **CLAUDE.md runtime-registry smoke gate not triggered this session** — chat tools register through the existing `defineTool` pattern via `ainative-tools.ts:71` (one-line addition to `collectAllTools`). No imports added/removed under `src/lib/agents/runtime/` or `claude-agent.ts`. Same precedent as the previous two sessions.
-
-5. **Two follow-ups worth tracking** (both deferred from this session, both honest):
-   - **AppViewEditorCard chat-message.tsx auto-render** — the card is built and tested standalone, but engine.ts doesn't yet detect a successful `set_app_view_*` tool call and populate chat metadata to auto-mount the card. The existing `composedApp` and `extensionFallback` metadata paths are precedents — adding `viewEditor` is a small engine.ts change. Per DD-1, the LLM can already call the tools directly without the card; the card is reusable for any future surface.
-   - **Latent stale baselines in older specs** — this session's spec said "chat-tool count goes from 92 → 95" but the actual baseline before my work was 97. The +3 still applies. Worth a project-wide grep on other planned specs that hard-code counts; 3 of the 4 in-progress features above might also have stale numbers.
+4. **Two follow-ups worth tracking** (both honest, both deferred from this session):
+   - **Phase 2 UI work** — see the spec's deferred-AC list at `features/chat-conversation-branches.md` "Phase 2 — UI + cross-runtime smoke (deferred)". Components needed: hover action menu on `chat-message.tsx`, branches tab on conversation detail sheet, ⌘Z/⌘⇧Z keybindings on `chat-input.tsx`, rewound-message render component. Possible new data-layer primitive: `getConversationTreeRoot(id)` for the tree view (deferred until UI shows it's actually needed).
+   - **Roadmap-vs-spec status drift** — predecessor noted this for `composed-app-auto-inference-hardening` (spec says `in-progress`, roadmap row says `planned`). My run confirms this affects others too — the roadmap shows 8 `| planned |` entries but several of those are spec-frontmatter `in-progress`. Worth a 30-min reconciliation pass.
 
 ---
 
 ## What landed this session
 
-Uncommitted in working tree (13 files):
+Uncommitted in working tree (12 files):
 
-- `features/composed-app-manifest-authoring-tools.md` — `status: planned` → `status: completed`, `shipped-date: 2026-05-03`. 9 of 10 ACs checked with file:line evidence; AC #7 marked deferred with rationale + 6 Design Decisions appended.
-- `features/roadmap.md` — `composed-app-manifest-authoring-tools` row flipped `planned` → `completed`.
-- `features/changelog.md` — prepended top-level entry with implementation summary, file:line evidence, verification numbers, DD summaries, and a Deferral section. Roadmap impact noted: P1=0, P2=0, P3=1.
-- `src/lib/apps/registry.ts` — added `writeAppManifest(id, manifest, appsDir?)` between `getApp` and `deleteApp`. Atomic via temp-file + renameSync; cleans up `.tmp` on rename failure; calls `invalidateAppsCache` on success; validates via strict `AppManifestSchema.parse` before any disk write.
-- `src/lib/chat/tools/app-view-tools.ts` — new file, 3 `defineTool` calls. Reuses `KitIdSchema` / `ViewSchema.shape.bindings` / `KpiSpecSchema` directly so future schema rotations propagate. Mutation tools replace-not-merge; preserves unrelated view fields.
-- `src/lib/chat/ainative-tools.ts` — added `import { appViewTools }` and `...appViewTools(ctx)` in `collectAllTools`. Total chat tools now 100 (97 → 100).
-- `src/lib/chat/planner/view-editing-hint.ts` — new file. `detectViewEditingIntent` (regex classifier with most-specific-wins precedence) + `buildViewEditingHint` (short prose nudge). Tolerant of false positives by design.
-- `src/lib/chat/engine.ts` — wired `detectViewEditingIntent` + `buildViewEditingHint` parallel to the existing `buildCompositionHint` injection.
-- `src/components/chat/app-view-editor-card.tsx` — new file. 5 visual states (idle/pending/applied/cancelled/failed), double-click guard during pending, inline error on confirm-throw.
-- `src/lib/apps/__tests__/write-app-manifest.test.ts` — 5 tests pinning the atomic-write contract.
-- `src/lib/chat/tools/__tests__/app-view-tools.test.ts` — 6 tests on the 3 chat tools (happy path + missing app + bindings-preservation + kit-preservation + kpis-merge + kpis-bound).
-- `src/lib/chat/planner/__tests__/view-editing-hint.test.ts` — 13 tests on the classifier (5 detect cases, 6 hint-shape cases, plus the AC #8 worked-example pinning).
-- `src/components/chat/__tests__/app-view-editor-card.test.tsx` — 7 tests on the card (3 render shapes, confirm/cancel, error-on-throw, double-click guard).
-- `.claude/skills/ainative-app/SKILL.md` — appended a "View-Editing (override auto-inferred layout)" section.
+- `src/lib/db/schema.ts` — added 2 columns to `conversations` (`parentConversationId` + `branchedFromMessageId`) and 1 column to `chatMessages` (`rewoundAt`, mode `timestamp_ms`). Added `idx_conversations_parent_id` index.
+- `src/lib/db/bootstrap.ts` — CREATE TABLE blocks for both tables updated with the new columns + index. `addColumnIfMissing` ALTERs added for legacy DB upgrade path. Caught a real bug mid-session: separate `CREATE INDEX` outside the CREATE TABLE block ran before the table existed on fresh DBs (because addColumnIfMissing precedes CREATE TABLE in bootstrap order — the documented MEMORY.md gotcha). Fixed by keeping the CREATE INDEX only inline in the CREATE TABLE block.
+- `src/lib/db/__tests__/bootstrap.test.ts` — 2 new tests: fresh-DB column presence, legacy-DB upgrade via addColumnIfMissing. Existing migration-recovery test still green.
+- `src/lib/data/chat.ts` — extended `CreateConversationInput` + `createConversation` with parent fields. Added `MAX_BRANCH_DEPTH=8`, `getMessagesWithAncestors` (rowid-based branch-point cutoff per DD-2), `markPairRewound`, `restoreLatestRewoundPair`. Switched `lt` → `lte` on prior-user lookup (caught by tests — same-millisecond timestamps without role filter).
+- `src/lib/data/__tests__/branching.test.ts` — new file, 10 tests covering create-with-parent, ancestor walk on linear + 1-deep + 2-deep branches, rewound filtering across layers, depth-cap, role-validation on rewind, restore-most-recent-pair, restore-no-op.
+- `src/lib/chat/context-builder.ts` — `buildTier1` now calls `getMessagesWithAncestors` instead of `getMessages`. Linear conversations behave identically (no parent → walk degenerates to single-conv read with `rewoundAt IS NULL` filter that's no-op for never-rewound rows). Depth-cap synthetic system note prepended when chains exceed 8 (DD-6).
+- `src/lib/chat/__tests__/context-builder-branching.test.ts` — new file, 4 tests: linear baseline, branch reconstruction, rewound exclusion, depth-cap notice.
+- `src/lib/chat/__tests__/active-skill-injection.test.ts` — added `getMessagesWithAncestors` + `MAX_BRANCH_DEPTH` to the existing `vi.mock("@/lib/data/chat", ...)`. Was failing the full vitest sweep until I extended the mock.
+- `src/app/api/chat/conversations/route.ts` — POST extended to accept `parentConversationId` + `branchedFromMessageId`. Strict pair validation: both required together (400), parent must exist (404), branch-point message must belong to the parent (400).
+- `src/app/api/chat/conversations/__tests__/branching.test.ts` — new file, 6 tests covering happy path + 4 validation paths + linear-baseline preserved.
+- `src/lib/chat/branching/flag.ts` + `__tests__/flag.test.ts` — new module + 3 tests. `isBranchingEnabled()` reads `AINATIVE_CHAT_BRANCHING === "true"` (canonical-true-only; rejects truthy variants).
+- `src/components/chat/chat-session-provider.tsx` — added `rewoundAt: null` to 3 ChatMessage object literals (user optimistic, assistant placeholder, system permission/question). Caught by tsc — non-optional on the new schema row type.
+- `features/chat-conversation-branches.md` — `status: planned` → `status: in-progress`. Added `data-layer-shipped: 2026-05-03`. ACs split into Phase 1 (8 shipped with file:line evidence) + Phase 2 (7 deferred). 6 Design Decisions appended.
+- `features/roadmap.md` — `chat-conversation-branches` row flipped `planned` → `in-progress`.
+- `features/changelog.md` — prepended top-level entry with implementation summary, file:line evidence, verification numbers, DD summaries, deferral list, and roadmap impact note.
 - `HANDOFF.md` — this file.
+- `.archive/handoff/2026-05-03-composed-app-manifest-authoring-tools.md` — predecessor handoff archived.
 
 ### Net effect on roadmap
 
 | Status | Before | After |
 |---|---|---|
-| completed | 209 | 210 |
-| planned | 2 | 1 |
+| in-progress | 0 | 1 |
+| planned (P3) | 1 | 0 |
 
-(in-progress, deferred, non-spec all unchanged. P1 planned: 0. P2 planned: 0. P3 planned: 1.)
+(completed and other-priority planned counts unchanged.)
 
 ### Test surface verified
 
-- `npx vitest run src/lib/apps src/lib/chat src/components/chat` — **656/657 pass across 70 files** (1 pre-existing skip; 31 new tests across 4 new test files).
-- `npx tsc --noEmit` — **clean project-wide** (zero errors). Pre-existing `.passthrough()` deprecation warnings on registry.ts not introduced by this session.
+- 25 new tests across 5 new test files (10 + 4 + 6 + 3 + 2 added to existing bootstrap test = 25 net-new) — **all passing**.
+- `npx vitest run src/lib/db src/lib/data src/lib/chat src/app/api/chat src/components/chat` — **402/402 pass across 49 files** (zero regressions in the touched-module sweep).
+- `npx tsc --noEmit` — **clean project-wide** (zero errors).
+- Pre-existing baseline failures (router.test.ts, settings.test.ts, blueprint.test.ts) confirmed unchanged via stash + re-run on `712fe62c`.
 
 ---
 
 ## Patterns reinforced this session
 
-- **Atomic write helper as a registry concern, not a tool concern.** `writeAppManifest` lives next to `getApp` so any caller — chat tool, CLI, settings UI, plugin — gets the same atomic guarantees without re-implementing temp-file + rename. The 3 chat tools are thin wrappers over it. If a future tool/route needs to mutate manifests, it gets atomicity for free.
+- **Phased ship for spec-broad-than-session features.** Spec called for ~12 ACs spanning data + UI + cross-runtime smoke; this session shipped only the data layer with the spec staying `in-progress`. Matches DD-1 from the predecessor session ("Build the standalone, defer the integration when honest"). Pattern is: ship the foundation cleanly with comprehensive tests, defer the consumer layer to a follow-up where the consumer has clearer requirements.
 
-- **Zod sub-schema reuse via `Schema.shape.field`.** `ViewSchema.shape.bindings` passed directly to `defineTool` keeps the chat-tool input shape in lock-step with the strict view schema. If the schema rotates (e.g., a new BindingRefSchema variant), the tool inherits the change with zero edit. Pattern is reusable for any chat tool that mutates a known-strict object slice.
+- **Tests caught a real timestamp-resolution bug at the schema boundary.** Drizzle's `mode: "timestamp"` rounds to seconds — fine for chat conversations spanning seconds, broken for tight test loops where multiple messages share a millisecond. Two clean fixes: (1) `rewoundAt` uses `mode: "timestamp_ms"` (new column, no migration risk); (2) ancestor-walk branch-point cutoff uses SQLite's implicit `rowid` instead of `createdAt` (monotonic per-INSERT, unique, immune to timestamp resolution). The lesson is to write the test FIRST; the obvious-looking implementation often hides resolution assumptions.
 
-- **Most-specific-wins classification for layered intents.** When a single message can match multiple intent categories (kit / bindings / kpis), the classifier returns the most-specific category that matched. Documented as DD-4 + pinned by a test. Pattern transfers to any future intent classifier with overlapping vocabularies.
+- **MEMORY.md gotcha enforced again — addColumnIfMissing precedes CREATE TABLE on fresh DBs.** I added a `CREATE INDEX` next to the addColumnIfMissing block; tests caught it failing on fresh DBs because the table didn't exist yet. Fixed by keeping the CREATE INDEX only inline in the CREATE TABLE block — `IF NOT EXISTS` makes it a safe no-op for legacy DBs that re-run bootstrap. Pattern: any standalone DDL that references a table by name has to live AFTER the CREATE TABLE block, not before it. Inline DDL inside the CREATE TABLE block is always safe.
 
-- **Replace-not-merge for whole-object mutation.** The bindings and kpis tools replace the entire object/array, not patch fields. The hint reminds the LLM to "pass the COMPLETE object". Avoids partial-mutation surprises for the user. Pattern is appropriate for any tool whose schema is small enough that the LLM can reliably reproduce the full state. Big nested schemas would warrant a deep-merge instead.
+- **Self-referential FKs as plain TEXT, not Drizzle `.references()`.** Matches existing schema pattern (`active_skill_id` does the same). Pair validation lives in the API route. Avoids Drizzle's circular-typeref complexity and works fine because the actual safety comes from the route-level check.
 
-- **Build the standalone, defer the integration when honest.** The AppViewEditorCard is fully built and tested but the chat-message.tsx auto-render integration is deferred. Documented as DD-1 with the rationale. The card is reusable for any future surface (settings UI, app detail page); the auto-render is sugar that costs engine.ts metadata-path work. Per project principle #7 ("Permission to scrap"), it's appropriate to ship the standalone now and wire the integration when there's a stronger user case for it.
-
-- **Stale baselines in older specs.** This spec said "92 → 95" — the actual baseline was 97 (now 100). Worth a project-wide audit before the next planned spec gets started; 3 of the 4 in-progress features may also have hard-coded counts that have drifted.
+- **Bootstrap-test legacy-DB simulation pattern.** Created a manual pre-feature CREATE TABLE (without the new columns), ran `bootstrapAinativeDatabase`, then asserted `addColumnIfMissing` added the new columns. This is a strict improvement over "just test fresh DB" — catches the upgrade path that's most likely to break in production.
 
 ---
 
 ## How to commit this session's work
 
 ```
-git add features/composed-app-manifest-authoring-tools.md \
+git add features/chat-conversation-branches.md \
         features/roadmap.md \
         features/changelog.md \
-        src/lib/apps/registry.ts \
-        src/lib/chat/tools/app-view-tools.ts \
-        src/lib/chat/ainative-tools.ts \
-        src/lib/chat/planner/view-editing-hint.ts \
-        src/lib/chat/engine.ts \
-        src/components/chat/app-view-editor-card.tsx \
-        src/lib/apps/__tests__/write-app-manifest.test.ts \
-        src/lib/chat/tools/__tests__/app-view-tools.test.ts \
-        src/lib/chat/planner/__tests__/view-editing-hint.test.ts \
-        src/components/chat/__tests__/app-view-editor-card.test.tsx \
-        .claude/skills/ainative-app/SKILL.md \
+        src/lib/db/schema.ts \
+        src/lib/db/bootstrap.ts \
+        src/lib/db/__tests__/bootstrap.test.ts \
+        src/lib/data/chat.ts \
+        src/lib/data/__tests__/branching.test.ts \
+        src/lib/chat/context-builder.ts \
+        src/lib/chat/__tests__/context-builder-branching.test.ts \
+        src/lib/chat/__tests__/active-skill-injection.test.ts \
+        src/lib/chat/branching/flag.ts \
+        src/lib/chat/branching/__tests__/flag.test.ts \
+        src/app/api/chat/conversations/route.ts \
+        src/app/api/chat/conversations/__tests__/branching.test.ts \
+        src/components/chat/chat-session-provider.tsx \
         HANDOFF.md \
-        .archive/handoff/2026-05-03-onboarding-runtime-provider-choice.md
-git commit -m "feat(apps): ship composed-app-manifest-authoring-tools (P3 close)"
+        .archive/handoff/2026-05-03-composed-app-manifest-authoring-tools.md
+git commit -m "feat(chat): ship chat-conversation-branches Phase 1 (data layer)"
 ```
 
-Single commit captures the full close-out — registry helper + 3 chat tools + planner hint + card + skill doc + 4 test files + spec/roadmap/changelog/handoff. Per CLAUDE.md commit style: `feat(apps)` is correct because the user-visible change is 3 new chat tools that mutate composed-app manifests.
+Single commit captures the full Phase 1 close-out — schema + bootstrap + data-layer primitives + context-builder integration + API route + feature flag + 25 new tests + spec/roadmap/changelog/handoff. Per CLAUDE.md commit style: `feat(chat)` is correct because the eventual user-visible change is a chat feature; tagging by the Phase 1 module would obscure that.
 
 ---
 
-*End of handoff. Next move: bidirectional-staleness grep on `chat-conversation-branches` (the last planned P3). If it's already partly shipped, close out fast; otherwise build the chat-data-layer change.*
+*End of handoff. Next move: Phase 2 UI for `chat-conversation-branches` (branch action + tree tab + ⌘Z/⌘⇧Z + cross-runtime smoke), OR pick up an in-progress P1 like `upgrade-session`. Either is reasonable; Phase 2 keeps the data-layer momentum.*

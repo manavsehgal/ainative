@@ -481,6 +481,7 @@ export function ChatSessionProvider({ children }: { children: ReactNode }) {
         content,
         metadata: null,
         status: "complete",
+        rewoundAt: null,
         createdAt: new Date(),
       };
 
@@ -493,6 +494,7 @@ export function ChatSessionProvider({ children }: { children: ReactNode }) {
         content: "",
         metadata: null,
         status: "streaming",
+        rewoundAt: null,
         createdAt: new Date(),
       };
 
@@ -653,6 +655,7 @@ export function ChatSessionProvider({ children }: { children: ReactNode }) {
                   id: event.messageId,
                   conversationId: convId,
                   role: "system",
+                  rewoundAt: null,
                   content:
                     event.type === "permission_request"
                       ? `Permission required: ${event.toolName}`

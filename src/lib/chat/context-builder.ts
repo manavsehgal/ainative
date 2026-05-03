@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { projects, tasks, workflows, documents, schedules } from "@/lib/db/schema";
 import { eq, desc, and } from "drizzle-orm";
-import { getMessages } from "@/lib/data/chat";
+import { getMessagesWithAncestors, MAX_BRANCH_DEPTH } from "@/lib/data/chat";
 import { getProfile } from "@/lib/agents/profiles/registry";
 import { AINATIVE_SYSTEM_PROMPT } from "./system-prompt";
 import type { WorkspaceContext } from "@/lib/environment/workspace-context";
@@ -177,7 +177,11 @@ interface HistoryMessage {
 async function buildTier1(
   conversationId: string
 ): Promise<HistoryMessage[]> {
-  const messages = await getMessages(conversationId);
+  // Walks branch ancestors and filters rewound pairs. For linear (root)
+  // conversations this is identical to the previous getMessages call —
+  // no ancestor chain to walk and no rewindAt set on any message.
+  // See `features/chat-conversation-branches.md`.
+  const { messages, depthCapped } = await getMessagesWithAncestors(conversationId);
   const history: HistoryMessage[] = [];
   let tokenCount = 0;
 
@@ -190,6 +194,16 @@ async function buildTier1(
     history.unshift({
       role: msg.role as HistoryMessage["role"],
       content: msg.content,
+    });
+  }
+
+  // If the branch chain exceeded the depth cap, prepend a synthetic system
+  // note so the agent knows context is incomplete. Pretty rare in practice
+  // (legitimate branching is shallow); guards against pathological chains.
+  if (depthCapped) {
+    history.unshift({
+      role: "system",
+      content: `Note: this conversation's branch ancestry exceeded ${MAX_BRANCH_DEPTH} levels — older context has been truncated. The user is aware.`,
     });
   }
 

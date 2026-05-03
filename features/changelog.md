@@ -1,5 +1,49 @@
 # Feature Changelog
 
+## 2026-05-03 — `chat-conversation-branches` Phase 1 shipped (P3 data-layer landing; UI + cross-runtime smoke deferred)
+
+Real build session, second of the day. Bidirectional-staleness grep for `parentConversationId`, `branchedFromMessageId`, `rewoundAt`, `loadConversationContext`, `chat.branching` returned **zero hits** outside the spec — spec frontmatter `status: planned` was accurate. Both dependencies (`chat-conversation-persistence`, `chat-data-layer`) verified `status: completed` with the schema artifacts (conversations + chat_messages tables) confirmed. Phased ship: data layer + feature-flag scaffold landed; UI surfaces and cross-runtime smoke deferred. Spec moves `planned` → `in-progress` (NOT `completed`) — half the ACs explicitly deferred. CLAUDE.md runtime-registry smoke gate did not apply this session — no imports added/removed under `src/lib/agents/runtime/` or `claude-agent.ts`; the only runtime-graph touch is `context-builder.ts` swapping `getMessages` for `getMessagesWithAncestors`, which keeps the same call shape.
+
+### Implementation
+- **Schema columns + bootstrap** — `parentConversationId` + `branchedFromMessageId` on `conversations`, `rewoundAt` (timestamp_ms) on `chat_messages`. All nullable; root conversations leave them NULL and behave identically to today. `src/lib/db/schema.ts:567-629`. Bootstrap CREATE TABLE blocks updated at `src/lib/db/bootstrap.ts:478-512`; `addColumnIfMissing` ALTERs added at `src/lib/db/bootstrap.ts:354-364` (legacy DB upgrade path); new index `idx_conversations_parent_id` declared inline in CREATE TABLE only — separate `CREATE INDEX` outside the block was caught by tests because it ran before the table existed on fresh DBs.
+- **Data-layer primitives** — `getMessagesWithAncestors(conversationId)` walks ancestors to depth 8 with rowid-based branch-point cutoff (DD-2) at `src/lib/data/chat.ts:362-437`. `markPairRewound(assistantMessageId)` flags the (user, assistant) pair atomically with millisecond-precision timestamps (DD-3) at `src/lib/data/chat.ts:444-501`. `restoreLatestRewoundPair(conversationId)` restores the pair with the highest `rewoundAt` at `src/lib/data/chat.ts:512-553`. `createConversation` extended to accept `parentConversationId` + `branchedFromMessageId` at `src/lib/data/chat.ts:60-78`. `MAX_BRANCH_DEPTH=8` exported as a public constant.
+- **Context-builder ancestor walk** — `buildTier1` at `src/lib/chat/context-builder.ts:177-209` swapped `getMessages(conversationId)` for `getMessagesWithAncestors(conversationId)`. Linear conversations behave identically (single-conv read with `rewoundAt IS NULL` filter — invisible since no row has it set). Depth-cap notice prepended as a synthetic `role: "system"` message (DD-6) when chains exceed 8 levels.
+- **API route extension** — POST `/api/chat/conversations` accepts `parentConversationId` + `branchedFromMessageId` with strict pair validation: both required together, parent must exist (404), branch-point message must belong to the parent (400). At `src/app/api/chat/conversations/route.ts:46-90`.
+- **Feature flag** — `isBranchingEnabled()` at `src/lib/chat/branching/flag.ts:21`. Env-var driven (`AINATIVE_CHAT_BRANCHING=true`), default off. Canonical-`true`-only; rejects `1`, `yes`, `True`, leading/trailing whitespace, etc. Waiting on the UI session to consume.
+- **Backward compatibility** — `chat-session-provider.tsx` ChatMessage object literals updated to include `rewoundAt: null` for the optimistic-message construction paths (3 sites: user, assistant placeholder, system permission/question rendering).
+
+### Verification
+- 3/3 schema + bootstrap tests pass at `src/lib/db/__tests__/bootstrap.test.ts` (fresh DB, legacy DB upgrade, existing migration recovery test still green).
+- 10/10 data-layer tests pass at `src/lib/data/__tests__/branching.test.ts` — covers create with parent, ancestor walk on linear + 1-deep + 2-deep branches, rewound filtering across layers, depth-cap flag, mark-pair-rewound role validation, restore-most-recent-pair, restore-no-op-when-empty.
+- 4/4 context-builder tests pass at `src/lib/chat/__tests__/context-builder-branching.test.ts` — linear baseline, branch reconstruction, rewound exclusion, depth-cap synthetic note.
+- 6/6 API-route tests pass at `src/app/api/chat/conversations/__tests__/branching.test.ts` — happy path, missing-branchedFrom 400, missing-parent 400, parent-not-found 404, cross-conversation branch-point 400, linear baseline preserved.
+- 3/3 feature-flag tests pass at `src/lib/chat/branching/__tests__/flag.test.ts`.
+- **402/402 tests pass across 49 files** in `src/lib/db src/lib/data src/lib/chat src/app/api/chat src/components/chat` (zero regressions).
+- `npx tsc --noEmit` clean project-wide.
+- Pre-existing baseline failures (router.test.ts, settings.test.ts, blueprint.test.ts) confirmed unchanged via stash + re-run on `712fe62c`.
+
+### Design Decisions codified in spec
+- **DD-1: Phased ship — data layer now, UI deferred.** Spec stays `status: in-progress`; UI ACs explicitly listed as Phase 2. Matches the previous session's "Build the standalone, defer the integration when honest" pattern.
+- **DD-2: Branch-point cutoff uses SQLite `rowid`, not `createdAt`.** Drizzle `mode: "timestamp"` rounds to seconds, breaking same-second ordering; rowid is monotonic, unique, and exactly the property the cutoff needs.
+- **DD-3: `rewoundAt` uses `timestamp_ms`, not `timestamp`.** Two rewind actions can fire well within the same second; restore identifies pairs by exact timestamp match. Brand-new column → no migration risk.
+- **DD-4: Replace, don't merge, on rewind operations.** Pairs are atomic from the UI's perspective; partial-pair states would confuse both UI and agent.
+- **DD-5: Self-referential FKs as plain TEXT.** Parent + branched-from columns are TEXT without `.references()` in Drizzle; matches existing `active_skill_id` pattern; pair validation lives in the API route.
+- **DD-6: Synthetic system note for depth-cap truncation, not Tier 0 injection.** The note belongs at the start of conversation context, not in the persistent system identity.
+
+### Deferral (Phase 2 — next session)
+- "Branch from here" hover action on assistant messages (chat-message.tsx).
+- Tree-view tab on conversation detail sheet (renders parent + siblings + children when conversation has relatives; hidden otherwise).
+- ⌘Z / ⌘⇧Z keybindings on chat input + rewound-message rendering.
+- Cross-runtime smoke (Claude + Codex + Ollama) — branch a conversation, continue, verify full prefix reconstruction.
+- Linear conversations rendering as single-node trees (UI regression check).
+- Possible follow-up data-layer primitive: `getConversationTreeRoot(id)` for the tree view (deferred until UI shows it's actually needed; pure-UI concern today).
+
+### Roadmap impact
+
+This session only flipped one row: `chat-conversation-branches` `planned` → `in-progress` in the roadmap row. Other rows in the roadmap retain their existing status, including 4 features whose spec frontmatter says `status: in-progress` but whose roadmap rows still say `planned` (the bidirectional-drift the previous handoff flagged on `composed-app-auto-inference-hardening` and similar — a separate cleanup, not this session's responsibility).
+
+**P3 planned: 1 → 0.** The last fully-planned P3 spec is now in-progress. The remaining `| planned |` rows in the roadmap are all either P1/P2 (workflow-document-pool, direct-runtime-*, entity-relationship-detail-views, relationship-summary-cards, upgrade-session, composed-app-kit-inbox-and-research) or the noted drift cases (composed-app-auto-inference-hardening etc.). Next session: tackle a P1 like `upgrade-session` or `workflow-document-pool`, or tighten the roadmap-vs-spec drift first.
+
 ## 2026-05-03 — `composed-app-manifest-authoring-tools` shipped (P3 build session — 9/10 ACs, AC #7 deferred on dep)
 
 Real build session — none of the 3 chat tools, the `AppViewEditorCard`, the `buildViewEditingHint` planner module, or the `writeAppManifest` atomic-write helper existed before this commit (verified via grep). Spec frontmatter `status: planned` was accurate. CLAUDE.md runtime-registry smoke gate did not apply — chat tools register through the existing `defineTool` pattern via `ainative-tools.ts:71` with no `src/lib/agents/runtime/` imports added/removed.
