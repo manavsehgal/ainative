@@ -1,5 +1,26 @@
 # Feature Changelog
 
+## 2026-05-03 — `workflow-learning-approval-reliability` ship-verified (P1 close-out)
+
+Pure Ship Verification — all 9 ACs satisfied by existing code. Fifth consecutive session catching bidirectional spec staleness, this time on the highest-priority remaining `planned` feature. CLAUDE.md runtime-registry smoke gate did not apply — Ship Verification reads code without reshaping imports.
+
+### File:line evidence (all 9 ACs)
+- **AC #1** Await before cleanup — `src/lib/agents/claude-agent.ts:651-655` (initial), `:808-812` (resume).
+- **AC #2** Workflow buffering — `src/lib/agents/pattern-extractor.ts:115` `bufferProposal(workflowId, rowId)`.
+- **AC #3** One batch per workflow — `src/lib/agents/learning-session.ts:80-141` `closeLearningSession`.
+- **AC #4** Enrichment spam fix — `src/lib/workflows/engine.ts:83/116/193/1269/1332` open/close session bracket.
+- **ACs #5–6** Default Inbox excludes responded learning items — `src/lib/notifications/visibility.ts:31-33` SQL condition + `:25-29` JS filter; 5 call sites (`app/inbox/page.tsx:23,61`, `app/api/notifications/route.ts:14`, `components/notifications/inbox-list.tsx:32,39`).
+- **ACs #7–8** Approve/reject removes after refresh — `src/lib/agents/learning-session.ts:223-229,297-304` (individual response + respondedAt) and `:319-354` `markBatchNotificationResponded`.
+- **AC #9** `permission_required` unchanged — `visibility.ts:11-13` `isLearningNotificationType` only matches the two learning types; pinned by `permission-response-actions.test.tsx` (4 tests).
+
+### Verification
+- 19/19 tests pass across 7 files: `visibility.test.ts` (2), `learning-session.test.ts` (1), `pattern-extractor.test.ts` (7), `batch-proposal-review.test.tsx` (2), `permission-response-actions.test.tsx` (4), `notification-item.test.tsx` (2), `pending-approval-host.test.tsx` (1).
+
+### Design Decisions codified in spec
+- **Doubled SQL+JS visibility filter** — SQL trims wire payload; JS handles live mutations between refreshes. Approve/reject takes effect in the visible list before any server round-trip.
+- **Workflow engine owns session lifecycle** — runtime-agnostic boundary, so buffering covers Claude Agent SDK, Codex, OpenAI direct, and Anthropic direct uniformly.
+- **Pattern extraction await but non-fatal** — failure logs and flushes whatever buffer exists; workflow itself completes normally.
+
 ## 2026-05-03 — `enrichment-planner-test-hardening` shipped (P2 hardening close-out)
 
 Build session, not a Ship Verification — the spec was genuinely planned. AC #1 (validation-before-cast) was already shipped *transitively* via `buildTargetContract`, but ACs #2–#5 (route tests, planner test expansion, sample-binding rationale) required real work.
