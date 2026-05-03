@@ -1,11 +1,13 @@
 ---
 title: Guided Upgrade Session (Merge in Chat)
-status: planned
+status: in-progress
 priority: P1
 milestone: post-mvp
 source: features/architect-report.md
 dependencies: [instance-bootstrap, upgrade-detection, agent-integration, agent-profile-catalog]
 ---
+
+> **Partially shipped (~60%) per Tier 2 Ship Verification 2026-05-03.** **Done:** `upgrade-assistant` profile + SKILL.md with merge sequence + Bash allowlist; 5 instance API routes (`/api/instance/init,config,upgrade,...`); UpgradeBadge dialog showing branch + commits-behind + data dir; InstanceSection in `/settings` with "Check for upgrades" + "Repair setup" + dev-mode skip. **Still missing:** dedicated upgrade-session-view.tsx (currently re-uses generic `/tasks/[id]`); upgrade history list (only shows `lastUpgrade` timestamp); abort confirmation dialog with rollback; "Restart dev server" success banner; integration tests on temp-dir clone. Roughly the back half of the UX spec is unbuilt.
 
 # Guided Upgrade Session (Merge in Chat)
 

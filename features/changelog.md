@@ -1,5 +1,19 @@
 # Feature Changelog
 
+## 2026-05-03 — Tier 2 Ship Verification (4 partial-drift candidates)
+
+Deeper AC-by-AC verification on the specs initial grooming pass classified as Tier 2 (partial drift):
+
+### Completed (planned → completed)
+- `entity-relationship-detail-views` — all ACs PASS. Initial grep missed it because the implementation re-uses existing `chip-bar` + `section-heading` patterns rather than a dedicated `RelationshipSection` component. Document detail (workflow badge + version history), task detail (sibling tasks + `/api/tasks/[id]/siblings`), project detail (recent docs at `app/projects/[id]/page.tsx:43-60`), workflow detail (project link badge) all shipped.
+
+### In-progress (planned → in-progress)
+- `direct-runtime-advanced-capabilities` (~55%) — extended thinking + model selection plumbing landed for both runtimes; thinking-block UI, context compaction, `/v1/models` discovery, and Anthropic-side server-tool toggles missing.
+- `upgrade-session` (~60%) — `upgrade-assistant` profile + 5 instance API routes + UpgradeBadge + InstanceSection ship; no dedicated session sheet (re-uses `/tasks/[id]`), no upgrade history list, no abort confirmation, no dev-server restart UI.
+
+### Kept planned (correction: previous evidence was wrong)
+- `task-turn-observability` — the `turnCount` column at `schema.ts:1274` belongs to `scheduleFiringMetrics`, not `tasks`. The tasks table only has `maxTurns:65`. Zero of the spec's surface is shipped. The earlier grooming-pass classification was incorrect; this is genuinely planned. Lesson: when verifying schema columns, confirm which **table** they belong to, not just the file:line of the column declaration.
+
 ## 2026-05-03 — Closed `relationship-summary-cards` gaps; spec flipped to completed
 
 Both gaps surfaced during Ship Verification closed:

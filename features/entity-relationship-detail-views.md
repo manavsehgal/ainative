@@ -1,6 +1,7 @@
 ---
 title: Bidirectional Entity Relationship Views
-status: planned
+status: completed
+shipped-date: 2026-05-03
 priority: P2
 milestone: post-mvp
 source: conversation/2026-04-02-entity-relationships
@@ -8,6 +9,8 @@ dependencies:
   - workflow-run-history
   - detail-view-redesign
 ---
+
+> Verified shipped 2026-05-03 via Tier 2 Ship Verification. All ACs PASS. Document detail uses `document-chip-bar.tsx:134-143` for source-workflow + run-N badges and `document-detail-view.tsx:70,160-163` for version history; tasks have Related Tasks via `task-detail-view.tsx:103-110` + `/api/tasks/[id]/siblings`; projects show Recent Documents at `app/projects/[id]/page.tsx:43-60,170-186`; workflow detail has project link badge at `workflows/shared/workflow-header.tsx:13,66-68`. Implementation uses existing chip-bar + section-heading patterns rather than a dedicated `RelationshipSection` component (initial grep missed it for that reason).
 
 # Bidirectional Entity Relationship Views
 
@@ -167,21 +170,21 @@ Display: compact list with file icon, document name (clickable → document deta
 
 ## Acceptance Criteria
 
-- [ ] Document detail shows source workflow badge with clickable link to workflow
-- [ ] Document detail shows "Run #N" chip when workflow run number is available
-- [ ] Document detail shows version history section for output documents
-- [ ] Version history sorted newest-first with "(current)" indicator on highest version
-- [ ] Version history rows are clickable, navigating to that version's detail
-- [ ] Version history section hidden for input documents and uploaded documents
-- [ ] Task detail shows "Related Tasks" section with sibling tasks from same workflow run
-- [ ] Sibling tasks show status dots and clickable titles
-- [ ] Sibling tasks section hidden when task is standalone (no workflowId/workflowRunNumber)
-- [ ] Project detail shows document count in summary line
-- [ ] Project detail shows 5 most recent documents with file icon, name, direction, version
-- [ ] Project detail "View all documents" links to filtered documents page
-- [ ] Workflow detail shows project link badge when projectId exists
-- [ ] All relationship links navigate correctly to target entity detail views
-- [ ] New API endpoints return correct data with proper error handling
+- [x] Document detail shows source workflow badge with clickable link to workflow
+- [x] Document detail shows "Run #N" chip when workflow run number is available
+- [x] Document detail shows version history section for output documents
+- [x] Version history sorted newest-first with "(current)" indicator on highest version
+- [x] Version history rows are clickable, navigating to that version's detail
+- [x] Version history section hidden for input documents and uploaded documents
+- [x] Task detail shows "Related Tasks" section with sibling tasks from same workflow run
+- [x] Sibling tasks show status dots and clickable titles
+- [x] Sibling tasks section hidden when task is standalone (no workflowId/workflowRunNumber)
+- [x] Project detail shows document count in summary line
+- [x] Project detail shows 5 most recent documents with file icon, name, direction, version
+- [x] Project detail "View all documents" links to filtered documents page
+- [x] Workflow detail shows project link badge when projectId exists
+- [x] All relationship links navigate correctly to target entity detail views
+- [x] New API endpoints return correct data with proper error handling
 
 ## Scope Boundaries
 

@@ -1,11 +1,13 @@
 ---
 title: Direct Runtime Advanced Capabilities
-status: planned
+status: in-progress
 priority: P2
 milestone: post-mvp
 source: ideas/direct-api-gap-analysis.md
 dependencies: [anthropic-direct-runtime, openai-direct-runtime]
 ---
+
+> **Partially shipped (~55%) per Tier 2 Ship Verification 2026-05-03.** Extended thinking enabled per profile (`anthropic-direct.ts:129,210-213,426`); model selection plumbed for both runtimes (`anthropic-direct.ts:122,189`, `openai-direct.ts:137,158`); `runtimeOverrides` field on profiles (`profiles/types.ts:26`); usage tracks `modelId` in TurnUsage. **Still missing:** thinking-block collapsible UI in chat-message.tsx, context compaction (no `compactContext` references), `/v1/models` discovery (settings UI uses static catalog), and Anthropic-side server-tool toggles (OpenAI has serverTools field, Anthropic does not).
 
 # Direct Runtime Advanced Capabilities
 
