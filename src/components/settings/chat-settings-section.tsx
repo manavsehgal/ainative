@@ -19,10 +19,43 @@ import {
 } from "@/components/ui/select";
 import { CHAT_MODELS, DEFAULT_CHAT_MODEL, type ChatModelOption } from "@/lib/chat/types";
 import { FormSectionCard } from "@/components/shared/form-section-card";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, Compass } from "lucide-react";
+
+type ModelPreference = "quality" | "cost" | "privacy" | "balanced";
+
+const MODEL_PREFERENCE_OPTIONS: Array<{
+  value: ModelPreference | "none";
+  label: string;
+  hint: string;
+}> = [
+  { value: "none", label: "Not set", hint: "No stated preference recorded." },
+  {
+    value: "quality",
+    label: "Best quality",
+    hint: "Top-tier cloud models (Opus / GPT-5.4).",
+  },
+  {
+    value: "balanced",
+    label: "Balanced",
+    hint: "Strong quality at moderate cost (Sonnet).",
+  },
+  {
+    value: "cost",
+    label: "Lowest cost",
+    hint: "Fastest, cheapest cloud (Haiku / GPT-5.4 Mini).",
+  },
+  {
+    value: "privacy",
+    label: "Best privacy",
+    hint: "Local-only via Ollama. No cloud calls.",
+  },
+];
 
 export function ChatSettingsSection() {
   const [defaultModel, setDefaultModel] = useState(DEFAULT_CHAT_MODEL);
+  const [modelPreference, setModelPreference] = useState<
+    ModelPreference | "none"
+  >("none");
   const [ollamaModels, setOllamaModels] = useState<ChatModelOption[]>([]);
 
   const fetchSettings = useCallback(async () => {
@@ -31,6 +64,9 @@ export function ChatSettingsSection() {
       if (res.ok) {
         const data = await res.json();
         setDefaultModel(data.defaultModel ?? DEFAULT_CHAT_MODEL);
+        setModelPreference(
+          (data.modelPreference as ModelPreference | null) ?? "none"
+        );
       }
     } catch {
       // Use default
@@ -80,6 +116,19 @@ export function ChatSettingsSection() {
     });
   };
 
+  const handlePreferenceChange = async (value: ModelPreference | "none") => {
+    setModelPreference(value);
+    await fetch("/api/settings/chat", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      // null clears the preference; the route persists an empty-string
+      // marker so the onboarding modal does not re-prompt.
+      body: JSON.stringify({
+        modelPreference: value === "none" ? null : value,
+      }),
+    });
+  };
+
   const anthropicModels = CHAT_MODELS.filter(
     (m) => m.provider === "anthropic"
   );
@@ -94,6 +143,30 @@ export function ChatSettingsSection() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        <FormSectionCard
+          icon={Compass}
+          title="Model preference"
+          hint="What matters most to you? Drives the recommended default and re-resolves sensibly when new models are released."
+        >
+          <Select
+            value={modelPreference}
+            onValueChange={(v) =>
+              handlePreferenceChange(v as ModelPreference | "none")
+            }
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {MODEL_PREFERENCE_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label} — {opt.hint}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </FormSectionCard>
+
         <FormSectionCard
           icon={MessageCircle}
           title="Default Model"

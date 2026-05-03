@@ -1,5 +1,36 @@
 # Feature Changelog
 
+## 2026-05-03 — `onboarding-runtime-provider-choice` shipped (P2 build session — last P2 closed)
+
+Real build session — `modelPreference` did not exist anywhere in the codebase before this commit (verified via grep). The `defaultChatModel` half was already shipped via `/api/settings/chat`; the first-launch modal + preference field were greenfield. CLAUDE.md runtime-registry smoke gate did not apply — this is pure UI + settings persistence with no `src/lib/agents/runtime/` imports added/removed.
+
+### Implementation
+- **Typed settings helpers** — `getModelPreference` / `setModelPreference` / `hasSeenModelPreferencePrompt` at `src/lib/settings/helpers.ts:79-141`, following the `getPluginTrustModel` enum-coercion pattern. `null` → empty-string write so "asked and skipped" is distinguishable from "never asked".
+- **Route extension** — `/api/settings/chat` GET now returns `{ defaultModel, defaultModelRecorded, modelPreference }`; PUT independently accepts each field. Added `ollama:*` model-id allowance to fix the latent dropdown-rejected bug exposed by the privacy preference path.
+- **Modal** — `src/components/onboarding/runtime-preference-modal.tsx` renders 4 radio options (Best quality / Balanced / Lowest cost / Best privacy) with capability notes sourced from RuntimeFeatures matrix knowledge. Resolves preference → SDK short-name model id at submit time. Refuses outside-click close so exit always writes a setting.
+- **Bootstrapper** — `src/components/onboarding/runtime-preference-bootstrapper.tsx` mounted in `src/app/layout.tsx:113`. Single GET on mount; only opens the modal when `!data.defaultModelRecorded && data.modelPreference == null`.
+- **Settings UI** — `ChatSettingsSection` exposes a "Model preference" Select alongside the existing "Default Model" Select. Each onChange PUTs only its own field for clean independent editing.
+
+### Verification
+- 10/10 model-preference helper tests pass (coercion + skip-marker semantics + `hasSeenModelPreferencePrompt`).
+- 7/7 modal tests pass (4-option render, default→sonnet, quality→opus, cost→haiku, skip→null+sonnet, privacy with discovered ollama→`ollama:*` id, privacy fallback note + does-not-close-until-dismissed).
+- 6/6 chat-session-provider tests still pass against the new GET shape.
+- 8/8 providers-runtimes-section tests still pass (existing PUT shape backward-compatible).
+- 36/36 settings-touching neighbors (instance + chat tools) still pass.
+- `npx tsc --noEmit` clean project-wide.
+
+### Design Decisions codified in spec
+- **DD-1: Persist user-stated preference even when privacy fallback hits** — preference="privacy" + model="sonnet" makes the mismatch visible in Settings; alternative (downgrade both) loses intent.
+- **DD-2: Capability notes inlined, not generator-driven** — 4 fixed pairs; rotation is rare; extract on third use.
+- **DD-3: Empty-string skip marker** — distinguishes "asked and skipped" from "never asked" without a separate boolean column.
+- **DD-4: Modal refuses outside-click close** — exit must write a setting to suppress re-prompt.
+- **DD-5: Route validator allows `ollama:*`** — fixed latent dropdown-rejection bug exposed by the privacy path.
+
+### Roadmap impact
+- planned 3 → 2 (only P3 remaining: `chat-conversation-branches`, `composed-app-manifest-authoring-tools`).
+- completed 208 → 209.
+- **No P1 left, no P2 left.** The roster is now P3-only for net-new specs.
+
 ## 2026-05-03 — `task-turn-observability` shipped (P2 build session)
 
 Real build session — spec was genuinely planned with no shipping evidence. Spec ACs touched 4 files and added a documented metric definition. CLAUDE.md runtime-registry smoke gate did not apply because no imports were added/removed/reshaped — only new fields on existing `db.update().set()` calls and a new `select` field.

@@ -75,3 +75,65 @@ export async function setPluginTrustModel(
 ): Promise<void> {
   await setSetting(PLUGIN_TRUST_MODEL_KEY, value);
 }
+
+// ---------------------------------------------------------------------------
+// Onboarding model preference (feature: onboarding-runtime-provider-choice)
+// ---------------------------------------------------------------------------
+
+/**
+ * User's stated chat-model priority captured at first-launch onboarding.
+ * Persisted alongside `chat.defaultModel` so future onboarding updates can
+ * re-resolve the recommended model if the user hasn't pinned one themselves.
+ *
+ * - "quality"  — best output (e.g. Opus / GPT-5.4)
+ * - "cost"     — cheapest cloud (e.g. Haiku / GPT-5.4 Mini)
+ * - "privacy"  — local-only (Ollama)
+ * - "balanced" — default middle path (Sonnet)
+ *
+ * Settings key: `chat.modelPreference`. A null value (skipped onboarding or
+ * never asked) means "use whatever the user picked in settings, no implicit
+ * preference recorded."
+ */
+export type ModelPreference = "quality" | "cost" | "privacy" | "balanced";
+
+const MODEL_PREFERENCE_KEY = "chat.modelPreference";
+const MODEL_PREFERENCE_VALUES: readonly ModelPreference[] = [
+  "quality",
+  "cost",
+  "privacy",
+  "balanced",
+];
+
+function coerceModelPreference(raw: string | null): ModelPreference | null {
+  if (raw === null) return null;
+  return MODEL_PREFERENCE_VALUES.includes(raw as ModelPreference)
+    ? (raw as ModelPreference)
+    : null;
+}
+
+export async function getModelPreference(): Promise<ModelPreference | null> {
+  return coerceModelPreference(await getSetting(MODEL_PREFERENCE_KEY));
+}
+
+export async function setModelPreference(
+  value: ModelPreference | null,
+): Promise<void> {
+  if (value === null) {
+    // Treat null as "clear the preference" — write the literal "" so the
+    // record exists but coerces back to null on read. We keep the row to
+    // signal "the user has been asked at least once" (used by the bootstrapper
+    // to suppress the modal after a Skip).
+    await setSetting(MODEL_PREFERENCE_KEY, "");
+    return;
+  }
+  await setSetting(MODEL_PREFERENCE_KEY, value);
+}
+
+/**
+ * True when the user has been asked at least once — either picked a
+ * preference or explicitly skipped. Used by the onboarding bootstrapper
+ * to decide whether to show the modal.
+ */
+export async function hasSeenModelPreferencePrompt(): Promise<boolean> {
+  return (await getSetting(MODEL_PREFERENCE_KEY)) !== null;
+}

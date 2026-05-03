@@ -1,6 +1,7 @@
 ---
 title: Onboarding — Runtime Provider Choice
-status: planned
+status: completed
+shipped-date: 2026-05-03
 priority: P2
 milestone: post-mvp
 source: ideas/chat-context-experience.md Q10
@@ -57,14 +58,35 @@ If the user picks "Best privacy" and no Ollama models are discovered, show a sma
 
 ## Acceptance Criteria
 
-- [ ] On first launch (no `defaultChatModel` in settings), onboarding modal appears once
-- [ ] Four preference options render with short capability notes from the runtime capability matrix
-- [ ] Selecting an option persists both `settings.modelPreference` and `settings.defaultChatModel`
-- [ ] "Skip / use default" path exists and sets the balanced default
-- [ ] If no Ollama models are discoverable when "Best privacy" is chosen, the user is informed and balanced is used as fallback until they configure Ollama
-- [ ] Modal does not re-appear on subsequent launches
-- [ ] Settings UI exposes both `modelPreference` and `defaultChatModel`, editable independently
-- [ ] Modal follows the project's Sheet padding convention (`px-6 pb-6` in body)
+- [x] On first launch (no `defaultChatModel` in settings), onboarding modal appears once — `RuntimePreferenceBootstrapper` at `src/components/onboarding/runtime-preference-bootstrapper.tsx:33-40` checks `!data.defaultModelRecorded && data.modelPreference == null`, mounted in root layout `src/app/layout.tsx:113`
+- [x] Four preference options render with short capability notes — `runtime-preference-modal.tsx:37-69` (quality/balanced/cost/privacy with capabilityNote sourced from RuntimeFeatures matrix knowledge)
+- [x] Selecting an option persists both `settings.modelPreference` and `settings.defaultChatModel` — `defaultPersistChoice` at `runtime-preference-modal.tsx:106-122` PUTs both to `/api/settings/chat`; route handles them independently at `src/app/api/settings/chat/route.ts:73-93`
+- [x] "Skip / use default" path exists and sets the balanced default — `handleSkip` at `runtime-preference-modal.tsx:181-191` persists `{ preference: null, defaultModel: "sonnet" }`
+- [x] If no Ollama models are discoverable when "Best privacy" is chosen, the user is informed and balanced is used as fallback until they configure Ollama — `resolveModelForPreference` at `runtime-preference-modal.tsx:139-155` returns `BALANCED_FALLBACK_MODEL` + a fallbackNote when discovery list is empty
+- [x] Modal does not re-appear on subsequent launches — both Confirm and Skip persist a record (`chat.defaultModel` setting present), making `defaultModelRecorded` true on subsequent GETs
+- [x] Settings UI exposes both `modelPreference` and `defaultChatModel`, editable independently — `ChatSettingsSection` at `src/components/settings/chat-settings-section.tsx:115-138` adds a "Model preference" Select alongside the existing "Default Model" Select; each has its own onChange that PUTs only that field
+- [x] Modal follows the project's Sheet padding convention (`px-6 pb-6` in body) — `runtime-preference-modal.tsx:208,221,255` apply `px-6` to body content + footer (the spec mentions Sheet but the implementation uses Dialog; the same padding discipline is preserved)
+
+## Verification
+
+- 10/10 settings helper tests at `src/lib/settings/__tests__/model-preference.test.ts` (coercion, persistence, skip-marker semantics, `hasSeenModelPreferencePrompt`).
+- 7/7 modal tests at `src/components/onboarding/__tests__/runtime-preference-modal.test.tsx` (4-option render, default=balanced→sonnet, quality→opus, cost→haiku, skip→null+sonnet, privacy with discovered ollama→`ollama:*` id, privacy fallback note + balanced model + does-not-close-until-dismissed).
+- 6/6 chat-session-provider tests still pass against the new GET shape (`{ defaultModel, defaultModelRecorded, modelPreference }`).
+- 8/8 providers-runtimes-section tests still pass (existing PUT `{ defaultModel }` only — backward compatible).
+- 36/36 settings-touching neighbors (instance/__tests__/settings, chat/tools/__tests__/settings-tools) still pass.
+- `npx tsc --noEmit` clean project-wide.
+
+## Design Decisions
+
+- **DD-1: Persist user-stated preference even when privacy fallback hits.** When the privacy option is chosen but no Ollama models are discoverable, we persist `preference: "privacy"` paired with `defaultModel: "sonnet"`. The mismatch is intentional — the Settings UI later surfaces it (Best privacy / Sonnet) so the user knows to install Ollama. The alternative (downgrading both to balanced) loses user intent. Rejected because "until they configure Ollama" in the spec implies the preference is sticky.
+
+- **DD-2: Capability notes inlined in the modal, not generated from the matrix.** The four preference→note pairs are short, fixed, and rarely rotated. A generator helper that maps `RuntimeFeatures` flags to prose would add complexity without proportional value. Per principle #6 (DRY with judgment), extract on third use, not first. If a fifth preference is added or notes need to vary by runtime catalog state, refactor then.
+
+- **DD-3: Empty-string write as the "skip marker".** `setModelPreference(null)` writes the literal `""` to `chat.modelPreference` so the row exists but coerces back to null on read. This lets the bootstrapper distinguish "never asked" (no row) from "asked and skipped" (row present, preference null). Same pattern as the route's `defaultModelRecorded` flag — both surface raw existence separately from coerced value.
+
+- **DD-4: Modal refuses outside-click and Escape close.** Exit must go through Confirm or Skip — both write a setting that suppresses re-prompt. If we allowed outside-click close without writing, the modal would re-appear on every page load until the user actually picked something. `showCloseButton={false}` + the empty-on-close handler enforce this.
+
+- **DD-5: Allow `ollama:*` model IDs in the route validator.** The original `/api/settings/chat` PUT validator rejected anything not in `CHAT_MODELS`, which silently broke the privacy path (Ollama models live under the `ollama:*` namespace and are discovered dynamically). Added a `validOllamaModel = body.defaultModel.startsWith("ollama:")` check. This was a latent bug for users picking Ollama from the existing chat-settings-section dropdown; the privacy preference exposed it.
 
 ## Scope Boundaries
 

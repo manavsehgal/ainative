@@ -9,6 +9,7 @@ import { PendingApprovalHost } from "@/components/notifications/pending-approval
 import { GlobalShortcuts } from "@/components/shared/global-shortcuts";
 import { Toaster } from "@/components/ui/sonner";
 import { ChatSessionProvider } from "@/components/chat/chat-session-provider";
+import { RuntimePreferenceBootstrapper } from "@/components/onboarding/runtime-preference-bootstrapper";
 import {
   DEFAULT_THEME,
   THEME_COOKIE,
@@ -110,6 +111,7 @@ export default async function RootLayout({
             <PendingApprovalHost />
             <CommandPalette />
             <GlobalShortcuts />
+            <RuntimePreferenceBootstrapper />
             <Toaster />
           </ChatSessionProvider>
         </TooltipProvider>

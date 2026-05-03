@@ -213,7 +213,7 @@ Runtime-native skills, filesystem context, file mentions, and a command-namespac
 | [chat-composition-ui-v1](chat-composition-ui-v1.md) | P1 | completed | chat-skill-composition, chat-command-namespace-refactor |
 | [saved-search-polish-v1](saved-search-polish-v1.md) | P2 | completed | chat-pinned-saved-searches |
 | [chat-conversation-branches](chat-conversation-branches.md) | P3 | planned | chat-conversation-persistence, chat-data-layer |
-| [onboarding-runtime-provider-choice](onboarding-runtime-provider-choice.md) | P2 | planned | app-shell, provider-runtime-abstraction, runtime-capability-matrix |
+| [onboarding-runtime-provider-choice](onboarding-runtime-provider-choice.md) | P2 | completed | app-shell, provider-runtime-abstraction, runtime-capability-matrix |
 
 ### Living Book
 
