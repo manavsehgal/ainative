@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { projects, tasks } from "@/lib/db/schema";
-import { eq, count } from "drizzle-orm";
+import { eq, count, sql } from "drizzle-orm";
 import { createProjectSchema } from "@/lib/validators/project";
 import { scanEnvironment } from "@/lib/environment/scanner";
 import { createScan } from "@/lib/environment/data";
@@ -17,6 +17,7 @@ export async function GET() {
       createdAt: projects.createdAt,
       updatedAt: projects.updatedAt,
       taskCount: count(tasks.id),
+      docCount: sql<number>`(SELECT COUNT(*) FROM documents d WHERE d.project_id = "projects"."id")`.as("docCount"),
     })
     .from(projects)
     .leftJoin(tasks, eq(tasks.projectId, projects.id))

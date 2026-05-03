@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FolderKanban, FolderOpen, Pencil } from "lucide-react";
+import { FileText, FolderKanban, FolderOpen, Pencil } from "lucide-react";
 import { projectStatusVariant } from "@/lib/constants/status-colors";
 
 interface ProjectCardProps {
@@ -15,6 +15,7 @@ interface ProjectCardProps {
     workingDirectory: string | null;
     status: string;
     taskCount: number;
+    docCount: number;
   };
   onEdit: (id: string, trigger: HTMLElement | null) => void;
 }
@@ -53,9 +54,17 @@ export function ProjectCard({ project, onEdit }: ProjectCardProps) {
               {project.description}
             </p>
           )}
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <FolderKanban className="h-3 w-3" />
-            <span>{project.taskCount} tasks</span>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <FolderKanban className="h-3 w-3" />
+              {project.taskCount} tasks
+            </span>
+            {project.docCount > 0 && (
+              <span className="flex items-center gap-1">
+                <FileText className="h-3 w-3" />
+                {project.docCount} docs
+              </span>
+            )}
           </div>
           {project.workingDirectory && (
             <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">

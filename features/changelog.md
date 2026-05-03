@@ -1,5 +1,15 @@
 # Feature Changelog
 
+## 2026-05-03 — Closed `relationship-summary-cards` gaps; spec flipped to completed
+
+Both gaps surfaced during Ship Verification closed:
+- `src/app/tasks/page.tsx` BoardContent query now selects `docCount` via SQL subquery (`SELECT COUNT(*) FROM documents d WHERE d.task_id = "tasks"."id"`); existing `serializedTasks` spread carries it through to `TaskItem`. Task-card badge renders when `task.docCount > 0`.
+- `src/app/projects/page.tsx` and `src/app/api/projects/route.ts` extended in lockstep with `docCount` SQL subquery. `Project` interface in `project-list.tsx` and `ProjectCardProps` in `project-card.tsx` extended. Project card now renders `FileText` icon + "N docs" alongside the task count, hidden when 0.
+
+Pattern note: SQL subquery uses raw `"projects"."id"` / `"tasks"."id"` string refs (not Drizzle column refs `${projects.id}`) per CLAUDE.md guidance — Drizzle's `sql` template treats column refs as bound params, generating `WHERE col = ?` with a JS object as value. The raw-string pattern matches the pre-existing `api/workflows/route.ts:20` precedent.
+
+24 tests passed (project + task component tests). Spec frontmatter flipped to `completed`.
+
 ## 2026-05-03 — Ship Verification on Tier 1 drift candidates
 
 ### Completed (status flipped `planned` → `completed` after AC-by-AC verification)

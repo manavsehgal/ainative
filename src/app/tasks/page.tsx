@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { db } from "@/lib/db";
 import { tasks, projects, workflows } from "@/lib/db/schema";
-import { desc, isNull } from "drizzle-orm";
+import { desc, getTableColumns, isNull, sql } from "drizzle-orm";
 import { parseWorkflowState } from "@/lib/workflows/engine";
 import { TaskSurface } from "@/components/tasks/task-surface";
 import { SkeletonBoard } from "@/components/tasks/skeleton-board";
@@ -13,7 +13,10 @@ export const dynamic = "force-dynamic";
 async function BoardContent() {
   // Only show parent/standalone tasks — hide workflow step tasks
   const allTasks = await db
-    .select()
+    .select({
+      ...getTableColumns(tasks),
+      docCount: sql<number>`(SELECT COUNT(*) FROM documents d WHERE d.task_id = "tasks"."id")`.as("docCount"),
+    })
     .from(tasks)
     .where(isNull(tasks.workflowId))
     .orderBy(tasks.priority, desc(tasks.createdAt));

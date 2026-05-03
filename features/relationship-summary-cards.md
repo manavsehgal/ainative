@@ -1,6 +1,7 @@
 ---
 title: Relationship Summary in Cards & Lists
-status: in-progress
+status: completed
+shipped-date: 2026-05-03
 priority: P2
 milestone: post-mvp
 source: conversation/2026-04-02-entity-relationships
@@ -8,7 +9,7 @@ dependencies:
   - entity-relationship-detail-views
 ---
 
-> **Mostly shipped, 2 small gaps remain.** Workflow cards (kanban + list), document table/grid, and the underlying SQL subqueries (`api/workflows/route.ts:20-21`) all PASS. Two surface gaps: (1) `task-card.tsx` accepts a `docCount` prop but the tasks page doesn't enrich `TaskItem` with it; (2) `project-card.tsx` shows only task count, not doc count. Both are small additive edits — should close in a follow-up. Verified 2026-05-03.
+> Verified shipped 2026-05-03. Workflow cards + document table/grid + SQL subqueries shipped earlier. The 2 remaining gaps surfaced during Ship Verification — task-card `docCount` enrichment in `src/app/tasks/page.tsx` and `project-card.tsx` rendering doc count alongside task count — were closed in the same session.
 
 # Relationship Summary in Cards & Lists
 
@@ -130,11 +131,11 @@ docCount: sql<number>`(SELECT COUNT(*) FROM documents WHERE project_id = ${proje
 
 - [x] Workflow kanban cards show output document count badge (when > 0)
 - [x] Workflow list cards show task count and document count in metadata line
-- [~] Task cards show document count badge in metadata row (when > 0) — **GAP**: `task-card.tsx` supports the prop but `src/app/tasks/page.tsx` doesn't enrich `TaskItem` with `docCount`, so the badge never renders in kanban context
+- [x] Task cards show document count badge in metadata row (when > 0) — closed 2026-05-03 by adding `docCount` SQL subquery to `src/app/tasks/page.tsx` BoardContent query; `task-card.tsx` already supported the prop
 - [x] Document table shows "Workflow" column at lg: breakpoint with workflow name
 - [x] Document table shows "—" for documents without workflow association
 - [x] Document grid shows workflow name label below direction/version row
-- [ ] Project cards show document count alongside task count (when > 0) — **GAP**: `project-card.tsx` shows `taskCount` and `workingDirectory` only; project detail page enriches with docs but the card does not
+- [x] Project cards show document count alongside task count (when > 0) — closed 2026-05-03 by adding `docCount` to project listing query (`src/app/projects/page.tsx` + `src/app/api/projects/route.ts`), extending `Project` type in `project-list.tsx`, and rendering with `FileText` icon in `project-card.tsx`
 - [x] All counts hidden when value is 0 (no zero-count badges)
 - [x] Count queries use subqueries or JOINs — no N+1 queries
 - [x] Card layout remains compact — counts don't push content or cause wrapping

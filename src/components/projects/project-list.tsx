@@ -16,6 +16,7 @@ interface Project {
   workingDirectory: string | null;
   status: string;
   taskCount: number;
+  docCount: number;
 }
 
 export function ProjectList({ initialProjects }: { initialProjects: Project[] }) {
