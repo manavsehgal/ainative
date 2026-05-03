@@ -125,6 +125,66 @@ describe("column-shape probes — tiered match precedence", () => {
   });
 });
 
+describe("decision table — per-rule negative near-misses", () => {
+  it("rule1_ledger: currency on a non-hero table does not fire", () => {
+    const m = makeManifest({
+      tables: [{ id: "t-hero" }, { id: "t-side" }],
+      blueprints: [{ id: "bp" }],
+    });
+    expect(
+      rule1_ledger(m, [
+        { tableId: "t-hero", columns: [{ name: "title" }] },
+        { tableId: "t-side", columns: [{ name: "amount" }] },
+      ])
+    ).toBe(false);
+  });
+
+  it("rule2_tracker: date without boolean does not fire", () => {
+    const m = makeManifest({
+      tables: [{ id: "t1" }],
+      schedules: [{ id: "s" }],
+    });
+    expect(rule2_tracker(m, cols("t1", [{ name: "start_date" }]))).toBe(false);
+  });
+
+  it("rule2_tracker: boolean without date does not fire", () => {
+    const m = makeManifest({
+      tables: [{ id: "t1" }],
+      schedules: [{ id: "s" }],
+    });
+    expect(rule2_tracker(m, cols("t1", [{ name: "completed" }]))).toBe(false);
+  });
+
+  it("rule3_research: schedule + 'process-rows' blueprint does not fire", () => {
+    const m = makeManifest({
+      blueprints: [{ id: "process-rows" }],
+      schedules: [{ id: "s" }],
+    });
+    expect(rule3_research(m)).toBe(false);
+  });
+
+  it("rule4_coach: schedule + 'researcher' profile does not fire", () => {
+    const m = makeManifest({
+      profiles: [{ id: "researcher" }],
+      schedules: [{ id: "s", runs: "profile:researcher" }],
+    });
+    expect(rule4_coach(m)).toBe(false);
+  });
+
+  it("rule5_inbox: blueprint 'weekly-review' does not fire on shape alone (no schemas)", () => {
+    const m = makeManifest({ blueprints: [{ id: "weekly-review" }] });
+    expect(rule5_inbox(m)).toBe(false);
+  });
+
+  it("rule6_multiBlueprint: 2 blueprints WITH hero table does not fire", () => {
+    const m = makeManifest({
+      blueprints: [{ id: "a" }, { id: "b" }],
+      tables: [{ id: "t1" }],
+    });
+    expect(rule6_multiBlueprint(m)).toBe(false);
+  });
+});
+
 describe("rule1_ledger — currency hero + ≥1 blueprint", () => {
   it("fires when hero table has a currency column AND ≥1 blueprint", () => {
     const m = makeManifest({
