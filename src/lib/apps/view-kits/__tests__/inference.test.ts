@@ -210,6 +210,36 @@ describe("rule5_inbox — drafter / follow-up / inbox blueprint", () => {
   it("does not fire when no inbox signals", () => {
     expect(rule5_inbox(makeManifest({ blueprints: [{ id: "weekly-review" }] }))).toBe(false);
   });
+  it("fires when hero has notification+message shape (no inbox blueprint id)", () => {
+    const m = makeManifest({
+      blueprints: [{ id: "process-rows" }],
+      tables: [{ id: "t1" }],
+    });
+    expect(
+      rule5_inbox(
+        m,
+        cols("t1", [{ name: "subject" }, { name: "body" }, { name: "read" }])
+      )
+    ).toBe(true);
+  });
+  it("does not fire on shape alone when only message shape present (no notification)", () => {
+    const m = makeManifest({
+      blueprints: [{ id: "process-rows" }],
+      tables: [{ id: "t1" }],
+    });
+    expect(rule5_inbox(m, cols("t1", [{ name: "summary" }]))).toBe(false);
+  });
+  it("does not fire on shape alone when only notification shape present (no message)", () => {
+    const m = makeManifest({
+      blueprints: [{ id: "process-rows" }],
+      tables: [{ id: "t1" }],
+    });
+    expect(rule5_inbox(m, cols("t1", [{ name: "read" }]))).toBe(false);
+  });
+  it("blueprint-id path still wins regardless of shape", () => {
+    const m = makeManifest({ blueprints: [{ id: "follow-up-drafter" }] });
+    expect(rule5_inbox(m, [])).toBe(true);
+  });
 });
 
 describe("rule6_multiBlueprint — ≥2 blueprints, no clear hero table", () => {

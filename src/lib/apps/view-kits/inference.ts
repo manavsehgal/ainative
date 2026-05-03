@@ -23,7 +23,7 @@ export function pickKit(
   if (rule2_tracker(manifest, columnSchemas)) return "tracker";
   if (rule3_research(manifest)) return "research";
   if (rule4_coach(manifest)) return "coach";
-  if (rule5_inbox(manifest)) return "inbox";
+  if (rule5_inbox(manifest, columnSchemas)) return "inbox";
   if (rule6_multiBlueprint(manifest)) return "workflow-hub";
   return "workflow-hub";
 }
@@ -66,8 +66,17 @@ export function rule4_coach(m: AppManifest): boolean {
   );
 }
 
-export function rule5_inbox(m: AppManifest): boolean {
-  return m.blueprints.some((b) => INBOX_BLUEPRINT_RE.test(b.id));
+export function rule5_inbox(
+  m: AppManifest,
+  schemas?: ColumnSchemaRef[]
+): boolean {
+  if (m.blueprints.some((b) => INBOX_BLUEPRINT_RE.test(b.id))) return true;
+  if (!schemas) return false;
+  const heroId = m.tables[0]?.id;
+  if (!heroId) return false;
+  const cols = lookupColumns(schemas, heroId);
+  if (!cols) return false;
+  return hasNotificationShape(cols) && hasMessageShape(cols);
 }
 
 export function rule6_multiBlueprint(m: AppManifest): boolean {
