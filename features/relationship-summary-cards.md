@@ -1,12 +1,14 @@
 ---
 title: Relationship Summary in Cards & Lists
-status: planned
+status: in-progress
 priority: P2
 milestone: post-mvp
 source: conversation/2026-04-02-entity-relationships
 dependencies:
   - entity-relationship-detail-views
 ---
+
+> **Mostly shipped, 2 small gaps remain.** Workflow cards (kanban + list), document table/grid, and the underlying SQL subqueries (`api/workflows/route.ts:20-21`) all PASS. Two surface gaps: (1) `task-card.tsx` accepts a `docCount` prop but the tasks page doesn't enrich `TaskItem` with it; (2) `project-card.tsx` shows only task count, not doc count. Both are small additive edits — should close in a follow-up. Verified 2026-05-03.
 
 # Relationship Summary in Cards & Lists
 
@@ -126,17 +128,17 @@ docCount: sql<number>`(SELECT COUNT(*) FROM documents WHERE project_id = ${proje
 
 ## Acceptance Criteria
 
-- [ ] Workflow kanban cards show output document count badge (when > 0)
-- [ ] Workflow list cards show task count and document count in metadata line
-- [ ] Task cards show document count badge in metadata row (when > 0)
-- [ ] Document table shows "Workflow" column at lg: breakpoint with workflow name
-- [ ] Document table shows "—" for documents without workflow association
-- [ ] Document grid shows workflow name label below direction/version row
-- [ ] Project cards show document count alongside task count (when > 0)
-- [ ] All counts hidden when value is 0 (no zero-count badges)
-- [ ] Count queries use subqueries or JOINs — no N+1 queries
-- [ ] Card layout remains compact — counts don't push content or cause wrapping
-- [ ] Workflow name in document table truncated at ~140px with ellipsis
+- [x] Workflow kanban cards show output document count badge (when > 0)
+- [x] Workflow list cards show task count and document count in metadata line
+- [~] Task cards show document count badge in metadata row (when > 0) — **GAP**: `task-card.tsx` supports the prop but `src/app/tasks/page.tsx` doesn't enrich `TaskItem` with `docCount`, so the badge never renders in kanban context
+- [x] Document table shows "Workflow" column at lg: breakpoint with workflow name
+- [x] Document table shows "—" for documents without workflow association
+- [x] Document grid shows workflow name label below direction/version row
+- [ ] Project cards show document count alongside task count (when > 0) — **GAP**: `project-card.tsx` shows `taskCount` and `workingDirectory` only; project detail page enriches with docs but the card does not
+- [x] All counts hidden when value is 0 (no zero-count badges)
+- [x] Count queries use subqueries or JOINs — no N+1 queries
+- [x] Card layout remains compact — counts don't push content or cause wrapping
+- [x] Workflow name in document table truncated at ~140px with ellipsis
 
 ## Scope Boundaries
 

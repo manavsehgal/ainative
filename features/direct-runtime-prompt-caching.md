@@ -1,11 +1,13 @@
 ---
 title: Direct Runtime Prompt Caching
-status: planned
+status: in-progress
 priority: P2
 milestone: post-mvp
 source: ideas/direct-api-gap-analysis.md
 dependencies: [anthropic-direct-runtime]
 ---
+
+> **Partially shipped.** Cache headers wired in `src/lib/agents/runtime/anthropic-direct.ts` (4 sites in `buildSystemBlocks`); `cache_creation_input_tokens` / `cache_read_input_tokens` read into local `TurnUsage` (`anthropic-direct.ts:243-245`). Remaining: ledger persistence, dashboard surfacing, Batch API path. Verified 2026-05-03.
 
 # Direct Runtime Prompt Caching
 
@@ -79,13 +81,13 @@ ainative's meta-completions (task assist, profile assist, pattern extraction) ar
 
 ## Acceptance Criteria
 
-- [ ] System prompt blocks have `cache_control: { type: "ephemeral" }` on stable content
-- [ ] Second task with same profile shows `cache_read_input_tokens > 0` in usage logs
-- [ ] Cost savings visible in usage dashboard (cache read tokens at 10% of normal cost)
-- [ ] Cache metrics recorded in usage ledger entries
-- [ ] Batch API used for task assist and profile assist meta-completions (when not time-critical)
-- [ ] No behavior change — task outputs identical with or without caching
-- [ ] No impact on other runtimes (caching is `anthropic-direct` only)
+- [x] System prompt blocks have `cache_control: { type: "ephemeral" }` on stable content
+- [x] Second task with same profile shows `cache_read_input_tokens > 0` in usage logs
+- [ ] Cost savings visible in usage dashboard (cache read tokens at 10% of normal cost) — **GAP** (`cost-dashboard.tsx` has no `cache*` references)
+- [ ] Cache metrics recorded in usage ledger entries — **GAP** (`usage/ledger.ts` + `db/schema.ts` lack cache columns)
+- [ ] Batch API used for task assist and profile assist meta-completions (when not time-critical) — **GAP** (no `messages.batches.create` references in `src/`)
+- [x] No behavior change — task outputs identical with or without caching
+- [x] No impact on other runtimes (caching is `anthropic-direct` only)
 
 ## Scope Boundaries
 

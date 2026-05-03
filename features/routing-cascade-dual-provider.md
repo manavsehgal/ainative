@@ -1,11 +1,14 @@
 ---
 title: Routing Cascade — Dual-Provider Auth & Model Recommendations
-status: planned
+status: completed
+shipped-date: 2026-05-03
 priority: P1
 milestone: post-mvp
 source: conversation — 2026-04-18 task-routing UX audit
 dependencies: []
 ---
+
+> Verified shipped 2026-05-03 via Ship Verification on prior `planned` drift. All ACs PASS at `src/lib/settings/routing-recommendation.ts`, `src/components/settings/providers-runtimes-section.tsx`, `src/lib/settings/__tests__/routing-recommendation.test.ts`.
 
 # Routing Cascade — Dual-Provider Auth & Model Recommendations
 
@@ -39,18 +42,18 @@ The settings component rewrites `handleRoutingChange` to fire parallel POSTs via
 
 ## Acceptance Criteria
 
-- [ ] Clicking Latency/Cost/Quality writes the recommendation for BOTH providers — auth + model — via parallel POSTs.
-- [ ] Clicking Cost when Ollama is connected also writes the Ollama default model via `POST /api/settings/ollama`.
-- [ ] Clicking Manual writes no provider changes; the banner collapses to a single explanatory line.
-- [ ] A "Recommended for {pref}" banner renders inline below the radio row using the existing inline-banner pattern.
-- [ ] Recommendation chips use `Badge variant="outline"` so they visually differ from the filled `AuthStatusBadge` configured-state chips.
-- [ ] At 1512×767, the routing radio row + recommendation banner + Anthropic row header are all above the fold.
-- [ ] The OpenAI provider row auto-expands when a non-Manual routing is selected, mirroring Anthropic.
-- [ ] Each provider row in the banner has a "Configure ↓" link that scrolls and opens that ProviderRow.
-- [ ] When one cascade POST fails, the other provider still updates; the UI reports the specific failure and re-syncs via `fetchData()`.
-- [ ] User overrides (manually switching auth or changing model) persist and are not reverted unless the user picks a new routing preference.
-- [ ] When Ollama probe returns `connected: false`, Cost falls back to haiku + nano and the Ollama row is hidden.
-- [ ] Switching between Quality and Cost/Latency visibly changes the OpenAI row's recommended auth chip.
+- [x] Clicking Latency/Cost/Quality writes the recommendation for BOTH providers — auth + model — via parallel POSTs.
+- [x] Clicking Cost when Ollama is connected also writes the Ollama default model via `POST /api/settings/ollama`.
+- [x] Clicking Manual writes no provider changes; the banner collapses to a single explanatory line.
+- [x] A "Recommended for {pref}" banner renders inline below the radio row using the existing inline-banner pattern.
+- [x] Recommendation chips use `Badge variant="outline"` so they visually differ from the filled `AuthStatusBadge` configured-state chips.
+- [x] At 1512×767, the routing radio row + recommendation banner + Anthropic row header are all above the fold.
+- [x] The OpenAI provider row auto-expands when a non-Manual routing is selected, mirroring Anthropic.
+- [x] Each provider row in the banner has a "Configure ↓" link that scrolls and opens that ProviderRow.
+- [x] When one cascade POST fails, the other provider still updates; the UI reports the specific failure and re-syncs via `fetchData()`.
+- [x] User overrides (manually switching auth or changing model) persist and are not reverted unless the user picks a new routing preference.
+- [x] When Ollama probe returns `connected: false`, Cost falls back to haiku + nano and the Ollama row is hidden.
+- [x] Switching between Quality and Cost/Latency visibly changes the OpenAI row's recommended auth chip.
 
 ## Scope Boundaries
 

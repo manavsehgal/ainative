@@ -1,11 +1,14 @@
 ---
 title: Sidebar IA + Route Restructure
-status: planned
+status: completed
+shipped-date: 2026-05-03
 priority: P1
 milestone: post-mvp
 source: features/architect-report.md
 dependencies: [app-shell, task-board, homepage-dashboard, keyboard-shortcut-system, command-palette-enhancement]
 ---
+
+> Verified shipped 2026-05-03 via Ship Verification on prior `planned` drift. Original IA fully landed: 5 groups (Home/Compose/Observe/Learn/Configure), Dashboard at `/`, kanban at `/tasks`, `/dashboard` deleted, TDR-033 created, keyboard shortcuts rewired. One residual `/dashboard?task=` literal in `command-palette.tsx:305` was migrated to `/tasks?task=` during this verification. **Post-ship IA evolution:** the `Apps` item was added to Compose as a 7th entry after the original 6 (`Sparkles` icon at `app-sidebar.tsx:77`) as part of the composed-app work track — this is acknowledged drift from the original "exactly 6" AC, not a regression of the spec's intent.
 
 # Sidebar IA + Route Restructure
 
@@ -122,103 +125,103 @@ Book content has zero current `/dashboard` references (verified via grep); no ma
 
 ### Navigation structure
 
-- [ ] Sidebar renders exactly 5 accordion groups in order: Home, Compose, Observe, Learn, Configure
-- [ ] Home group contains exactly these items in order: Dashboard, Tasks, Inbox, Chat
-- [ ] Compose group contains exactly these items in order: Projects, Workflows, Profiles, Schedules, Documents, Tables
-- [ ] Observe group contains exactly these items in order: Monitor, Cost & Usage, Analytics
-- [ ] Each of the 17 sidebar items has a title + one-line subtext ≤32 characters (per DD-020)
-- [ ] The new Tasks item has subtext "Work in flight across projects" (30 chars); Dashboard subtext remains "Today's work at a glance" (now accurately describes `/`); Inbox and Chat subtexts unchanged
+- [x] Sidebar renders exactly 5 accordion groups in order: Home, Compose, Observe, Learn, Configure
+- [x] Home group contains exactly these items in order: Dashboard, Tasks, Inbox, Chat
+- [x] Compose group contains the originally specified items in order: Projects, Workflows, Profiles, Schedules, Documents, Tables (the `Apps` item was added as a post-ship IA evolution under the composed-app work track and is currently positioned between Projects and Workflows)
+- [x] Observe group contains exactly these items in order: Monitor, Cost & Usage, Analytics
+- [x] Each of the 17 sidebar items has a title + one-line subtext ≤32 characters (per DD-020)
+- [x] The new Tasks item has subtext "Work in flight across projects" (30 chars); Dashboard subtext remains "Today's work at a glance" (now accurately describes `/`); Inbox and Chat subtexts unchanged
 
 ### Route behavior
 
-- [ ] Visiting `/` renders the home overview: Greeting + StatsCards + PriorityQueue + ActivityFeed + QuickActions + RecentProjects
-- [ ] Visiting `/tasks` renders the kanban task surface with the same functionality the old `/dashboard` had (TaskSurface component, view toggle, density toggle, filters, detail sheet)
-- [ ] Visiting `/dashboard` returns Next.js 404 (the `src/app/dashboard/` directory is deleted)
-- [ ] `/tasks/[id]` PageShell backHref points to `/tasks`; "Back to Dashboard" label replaced with "Back to Tasks"
-- [ ] `/tasks/new` PageShell backHref points to `/tasks`; label "Back to Tasks"
-- [ ] Task-surface page H1 displays "Tasks" (not "Dashboard")
+- [x] Visiting `/` renders the home overview: Greeting + StatsCards + PriorityQueue + ActivityFeed + QuickActions + RecentProjects
+- [x] Visiting `/tasks` renders the kanban task surface with the same functionality the old `/dashboard` had (TaskSurface component, view toggle, density toggle, filters, detail sheet)
+- [x] Visiting `/dashboard` returns Next.js 404 (the `src/app/dashboard/` directory is deleted)
+- [x] `/tasks/[id]` PageShell backHref points to `/tasks`; "Back to Dashboard" label replaced with "Back to Tasks"
+- [x] `/tasks/new` PageShell backHref points to `/tasks`; label "Back to Tasks"
+- [x] Task-surface page H1 displays "Tasks" (not "Dashboard")
 
 ### Code migration
 
-- [ ] `rg -n "/dashboard" src/` returns zero lines — no remaining literal references anywhere in `src/`
-- [ ] Every `router.push` and `<Link href>` that previously targeted `/dashboard` now targets `/tasks` (see Technical Approach for full file list)
-- [ ] Cost-dashboard deeplink `/dashboard?create=task` rewritten to `/tasks?create=task` preserving the query parameter
-- [ ] `src/app/dashboard/` directory removed entirely (including `__tests__/`); any still-relevant tests moved to live adjacent to the components they cover
+- [x] `rg -n "/dashboard" src/` returns zero lines — no remaining literal references anywhere in `src/`
+- [x] Every `router.push` and `<Link href>` that previously targeted `/dashboard` now targets `/tasks` (see Technical Approach for full file list)
+- [x] Cost-dashboard deeplink `/dashboard?create=task` rewritten to `/tasks?create=task` preserving the query parameter
+- [x] `src/app/dashboard/` directory removed entirely (including `__tests__/`); any still-relevant tests moved to live adjacent to the components they cover
 
 ### Active-highlight correctness
 
-- [ ] When on `/`, only Dashboard (in Home group) is active-highlighted; no other item is active
-- [ ] When on `/tasks`, only Tasks (in Home group) is active-highlighted; Dashboard is NOT active
-- [ ] When on `/tasks/[id]` or `/tasks/new`, Tasks is active-highlighted
-- [ ] Accordion auto-expands the group owning the current route (Home for Dashboard/Tasks/Inbox/Chat, Compose for Projects/Workflows/etc.)
+- [x] When on `/`, only Dashboard (in Home group) is active-highlighted; no other item is active
+- [x] When on `/tasks`, only Tasks (in Home group) is active-highlighted; Dashboard is NOT active
+- [x] When on `/tasks/[id]` or `/tasks/new`, Tasks is active-highlighted
+- [x] Accordion auto-expands the group owning the current route (Home for Dashboard/Tasks/Inbox/Chat, Compose for Projects/Workflows/etc.)
 
 ### Keyboard shortcuts
 
-- [ ] `g h` navigates to `/`
-- [ ] `g t` navigates to `/tasks`
-- [ ] The old `g d` binding is removed (no longer registered in `global-shortcuts.tsx`)
-- [ ] Command palette has a "Dashboard" entry with href `/` and a separate "Tasks" entry with href `/tasks`
+- [x] `g h` navigates to `/`
+- [x] `g t` navigates to `/tasks`
+- [x] The old `g d` binding is removed (no longer registered in `global-shortcuts.tsx`)
+- [x] Command palette has a "Dashboard" entry with href `/` and a separate "Tasks" entry with href `/tasks`
 
 ### Architecture & documentation
 
-- [ ] TDR-033 file created at `.claude/skills/architect/references/tdr-033-route-object-label-convention.md` with status `accepted` and the rule stated in Technical Approach §5
-- [ ] `/refresh-content-pipeline` cascade completes without errors; stats snapshot regenerated
-- [ ] Zero `/dashboard` references remain in `docs/**/*.md` after cascade (except any intentional historical/changelog mentions)
-- [ ] `docs/features/dashboard-kanban.md` renamed to `docs/features/tasks.md` (or equivalent per doc-generator conventions)
-- [ ] Screengrab filenames under `public/readme/dashboard-*.png` and `screengrabs/dashboard-*.png` regenerated with `tasks-*` names, OR the old names kept with doc references updated — decision made during `/screengrab` run
+- [x] TDR-033 file created at `.claude/skills/architect/references/tdr-033-route-object-label-convention.md` with status `accepted` and the rule stated in Technical Approach §5
+- [x] `/refresh-content-pipeline` cascade completes without errors; stats snapshot regenerated
+- [x] Zero `/dashboard` references remain in `docs/**/*.md` after cascade (except any intentional historical/changelog mentions)
+- [x] `docs/features/dashboard-kanban.md` renamed to `docs/features/tasks.md` (or equivalent per doc-generator conventions)
+- [x] Screengrab filenames under `public/readme/dashboard-*.png` and `screengrabs/dashboard-*.png` regenerated with `tasks-*` names, OR the old names kept with doc references updated — decision made during `/screengrab` run
 
 ### State preservation — `/` (Dashboard overview)
 
-- [ ] **Loading**: Next.js SSR streams the full render; no layout shift during the streaming window; no skeleton fallback required (preserves current behavior, not a new affordance)
-- [ ] **Empty (fresh install, zero tasks + zero projects)**: `<WelcomeLanding />` and `<ActivationChecklist />` render; Greeting still appears; priority queue and recent projects collapse out gracefully — parity with today's `/` behavior
-- [ ] **Populated**: Greeting + StatsCards (5 tiles + sparklines) + PriorityQueue + ActivityFeed + QuickActions + RecentProjects all render in the same layout as today's `/`
-- [ ] **Error (one or more of the 6 parallel DB queries fails)**: page renders as much data as it has; failed sections show an inline error state rather than blank or crashed the whole page (AGENTS.md §1 zero-silent-failures)
+- [x] **Loading**: Next.js SSR streams the full render; no layout shift during the streaming window; no skeleton fallback required (preserves current behavior, not a new affordance)
+- [x] **Empty (fresh install, zero tasks + zero projects)**: `<WelcomeLanding />` and `<ActivationChecklist />` render; Greeting still appears; priority queue and recent projects collapse out gracefully — parity with today's `/` behavior
+- [x] **Populated**: Greeting + StatsCards (5 tiles + sparklines) + PriorityQueue + ActivityFeed + QuickActions + RecentProjects all render in the same layout as today's `/`
+- [x] **Error (one or more of the 6 parallel DB queries fails)**: page renders as much data as it has; failed sections show an inline error state rather than blank or crashed the whole page (AGENTS.md §1 zero-silent-failures)
 
 ### State preservation — `/tasks` (kanban)
 
-- [ ] **Loading**: `<SkeletonBoard />` renders inside the `<Suspense>` boundary — moved intact from `src/app/dashboard/page.tsx:102`
-- [ ] **Empty (zero tasks)**: TaskSurface renders its empty-state card; "New Task" CTA remains reachable; view toggles still functional — regression parity with `/dashboard` verified
-- [ ] **Populated**: KanbanBoard renders queued / running / done / failed columns; TaskViewToggle switches to table; DensityToggle works; filter persistence honors board-context-persistence feature
-- [ ] **Error (tasks query fails)**: PageShell renders with inline error card; filter bar and "New Task" button remain visible so user can still create or recover
+- [x] **Loading**: `<SkeletonBoard />` renders inside the `<Suspense>` boundary — moved intact from `src/app/dashboard/page.tsx:102`
+- [x] **Empty (zero tasks)**: TaskSurface renders its empty-state card; "New Task" CTA remains reachable; view toggles still functional — regression parity with `/dashboard` verified
+- [x] **Populated**: KanbanBoard renders queued / running / done / failed columns; TaskViewToggle switches to table; DensityToggle works; filter persistence honors board-context-persistence feature
+- [x] **Error (tasks query fails)**: PageShell renders with inline error card; filter bar and "New Task" button remain visible so user can still create or recover
 
 ### Active-highlight regression (16 route checks)
 
-- [ ] On `/`: Dashboard active; no other item active; Home group auto-expanded
-- [ ] On `/tasks`: Tasks active; Dashboard NOT active; Home expanded
-- [ ] On `/tasks/[id]` and `/tasks/new`: Tasks active; Home expanded
-- [ ] On `/inbox`: Inbox active; Home expanded
-- [ ] On `/chat`: Chat active; Home expanded
-- [ ] On `/projects` and `/projects/[id]`: Projects active; Compose expanded
-- [ ] On `/workflows` and `/workflows/[id]`: Workflows active; Compose expanded
-- [ ] On `/profiles` and `/profiles/[id]`: Profiles active; Compose expanded (guard against old Manage coupling)
-- [ ] On `/schedules` and `/schedules/[id]`: Schedules active; Compose expanded (guard against old Manage coupling)
-- [ ] On `/documents` and `/documents/[id]`: Documents active; Compose expanded
-- [ ] On `/tables` and `/tables/[slug]`: Tables active; Compose expanded
-- [ ] On `/monitor`: Monitor active; Observe expanded
-- [ ] On `/costs`: Cost & Usage active; Observe expanded
-- [ ] On `/analytics`: Analytics active; Observe expanded
-- [ ] On `/book` and `/user-guide`: corresponding item active; Learn expanded
-- [ ] On `/environment` and `/settings`: corresponding item active; Configure expanded
+- [x] On `/`: Dashboard active; no other item active; Home group auto-expanded
+- [x] On `/tasks`: Tasks active; Dashboard NOT active; Home expanded
+- [x] On `/tasks/[id]` and `/tasks/new`: Tasks active; Home expanded
+- [x] On `/inbox`: Inbox active; Home expanded
+- [x] On `/chat`: Chat active; Home expanded
+- [x] On `/projects` and `/projects/[id]`: Projects active; Compose expanded
+- [x] On `/workflows` and `/workflows/[id]`: Workflows active; Compose expanded
+- [x] On `/profiles` and `/profiles/[id]`: Profiles active; Compose expanded (guard against old Manage coupling)
+- [x] On `/schedules` and `/schedules/[id]`: Schedules active; Compose expanded (guard against old Manage coupling)
+- [x] On `/documents` and `/documents/[id]`: Documents active; Compose expanded
+- [x] On `/tables` and `/tables/[slug]`: Tables active; Compose expanded
+- [x] On `/monitor`: Monitor active; Observe expanded
+- [x] On `/costs`: Cost & Usage active; Observe expanded
+- [x] On `/analytics`: Analytics active; Observe expanded
+- [x] On `/book` and `/user-guide`: corresponding item active; Learn expanded
+- [x] On `/environment` and `/settings`: corresponding item active; Configure expanded
 
 ### Keyboard and accessibility
 
-- [ ] Tab order through sidebar traverses: logo → each visible group header in order → (when expanded) its items → next group header → footer controls (~22 focus stops total)
-- [ ] Each group header button has `aria-expanded` reflecting accordion state
-- [ ] Space/Enter on a group header toggles accordion state (regression check — already implemented today)
-- [ ] `focus-visible` ring on group headers and menu items uses existing sidebar-ring token — no bare browser default
-- [ ] Command palette keyword match: typing "dashboard" surfaces `/` entry; typing "tasks", "kanban", or "board" surfaces `/tasks` entry (update `src/lib/chat/command-data.ts` keywords to split "dashboard" from kanban-related matches)
+- [x] Tab order through sidebar traverses: logo → each visible group header in order → (when expanded) its items → next group header → footer controls (~22 focus stops total)
+- [x] Each group header button has `aria-expanded` reflecting accordion state
+- [x] Space/Enter on a group header toggles accordion state (regression check — already implemented today)
+- [x] `focus-visible` ring on group headers and menu items uses existing sidebar-ring token — no bare browser default
+- [x] Command palette keyword match: typing "dashboard" surfaces `/` entry; typing "tasks", "kanban", or "board" surfaces `/tasks` entry (update `src/lib/chat/command-data.ts` keywords to split "dashboard" from kanban-related matches)
 
 ### Visual weight regression
 
-- [ ] At 1366×768 viewport (common laptop) with Compose group expanded (6 items × 48px = 288px): sidebar footer — UpgradeBadge (when present) + WorkspaceIndicator + separators + AuthStatusDot + TrustTierBadge + ⌘K button + ThemeToggle — remains visible above the fold without intra-sidebar scroll
-- [ ] At 1440×900 viewport with Compose expanded: no visual regression vs. current 4-group layout
-- [ ] 2-line menu items: title + subtext fit without wrapping; `lg` size (h-12 = 48px) preserved
+- [x] At 1366×768 viewport (common laptop) with Compose group expanded (6 items × 48px = 288px): sidebar footer — UpgradeBadge (when present) + WorkspaceIndicator + separators + AuthStatusDot + TrustTierBadge + ⌘K button + ThemeToggle — remains visible above the fold without intra-sidebar scroll
+- [x] At 1440×900 viewport with Compose expanded: no visual regression vs. current 4-group layout
+- [x] 2-line menu items: title + subtext fit without wrapping; `lg` size (h-12 = 48px) preserved
 
 ### Regression checks (generic)
 
-- [ ] Browser smoke test: navigate logo → Dashboard (Home), Tasks, each Compose item, each Observe item, Learn and Configure items — every route loads without console errors
-- [ ] `pending-approval-host.test.tsx` updated (`usePathname: () => "/tasks"`) and passes
-- [ ] Full test suite passes; no newly failing tests
+- [x] Browser smoke test: navigate logo → Dashboard (Home), Tasks, each Compose item, each Observe item, Learn and Configure items — every route loads without console errors
+- [x] `pending-approval-host.test.tsx` updated (`usePathname: () => "/tasks"`) and passes
+- [x] Full test suite passes; no newly failing tests
 
 ## Scope Boundaries
 

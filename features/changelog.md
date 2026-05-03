@@ -1,5 +1,20 @@
 # Feature Changelog
 
+## 2026-05-03 — Ship Verification on Tier 1 drift candidates
+
+### Completed (status flipped `planned` → `completed` after AC-by-AC verification)
+- `routing-cascade-dual-provider` — all 12 ACs PASS at `src/lib/settings/routing-recommendation.ts`, `providers-runtimes-section.tsx`, dedicated 8-case test matrix
+- `workflow-document-pool` — all 22 ACs across 3 phases PASS — junction table + Input Tray + Output Dock + chat tools
+- `workflow-editing` — all 11 ACs PASS — Edit button visibility + reset-to-draft logic + state cleanup
+- `sidebar-ia-route-restructure` — all 5-group / route-rename / TDR-033 / keyboard ACs PASS; one residual `/dashboard?task=` literal in `command-palette.tsx:305` migrated to `/tasks?task=` during verification; post-ship `Apps` item addition to Compose acknowledged in body note (not a regression)
+
+### In-progress (status flipped `planned` → `in-progress` to reflect partial reality)
+- `direct-runtime-prompt-caching` — cache headers wired in `anthropic-direct.ts`; ledger persistence, cost-dashboard surfacing, and Batch API path remain
+- `relationship-summary-cards` — workflow cards + document table/grid + queries all shipped; 2 surface gaps remain: `tasks/page.tsx` not enriching `TaskItem` with `docCount`, `project-card.tsx` not rendering `docCount`
+
+### Code change in src/
+- `src/components/shared/command-palette.tsx:305` — `navigate(\`/dashboard?task=\${task.id}\`)` → `navigate(\`/tasks?task=\${task.id}\`)` (closes the last route literal violating sidebar-ia-route-restructure AC)
+
 ## 2026-05-03 — Roadmap grooming pass
 
 ### Status-string normalized

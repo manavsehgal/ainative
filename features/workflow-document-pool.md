@@ -1,6 +1,7 @@
 ---
 title: Workflow Document Pool
-status: planned
+status: completed
+shipped-date: 2026-05-03
 priority: P1
 milestone: post-mvp
 source: plans/kind-mapping-turing.md
@@ -12,6 +13,8 @@ dependencies:
   - document-output-generation
   - workflow-ux-overhaul
 ---
+
+> Verified shipped 2026-05-03 via Ship Verification on prior `planned` drift. All 22 ACs across all 3 phases PASS — junction table at `schema.ts:764`, picker UI at `workflow-form-view.tsx:1276`, Output Dock at `views/sequence-pattern-view.tsx:404`, chat tools at `workflow-tools.ts:231,728`.
 
 # Workflow Document Pool
 
@@ -106,32 +109,32 @@ The architecture uses a junction table (`workflow_document_inputs`) for determin
 ## Acceptance Criteria
 
 ### Phase 1: Data + Engine
-- [ ] `workflow_document_inputs` table exists with FK constraints and indexes
-- [ ] Creating a workflow with document IDs persists bindings in junction table
-- [ ] Executing a workflow with pool documents injects their content into step prompts
-- [ ] Per-step document scoping works: step-specific docs only injected into that step
-- [ ] Workflow-level docs (stepId=null) injected into all steps
-- [ ] Existing workflows without document bindings execute unchanged (backward compatible)
-- [ ] Pool document context respects 30KB cap
-- [ ] `resolveDocumentSelector()` correctly filters by all selector fields
-- [ ] Bootstrap creates table on fresh DB; migration applies on existing DB
-- [ ] `clear.ts` deletes junction table rows in FK-safe order
+- [x] `workflow_document_inputs` table exists with FK constraints and indexes
+- [x] Creating a workflow with document IDs persists bindings in junction table
+- [x] Executing a workflow with pool documents injects their content into step prompts
+- [x] Per-step document scoping works: step-specific docs only injected into that step
+- [x] Workflow-level docs (stepId=null) injected into all steps
+- [x] Existing workflows without document bindings execute unchanged (backward compatible)
+- [x] Pool document context respects 30KB cap
+- [x] `resolveDocumentSelector()` correctly filters by all selector fields
+- [x] Bootstrap creates table on fresh DB; migration applies on existing DB
+- [x] `clear.ts` deletes junction table rows in FK-safe order
 
 ### Phase 2: Form UX
-- [ ] Workflow form shows "Input Documents" section with attach button
-- [ ] Document picker sheet displays project documents grouped by source
-- [ ] Selected documents appear as removable chips in the Input Tray
-- [ ] Per-step document selection available via collapsible section on each step card
-- [ ] Output Dock on completed workflow shows selectable output document cards
-- [ ] "Chain Into New Workflow" navigates with inputDocs URL params
-- [ ] Workflow form pre-populates Input Tray from URL params
-- [ ] Saving workflow persists document bindings via POST to documents API
+- [x] Workflow form shows "Input Documents" section with attach button
+- [x] Document picker sheet displays project documents grouped by source
+- [x] Selected documents appear as removable chips in the Input Tray
+- [x] Per-step document selection available via collapsible section on each step card
+- [x] Output Dock on completed workflow shows selectable output document cards
+- [x] "Chain Into New Workflow" navigates with inputDocs URL params
+- [x] Workflow form pre-populates Input Tray from URL params
+- [x] Saving workflow persists document bindings via POST to documents API
 
 ### Phase 3: Chat
-- [ ] `create_workflow` tool accepts and persists documentIds
-- [ ] `find_related_documents` tool discovers output docs from completed project workflows
-- [ ] AI proactively suggests documents when creating follow-up workflows
-- [ ] AI mentions output documents after workflow completion
+- [x] `create_workflow` tool accepts and persists documentIds
+- [x] `find_related_documents` tool discovers output docs from completed project workflows
+- [x] AI proactively suggests documents when creating follow-up workflows
+- [x] AI mentions output documents after workflow completion
 
 ## Scope Boundaries
 

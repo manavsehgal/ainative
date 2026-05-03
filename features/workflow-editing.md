@@ -1,11 +1,14 @@
 ---
 title: Workflow Editing (Post-Execution)
-status: planned
+status: completed
+shipped-date: 2026-05-03
 priority: P1
 milestone: post-mvp
 source: conversation
 dependencies: [workflow-engine]
 ---
+
+> Verified shipped 2026-05-03 via Ship Verification on prior `planned` drift. All 11 ACs PASS — Edit button visibility at `shared/workflow-header.tsx:92` + `workflow-list.tsx:213`; reset-to-draft at `api/workflows/[id]/route.ts:50-56`; state cleanup strips `_state`/`_loopState` per spec.
 
 # Workflow Editing (Post-Execution)
 
@@ -60,17 +63,17 @@ The `WorkflowFormView` component (1599 lines) builds the PATCH definition entire
 
 ## Acceptance Criteria
 
-- [ ] Completed workflows show an Edit button in both the detail view and list card
-- [ ] Failed workflows show an Edit button in both the detail view and list card
-- [ ] Clicking Edit on a completed/failed workflow navigates to the edit form pre-populated with the workflow's definition
-- [ ] Saving edits on a completed/failed workflow resets its status to "draft"
-- [ ] Execution state (`_state`, `_loopState`) is stripped from the definition on save
-- [ ] Edited workflow can be executed via the normal Execute button
-- [ ] Old task records from previous executions remain intact (not deleted)
-- [ ] Active workflows cannot be edited (API returns 409)
-- [ ] Paused workflows cannot be edited (API returns 409)
-- [ ] Pattern selector remains disabled when editing (pattern is immutable)
-- [ ] Document pool bindings are preserved through the edit cycle
+- [x] Completed workflows show an Edit button in both the detail view and list card
+- [x] Failed workflows show an Edit button in both the detail view and list card
+- [x] Clicking Edit on a completed/failed workflow navigates to the edit form pre-populated with the workflow's definition
+- [x] Saving edits on a completed/failed workflow resets its status to "draft"
+- [x] Execution state (`_state`, `_loopState`) is stripped from the definition on save
+- [x] Edited workflow can be executed via the normal Execute button
+- [x] Old task records from previous executions remain intact (not deleted)
+- [x] Active workflows cannot be edited (API returns 409)
+- [x] Paused workflows cannot be edited (API returns 409)
+- [x] Pattern selector remains disabled when editing (pattern is immutable)
+- [x] Document pool bindings are preserved through the edit cycle
 
 ## Scope Boundaries
 

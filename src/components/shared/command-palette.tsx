@@ -302,7 +302,7 @@ export function CommandPalette() {
                   <CommandItem
                     key={`task-${task.id}`}
                     value={`recent-task-${task.title}`}
-                    onSelect={() => navigate(`/dashboard?task=${task.id}`)}
+                    onSelect={() => navigate(`/tasks?task=${task.id}`)}
                     keywords={["recent", "task"]}
                   >
                     <LayoutDashboard className="h-4 w-4" />
