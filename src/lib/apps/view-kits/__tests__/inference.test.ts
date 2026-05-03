@@ -434,6 +434,20 @@ describe("pickKit — first-match-wins decision table", () => {
   });
 });
 
+describe("pickKit — workflow-hub fallback (no rule matches)", () => {
+  it("empty manifest falls through to workflow-hub", () => {
+    expect(pickKit(makeManifest(), [])).toBe("workflow-hub");
+  });
+  it("manifest with only profiles falls through", () => {
+    expect(pickKit(makeManifest({ profiles: [{ id: "x" }] }), [])).toBe("workflow-hub");
+  });
+  it("manifest with only one blueprint and no schedules/tables falls through", () => {
+    expect(
+      pickKit(makeManifest({ blueprints: [{ id: "lonely" }] }), [])
+    ).toBe("workflow-hub");
+  });
+});
+
 describe("pickKit — starter intent fixtures (acceptance criteria)", () => {
   it("habit-tracker → tracker", () => {
     const m = makeManifest({
