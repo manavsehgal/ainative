@@ -1,5 +1,25 @@
 # Feature Changelog
 
+## 2026-05-03 — `enrichment-planner-test-hardening` shipped (P2 hardening close-out)
+
+Build session, not a Ship Verification — the spec was genuinely planned. AC #1 (validation-before-cast) was already shipped *transitively* via `buildTargetContract`, but ACs #2–#5 (route tests, planner test expansion, sample-binding rationale) required real work.
+
+### Implementation
+- **Planner unit tests expanded 7 → 40** (`src/lib/tables/__tests__/enrichment-planner.test.ts`). New coverage: `assertEnrichmentCompatibleColumn` direct + transitive tests, `selectStrategy` edge cases (empty/long/single-word prompts; type-overrides-prompt for boolean+select; type-forces-lookup for URL), `buildReasoning` clauses across all strategies + filter + operator-guidance branches, all 6 data types in `normalizeEnrichmentOutput` (text/url/email/boolean/number/select) plus `skip:empty` + `skip:not_found` paths, null-input paths for `buildEnrichmentPlan`.
+- **New route test file** `src/app/api/tables/[id]/enrich/plan/__tests__/route.test.ts` (11 cases): missing `targetColumn` 400, custom-mode-without-prompt 400, invalid-JSON 400, happy-path 200, batchSize cap to 200, batchSize<1 400, table-missing 404, unsupported-column 400, missing-column 400, generic 500 with no leaked cause, forwarding of filter/prompt/agentProfileOverride.
+- **Sample-binding rationale codified** as `PREVIEW_SAMPLE_BINDING_COUNT` constant (`src/lib/tables/enrichment-planner.ts:48-52`) with LLM-context-budget rationale and revisit trigger. Replaces two duplicated `.slice(0, 2)` magic numbers.
+
+### Test-to-code ratio
+- Before: 124/454 = **27.3%**
+- After: 573/459 = **124.8%** (target was 50%+)
+
+### Verification
+- 73/73 `npx vitest run src/lib/tables src/app/api/tables` pass (40 planner + 11 plan-route + 7 enrich-route + 15 enrichment integration).
+- `npx tsc --noEmit` clean for the touched files.
+
+### Spec correction codified
+The original spec asked for `assertEnrichmentCompatibleColumn` to move to the top of `buildEnrichmentPlan`. The shipped path is stronger: the assertion runs through `buildTargetContract`, which `buildEnrichmentPlan` calls first AND `validateEnrichmentPlan` calls independently — protecting both entry points against unsupported types. Recorded as a Design Decision in the spec.
+
 ## 2026-05-03 — `schedule-collision-prevention` ship-verified; spec flipped to completed
 
 Bidirectional spec staleness: spec frontmatter said `planned`, but all four phases of the spec already shipped over prior sessions. Ship Verification covered all 8 ACs with one real gap closed mid-session.

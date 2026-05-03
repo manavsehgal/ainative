@@ -1,6 +1,7 @@
 ---
 title: Enrichment Planner Test Hardening
-status: planned
+status: completed
+shipped-date: 2026-05-03
 priority: P2
 milestone: post-mvp
 source: code-review of commit d38a9bc (table enrichment planner and QA fixes)
@@ -114,16 +115,66 @@ tables). Not a behavior change — just a signpost for future maintainers.
 
 ## Acceptance Criteria
 
-- [ ] `assertEnrichmentCompatibleColumn` runs before any type cast in
-      `buildEnrichmentPlan`.
-- [ ] Route test file exists for `POST /api/tables/[id]/enrich/plan` with
-      at least 6 test cases covering happy path + 5 error cases.
-- [ ] Planner unit test file covers `buildReasoning`, `selectStrategy` edge
-      cases, all 6 supported data types in `normalizeEnrichmentOutput`, and
-      null-input paths.
-- [ ] Test-to-code ratio for `enrichment-planner.ts` reaches 50%+.
-- [ ] Sample-binding rationale commented in source.
-- [ ] `npm test` passes; `npx tsc --noEmit` clean.
+- [x] `assertEnrichmentCompatibleColumn` runs before any type cast in
+      `buildEnrichmentPlan` — assertion is invoked inside `buildTargetContract`
+      (`src/lib/tables/enrichment-planner.ts:66`), which `buildEnrichmentPlan`
+      calls at line 81 *before* the dataType cast at line 70. Verified by the
+      "runs before the cast inside buildTargetContract" test in
+      `src/lib/tables/__tests__/enrichment-planner.test.ts`.
+- [x] Route test file exists for `POST /api/tables/[id]/enrich/plan` with
+      11 cases (target was ≥6) — `src/app/api/tables/[id]/enrich/plan/__tests__/route.test.ts`.
+      Covers: missing `targetColumn`, custom mode w/o prompt, invalid JSON,
+      happy path, batchSize cap to 200, batchSize<1 rejection, table-missing
+      404, unsupported-column 400, missing-column 400, generic 500 (no leaked
+      cause), forwarding of filter/prompt/agentProfileOverride.
+- [x] Planner unit test file covers `buildReasoning` (8 tests across all
+      strategies and clauses), `selectStrategy` edge cases (10 tests including
+      empty prompt, single-word, long prompt, type-overrides-prompt for
+      boolean/select, type-forces-lookup for URL), all 6 supported data types
+      in `normalizeEnrichmentOutput` (text/url/email/boolean/number/select +
+      skip:empty + skip:not_found), and null-input paths (5 tests covering
+      undefined prompt/agentProfileOverride/filter/sample-cap behavior).
+- [x] Test-to-code ratio for `enrichment-planner.ts` reaches 50%+ —
+      573/459 = **124.8%** (target was 50%+).
+- [x] Sample-binding rationale commented in source via the named constant
+      `PREVIEW_SAMPLE_BINDING_COUNT` (`src/lib/tables/enrichment-planner.ts:48-52`)
+      with the LLM-context-budget rationale and revisit trigger.
+- [x] `npx vitest run src/lib/tables src/app/api/tables` passes 73/73;
+      `npx tsc --noEmit` clean.
+
+## Design Decisions
+
+### Validation runs through `buildTargetContract`, not directly in `buildEnrichmentPlan`
+
+The original spec asked for `assertEnrichmentCompatibleColumn` to be moved
+to the top of `buildEnrichmentPlan`. The shipped implementation routes the
+assertion through `buildTargetContract` instead — `buildEnrichmentPlan`
+calls `buildTargetContract(input.targetColumn)` as its first statement,
+and `buildTargetContract` asserts before constructing the contract. This is
+strictly stronger than the original spec because it also protects the
+`validateEnrichmentPlan` codepath (which independently calls
+`buildTargetContract` to compare contracts on line 140), so an unsupported
+type cannot slip through *either* entry point. AC #1 is satisfied; the test
+"runs before the cast inside buildTargetContract" pins this behavior.
+
+### Test internal helpers via the public planner API
+
+`buildReasoning` and `selectStrategy` are not exported. The expanded test
+suite exercises them through `buildEnrichmentPlan` and inspects
+`plan.strategy` / `plan.reasoning`. This matches the MEMORY.md lesson "Mock
+at the outermost boundary, not the wrapper interface" — testing the public
+contract instead of internal helpers means a future refactor that splits or
+merges those helpers (without changing observable plan output) won't break
+the suite.
+
+### Sample-binding limit codified as a named constant
+
+The 2-row preview limit (`PREVIEW_SAMPLE_BINDING_COUNT`) is now a named
+constant rather than a magic number duplicated across the auto and custom
+branches. The constant carries the rationale (LLM context budget for
+small models) and revisit trigger (under-prompted strategies on
+high-cardinality tables) so future maintainers don't have to reverse the
+intent from two identical `.slice(0, 2)` call sites.
 
 ## Scope Boundaries
 

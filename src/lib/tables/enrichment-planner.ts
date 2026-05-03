@@ -43,6 +43,12 @@ export interface BuildEnrichmentPlanInput {
 
 const LOOKUP_TYPES = new Set(["url", "email", "number"]);
 const CLASSIFY_TYPES = new Set(["select", "boolean"]);
+
+// Plan preview ships only 2 sample rows so the LLM-rendered reasoning panel stays
+// within budget for small models (Haiku, gpt-5.4-mini). Revisit if operators report
+// under-prompted strategies on high-cardinality tables where 2 rows under-represent
+// the value distribution.
+const PREVIEW_SAMPLE_BINDING_COUNT = 2;
 const SUPPORTED_TYPES = new Set([
   "text",
   "number",
@@ -111,10 +117,9 @@ export function buildEnrichmentPlan(
       ],
       targetContract,
       eligibleRowCount: input.eligibleRowCount,
-      sampleBindings: input.sampleRows.slice(0, 2).map((row) => ({
-        id: row.id,
-        ...row.data,
-      })),
+      sampleBindings: input.sampleRows
+        .slice(0, PREVIEW_SAMPLE_BINDING_COUNT)
+        .map((row) => ({ id: row.id, ...row.data })),
     };
   }
 

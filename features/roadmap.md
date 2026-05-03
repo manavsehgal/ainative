@@ -359,7 +359,7 @@ Durable fixes that replace symptom-level hotfixes with architectural contracts. 
 | [chat-stream-resilience-telemetry](chat-stream-resilience-telemetry.md) | P2 | completed | chat-engine, chat-api-routes |
 | [chat-session-persistence-provider](chat-session-persistence-provider.md) | P0 | completed | chat-engine, chat-ui-shell, chat-stream-resilience-telemetry |
 | [marketplace-install-hardening](marketplace-install-hardening.md) | P1 | deferred | instance-bootstrap |
-| [enrichment-planner-test-hardening](enrichment-planner-test-hardening.md) | P2 | planned | tables-enrichment-runtime-v2, tables-enrichment-planner-api |
+| [enrichment-planner-test-hardening](enrichment-planner-test-hardening.md) | P2 | completed | tables-enrichment-runtime-v2, tables-enrichment-planner-api |
 | [chat-dedup-variant-tolerance](chat-dedup-variant-tolerance.md) | P3 | completed | workflow-create-dedup |
 | [task-runtime-ainative-mcp-injection](task-runtime-ainative-mcp-injection.md) | P0 | completed | agent-integration, chat-engine |
 | [task-create-profile-validation](task-create-profile-validation.md) | P1 | completed | agent-integration, agent-profile-catalog |

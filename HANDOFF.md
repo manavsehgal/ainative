@@ -1,35 +1,36 @@
-# Handoff: `schedule-collision-prevention` ship-verified — pick the next P1 planned feature
+# Handoff: `enrichment-planner-test-hardening` shipped — P1 `workflow-learning-approval-reliability` is next
 
-**Created:** 2026-05-03 (continuation session — Ship Verification on `schedule-collision-prevention`)
-**Status:** Working tree has uncommitted edits (spec, roadmap, changelog, route.ts, HANDOFF.md). Ready to commit. Roadmap status now: 205 completed / 27 deferred / 6 planned / 4 in-progress / 5 non-spec docs.
-**Predecessor:** `.archive/handoff/2026-05-03-roadmap-drift-hardening-shipped-handoff.md`
+**Created:** 2026-05-03 (build session — `enrichment-planner-test-hardening`)
+**Status:** Working tree has uncommitted edits across spec, roadmap, changelog, planner source + tests, new route test file, and HANDOFF.md. Ready to commit. Roadmap status now: 206 completed / 27 deferred / 5 planned / 4 in-progress / 5 non-spec docs.
+**Predecessor:** previous handoff was the `schedule-collision-prevention` ship verification (committed in `245d7165`).
 
 ---
 
 ## TL;DR for the next agent
 
-1. **`schedule-collision-prevention` was a textbook bidirectional spec-staleness case.** Frontmatter said `planned`; in reality all 4 phases (queue drain, auto-stagger, turn-budget header, health metrics + auto-pause) had shipped over prior sessions. Ship Verification took ~30 minutes, closed one real gap, and added the operational lessons learned (heartbeat exclusion + split auto-pause thresholds) as Design Decisions in the spec body. **Pattern continues:** always grep for the spec's referenced symbols (function names, schema columns, table names) before treating any `status: planned` feature as buildable.
+1. **`enrichment-planner-test-hardening` was a real build session, not a Ship Verification.** The previous handoff flagged it as "possibly already shipped — 30-min Ship Verification candidate." Verification at start showed: AC #1 (validation-before-cast) shipped *transitively* via `buildTargetContract`, but ACs #2–#5 (route tests, planner test expansion, sample-binding rationale) had not landed. Rather than escalate to a multi-day plan, the gap was small enough to close in one session: 73/73 tables tests green, `tsc` clean, 40 planner tests + 11 plan-route tests added.
 
-2. **Real gap closed mid-session.** The REST API POST `/api/schedules/route.ts` only emitted a `checkCollision` *warning* — it never applied `computeStaggeredCron`. The chat tool path did. Both `schedule-create-sheet.tsx` and `schedule-create-dialog.tsx` POST to the REST API, so the UI form path was failing the AC silently. Fix: 25-line block in the POST handler mirroring the chat-tool pattern. Verified by `npx tsc --noEmit` clean and 162 schedule-adjacent tests passing.
+2. **Test-to-code ratio jump.** Planner went from 124/454 = **27.3%** to 573/459 = **124.8%**. The internal helpers `buildReasoning` and `selectStrategy` are not exported, so they're tested through the public `buildEnrichmentPlan` API — matches the MEMORY.md "mock at the outermost boundary" rule. A future refactor that splits or merges those helpers (without changing observable plan output) won't break the suite.
 
-3. **Pick the next feature.** Truly-planned roster (after this session) is now **6 specs**:
+3. **Pattern reinforced (yet again).** This was the *fourth* consecutive session where a `status: planned` feature needed grep-for-symbols verification before being treated as buildable. AC #1 here was a perfect example of *positive drift*: the runtime path was strictly stronger than the spec asked for (`assertEnrichmentCompatibleColumn` runs in `buildTargetContract`, which protects both `buildEnrichmentPlan` and `validateEnrichmentPlan` entry points). Codified as a Design Decision in the spec.
+
+4. **Pick the next feature.** Truly-planned roster (after this session) is **5 specs**:
 
    | Spec | Priority | Notes |
    |---|---|---|
-   | `chat-conversation-branches` | P3 | |
-   | `composed-app-manifest-authoring-tools` | P3 | Prior session's recommended next-up; deps in known states. |
-   | `enrichment-planner-test-hardening` | P2 | Possibly already shipped — 7 tests for 6 ACs. **30-min Ship Verification candidate.** |
+   | `workflow-learning-approval-reliability` | **P1** | Highest priority. Touches `claude-agent.ts` + `learning-session.ts` + Inbox UI. Has prior-incident evidence in `.archive/handoff/table-enrich-context-approval-noise.md`. |
    | `onboarding-runtime-provider-choice` | P2 | |
-   | `task-turn-observability` | P2 | Confirmed-planned by prior handoff (the `turnCount` column is on `scheduleFiringMetrics`, not `tasks`). |
-   | `workflow-learning-approval-reliability` | **P1** | Highest priority. Touches `claude-agent.ts` + `learning-session.ts` + Inbox UI. |
+   | `task-turn-observability` | P2 | Confirmed-planned (the `turnCount` column is on `scheduleFiringMetrics`, not `tasks`). |
+   | `chat-conversation-branches` | P3 | |
+   | `composed-app-manifest-authoring-tools` | P3 | Prior-handoff's "momentum" alternative if avoiding the runtime-registry smoke gate. |
 
    **Recommended order:**
-   - **First, run a 30-min Ship Verification on `enrichment-planner-test-hardening`** — if it ship-verifies, you reduce planned count to 5 with minimal effort. If it has real gaps, escalate to a build session.
-   - **Then start `workflow-learning-approval-reliability`** — only remaining P1 planned. Has prior-incident evidence (`.archive/handoff/table-enrich-context-approval-noise.md`). Note: this feature touches `claude-agent.ts` which triggers the **CLAUDE.md runtime-registry smoke-test budget** — plan an end-to-end smoke run under `npm run dev`, not just unit tests.
-   - **Or pick `composed-app-manifest-authoring-tools`** for momentum continuation if you'd rather not deal with the runtime-registry smoke gate.
+   - **`workflow-learning-approval-reliability`** is the only remaining P1 — start there.
+   - **CRITICAL: this feature triggers the CLAUDE.md runtime-registry smoke-test budget.** It touches `claude-agent.ts`, which is in the transitive import graph of `@/lib/agents/runtime/catalog.ts`. Plan an end-to-end smoke run under `npm run dev`, not just unit tests. Unit tests that mock chat-tools modules cannot catch module-load cycles. See CLAUDE.md "Smoke-test budget" section + TDR-032 + `features/task-runtime-ainative-mcp-injection.md` "Verification run — 2026-04-11" for the precedent.
+   - **Or pick `composed-app-manifest-authoring-tools` (P3)** for momentum continuation if you'd rather not deal with the runtime-registry smoke gate this session.
 
-4. **Outstanding gap-closure work (not blocking, trackable):**
-   - `direct-runtime-prompt-caching` (in-progress) — needs ledger persistence + cost-dashboard cache hit-rate UI + Batch API for meta-completions. Concrete and small.
+5. **Outstanding gap-closure work (not blocking, trackable):**
+   - `direct-runtime-prompt-caching` (in-progress) — needs ledger persistence + cost-dashboard cache hit-rate UI + Batch API for meta-completions.
    - `direct-runtime-advanced-capabilities` (in-progress) — context compaction, `/v1/models` discovery, and Anthropic server-tool toggles.
    - `upgrade-session` (in-progress) — dedicated session-sheet UI, upgrade history list, abort confirmation, dev-server restart banner.
    - `composed-app-auto-inference-hardening` (in-progress) — 4 deferred ACs gated on first reported kit misfire.
@@ -38,20 +39,22 @@
 
 ## What landed this session
 
-Uncommitted in working tree (5 files):
+Uncommitted in working tree (6 files):
 
-- `features/schedule-collision-prevention.md` — `status: planned` → `status: completed`, `shipped-date: 2026-05-03`. All 8 ACs checked off with file:line evidence. Two new Design Decisions sections added: heartbeat exclusion rationale + split auto-pause threshold rationale.
-- `features/roadmap.md` — added `schedule-collision-prevention` row in **Platform Hardening** section (P1 / completed / deps: scheduled-prompt-loops, heartbeat-scheduler).
-- `features/changelog.md` — prepended a top-level entry summarizing the Ship Verification, the gap closed in `route.ts`, and the positive drift codified in the spec.
-- `src/app/api/schedules/route.ts` — added `computeStaggeredCron` import + ~25-line stagger block before `db.insert`. Drizzle `and`/`eq`/`desc` consolidated into a single import.
-- `HANDOFF.md` — this file. Prior handoff archived at `.archive/handoff/2026-05-03-roadmap-drift-hardening-shipped-handoff.md`.
+- `features/enrichment-planner-test-hardening.md` — `status: planned` → `status: completed`, `shipped-date: 2026-05-03`. All 6 ACs checked with file:line evidence + 3 Design Decisions added (validation through buildTargetContract, test-via-public-API rationale, named-constant for sample-binding limit).
+- `features/roadmap.md` — `enrichment-planner-test-hardening` row flipped `planned` → `completed`.
+- `features/changelog.md` — prepended top-level entry with implementation summary, test-to-code ratio change, and the spec-correction note.
+- `src/lib/tables/enrichment-planner.ts` — added `PREVIEW_SAMPLE_BINDING_COUNT` constant + comment; replaced two `.slice(0, 2)` call sites.
+- `src/lib/tables/__tests__/enrichment-planner.test.ts` — expanded 124 → 573 lines, 7 → 40 tests.
+- `src/app/api/tables/[id]/enrich/plan/__tests__/route.test.ts` — **new file**, 11 tests.
+- `HANDOFF.md` — this file.
 
 ### Net effect on roadmap
 
 | Status | Before | After |
 |---|---|---|
-| completed | 204 | 205 |
-| planned | 7 | 6 |
+| completed | 205 | 206 |
+| planned | 6 | 5 |
 
 (in-progress, deferred, non-spec all unchanged.)
 
@@ -59,30 +62,31 @@ Uncommitted in working tree (5 files):
 
 ## Patterns reinforced this session
 
-- **Bidirectional spec staleness — third consecutive session catching it.** This time on a P1 hardening feature with very specific field-data evidence. The lesson is now well-established in the codebase: **always grep for the spec's referenced symbols (`drainQueue`, `computeStaggeredCron`, `recordFiringMetrics`, `scheduleFiringMetrics`) before treating any `planned` feature as greenfield.** The grooming process needs to bake this in — a `status: planned` feature with N referenced symbols all present in code is almost certainly already shipped.
+- **Bidirectional spec staleness — fourth consecutive session catching it.** AC #1 of this spec was already shipped (and stronger than asked). The previous three sessions all caught the same pattern in different forms. The `/supervisor` skill should bake this into the next-up triage step: a `status: planned` feature with N referenced symbols all present in code is almost certainly already shipped or partially shipped — verify before scoping.
 
-- **Two creation paths, one AC.** When a feature affects schedule creation, both the chat tool (`schedule-tools.ts`) and the REST API (`/api/schedules/route.ts`) must satisfy the same AC. Today there are exactly two paths, so duplication is acceptable per CLAUDE.md "DRY with judgment — extract on third use." If a third creation path ever lands (workflow blueprint instantiation, ainative-app composition), extract the auto-stagger block into a shared helper.
+- **Test internal helpers via public API, not via export.** `buildReasoning` and `selectStrategy` were intentionally kept un-exported. The new tests inspect `plan.reasoning` and `plan.strategy` from the public output. A future maintainer can refactor those helpers freely without breaking the suite. This matches the MEMORY.md "mock at the outermost boundary" lesson.
 
-- **Positive drift is worth codifying in the spec.** The implementation introduced two refinements not in the original spec: (a) heartbeat path's exclusion from turn-budget header (different prompt structure), (b) split `failureStreak`/`turnBudgetBreachStreak` thresholds with a first-breach grace window. Both were operational lessons learned during the field deployment that motivated the spec. Recording them in the spec's Design Decisions preserves the *why* for future readers.
+- **Magic number → named constant is documentation by other means.** The original spec asked for "a code comment explaining why 2." Replacing the two `.slice(0, 2)` call sites with `.slice(0, PREVIEW_SAMPLE_BINDING_COUNT)` carries the rationale once at the constant declaration instead of twice at the call sites. Per CLAUDE.md "DRY with judgment — extract on third use, not first" — but the alternative here was duplicating a multi-line comment, so the extraction earns its keep.
 
-- **The TS diagnostic panel is still flaky** (CLAUDE.md MEMORY.md re-confirmed) — duplicate-import and "Cannot find module" warnings appeared after my edit but `npx tsc --noEmit` was clean. Always verify with the compiler, not the panel.
+- **Positive drift is worth codifying in the spec.** AC #1 of the original spec asked for the assertion to be moved to the top of `buildEnrichmentPlan`. The shipped path goes through `buildTargetContract`, which is *stronger* — it protects both `buildEnrichmentPlan` AND `validateEnrichmentPlan`. Spec now records this as a Design Decision so future readers don't "fix" the perceived spec deviation.
 
 ---
 
 ## How to commit this session's work
 
 ```
-git add features/schedule-collision-prevention.md \
+git add features/enrichment-planner-test-hardening.md \
         features/roadmap.md \
         features/changelog.md \
-        src/app/api/schedules/route.ts \
-        HANDOFF.md \
-        .archive/handoff/2026-05-03-roadmap-drift-hardening-shipped-handoff.md
-git commit -m "feat(schedules): close UI auto-stagger gap; ship-verify schedule-collision-prevention"
+        src/lib/tables/enrichment-planner.ts \
+        src/lib/tables/__tests__/enrichment-planner.test.ts \
+        "src/app/api/tables/[id]/enrich/plan/__tests__/route.test.ts" \
+        HANDOFF.md
+git commit -m "feat(tables): ship enrichment-planner test hardening (40 unit + 11 route tests)"
 ```
 
-The single commit is fine — the spec/roadmap/changelog edits and the route.ts edit are part of the same Ship Verification close-out. Per CLAUDE.md commit style: prefer `feat()` over `docs()` because there's a real code change (the route.ts stagger block).
+Single commit is fine — spec/roadmap/changelog are part of the same close-out as the code change. Per CLAUDE.md commit style: prefer `feat()` over `test()` because the named-constant refactor in `enrichment-planner.ts` is a real (small) code change.
 
 ---
 
-*End of handoff. Next move: 30-min Ship Verification on `enrichment-planner-test-hardening`, then `workflow-learning-approval-reliability` (P1) or `composed-app-manifest-authoring-tools` (P3) for the next build.*
+*End of handoff. Next move: `workflow-learning-approval-reliability` (P1 — runtime-registry smoke-test budget applies) or `composed-app-manifest-authoring-tools` (P3 — momentum alternative).*
