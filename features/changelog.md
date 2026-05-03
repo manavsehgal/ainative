@@ -1,5 +1,40 @@
 # Feature Changelog
 
+## 2026-05-03 — `composed-app-manifest-authoring-tools` shipped (P3 build session — 9/10 ACs, AC #7 deferred on dep)
+
+Real build session — none of the 3 chat tools, the `AppViewEditorCard`, the `buildViewEditingHint` planner module, or the `writeAppManifest` atomic-write helper existed before this commit (verified via grep). Spec frontmatter `status: planned` was accurate. CLAUDE.md runtime-registry smoke gate did not apply — chat tools register through the existing `defineTool` pattern via `ainative-tools.ts:71` with no `src/lib/agents/runtime/` imports added/removed.
+
+### Implementation
+- **Atomic write helper** — `writeAppManifest(id, manifest, appsDir?)` at `src/lib/apps/registry.ts:425-455`. Validates via strict `AppManifestSchema.parse` before write, then `<path>.<pid>.<ts>.tmp` + `renameSync` + `unlinkSync` cleanup on rename failure. Calls `invalidateAppsCache` on success.
+- **3 chat tools** — `src/lib/chat/tools/app-view-tools.ts` (`set_app_view_kit` / `set_app_view_bindings` / `set_app_view_kpis`). Each loads via `getApp`, deep-clones, mutates `view`, validates, atomic-writes. Registered in `ainative-tools.ts:30,71`. Chat-tool count went 97 → 100 (spec said 92 → 95 — outdated baseline).
+- **Planner hint module** — `src/lib/chat/planner/view-editing-hint.ts` exports `detectViewEditingIntent` (regex classifier with most-specific-wins precedence: kpis > bindings > kit) and `buildViewEditingHint` (short prose nudge naming the 3 tools and 7 kit ids). Wired into `engine.ts:343-352` parallel to `buildCompositionHint`.
+- **AppViewEditorCard** — `src/components/chat/app-view-editor-card.tsx` with `onConfirm`/`onCancel` callbacks, 5 visual states (idle / pending / applied / cancelled / failed), and double-click guard during pending. Mirrors `AppMaterializedCard` visual language.
+- **`ainative-app` skill doc** — appended a "View-Editing (override auto-inferred layout)" section with 3 tool descriptions, 4 trigger phrases, and a "for power users only" note.
+
+### Verification
+- 5/5 atomic-write tests pass (`write-app-manifest.test.ts`).
+- 6/6 chat-tool tests pass (`app-view-tools.test.ts`).
+- 13/13 planner-hint classifier tests pass (`view-editing-hint.test.ts`).
+- 7/7 card render+interaction tests pass (`app-view-editor-card.test.tsx`).
+- 656/657 tests pass across 70 files in `src/lib/apps src/lib/chat src/components/chat` (1 pre-existing skip; 0 regressions).
+- `npx tsc --noEmit` clean project-wide.
+
+### Design Decisions codified in spec
+- **DD-1: Card built standalone; chat-message.tsx auto-render integration deferred** — card is reusable and tested; engine-side metadata-population path is straightforward but P3 doesn't justify the engine.ts change in this session.
+- **DD-2: Capability validation via Zod sub-schema reuse** — `ViewSchema.shape.bindings` passed directly to `defineTool`; future schema rotations propagate automatically.
+- **DD-3: Atomic write helper added to registry, not the chat tool** — colocated with `getApp` so any future caller (settings UI, CLI, plugin) inherits the atomic guarantee.
+- **DD-4: Most-specific intent wins** — kpis > bindings > kit precedence so mixed-intent messages classify as the most-specific category.
+- **DD-5: View-editing hint independent of compose verdict** — user mid-conversation can switch layouts without re-triggering composition.
+- **DD-6: Mutation tools replace, not merge** — bindings/kpis arrays are replaced wholesale to avoid partial-mutation surprises.
+
+### Deferral
+- **AC #7 deferred** — "Apply via chat" affordance on the diagnostics page. The diagnostics page is a deferred AC of the in-progress `composed-app-auto-inference-hardening` spec; cannot wire what doesn't exist. Will be picked up when the diagnostics page lands.
+
+### Roadmap impact
+- planned 2 → 1 (only P3 remaining: `chat-conversation-branches`).
+- completed 209 → 210.
+- **Zero P1, zero P2, only one P3 left.** Net-new spec roster is at its smallest in months.
+
 ## 2026-05-03 — `onboarding-runtime-provider-choice` shipped (P2 build session — last P2 closed)
 
 Real build session — `modelPreference` did not exist anywhere in the codebase before this commit (verified via grep). The `defaultChatModel` half was already shipped via `/api/settings/chat`; the first-launch modal + preference field were greenfield. CLAUDE.md runtime-registry smoke gate did not apply — this is pure UI + settings persistence with no `src/lib/agents/runtime/` imports added/removed.

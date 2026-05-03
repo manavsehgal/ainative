@@ -1,107 +1,116 @@
-# Handoff: `onboarding-runtime-provider-choice` shipped — last P2 closed; only 2 P3 specs remain
+# Handoff: `composed-app-manifest-authoring-tools` shipped — only 1 P3 spec remains
 
-**Created:** 2026-05-03 (build session — `onboarding-runtime-provider-choice`)
-**Status:** Working tree has uncommitted edits across spec, roadmap, changelog, helpers.ts, route.ts, layout.tsx, chat-settings-section.tsx, two new components under onboarding/, two new test files, and HANDOFF.md (12 files). Ready to commit. Roadmap status now: 209 completed / 27 deferred / 2 planned / 4 in-progress / 5 non-spec docs.
-**Predecessor:** previous handoff was the `task-turn-observability` build session (committed in `3a971be9`).
+**Created:** 2026-05-03 (build session — `composed-app-manifest-authoring-tools`)
+**Status:** Working tree has uncommitted edits across spec, roadmap, changelog, registry.ts, ainative-tools.ts, engine.ts, ainative-app SKILL.md, plus 4 new files (app-view-tools.ts + view-editing-hint.ts + app-view-editor-card.tsx + bootstrapper) and 4 new test files. 13 files total. Ready to commit.
+**Predecessor:** previous handoff was the `onboarding-runtime-provider-choice` build session (committed in `996a727c`, pushed to `origin/main`).
 
 ---
 
 ## TL;DR for the next agent
 
-1. **`onboarding-runtime-provider-choice` was a real build session.** Verification took ~10 minutes and confirmed real gaps — `modelPreference` did not exist anywhere in the codebase. The bidirectional-staleness pattern *did not* hit this time, but verifying first was still cheap. Sixth consecutive session benefiting from the verify-first playbook.
+1. **Real build session, ~9 of 10 ACs shipped.** AC #7 ("Apply via chat" affordance from the diagnostics page) deferred because the diagnostics page belongs to `composed-app-auto-inference-hardening` which is `status: in-progress` (one of the 4 deferred ACs on that spec). Cannot wire what doesn't exist. Documented as a follow-up; will be picked up when the diagnostics page lands.
 
-2. **No P1, no P2 left.** With this ship, the planned roster is **2 specs, both P3:**
+2. **Net-new spec roster is at its smallest in months — only 1 P3 left:**
 
    | Spec | Priority | Notes |
    |---|---|---|
-   | `chat-conversation-branches` | P3 | Focused chat-runtime change. |
-   | `composed-app-manifest-authoring-tools` | P3 | "Momentum" alternative across multiple handoffs. Has been deferred at least 3 times. |
+   | `chat-conversation-branches` | P3 | Focused chat-runtime change. The last fully-planned spec in the backlog. |
 
-   **Recommended order:** Start with `composed-app-manifest-authoring-tools` since it's been deferred multiple times and is the heavier piece. `chat-conversation-branches` is more focused and could be tackled as a quick chaser. Both are P3 — momentum and energy levels matter more than priority sequencing here.
+   **Recommended next:** Start with bidirectional-staleness grep (still 6 of 7 recent sessions hit it). If it turns out to be already shipped or partly built, close it out fast. If it's genuinely planned, it's a contained chat-data-layer change.
 
-   **Per the bidirectional-staleness pattern (5 of 6 recent sessions hit it):** grep for spec-referenced symbols, files, and DB columns BEFORE treating either spec as buildable. The pattern still applies even with no P1/P2 backlog — `composed-app-*` in particular has been brainstormed multiple times and may have partial machinery already shipped.
+3. **After `chat-conversation-branches` ships, the roster shifts to in-progress closeouts.** Per the prior handoff, 4 in-progress features have outstanding gap-closure work:
+   - `direct-runtime-prompt-caching` — needs ledger persistence + cost-dashboard cache hit-rate UI + Batch API for meta-completions.
+   - `direct-runtime-advanced-capabilities` — context compaction, `/v1/models` discovery, and Anthropic server-tool toggles.
+   - `upgrade-session` — dedicated session-sheet UI, upgrade history list, abort confirmation, dev-server restart banner.
+   - `composed-app-auto-inference-hardening` — 4 deferred ACs gated on first reported kit misfire (the diagnostics page that AC #7 of THIS session was waiting on lives here).
 
-3. **Outstanding gap-closure work (not blocking, trackable):**
-   - `direct-runtime-prompt-caching` (in-progress) — needs ledger persistence + cost-dashboard cache hit-rate UI + Batch API for meta-completions.
-   - `direct-runtime-advanced-capabilities` (in-progress) — context compaction, `/v1/models` discovery, and Anthropic server-tool toggles.
-   - `upgrade-session` (in-progress) — dedicated session-sheet UI, upgrade history list, abort confirmation, dev-server restart banner.
-   - `composed-app-auto-inference-hardening` (in-progress) — 4 deferred ACs gated on first reported kit misfire.
+   Plus a small one I noticed mid-session:
+   - **Roadmap drift on `composed-app-auto-inference-hardening`**: spec frontmatter says `status: in-progress` but the roadmap row says `planned`. Worth flipping next session for consistency. Not done this session because the focus was on the new spec; the drift doesn't affect functionality.
 
-4. **CLAUDE.md runtime-registry smoke gate not triggered this session** — the changes added new fields to existing route handlers, two new client components, and new typed helpers. Zero imports added/removed/reshaped under `src/lib/agents/runtime/` or `claude-agent.ts`. Pure UI + settings persistence. Same precedent as the prior task-turn-observability handoff.
+4. **CLAUDE.md runtime-registry smoke gate not triggered this session** — chat tools register through the existing `defineTool` pattern via `ainative-tools.ts:71` (one-line addition to `collectAllTools`). No imports added/removed under `src/lib/agents/runtime/` or `claude-agent.ts`. Same precedent as the previous two sessions.
 
-5. **Latent bug fixed in passing.** The original `/api/settings/chat` PUT validator rejected anything not in `CHAT_MODELS`, which silently broke any user picking an Ollama model from the existing chat-settings-section dropdown (Ollama models live under the `ollama:*` namespace). Added `validOllamaModel = body.defaultModel.startsWith("ollama:")` allowance. Documented as DD-5 in the spec. Worth flagging in case the user wants to grep for similar latent-validator bugs in other settings routes.
+5. **Two follow-ups worth tracking** (both deferred from this session, both honest):
+   - **AppViewEditorCard chat-message.tsx auto-render** — the card is built and tested standalone, but engine.ts doesn't yet detect a successful `set_app_view_*` tool call and populate chat metadata to auto-mount the card. The existing `composedApp` and `extensionFallback` metadata paths are precedents — adding `viewEditor` is a small engine.ts change. Per DD-1, the LLM can already call the tools directly without the card; the card is reusable for any future surface.
+   - **Latent stale baselines in older specs** — this session's spec said "chat-tool count goes from 92 → 95" but the actual baseline before my work was 97. The +3 still applies. Worth a project-wide grep on other planned specs that hard-code counts; 3 of the 4 in-progress features above might also have stale numbers.
 
 ---
 
 ## What landed this session
 
-Uncommitted in working tree (12 files):
+Uncommitted in working tree (13 files):
 
-- `features/onboarding-runtime-provider-choice.md` — `status: planned` → `status: completed`, `shipped-date: 2026-05-03`. All 8 ACs checked with file:line evidence + Verification section + 5 Design Decisions added.
-- `features/roadmap.md` — `onboarding-runtime-provider-choice` row flipped `planned` → `completed`.
-- `features/changelog.md` — prepended top-level entry with implementation summary, file:line evidence, verification numbers, and DD summaries. Roadmap impact noted: P1=0, P2=0.
-- `src/lib/settings/helpers.ts` — added `ModelPreference` type, `getModelPreference`, `setModelPreference`, `hasSeenModelPreferencePrompt`. Empty-string skip marker convention documented inline.
-- `src/app/api/settings/chat/route.ts` — extended GET to return `{ defaultModel, defaultModelRecorded, modelPreference }`; PUT independently accepts each field. Added `ollama:*` model-id allowance.
-- `src/components/onboarding/runtime-preference-modal.tsx` — new component. 4-option Dialog with capability notes, Skip path, Ollama discovery fallback, refuses outside-click close.
-- `src/components/onboarding/runtime-preference-bootstrapper.tsx` — new component. Single GET on mount; opens modal only when `!defaultModelRecorded && modelPreference == null`.
-- `src/app/layout.tsx` — mounted `RuntimePreferenceBootstrapper` inside the `ChatSessionProvider` tree, alongside `GlobalShortcuts`.
-- `src/components/settings/chat-settings-section.tsx` — added "Model preference" Select alongside the existing "Default Model" Select with independent onChange handlers.
-- `src/lib/settings/__tests__/model-preference.test.ts` — 10 new unit tests using a Map-backed `@/lib/db` mock.
-- `src/components/onboarding/__tests__/runtime-preference-modal.test.tsx` — 7 new tests using `fetchOllamaModels` + `persistChoice` injection overrides.
+- `features/composed-app-manifest-authoring-tools.md` — `status: planned` → `status: completed`, `shipped-date: 2026-05-03`. 9 of 10 ACs checked with file:line evidence; AC #7 marked deferred with rationale + 6 Design Decisions appended.
+- `features/roadmap.md` — `composed-app-manifest-authoring-tools` row flipped `planned` → `completed`.
+- `features/changelog.md` — prepended top-level entry with implementation summary, file:line evidence, verification numbers, DD summaries, and a Deferral section. Roadmap impact noted: P1=0, P2=0, P3=1.
+- `src/lib/apps/registry.ts` — added `writeAppManifest(id, manifest, appsDir?)` between `getApp` and `deleteApp`. Atomic via temp-file + renameSync; cleans up `.tmp` on rename failure; calls `invalidateAppsCache` on success; validates via strict `AppManifestSchema.parse` before any disk write.
+- `src/lib/chat/tools/app-view-tools.ts` — new file, 3 `defineTool` calls. Reuses `KitIdSchema` / `ViewSchema.shape.bindings` / `KpiSpecSchema` directly so future schema rotations propagate. Mutation tools replace-not-merge; preserves unrelated view fields.
+- `src/lib/chat/ainative-tools.ts` — added `import { appViewTools }` and `...appViewTools(ctx)` in `collectAllTools`. Total chat tools now 100 (97 → 100).
+- `src/lib/chat/planner/view-editing-hint.ts` — new file. `detectViewEditingIntent` (regex classifier with most-specific-wins precedence) + `buildViewEditingHint` (short prose nudge). Tolerant of false positives by design.
+- `src/lib/chat/engine.ts` — wired `detectViewEditingIntent` + `buildViewEditingHint` parallel to the existing `buildCompositionHint` injection.
+- `src/components/chat/app-view-editor-card.tsx` — new file. 5 visual states (idle/pending/applied/cancelled/failed), double-click guard during pending, inline error on confirm-throw.
+- `src/lib/apps/__tests__/write-app-manifest.test.ts` — 5 tests pinning the atomic-write contract.
+- `src/lib/chat/tools/__tests__/app-view-tools.test.ts` — 6 tests on the 3 chat tools (happy path + missing app + bindings-preservation + kit-preservation + kpis-merge + kpis-bound).
+- `src/lib/chat/planner/__tests__/view-editing-hint.test.ts` — 13 tests on the classifier (5 detect cases, 6 hint-shape cases, plus the AC #8 worked-example pinning).
+- `src/components/chat/__tests__/app-view-editor-card.test.tsx` — 7 tests on the card (3 render shapes, confirm/cancel, error-on-throw, double-click guard).
+- `.claude/skills/ainative-app/SKILL.md` — appended a "View-Editing (override auto-inferred layout)" section.
 - `HANDOFF.md` — this file.
 
 ### Net effect on roadmap
 
 | Status | Before | After |
 |---|---|---|
-| completed | 208 | 209 |
-| planned | 3 | 2 |
+| completed | 209 | 210 |
+| planned | 2 | 1 |
 
-(in-progress, deferred, non-spec all unchanged. P1 planned: 0. P2 planned: 0. P3 planned: 2.)
+(in-progress, deferred, non-spec all unchanged. P1 planned: 0. P2 planned: 0. P3 planned: 1.)
 
 ### Test surface verified
 
-- `npx vitest run src/lib/settings src/components/onboarding src/components/settings/__tests__` — **60/60 pass across 10 files** (10 new + 7 new + 43 existing).
-- `npx vitest run src/components/chat/__tests__/chat-session-provider.test.tsx` — **6/6 pass** (no regression from new GET shape — provider only reads `data.defaultModel`).
-- `npx vitest run src/lib/instance/__tests__/settings.test.ts src/lib/chat/tools/__tests__/settings-tools.test.ts` — **36/36 pass**.
-- `npx tsc --noEmit` — **clean project-wide** (zero errors).
+- `npx vitest run src/lib/apps src/lib/chat src/components/chat` — **656/657 pass across 70 files** (1 pre-existing skip; 31 new tests across 4 new test files).
+- `npx tsc --noEmit` — **clean project-wide** (zero errors). Pre-existing `.passthrough()` deprecation warnings on registry.ts not introduced by this session.
 
 ---
 
 ## Patterns reinforced this session
 
-- **Empty-string skip marker** — the existence of a row in the settings k/v table can encode "user has been asked at least once," even when the coerced value is null. Lets the bootstrapper distinguish "never asked" from "asked and skipped" without a separate boolean column. Documented in `helpers.ts` JSDoc + DD-3 in spec. Reusable pattern for any future "has user been prompted?" feature.
+- **Atomic write helper as a registry concern, not a tool concern.** `writeAppManifest` lives next to `getApp` so any caller — chat tool, CLI, settings UI, plugin — gets the same atomic guarantees without re-implementing temp-file + rename. The 3 chat tools are thin wrappers over it. If a future tool/route needs to mutate manifests, it gets atomicity for free.
 
-- **Injection overrides for testability** — the modal accepts `fetchOllamaModels` and `persistChoice` as optional props with production defaults. Tests inject mocks; production omits and gets the real fetches. Cleaner than mocking `global.fetch` for component tests, especially when the component already has internal state machinery to test.
+- **Zod sub-schema reuse via `Schema.shape.field`.** `ViewSchema.shape.bindings` passed directly to `defineTool` keeps the chat-tool input shape in lock-step with the strict view schema. If the schema rotates (e.g., a new BindingRefSchema variant), the tool inherits the change with zero edit. Pattern is reusable for any chat tool that mutates a known-strict object slice.
 
-- **Map-backed `@/lib/db` mock for typed-helper tests** — at `src/lib/settings/__tests__/model-preference.test.ts`. Lighter than the heavily-mocked-chains pattern in `auth.test.ts`. Works because the typed helpers (`getModelPreference`/`setModelPreference`) are thin coerce-and-call wrappers over `getSetting`/`setSetting` — testing with a real-ish in-memory store gives end-to-end coverage of the wrapper logic. Pattern is reusable for other future typed-setting helpers.
+- **Most-specific-wins classification for layered intents.** When a single message can match multiple intent categories (kit / bindings / kpis), the classifier returns the most-specific category that matched. Documented as DD-4 + pinned by a test. Pattern transfers to any future intent classifier with overlapping vocabularies.
 
-- **Verification first, even when handoff says "build"** — the previous handoff explicitly framed this as a "real build session" rather than Ship Verification, but I still ran a 10-minute verification round (`rg modelPreference`, `rg DEFAULT_CHAT_MODEL`, `ls src/components/onboarding/`) before designing. Cost: 10 min. Benefit: confirmed scope was greenfield and no half-shipped machinery existed; saved scope creep. Sixth consecutive session benefiting from verify-first.
+- **Replace-not-merge for whole-object mutation.** The bindings and kpis tools replace the entire object/array, not patch fields. The hint reminds the LLM to "pass the COMPLETE object". Avoids partial-mutation surprises for the user. Pattern is appropriate for any tool whose schema is small enough that the LLM can reliably reproduce the full state. Big nested schemas would warrant a deep-merge instead.
 
-- **Spec-faithful design decisions even when ambiguous** — DD-1 (privacy fallback persists `preference: "privacy"` despite operating model being sonnet) is one of those "neither answer is wrong" calls. I documented the rejected alternative in the design decision so future agents can see the reasoning if a user reports the mismatch as a bug. Worth doing for any non-obvious choice.
+- **Build the standalone, defer the integration when honest.** The AppViewEditorCard is fully built and tested but the chat-message.tsx auto-render integration is deferred. Documented as DD-1 with the rationale. The card is reusable for any future surface (settings UI, app detail page); the auto-render is sugar that costs engine.ts metadata-path work. Per project principle #7 ("Permission to scrap"), it's appropriate to ship the standalone now and wire the integration when there's a stronger user case for it.
+
+- **Stale baselines in older specs.** This spec said "92 → 95" — the actual baseline was 97 (now 100). Worth a project-wide audit before the next planned spec gets started; 3 of the 4 in-progress features may also have hard-coded counts that have drifted.
 
 ---
 
 ## How to commit this session's work
 
 ```
-git add features/onboarding-runtime-provider-choice.md \
+git add features/composed-app-manifest-authoring-tools.md \
         features/roadmap.md \
         features/changelog.md \
-        src/lib/settings/helpers.ts \
-        src/app/api/settings/chat/route.ts \
-        src/components/onboarding/runtime-preference-modal.tsx \
-        src/components/onboarding/runtime-preference-bootstrapper.tsx \
-        src/app/layout.tsx \
-        src/components/settings/chat-settings-section.tsx \
-        src/lib/settings/__tests__/model-preference.test.ts \
-        src/components/onboarding/__tests__/runtime-preference-modal.test.tsx \
-        HANDOFF.md
-git commit -m "feat(onboarding): ship onboarding-runtime-provider-choice (P2 close)"
+        src/lib/apps/registry.ts \
+        src/lib/chat/tools/app-view-tools.ts \
+        src/lib/chat/ainative-tools.ts \
+        src/lib/chat/planner/view-editing-hint.ts \
+        src/lib/chat/engine.ts \
+        src/components/chat/app-view-editor-card.tsx \
+        src/lib/apps/__tests__/write-app-manifest.test.ts \
+        src/lib/chat/tools/__tests__/app-view-tools.test.ts \
+        src/lib/chat/planner/__tests__/view-editing-hint.test.ts \
+        src/components/chat/__tests__/app-view-editor-card.test.tsx \
+        .claude/skills/ainative-app/SKILL.md \
+        HANDOFF.md \
+        .archive/handoff/2026-05-03-onboarding-runtime-provider-choice.md
+git commit -m "feat(apps): ship composed-app-manifest-authoring-tools (P3 close)"
 ```
 
-Single commit captures the full close-out — typed helpers + route extension + modal + bootstrapper + layout wiring + settings UI + tests + spec/roadmap/changelog/handoff docs. Per CLAUDE.md commit style: `feat(onboarding)` is correct because the user-visible change is a new first-launch onboarding step.
+Single commit captures the full close-out — registry helper + 3 chat tools + planner hint + card + skill doc + 4 test files + spec/roadmap/changelog/handoff. Per CLAUDE.md commit style: `feat(apps)` is correct because the user-visible change is 3 new chat tools that mutate composed-app manifests.
 
 ---
 
-*End of handoff. Next move: pick one of the two remaining P3 specs (recommend `composed-app-manifest-authoring-tools` for momentum). Bidirectional-staleness grep first.*
+*End of handoff. Next move: bidirectional-staleness grep on `chat-conversation-branches` (the last planned P3). If it's already partly shipped, close out fast; otherwise build the chat-data-layer change.*

@@ -403,6 +403,51 @@ export function getApp(
   }
 }
 
+/**
+ * Atomic manifest write — temp-file + rename so a mid-write failure cannot
+ * corrupt manifest.yaml. Validates against the strict `AppManifestSchema`
+ * before write, so LLM-hallucinated `view:` shapes (or any other schema
+ * violation) fail loudly rather than producing a half-valid file on disk.
+ *
+ * Used by the view-editing chat tools to mutate `manifest.view` safely
+ * without race-prone partial overwrites. The cache is invalidated on
+ * success so the dispatcher and `useApps()` see the new layout immediately.
+ *
+ * Throws when:
+ *   - the app dir does not exist
+ *   - the manifest fails strict-schema validation
+ *   - the underlying fs write or rename fails (caller is expected to surface
+ *     the error to the user; the temp file is cleaned up on failure)
+ */
+export function writeAppManifest(
+  id: string,
+  manifest: AppManifest,
+  appsDir: string = getAinativeAppsDir()
+): void {
+  const rootDir = path.join(appsDir, id);
+  const manifestPath = path.join(rootDir, "manifest.yaml");
+  if (!fs.existsSync(rootDir)) {
+    throw new Error(`App not found: ${id}`);
+  }
+  // Validate first so a thrown ZodError doesn't leave a temp file behind.
+  const validated = AppManifestSchema.parse(manifest);
+  const tmpPath = `${manifestPath}.${process.pid}.${Date.now()}.tmp`;
+  try {
+    fs.writeFileSync(tmpPath, yaml.dump(validated), "utf-8");
+    fs.renameSync(tmpPath, manifestPath);
+  } catch (err) {
+    // Clean up the temp file if rename failed — we don't want orphaned
+    // .tmp files cluttering the app dir.
+    try {
+      fs.unlinkSync(tmpPath);
+    } catch {
+      // tmp file may not exist if writeFileSync was the failure point
+    }
+    throw err;
+  }
+  invalidateAppsCache();
+}
+
 export function deleteApp(
   id: string,
   appsDir: string = getAinativeAppsDir()

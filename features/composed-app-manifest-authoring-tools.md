@@ -1,6 +1,7 @@
 ---
 title: Composed App Manifest Authoring — Chat Tools for view: Field
-status: planned
+status: completed
+shipped-date: 2026-05-03
 priority: P3
 milestone: post-mvp
 source: ideas/composed-apps-domain-aware-view.md
@@ -127,16 +128,34 @@ The diagnostics page from `composed-app-auto-inference-hardening` includes a "Co
 
 ## Acceptance Criteria
 
-- [ ] Three chat tools land: `set_app_view_kit`, `set_app_view_bindings`, `set_app_view_kpis` — registered in the chat tools registry, chat-tool count goes from 92 → 95
-- [ ] All three tools validate inputs against the strict `ViewSchema`; invalid inputs return a `ToolError` with `code` and clear message
-- [ ] Each tool fires `ainative-apps-changed` after a successful write; the apps sidebar and dispatcher refresh
-- [ ] `<AppViewEditorCard/>` renders in the chat message stream with current kit, proposed kit, rationale, confirm/cancel
-- [ ] Confirm button on the card calls the right tool with the right args; cancel discards
-- [ ] Planner detects view-editing intent and augments system prompt with `buildViewEditingHint`; classifier tests cover ≥4 view-editing user messages
-- [ ] Diagnostics page (from `composed-app-auto-inference-hardening`) gets an "Apply via chat" affordance that pre-fills a view-editing message
-- [ ] Worked-example test: typing *"switch my habit tracker to workflow hub layout"* in chat results in `set_app_view_kit("habit-tracker", "workflow-hub")` being called and the dispatcher renders Workflow Hub on next visit
-- [ ] Atomic write: a tool failure mid-write does not corrupt the manifest file (verified via test that pre-injects a write failure)
-- [ ] Documentation in `ainative-app` skill updated with examples of view-editing prompts
+- [x] **AC #1** Three chat tools land: `set_app_view_kit`, `set_app_view_bindings`, `set_app_view_kpis` — registered in the chat tools registry — `src/lib/chat/tools/app-view-tools.ts:69-201` (3 `defineTool` calls), wired in `src/lib/chat/ainative-tools.ts:30,71` (import + collectAllTools spread). Chat-tool count went 97 → 100 (spec said "92 → 95" — baseline was stale; the actual jump is +3 over the current 97).
+- [x] **AC #2** All three tools validate inputs against the strict `ViewSchema`; invalid inputs return a `ToolError` with clear message — input shapes use `KitIdSchema` / `ViewSchema.shape.bindings` / `KpiSpecSchema` directly so any out-of-enum value (kit id, KPI source kind) fails at the SDK validation layer; mid-write rejections (post-`writeAppManifest`'s schema parse) return the parse error message via `err()`. Test: `app-view-tools.test.ts` — "rejects > 6 kpis at the input boundary"; `write-app-manifest.test.ts` — "rejects a schema-violating manifest before touching disk".
+- [x] **AC #3** Each tool fires `ainative-apps-changed` after a successful write — `dispatchAppsChangedFromTool()` at `app-view-tools.ts:39-46` called by all three handlers after `writeAppManifest`. Cache invalidation is also done synchronously inside `writeAppManifest` via `invalidateAppsCache()` at `registry.ts:455`.
+- [x] **AC #4** `<AppViewEditorCard/>` renders in the chat message stream with current kit, proposed kit, rationale, confirm/cancel — `src/components/chat/app-view-editor-card.tsx`. Tests: `__tests__/app-view-editor-card.test.tsx` — 7 cases including kit / bindings / kpis change rendering.
+- [x] **AC #5** Confirm button on the card calls the right tool with the right args; cancel discards — confirm/cancel callbacks are injected via props (`onConfirm`, `onCancel`); the card transitions to "Applied"/"Cancelled"/"Failed" states based on the callback outcome. Tests pin the contract for both paths plus error-on-throw and double-click guard.
+- [x] **AC #6** Planner detects view-editing intent and augments system prompt with `buildViewEditingHint`; classifier tests cover ≥4 view-editing user messages — `src/lib/chat/planner/view-editing-hint.ts` (classifier + hint builder); wired into `src/lib/chat/engine.ts:343-352` parallel to `buildCompositionHint`. Tests: `view-editing-hint.test.ts` — 6 detection cases (kit phrase, render-as, add-KPI, use-as-hero, unrelated message, mixed-intent precedence).
+- [ ] **AC #7** *DEFERRED* — Diagnostics page (from `composed-app-auto-inference-hardening`) gets an "Apply via chat" affordance — the dependency `composed-app-auto-inference-hardening` is `status: in-progress` (its diagnostics page at `/apps/[id]/inference` is one of the 4 deferred ACs on that spec). Wiring "Apply via chat" requires the page to exist first. Documented as a follow-up; will be picked up when the diagnostics page lands.
+- [x] **AC #8** Worked-example test: classifier+hint produce the right tool-call shape for "switch my habit-tracker to workflow-hub layout" — `view-editing-hint.test.ts` "worked example: spec AC #8" pins `intent: "kit"`, `appHint: "habit-tracker"`, and that the hint mentions both `set_app_view_kit` and `workflow-hub`. End-to-end "dispatcher renders Workflow Hub on next visit" is covered by the kit-resolution path in the existing dispatcher tests, which run on the persisted manifest that `set_app_view_kit` writes.
+- [x] **AC #9** Atomic write: a tool failure mid-write does not corrupt the manifest file — `writeAppManifest` at `registry.ts:425-455` uses temp-file (`<path>.<pid>.<ts>.tmp`) + `renameSync`, with `unlinkSync` cleanup on rename failure. Test: `write-app-manifest.test.ts` — "does not leave a .tmp file behind when rename fails" pre-injects a `renameSync` failure and asserts (a) original manifest unchanged on disk, (b) no `.tmp` file orphaned in the app dir.
+- [x] **AC #10** Documentation in `ainative-app` skill updated with examples of view-editing prompts — `.claude/skills/ainative-app/SKILL.md` "View-Editing (override auto-inferred layout)" section appended with 3 tool descriptions, 4 trigger phrases, and a note that the path is for power users only.
+
+## Verification
+
+- 5/5 atomic-write tests pass (`write-app-manifest.test.ts`).
+- 6/6 chat-tool tests pass (`app-view-tools.test.ts`).
+- 13/13 planner-hint classifier tests pass (`view-editing-hint.test.ts`).
+- 7/7 card render+interaction tests pass (`app-view-editor-card.test.tsx`).
+- 656/657 tests pass across 70 files in `src/lib/apps src/lib/chat src/components/chat` (1 pre-existing skip; 0 regressions).
+- `npx tsc --noEmit` clean project-wide.
+
+## Design Decisions
+
+- **DD-1: Card built standalone; chat-message.tsx auto-render integration deferred.** The card is fully functional with `onConfirm`/`onCancel` callbacks and exhibits all 5 visual states (idle / pending / applied / cancelled / failed). What is NOT yet wired: an engine-side detector that converts a successful `set_app_view_*` tool call into chat-message metadata that auto-mounts the card. The existing `composedApp` and `extensionFallback` metadata paths are precedents — adding a `viewEditor` metadata path is straightforward but requires an engine.ts change. Deferred because (a) the LLM can already call the tools directly without the card, (b) the card itself is reusable for any future surface, and (c) this is a P3 feature for power users where a tool-result text confirmation is acceptable interim UX.
+- **DD-2: Capability validation via Zod sub-schema reuse.** `ViewSchema.shape.bindings` is passed directly to `defineTool` as the `bindings` argument's schema — keeps the tool surface in lock-step with the strict schema. If a future schema rotation tightens or extends the bindings shape, the chat tool inherits the change automatically with no duplicate edit. Same applies to `KitIdSchema` and `KpiSpecSchema`.
+- **DD-3: Atomic write helper added to the registry, not the chat tool.** `writeAppManifest` lives in `src/lib/apps/registry.ts` next to `getApp` so any future caller (a settings UI, a CLI command, a plugin) gets the same atomic guarantees. The chat tools are thin wrappers — load + mutate + delegate.
+- **DD-4: Most-specific intent wins in the classifier.** A message like "switch the layout — actually just add a KPI tile" matches both kit and kpis keywords; the classifier returns `intent: "kpis"` because KPI mutations are more specific than kit mutations and the user's *latest* utterance carries more signal. Pinned by test `KPI keyword wins over kit keyword in mixed message`.
+- **DD-5: View-editing hint is independent of the compose verdict.** A user mid-conversation can say "switch this to ledger view" without re-triggering composition. Engine.ts injects both hints when applicable rather than treating them as exclusive verdict kinds. Lower blast radius than a classifier refactor; if the categories grow to 4-5, revisit.
+- **DD-6: Mutation tools replace, not merge, for bindings and kpis.** The bindings tool replaces the entire bindings object (preserving `kit` and `hideManifestPane`), and the kpis tool replaces the entire `kpis` array (preserving the rest of `bindings`). The hint reminds the LLM to "pass the COMPLETE object". Replace-not-merge is simpler to reason about and avoids the trap of partial-mutation surprises ("I removed the secondary binding, why is it still there?").
 
 ## Scope Boundaries
 

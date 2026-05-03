@@ -451,7 +451,7 @@ Per-app view redesign so that composed apps render domain-aware dashboards drive
 | [composed-app-kit-coach-and-ledger](composed-app-kit-coach-and-ledger.md) (Phase 3) | P2 | completed | composed-app-kit-tracker-and-hub |
 | [composed-app-kit-inbox-and-research](composed-app-kit-inbox-and-research.md) (Phase 4) | P2 | planned | composed-app-kit-coach-and-ledger |
 | [composed-app-auto-inference-hardening](composed-app-auto-inference-hardening.md) (Phase 5) | P2 | planned | composed-app-kit-inbox-and-research |
-| [composed-app-manifest-authoring-tools](composed-app-manifest-authoring-tools.md) (Phase 5) | P3 | planned | composed-app-manifest-view-field, composed-app-auto-inference-hardening, chat-app-builder |
+| [composed-app-manifest-authoring-tools](composed-app-manifest-authoring-tools.md) (Phase 5) | P3 | completed | composed-app-manifest-view-field, composed-app-auto-inference-hardening, chat-app-builder |
 
 ## Dependency Graph
 

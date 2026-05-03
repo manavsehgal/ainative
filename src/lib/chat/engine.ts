@@ -62,6 +62,10 @@ import {
 import { resolveChatExecutionTarget } from "@/lib/agents/runtime/execution-target";
 import { classifyMessage } from "./planner/classifier";
 import { buildCompositionHint } from "./planner/composition-hint";
+import {
+  detectViewEditingIntent,
+  buildViewEditingHint,
+} from "./planner/view-editing-hint";
 
 // Re-exported from runtime/claude-sdk.ts so chat/engine.ts remains a stable
 // import surface for the Phase 1a test suite. The canonical definitions
@@ -339,6 +343,14 @@ export async function* sendMessage(
   let systemPreamble = context.systemPrompt + historyBlock;
   if (verdict.kind === "compose") {
     systemPreamble += buildCompositionHint(verdict.plan);
+  }
+  // View-editing intent — independent of compose verdict so a user
+  // mid-conversation can switch a layout without re-triggering composition.
+  // Detection is regex-based and tolerant of false positives; the LLM will
+  // ignore the hint when the message is unrelated.
+  const viewEditDetection = detectViewEditingIntent(userContent);
+  if (viewEditDetection.detected) {
+    systemPreamble += buildViewEditingHint(viewEditDetection);
   }
 
   const fullPrompt = [systemPreamble, "", userContent].join("\n");

@@ -432,6 +432,24 @@ These limits reflect what the PLATFORM supports today. None require this skill t
 - Use `domain:` values from the existing builtins: `work`, `home`, `learn`, `health`, `finance` — don't invent new domains.
 - Skill frontmatter `description` MUST include concrete trigger phrases; the system uses this string to decide when to activate the skill.
 
+## View-Editing (override auto-inferred layout)
+
+Auto-inference picks a layout kit from manifest shape. When a user wants explicit control, three chat tools mutate `manifest.view` atomically:
+
+- **`set_app_view_kit(appId, kit)`** — lock the kit (`auto`/`tracker`/`coach`/`inbox`/`research`/`ledger`/`workflow-hub`).
+- **`set_app_view_bindings(appId, bindings)`** — set hero/secondary/cadence/runs bindings to manifest primitive ids. Replaces (not merges) the bindings object.
+- **`set_app_view_kpis(appId, kpis)`** — declare 1-6 KPI tiles with discriminated source kinds (`tableCount`, `tableSum`, `tableLatest`, `blueprintRunCount`, `scheduleNextFire`, `tableSumWindowed`).
+
+Trigger phrases the planner detects:
+- *"switch my habit-tracker to workflow-hub layout"* → `set_app_view_kit("habit-tracker", "workflow-hub")`
+- *"add a savings-rate KPI to my finance-tracker"* → `set_app_view_kpis(...)`
+- *"use this table as hero on my coach-app"* → `set_app_view_bindings(...)`
+- *"render as ledger"* → `set_app_view_kit(<active-app>, "ledger")`
+
+All three tools validate against the strict `ViewSchema` (rejecting hallucinated kit ids, unknown KPI source kinds, or wrong binding shapes) and write atomically (temp-file + rename) so a mid-write failure cannot corrupt the manifest. After a successful write, `ainative-apps-changed` fires and the dispatcher picks up the new layout immediately.
+
+The view-editing path is for power users; default-path apps work fine on auto-inference and never need these calls.
+
 ## References
 
 - `src/lib/agents/profiles/registry.ts` — profile loader. Reuse `loadProfiles()` and `getProfile(id)`; never write a parallel loader.
