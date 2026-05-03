@@ -1,8 +1,8 @@
 ---
 id: nl-to-composition-v1
 name: Natural Language → App Composition v1
-status: shipped
-shipped: 2026-04-21
+status: completed
+shipped-date: 2026-04-21
 milestone: M4.5
 dependencies:
   - create-plugin-spec (M4, shipped 2026-04-20)

@@ -1,5 +1,25 @@
 # Feature Changelog
 
+## 2026-05-03 — Roadmap grooming pass
+
+### Status-string normalized
+- `chat-skill-composition` — frontmatter cleaned (`completed  # comment` → clean `completed` + `shipped-date: 2026-04-15` + body note); semantically unchanged
+- `chat-tools-plugin-kind-1` — `shipped` → `completed` (vocabulary normalization; spec already documents 2026-04-20 shipped state)
+- `install-parity-audit` — `shipped` → `completed`; `shipped:` field renamed to `shipped-date:` for consistency
+- `nl-to-composition-v1` — `shipped` → `completed`; `shipped:` field renamed to `shipped-date:`
+
+### Drift candidates flagged (NOT auto-flipped — require Ship Verification)
+**Tier 1 (definite drift, `planned` → likely `completed`):** `direct-runtime-prompt-caching`, `routing-cascade-dual-provider`, `sidebar-ia-route-restructure`, `workflow-document-pool`, `relationship-summary-cards`, `workflow-editing` — strong code evidence (helpers/components/columns at spec-named paths; spec-named symbols in use).
+
+**Tier 2 (partial drift, `planned` → likely `in-progress`):** `direct-runtime-advanced-capabilities` (1 of 4 capabilities shipped: extended thinking only); `task-turn-observability` (schema column only, no surface); `entity-relationship-detail-views` (tasks only, 3 of 4 detail views missing); `upgrade-session` (profile + UI surface shipped, guided-merge task UI not deeply verified).
+
+**Uncertain:** `enrichment-planner-test-hardening` (7 tests vs 6 ACs; needs deeper read).
+
+### Lessons from this grooming pass
+- `features/` mixes 4 non-spec doc types (architect-report, supervisor-report, quality-audit-report, marketing-site-pricing-reference) — these have no YAML frontmatter by design. Status-tally scripts must skip them.
+- 1 spec uses legacy inline-status format: `board-context-persistence.md`. Low priority to convert.
+- The `ainative-business@0.13.x` line shipped many features whose specs were never re-flipped from `planned` → `completed` in the same commit. Recommend adding a checklist item to commit-push-pr workflow: "Did this commit flip a spec from planned → completed?"
+
 ## 2026-05-02 — Phase 4 (`composed-app-kit-inbox-and-research`) shipped
 
 - 2 new kits: InboxKit, ResearchKit

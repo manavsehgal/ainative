@@ -1,6 +1,7 @@
 ---
 title: Chat — Skill Composition with Conflict Warning
-status: completed  # closed out 2026-04-15 after oldest-first prompt-budget eviction shipped
+status: completed
+shipped-date: 2026-04-15
 priority: P3
 milestone: post-mvp
 source: chat-advanced-ux.md §4 (split during grooming, 2026-04-14)
@@ -12,6 +13,8 @@ dependencies:
 ---
 
 # Chat — Skill Composition with Conflict Warning
+
+> Closed out 2026-04-15 after oldest-first prompt-budget eviction shipped.
 
 ## Description
 

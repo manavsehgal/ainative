@@ -1,8 +1,8 @@
 ---
 id: install-parity-audit
 name: Install Parity Audit
-status: shipped
-shipped: 2026-04-21
+status: completed
+shipped-date: 2026-04-21
 milestone: M5
 dependencies:
   - nl-to-composition-v1 (M4.5, shipped 2026-04-21)

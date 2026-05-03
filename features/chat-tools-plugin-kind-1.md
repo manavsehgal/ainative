@@ -1,6 +1,6 @@
 ---
 title: Chat Tools Plugin (Kind 1) — MCP as Extension Surface
-status: shipped
+status: completed
 shipped-date: 2026-04-20
 priority: P0
 milestone: post-mvp
