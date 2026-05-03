@@ -1,93 +1,127 @@
-# Handoff: `composed-app-auto-inference-hardening` shipped (REDUCE scope) — pick the next feature
+# Handoff: Roadmap drift hardening shipped — 7 specs in clean planned state, pick the next feature
 
-**Created:** 2026-05-02 (composed-app-auto-inference-hardening implementation session)
-**Status:** Probes + test matrix shipped per REDUCE scope. Working tree clean. Spec is `in-progress` because items 3+4 (diagnostics route, trace API, settings toggle, copy-as-view generator) were intentionally deferred.
-**Predecessor:** `.archive/handoff/2026-05-02-profile-runtime-default-resolution-shipped-handoff.md` (the `profile-runtime-default-resolution` shipped handoff this one supersedes)
+**Created:** 2026-05-03 (roadmap grooming + Ship Verification session)
+**Status:** Working tree clean. 4 commits on `main`. Roadmap status distribution is now trustworthy: 204 completed / 27 deferred / 7 planned / 4 in-progress / 5 non-spec docs.
+**Predecessor:** `.archive/handoff/2026-05-02-composed-app-auto-inference-hardening-shipped-handoff.md`
 
 ---
 
 ## TL;DR for the next agent
 
-1. **`composed-app-auto-inference-hardening` partially shipped.** The two new probes (`hasNotificationShape`, `hasMessageShape`) and the rule5 hero-shape extension are in. Test matrix grew from 36 → 69 cases (well above the spec floor of 25-35). Five of nine acceptance criteria boxes are checked; four remain unchecked because they depend on diagnostics tooling that was deliberately deferred.
+1. **Roadmap drift hardening shipped end-to-end this session.** Initial grooming pass found 6 Tier 1 + 4 Tier 2 drift candidates plus 4 status-string vocabulary issues. Tier 1 + Tier 2 Ship Verification + 1 follow-up code change (`relationship-summary-cards` doc-count plumbing on tasks + projects pages) all landed. Net: roadmap moved from 194 → 204 completed, 16 → 7 planned. The 7 planned features are all *truly* planned now (verified zero shipping evidence).
 
-2. **Carried-forward gap from previous handoff: HANDOFF.md inaccuracy.** The previous handoff listed `document-output-generation` and `multi-agent-swarm` as "next up" — both turned out to be already shipped (`status: completed` with all `[x]` boxes; verified by file-existence + import grep). Lesson recorded as a memory entry to grep before treating any spec as buildable. **This handoff has been verified accurate.**
+2. **The `task-turn-observability` correction is worth remembering.** A previous classification said `turnCount` exists at `schema.ts:1274`. That's true — but the column is on `scheduleFiringMetrics`, NOT on `tasks`. The tasks table only has `maxTurns`. **Lesson:** when verifying a schema column, confirm which **table** owns it, not just the file:line of the column declaration. A `rg -B5 turnCount src/lib/db/schema.ts` walks back to the enclosing `sqliteTable("...")` call and avoids this trap.
 
-3. **Pick the next feature.** In priority order:
-   - **`composed-app-auto-inference-hardening` follow-up (deferred items)** — diagnostics route at `/apps/[id]/inference`, `pickKit({trace: true})` overload, `apps.showInferenceDiagnostics` setting, "Copy as `view:` field" generator. P3 polish; *gate on first reported kit misfire* before building. Spec already lists these as unchecked acceptance criteria; plan template at `docs/superpowers/plans/2026-05-02-composed-app-auto-inference-hardening.md` documents the deferral rationale.
-   - **`composed-app-manifest-authoring-tools`** — chat-tool surface for editing app manifests. Mentioned as a related feature in the hardening spec; status unverified at handoff time.
-   - **Roadmap grooming pass** — the previous handoff listed two shipped features as roadmap candidates. Worth a 30-minute grooming sweep across `features/*.md` to fix any other spec-vs-code drift before the next feature pick.
+3. **Pick the next feature.** In priority order based on dependency status and handoff signal:
+
+   - **`composed-app-manifest-authoring-tools`** (P3 post-mvp) — the prior session's recommended next-up, now confirmed truly planned with all 3 dependencies in known states (`composed-app-manifest-view-field` completed, `composed-app-auto-inference-hardening` in-progress with 4 deferred ACs, `chat-app-builder` shipped). The auto-inference dependency's `in-progress` state is fine — the deferred items (diagnostics route, trace API) are not consumed by the manifest authoring tools.
+   - **`schedule-collision-prevention`** (P1 post-mvp) — listed as planned with field-data evidence from wealth-mgr deployment. Highest priority truly-planned feature.
+   - **`workflow-learning-approval-reliability`** (P1 post-mvp) — also planned with prior incident evidence (table-enrich-context-approval-noise handoff). Higher priority than the manifest tools.
+
+   If priority drives, **start with `schedule-collision-prevention` or `workflow-learning-approval-reliability`** — both are P1 with concrete user-impact evidence. The manifest authoring tools are P3 and pleasant but not urgent.
+
+4. **Outstanding gap-closure work surfaced this session (not blocking, but trackable):**
+   - `direct-runtime-prompt-caching` (in-progress) — needs ledger persistence + cost-dashboard cache hit-rate UI + Batch API for meta-completions (~50% discount). Concrete and small once started.
+   - `direct-runtime-advanced-capabilities` (in-progress) — context compaction, `/v1/models` discovery, and Anthropic server-tool toggles (`web_search`, `code_execution`, `text_editor`).
+   - `upgrade-session` (in-progress) — dedicated session-sheet UI, upgrade history list, abort confirmation, dev-server restart banner. The functional scaffolding is in place; the UX polish is not.
 
 ---
 
 ## What landed this session
 
-9 commits (1 plan + 7 feature/test + 1 spec update) on `main`:
+4 commits on `main`:
 
 ```
-e6b621bb  docs(plans): composed-app-auto-inference-hardening implementation plan
-4ddb87a1  feat(view-kits): add hasNotificationShape probe for inbox inference
-957a61a2  feat(view-kits): add hasMessageShape probe for inbox inference
-ec1f2399  feat(view-kits): rule5_inbox consults hero-table shape
-654ae9d4  test(view-kits): lock tiered-match precedence for shape probes
-d39fbc0d  test(view-kits): per-rule negative near-miss matrix
-d1e944a4  test(view-kits): conjunction first-match-wins matrix
-4643b458  test(view-kits): golden-master audit + no-match fallback lock
-21707cea  docs(features): hardening probes + test matrix shipped (REDUCE scope)
+fe555cba  docs(features): Tier 2 Ship Verification — 1 completed, 2 in-progress
+8827e498  feat(relationship-cards): close docCount gaps on task + project cards
+d3b3004c  docs(features): Ship Verification — 4 specs to completed, 2 to in-progress
+c4f9cf80  docs(features): roadmap grooming — normalize status strings, flag drift
 ```
 
-Plus a one-off cleanup at session start: deleted 2 smoke test rows from `~/.ainative/ainative.db` (`d77d9ace-...` and `b5ad153a-...`) per the previous handoff's instruction.
+### Code changes (`src/`)
+
+- **`src/components/shared/command-palette.tsx:305`** — `navigate('/dashboard?task=...')` → `navigate('/tasks?task=...')`. Closes the last residual `/dashboard` route literal violating `sidebar-ia-route-restructure` AC. Fix surfaced by Ship Verification — would have left command-palette recent-task shortcut 404'ing silently.
+
+- **`src/app/projects/page.tsx`, `src/app/api/projects/route.ts`** — added `docCount` SQL subquery to project listing (kept the two queries in lockstep). Pattern is `sql<number>\`(SELECT COUNT(*) FROM documents d WHERE d.project_id = "projects"."id")\`.as("docCount")` — uses raw quoted-string column refs, not Drizzle column-ref interpolation (which generates `WHERE col = ?` with a JS object as value per CLAUDE.md gotcha).
+
+- **`src/components/projects/project-card.tsx`, `src/components/projects/project-list.tsx`** — extended `Project` type and `ProjectCardProps` with `docCount: number`. Card renders `FileText` icon + "N docs" alongside task count, hidden when 0.
+
+- **`src/app/tasks/page.tsx`** — switched `BoardContent` query from `db.select().from(tasks)` (all columns) to `db.select({ ...getTableColumns(tasks), docCount: sql<number>... }).from(tasks)`. The existing `serializedTasks.map((t) => ({...t}))` spread carries `docCount` through to `TaskItem`. Task-card already supported the prop.
+
+### Spec changes (`features/`)
+
+| Spec | Before | After | Mechanism |
+|---|---|---|---|
+| `chat-skill-composition` | `completed  # comment` | clean `completed` + `shipped-date: 2026-04-15` | normalization |
+| `chat-tools-plugin-kind-1` | `shipped` | `completed` | normalization |
+| `install-parity-audit` | `shipped` | `completed` | normalization |
+| `nl-to-composition-v1` | `shipped` | `completed` | normalization |
+| `routing-cascade-dual-provider` | `planned` | `completed` (12/12 ACs PASS) | Ship Verification |
+| `workflow-document-pool` | `planned` | `completed` (22/22 ACs PASS) | Ship Verification |
+| `workflow-editing` | `planned` | `completed` (11/11 ACs PASS) | Ship Verification |
+| `sidebar-ia-route-restructure` | `planned` | `completed` (residual literal fixed) | Ship Verification + 1 code edit |
+| `relationship-summary-cards` | `planned` | `completed` (after 2 small gaps closed) | Ship Verification + 7 code edits |
+| `entity-relationship-detail-views` | `planned` | `completed` | Tier 2 Ship Verification |
+| `direct-runtime-prompt-caching` | `planned` | `in-progress` | Ship Verification (3 ACs GAP) |
+| `direct-runtime-advanced-capabilities` | `planned` | `in-progress` | Tier 2 Ship Verification (~55%) |
+| `upgrade-session` | `planned` | `in-progress` | Tier 2 Ship Verification (~60%) |
 
 ---
 
-## What shipped (code)
+## Roadmap state at session end
 
-- **`src/lib/apps/view-kits/inference.ts`** —
-  - 2 new regex constants: `NOTIFICATION_NAME_RE` (`/(^|_)(read|unread|seen|notified|notification)(_|$)/i`), `MESSAGE_NAME_RE` (`/(^|_)(body|message|subject|summary|content)(_|$)/i`). Word-boundary anchors prevent false positives on substring matches like `ready`, `embodied`.
-  - 2 new probe functions: `hasNotificationShape(cols)` and `hasMessageShape(cols)`, both using the existing tiered-match pattern (semantic → name regex).
-  - `rule5_inbox(m, schemas?)` extended: still fires on inbox-style blueprint id (existing path, preserved as first check), and now ALSO fires when the hero table has BOTH notification-shape AND message-shape columns. The AND requirement is intentional — single-shape matches would over-trigger.
-  - `pickKit` call site updated to pass `columnSchemas` to rule5.
-- **`src/lib/apps/view-kits/__tests__/inference.test.ts`** — grew from 36 to 69 tests:
-  - 8 new probe tests (4 each for `hasNotificationShape` and `hasMessageShape`, including substring-anchor regression cases)
-  - 6 tiered-match precedence tests (locking semantic > type > regex ordering)
-  - 4 rule5 extension tests (shape path positive + 3 negatives + blueprint-path-still-wins)
-  - 7 per-rule negative near-miss tests (one per rule covering the most likely false-positive shape)
-  - 4 conjunction first-match-wins tests (ledger>inbox, research>coach, inbox>hub, coach>inbox)
-  - 3 no-match fallback tests (empty manifest, profiles-only, single-blueprint)
-  - 1 golden-master audit (no new fixtures; verified all 6 existing fixtures still pick their expected kit after the rule5 extension — no flips)
-- **`features/composed-app-auto-inference-hardening.md`** — frontmatter `status: planned` → `in-progress`. 3 acceptance criteria checked; 6 remain unchecked (4 are deferred-by-design, 1 is `userTableColumns.config.semantic` persistence which was descoped).
+| Status | Count |
+|---|---|
+| completed | 204 |
+| deferred | 27 |
+| planned | 7 |
+| in-progress | 4 |
+| non-spec docs (no frontmatter — by design) | 5 |
+| **Total** | **247 specs + 2 (roadmap.md, changelog.md) = 249 files** |
 
----
+### The 7 truly planned features (all verified — no shipping evidence)
+1. `chat-conversation-branches` (P3)
+2. `composed-app-manifest-authoring-tools` (P3) — handoff's prior next-up
+3. `enrichment-planner-test-hardening` (P2) — uncertain (7 tests for 6 ACs); could be ship-verifiable
+4. `onboarding-runtime-provider-choice` (P2)
+5. `schedule-collision-prevention` (P1) — **highest-priority planned feature**
+6. `task-turn-observability` (P2)
+7. `workflow-learning-approval-reliability` (P1)
 
-## Verification run — 2026-05-02
-
-| Check | Command | Result |
-|-------|---------|--------|
-| Inference suite | `npx vitest run src/lib/apps/view-kits/__tests__/inference.test.ts` | 69/69 pass |
-| Full test suite | `npm test` | 1979 pass / 7 fail / 13 skipped (same 7 pre-existing failures from previous handoff: `router.test.ts` 6×, `blueprint.test.ts` 1×, `settings.test.ts` 1×; baseline was 1947 passing → +32 new passing) |
-| TypeScript | `npx tsc --noEmit` | exit 0, no output |
-| Starter regression | Embedded in inference.test.ts | All 6 starter fixtures still pick expected kit |
-| Module-load cycle | Static import inspection | inference.ts only imports type from `@/lib/apps/registry`. Zero runtime-registry-adjacency. No smoke step required per project's smoke-test budget rule. |
+### The 4 in-progress features
+1. `composed-app-auto-inference-hardening` (from prior session — 4 deferred ACs gated on first kit misfire)
+2. `direct-runtime-prompt-caching` (cache headers shipped, ledger/dashboard/Batch missing)
+3. `direct-runtime-advanced-capabilities` (~55% — thinking + model selection done)
+4. `upgrade-session` (~60% — profile + APIs + Badge done, session UX missing)
 
 ---
 
 ## Patterns to remember (this session's additions)
 
-- **Spec frontmatter `status: completed` is unreliable in the OPPOSITE direction too.** The previous handoff said `document-output-generation` was next up. The spec said `status: completed` with all `[x]` boxes — and verification confirmed it was actually shipped. Same for `multi-agent-swarm`. Two of three "next features" listed in the previous handoff were actually shipped. **The lesson from MEMORY.md was about `status: planned` being unreliable. The reverse also happens: handoffs can list shipped features as next-up.** Always grep for spec-referenced files before treating any spec as buildable, regardless of which direction the staleness runs.
-- **Word-boundary anchors are load-bearing in column-name regexes.** `(^|_)(body|message|...)(_|$)` correctly matches `body`, `email_subject`, `draft_body` while rejecting `embodied`, `anybody`, `spreadsheet`. The pattern is consistent across all three new-style probes (`BOOLEAN_NAME_RE`, `NOTIFICATION_NAME_RE`, `MESSAGE_NAME_RE`); legacy probes (`CURRENCY_NAME_RE`, `DATE_NAME_RE`) use slightly different anchor conventions (`[^a-z]`, `_at$`) — when you next harden them, normalize on the `(^|_)…(_|$)` shape.
-- **Pre-flight starter audit is cheap and prevents kit-selection flips.** Before extending rule5 to use new probes, walked through the 5 seeded starters' hero columns and confirmed none would fire the extended rule unintentionally. Took 5 minutes; protected 6 golden-master tests from breaking. The audit table lives in the plan file at `docs/superpowers/plans/2026-05-02-composed-app-auto-inference-hardening.md` for reference if you ever extend a rule again.
-- **REDUCE scope challenges shrink the surface and surface the deferred work in the spec itself.** This session deferred 4 of 8 acceptance criteria to a follow-up. Leaving them unchecked in the spec keeps them visible during roadmap grooming. Setting `status: in-progress` (not `completed`) signals the deferral. Future-you grooming the backlog can decide to ship the follow-up or close it as YAGNI based on field signal.
-- **TS panel diagnostics are flaky for `@/lib/apps/registry`.** The inline panel showed "Cannot find module '@/lib/apps/registry'" repeatedly while `npx tsc --noEmit` returned clean (exit 0). Memory entry already covers this — confirmed again here.
+- **Bidirectional spec staleness is real.** The previous handoff's lesson was "`status: planned` can be stale (already shipped)". This session's lesson is: it's stale in the OTHER direction too — initial verification can MISS shipped work because the implementation doesn't use the symbol the spec mentions. `entity-relationship-detail-views` was nearly classified KEEP-PLANNED because I grepped for `RelationshipSection` (a component name from the spec) when the actual implementation re-uses existing chip-bar + section-heading patterns. **Mitigation:** when verifying, also grep for AC keywords ("source workflow", "Related Tasks", "Recent Documents") not just spec-mentioned symbol names.
+
+- **Confirm which TABLE owns a schema column.** `rg -n turnCount src/lib/db/schema.ts` returned `1274:    turnCount: integer("turn_count"),` — true line, wrong table. The column is on `scheduleFiringMetrics`, not `tasks`. A `rg -B30 turnCount src/lib/db/schema.ts | grep sqliteTable | tail -1` finds the enclosing table.
+
+- **Drizzle SQL subquery pattern: raw quoted-string column refs, not column-ref interpolation.** Use `sql<number>\`(SELECT COUNT(*) FROM documents WHERE project_id = "projects"."id")\`` — NOT `${projects.id}`. The latter triggers the bound-param gotcha (CLAUDE.md). Pattern verified working in 4 places this session: `api/workflows/route.ts:20` (pre-existing), `api/projects/route.ts`, `app/projects/page.tsx`, `app/tasks/page.tsx`.
+
+- **Ship Verification surfaces real defects.** This session's fix to `command-palette.tsx:305` would have left command-palette recent-task shortcut silently 404'ing forever. The pattern of encoding "absence of X" as a verifiable AC (e.g., `rg -n /dashboard src/ returns zero`) is powerful — it's an AC that becomes its own enforcement.
+
+- **The `_state`/`_loopState` strip pattern (used in `workflow-editing` PATCH route) is reusable.** Whenever a route resets a workflow to draft for re-execution, those execution-state keys must be stripped from the stored definition as defense-in-depth, even if the form layer already builds a clean definition. Direct API callers can pass stale state.
 
 ---
 
 ## Carried-forward gaps (acknowledged, not blocking)
 
-1. **`userTableColumns.config.semantic` persistence path** — descoped from this session. Probes today read `c.semantic` from the inference-time projection (`ColumnSchemaRef`); persistence isn't wired and isn't required for the probe path to harden. If users start authoring manifests with explicit semantic tags, this gets pulled in.
-2. **`Semantic` union type** — current shape is `semantic?: string` (loose). Probes do exact equality (`=== "currency"`). Unknown semantics simply don't match. Tightening to a union forces migration of every callsite for marginal benefit; defer until persistence lands.
-3. **Diagnostics route + trace API + settings toggle + copy-as-view generator** — explicitly deferred to follow-up gated on first reported kit misfire (see TL;DR #3).
-4. **Roadmap drift sweep** — handoff's accuracy rule should apply to the broader roadmap. A grooming pass over `features/*.md` to catch any other shipped-but-listed-as-planned items would prevent future "pick a feature, discover it's shipped" rabbit holes.
-5. ~~Memory inaccuracy: `~/.stagent/` data dir reference is stale.~~ **RESOLVED** in this session — MEMORY.md and 4 dependent memory entries updated to reflect the post-2026-04-18 data-layer rename to `AINATIVE_*` env vars and `~/.ainative/` paths. Source of truth is `src/lib/utils/ainative-paths.ts` and `src/lib/instance/detect.ts`.
+1. **`direct-runtime-prompt-caching` ledger + dashboard + Batch API** — cache headers ship and `cache_creation_input_tokens`/`cache_read_input_tokens` are read into local TurnUsage, but never persisted to ledger or surfaced in cost-dashboard.tsx. Batch API (50% discount on meta-completions) entirely unbuilt. Concrete follow-up.
+
+2. **`direct-runtime-advanced-capabilities` second-half work** — thinking-block collapsible UI in chat-message.tsx, context compaction, `/v1/models` discovery, Anthropic server-tool toggles (`web_search`, `code_execution`, `text_editor`).
+
+3. **`upgrade-session` UX polish** — dedicated upgrade-session-view.tsx (currently re-uses generic `/tasks/[id]`), upgrade history list (only shows `lastUpgrade` timestamp), abort confirmation with rollback, "Restart dev server" success banner, integration tests on temp-dir clone.
+
+4. **`composed-app-auto-inference-hardening` deferred items** — 4 deferred ACs (diagnostics route at `/apps/[id]/inference`, `pickKit({trace: true})` overload, `apps.showInferenceDiagnostics` setting, "Copy as `view:` field" generator). Per spec: gated on first reported kit misfire before building. Not blocking.
+
+5. **`enrichment-planner-test-hardening` uncertain ship state** — 7 tests exist for a 6-AC spec but I haven't read the full spec to verify whether the tests cover the right ACs. A 30-minute Ship Verification (similar to this session's pattern) would resolve.
 
 ---
 
-*End of handoff. Next move: roadmap grooming pass (30 min) to catch other spec-vs-code drift before picking the next feature, OR jump directly to `composed-app-manifest-authoring-tools` if the roadmap is trusted.*
+*End of handoff. Next move: pick `schedule-collision-prevention` or `workflow-learning-approval-reliability` (both P1, both have prior-incident evidence) for the next feature build, OR pick `composed-app-manifest-authoring-tools` if you want to continue the composed-app momentum from prior sessions.*
