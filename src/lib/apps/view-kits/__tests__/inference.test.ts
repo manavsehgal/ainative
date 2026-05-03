@@ -103,6 +103,28 @@ describe("column-shape probes", () => {
   });
 });
 
+describe("column-shape probes — tiered match precedence", () => {
+  it("hasCurrency: explicit semantic wins regardless of name", () => {
+    expect(hasCurrency([{ name: "wibble", semantic: "currency" }])).toBe(true);
+  });
+  it("hasCurrency: name pattern wins when semantic is unset", () => {
+    expect(hasCurrency([{ name: "monthly_revenue" }])).toBe(true);
+  });
+  it("hasCurrency: neither tier hits → false", () => {
+    expect(hasCurrency([{ name: "wibble" }])).toBe(false);
+  });
+  it("hasDate: type=date wins regardless of semantic/name", () => {
+    expect(hasDate([{ name: "wibble", type: "date" }])).toBe(true);
+    expect(hasDate([{ name: "wibble", type: "datetime" }])).toBe(true);
+  });
+  it("hasDate: explicit semantic wins when type is unset", () => {
+    expect(hasDate([{ name: "wibble", semantic: "date" }])).toBe(true);
+  });
+  it("hasBoolean: type=boolean wins regardless of name", () => {
+    expect(hasBoolean([{ name: "wibble", type: "boolean" }])).toBe(true);
+  });
+});
+
 describe("rule1_ledger — currency hero + ≥1 blueprint", () => {
   it("fires when hero table has a currency column AND ≥1 blueprint", () => {
     const m = makeManifest({
