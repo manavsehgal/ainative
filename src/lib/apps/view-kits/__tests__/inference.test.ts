@@ -386,6 +386,52 @@ describe("pickKit — first-match-wins decision table", () => {
   it("returns workflow-hub as fallback when no rule matches", () => {
     expect(pickKit(makeManifest(), [])).toBe("workflow-hub");
   });
+  it("ledger wins over inbox when both could fire", () => {
+    const m = makeManifest({
+      tables: [{ id: "t1" }],
+      blueprints: [{ id: "bp" }],
+    });
+    expect(
+      pickKit(
+        m,
+        cols("t1", [
+          { name: "amount" },
+          { name: "subject" },
+          { name: "body" },
+          { name: "read" },
+        ])
+      )
+    ).toBe("ledger");
+  });
+  it("research wins over coach when both could fire", () => {
+    const m = makeManifest({
+      profiles: [{ id: "weekly-coach" }],
+      blueprints: [{ id: "weekly-digest" }],
+      schedules: [{ id: "s" }],
+    });
+    expect(pickKit(m, [])).toBe("research");
+  });
+  it("inbox wins over multi-blueprint hub when both could fire", () => {
+    const m = makeManifest({
+      blueprints: [{ id: "follow-up-drafter" }, { id: "weekly-review" }],
+      tables: [],
+    });
+    expect(pickKit(m, [])).toBe("inbox");
+  });
+  it("coach wins over inbox-shape when both could fire", () => {
+    const m = makeManifest({
+      profiles: [{ id: "support-coach" }],
+      schedules: [{ id: "s" }],
+      tables: [{ id: "t1" }],
+      blueprints: [{ id: "process-rows" }],
+    });
+    expect(
+      pickKit(
+        m,
+        cols("t1", [{ name: "subject" }, { name: "body" }, { name: "read" }])
+      )
+    ).toBe("coach");
+  });
 });
 
 describe("pickKit — starter intent fixtures (acceptance criteria)", () => {
