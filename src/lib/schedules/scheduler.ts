@@ -177,6 +177,7 @@ export async function recordFiringMetrics(
       result: tasks.result,
       failureReason: tasks.failureReason,
       updatedAt: tasks.updatedAt,
+      turnCount: tasks.turnCount,
     })
     .from(tasks)
     .where(eq(tasks.id, taskId));
@@ -188,11 +189,24 @@ export async function recordFiringMetrics(
     .where(eq(schedules.id, scheduleId));
   if (!schedule) return;
 
-  const turnCountResult = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(agentLogs)
-    .where(eq(agentLogs.taskId, taskId));
-  const turns = Number(turnCountResult[0]?.count ?? 0);
+  // Prefer the persisted per-task turnCount written by the runtime at completion
+  // (see features/task-turn-observability.md). Fall back to counting agentLogs
+  // rows for pre-existing tasks where turnCount is still null. This keeps the
+  // schedule aggregates (lastTurnCount / avgTurnsPerFiring) consistent with the
+  // value get_task / list_tasks expose for the same firing — the prior COUNT(*)
+  // path counted every log row including content_block_start/delta and tool_*
+  // events, which inflated the metric well above the assistant-frame count
+  // recorded on the task row.
+  let turns: number;
+  if (task.turnCount != null) {
+    turns = task.turnCount;
+  } else {
+    const turnCountResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(agentLogs)
+      .where(eq(agentLogs.taskId, taskId));
+    turns = Number(turnCountResult[0]?.count ?? 0);
+  }
 
   const prevAvg = schedule.avgTurnsPerFiring ?? turns;
   const newAvg = Math.round(prevAvg * 0.7 + turns * 0.3);

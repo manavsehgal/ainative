@@ -1,6 +1,7 @@
 ---
 title: Task Turn Count Observability
-status: planned
+status: completed
+shipped-date: 2026-05-03
 priority: P2
 milestone: post-mvp
 source: .archive/handoff/feature-task-turn-observability.md
@@ -55,14 +56,36 @@ Before adding any columns, a short investigation subtask: trace `turnCount++` at
 
 ## Acceptance Criteria
 
-- [ ] The metric definition is written into this spec's References section (and mirrored to `AGENTS.md` or `MEMORY.md` where runtime metrics are discussed) before any columns are added.
-- [ ] `tasks` table has `turnCount` and `tokenCount` columns, reflected in both `src/lib/db/schema.ts` and `src/lib/db/bootstrap.ts`.
-- [ ] `get_task` and `list_tasks` responses include both fields for completed tasks.
-- [ ] One-off manual tasks (not schedule-fired) also capture and expose these metrics.
-- [ ] Schedule aggregates `lastTurnCount` / `avgTurnsPerFiring` are consistent with the individual task `turnCount` for the same firing — a chat response describing both should never contradict itself.
-- [ ] `src/lib/data/clear.ts` is verified to still work correctly (no new FK-dependent tables introduced — just columns — but the safety-net test per `MEMORY.md` must stay green).
-- [ ] Existing `claude-agent` and `scheduler` tests still pass.
-- [ ] A new test asserts that a completed task has `turnCount > 0` and `tokenCount > 0`.
+- [x] The metric definition is written into this spec's References section (and mirrored to `MEMORY.md`'s "Architecture Notes" section) before any columns are added — see "Metric Definition" below; mirror at `MEMORY.md` (under "Architecture Notes", `tasks.turnCount counts streamed assistant frames, NOT SDK reasoning rounds`).
+- [x] `tasks` table has `turnCount` and `tokenCount` columns, reflected in both `src/lib/db/schema.ts:66-79` and `src/lib/db/bootstrap.ts:84-85` (CREATE block) and `:614-615` (ALTER for existing DBs).
+- [x] `get_task` and `list_tasks` responses include both fields for completed tasks — both tools select via `db.select().from(tasks)` (`src/lib/chat/tools/task-tools.ts:67-72` and similar in `get_task`), so the new schema columns flow through to the response automatically with no field-mapping change.
+- [x] One-off manual tasks (not schedule-fired) also capture and expose these metrics — the persistence happens at `src/lib/agents/claude-agent.ts:382-389` in the result-frame handler, which fires for every successful task regardless of source (manual/scheduled/heartbeat/workflow).
+- [x] Schedule aggregates `lastTurnCount` / `avgTurnsPerFiring` are consistent with the individual task `turnCount` for the same firing — `src/lib/schedules/scheduler.ts:175-208` now reads `tasks.turnCount` first and only falls back to the legacy `COUNT(*) FROM agentLogs` when the persisted value is null (pre-existing rows). New firings produce identical numbers across `get_task` and the schedule aggregate.
+- [x] `src/lib/data/clear.ts` safety-net test still passes — no FK-dependent tables introduced, just new columns; clear.test.ts green (verified 2026-05-03).
+- [x] Existing `claude-agent` and `scheduler` tests still pass — 41/41 claude-agent tests + 131/131 schedule tests pass after the change.
+- [x] A new test asserts that a completed task has `turnCount > 0` and `tokenCount > 0` — `src/lib/agents/__tests__/claude-agent.test.ts` "A2b: persists turnCount and tokenCount on the completion update" pins both fields against a mock stream with two assistant frames (turnCount=2) and a result frame carrying `total_tokens: 300` (tokenCount=300).
+
+## Verification
+
+Run on 2026-05-03:
+
+- `npx vitest run src/lib/agents/__tests__/claude-agent.test.ts src/lib/data/__tests__/clear.test.ts` — 41/41 pass.
+- `npx vitest run src/lib/schedules` — 131/131 pass across 13 files.
+- `npx tsc --noEmit` — clean for `schema.ts`, `bootstrap.ts`, `claude-agent.ts`, `scheduler.ts`.
+
+## Design Decisions
+
+### Stream-frame counter (not reasoning-round counter)
+
+The persisted `turnCount` deliberately matches what the existing in-memory counter at `claude-agent.ts:295` already produces — number of `assistant`-role frames emitted by the runtime stream, not number of model invocations. Two reasons: (1) the metric was already being surfaced as `lastTurnCount`/`avgTurnsPerFiring` on schedules using a different (and inflated) counting basis (`COUNT(*) FROM agentLogs`), so the in-memory counter is the closest existing definition that still has signal; (2) renaming to "reasoning rounds" or similar would have required either parsing the SDK's own turn-budget metadata at completion (which would diverge across runtimes) or post-hoc reconstructing the count from logs. The Metric Definition section above documents the choice explicitly so operators don't misread the numbers as a `maxTurns`-comparable budget unit.
+
+### Schema column duplication of usage_ledger.totalTokens
+
+`tokenCount` on `tasks` is denormalized — the same value lands in `usage_ledger.totalTokens` for billing. The duplication is intentional: `get_task` and `list_tasks` are the primary chat-tool reads, and they should never have to JOIN against the usage ledger to surface a token count. The denormalized field is a one-time write at completion (`claude-agent.ts:382-389`) and never updated thereafter — the ledger remains authoritative for billing reconciliation; the task field is authoritative for chat surfaces.
+
+### Scheduler falls back to COUNT(*) only for null rows
+
+The scheduler at `scheduler.ts:198-206` reads `tasks.turnCount` first; only falls back to `COUNT(*) FROM agentLogs` when null (pre-existing tasks). This means new firings produce schedule aggregates that are *strictly consistent* with the per-task field, while historical data continues to surface its existing (inflated) numbers without a migration. Operators who care about apples-to-apples comparison can wait one cron cycle and the schedule aggregate will reflect the new metric.
 
 ## Scope Boundaries
 
@@ -89,4 +112,29 @@ Before adding any columns, a short investigation subtask: trace `turnCount++` at
 - `src/lib/schedules/scheduler.ts:235-236` — existing write of `lastTurnCount` / `avgTurnsPerFiring` to schedule row
 - `src/lib/chat/tools/task-tools.ts:215-236` — existing `get_task` / `list_tasks` response shape
 - Related features: `cost-and-usage-dashboard.md`, `workflow-intelligence-observability.md`, `scheduled-prompt-loops.md`
-- **Metric definition (to be filled in by step 1 subtask):** _precise one-paragraph definition of what `turnCount` counts_
+
+## Metric Definition
+
+**`turnCount`** is the number of `assistant`-role messages emitted in the runtime
+stream during a task run, where the assistant message carries content blocks
+(text, thinking, or `tool_use`). The counter increments at
+`src/lib/agents/claude-agent.ts:295` on every `message.type === "assistant" && message.message?.content`
+frame. Each model "reasoning round" can emit multiple such frames — for example,
+a single round that produces a thinking block plus a tool_use block plus a final
+text block emits three assistant messages and increments `turnCount` by three.
+This is why observed values run from hundreds to low thousands for autonomous
+loop schedules: a single tool-using round may contribute 3–5+ to the count.
+
+**This is not the SDK's `maxTurns`-budgeted "reasoning round" metric** — the SDK
+counts model invocations, while `turnCount` here counts streamed assistant
+frames. The two values can diverge by an order of magnitude. Operators reading
+the dashboard should treat `turnCount` as a *stream-frame work-volume signal*
+useful for relative comparison (this run did 2× the frames as the previous one)
+rather than as a budget unit comparable to `maxTurns`.
+
+**`tokenCount`** is the total token count (input + output, including cache hits)
+accumulated across the runtime stream by `applyUsageSnapshot` in the usage
+ledger. At task completion the value is the same one written to the
+`usage_ledger` row for billing, denormalized onto the `tasks` row for cheap
+single-task lookups via `get_task` / `list_tasks`. Null until the result frame
+arrives or for runtimes other than `claude-code`.

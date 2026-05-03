@@ -63,6 +63,21 @@ export const tasks = sqliteTable(
     failureReason: text("failure_reason"),
     /** Per-task turn budget copied from schedules.maxTurns at firing time */
     maxTurns: integer("max_turns"),
+    /**
+     * Number of assistant-role frames in the runtime stream where the agent
+     * produced content. Persisted at task completion. Null for pre-existing
+     * rows or runtimes other than `claude-code`. See features/task-turn-observability.md
+     * "Metric Definition" for the precise definition and why these counts are
+     * far higher than "reasoning rounds".
+     */
+    turnCount: integer("turn_count"),
+    /**
+     * Total token usage (input + output) accumulated across the runtime stream,
+     * persisted at task completion. Mirrors the same value the usage ledger writes
+     * to its row but is denormalized here for cheap one-shot reads via get_task /
+     * list_tasks. Null for pre-existing rows.
+     */
+    tokenCount: integer("token_count"),
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
   },

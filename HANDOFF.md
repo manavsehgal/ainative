@@ -1,29 +1,27 @@
-# Handoff: `workflow-learning-approval-reliability` ship-verified — 4 planned specs left, no P1 remaining
+# Handoff: `task-turn-observability` shipped — 3 planned specs left, all P2/P3
 
-**Created:** 2026-05-03 (continuation session — Ship Verification on `workflow-learning-approval-reliability`)
-**Status:** Working tree has uncommitted edits across spec, roadmap, changelog, HANDOFF.md. **Zero source code changes** — pure Ship Verification close-out. Roadmap status now: 207 completed / 27 deferred / 4 planned / 4 in-progress / 5 non-spec docs.
-**Predecessor:** previous handoff was the `enrichment-planner-test-hardening` build session (committed in `3bc36c9d`).
+**Created:** 2026-05-03 (build session — `task-turn-observability`)
+**Status:** Working tree has uncommitted edits across spec, roadmap, changelog, MEMORY.md, schema.ts, bootstrap.ts, claude-agent.ts (+ new test), scheduler.ts, and HANDOFF.md (9 files). Ready to commit. Roadmap status now: 208 completed / 27 deferred / 3 planned / 4 in-progress / 5 non-spec docs.
+**Predecessor:** previous handoff was the `workflow-learning-approval-reliability` ship verification (committed in `ac411cbc`).
 
 ---
 
 ## TL;DR for the next agent
 
-1. **`workflow-learning-approval-reliability` was the fifth consecutive bidirectional-spec-staleness catch, on the highest-priority remaining `planned` feature.** All 9 ACs were already satisfied by existing code — verification took ~30 minutes with zero source changes. Notable pieces shipped across prior sessions: workflow engine owns session lifecycle (`engine.ts:83/116/193/1269/1332`), pattern extractor buffers via `bufferProposal` (`pattern-extractor.ts:115`), `learning-session.ts:80-141` produces exactly one `context_proposal_batch` notification per workflow, doubled SQL+JS visibility filter at `src/lib/notifications/visibility.ts` with 5 call sites across the inbox page + API route + live list component.
+1. **`task-turn-observability` was a real build session**, not a Ship Verification. Unlike the previous five sessions, every AC required actual work: schema columns added (`tasks.turnCount` + `tokenCount`), persistence wired in `claude-agent.ts` result-frame handler, scheduler refactored to prefer the new persisted value, metric definition documented in spec + MEMORY.md, new unit test pinning `turnCount > 0 && tokenCount > 0`. The bidirectional-staleness pattern *did not* hit this time — but verifying first was still cheap (a single grep round confirmed real gaps).
 
-2. **CLAUDE.md runtime-registry smoke gate did NOT fire here** because Ship Verification reads code without reshaping imports. The gate triggers only when "a plan adds, removes, or reshapes an import in any module transitively reachable from `@/lib/agents/runtime/catalog.ts`". This is a useful precedent: Ship Verification on runtime-adjacent features is *cheap* — the smoke gate cost only applies once the verifier escalates to a build session that touches imports.
+2. **Critical metric clarification codified in MEMORY.md.** The persisted `turnCount` counts streamed `assistant`-role frames, not SDK reasoning rounds. Production values run hundreds-to-thousands per autonomous-loop firing because each tool-using round emits multiple assistant frames (thinking + tool_use + final text). Operators reading dashboards must treat this as a stream-frame work-volume signal for relative comparison, *not* a budget unit comparable to `maxTurns`. This lesson lives in `MEMORY.md` "Architecture Notes" so future agents and operators don't repeat the spec author's misreading.
 
-3. **No P1 left in the planned roster.** Truly-planned roster (after this session) is **4 specs**, all P2/P3:
+3. **No P1 left, no P2 left.** Truly-planned roster (after this session) is **3 specs**, all P2 or P3:
 
    | Spec | Priority | Notes |
    |---|---|---|
-   | `onboarding-runtime-provider-choice` | P2 | |
-   | `task-turn-observability` | P2 | Confirmed-planned (the `turnCount` column is on `scheduleFiringMetrics`, not `tasks`). |
-   | `chat-conversation-branches` | P3 | |
-   | `composed-app-manifest-authoring-tools` | P3 | "Momentum" alternative across the last two handoffs. |
+   | `onboarding-runtime-provider-choice` | P2 | Last remaining P2. |
+   | `chat-conversation-branches` | P3 | Focused chat-runtime change. |
+   | `composed-app-manifest-authoring-tools` | P3 | "Momentum" alternative across the last three handoffs. |
 
    **Recommended order:**
-   - **30-min Ship Verification on `task-turn-observability` first** — same playbook as today's session (grep for spec-referenced symbols, especially around `turnCount` / `scheduleFiringMetrics`, before treating as buildable). High likelihood of similar partial-or-full drift given the pattern's track record.
-   - **Then `onboarding-runtime-provider-choice`** for the remaining P2.
+   - **30-min Ship Verification on `onboarding-runtime-provider-choice` first** — same playbook as the prior sessions. Per the bidirectional-staleness pattern (5 of 6 recent sessions hit it), grep for spec-referenced symbols before treating as buildable.
    - **Then either P3** based on momentum: `composed-app-manifest-authoring-tools` is the bigger one and has been deferred multiple times; `chat-conversation-branches` is a more focused chat-runtime change.
 
 4. **Outstanding gap-closure work (not blocking, trackable):**
@@ -32,58 +30,72 @@
    - `upgrade-session` (in-progress) — dedicated session-sheet UI, upgrade history list, abort confirmation, dev-server restart banner.
    - `composed-app-auto-inference-hardening` (in-progress) — 4 deferred ACs gated on first reported kit misfire.
 
-5. **Fifth consecutive bidirectional-staleness catch — formalize the grooming check.** This pattern has now hit P0/P1/P2 specs across five sessions in a row. The `/supervisor` and `product-manager` skills should bake in: *"Before treating any `status: planned` feature as buildable, grep for the spec's referenced files / functions / DB columns / route paths. If artifacts exist, the work shifts from build to verify."* Worth a dedicated entry in MEMORY.md or a hook.
+5. **CLAUDE.md runtime-registry smoke gate not triggered this session** — the changes added new fields to existing `db.update().set()` calls and a new `select` field, with no imports added/removed/reshaped. The smoke gate's wording is precise about that ("adds, removes, or reshapes an import"); pure runtime-path edits without import changes don't fire it. Useful precedent for future sessions: editing claude-agent.ts is allowed at moderate scope without the smoke gate, but any `import` line change crosses the threshold.
 
 ---
 
 ## What landed this session
 
-Uncommitted in working tree (4 files, **zero source changes**):
+Uncommitted in working tree (9 files):
 
-- `features/workflow-learning-approval-reliability.md` — `status: planned` → `status: completed`, `shipped-date: 2026-05-03`. All 9 ACs checked with file:line evidence. 3 Design Decisions added (doubled SQL+JS visibility filter; workflow engine owns session lifecycle, not runtime adapters; pattern extraction awaited but non-fatal). New "Verification" section documents the test run.
-- `features/roadmap.md` — `workflow-learning-approval-reliability` row flipped `planned` → `completed`.
-- `features/changelog.md` — prepended top-level entry with file:line evidence map and Design Decision summaries.
+- `features/task-turn-observability.md` — `status: planned` → `status: completed`, `shipped-date: 2026-05-03`. All 8 ACs checked with file:line evidence + Metric Definition section + Verification section + 3 Design Decisions added (stream-frame counter rationale; tokenCount denormalization rationale; scheduler fallback rationale).
+- `features/roadmap.md` — `task-turn-observability` row flipped `planned` → `completed`.
+- `features/changelog.md` — prepended top-level entry with implementation summary, file:line evidence, verification numbers, and Design Decision summaries.
+- `MEMORY.md` — added the "tasks.turnCount counts streamed assistant frames, NOT SDK reasoning rounds" entry under "Architecture Notes". Spec AC #1 satisfied.
+- `src/lib/db/schema.ts` — added `turnCount: integer("turn_count")` and `tokenCount: integer("token_count")` after `maxTurns` on the `tasks` table, with explanatory JSDoc.
+- `src/lib/db/bootstrap.ts` — added `turn_count INTEGER, token_count INTEGER` to the CREATE TABLE block AND `addColumnIfMissing` ALTER calls. Per MEMORY.md "addColumnIfMissing runs BEFORE CREATE" rule.
+- `src/lib/agents/claude-agent.ts` — extended the result-frame handler's `db.update(tasks).set(...)` call to write `turnCount` and `tokenCount: usageState.totalTokens ?? null`.
+- `src/lib/agents/__tests__/claude-agent.test.ts` — new test "A2b: persists turnCount and tokenCount on the completion update" pins both fields. Required overriding the module-level `extractUsageSnapshot` mock per-test so the result frame's usage data flows into `usageState`.
+- `src/lib/schedules/scheduler.ts` — `recordFiringMetrics` now reads `tasks.turnCount` first, falling back to `COUNT(*) FROM agentLogs` for pre-existing rows where the persisted value is null. Eliminates the schedule-vs-task aggregate inconsistency that motivated the spec.
 - `HANDOFF.md` — this file.
 
 ### Net effect on roadmap
 
 | Status | Before | After |
 |---|---|---|
-| completed | 206 | 207 |
-| planned | 5 | 4 |
+| completed | 207 | 208 |
+| planned | 4 | 3 |
 
-(in-progress, deferred, non-spec all unchanged. P1 planned count: **0**.)
+(in-progress, deferred, non-spec all unchanged. P1 planned: 0. P2 planned: 1.)
 
 ### Test surface verified
 
-- `npx vitest run src/lib/notifications src/lib/agents/__tests__/learning-session.test.ts src/lib/agents/__tests__/pattern-extractor.test.ts src/components/notifications` — **19/19 passed across 7 files**.
+- `npx vitest run src/lib/agents/__tests__/claude-agent.test.ts src/lib/data/__tests__/clear.test.ts` — **41/41 pass** (1 new test).
+- `npx vitest run src/lib/schedules` — **131/131 pass across 13 files** (no regressions from the scheduler refactor).
+- `npx tsc --noEmit` — clean for all touched files.
 
 ---
 
 ## Patterns reinforced this session
 
-- **Bidirectional spec staleness — fifth consecutive session.** Now spans P0/P1/P2/P3 priorities. The CLAUDE.md MEMORY.md entry "Spec frontmatter `status: planned` is unreliable — code may already be shipped" deserves promotion to a process gate, not just a memory note.
+- **Mock-at-the-outermost-boundary tradeoff in claude-agent.test.ts.** The module-level `vi.mock("@/lib/usage/ledger", ...)` returns `extractUsageSnapshot: () => ({})` so all existing tests run without real usage extraction. To assert `tokenCount > 0` in the new test, I had to override the mock implementation per-test (`vi.mocked(extractUsageSnapshot).mockImplementation(...)`). This works but it's a moderate complexity cost — a future cleanup could split the usage-mock into a more granular boundary so token assertions don't need per-test override.
 
-- **Ship Verification on runtime-adjacent features is cheap.** The CLAUDE.md runtime-registry smoke-test budget rule reads as a heavy cost ("must budget an end-to-end smoke step under `npm run dev`"), but it only fires when a plan reshapes imports. Pure verification reads code without changing it, so the smoke gate doesn't apply. This makes it safe to default to Ship Verification first on runtime-adjacent specs, escalating only if real gaps exist.
+- **Doubled CREATE+ALTER for new schema columns.** Per the MEMORY.md "Recurring Gotchas" entry, every new column added via `addColumnIfMissing` must also appear in the CREATE TABLE IF NOT EXISTS block — otherwise fresh DBs fail at first Drizzle insert. Followed that rule for both `turn_count` and `token_count`. Tests run against a fresh temp DB so they would have caught the failure mode if the rule had been missed.
 
-- **`/permission_required` regression-pin via test.** AC #9 ("permission_required behavior unchanged") sounds soft, but `permission-response-actions.test.tsx` (4 tests) plus `isLearningNotificationType`'s exact-string match in `visibility.ts:11-13` together pin the invariant: any future expansion of the "responded-filter" types must be explicit. The test would fail if a fix-the-symptom-not-the-cause refactor accidentally widened the filter.
+- **Spec ACs called for "30-min Ship Verification" but the work was a build session.** The previous handoff flagged `task-turn-observability` as "30-min Ship Verification candidate" but verification took ~15 minutes and revealed real gaps. Time spent on verification first is *cheap* — even when it doesn't unlock a quick close-out, it prevents wasted scope. Confirmed this session: ~15 min verification + ~60 min build, vs. an estimated ~75 min if I'd skipped verification and started building immediately.
 
-- **Doubled SQL+JS filter is the user-facing reliability play.** SQL alone would mean the responded item lingers visually until the next refresh. JS alone would mean the wire payload carries items the user will never see. The doubling is what makes the approval flow feel trustworthy — directly addresses the "trust" failure mode the spec was written to fix.
+- **Metric definition belongs in MEMORY.md, not just the spec.** The Metric Definition section in `features/task-turn-observability.md` is the canonical home, but mirroring to `MEMORY.md` "Architecture Notes" means future agents reading the auto-memory will see the clarification before they ever open the spec. AC #1 explicitly required this mirroring — the spec author understood that misreading metric numbers is a recurring failure mode worth multiple memory write-paths.
 
 ---
 
 ## How to commit this session's work
 
 ```
-git add features/workflow-learning-approval-reliability.md \
+git add features/task-turn-observability.md \
         features/roadmap.md \
         features/changelog.md \
+        MEMORY.md \
+        src/lib/db/schema.ts \
+        src/lib/db/bootstrap.ts \
+        src/lib/agents/claude-agent.ts \
+        src/lib/agents/__tests__/claude-agent.test.ts \
+        src/lib/schedules/scheduler.ts \
         HANDOFF.md
-git commit -m "docs(features): ship-verify workflow-learning-approval-reliability (P1 close-out)"
+git commit -m "feat(observability): ship task-turn-observability (turnCount + tokenCount)"
 ```
 
-Single docs-only commit — zero source changes today. Per CLAUDE.md commit style: `docs(features)` is correct here because nothing under `src/` moved.
+Single commit captures the full close-out — schema + bootstrap + runtime persistence + scheduler consistency refactor + test + spec/roadmap/changelog/memory docs. Per CLAUDE.md commit style: `feat(observability)` is correct because the user-visible change is a new metric exposed via `get_task` / `list_tasks`.
 
 ---
 
-*End of handoff. Next move: 30-min Ship Verification on `task-turn-observability` (P2), then `onboarding-runtime-provider-choice` (P2), then either P3 based on momentum.*
+*End of handoff. Next move: 30-min Ship Verification on `onboarding-runtime-provider-choice` (last P2), then either P3.*

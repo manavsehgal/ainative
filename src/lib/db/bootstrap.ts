@@ -80,6 +80,8 @@ export function bootstrapAinativeDatabase(sqlite: Database.Database): void {
       resume_count INTEGER DEFAULT 0 NOT NULL,
       workflow_run_number INTEGER,
       max_budget_usd REAL,
+      turn_count INTEGER,
+      token_count INTEGER,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL,
       FOREIGN KEY (project_id) REFERENCES projects(id) ON UPDATE NO ACTION ON DELETE NO ACTION,
@@ -607,6 +609,9 @@ export function bootstrapAinativeDatabase(sqlite: Database.Database): void {
   addColumnIfMissing(`ALTER TABLE tasks ADD COLUMN lease_expires_at INTEGER;`);
   addColumnIfMissing(`ALTER TABLE tasks ADD COLUMN failure_reason TEXT;`);
   addColumnIfMissing(`ALTER TABLE tasks ADD COLUMN max_turns INTEGER;`);
+  // Per-task observability — see features/task-turn-observability.md
+  addColumnIfMissing(`ALTER TABLE tasks ADD COLUMN turn_count INTEGER;`);
+  addColumnIfMissing(`ALTER TABLE tasks ADD COLUMN token_count INTEGER;`);
   // Phase 4: link row-triggered tasks back to their originating user_table_rows row
   addColumnIfMissing(`ALTER TABLE tasks ADD COLUMN context_row_id TEXT;`);
   addColumnIfMissing(`ALTER TABLE schedules ADD COLUMN max_turns INTEGER;`);

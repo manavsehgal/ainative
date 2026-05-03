@@ -252,6 +252,52 @@ describe("executeClaudeTask", () => {
     expect(mockRemoveExecution).toHaveBeenCalledWith("task-1");
   });
 
+  it("A2b: persists turnCount and tokenCount on the completion update", async () => {
+    mockWhere.mockResolvedValueOnce([makeTask()]);
+    // Override extractUsageSnapshot for this test so usage tokens flow into usageState.
+    // The default mock at module top returns {}; here we want the result frame to carry
+    // a usage snapshot that the merge picks up as totalTokens.
+    const { extractUsageSnapshot } = await import("@/lib/usage/ledger");
+    vi.mocked(extractUsageSnapshot).mockImplementation((source: unknown) => {
+      const node = source as { type?: string; usage?: { total_tokens?: number } };
+      if (node?.type === "result" && node.usage?.total_tokens) {
+        return { totalTokens: node.usage.total_tokens };
+      }
+      return {};
+    });
+
+    mockQuery.mockReturnValue(
+      createMockStream([
+        // Two assistant frames bump turnCount to 2
+        {
+          type: "assistant",
+          message: { content: [{ type: "text", text: "thinking..." }] },
+        },
+        {
+          type: "assistant",
+          message: { content: [{ type: "text", text: "answer" }] },
+        },
+        // Result frame carries the cumulative token total
+        { type: "result", result: "done", usage: { total_tokens: 300 } },
+      ]) as unknown as ReturnType<typeof query>
+    );
+
+    await executeClaudeTask("task-1");
+
+    // The completion update is the call that carries the result+turnCount+tokenCount.
+    const completionCall = mockSet.mock.calls.find((call) => {
+      const arg = call[0] as Record<string, unknown>;
+      return arg?.status === "completed";
+    });
+    expect(completionCall).toBeDefined();
+    const completionArg = completionCall![0] as {
+      turnCount: number;
+      tokenCount: number | null;
+    };
+    expect(completionArg.turnCount).toBe(2);
+    expect(completionArg.tokenCount).toBe(300);
+  });
+
   it("A-ainative-1: injects ainative MCP server into query mcpServers", async () => {
     mockWhere.mockResolvedValueOnce([makeTask({ projectId: "proj-7" })]);
     mockQuery.mockReturnValue(

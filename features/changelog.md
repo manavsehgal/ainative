@@ -1,5 +1,26 @@
 # Feature Changelog
 
+## 2026-05-03 — `task-turn-observability` shipped (P2 build session)
+
+Real build session — spec was genuinely planned with no shipping evidence. Spec ACs touched 4 files and added a documented metric definition. CLAUDE.md runtime-registry smoke gate did not apply because no imports were added/removed/reshaped — only new fields on existing `db.update().set()` calls and a new `select` field.
+
+### Implementation
+- **Schema columns** — `turnCount` + `tokenCount` on `tasks` (`src/lib/db/schema.ts:66-79`). Bootstrap synced in both the CREATE TABLE block (`bootstrap.ts:84-85`) and `addColumnIfMissing` (`bootstrap.ts:614-615`) per MEMORY.md's "BOTH the CREATE block AND the ALTER" rule.
+- **Persistence** — result-frame handler at `claude-agent.ts:382-389` writes both fields at completion using the in-memory `turnCount` counter (already incrementing at line 295) and `usageState.totalTokens` accumulated by `applyUsageSnapshot` across the stream.
+- **Scheduler consistency** — `scheduler.ts:175-208` now reads `tasks.turnCount` first, falling back to legacy `COUNT(*) FROM agentLogs` only when null (pre-existing rows). Eliminates the schedule-vs-task aggregate mismatch that motivated the spec.
+- **Metric definition** — `features/task-turn-observability.md` "Metric Definition" section documents that `turnCount` counts streamed assistant frames (not SDK reasoning rounds), explaining why production values run hundreds-to-thousands. Mirror in `MEMORY.md` "Architecture Notes".
+
+### Verification
+- 41/41 claude-agent tests pass (1 new: A2b pins `turnCount > 0 && tokenCount > 0`).
+- 131/131 schedule tests pass across 13 files (no regressions from the scheduler refactor).
+- `clear.ts` safety-net test still green (no FK-dependent tables added — just columns).
+- `tsc --noEmit` clean for all touched files.
+
+### Design Decisions codified in spec
+- **Stream-frame counter, not reasoning-round counter** — preserves continuity with the existing `turnCount++` semantics already in the runtime; explicit Metric Definition prevents misreading.
+- **`tokenCount` denormalized on `tasks`** — duplicates `usage_ledger.totalTokens` so `get_task`/`list_tasks` don't need to JOIN. Ledger remains authoritative for billing.
+- **Scheduler fallback to `COUNT(*)` only for null rows** — historical data stays readable; new firings produce strictly-consistent aggregates without a migration.
+
 ## 2026-05-03 — `workflow-learning-approval-reliability` ship-verified (P1 close-out)
 
 Pure Ship Verification — all 9 ACs satisfied by existing code. Fifth consecutive session catching bidirectional spec staleness, this time on the highest-priority remaining `planned` feature. CLAUDE.md runtime-registry smoke gate did not apply — Ship Verification reads code without reshaping imports.

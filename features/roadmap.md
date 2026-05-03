@@ -365,7 +365,7 @@ Durable fixes that replace symptom-level hotfixes with architectural contracts. 
 | [task-create-profile-validation](task-create-profile-validation.md) | P1 | completed | agent-integration, agent-profile-catalog |
 | [schedule-maxturns-api-control](schedule-maxturns-api-control.md) | P2 | completed | scheduled-prompt-loops |
 | [schedule-collision-prevention](schedule-collision-prevention.md) | P1 | completed | scheduled-prompt-loops, heartbeat-scheduler |
-| [task-turn-observability](task-turn-observability.md) | P2 | planned | agent-integration, scheduled-prompt-loops |
+| [task-turn-observability](task-turn-observability.md) | P2 | completed | agent-integration, scheduled-prompt-loops |
 
 ### App Marketplace — Foundation Layer
 

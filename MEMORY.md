@@ -55,6 +55,7 @@ This file captures evolving project facts, decisions, and recurring gotchas that
 - Technical Decision Records (TDRs) are maintained in `.claude/skills/architect/references/tdr-*.md` with 7 categories (data-layer, agent-system, api-design, frontend-architecture, runtime, workflow, infrastructure).
 - The `/architect` skill provides architecture review, change impact analysis, integration design, TDR management, architecture health, and drift detection. Supervisor delegates architecture questions to it.
 - Drift detection identifies positive patterns to codify as new TDRs and negative patterns (anti-patterns) to remediate in code.
+- **`tasks.turnCount` counts streamed assistant frames, NOT SDK reasoning rounds.** The counter at `src/lib/agents/claude-agent.ts:295` increments on every `message.type === "assistant"` frame from the runtime stream — and a single tool-using round emits multiple such frames (thinking + tool_use + final text). Observed values run hundreds-to-thousands per autonomous-loop firing; that is *expected*, not a misbehaving agent. Treat `turnCount` as a stream-frame work-volume signal for relative comparison, not a budget unit comparable to `maxTurns`. Same field exposed via `get_task` / `list_tasks` and as `scheduleFiringMetrics.turnCount` per firing. See `features/task-turn-observability.md` → "Metric Definition".
 
 ## Recurring Gotchas
 
