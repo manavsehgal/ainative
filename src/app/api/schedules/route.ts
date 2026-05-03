@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { schedules, scheduleDocumentInputs } from "@/lib/db/schema";
-import { desc, eq } from "drizzle-orm";
-import { parseInterval, computeNextFireTime } from "@/lib/schedules/interval-parser";
+import { and, desc, eq } from "drizzle-orm";
+import {
+  parseInterval,
+  computeNextFireTime,
+  computeStaggeredCron,
+} from "@/lib/schedules/interval-parser";
 import { parseNaturalLanguage } from "@/lib/schedules/nlp-parser";
 import { resolveAgentRuntime } from "@/lib/agents/runtime/catalog";
 import { validateRuntimeProfileAssignment } from "@/lib/agents/profiles/assignment-validation";
@@ -126,6 +130,30 @@ export async function POST(req: NextRequest) {
   });
   if (compatibilityError) {
     return NextResponse.json({ error: compatibilityError }, { status: 400 });
+  }
+
+  // Auto-stagger: if other active schedules in the same project would
+  // collide with the requested cron, offset its minute field. The chat-tool
+  // creation path (lib/chat/tools/schedule-tools.ts) does the same — keeping
+  // both paths in sync so AC "two schedules with */30 get :00/:30 and :15/:45"
+  // holds regardless of how the schedule was created.
+  const existingForStagger = await db
+    .select({ cron: schedules.cronExpression })
+    .from(schedules)
+    .where(
+      projectId
+        ? and(eq(schedules.status, "active"), eq(schedules.projectId, projectId))
+        : eq(schedules.status, "active"),
+    );
+  const staggerResult = computeStaggeredCron(
+    cronExpression,
+    existingForStagger.map((s) => s.cron),
+  );
+  if (staggerResult.offsetApplied > 0) {
+    console.log(
+      `[scheduler] staggered "${name.trim()}" by ${staggerResult.offsetApplied}min to avoid collision (${cronExpression} → ${staggerResult.cronExpression})`,
+    );
+    cronExpression = staggerResult.cronExpression;
   }
 
   const id = crypto.randomUUID();

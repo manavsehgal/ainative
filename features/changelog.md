@@ -1,5 +1,29 @@
 # Feature Changelog
 
+## 2026-05-03 — `schedule-collision-prevention` ship-verified; spec flipped to completed
+
+Bidirectional spec staleness: spec frontmatter said `planned`, but all four phases of the spec already shipped over prior sessions. Ship Verification covered all 8 ACs with one real gap closed mid-session.
+
+### All 8 ACs PASS
+- **Queue drain** (Phase 1) — `drainQueue()` at `src/lib/schedules/scheduler.ts:58-116` walks queued schedule/heartbeat tasks until empty; wired into `fireSchedule` (line 611) and `fireHeartbeat` (line 762) via `.then(() => drainQueue())` chains. Module-level `draining` flag prevents concurrent loops.
+- **Auto-stagger + 5min gap** (Phase 2) — `computeStaggeredCron` + `expandCronMinutes` at `src/lib/schedules/interval-parser.ts`; `MIN_GAP_MINUTES = 5` enforced via ±4-minute window in `hasCollision`.
+- **Turn budget header + prompt analyzer** (Phase 3) — `buildTurnBudgetHeader()` prepends to schedule task descriptions; `analyzePromptEfficiency()` warns on per-item loop patterns (8 test cases).
+- **Health metrics + auto-pause** (Phase 4) — `recordFiringMetrics` writes EMA-smoothed turn averages and inserts `scheduleFiringMetrics` rows; auto-pauses at 3 generic failures or 5 turn-budget breaches.
+
+### Gap closed mid-session
+- `src/app/api/schedules/route.ts` POST handler now applies `computeStaggeredCron` before `db.insert` — previously only the chat tool path (`schedule-tools.ts`) staggered, while UI form submissions (`schedule-create-sheet.tsx`, `schedule-create-dialog.tsx`) hit the REST API and bypassed the stagger logic. Behaviorally, two `*/30 * * * *` schedules created via the UI form now correctly become `:00/:30` and `:15/:45`.
+
+### Positive drift codified in spec
+- Heartbeat path's deliberate exclusion from the turn-budget header (different prompt structure — bounded JSON evaluation, not data fetching).
+- Split `failureStreak ≥ 3` vs. `turnBudgetBreachStreak ≥ 5` thresholds, with a first-breach grace window (2× cron interval after `maxTurnsSetAt`). Operational lesson preserved in the spec's Design Decisions.
+
+### Tests
+- 158 schedule-related tests pass across 15 files (drain, interval parser, prompt analyzer, turn budget, firing metrics, integration, tick scheduler).
+- 4 schedules-API tests pass (execute-route).
+
+### Pattern note
+This is another Ship Verification close-out following the bidirectional staleness pattern from CLAUDE.md: ALWAYS grep for the spec's referenced symbols before treating a `planned` feature as greenfield work.
+
 ## 2026-05-03 — Tier 2 Ship Verification (4 partial-drift candidates)
 
 Deeper AC-by-AC verification on the specs initial grooming pass classified as Tier 2 (partial drift):

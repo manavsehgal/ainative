@@ -1,6 +1,7 @@
 ---
 title: Schedule Collision Prevention & Turn Budget Optimization
-status: planned
+status: completed
+shipped-date: 2026-05-03
 priority: P1
 milestone: post-mvp
 source: wealth-mgr field deployment learnings
@@ -329,14 +330,14 @@ async function recordFiringMetrics(scheduleId: string, taskId: string): Promise<
 
 ## Acceptance Criteria
 
-- [ ] Queue drain: When task A completes and task B is queued, task B starts within 5 seconds (not on next poll cycle)
-- [ ] Auto-stagger: Two schedules created with `*/30 * * * *` get staggered to `:00/:30` and `:15/:45`
-- [ ] Minimum 5-minute gap enforced between any two schedule fire times
-- [ ] Turn budget header auto-prepended to all schedule-spawned tasks
-- [ ] Prompt efficiency warnings surfaced for per-item loop patterns
-- [ ] Schedule health metrics (avgTurns, failureStreak) tracked and visible
-- [ ] Auto-pause after 3 consecutive failures with log warning
-- [ ] Existing schedules unaffected (backward compatible)
+- [x] Queue drain: When task A completes and task B is queued, task B starts within 5 seconds (not on next poll cycle) — `drainQueue()` at `src/lib/schedules/scheduler.ts:58-116`, wired into `fireSchedule` (line 611) and `fireHeartbeat` (line 762) `.then()` chains.
+- [x] Auto-stagger: Two schedules created with `*/30 * * * *` get staggered to `:00/:30` and `:15/:45` — `computeStaggeredCron` at `src/lib/schedules/interval-parser.ts:177`, wired into the chat tool path (`src/lib/chat/tools/schedule-tools.ts:143`) and the REST API path (`src/app/api/schedules/route.ts`, added 2026-05-03).
+- [x] Minimum 5-minute gap enforced between any two schedule fire times — `MIN_GAP_MINUTES = 5` constant + `hasCollision()` walks ±4 minutes around each occupied minute (`src/lib/schedules/interval-parser.ts:148, 220-229`).
+- [x] Turn budget header auto-prepended to all schedule-spawned tasks — `buildTurnBudgetHeader()` at `src/lib/schedules/scheduler.ts:124`, prepended in `fireSchedule` at line 529. (Heartbeat path intentionally excluded — see Design Decisions.)
+- [x] Prompt efficiency warnings surfaced for per-item loop patterns — `analyzePromptEfficiency()` at `src/lib/schedules/prompt-analyzer.ts:46`, called from `create_schedule` chat tool at `src/lib/chat/tools/schedule-tools.ts:156`. Coverage in `prompt-analyzer.test.ts` (8 cases).
+- [x] Schedule health metrics (avgTurns, failureStreak) tracked and visible — `recordFiringMetrics` at `src/lib/schedules/scheduler.ts:170` writes `lastTurnCount`, `avgTurnsPerFiring` (EMA 0.7/0.3), `failureStreak`, `turnBudgetBreachStreak`, `lastFailureReason`. Persistent firing log in `scheduleFiringMetrics` table (`src/lib/db/schema.ts:1261`).
+- [x] Auto-pause after 3 consecutive failures with log warning — implemented at `scheduler.ts:226-253` with separate thresholds: 3 generic failures, 5 turn-budget breaches (with first-breach grace window, see Design Decisions).
+- [x] Existing schedules unaffected (backward compatible) — new schedule columns default to NULL/0 via bootstrap DDL; `drainQueue` respects existing concurrency cap; auto-stagger returns original cron when no neighbors collide.
 
 ## Design Decisions
 
@@ -351,6 +352,14 @@ Staggering at fire time (delaying execution by a random offset) adds latency to 
 ### Why prepend turn budget to prompt, not enforce in runtime?
 
 The runtime already enforces `maxTurns` — but hard-stopping an agent mid-task produces incomplete results. By telling the agent its budget upfront, it can plan its approach (batch vs. iterate) to complete within the limit. This is a soft guidance layer on top of the hard enforcement.
+
+### Why is the heartbeat path excluded from the turn-budget header?
+
+Heartbeat prompts (`src/lib/schedules/heartbeat-prompt.ts:27`) are structurally bounded JSON-evaluation tasks: N checklist items, one structured response. They don't have the per-item loop pathology that the field-data evidence in this spec (97/84/69 turn cases) describes. Adding the batching guidance in front of the strict JSON-response contract creates noise without addressing a real failure mode. The runtime turn limit still applies as a hard cap on heartbeats.
+
+### Why two auto-pause streaks (`failureStreak` ≥ 3 vs. `turnBudgetBreachStreak` ≥ 5)?
+
+A misconfigured `maxTurns` shouldn't trigger the same auto-pause as a misbehaving agent. Splitting the counter and lifting the threshold (5 vs. 3) gives users a few firings to notice the new cap is too tight before the schedule pauses. A first-breach grace window (`shouldApplyGrace` at `scheduler.ts:302`, 2× cron interval after `maxTurnsSetAt`) further forgives the first firing after a recent maxTurns edit. This is positive drift from the original spec — operational lesson learned during the field deployment that motivated this work.
 
 ## References
 
