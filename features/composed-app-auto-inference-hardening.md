@@ -1,6 +1,6 @@
 ---
 title: Composed App Auto-Inference — Probes & Decision Table Hardening
-status: planned
+status: in-progress
 priority: P2
 milestone: post-mvp
 source: ideas/composed-apps-domain-aware-view.md
@@ -105,9 +105,9 @@ Settings entry added to existing settings page (`src/app/settings/page.tsx`); pe
 ## Acceptance Criteria
 
 - [ ] `userTableColumns.config.semantic` is documented and accepted; existing rows without it continue to work
-- [ ] `hasCurrency`, `hasDate`, `hasBoolean`, `hasNotificationShape`, `hasMessageShape` probes use tiered match (semantic → format → regex), with tests for each tier
-- [ ] Inference test suite has ≥25 cases; positive + negative + conjunction + edge + golden-master coverage
-- [ ] All existing starter apps still resolve to their expected kit (no regression)
+- [x] `hasCurrency`, `hasDate`, `hasBoolean`, `hasNotificationShape`, `hasMessageShape` probes use tiered match (semantic → format → regex), with tests for each tier
+- [x] Inference test suite has ≥25 cases; positive + negative + conjunction + edge + golden-master coverage
+- [x] All existing starter apps still resolve to their expected kit (no regression)
 - [ ] `pickKit(...).options.trace` returns an `InferenceTrace` object listing rule hits, probe values, and rejected candidate kits
 - [ ] `/apps/[id]/inference` route renders the trace when `apps.showInferenceDiagnostics` is enabled, returns 404 otherwise
 - [ ] "Copy as `view:` field" button on the diagnostics page produces a valid YAML snippet that, when added to the manifest, produces the same kit selection
@@ -136,3 +136,4 @@ Settings entry added to existing settings page (`src/app/settings/page.tsx`); pe
 - Related features: `composed-app-manifest-view-field` (provides initial `pickKit`), `composed-app-manifest-authoring-tools` (consumes the trace generator)
 - Reference: `src/lib/tables/types.ts` (existing column-config shape), `src/app/settings/page.tsx` (settings UX pattern)
 - Anti-pattern reminders: no scoring, no telemetry inputs, no fuzzy matching
+- Implementation plan: `docs/superpowers/plans/2026-05-02-composed-app-auto-inference-hardening.md` (REDUCE scope: probes + test matrix only; diagnostics route + trace API + settings toggle + copy-as-view generator deferred to follow-up feature gated on first reported kit misfire)
