@@ -557,3 +557,75 @@ export async function restoreLatestRewoundPair(
 
   return { restoredMessageIds: pair.map((p) => p.id) };
 }
+
+/**
+ * chat-conversation-branches v1 — return all conversations in the same
+ * branching tree as `conversationId`. Walks to the topmost ancestor
+ * (parentConversationId IS NULL) then BFS-expands all descendants. Bounded
+ * by `MAX_BRANCH_DEPTH * branching factor`, which is small in practice.
+ *
+ * Used by the branches tree dialog to render the family without N+1 queries.
+ */
+export async function getConversationFamily(
+  conversationId: string
+): Promise<ConversationRow[]> {
+  // Phase 1: walk to root.
+  let cursor: string | null = conversationId;
+  let rootId: string | null = null;
+  for (let depth = 0; depth <= MAX_BRANCH_DEPTH; depth++) {
+    if (cursor == null) break;
+    const conv = (await db
+      .select({
+        id: conversations.id,
+        parentConversationId: conversations.parentConversationId,
+      })
+      .from(conversations)
+      .where(eq(conversations.id, cursor))
+      .get()) as
+      | { id: string; parentConversationId: string | null }
+      | undefined;
+    if (!conv) return [];
+    if (conv.parentConversationId == null) {
+      rootId = conv.id;
+      break;
+    }
+    cursor = conv.parentConversationId;
+  }
+  if (rootId == null) return [];
+
+  // Phase 2: BFS down. Iteratively load children until no new ids are added.
+  const known = new Set<string>([rootId]);
+  const all: ConversationRow[] = [];
+  const root = (await db
+    .select()
+    .from(conversations)
+    .where(eq(conversations.id, rootId))
+    .get()) as ConversationRow | undefined;
+  if (root) all.push(root);
+
+  let frontier = [rootId];
+  while (frontier.length > 0) {
+    const children = (await db
+      .select()
+      .from(conversations)
+      .where(
+        sql`${conversations.parentConversationId} IN (${sql.join(
+          frontier.map((id) => sql`${id}`),
+          sql.raw(", ")
+        )})`
+      )
+      .all()) as ConversationRow[];
+
+    const next: string[] = [];
+    for (const child of children) {
+      if (!known.has(child.id)) {
+        known.add(child.id);
+        all.push(child);
+        next.push(child.id);
+      }
+    }
+    frontier = next;
+  }
+
+  return all;
+}

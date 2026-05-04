@@ -66,6 +66,7 @@ interface ChatSessionValue {
   savedDefaultModel: string; // the persisted chat.defaultModel, separate from the currently-displayed modelId
   availableModels: ChatModelOption[];
   hydrated: boolean;
+  branchingEnabled: boolean;
 
   // Actions
   hydrate: (payload: {
@@ -83,6 +84,13 @@ interface ChatSessionValue {
     status: "pending" | "streaming" | "complete" | "error"
   ) => void;
   setModelId: (modelId: string) => Promise<void>;
+  rewindLastTurn: () => Promise<{ rewoundUserContent: string | null }>;
+  restoreLastRewoundPair: () => Promise<void>;
+  branchConversation: (input: {
+    parentConversationId: string;
+    branchedFromMessageId: string;
+    title?: string;
+  }) => Promise<string | null>;
 }
 
 const ChatSessionContext = createContext<ChatSessionValue | null>(null);
@@ -113,6 +121,7 @@ export function ChatSessionProvider({ children }: { children: ReactNode }) {
   const [availableModels, setAvailableModels] =
     useState<ChatModelOption[]>(CHAT_MODELS);
   const [hydrated, setHydrated] = useState(false);
+  const [branchingEnabled, setBranchingEnabled] = useState(false);
 
   const [helpDialogOpen, setHelpDialogOpen] = useState(false);
 
@@ -143,6 +152,15 @@ export function ChatSessionProvider({ children }: { children: ReactNode }) {
       .then((models) => {
         if (!cancelled && models?.length) {
           setAvailableModels(models);
+        }
+      })
+      .catch(() => {});
+
+    fetch("/api/chat/branching/flag")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!cancelled && typeof data?.enabled === "boolean") {
+          setBranchingEnabled(data.enabled);
         }
       })
       .catch(() => {});
@@ -458,6 +476,103 @@ export function ChatSessionProvider({ children }: { children: ReactNode }) {
       window.removeEventListener("ainative.chat.default-model-changed", handler);
     };
   }, [setModelId]);
+
+  // ── Branching: rewind / redo / branch ──────────────────────────────
+  // After a successful rewind/redo we re-fetch messages from the server.
+  // The optimistic user message inserted by `sendMessage` keeps its
+  // client-side `crypto.randomUUID()` even after the SSE `done` event
+  // (only the assistant id is reconciled to the server id). The server's
+  // markPair/restoreLatestRewoundPair return server-assigned ids; doing a
+  // pure client-side optimistic update by id misses the user message,
+  // leaving it rewound in the UI even though the DB cleared it. Refetching
+  // converges the client to DB truth in one extra round-trip per action.
+  const rewindLastTurn = useCallback(
+    async (): Promise<{ rewoundUserContent: string | null }> => {
+      const convId = activeIdRef.current;
+      if (!convId) return { rewoundUserContent: null };
+      const msgs = messagesByConversationRef.current[convId] ?? [];
+      let target: ChatMessageRow | null = null;
+      for (let i = msgs.length - 1; i >= 0; i--) {
+        const m = msgs[i];
+        if (m.role === "assistant" && m.rewoundAt == null) {
+          target = m;
+          break;
+        }
+      }
+      if (!target) return { rewoundUserContent: null };
+
+      try {
+        const res = await fetch(
+          `/api/chat/conversations/${convId}/rewind`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ assistantMessageId: target.id }),
+          }
+        );
+        if (!res.ok) return { rewoundUserContent: null };
+        const data = (await res.json()) as { rewoundUserContent: string | null };
+        await loadMessagesForConversation(convId);
+        return data;
+      } catch {
+        return { rewoundUserContent: null };
+      }
+    },
+    [loadMessagesForConversation]
+  );
+
+  const restoreLastRewoundPair = useCallback(async (): Promise<void> => {
+    const convId = activeIdRef.current;
+    if (!convId) return;
+    try {
+      const res = await fetch(
+        `/api/chat/conversations/${convId}/redo`,
+        { method: "POST" }
+      );
+      if (!res.ok) return;
+      await loadMessagesForConversation(convId);
+    } catch {
+      /* non-fatal */
+    }
+  }, [loadMessagesForConversation]);
+
+  const branchConversation = useCallback(
+    async (input: {
+      parentConversationId: string;
+      branchedFromMessageId: string;
+      title?: string;
+    }): Promise<string | null> => {
+      try {
+        const res = await fetch("/api/chat/conversations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            runtimeId: getRuntimeForModel(modelIdRef.current),
+            modelId: modelIdRef.current,
+            parentConversationId: input.parentConversationId,
+            branchedFromMessageId: input.branchedFromMessageId,
+            ...(input.title ? { title: input.title } : {}),
+          }),
+        });
+        if (!res.ok) {
+          toast.error("Failed to create branch");
+          return null;
+        }
+        const conversation = (await res.json()) as ConversationRow;
+        setConversations((prev) => [conversation, ...prev]);
+        setMessagesByConversation((prev) => ({
+          ...prev,
+          [conversation.id]: [],
+        }));
+        setActiveConversation(conversation.id, { skipLoad: true });
+        return conversation.id;
+      } catch {
+        toast.error("Failed to create branch");
+        return null;
+      }
+    },
+    [setActiveConversation]
+  );
 
   // ── Streaming: sendMessage + stopStreaming ──────────────────────────
   // The SSE reader loop runs inside the provider. If the consumer view
@@ -780,6 +895,7 @@ export function ChatSessionProvider({ children }: { children: ReactNode }) {
       savedDefaultModel,
       availableModels,
       hydrated,
+      branchingEnabled,
       hydrate,
       setActiveConversation,
       sendMessage,
@@ -789,6 +905,9 @@ export function ChatSessionProvider({ children }: { children: ReactNode }) {
       renameConversation,
       setMessageStatus,
       setModelId,
+      rewindLastTurn,
+      restoreLastRewoundPair,
+      branchConversation,
     }),
     [
       conversations,
@@ -799,6 +918,7 @@ export function ChatSessionProvider({ children }: { children: ReactNode }) {
       savedDefaultModel,
       availableModels,
       hydrated,
+      branchingEnabled,
       hydrate,
       setActiveConversation,
       sendMessage,
@@ -808,6 +928,9 @@ export function ChatSessionProvider({ children }: { children: ReactNode }) {
       renameConversation,
       setMessageStatus,
       setModelId,
+      rewindLastTurn,
+      restoreLastRewoundPair,
+      branchConversation,
     ]
   );
 

@@ -48,6 +48,9 @@ function Consumer({ label }: { label?: string }) {
           .map((m: ChatMessageRow) => m.content)
           .join("|")}
       </div>
+      <div data-testid={`${label ?? "c"}-branchingEnabled`}>
+        {String(session.branchingEnabled)}
+      </div>
       <button
         data-testid={`${label ?? "c"}-send`}
         onClick={() => void session.sendMessage("hello")}
@@ -569,5 +572,51 @@ describe("ChatSessionProvider", () => {
     expect(viewRemountCalls).toHaveLength(0);
 
     consoleInfoSpy.mockRestore();
+  });
+
+  it("exposes branchingEnabled from /api/chat/branching/flag", async () => {
+    const fetchMock = vi.fn(async (url: RequestInfo | URL) => {
+      const u = url.toString();
+      if (u.endsWith("/api/chat/branching/flag")) {
+        return new Response(JSON.stringify({ enabled: true }), { status: 200 });
+      }
+      return new Response(null, { status: 204 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <ChatSessionProvider>
+        <Consumer />
+      </ChatSessionProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("c-branchingEnabled").textContent).toBe("true");
+    });
+  });
+
+  it("defaults branchingEnabled to false when flag endpoint returns disabled", async () => {
+    const fetchMock = vi.fn(async (url: RequestInfo | URL) => {
+      const u = url.toString();
+      if (u.endsWith("/api/chat/branching/flag")) {
+        return new Response(JSON.stringify({ enabled: false }), { status: 200 });
+      }
+      return new Response(null, { status: 204 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <ChatSessionProvider>
+        <Consumer />
+      </ChatSessionProvider>
+    );
+
+    // Allow the one-time fetch effect to settle, then assert.
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining("/api/chat/branching/flag")
+      );
+    });
+    expect(screen.getByTestId("c-branchingEnabled").textContent).toBe("false");
   });
 });

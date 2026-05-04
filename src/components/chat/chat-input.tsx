@@ -14,6 +14,7 @@ import { toggleTheme } from "@/lib/theme";
 import type { ChatModelOption } from "@/lib/chat/types";
 import { getRuntimeForModel } from "@/lib/chat/types";
 import { resolveAgentRuntime } from "@/lib/agents/runtime/catalog";
+import { useChatSession } from "./chat-session-provider";
 
 interface ChatInputProps {
   onSend: (content: string, mentions?: MentionReference[]) => void;
@@ -49,6 +50,11 @@ export function ChatInput({
   conversationId,
 }: ChatInputProps) {
   const [value, setValue] = useState("");
+
+  const session = useChatSession();
+  const branchingEnabled = session.branchingEnabled;
+  const rewindLastTurn = session.rewindLastTurn;
+  const restoreLastRewoundPair = session.restoreLastRewoundPair;
 
   // One-shot hydration from sessionStorage when this input mounts for a
   // conversation that was just created from a template. Two keys:
@@ -134,6 +140,14 @@ export function ChatInput({
     }
   }, []);
 
+  // Auto-resize textarea
+  const handleInput = useCallback(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    textarea.style.height = "auto";
+    textarea.style.height = Math.min(textarea.scrollHeight, 200) + "px";
+  }, []);
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       // Let autocomplete handle keys first when popover is open
@@ -142,6 +156,30 @@ export function ChatInput({
       }
 
       const cmd = e.metaKey || e.ctrlKey;
+      // ⌘⇧Z / Ctrl+Shift+Z — restore most recently rewound pair (must come
+      // before the plain ⌘Z handler to win the same key event).
+      if (cmd && e.shiftKey && (e.key === "z" || e.key === "Z")) {
+        e.preventDefault();
+        if (branchingEnabled) {
+          void restoreLastRewoundPair();
+        }
+        return;
+      }
+      // ⌘Z / Ctrl+Z — rewind last turn and pre-fill composer
+      if (cmd && !e.shiftKey && (e.key === "z" || e.key === "Z")) {
+        e.preventDefault();
+        if (!branchingEnabled) return;
+        void rewindLastTurn().then((result) => {
+          if (result.rewoundUserContent != null) {
+            setValue(result.rewoundUserContent);
+            requestAnimationFrame(() => {
+              textareaRef.current?.focus();
+              handleInput();
+            });
+          }
+        });
+        return;
+      }
       if (cmd && (e.key === "l" || e.key === "L")) {
         e.preventDefault();
         if (!isStreaming) executeSessionCommand("clear");
@@ -167,16 +205,19 @@ export function ChatInput({
         textareaRef.current?.blur();
       }
     },
-    [handleSend, autocomplete.handleKeyDown, autocomplete.handleChange, executeSessionCommand, isStreaming]
+    [
+      handleSend,
+      autocomplete.handleKeyDown,
+      autocomplete.handleChange,
+      executeSessionCommand,
+      isStreaming,
+      branchingEnabled,
+      rewindLastTurn,
+      restoreLastRewoundPair,
+      handleInput,
+    ]
   );
 
-  // Auto-resize textarea
-  const handleInput = useCallback(() => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-    textarea.style.height = "auto";
-    textarea.style.height = Math.min(textarea.scrollHeight, 200) + "px";
-  }, []);
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {

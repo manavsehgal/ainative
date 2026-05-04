@@ -10,6 +10,7 @@ import { ChatInput } from "./chat-input";
 import { ChatEmptyState } from "./chat-empty-state";
 import { ChatActivityIndicator } from "./chat-activity-indicator";
 import { ConversationTemplatePicker } from "./conversation-template-picker";
+import { BranchesTreeDialog } from "./branches-tree-dialog";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { PanelRightOpen, Sparkles } from "lucide-react";
@@ -59,6 +60,17 @@ export function ChatShell({
   const [mobileListOpen, setMobileListOpen] = useState(false);
   const [hoverPreview, setHoverPreview] = useState<string | null>(null);
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
+  const [branchesDialogId, setBranchesDialogId] = useState<string | null>(null);
+
+  const hasRelatives = useCallback(
+    (id: string) => {
+      const conv = conversations.find((c) => c.id === id);
+      if (!conv) return false;
+      if (conv.parentConversationId != null) return true;
+      return conversations.some((c) => c.parentConversationId === id);
+    },
+    [conversations]
+  );
 
   // Open the template picker from any source (empty-state button, slash
   // command, palette). Central handler keeps the open state authoritative.
@@ -217,6 +229,9 @@ export function ChatShell({
       onNewChat={handleNewChat}
       onDelete={handleDeleteConversation}
       onRename={handleRenameConversation}
+      branchingEnabled={session.branchingEnabled}
+      hasRelatives={hasRelatives}
+      onViewBranches={(id) => setBranchesDialogId(id)}
     />
   );
 
@@ -312,6 +327,18 @@ export function ChatShell({
       <ConversationTemplatePicker
         open={templatePickerOpen}
         onOpenChange={setTemplatePickerOpen}
+      />
+
+      <BranchesTreeDialog
+        open={branchesDialogId != null}
+        onOpenChange={(o) => {
+          if (!o) setBranchesDialogId(null);
+        }}
+        conversationId={branchesDialogId}
+        onSelect={(id) => {
+          setActiveConversation(id);
+          setBranchesDialogId(null);
+        }}
       />
 
       {/* Desktop conversation list — right side */}

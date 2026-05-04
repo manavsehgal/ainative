@@ -1,5 +1,46 @@
 # Feature Changelog
 
+## 2026-05-03 — `chat-conversation-branches` Phase 2 shipped (UI + Claude smoke; spec → completed)
+
+Real build session, third of the day, executes Phase 1's deferred UI work end-to-end. Phase 1 (committed in `4b080ccd` earlier today) shipped the data layer + flag; Phase 2 wires branch action, tree dialog, ⌘Z/⌘⇧Z keybindings, and verifies cross-runtime behavior on Claude. Plan at `docs/superpowers/plans/2026-05-03-chat-conversation-branches-phase-2.md`. Scope challenge replaced the spec's literal "conversation detail sheet with Branches tab" — which would have invented a one-off UI pattern — with a `BranchesTreeDialog` opened from the existing `ConversationList` row dropdown (DD-7). Spec moves `in-progress` → `completed`. AC #6 (Ollama smoke) deferred with rationale: Ollama is not exposed in the chat-model selector today (only at the agent-runtime layer); branching is purely chat-layer.
+
+### Implementation
+
+- **Server-side flag exposure** — GET `/api/chat/branching/flag` at `src/app/api/chat/branching/flag/route.ts` returns `{ enabled }` so client UI can gate without a `NEXT_PUBLIC_*` env-var leak. Provider fetches it once at mount and exposes `branchingEnabled` in `ChatSessionValue`. (DD-8)
+- **Conversation family + branches route** — `getConversationFamily(conversationId)` walks to root then BFS-expands all descendants at `src/lib/data/chat.ts:560-632`. GET `/api/chat/conversations/[id]/branches` at `src/app/api/chat/conversations/[id]/branches/route.ts` returns `{ family }`; 404s when flag is off (branching invisible to clients) or conversation missing.
+- **Rewind + redo routes** — POST `/api/chat/conversations/[id]/rewind` and `/redo` are thin pass-throughs to existing `markPairRewound` / `restoreLatestRewoundPair` data fns. Same flag-off + 404 semantics as the branches route.
+- **Provider actions** — `rewindLastTurn`, `restoreLastRewoundPair`, `branchConversation` added to `ChatSessionValue` at `src/components/chat/chat-session-provider.tsx`. Both rewind actions refetch messages after the server roundtrip (DD-9 — caught a real bug during smoke).
+- **BranchActionButton** — hover action button + dialog at `src/components/chat/branch-action-button.tsx` with default branch title `{parent} — branch`. Wired into `ChatMessage` for completed assistant messages only, gated on `branchingEnabled`.
+- **Rewound message rendering** — `chat-message.tsx` returns a collapsed gray italic placeholder ("Rewound · your turn / assistant turn hidden from context") when `message.rewoundAt != null`, regardless of role. The DB row stays in place; only the rendering and agent-context visibility change.
+- **⌘Z / ⌘⇧Z keybindings** — registered on the textarea's `onKeyDown` (not `window`) at `src/components/chat/chat-input.tsx:144-167` so they only fire when the composer is focused (DD-10). ⌘Z calls `rewindLastTurn`, pre-fills the composer with `rewoundUserContent`, and refocuses with end-of-input cursor; ⌘⇧Z calls `restoreLastRewoundPair`. Both gated on `branchingEnabled`.
+- **BranchesTreeDialog** — at `src/components/chat/branches-tree-dialog.tsx`. Fetches family on open, builds an indented tree (depth × 16px padding-left), highlights current node with `(current)` + accent background. Plain DOM `<ul>` — no D3, no canvas. Single-node families render an empty-state message instead of a tree.
+- **ConversationList "View branches" item** — added between Rename and Delete in the row dropdown at `src/components/chat/conversation-list.tsx`. Visible only when `branchingEnabled && hasRelatives(id)`.
+- **ChatShell wiring** — `hasRelatives(id)` derived from `conversations` (parent or any child); `branchesDialogId` view-local state; `BranchesTreeDialog` rendered at the bottom alongside `ConversationTemplatePicker`.
+
+### Verification
+
+- **437/437 tests pass across 57 files** in `src/lib/db src/lib/data src/lib/chat src/app/api/chat src/components/chat` after Phase 2 changes (zero regressions). `npx tsc --noEmit` clean.
+- **New test files (5):** `src/app/api/chat/branching/flag/__tests__/route.test.ts` (3), `src/app/api/chat/conversations/[id]/branches/__tests__/route.test.ts` (3), `src/app/api/chat/conversations/[id]/rewind/__tests__/route.test.ts` (4), `src/app/api/chat/conversations/[id]/redo/__tests__/route.test.ts` (4), `src/components/chat/__tests__/branch-action-button.test.tsx` (3), `src/components/chat/__tests__/chat-message-branching.test.tsx` (4), `src/components/chat/__tests__/branches-tree-dialog.test.tsx` (4), `src/components/chat/__tests__/chat-input-rewind.test.tsx` (4). Total: 29 new tests.
+- **Extended** `src/lib/data/__tests__/branching.test.ts` with `getConversationFamily` cases (4); existing chat-session-provider tests extended with branching-flag exposure (2).
+- **Claude smoke (2026-05-03):** Verified end-to-end through `claude-opus-4-6` — branch action created child, prefix reconstruction confirmed via "Yellow" answer, ⌘Z/⌘⇧Z worked, tree dialog rendered + navigated, linear conversations un-regressed. See spec's "Verification — Claude smoke (2026-05-03 / Phase 2)" section.
+- **Ollama smoke deferred (AC #6):** rationale documented in spec — Ollama not in chat-model registry today.
+
+### Design Decisions codified in spec (Phase 2 additions)
+
+- **DD-7: Tree view ships as a Dialog from the row dropdown, not a new "conversation detail sheet."** No detail sheet exists in the codebase; reusing the row dropdown matches established pattern (Rename/Delete) and avoids a one-off UI invention.
+- **DD-8: Server-side flag via `/api/chat/branching/flag`.** Avoids `NEXT_PUBLIC_*` env-var leak; matches existing one-shot fetch pattern in the provider.
+- **DD-9: Refetch-after-mutation for rewind/redo, not optimistic-only.** Caught during Claude smoke: optimistic user message keeps its `crypto.randomUUID()` id; only assistant reconciles to server id via SSE `done`. Server-returned ids miss the user msg in optimistic clears. Refetch converges client to DB truth.
+- **DD-10: ⌘Z keybinding scoped to the textarea, not `window`.** Matches spec intent ("`⌘Z` *at the chat input*"), avoids hijacking OS undo elsewhere on the page.
+
+### Net effect on roadmap
+
+| Status | Before | After |
+|---|---|---|
+| in-progress | 1 | 0 |
+| completed (P3) | (n) | (n+1) |
+
+`chat-conversation-branches` flips `in-progress` → `completed`. Net-new planned-spec roster remains empty; next session can pick up P1 in-progress closeouts (`upgrade-session`, `workflow-document-pool`) or roadmap-vs-spec drift cleanup.
+
 ## 2026-05-03 — `chat-conversation-branches` Phase 1 shipped (P3 data-layer landing; UI + cross-runtime smoke deferred)
 
 Real build session, second of the day. Bidirectional-staleness grep for `parentConversationId`, `branchedFromMessageId`, `rewoundAt`, `loadConversationContext`, `chat.branching` returned **zero hits** outside the spec — spec frontmatter `status: planned` was accurate. Both dependencies (`chat-conversation-persistence`, `chat-data-layer`) verified `status: completed` with the schema artifacts (conversations + chat_messages tables) confirmed. Phased ship: data layer + feature-flag scaffold landed; UI surfaces and cross-runtime smoke deferred. Spec moves `planned` → `in-progress` (NOT `completed`) — half the ACs explicitly deferred. CLAUDE.md runtime-registry smoke gate did not apply this session — no imports added/removed under `src/lib/agents/runtime/` or `claude-agent.ts`; the only runtime-graph touch is `context-builder.ts` swapping `getMessages` for `getMessagesWithAncestors`, which keeps the same call shape.

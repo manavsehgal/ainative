@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Plus, MoreHorizontal, Pencil, Trash2, MessageCircle, Search } from "lucide-react";
+import { Plus, MoreHorizontal, Pencil, Trash2, MessageCircle, Search, GitBranch } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { resolveModelLabel } from "@/lib/chat/types";
 
@@ -21,6 +21,9 @@ interface ConversationListProps {
   onNewChat: () => void;
   onDelete: (id: string) => void;
   onRename: (id: string, title: string) => void;
+  branchingEnabled?: boolean;
+  hasRelatives?: (id: string) => boolean;
+  onViewBranches?: (id: string) => void;
 }
 
 function formatRelativeTime(date: Date | string | number): string {
@@ -45,6 +48,9 @@ export function ConversationList({
   onNewChat,
   onDelete,
   onRename,
+  branchingEnabled,
+  hasRelatives,
+  onViewBranches,
 }: ConversationListProps) {
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
@@ -170,6 +176,17 @@ export function ConversationList({
                       <Pencil className="h-3.5 w-3.5 mr-2" />
                       Rename
                     </DropdownMenuItem>
+                    {branchingEnabled && hasRelatives?.(conv.id) && onViewBranches && (
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onViewBranches(conv.id);
+                        }}
+                      >
+                        <GitBranch className="h-3.5 w-3.5 mr-2" />
+                        View branches
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem
                       onClick={(e) => {
                         e.stopPropagation();

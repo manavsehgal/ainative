@@ -3,6 +3,15 @@ import { render } from "@testing-library/react";
 import { ChatMessage } from "../chat-message";
 import type { ChatMessageRow } from "@/lib/db/schema";
 
+vi.mock("../chat-session-provider", () => ({
+  useChatSession: () => ({
+    branchingEnabled: false,
+    branchConversation: vi.fn(),
+    conversations: [],
+    activeId: "conv-1",
+  }),
+}));
+
 beforeEach(() => {
   vi.stubGlobal(
     "fetch",

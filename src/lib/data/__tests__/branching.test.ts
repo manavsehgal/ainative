@@ -15,6 +15,7 @@ import {
   getMessagesWithAncestors,
   markPairRewound,
   restoreLatestRewoundPair,
+  getConversationFamily,
   MAX_BRANCH_DEPTH,
 } from "../chat";
 // eslint-disable-next-line import/first
@@ -323,6 +324,72 @@ describe("chat branching data layer", () => {
 
     const result = await restoreLatestRewoundPair(conv.id);
     expect(result.restoredMessageIds).toEqual([]);
+  });
+
+  describe("getConversationFamily", () => {
+    it("returns single-element list for an isolated conversation", async () => {
+      const conv = await createConversation({ runtimeId: "claude-code" });
+      const family = await getConversationFamily(conv.id);
+      expect(family.map((c) => c.id)).toEqual([conv.id]);
+    });
+
+    it("returns root + all descendants for a 2-level tree", async () => {
+      const root = await createConversation({ runtimeId: "claude-code" });
+      const m = await addMessage({
+        conversationId: root.id,
+        role: "assistant",
+        content: "fork",
+      });
+      const childA = await createConversation({
+        runtimeId: "claude-code",
+        parentConversationId: root.id,
+        branchedFromMessageId: m.id,
+      });
+      const childB = await createConversation({
+        runtimeId: "claude-code",
+        parentConversationId: root.id,
+        branchedFromMessageId: m.id,
+      });
+      const m2 = await addMessage({
+        conversationId: childA.id,
+        role: "assistant",
+        content: "deeper fork",
+      });
+      const grandchild = await createConversation({
+        runtimeId: "claude-code",
+        parentConversationId: childA.id,
+        branchedFromMessageId: m2.id,
+      });
+
+      const family = await getConversationFamily(grandchild.id);
+      const ids = family.map((c) => c.id).sort();
+      expect(ids).toEqual([childA.id, childB.id, grandchild.id, root.id].sort());
+    });
+
+    it("returns family from any node in the tree (root, leaf, mid)", async () => {
+      const root = await createConversation({ runtimeId: "claude-code" });
+      const m = await addMessage({
+        conversationId: root.id,
+        role: "assistant",
+        content: "fork",
+      });
+      const child = await createConversation({
+        runtimeId: "claude-code",
+        parentConversationId: root.id,
+        branchedFromMessageId: m.id,
+      });
+
+      const fromRoot = await getConversationFamily(root.id);
+      const fromChild = await getConversationFamily(child.id);
+      expect(fromRoot.map((c) => c.id).sort()).toEqual(
+        fromChild.map((c) => c.id).sort()
+      );
+    });
+
+    it("returns empty list when conversation does not exist", async () => {
+      const family = await getConversationFamily("does-not-exist");
+      expect(family).toEqual([]);
+    });
   });
 
   afterAll(() => {

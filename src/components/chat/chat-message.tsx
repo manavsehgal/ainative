@@ -9,6 +9,8 @@ import { ChatQuestionInline } from "./chat-question";
 import { ChatQuickAccess } from "./chat-quick-access";
 import { ScreenshotGallery } from "./screenshot-gallery";
 import { AppMaterializedCard } from "./app-materialized-card";
+import { BranchActionButton } from "./branch-action-button";
+import { useChatSession } from "./chat-session-provider";
 import {
   ExtensionFallbackCard,
   type CreatePluginSpecInputForCard,
@@ -118,6 +120,23 @@ export function ChatMessage({ message, isStreaming, conversationId, onStatusChan
   const isUser = message.role === "user";
   const isSystem = message.role === "system";
   const isError = message.status === "error";
+  const isRewound = message.rewoundAt != null;
+
+  const session = useChatSession();
+  const branchingEnabled = session.branchingEnabled;
+  const parentTitle =
+    session.conversations.find((c) => c.id === conversationId)?.title ?? null;
+
+  // Rewound messages render as a single collapsed gray placeholder regardless
+  // of role. They stay visible to the user but are filtered from agent
+  // context server-side (see context-builder ancestor walk).
+  if (isRewound) {
+    return (
+      <div className="text-xs text-muted-foreground italic px-4 py-1.5 opacity-60">
+        Rewound · {message.role === "user" ? "your turn" : "assistant turn"} hidden from context
+      </div>
+    );
+  }
 
   // Handle system messages (permission requests, questions)
   if (isSystem && message.metadata && conversationId) {
@@ -256,6 +275,17 @@ export function ChatMessage({ message, isStreaming, conversationId, onStatusChan
               {fallbackReason}
             </span>
           )}
+        </div>
+      )}
+      {/* Branch action — completed assistant messages only, gated on flag */}
+      {!isUser && !isStreaming && branchingEnabled && conversationId && (
+        <div className="mt-1 ml-1">
+          <BranchActionButton
+            parentConversationId={conversationId}
+            branchedFromMessageId={message.id}
+            parentTitle={parentTitle}
+            onBranch={(input) => session.branchConversation(input)}
+          />
         </div>
       )}
     </div>
