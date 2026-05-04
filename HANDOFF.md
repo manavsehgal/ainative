@@ -1,137 +1,108 @@
-# Handoff: `chat-conversation-branches` Phase 2 (UI + Claude smoke) shipped — net-new planned-spec roster empty again
+# Handoff: Roadmap-vs-spec drift reconciliation (post Phase 2) — planned-spec roster at 0
 
-**Created:** 2026-05-03 (build session — `chat-conversation-branches` Phase 2)
-**Status:** Working tree has uncommitted edits across ~22 files (12 new + ~10 modified). Ready for a single Phase 2 commit.
-**Predecessor:** Phase 1 handoff archived at `.archive/handoff/2026-05-03-chat-conversation-branches-phase-1.md` (Phase 1 was committed as `4b080ccd` earlier today).
+**Created:** 2026-05-03 (drift reconciliation session — single-file commit pending)
+**Status:** Working tree has uncommitted edits to `features/roadmap.md` only (15 inserts / 9 deletes). Ready for a single docs commit.
+**Predecessor:** `chat-conversation-branches` Phase 2 handoff archived at `.archive/handoff/2026-05-03-chat-conversation-branches-phase-2.md` (Phase 2 was committed as `17a6fc5b` earlier today).
 
 ---
 
 ## TL;DR for the next agent
 
-1. **Phase 2 is fully done end-to-end except one structural deferral.** All 6 of 7 Phase 2 ACs landed with file:line evidence and a real Claude smoke run. AC #6 (Ollama smoke) is deferred with a written rationale in the spec — Ollama is not exposed as a chat-model option today (only at the agent-runtime layer for tasks/workflows). The spec is now `status: completed`. Plan at `docs/superpowers/plans/2026-05-03-chat-conversation-branches-phase-2.md`.
+1. **The planned-spec roster is now genuinely empty.** Final roadmap status distribution: 207 completed / 28 deferred / 5 shipped (SEM milestones) / 4 in-progress / 0 planned. Every previously-planned row was either promoted to its true state (completed/in-progress) or had already shipped via earlier commits today (`composed-app-manifest-authoring-tools` 712fe62c, `schedule-collision-prevention` 245d7165, `workflow-learning-approval-reliability` ac411cbc, `task-turn-observability` 3a971be9, `onboarding-runtime-provider-choice` 996a727c, plus the 2 chat-branches phases). The drift-detection grep heuristic for "next-up planned spec" no longer returns anything — pick from in-progress closeouts or net-new ideation instead.
 
-2. **Smoke caught a real client-side bug — fixed and codified as DD-9.** Optimistic user messages keep their `crypto.randomUUID()` id forever after `sendMessage`; only the assistant id is reconciled to the server's id via SSE `done`. So when `restoreLatestRewoundPair` returned server-assigned ids, the optimistic clear by id matched only the assistant. Fix: refetch messages after rewind/redo POST. One extra round-trip, robust against future state drift. Caught only because the smoke run actually drove the keybindings — unit tests structurally couldn't have caught it (they don't simulate the streaming-handshake id-assignment lifecycle).
+2. **9 roadmap rows promoted; 6 missing rows added.** Drift caught: ship-verifications today flipped spec frontmatter `status` to completed/in-progress without updating the corresponding roadmap row. Fixed both directions: (a) 5 rows promoted `planned → completed` (`composed-app-kit-inbox-and-research`, `entity-relationship-detail-views`, `relationship-summary-cards`, `sidebar-ia-route-restructure`, `workflow-document-pool`); (b) 4 rows promoted `planned → in-progress` (`composed-app-auto-inference-hardening`, `direct-runtime-advanced-capabilities`, `direct-runtime-prompt-caching`, `upgrade-session`); (c) 6 missing rows added (`routing-cascade-dual-provider`, `chat-polish-bundle-v1`, `instance-bootstrap-local-branch-shim`, `profile-runtime-default-resolution`, `workflow-editing`, `row-trigger-blueprint-execution`). 3 specs correctly excluded from roadmap (audit reports + external-repo doc).
 
-3. **The net-new planned-spec roster is empty again.** Same options as the predecessor handoff — pick a P1 in-progress closeout (`upgrade-session`, `workflow-document-pool`), do roadmap-vs-spec drift cleanup, or pick up something net-new from grooming. No spec-frontmatter `status: planned` features remain in `features/`.
+3. **The 4 remaining in-progress closeouts are the recommended next moves**, in priority order with concrete remaining scope:
 
-   **Recommended next:** `upgrade-session` was on the predecessor's "in-progress closeouts" list. Otherwise, a 30-minute roadmap-vs-spec drift reconciliation pass would clear up the spec frontmatter staleness predecessors flagged.
+   - **`upgrade-session`** (P1) — ~60% shipped per its own ship-verification block. Still missing: dedicated `upgrade-session-view.tsx` (currently re-uses generic `/tasks/[id]`), upgrade history list, abort confirmation dialog with rollback, "Restart dev server" success banner, integration tests on temp-dir clone. Substantial multi-step build — write a plan first.
+   - **`direct-runtime-advanced-capabilities`** (P2) — ~55% shipped. Remaining: thinking-block collapsible UI in `chat-message.tsx`, context compaction (no `compactContext` references yet), `/v1/models` discovery, Anthropic-side server-tool toggles. Concrete and bounded.
+   - **`direct-runtime-prompt-caching`** (P2) — partially shipped. Remaining: ledger persistence, dashboard surfacing, Batch API path. Smallest remaining scope of the four.
+   - **`composed-app-auto-inference-hardening`** (P2) — first cut shipped via `composed-app-manifest-view-field`. Remaining: explicit `column.config.semantic` field, expanded decision-table test suite (20-30 cases), `/apps/[id]/inference` diagnostic page.
 
-4. **CLAUDE.md runtime-registry smoke gate did not trigger this session.** No imports added/removed under `src/lib/agents/runtime/` or `claude-agent.ts`. The Phase 2 work is purely above the runtime layer — chat-input keybinding, provider state, dialog component, three thin API routes. Smoke ran against Claude anyway because spec AC #5 required it (different smoke gate — spec-driven, not runtime-cycle-driven).
+4. **Two non-drift findings worth carrying forward:**
+   - **`board-context-persistence` uses bullet-list metadata, not YAML frontmatter.** Status is `completed` (matches roadmap) so no functional drift, but the format inconsistency causes a parser miss in any tooling that reads `awk '/^---$/{flag++} flag==1 ...'`. Out of scope for this pass; flag for a future style-consistency PR.
+   - **SEM milestone `shipped` ≠ `completed` is intentional and load-bearing.** 5 rows show `roadmap=shipped, spec=completed` — this encodes the "shipped to GitHub origin AND part of the SEM batched npm release" state via the spec's `shipped-date:` frontmatter field. Do NOT normalize these to a single value. See memory note `project-self-extending-machine-npm-deferred.md`.
 
 ---
 
 ## What landed this session
 
-Uncommitted in working tree (~22 files):
+Single-file change to `features/roadmap.md` (15 inserts / 9 deletes):
 
-### New API routes + tests (8 files)
+### Status promotions (9)
 
-- `src/app/api/chat/branching/flag/route.ts` + `__tests__/route.test.ts` — GET → `{ enabled }`. 3 tests.
-- `src/app/api/chat/conversations/[id]/branches/route.ts` + `__tests__/route.test.ts` — GET → `{ family }`. 3 tests.
-- `src/app/api/chat/conversations/[id]/rewind/route.ts` + `__tests__/route.test.ts` — POST `{ assistantMessageId }` → `{ rewoundUserContent }`. 4 tests.
-- `src/app/api/chat/conversations/[id]/redo/route.ts` + `__tests__/route.test.ts` — POST → `{ restoredMessageIds }`. 4 tests.
+| Feature | Section | Before | After |
+|---|---|---|---|
+| workflow-document-pool | Document Management | planned | completed |
+| sidebar-ia-route-restructure | UI Enhancement | planned | completed |
+| direct-runtime-prompt-caching | Direct API Runtime Expansion | planned | in-progress |
+| direct-runtime-advanced-capabilities | Direct API Runtime Expansion | planned | in-progress |
+| entity-relationship-detail-views | Entity Relationships | planned | completed |
+| relationship-summary-cards | Entity Relationships | planned | completed |
+| upgrade-session | Clone Lifecycle & Self-Upgrade | planned | in-progress |
+| composed-app-kit-inbox-and-research | Composed Apps — Domain-Aware View | planned | completed |
+| composed-app-auto-inference-hardening | Composed Apps — Domain-Aware View | planned | in-progress |
 
-### New components + tests (4 files)
+### New rows added (6)
 
-- `src/components/chat/branch-action-button.tsx` + `__tests__/branch-action-button.test.tsx` — hover button + dialog. 3 tests.
-- `src/components/chat/branches-tree-dialog.tsx` + `__tests__/branches-tree-dialog.test.tsx` — indented tree. 4 tests.
+| Feature | Section | Status | Why missing |
+|---|---|---|---|
+| routing-cascade-dual-provider | Runtime Quality | completed | Verified shipped 2026-05-03 today; never had a roadmap row |
+| chat-polish-bundle-v1 | Chat Context Experience | completed | Bundle umbrella for Phase 3 chat-advanced-ux close-out |
+| instance-bootstrap-local-branch-shim | Clone Lifecycle & Self-Upgrade | completed | Spawned from incident memory note 2026-04-17 |
+| profile-runtime-default-resolution | Platform Hardening | completed | Phase-5 derived; closes a row-trigger-blueprint-execution bug |
+| workflow-editing | Platform Hardening | completed | Verified shipped 2026-05-03 today; never had a roadmap row |
+| row-trigger-blueprint-execution | Composed Apps — Domain-Aware View | completed | Phase-5 milestone; depends on inbox-and-research kit |
 
-### New tests (component-side coverage)
+### Excluded from roadmap (3)
 
-- `src/components/chat/__tests__/chat-message-branching.test.tsx` — branch button + rewound rendering. 4 tests.
-- `src/components/chat/__tests__/chat-input-rewind.test.tsx` — ⌘Z / ⌘⇧Z keybindings. 4 tests.
+- `quality-audit-report` — generated MVP audit document, not a feature
+- `supervisor-report` — generated supervisor output (frontmatter has `generated:` not `title:`/`status:`)
+- `marketing-site-pricing-reference` — implementation reference for the external `ainative.github.io` repo, not a ainative feature
 
-### Modified files
+### Verification
 
-- `src/lib/data/chat.ts` — added `getConversationFamily(conversationId)` (root walk + BFS-down).
-- `src/lib/data/__tests__/branching.test.ts` — added 4 family tests.
-- `src/components/chat/chat-session-provider.tsx` — added `branchingEnabled` state + flag fetch; added `rewindLastTurn`, `restoreLastRewoundPair`, `branchConversation` actions; refetch-after-mutation pattern (DD-9 fix).
-- `src/components/chat/__tests__/chat-session-provider.test.tsx` — extended Consumer probe with `branchingEnabled`; added 2 flag-fetch tests.
-- `src/components/chat/chat-message.tsx` — rewound placeholder rendering; branch button gated on flag + assistant + completed.
-- `src/components/chat/__tests__/chat-message-extension-fallback.test.tsx` — added `useChatSession` mock (now required since chat-message reads from session).
-- `src/components/chat/chat-input.tsx` — moved `handleInput` declaration above `handleKeyDown`; added ⌘Z / ⌘⇧Z handlers.
-- `src/components/chat/conversation-list.tsx` — added `branchingEnabled`/`hasRelatives`/`onViewBranches` props; "View branches" dropdown item.
-- `src/components/chat/chat-shell.tsx` — `hasRelatives` derived from conversations; `branchesDialogId` state; renders `BranchesTreeDialog`.
-- `features/chat-conversation-branches.md` — Phase 2 ACs flipped (1 deferred); 4 new design decisions (DD-7..DD-10); Verification section appended.
-- `features/roadmap.md` — `chat-conversation-branches` row `in-progress` → `completed`.
-- `features/changelog.md` — Phase 2 entry prepended above Phase 1.
-- `HANDOFF.md` — this file.
-- `.archive/handoff/2026-05-03-chat-conversation-branches-phase-1.md` — predecessor archived.
-- `docs/superpowers/plans/2026-05-03-chat-conversation-branches-phase-2.md` — implementation plan.
+```
+$ join -t '|' -j 1 /tmp/spec-status.txt /tmp/roadmap-status-after.txt | awk -F'|' '$2 != $3'
+board-context-persistence    spec=             roadmap=completed   # bullet-list format, parser miss only
+chat-tools-plugin-kind-1     spec=completed    roadmap=shipped     # SEM (intentional)
+install-parity-audit         spec=completed    roadmap=shipped     # SEM (intentional)
+nl-to-composition-v1         spec=completed    roadmap=shipped     # SEM (intentional)
+primitive-bundle-plugin-kind-5 spec=completed  roadmap=shipped     # SEM (intentional)
+schedules-as-yaml-registry   spec=completed    roadmap=shipped     # SEM (intentional)
+```
 
-### Net effect on roadmap
-
-| Status | Before | After |
-|---|---|---|
-| in-progress | 1 | 0 |
-| completed (P3) | n | n+1 |
-
-### Test surface verified
-
-- 29 new tests across 8 new test files; 4 added to existing `branching.test.ts`; 2 added to existing `chat-session-provider.test.tsx`. Total Phase 2: ~35 net-new tests.
-- `npx vitest run src/lib/db src/lib/data src/lib/chat src/app/api/chat src/components/chat` — **437/437 pass across 57 files** (zero regressions in the touched-module sweep).
-- `npx tsc --noEmit` — **clean project-wide** (zero errors).
-- **Claude smoke (2026-05-03):** branched a Claude `claude-opus-4-6` conversation; verified prefix reconstruction (model answered "Yellow" given a branch with no other context), ⌘Z rewound + composer pre-fill, ⌘⇧Z restored both messages, tree dialog rendered + navigation worked, linear-conversation regression check clean.
+All 6 remaining "mismatches" are expected and load-bearing — no further drift to fix.
 
 ---
 
 ## Patterns reinforced this session
 
-- **Smoke-test budget pays off even when the runtime-registry gate doesn't trigger.** The gate is for module-load cycles in agent runtime modules — none touched here. But the spec required cross-runtime smoke for behavior-correctness reasons (does branching reach the model?). Running the smoke caught a client-side staleness bug (DD-9) that 437 unit tests didn't surface, because unit tests don't simulate the SSE `done`-event id-reconciliation lifecycle. Lesson: when a feature crosses optimistic-state + server-state boundaries, smoke isn't optional even if module imports look safe.
+- **Drift creeps back fast.** The prior roadmap-drift handoff (4 commits, 2026-05-03 morning) reduced planned-row count to 7 "truly planned." Within the same day, ship-verifications baked into 5 separate feature commits flipped spec frontmatter without touching roadmap rows, regenerating 9 new drift cases by evening. **Lesson:** any commit that flips a spec's `status:` frontmatter MUST also update its corresponding roadmap row in the same commit. Worth codifying as a commit-time check (a hooked grep that fails the commit if `features/<name>.md` status changed but `features/roadmap.md` row for `<name>` did not). The `commit-push-pr` skill's automation surface is the natural home for this.
 
-- **Refetch-after-mutation > id-based optimistic clears for persisted chat state.** Tried optimistic-by-id first; tripped on a pre-existing client-side id staleness in `sendMessage`. Refetch converges client to DB truth in one round-trip and is robust against future state drift. The cost (extra GET) is negligible for chat where users naturally pause between turns.
+- **`shipped` and `completed` are semantically distinct in this project.** `shipped` is reserved for SEM (Self-Extending Machine) milestones M1–M5, encoding "on origin AND part of the deferred batched npm release." Spec frontmatter uses `completed` + `shipped-date:` to encode the same state at finer granularity. Anyone running a "normalize statuses" pass will be tempted to collapse these — don't. The semantic split is referenced in `project-self-extending-machine-npm-deferred.md`.
 
-- **Replace-not-invent for UI patterns.** Spec said "conversation detail sheet with Branches tab"; codebase had no such sheet. Reused the existing row dropdown menu pattern (Rename/Delete + new "View branches" item → opens a Dialog). Same user value, no one-off pattern. Codified as DD-7. Pattern: when a spec assumes a UI affordance that doesn't exist, scope-challenge it before building the affordance from scratch.
+- **Excluding non-feature specs from roadmap is correct, not a bug.** `quality-audit-report`, `supervisor-report`, `marketing-site-pricing-reference` all live in `features/` but aren't features. The frontmatter shape is the tell — `generated:` instead of `status:`, or no frontmatter at all. Future drift-detection scripts should special-case these (e.g., skip files without a `status:` field).
 
-- **Server-side flag exposure via tiny GET route, not `NEXT_PUBLIC_*`.** Keeps the env var server-only. Matches the existing one-shot fetch pattern (`/api/settings/chat`, `/api/chat/models`). Codified as DD-8. Useful pattern for any feature with a runtime flag whose flip-state should not be visible to all clients regardless of the flag's value.
-
-- **Keybindings scoped to the input that owns them, not `window`.** `⌘Z` is registered on the textarea's `onKeyDown` — fires only when the composer has focus. Matches spec intent and avoids hijacking OS undo elsewhere on the page (e.g., when editing the conversation title or typing in a form). Codified as DD-10.
+- **The "no planned rows" milestone reveals the project's cadence.** With everything either completed, deferred, in-progress, or shipped, the next session's "what to work on" decision is simpler: pick an in-progress closeout, write a plan for a previously-deferred feature being un-deferred, or pull from the ideas/ pipeline. There's no longer an ambient "planned backlog" to draw from. This is healthy for a single-developer cadence but means each session must do a small ideation step before starting work.
 
 ---
 
 ## How to commit this session's work
 
 ```
-git add features/chat-conversation-branches.md \
-        features/roadmap.md \
-        features/changelog.md \
-        src/lib/data/chat.ts \
-        src/lib/data/__tests__/branching.test.ts \
-        src/app/api/chat/branching/flag/route.ts \
-        src/app/api/chat/branching/flag/__tests__/route.test.ts \
-        src/app/api/chat/conversations/\[id\]/branches/route.ts \
-        src/app/api/chat/conversations/\[id\]/branches/__tests__/route.test.ts \
-        src/app/api/chat/conversations/\[id\]/rewind/route.ts \
-        src/app/api/chat/conversations/\[id\]/rewind/__tests__/route.test.ts \
-        src/app/api/chat/conversations/\[id\]/redo/route.ts \
-        src/app/api/chat/conversations/\[id\]/redo/__tests__/route.test.ts \
-        src/components/chat/chat-session-provider.tsx \
-        src/components/chat/__tests__/chat-session-provider.test.tsx \
-        src/components/chat/branch-action-button.tsx \
-        src/components/chat/__tests__/branch-action-button.test.tsx \
-        src/components/chat/branches-tree-dialog.tsx \
-        src/components/chat/__tests__/branches-tree-dialog.test.tsx \
-        src/components/chat/chat-message.tsx \
-        src/components/chat/__tests__/chat-message-branching.test.tsx \
-        src/components/chat/__tests__/chat-message-extension-fallback.test.tsx \
-        src/components/chat/chat-input.tsx \
-        src/components/chat/__tests__/chat-input-rewind.test.tsx \
-        src/components/chat/conversation-list.tsx \
-        src/components/chat/chat-shell.tsx \
-        docs/superpowers/plans/2026-05-03-chat-conversation-branches-phase-2.md \
-        HANDOFF.md \
-        .archive/handoff/2026-05-03-chat-conversation-branches-phase-1.md
-git commit -m "feat(chat): ship chat-conversation-branches Phase 2 (UI + Claude smoke)"
+git add features/roadmap.md HANDOFF.md .archive/handoff/2026-05-03-chat-conversation-branches-phase-2.md
+git commit -m "docs(features): reconcile roadmap drift — 9 promotions + 6 missing rows"
 ```
 
-Single bisectable commit captures the full Phase 2 close-out — 3 new API routes + tests, 2 new components + tests, 2 new component-test files, provider extension, ChatMessage rewound rendering, ChatInput keybindings, ConversationList "View branches" item, ChatShell wiring, spec ACs flipped, roadmap row updated, changelog entry, plan, handoff archive + new handoff. Per CLAUDE.md commit style: `feat(chat)` is correct because the user-visible feature is the chat branching surface.
+Single-file feature-data change. Per the commit-style guidance in CLAUDE.md, `docs(features)` is correct because the only code-affecting surface is the roadmap source-of-truth, not runtime behavior. This commit is bisectable and self-contained — no test surface required (the file is data, validated by the `join`-based diff above).
 
 ---
 
-*End of handoff. Three reasonable next moves:*
+*End of handoff. Three reasonable next moves, in priority order:*
 
-1. ***P1 in-progress closeout — `upgrade-session`*** (was on predecessor's list): dedicated session sheet, upgrade history, abort confirmation, dev-server restart banner.
-2. ***P1 in-progress closeout — `workflow-document-pool`*** (also on predecessor's list).
-3. ***Roadmap-vs-spec drift reconciliation*** (~30 min): predecessor noted `composed-app-auto-inference-hardening` specifically; my session confirms others may have drifted (spec frontmatter `in-progress` while roadmap row says `planned`). Would improve later signal for the planned-spec grep heuristic.
+1. ***P1 in-progress closeout — `upgrade-session`*** (largest scope of the four; needs a plan first per CLAUDE.md "plan-first for non-trivial features"). Concrete remaining ACs in the spec's ship-verification block at `features/upgrade-session.md` line 10.
+2. ***P2 in-progress closeout — `direct-runtime-prompt-caching`*** (smallest scope; ledger persistence + cost dashboard cache hit-rate + Batch API). Good candidate if seeking a finishable-in-one-session task.
+3. ***Net-new from `ideas/`*** (the planned roster is empty — need ideation to refill). Run `/supervisor` for project-state-aware recommendations or scan `ideas/` for un-specced concepts.
 
-*If picking a roadmap option: skim the predecessor handoff for the recommended closeout sequence.*
+*If picking option 1 or 2: skim the `direct-api-gap-analysis.md` idea doc and the predecessor's roadmap-drift handoff for context on what's already mapped.*

@@ -48,7 +48,7 @@ Features that enhance the product but aren't essential for first use — homepag
 | [agent-document-context](agent-document-context.md) | P1 | completed | file-attachment-data-layer, document-preprocessing |
 | [document-manager](document-manager.md) | P2 | completed | file-attachment-data-layer, document-preprocessing |
 | [document-output-generation](document-output-generation.md) | P3 | completed | file-attachment-data-layer, agent-document-context |
-| [workflow-document-pool](workflow-document-pool.md) | P1 | planned | workflow-engine, file-attachment-data-layer, document-preprocessing, agent-document-context, document-output-generation, workflow-ux-overhaul |
+| [workflow-document-pool](workflow-document-pool.md) | P1 | completed | workflow-engine, file-attachment-data-layer, document-preprocessing, agent-document-context, document-output-generation, workflow-ux-overhaul |
 
 ### Agent Intelligence
 
@@ -91,7 +91,7 @@ Features that enhance the product but aren't essential for first use — homepag
 | [keyboard-shortcut-system](keyboard-shortcut-system.md)             | P2       | completed | app-shell, command-palette-enhancement                                                                   |
 | [workflow-ux-overhaul](workflow-ux-overhaul.md)                     | P1       | completed | workflow-engine, ai-assist-workflow-creation, agent-document-context, document-output-generation        |
 | [settings-interactive-controls](settings-interactive-controls.md)   | P2       | completed | —                                                                                                        |
-| [sidebar-ia-route-restructure](sidebar-ia-route-restructure.md)     | P1       | planned   | app-shell, task-board, homepage-dashboard, keyboard-shortcut-system, command-palette-enhancement         |
+| [sidebar-ia-route-restructure](sidebar-ia-route-restructure.md)     | P1       | completed | app-shell, task-board, homepage-dashboard, keyboard-shortcut-system, command-palette-enhancement         |
 
 ### Browser & Automation
 
@@ -135,8 +135,8 @@ Features that enhance the product but aren't essential for first use — homepag
 | [anthropic-direct-runtime](anthropic-direct-runtime.md) | P1 | completed | provider-agnostic-tool-layer, provider-runtime-abstraction, cross-provider-profile-compatibility |
 | [openai-direct-runtime](openai-direct-runtime.md) | P1 | completed | provider-agnostic-tool-layer, provider-runtime-abstraction, cross-provider-profile-compatibility |
 | [smart-runtime-router](smart-runtime-router.md) | P1 | completed | anthropic-direct-runtime, openai-direct-runtime, multi-agent-routing |
-| [direct-runtime-prompt-caching](direct-runtime-prompt-caching.md) | P2 | planned | anthropic-direct-runtime |
-| [direct-runtime-advanced-capabilities](direct-runtime-advanced-capabilities.md) | P2 | planned | anthropic-direct-runtime, openai-direct-runtime |
+| [direct-runtime-prompt-caching](direct-runtime-prompt-caching.md) | P2 | in-progress | anthropic-direct-runtime |
+| [direct-runtime-advanced-capabilities](direct-runtime-advanced-capabilities.md) | P2 | in-progress | anthropic-direct-runtime, openai-direct-runtime |
 
 ### Runtime Quality
 
@@ -145,6 +145,7 @@ Features that enhance the product but aren't essential for first use — homepag
 | [sdk-runtime-hardening](sdk-runtime-hardening.md) | P2 | completed | provider-runtime-abstraction, usage-metering-ledger, spend-budget-guardrails, agent-self-improvement |
 | [e2e-test-automation](e2e-test-automation.md) | P2 | completed | provider-runtime-abstraction, workflow-engine, agent-profile-catalog |
 | [runtime-validation-hardening](runtime-validation-hardening.md) | P1 | completed | provider-runtime-abstraction, multi-agent-routing |
+| [routing-cascade-dual-provider](routing-cascade-dual-provider.md) | P1 | completed | provider-runtime-abstraction, runtime-capability-matrix |
 
 ### Governance & Analytics
 
@@ -214,6 +215,7 @@ Runtime-native skills, filesystem context, file mentions, and a command-namespac
 | [saved-search-polish-v1](saved-search-polish-v1.md) | P2 | completed | chat-pinned-saved-searches |
 | [chat-conversation-branches](chat-conversation-branches.md) | P3 | completed | chat-conversation-persistence, chat-data-layer |
 | [onboarding-runtime-provider-choice](onboarding-runtime-provider-choice.md) | P2 | completed | app-shell, provider-runtime-abstraction, runtime-capability-matrix |
+| [chat-polish-bundle-v1](chat-polish-bundle-v1.md) | P3 | completed | chat-filter-namespace, chat-pinned-saved-searches, saved-search-polish-v1 |
 
 ### Living Book
 
@@ -275,8 +277,8 @@ Runtime-native skills, filesystem context, file mentions, and a command-namespac
 | Feature | Priority | Status | Dependencies |
 |---------|----------|--------|--------------|
 | [workflow-run-history](workflow-run-history.md) | P1 | completed | workflow-engine, workflow-editing, document-output-generation |
-| [entity-relationship-detail-views](entity-relationship-detail-views.md) | P2 | planned | workflow-run-history, detail-view-redesign |
-| [relationship-summary-cards](relationship-summary-cards.md) | P2 | planned | entity-relationship-detail-views |
+| [entity-relationship-detail-views](entity-relationship-detail-views.md) | P2 | completed | workflow-run-history, detail-view-redesign |
+| [relationship-summary-cards](relationship-summary-cards.md) | P2 | completed | entity-relationship-detail-views |
 
 ### PLG Monetization — Foundation Layer
 
@@ -336,8 +338,9 @@ Automates the PRIVATE-INSTANCES runbook — turns the manual `git merge main` + 
 |---------|----------|--------|--------------|
 | [instance-bootstrap](instance-bootstrap.md) | P1 | completed | — |
 | [upgrade-detection](upgrade-detection.md) | P1 | completed | instance-bootstrap, scheduled-prompt-loops |
-| [upgrade-session](upgrade-session.md) | P1 | planned | instance-bootstrap, upgrade-detection, agent-integration, agent-profile-catalog |
+| [upgrade-session](upgrade-session.md) | P1 | in-progress | instance-bootstrap, upgrade-detection, agent-integration, agent-profile-catalog |
 | [instance-license-metering](instance-license-metering.md) | P2 | deferred | instance-bootstrap, local-license-manager, license-activation-flow |
+| [instance-bootstrap-local-branch-shim](instance-bootstrap-local-branch-shim.md) | P2 | completed | instance-bootstrap, upgrade-detection |
 
 ### Growth-Enabling Primitives
 
@@ -366,6 +369,8 @@ Durable fixes that replace symptom-level hotfixes with architectural contracts. 
 | [schedule-maxturns-api-control](schedule-maxturns-api-control.md) | P2 | completed | scheduled-prompt-loops |
 | [schedule-collision-prevention](schedule-collision-prevention.md) | P1 | completed | scheduled-prompt-loops, heartbeat-scheduler |
 | [task-turn-observability](task-turn-observability.md) | P2 | completed | agent-integration, scheduled-prompt-loops |
+| [profile-runtime-default-resolution](profile-runtime-default-resolution.md) | P1 | completed | row-trigger-blueprint-execution |
+| [workflow-editing](workflow-editing.md) | P1 | completed | workflow-engine |
 
 ### App Marketplace — Foundation Layer
 
@@ -449,9 +454,10 @@ Per-app view redesign so that composed apps render domain-aware dashboards drive
 | [composed-app-manifest-view-field](composed-app-manifest-view-field.md) (Phase 1) | P1 | completed | composed-app-view-shell |
 | [composed-app-kit-tracker-and-hub](composed-app-kit-tracker-and-hub.md) (Phase 2) | P1 | completed | composed-app-view-shell, composed-app-manifest-view-field, tables-spreadsheet-editor, micro-visualizations |
 | [composed-app-kit-coach-and-ledger](composed-app-kit-coach-and-ledger.md) (Phase 3) | P2 | completed | composed-app-kit-tracker-and-hub |
-| [composed-app-kit-inbox-and-research](composed-app-kit-inbox-and-research.md) (Phase 4) | P2 | planned | composed-app-kit-coach-and-ledger |
-| [composed-app-auto-inference-hardening](composed-app-auto-inference-hardening.md) (Phase 5) | P2 | planned | composed-app-kit-inbox-and-research |
+| [composed-app-kit-inbox-and-research](composed-app-kit-inbox-and-research.md) (Phase 4) | P2 | completed | composed-app-kit-coach-and-ledger |
+| [composed-app-auto-inference-hardening](composed-app-auto-inference-hardening.md) (Phase 5) | P2 | in-progress | composed-app-kit-inbox-and-research |
 | [composed-app-manifest-authoring-tools](composed-app-manifest-authoring-tools.md) (Phase 5) | P3 | completed | composed-app-manifest-view-field, composed-app-auto-inference-hardening, chat-app-builder |
+| [row-trigger-blueprint-execution](row-trigger-blueprint-execution.md) (Phase 5) | P1 | completed | composed-app-kit-inbox-and-research, workflow-engine |
 
 ## Dependency Graph
 
