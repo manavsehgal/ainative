@@ -73,8 +73,8 @@ const homeItems: NavItem[] = [
 ];
 
 const composeItems: NavItem[] = [
+  { title: "Apps", href: "/apps", icon: Sparkles, description: "Composed apps — the entry point", alsoMatches: ["/apps/"] },
   { title: "Projects", href: "/projects", icon: FolderKanban, description: "Group work by project" },
-  { title: "Apps", href: "/apps", icon: Sparkles, description: "Composed apps you've built", alsoMatches: ["/apps/"] },
   { title: "Workflows", href: "/workflows", icon: Workflow, description: "Multi-step agent pipelines" },
   { title: "Profiles", href: "/profiles", icon: Bot, description: "Tune agent behavior" },
   { title: "Schedules", href: "/schedules", icon: Clock, description: "Recurring automated runs" },

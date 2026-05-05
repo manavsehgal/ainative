@@ -34,6 +34,15 @@ interface ChatInputProps {
    * without a schema change.
    */
   conversationId?: string | null;
+  /**
+   * Imperative seed signal — when `seedSignal.nonce` changes, the textarea
+   * value is replaced with `seedSignal.value`. Used by the chat hero's
+   * starter cards and example chips, which need to fill the input WITHOUT
+   * auto-submitting (so the user can review and edit a long compositional
+   * prompt before sending). The nonce-driven design lets the same value be
+   * re-seeded on repeated clicks.
+   */
+  seedSignal?: { value: string; nonce: number };
 }
 
 export function ChatInput({
@@ -48,8 +57,30 @@ export function ChatInput({
   availableModels,
   projectId,
   conversationId,
+  seedSignal,
 }: ChatInputProps) {
   const [value, setValue] = useState("");
+
+  // External seed: starter cards / example chips set this to fill the
+  // composer without sending. Watching the nonce (not the value) lets the
+  // same prompt be re-seeded if the user clicks the same card twice.
+  // We track the last consumed nonce so that ChatInput remounts (e.g. when a
+  // new conversation is created from a starter click) don't re-apply a stale
+  // seed at mount time. Initialize to whatever nonce was current at mount —
+  // any subsequent change is a fresh user click and should fire.
+  // Track the last consumed nonce so a stale seedSignal can't re-fire on
+  // ChatInput remount (e.g. when a starter click creates a new conversation,
+  // the input remounts with the same in-memory seedSignal). Initializing the
+  // ref to the current nonce skips that initial application; later changes
+  // via parent click are real user actions and seed normally.
+  const consumedNonceRef = useRef<number>(seedSignal?.nonce ?? 0);
+  useEffect(() => {
+    const nonce = seedSignal?.nonce ?? 0;
+    if (nonce === 0 || nonce === consumedNonceRef.current) return;
+    consumedNonceRef.current = nonce;
+    setValue(seedSignal!.value);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seedSignal?.nonce]);
 
   const session = useChatSession();
   const branchingEnabled = session.branchingEnabled;

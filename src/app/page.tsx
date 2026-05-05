@@ -13,6 +13,7 @@ import { RecentProjects } from "@/components/dashboard/recent-projects";
 import type { RecentProject } from "@/components/dashboard/recent-projects";
 import { WelcomeLanding } from "@/components/dashboard/welcome-landing";
 import { ActivationChecklist } from "@/components/onboarding/activation-checklist";
+import { listStarters } from "@/lib/apps/starters";
 import {
   getCompletionsByDay,
   getTaskCreationsByDay,
@@ -103,10 +104,13 @@ export default async function HomePage() {
     activeWorkflowCountResult.count === 0;
 
   if (isFreshInstance) {
+    // listStarters reads YAML files from disk synchronously — only loaded on
+    // the welcome path so we don't pay the read on every dashboard hit.
+    const starters = listStarters();
     return (
       <div className="bg-background min-h-screen p-4 sm:p-6">
         <div className="surface-page-shell min-h-[calc(100dvh-2rem)] rounded-xl p-5 sm:p-6 lg:p-7 space-y-6">
-          <WelcomeLanding />
+          <WelcomeLanding starters={starters} />
         </div>
       </div>
     );

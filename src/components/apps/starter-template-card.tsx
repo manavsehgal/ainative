@@ -11,6 +11,8 @@ import {
   Workflow,
   Table2,
   Clock,
+  Wallet,
+  CheckCircle,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -21,11 +23,21 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   "library": Library,
   "mail": Mail,
   "sparkles": Sparkles,
+  "wallet": Wallet,
+  "check-circle": CheckCircle,
 };
 
 interface Props {
   starter: StarterTemplate;
   className?: string;
+  /**
+   * Optional click override. When provided, replaces the default
+   * sessionStorage-prefill + router.push("/chat") behavior. Use this when
+   * rendering the card on the chat page itself, where router navigation is a
+   * no-op and sessionStorage prefill never gets consumed — the caller should
+   * seed the chat input directly via its own suggestion-click handler.
+   */
+  onClick?: (starter: StarterTemplate) => void;
 }
 
 /**
@@ -33,19 +45,27 @@ interface Props {
  * style, research-digest, customer-follow-up). Clicking seeds the chat
  * composer via existing `chat:prefill:pending` sessionStorage channel,
  * then routes to /chat. Zero chat-input changes required.
+ *
+ * Pass `onClick` to override the default route-and-prefill behavior — the
+ * chat hero uses this so clicking a card directly fills the visible textarea
+ * instead of trying to navigate to a route the user is already on.
  */
-export function StarterTemplateCard({ starter, className }: Props) {
+export function StarterTemplateCard({ starter, className, onClick }: Props) {
   const router = useRouter();
   const Icon = ICONS[starter.icon] ?? Sparkles;
 
   const onPick = useCallback(() => {
+    if (onClick) {
+      onClick(starter);
+      return;
+    }
     try {
       window.sessionStorage.setItem("chat:prefill:pending", starter.starterPrompt);
     } catch {
       // sessionStorage unavailable — still navigate; user pastes manually.
     }
     router.push("/chat");
-  }, [starter.starterPrompt, router]);
+  }, [starter, router, onClick]);
 
   const onKey = useCallback(
     (e: React.KeyboardEvent) => {

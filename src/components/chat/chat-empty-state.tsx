@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import type { PromptCategory } from "@/lib/chat/types";
+import type { StarterTemplate } from "@/lib/apps/starters";
 import {
   Bot,
   Search,
@@ -13,10 +14,19 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AppComposerHero } from "./app-composer-hero";
 
 interface ChatEmptyStateProps {
   promptCategories: PromptCategory[];
+  starters?: StarterTemplate[];
   onSuggestionClick: (prompt: string) => void;
+  /**
+   * Seeds the composer textarea WITHOUT sending. Used by starter cards and
+   * example chips, where the prompt is long-form and the user should review
+   * before submitting. Distinct from `onSuggestionClick`, which auto-sends
+   * (correct for the short prompt-category items in the tabs below).
+   */
+  onSeedComposer?: (value: string) => void;
   onHoverPreview: (prompt: string | null) => void;
   children?: React.ReactNode;
 }
@@ -31,7 +41,9 @@ const iconMap: Record<string, typeof Search> = {
 
 export function ChatEmptyState({
   promptCategories,
+  starters,
   onSuggestionClick,
+  onSeedComposer,
   onHoverPreview,
   children,
 }: ChatEmptyStateProps) {
@@ -85,15 +97,29 @@ export function ChatEmptyState({
         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
           <Bot className="h-6 w-6 text-primary" />
         </div>
-        <h2 className="text-lg font-semibold">What can I help you with?</h2>
+        <h2 className="text-lg font-semibold">Describe an app. Ainative builds it.</h2>
         <p className="text-sm text-muted-foreground text-center max-w-md">
-          Ask about your projects, tasks, workflows, or documents. I have full
-          context of your workspace.
+          Profiles, blueprints, tables, and schedules — composed from a single prompt.
+          Or ask anything about your workspace.
         </p>
       </div>
 
       {/* Input slot */}
       {children && <div className="w-full max-w-2xl mb-4">{children}</div>}
+
+      {/* App composer affordance — starter cards + example prompts. Uses
+          onSeedComposer (fill-only) instead of onSuggestionClick (click-to-
+          send) because these are long compositional prompts the user should
+          review before sending. Falls back to onSuggestionClick when no seed
+          handler is wired (legacy callers). */}
+      {starters && starters.length > 0 && (
+        <div className="w-full flex justify-center mb-6">
+          <AppComposerHero
+            starters={starters}
+            onSeedPrompt={onSeedComposer ?? onSuggestionClick}
+          />
+        </div>
+      )}
 
       {/* Tabbed prompt selector */}
       <div className="w-full max-w-2xl">

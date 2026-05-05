@@ -18,6 +18,7 @@ import { PanelRightOpen, Sparkles } from "lucide-react";
 interface ChatShellProps {
   initialConversations: ConversationRow[];
   promptCategories: PromptCategory[];
+  starters?: import("@/lib/apps/starters").StarterTemplate[];
   initialActiveId?: string | null;
 }
 
@@ -33,6 +34,7 @@ interface ChatShellProps {
 export function ChatShell({
   initialConversations,
   promptCategories,
+  starters,
   initialActiveId,
 }: ChatShellProps) {
   const session = useChatSession();
@@ -61,6 +63,13 @@ export function ChatShell({
   const [hoverPreview, setHoverPreview] = useState<string | null>(null);
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
   const [branchesDialogId, setBranchesDialogId] = useState<string | null>(null);
+  // Seed signal for the composer — starter cards + example chips set this to
+  // fill the textarea without sending. Nonce drives re-seed on repeated clicks.
+  const [seedSignal, setSeedSignal] = useState<{ value: string; nonce: number }>({ value: "", nonce: 0 });
+
+  const seedComposer = useCallback((value: string) => {
+    setSeedSignal({ value, nonce: Date.now() });
+  }, []);
 
   const hasRelatives = useCallback(
     (id: string) => {
@@ -261,7 +270,9 @@ export function ChatShell({
           <div className="flex-1 flex items-center justify-center overflow-hidden">
             <ChatEmptyState
               promptCategories={promptCategories}
+              starters={starters}
               onSuggestionClick={handleSuggestionClick}
+              onSeedComposer={seedComposer}
               onHoverPreview={setHoverPreview}
             >
               <ChatInput
@@ -276,6 +287,7 @@ export function ChatShell({
                 availableModels={availableModels}
                 projectId={activeConversation?.projectId}
                 conversationId={activeId}
+                seedSignal={seedSignal}
               />
               <div className="mt-3 flex justify-center">
                 <Button

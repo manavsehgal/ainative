@@ -1,6 +1,7 @@
 import { listConversations } from "@/lib/data/chat";
 import { getPromptCategories } from "@/lib/chat/suggested-prompts";
 import { reconcileStreamingMessages } from "@/lib/chat/reconcile";
+import { listStarters } from "@/lib/apps/starters";
 import { ChatShell } from "@/components/chat/chat-shell";
 
 export const dynamic = "force-dynamic";
@@ -25,11 +26,15 @@ export default async function ChatPage({
     listConversations({ status: "active" }),
     getPromptCategories(),
   ]);
+  // listStarters reads YAML files from disk synchronously — cheap, no need to
+  // parallelize. Returns [] when the starters dir is missing (e.g. CE install).
+  const starters = listStarters();
 
   return (
     <ChatShell
       initialConversations={conversations}
       promptCategories={promptCategories}
+      starters={starters}
       initialActiveId={params.c ?? null}
     />
   );
