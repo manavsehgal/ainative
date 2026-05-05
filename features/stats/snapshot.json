@@ -1,24 +1,37 @@
 {
-  "generatedAt": "2026-04-18T00:00:00Z",
-  "fromSha": "15d721ba4a8849f688e7733937b2f9a5b7f66350",
+  "generatedAt": "2026-05-05T00:00:00Z",
+  "fromSha": "0016ca1b12773829d2c961484b53b72ea9216022",
+  "previousSha": "15d721ba4a8849f688e7733937b2f9a5b7f66350",
   "features": {
-    "completed": 186,
-    "inProgress": 0,
-    "planned": 15,
+    "completed": 211,
+    "inProgress": 4,
+    "planned": 0,
     "deferred": 27
   },
-  "chatTools": 85,
+  "chatTools": 99,
   "dbTables": 45,
   "builtinProfiles": 21,
   "workflowBlueprints": 13,
   "skills": {
     "claude": 25,
-    "codex": 36,
+    "codex": 35,
     "shared": 22
   },
   "referenceLibraries": 4,
   "velocity": {
-    "source": "unavailable",
-    "note": "features/retros/ does not exist; run /supervisor retrospective to generate"
+    "source": "git log --since=7days",
+    "note": "features/retros/ does not exist; using git-derived velocity. Run /supervisor retrospective to upgrade.",
+    "commitsLast7d": 124,
+    "featOrFixCommitsLast7d": 55
+  },
+  "diffVsPrevious": {
+    "features": "+25 completed, +4 in-progress, -15 planned (15 promoted to completed), =27 deferred",
+    "chatTools": "+14 (85 → 99)",
+    "skills": {
+      "codex": "-1 (36 → 35)",
+      "claude": "0",
+      "shared": "0"
+    },
+    "unchanged": ["dbTables", "builtinProfiles", "workflowBlueprints", "referenceLibraries"]
   }
 }

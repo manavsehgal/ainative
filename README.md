@@ -65,7 +65,7 @@ Author, AI Native Business open book. 2M+ Kaggle views. Ex Amazon AGI.
 
 ### Bio
 
-Manav is a solutions leader at AWS Frontier AI, collaborating with Anthropic, NVIDIA, and Disney on production AI and agentic systems. His 25-year career spans Xerox PARC (1996), HCL's digital practice, Daily Mail, Amazon AGI, and AWS, where he has delivered scale AI programs for Amazon Retail and Alexa. He led AWS pandemic response which was honored by President of India award for the customer. He holds credentials from Harvard, MIT Sloan, Berkeley Haas. He has studied Computer Engineering and Lean Management.
+Manav is a solutions leader at AWS Frontier AI, collaborating with Anthropic, NVIDIA, and Disney on production AI and agentic systems. His 25-year arc spans Xerox PARC (1996), HCL's digital practice, Daily Mail, Amazon AGI, and AWS, where he has delivered scale AI programs for Amazon Retail and Alexa. He led AWS pandemic response which was honored by President of India award for the customer. He holds credentials from Harvard, MIT Sloan, Berkeley Haas. He has studied Computer Engineering and Lean Management.
 
 ### Research Premise
 
