@@ -1,0 +1,16 @@
+id: habit-tracker
+name: Habit tracker
+description: Daily habit log with streaks, completion KPIs, and an evening check-in routine.
+persona: personal
+icon: check-circle
+starterPrompt: |
+  Build me a daily habit tracker.
+
+  - Track each habit with a name, category, frequency, current streak, and start date
+  - Log daily entries with date, habit, completed (true/false), and a notes field
+  - Every evening at 8pm, run a quick check-in that summarizes today's completions and longest streaks
+preview:
+  profiles: 1
+  blueprints: 1
+  tables: 2
+  schedules: 1

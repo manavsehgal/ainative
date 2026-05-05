@@ -550,6 +550,52 @@ describe("pickKit — starter intent fixtures (acceptance criteria)", () => {
     expect(pickKit(m, colMap)).toBe("ledger");
   });
 
+  it("reading-log (personal-log shape) → tracker, NOT research", () => {
+    // Regression: the actual user-composed reading-log app has a digest
+    // blueprint + Friday schedule, which used to wrongly pull it into the
+    // research kit. The hero columns are a books log with no source/url
+    // shape, so it should land on tracker via the rating-as-completion-signal
+    // path, leaving the books table visible to the user.
+    const m = makeManifest({
+      id: "reading-log",
+      profiles: [{ id: "reading-log--digest" }],
+      blueprints: [{ id: "reading-log--weekly-digest" }],
+      tables: [{ id: "t-books" }],
+      schedules: [{ id: "s", cron: "0 17 * * 5" }],
+    });
+    const colMap: ColumnSchemaRef[] = [
+      {
+        tableId: "t-books",
+        columns: [
+          { name: "title" },
+          { name: "author" },
+          { name: "date_finished", type: "date" },
+          { name: "rating", type: "number" },
+        ],
+      },
+    ];
+    expect(pickKit(m, colMap)).toBe("tracker");
+  });
+
+  it("research-digest still wins research when hero has source shape", () => {
+    // Sanity: the existing research-digest fixture has a `url` column on its
+    // sources table. The tightened rule3_research must still fire there.
+    const m = makeManifest({
+      id: "research-digest",
+      profiles: [{ id: "researcher" }],
+      blueprints: [{ id: "weekly-digest" }],
+      tables: [{ id: "t-src" }],
+      schedules: [{ id: "s", cron: "0 17 * * 5" }],
+    });
+    const colMap: ColumnSchemaRef[] = [
+      {
+        tableId: "t-src",
+        columns: [{ name: "name" }, { name: "url" }, { name: "cadence" }],
+      },
+    ];
+    expect(pickKit(m, colMap)).toBe("research");
+  });
+
   it("reading-radar → tracker", () => {
     const m = makeManifest({
       id: "reading-radar",

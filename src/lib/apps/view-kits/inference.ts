@@ -21,7 +21,7 @@ export function pickKit(
   }
   if (rule1_ledger(manifest, columnSchemas)) return "ledger";
   if (rule2_tracker(manifest, columnSchemas)) return "tracker";
-  if (rule3_research(manifest)) return "research";
+  if (rule3_research(manifest, columnSchemas)) return "research";
   if (rule4_coach(manifest)) return "coach";
   if (rule5_inbox(manifest, columnSchemas)) return "inbox";
   if (rule6_multiBlueprint(manifest)) return "workflow-hub";
@@ -50,12 +50,30 @@ export function rule2_tracker(
   if (m.schedules.length < 1) return false;
   const cols = lookupColumns(schemas, heroId);
   if (!cols) return false;
-  return hasBoolean(cols) && hasDate(cols);
+  // A tracker has dated entries with some kind of completion or scoring signal.
+  // Most often this is a boolean (`completed`, `done`); personal-log shapes
+  // commonly use a numeric rating/score/stars instead — both belong here.
+  return hasDate(cols) && (hasBoolean(cols) || hasRating(cols));
 }
 
-export function rule3_research(m: AppManifest): boolean {
+export function rule3_research(
+  m: AppManifest,
+  schemas?: ColumnSchemaRef[]
+): boolean {
   if (m.schedules.length < 1) return false;
-  return m.blueprints.some((b) => DOC_BLUEPRINT_RE.test(b.id));
+  if (!m.blueprints.some((b) => DOC_BLUEPRINT_RE.test(b.id))) return false;
+  // The research kit only renders a sources sidebar + synthesis pane — it
+  // assumes the hero table holds source links/articles. Personal logs (e.g.
+  // "books I've read") share the digest+schedule signature but have no source
+  // shape; route them elsewhere instead of dropping into a kit that hides
+  // their table. When schemas aren't supplied (legacy callers) keep the
+  // pre-tightening behavior so existing fixtures still resolve.
+  if (!schemas) return true;
+  const heroId = m.tables[0]?.id;
+  if (!heroId) return true;
+  const cols = lookupColumns(schemas, heroId);
+  if (!cols) return true;
+  return hasSourceShape(cols);
 }
 
 export function rule4_coach(m: AppManifest): boolean {
@@ -92,6 +110,8 @@ type Col = ColumnSchemaRef["columns"][number];
 const CURRENCY_NAME_RE = /(^|[^a-z])(amount|price|cost|balance|total|revenue|income|spend)([^a-z]|$)/i;
 const DATE_NAME_RE = /(^date$|_date$|_at$|^at_)/i;
 const BOOLEAN_NAME_RE = /(^|_)(active|completed|done|enabled|verified|is)(_|$)/i;
+const RATING_NAME_RE = /(^|_)(rating|score|stars|grade)(_|$)/i;
+const SOURCE_NAME_RE = /(^|_)(url|link|source|article|reference|feed)(_|$)/i;
 const NOTIFICATION_NAME_RE = /(^|_)(read|unread|seen|notified|notification)(_|$)/i;
 const MESSAGE_NAME_RE = /(^|_)(body|message|subject|summary|content)(_|$)/i;
 const COACH_RE = /(^|[-_])coach($|[-_])/i;
@@ -132,6 +152,26 @@ export function hasNotificationShape(cols: Col[]): boolean {
 export function hasMessageShape(cols: Col[]): boolean {
   return cols.some(
     (c) => c.semantic === "message-body" || MESSAGE_NAME_RE.test(c.name)
+  );
+}
+
+/** A numeric rating/score column — a tracker-style completion signal that's
+ *  not a boolean (e.g. "stars given to a book"). */
+export function hasRating(cols: Col[]): boolean {
+  return cols.some(
+    (c) => c.semantic === "rating" || RATING_NAME_RE.test(c.name)
+  );
+}
+
+/** A column that looks like an external source link/reference — used to
+ *  decide whether the research kit (sources + synthesis) is appropriate. */
+export function hasSourceShape(cols: Col[]): boolean {
+  return cols.some(
+    (c) =>
+      c.type === "url" ||
+      c.semantic === "url" ||
+      c.semantic === "source" ||
+      SOURCE_NAME_RE.test(c.name)
   );
 }
 

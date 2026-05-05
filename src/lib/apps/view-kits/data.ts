@@ -39,6 +39,8 @@ export interface KitProjectionShape {
   /** Phase 3: Ledger column inference for data-layer queries. */
   amountColumn?: string;
   categoryColumn?: string;
+  /** Phase 3: Ledger transaction-row date column (e.g. `date`, `billing_date`). */
+  dateColumn?: string;
   /** Phase 4: Inbox kit — table whose rows populate the queue. */
   queueTableId?: string;
   /** Phase 4: Research kit — table whose rows are source documents. */
@@ -112,7 +114,7 @@ async function loadRuntimeStateUncached(
         categoryCol,
         period
       ),
-      ledgerTransactions: await loadLedgerTransactions(projection.heroTableId, period),
+      ledgerTransactions: await loadLedgerTransactions(projection.heroTableId, period, 25, projection.dateColumn),
       ledgerMonthlyClose: await loadMonthlyCloseSummary(app.id, projection.runsBlueprintId),
       ledgerPeriod: period,
       evaluatedKpis: await loadEvaluatedKpis(projection.kpiSpecs ?? []),
@@ -514,7 +516,8 @@ async function loadLedgerCategories(
 async function loadLedgerTransactions(
   tableId: string | undefined,
   period: "mtd" | "qtd" | "ytd",
-  limit: number = 25
+  limit: number = 25,
+  dateColumn?: string,
 ): Promise<{ id: string; date: string; label: string; amount: number; category?: string }[]> {
   if (!tableId) return [];
   try {
@@ -551,9 +554,25 @@ async function loadLedgerTransactions(
             : 0;
       const category =
         typeof parsed.category === "string" ? parsed.category : undefined;
+      // Prefer the row's user-meaningful date field (e.g. "date", "billing_date")
+      // over r.createdAt — the latter is the row insertion timestamp, not the
+      // transaction date. Falls back to createdAt only when no date field exists.
+      const parsedDate =
+        dateColumn && typeof parsed[dateColumn] === "string"
+          ? (parsed[dateColumn] as string)
+          : null;
+      let date: string;
+      if (parsedDate && parsedDate.length > 0) {
+        date = parsedDate.slice(0, 10);
+      } else {
+        const fallback = r.createdAt instanceof Date ? r.createdAt : new Date(r.createdAt);
+        date = Number.isFinite(fallback.getTime())
+          ? fallback.toISOString().slice(0, 10)
+          : "";
+      }
       return {
         id: r.id,
-        date: r.createdAt.toISOString().slice(0, 10),
+        date,
         label,
         amount,
         category,

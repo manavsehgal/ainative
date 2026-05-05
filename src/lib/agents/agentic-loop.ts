@@ -103,6 +103,12 @@ export interface AgenticLoopResult {
   turnCount: number;
   totalUsage: TurnUsage;
   stopReason: "complete" | "max_turns" | "budget_exceeded" | "cancelled" | "error";
+  /**
+   * When `stopReason === "error"` or `"budget_exceeded"`, holds the underlying
+   * cause string. Adapters surface this in the task `result` field so the
+   * failure is debuggable instead of opaque ("Task stopped: error").
+   */
+  errorMessage?: string;
 }
 
 // ── Loop implementation ──────────────────────────────────────────────
@@ -141,8 +147,9 @@ export async function runAgenticLoop(
 
     // Check budget
     if (config.maxBudgetUsd && (totalUsage.costUsd ?? 0) >= config.maxBudgetUsd) {
-      config.emitEvent({ type: "error", message: "Budget limit exceeded" });
-      return { finalText: lastText, turnCount, totalUsage, stopReason: "budget_exceeded" };
+      const message = `Budget limit exceeded ($${config.maxBudgetUsd.toFixed(2)})`;
+      config.emitEvent({ type: "error", message });
+      return { finalText: lastText, turnCount, totalUsage, stopReason: "budget_exceeded", errorMessage: message };
     }
 
     // Call model
@@ -157,7 +164,7 @@ export async function runAgenticLoop(
       }
       const message = err instanceof Error ? err.message : "Model API call failed";
       config.emitEvent({ type: "error", message });
-      return { finalText: lastText, turnCount, totalUsage, stopReason: "error" };
+      return { finalText: lastText, turnCount, totalUsage, stopReason: "error", errorMessage: message };
     }
 
     totalUsage = mergeTurnUsage(totalUsage, turnResult.usage);

@@ -422,7 +422,9 @@ async function executeOpenAIDirectTask(taskId: string, isResume = false): Promis
     const finalStatus = result.stopReason === "complete" ? "completed" : "failed";
     const resultText = result.stopReason === "complete"
       ? result.finalText
-      : `Task stopped: ${result.stopReason}`;
+      : result.errorMessage
+        ? `Task stopped: ${result.stopReason} — ${result.errorMessage}`
+        : `Task stopped: ${result.stopReason}`;
 
     await db
       .update(tasks)

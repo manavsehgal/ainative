@@ -23,6 +23,13 @@ interface LedgerProjection extends KitProjection {
   period: "mtd" | "qtd" | "ytd";
   amountColumn: string | undefined;
   categoryColumn: string | undefined;
+  /**
+   * Name of the JSON column to use as each transaction row's display date.
+   * The transaction's user-meaningful date lives inside the row payload (e.g.
+   * `date: "2026-05-01"`); the row's `createdAt` is the insertion time, which
+   * is wrong for ledger semantics.
+   */
+  dateColumn: string | undefined;
   kpiSpecs: KpiSpec[];
   runsBlueprintVars: BlueprintVariable[] | null;
   manifestYaml: string;
@@ -59,6 +66,9 @@ export const ledgerKit: KitDefinition = {
       (c) => c.semantic === "currency" || /amount|balance|value/i.test(c.name)
     )?.name;
     const categoryColumn = heroCols.find((c) => /category|tag|group/i.test(c.name))?.name;
+    const dateColumn =
+      heroCols.find((c) => c.type === "date" || c.semantic === "date")?.name ??
+      heroCols.find((c) => /^(date|.*_date|posted|occurred|billing|transaction)/i.test(c.name))?.name;
 
     const kpiSpecs = bindings?.kpis ?? defaultLedgerKpis(
       heroTableId ?? "",
@@ -81,6 +91,7 @@ export const ledgerKit: KitDefinition = {
       period,
       amountColumn,
       categoryColumn,
+      dateColumn,
       kpiSpecs,
       runsBlueprintVars,
       manifestYaml: yaml.dump(m, { lineWidth: 100 }),

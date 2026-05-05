@@ -1,3 +1,4 @@
+import { createElement } from "react";
 import yaml from "js-yaml";
 import { ManifestPaneBody } from "@/components/apps/kit-view/manifest-pane-body";
 import { LastRunCard } from "@/components/apps/last-run-card";
@@ -48,7 +49,7 @@ export const workflowHubKit: KitDefinition = {
 
     const secondary = blueprintIds.map((bpId) => ({
       id: `blueprint-${bpId}`,
-      content: LastRunCard({
+      content: createElement(LastRunCard, {
         blueprintId: bpId,
         blueprintLabel: bpId,
         lastRun: lastRuns[bpId] ?? null,
@@ -60,7 +61,7 @@ export const workflowHubKit: KitDefinition = {
     const activity =
       failed.length > 0
         ? {
-            content: ErrorTimeline({
+            content: createElement(ErrorTimeline, {
               events: failed.map((t) => ({
                 timestamp: new Date(t.createdAt).toISOString(),
                 event: "task_failed",
