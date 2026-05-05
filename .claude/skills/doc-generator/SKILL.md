@@ -1,6 +1,6 @@
 ---
 name: doc-generator
-description: Generate and maintain product documentation from code, feature specs, and screengrabs. Produces user journey guides for 4 personas (Personal, Work, Power User, Developer) and per-feature reference docs with embedded screenshots. Outputs to docs/ with YAML frontmatter and manifest.json for future UI consumption. Incremental — detects changes and regenerates only affected docs. Triggers on "generate docs", "update docs", "doc-generator", "write documentation", "create user guides", "build feature reference", "document the product", "docs for personas", "journey guide", "update documentation", or documentation generation requests. Also triggers when user says "docs for [section]" targeting a single app section.
+description: Generate and maintain product documentation from code, feature specs, and screengrabs. Produces user journey guides for 5 personas (Personal, Work, Power User, Developer, App Builder) and per-feature reference docs with embedded screenshots. Outputs to docs/ with YAML frontmatter and manifest.json for future UI consumption. Incremental — detects changes and regenerates only affected docs. Triggers on "generate docs", "update docs", "doc-generator", "write documentation", "create user guides", "build feature reference", "document the product", "docs for personas", "journey guide", "update documentation", or documentation generation requests. Also triggers when user says "docs for [section]" targeting a single app section.
 ---
 
 # Doc Generator Skill
@@ -295,6 +295,7 @@ Use this decision matrix to assign uncovered features to the most appropriate jo
 | Workflows | Power User | Work Use |
 | Schedules | Power User | Work Use |
 | Runtime Quality | Developer | — |
+| Apps / App Composition | App Builder | Personal Use |
 
 ### 4.5e. Coverage Report
 
@@ -328,7 +329,7 @@ If `docs/.coverage-gaps.json` exists from a previous `/user-guide-sync` run, rea
 
 Before generating journeys, read the coverage analysis from Phase 4.5. In incremental mode, focus journey updates on the features and screenshots identified as coverage gaps. In full mode, ensure the generated journeys collectively cover all features and screenshots.
 
-Generate 4 journey guides in `docs/journeys/`:
+Generate 5 journey guides in `docs/journeys/`:
 
 | Persona | File | Difficulty | Theme | Sections |
 |---------|------|-----------|-------|----------|
@@ -336,6 +337,7 @@ Generate 4 journey guides in `docs/journeys/`:
 | Work Use | `work-use.md` | intermediate | Team context: organize projects → manage documents → schedule automations → track costs → handle approvals | Projects, Documents, Schedules, Costs, Inbox |
 | Power User | `power-user.md` | advanced | Advanced: custom profiles → build workflows → blueprints → autonomous loops → monitor execution | Profiles, Workflows, Schedules, Monitor |
 | Developer | `developer.md` | advanced | Technical: CLI setup → auth config → provider runtimes → API integration → extending profiles | Settings, Monitor, Profiles, CLI |
+| App Builder | `app-builder.md` | beginner | Compose an app: pick a starter → seed prompt in chat → install primitives → use the kit-aware view | Apps, Chat, /apps/[id] |
 
 **Additional interaction coverage per persona** — each journey should demonstrate these new UX patterns where they naturally fit:
 
@@ -345,6 +347,7 @@ Generate 4 journey guides in `docs/journeys/`:
 | Work Use | FilterBar on documents, trust tier management via sidebar popover, saved views |
 | Power User | Keyboard shortcuts, command palette power usage, custom saved views, detail pane right-rail |
 | Developer | Settings subsection walkthrough (auth, runtime, presets, permissions), API route references |
+| App Builder | App gallery browsing, starter selection, chat-driven primitive seeding, kit-aware app detail view |
 
 ### Journey Template
 
@@ -412,6 +415,7 @@ Use these consistent persona identities across all journey guides. The same name
 | Work | Jordan | Team lead | "Q2 Marketing Campaign" | "Review brand guidelines doc" | Team collaboration |
 | Power User | Sam | DevOps engineer | "ML Pipeline Orchestrator" | "Train model v3.2 with new dataset" | Complex automation |
 | Developer | Riley | Platform engineer | "ainative Plugin Dev" | "Add custom tool integration" | API/CLI/extension |
+| App Builder | Casey | Solo entrepreneur | "Personal Habit Tracker" | "Log today's run" | Composing apps from existing primitives without code |
 
 Reference these personas by name in journey narrative text (e.g., "Alex creates a new project called 'Side Project Tracker'...").
 
@@ -430,6 +434,9 @@ When embedding the newer screenshot types into journey guides, use this mapping 
 | `inbox-permissions.png` | Work | "Review and approve agent permission requests" |
 | `schedules-detail.png` | Power User | "Monitor schedule firing history and next run" |
 | `documents-detail.png` | Work | "View document metadata and extracted content" |
+| `journey-app-builder-overview.png` | App Builder | "Browse the apps gallery and pick a starter manifest" |
+| `journey-app-builder-starter-handoff.png` | App Builder | "Hand off to chat with a starter prompt to seed primitives" |
+| `journey-app-builder-detail.png` | App Builder | "Use the kit-aware view of an installed app" |
 
 ---
 
@@ -752,7 +759,8 @@ docs/
     ├── personal-use.md               # Beginner persona
     ├── work-use.md                   # Intermediate persona
     ├── power-user.md                 # Advanced persona
-    └── developer.md                  # Developer persona
+    ├── developer.md                  # Developer persona
+    └── app-builder.md                # App Builder persona (compose apps from primitives)
 ```
 
 ---
@@ -769,7 +777,7 @@ docs/
 - [ ] Incremental detection completed
 - [ ] Feature reference docs generated (18 files including 4 new cross-cutting docs)
 - [ ] Screenshots embedded with valid paths and captions
-- [ ] User journey guides generated (4 personas)
+- [ ] User journey guides generated (5 personas)
 - [ ] Journey steps include narrative flow + screenshots
 - [ ] Getting Started guide generated
 - [ ] Index.md generated with navigation tables

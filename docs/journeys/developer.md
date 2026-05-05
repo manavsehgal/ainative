@@ -29,6 +29,8 @@ Riley starts at the Settings page. The first priority is getting authentication 
 
 ![Settings page showing auth, runtime, and configuration sections](../screengrabs/settings-list.png)
 
+![Settings page scrolled to show the full layout — every subsection visible at once](../screengrabs/settings-full.png)
+
 1. Click **Settings** in the sidebar under the **Configure** group
 2. Choose between **OAuth** (default, recommended for Claude Max subscribers) and **API Key** (billed per token)
 3. Click **Test Connection** to verify provider connectivity
@@ -44,7 +46,10 @@ Riley sets up Ollama as the fifth runtime adapter for private, zero-cost executi
 ![Settings Providers and Runtimes section with authentication and runtime config](../screengrabs/settings-auth.png)
 
 1. Install Ollama from [ollama.com](https://ollama.com) and pull models: `ollama pull llama3 && ollama pull qwen3`
-2. Scroll to the **Ollama** section in Settings
+2. Scroll to the **Ollama** section in Settings, then open the **Runtime** subsection to fine-tune adapter timeouts, max turns, and per-runtime defaults
+
+![Settings Runtime subsection with per-runtime timeout and turn-limit controls](../screengrabs/settings-runtime.png)
+
 3. Verify the URL (default: `http://localhost:11434`)
 4. Click **Test Connection** -- the status shows connected with all available models listed
 5. Models now appear as runtime options across tasks, schedules, workflows, and chat
@@ -87,7 +92,11 @@ Riley sets up Slack and Telegram as delivery channels for schedule notifications
 1. Scroll to the **Permissions** section
 2. Review the three presets with risk badges (Read Only, Git Safe, Full Auto)
 3. Select a preset as the workspace default
-4. Optionally toggle individual tool permissions for fine-grained control
+
+![Settings Permissions subsection with per-tool grants and revoke controls](../screengrabs/settings-permissions.png)
+
+4. For per-tool grants beyond the presets, expand the **Permissions** subsection — each previously approved "Always Allow" decision is listed and can be revoked individually
+5. Optionally toggle individual tool permissions for fine-grained control
 
 ### Step 6: Manage Data and Storage
 
@@ -170,6 +179,23 @@ Riley reviews the episodic memory system that gives agents persistent knowledge.
 6. Memories are stored in the `agent_memory` table, distinct from the behavioral `learned_context` table
 
 > **Tip:** Episodic memory captures *facts* (company research, discovered configurations, market data). Learned context captures *behaviors* (preferred code patterns, formatting conventions). Both systems work together but serve different purposes.
+
+### Step 10b: Author a Custom Agent Profile
+
+Riley wants to ship a new behavioral profile (`api-contract-reviewer`) that other team members can use. Profile authoring is form-driven — no YAML editing required for the common case.
+
+![Create profile form with empty name, description, and capabilities fields](../screengrabs/profiles-create-form-empty.png)
+
+1. Open **Profiles** in the sidebar under the **Compose** group and click **Create Profile**
+2. Enter a **Name** (`api-contract-reviewer`), **Description**, and pick **Capabilities** the profile should have access to (read_file, run_shell, search, etc.)
+3. Optionally write a **System Prompt** and pin **Tools** the profile should default to
+
+![Create profile form with all fields filled in for an api-contract-reviewer profile](../screengrabs/profiles-create-form-filled.png)
+
+4. Click **Create** — the profile registers immediately and is available in the chat profile selector and the task assignment dropdown
+5. Optionally test the profile by chatting with it: `@api-contract-reviewer review this file…`
+
+> **Tip:** Profiles authored in the UI persist as JSON under `~/.ainative/profiles/`. To version-control or share a profile across machines, copy the JSON file to a teammate's profiles folder — the registry hot-reloads on first use.
 
 ### Step 11: Inspect Workflow Runs
 

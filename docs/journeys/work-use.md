@@ -69,21 +69,28 @@ Jordan uploads reference documents that agents will consult during planning task
 ![Documents table view with file type icons and metadata columns](../screengrabs/documents-list.png)
 
 1. Click **Documents** in the sidebar
-2. Click **Upload** and select files (supports PDF, text, images, Word, and spreadsheets)
-3. Assign the documents to the appropriate project
+2. Click **Upload** to open the upload dialog
+
+![Document upload form with file picker and project selector](../screengrabs/documents-upload-form.png)
+
+3. Select files (supports PDF, text, images, Word, and spreadsheets) and assign them to a project
 4. Click **Upload** to process and store the files
 
 > **Tip:** `ainative-business` automatically extracts text from uploaded documents so agents can reference their contents during task execution.
 
-### Step 5: Switch Document Views
+### Step 5: Switch Document Views and Inspect a File
 
-Jordan switches to grid view for a visual overview.
+Jordan switches to grid view for a visual overview, then opens a document to verify the extracted content is accurate.
 
 ![Documents grid view with card layout showing file previews](../screengrabs/documents-grid.png)
 
 1. Click the **grid toggle** in the documents page header
 2. Browse document cards with file name, type icon, and project association
-3. Toggle back to **table view** when you need to sort or filter
+3. Click any document to open the **detail sheet** showing the full extracted text, metadata, and per-file processing status
+
+![Document detail sheet with extracted text preview and metadata fields](../screengrabs/documents-detail.png)
+
+4. Toggle back to **table view** when you need to sort or filter
 
 ### Step 6: Create a Table from a Template
 
@@ -102,6 +109,8 @@ Jordan needs a structured tracker for the team's quarterly OKRs. Instead of buil
 ### Step 7: Import Document Data into a Table
 
 Jordan has a CSV export from the previous quarter's performance review. Importing it into a table takes seconds.
+
+![Empty create-table dialog before any fields are filled](../screengrabs/tables-create-form-empty.png)
 
 ![Create table dialog with fields filled in](../screengrabs/tables-create-form-filled.png)
 
@@ -173,6 +182,23 @@ Jordan schedules a weekly status summary using plain English instead of cron syn
 
 > **Tip:** The breakdown table is your audit trail. Trace every dollar back to a specific task.
 
+### Step 12b: Set the Workspace Trust Tier and Watch the Analytics Dashboard
+
+Jordan wants to keep the team's overall posture under control: trust tiers gate which tools agents can run without approval, and the analytics dashboard surfaces broader workspace activity beyond cost.
+
+![Trust tier popover anchored to the sidebar footer](../screengrabs/trust-tier-popover.png)
+
+1. Click the **trust tier badge** in the sidebar footer to open the popover
+2. Pick a posture: **Cautious** (every tool prompts), **Balanced** (default; sensitive tools prompt), **Trusted** (approve broadly), or **Custom** (per-tool overrides)
+3. The chosen tier flows through to every notification in the Inbox — `Always Allow` shortcuts respect tier boundaries
+
+![Analytics dashboard with workspace-wide metrics and trends](../screengrabs/analytics-list.png)
+
+4. Click **Analytics** under the **Observe** group in the sidebar
+5. Review workspace-wide metrics: tasks completed per day, active agents, top profiles by usage, and per-project velocity trends
+
+> **Tip:** The trust tier is the single most important governance lever. Use **Cautious** during onboarding, then relax to **Balanced** once the team understands what tools agents typically need.
+
 ### Step 13: Review Agent Notifications and Handoffs
 
 Jordan's agents have been running in the background. Some have generated handoff requests where one agent wants to delegate work to another.
@@ -191,11 +217,21 @@ Jordan's agents have been running in the background. Some have generated handoff
 ![Inbox with expanded notification showing full content and approval options](../screengrabs/inbox-expanded.png)
 
 1. Click a notification to expand it
+
+![Inbox with notification fully expanded showing reasoning and full agent context](../screengrabs/inbox-fully-expanded.png)
+
 2. For permission requests, review the tool name, arguments, and reason
-3. Choose **Approve**, **Deny**, or **Always Allow**
-4. For handoffs, approve to let the receiving agent begin work
-5. If an agent sends an **AskUserQuestion** notification, type your answer in the inline reply field — there is no approve/deny, just a short response that lets the agent resume
-6. Watch for **upgrade available** notifications and the occasional upgrade-failure alert (raised only after three consecutive poller failures, so these should be rare)
+
+![Inbox showing the Permissions tab with pending and approved tool grants](../screengrabs/inbox-permissions.png)
+
+3. Switch to the **Permissions** tab to audit all tool grants — pending requests live here, and you can revoke prior "Always Allow" decisions
+4. Choose **Approve**, **Deny**, or **Always Allow** on a pending request
+
+![Approval action confirmation showing the approved request returning to the inbox](../screengrabs/journey-inbox-action.png)
+
+5. For handoffs, approve to let the receiving agent begin work
+6. If an agent sends an **AskUserQuestion** notification, type your answer in the inline reply field — there is no approve/deny, just a short response that lets the agent resume
+7. Watch for **upgrade available** notifications and the occasional upgrade-failure alert (raised only after three consecutive poller failures, so these should be rare)
 
 ### Step 15: Configure Multi-Channel Notifications
 

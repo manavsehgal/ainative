@@ -1,9 +1,9 @@
-# Handoff: Comprehensive screengrab pass complete (95 captures, all blockers cleared) — Sessions B/C/D ready
+# Handoff: Doc-generator + user-guide-sync passes complete (App Builder journey shipped, 100% screenshot coverage) — Session D book-updater deferred
 
-**Created:** 2026-05-05 (full screengrab session — replaces the light-pass handoff)
-**Status:** Stage 1 of `/refresh-content-pipeline` (the screengrab pass) is now **comprehensive** — 95 PNGs covering every sidebar route, every settings subsection, every create form (including AI Assist + workflow-from-assist), all 6 `/apps/[id]` view kits, full chat branching UI, command palette empty + filtered, trust-tier popover, inbox expanded + permissions, tables detail tabs (Data/Charts/Triggers/Details), tables templates page, plus a new app-builder journey. The two highest-priority deferrals from the prior handoff (chat branching, /apps/[id] kit views) are **both cleared**. Stages 2 (`/doc-generator`), 3 (`/user-guide-sync`), 4 (`/book-updater`) queued.
+**Created:** 2026-05-05 (after sessions B + C of `/refresh-content-pipeline`)
+**Status:** Pipeline stages 1 + 2 + 3 done end-to-end. Stage 5 (`/book-updater`) is the only remaining outstanding work and was intentionally deferred — chapter editorial prose deserves its own focused session, not a third pass at the end of a long pipeline run.
 
-Prior handoff archived at `.archive/handoff/2026-05-05-light-pass-with-blockers.md`.
+Prior handoff archived at `.archive/handoff/2026-05-05-screengrab-95-captures-blockers-cleared.md`.
 
 ---
 
@@ -11,99 +11,101 @@ Prior handoff archived at `.archive/handoff/2026-05-05-light-pass-with-blockers.
 
 Pick one (in order of biggest payoff):
 
-1. **Run Session B (`/doc-generator`)** — proceed with the 95 captures. Doc-generator will refresh feature docs, journey docs, README. Add an "App Builder" persona journey (see "App Builder journey: doc work needed" below).
-2. **Run Session C (`/user-guide-sync`)** — depends on B. Mirrors `screengrabs/` into `public/readme/` and validates journey screenshot references.
-3. **Run Session D (`/book-updater`)** — independent of A/B/C, can run in parallel with B.
+1. **Run `/book-updater` (Session D)** — the only deferred stage. Major triggering changes since the last book run (2026-04-18): chat-conversation-branches Phase 1+2, composed-app-manifest-authoring-tools, onboarding-runtime-provider-choice, M3 plugin platform, M4.5 NL-to-composition, the 6 composed-app kits. See "Book-updater scope" below for specific chapters.
+2. **Refresh deferred feature reference docs** (~19 docs in `docs/features/`) — the doc-generator pass was deliberately scoped to greenfield content (App Builder journey + Apps feature ref) plus manifest/index/README updates. Most existing feature docs still reference the pre-2026-05-05 screenshot inventory. Highest-impact targets: `chat.md` (branching UI), `settings.md` (9 subsection captures), `tasks.md` (AI Assist flow), `keyboard-navigation.md` (command-palette-search), `tables.md` (4 tabs + templates).
+3. **Optional cleanup**: 10 stale files in `public/readme/` from pre-2026-04 captures (chat-conversation.png, settings-ollama.png, etc.) can be deleted manually — they're orphans from older screengrab runs and are not referenced anywhere.
 
-Recommended: **start B now**. The captures are stable; manifest is up to date; no blockers remain.
+If you only do one thing, do **#1** — book-updater is the last stage of the content pipeline and the chapters are 17 days behind code.
 
-## What was captured (95 PNGs)
+## What this session accomplished
 
-| Surface | Captures |
+### Session B — `/doc-generator` (scoped incremental run)
+
+| Artifact | Status |
 |---|---|
-| All 17 sidebar routes | Default `*-list.png` per route |
-| Home | hero (sidebar expanded) + below-fold |
-| Onboarding | first-launch runtime modal |
-| Chat — branching UI | `chat-detail` (re-taken with branching), `chat-branch-action-button`, `chat-branch-create-dialog`, `chat-branches-tree-dialog`, `chat-message-rewound` |
-| Chat — composer popovers | `chat-mentions-popover`, `chat-slash-popover` (Actions tab), `chat-tools-tab`, `chat-skills-tab` |
-| /apps/[id] view kits | `apps-detail-tracker`, `apps-detail-coach`, `apps-detail-ledger`, `apps-detail-inbox`, `apps-detail-research`, `apps-detail-workflow-hub` |
-| Settings subsections (element-level) | `settings-instance`, `settings-auth`, `settings-runtime`, `settings-channels`, `settings-budget`, `settings-presets`, `settings-permissions`, `settings-snapshots`, `settings-data` (plus existing `settings-list`, `settings-full`, `settings-chat-model-preference`) |
-| Tasks — alternate views | `tasks-table`, `tasks-detail`, `tasks-card-edit`, `tasks-bulk-select` |
-| Tasks — AI Assist flow | `tasks-create-form-empty`, `-filled`, `-ai-assist`, `-ai-breakdown`, `-ai-applied`, `tasks-workflow-confirm` |
-| Workflows | `workflows-detail`, `workflows-blueprints`, `workflows-create-form-empty`, `-delay` |
-| Profiles | `profiles-detail`, `profiles-create-form-empty`, `-filled` |
-| Schedules | `schedules-detail` (sheet, element-level), `schedules-create-form-empty`, `-filled` |
-| Documents | `documents-grid`, `documents-detail`, `documents-upload-form` |
-| Tables | `tables-detail` (Data tab), `-charts`, `-triggers`, `-details`, `tables-create-form-empty`, `-filled`, `tables-templates` |
-| Projects | `projects-create-form-empty`, `-filled` (already had `-detail`) |
-| Costs | `cost-usage-below-fold` |
-| Inbox | `inbox-expanded`, `inbox-fully-expanded`, `inbox-permissions` |
-| Overlays | `command-palette-empty` (existed) + `command-palette-search` (filtered), `trust-tier-popover` |
-| Phase 6 journeys | `journey-task-created`, `journey-task-detail`, `journey-project-tasks`, `journey-inbox-action`, `journey-app-builder-overview`, `journey-app-builder-starter-handoff`, `journey-app-builder-detail` |
+| `docs/journeys/app-builder.md` | NEW — 10 steps, 12 screenshots, Casey persona (solo entrepreneur composing a Personal Habit Tracker from a starter manifest) |
+| `docs/features/apps.md` | NEW — 7 screenshots, kit catalog (Tracker / Coach / Ledger / Inbox / Research / Workflow Hub), composition-by-chat How-To |
+| `docs/manifest.json` | UPDATED — apps section + app-builder journey + counts (30→32 docs, 42→95 screengrabs, 16→17 sections) |
+| `docs/index.md` | UPDATED — 5th persona row + Apps section row + lastUpdated bumped |
+| `README.md` | UPDATED — Post-MVP section: stale "52 features shipped" → "197 features shipped (211 total)"; added 3 new category rows (Composed Apps, Onboarding, Plugin Platform); Chat row updated for branching/rewind |
+| `docs/.last-generated` | Bumped to 2026-05-05T18:16:15Z |
+| `.claude/skills/doc-generator/SKILL.md` | UPDATED — 8 surgical edits adding 5th persona (App Builder / Casey) to all relevant tables: frontmatter description, Phase 4.5d decision matrix, Phase 5 persona table, Additional Interaction Coverage, Persona Data Profiles, Journey Screenshot Hints, Naming Convention `docs/` tree, Checklist |
 
-Manifest: `screengrabs/manifest.json` (95 entries with file → page → view → route → type → features → description). Last-run timestamp: `screengrabs/.last-run`.
+**Deferred from session B (kept the run scoped to high-value greenfield):**
+- 19 existing feature docs in `docs/features/` still reference the pre-2026-05-05 screenshot inventory. They're not broken — every reference still resolves — but they don't yet show the new chat branching UI, app kit views, or settings subsections.
+- 4 existing journey docs were *not* regenerated as part of session B; they were *patched* in session C to weave in orphan screenshots (see below).
 
-## How the blockers were cleared
+### Session C — `/user-guide-sync` + orphan-weaving follow-up
 
-### Chat branching (was: blocked by env flag)
-- Added `AINATIVE_CHAT_BRANCHING=true` to `.env.local` for the duration of capture, then **REMOVED**. `.env.local` is back to its pre-session state.
-- Cleanly restarted dev server twice (start with flag on, end with flag off) targeting only the `:3000` listener PID — never `pkill -f "next dev"` (memory feedback in CLAUDE.md is explicit about this).
-- Tested via curl: `/api/chat/branching/flag` returns `{"enabled":false}` after restoration. Default user behavior is unchanged.
-- Captures used the existing 18-message conversation `473ee5cb-…-edfd` ("Deal review: Meridian Corp stall"). One actual branch was created during capture (`4c20e275-…`) so the BranchesTreeDialog could show parent + child. Both conversations remain in the DB.
+| Phase | Result |
+|---|---|
+| Phase 1 (staleness) | screengrabs (95) > public/readme (was 69, 3 weeks stale) |
+| Phase 2 (sync) | 36 new + 59 updated PNGs copied from `screengrabs/` to `public/readme/`; 10 pre-existing public/readme orphans preserved (per skill rule, never auto-delete) |
+| Phase 3 (ref validation) | 113/113 image refs valid across all 5 journeys |
+| Phase 4f (naming convention) | 0 WRONG hits; 1 borderline at README.md L3938 ("custom ainative logo" — pre-existing, brand-vs-software ambiguous) |
+| Phase 4e (coverage gaps) | Initial: 37 orphan screenshots, 8 uncovered features → wrote `docs/.coverage-gaps.json` |
+| **Orphan weaving (follow-up)** | All 37 orphans woven into the 5 journey docs (per user request after first pass) |
+| Final coverage | **95/95 screenshots referenced (100%), 51/51 features covered (100%), 113/113 refs valid** |
+| `public/readme/.last-synced` | Bumped to 2026-05-05T18:16:15Z |
+| `docs/.coverage-gaps.json` | Reset to zero gaps after orphan weaving |
 
-### /apps/[id] kit views (was: blocked by empty apps registry)
-- Wrote 6 manifest YAMLs at `~/.ainative/apps/demo-{habit-tracker,portfolio-coach,expense-ledger,lead-inbox,research-pad,ops-hub}/manifest.yaml`. Each composes one or more **existing builtin profiles + blueprints** (no new code, no new primitives). All 6 register cleanly via the apps registry's YAML loader.
-- Encountered one schema gotcha: `AppTableRefSchema.columns` is `z.array(z.string())` (bare strings), not `z.array(z.object(...))`. First 4 manifests had column objects → silently failed to parse → invisible in `/api/apps`. Fixed in-place.
-- All 6 kit views render. **Workflow-hub regression test from commit `98e6ca3f` verified — `/apps/demo-ops-hub` renders cleanly with 4 blueprints + cadence chip + 3 KPI tiles, no crash.**
-- The 6 demo apps remain seeded in `~/.ainative/apps/`. They're benign, all prefixed `demo-`, and can be deleted from the /apps UI when no longer needed.
+**Where each orphan landed (37 total):**
 
-## App Builder journey: doc work needed (next session)
+| Journey | Orphans woven | Highlights |
+|---|---|---|
+| `personal-use.md` | 13 | onboarding modal (folded into Step 1), project create forms + journey-project-tasks, task create empty/filled + journey-task-created/-detail, tasks-detail, chat branching trio (action button + rewound + create dialog) inserted as Step 4b, settings-chat-model-preference |
+| `work-use.md` | 8 | documents-upload-form + documents-detail, inbox-fully-expanded + inbox-permissions + journey-inbox-action, trust-tier-popover + analytics-list inserted as Step 12b, tables-create-form-empty |
+| `power-user.md` | 7 | tables-detail-triggers (Step 10 had no screenshot before!), tasks-workflow-confirm, chat-branches-tree-dialog appended to Step 5, schedules-create-form-empty, workflows-create-form-empty, tables-detail-details |
+| `developer.md` | 5 | profiles-create-form-empty + filled inserted as Step 10b (Author a Custom Profile), settings-runtime + settings-permissions inline in existing steps, settings-full |
+| `app-builder.md` | 5 | apps-starters-grid in Step 2, apps-starter-to-chat in Step 3, apps-detail-tracker + -inbox + -research added to Step 8 (now full kit catalog) |
 
-The user explicitly asked to add a user journey for app building. Screenshots are captured (`journey-app-builder-overview.png`, `-starter-handoff.png`, `-detail.png`), but the journey doc itself is **not yet written** because:
+## What's deferred — `/book-updater` (Session D)
 
-1. `/doc-generator` skill currently lists 4 personas (`personal-use.md`, `work-use.md`, `power-user.md`, `developer.md`). Adding a 5th requires an edit to the skill's Phase 5 persona table at `.claude/skills/doc-generator/SKILL.md`.
-2. The journey screenshots are ready and the `journey-app-builder-*` filenames follow the standard naming convention, so doc-generator will find them automatically once the persona is added.
+The book chapters' `lastGeneratedBy` timestamp is `2026-04-18T17:10:00.000Z` across all 14 chapters. The major triggering changes since then:
 
-**Recommended for next agent:**
-- Edit `.claude/skills/doc-generator/SKILL.md` Phase 5 table to add a 5th persona row:
-  | App Builder | `app-builder.md` | beginner | Compose an app: pick a starter → seed prompt in chat → install primitives → use the kit-aware view | Apps, Chat, /apps/[id] |
-- Update Persona Data Profiles table with a 5th persona (e.g., "Casey — solo entrepreneur — `Personal Habit Tracker` — `Log today's run`").
-- Add `App Builder` to the Journey Screenshot Hints table mapping `journey-app-builder-*.png` → step contexts.
-- Then re-run `/doc-generator` — it will pick up the new persona and the existing screenshots.
+| Change | Affected Chapter(s) |
+|---|---|
+| **chat-conversation-branches** Phase 1 + 2 (data layer + UI: rewind, branch, tree dialog, ⌘Z/⌘⇧Z) | Ch 7 (Institutional Memory) — branching is conversation memory navigation |
+| **composed-app-manifest-authoring-tools** + composed-app kits (6 kits, atomic writes, view-editing chat tools) | Ch 5 (Blueprints) — composed apps as scaled-up blueprints |
+| **chat-app-builder** (M4.5 NL-to-composition) + **onboarding-runtime-provider-choice** | Ch 11 (The Machine That Builds Machines) — composition by language |
+| **M3 plugin platform** (chat-tools-plugin-kind-1, MCP plugin spec) | Ch 11 (The Machine That Builds Machines) — extension surface |
 
-## Other captures the screengrab skill recommends but were intentionally skipped
+**Other relevant context for the next session:**
 
-The manifest now lists **zero deferred** items, but a few minor ones could still be added in a future polish pass:
-- Density toggle variants (`{page}-density-compact.png`, `-spacious.png`) on tasks/documents/tables — the tasks density toggle wasn't surfaced in this UI version.
-- Saved Views dropdown open state.
-- FilterBar with active filters applied.
-- Detail-pane right-rail layout — none of the routes I visited use the split layout in current state.
-- Edit forms for workflows/profiles (`/workflows/[id]/edit`, `/profiles/[id]/edit`) — `tasks-card-edit.png` covers the inline-dialog edit pattern; the dedicated edit pages weren't captured.
+- Zero new ai-native-notes since 2026-04-18, so external research integration is *not* required. The book content sources haven't grown — only the implementation has.
+- The book's "ainative Today" sections describe what's *implemented*. These are the sections most likely to need surgical edits.
+- I made one mapping update partway through the book-updater run (started editing `src/lib/book/chapter-mapping.ts` to add `src/lib/apps/` deps to Ch 5, but Edit failed because file wasn't read first — the user pivoted to orphan weaving before the edit was retried). The mapping update is **NOT** committed; chapter-mapping.ts is still pointing at the old dependency set.
+- Skill warns: *"Do not regenerate entire chapters for incremental changes. Surgical edits preserve voice consistency."* — the right scope is 1-3 paragraphs added per affected chapter, not full rewrites.
 
-None of these block doc-generator. They can be added incrementally on the next refresh.
+**Recommended for next agent (book-updater session):**
+1. Update `src/lib/book/chapter-mapping.ts` to add `src/lib/apps/` to Ch 5 + Ch 11 sourceFiles, and `src/lib/chat/branching/` to Ch 7
+2. Surgically edit Ch 5's "ainative Today" section to mention composed apps + 6-kit catalog
+3. Surgically edit Ch 7's "ainative Today" section to mention conversation branching as memory navigation
+4. Surgically edit Ch 11's "ainative Today" section to mention M3 plugin platform + M4.5 NL composition
+5. Run Phase 6 verifications: word count update, tone check (`grep -ri "superintelligence\|AGI by 2027\|existential risk\|national security\|geopolitical" book/chapters/` should be empty), naming convention scan
+6. If structural change (none expected this session), update the apply-book-update skill at `~/Developer/ainative.github.io/.claude/skills/apply-book-update/SKILL.md` and sync to website
 
 ## State changes during this session
 
-- **`.env.local`:** added `AINATIVE_CHAT_BRANCHING=true`, then **removed**. Reverted to original 12 lines. Verified via diff.
-- **`~/.ainative/apps/`:** 6 new directories with `manifest.yaml` files (demo apps). Persistent. Safe to delete via /apps UI.
-- **DB:** one new branched conversation row (`4c20e275-…`) created when exercising the Branch button. Persistent (no harm). The parent `473ee5cb-…` conversation has one user+assistant turn marked as rewound (`rewound_at` non-null) — UX-visible but reversible by clicking ⌘⇧Z while focused on that conversation.
-- **Sidebar cookie:** ended in collapsed state (`sidebar_state` cookie). Will re-expand on the user's next visit if their preference was expanded.
-- **No code edits.**
-- **Dev server:** restarted twice cleanly. Currently running on `:3000` with the original env (no branching flag).
+- **2 new files**: `docs/features/apps.md`, `docs/journeys/app-builder.md` (both greenfield)
+- **1 archived file**: prior HANDOFF.md → `.archive/handoff/2026-05-05-screengrab-95-captures-blockers-cleared.md`
+- **`docs/`**: 9 files updated (manifest, index, last-generated, coverage-gaps, 4 journey files, plus the 2 new files)
+- **`public/readme/`**: 95 PNGs synced from `screengrabs/` (36 new + 59 refreshed); 10 pre-existing orphans untouched; `.last-synced` bumped
+- **`README.md`**: Post-MVP section heading + 3 new category rows + Chat row updated
+- **`.claude/skills/doc-generator/SKILL.md`**: 8 surgical edits adding 5th persona
+- **No code edits.** No DB changes. No `.env.local` changes.
+- **Dev server**: not touched this session.
 
 ## Process notes for next agent
 
-- **Always target the `:3000` PID by `lsof -ti :3000 -sTCP:LISTEN`**, then kill that PID (and its immediate children via `pgrep -P`). Never use `pkill -f "next dev --turbopack"` — it can hit the user's parallel dev instances (stagent-growth etc.). Memory feedback in CLAUDE.md is explicit about this.
-- **Apps cache TTL is 5 seconds** — when writing new manifests, either wait 6s before hitting `/api/apps` or restart the dev server (which clears the module-level cache too). The handler doesn't fire `invalidateAppsCache()` on filesystem writes that don't go through the chat-tool path.
-- **Apps schema gotcha:** `tables[].columns` must be `array<string>`, not `array<object>`. Object columns silently fail Zod parsing → app vanishes from registry. Look at `src/lib/apps/registry.ts:128` for the exact shape.
-- **Branching flag:** `src/lib/chat/branching/flag.ts:19` reads `process.env.AINATIVE_CHAT_BRANCHING === "true"` synchronously per-request — no DB row, no settings row, just env. Toggling requires a dev-server restart.
-- **TS diagnostic noise:** the inline panel surfaced ~150 phantom "Cannot find module" warnings throughout this session. Per CLAUDE.md, trust `npx tsc --noEmit` over the diagnostics panel.
-- **Element-level capture works well for sheet/dialog content.** Tag the parent card with `role="region"` + `aria-label="Settings:section-slug"` via `evaluate_script`, then the next `take_snapshot` exposes a distinct uid you can pass to `take_screenshot`. Used this pattern for all 9 settings subsections.
+- **TS diagnostic panel was extra noisy this session.** The phantom "Cannot find module @/lib/..." warnings appeared after almost every edit despite the modules existing. Per CLAUDE.md memory: trust `npx tsc --noEmit | grep <file>` over the inline panel.
+- **Step numbering pitfall** (caught and reverted in personal-use.md): inserting a new "Step 1" before existing Step 1 broke numbering for all 14 subsequent steps. Use Step 1.5 / 4b / 12b sub-numbering for inserts, or extend an existing step rather than adding a new one. The `4b` / `10b` / `12b` pattern is now established across personal-use.md, work-use.md, and developer.md.
+- **`docs/.coverage-gaps.json`** is the closed-loop signal between user-guide-sync and doc-generator. Currently empty (zero gaps). If a future screengrab pass adds new captures and they're not woven into journeys, user-guide-sync will repopulate this file with the new orphan list.
+- **Naming convention regex is intentionally lenient on file paths.** The `\bainative\b(?!(\.\w|-))` regex flags `~/.ainative/...` paths because the lookahead only excludes `.X` and `-`. All 5 file-path hits are CORRECT per skill audit rules — don't auto-fix them.
 
 ## Recommended next-session sequence
 
-1. Edit `.claude/skills/doc-generator/SKILL.md` to add the App Builder persona (Phase 5 table + Persona Data Profiles + Journey Screenshot Hints).
-2. Run `/doc-generator` (Session B). It should produce `docs/journeys/app-builder.md` plus refresh the other 4 journey docs, all 18 feature docs, the index, getting-started, manifest, and README.
-3. Run `/user-guide-sync` (Session C) — mirrors `screengrabs/` to `public/readme/` and validates journey screenshot references.
-4. Run `/book-updater` (Session D) in parallel with B if helpful.
-5. After all pipeline stages land: optionally delete the 6 `demo-*` apps via the /apps UI (or leave them — they're harmless).
+1. Run `/book-updater` (Session D) per the scope above — most important remaining piece
+2. Optionally run `/doc-generator` once more in incremental mode against the 19 deferred feature docs (chat.md, settings.md, tasks.md, etc.) to refresh their screenshot inventory
+3. Optionally clean up 10 pre-existing public/readme orphans (manual sweep — they have no `screengrabs/` counterpart)
+4. After all stages land, consider running `/refresh-content-pipeline` end-to-end as a single confirmation pass — by then it should detect zero drift and exit fast

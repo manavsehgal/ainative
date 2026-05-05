@@ -1,6 +1,6 @@
 {
-  "generated": "2026-04-15T15:30:00Z",
-  "version": 4,
+  "generated": "2026-05-05T00:00:00Z",
+  "version": 5,
   "sections": [
     {
       "slug": "home-workspace",
@@ -38,9 +38,19 @@
       "category": "feature-reference",
       "path": "features/chat.md",
       "route": "/chat",
-      "tags": ["chat", "conversations", "ai", "tool-catalog", "mentions", "model-selection", "channels", "skills", "templates", "filters", "saved-searches"],
-      "features": ["chat-data-layer", "chat-engine", "chat-api-routes", "chat-ui-shell", "chat-message-rendering", "chat-input-composer", "bidirectional-channel-chat", "chat-skill-composition", "chat-composition-ui-v1", "chat-conversation-templates", "chat-filter-namespace", "chat-pinned-saved-searches", "saved-search-polish-v1"],
-      "screengrabCount": 4
+      "tags": ["chat", "conversations", "ai", "tool-catalog", "mentions", "model-selection", "channels", "skills", "templates", "filters", "saved-searches", "branching", "rewind"],
+      "features": ["chat-data-layer", "chat-engine", "chat-api-routes", "chat-ui-shell", "chat-message-rendering", "chat-input-composer", "bidirectional-channel-chat", "chat-skill-composition", "chat-composition-ui-v1", "chat-conversation-templates", "chat-filter-namespace", "chat-pinned-saved-searches", "saved-search-polish-v1", "chat-conversation-branches", "chat-app-builder"],
+      "screengrabCount": 9
+    },
+    {
+      "slug": "apps",
+      "title": "Apps",
+      "category": "feature-reference",
+      "path": "features/apps.md",
+      "route": "/apps",
+      "tags": ["apps", "composition", "starters", "kits", "manifests", "no-code"],
+      "features": ["composed-app-view-shell", "composed-app-starters-showcase", "composed-app-manifest-authoring-tools", "chat-app-builder", "app-view-tracker-kit", "app-view-coach-kit", "app-view-ledger-kit", "app-view-inbox-kit", "app-view-research-kit", "app-view-workflow-hub-kit"],
+      "screengrabCount": 9
     },
     {
       "slug": "projects",
@@ -271,12 +281,21 @@
       "path": "journeys/developer.md",
       "sections": ["settings", "environment", "chat", "monitoring", "profiles", "tables", "workflows", "schedules", "delivery-channels"],
       "stepCount": 15
+    },
+    {
+      "slug": "app-builder",
+      "title": "App Builder Guide",
+      "persona": "app-builder",
+      "difficulty": "beginner",
+      "path": "journeys/app-builder.md",
+      "sections": ["apps", "chat", "apps-detail", "user-guide"],
+      "stepCount": 10
     }
   ],
   "metadata": {
-    "totalDocs": 30,
-    "totalScreengrabs": 42,
-    "featuresCovered": 95,
-    "appSections": 16
+    "totalDocs": 32,
+    "totalScreengrabs": 95,
+    "featuresCovered": 110,
+    "appSections": 17
   }
 }

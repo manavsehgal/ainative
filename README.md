@@ -562,7 +562,7 @@ All 14 features shipped across three layers:
 | **Core** | Project management, task board, agent integration, inbox notifications, monitoring dashboard |
 | **Polish** | Homepage dashboard, UX fixes, workflow engine, AI task assist, content handling, session management |
 
-### Post-MVP — 52 features shipped
+### Post-MVP — 197 features shipped (211 total, including 14 MVP)
 
 | Category | Features |
 |----------|---------|
@@ -573,10 +573,15 @@ All 14 features shipped across three layers:
 | **Platform** (8) | Scheduled prompt loops, tool permissions, provider runtimes, OpenAI Codex runtime, cross-provider profiles, parallel fork/join, tool permission presets, npm publish (deferred) |
 | **Runtime Quality** (2) | SDK runtime hardening, E2E test automation |
 | **Governance** (3) | Usage metering ledger, spend budget guardrails, cost & usage dashboard |
-| **Chat** (10) | Chat data layer, chat engine (5-tier context, CRUD tools), API routes (SSE streaming), UI shell, message rendering (Quick Access pills), input composer (tool catalog, model selector), skill composition (multi-skill with conflict detection), filter namespace (`#key:value` grammar), pinned + saved searches, conversation templates |
+| **Chat** (12) | Chat data layer, chat engine (5-tier context, CRUD tools), API routes (SSE streaming), UI shell, message rendering (Quick Access pills), input composer (tool catalog, model selector), skill composition (multi-skill with conflict detection), filter namespace (`#key:value` grammar), pinned + saved searches, conversation templates, **conversation branching + rewind** (`⌘Z`/`⌘⇧Z`), **chat-driven app builder** |
+| **Composed Apps** (10) | Apps surface (`/apps` route), starters showcase, kit-aware detail views, 6 layout kits (Tracker, Coach, Ledger, Inbox, Research, Workflow Hub), manifest authoring tools (`set_app_view_kit`/`bindings`/`kpis`), atomic manifest writes |
+| **Onboarding** (2) | First-launch runtime preference modal (Best quality / Balanced / Lowest cost / Best privacy), instance bootstrap with dev-mode gate |
+| **Plugin Platform** (5) | M3 chat-tools plugin kind, MCP plugin spec, plugin tools registry, plugin spec tools, schedule spec tools |
 | **Platform Hardening** (2) | Runtime validation hardening (MCP-tool runtime-id validation with safe fallbacks), upgrade detection (hourly upstream poll + guided merge sessions) |
 | **Environment** (11) | Environment scanner, cache, dashboard, git checkpoint manager, sync engine, project onboarding, templates, cross-project comparison, skill portfolio, health scoring, agent profile from environment |
 | **Living Book** (5) | Content merge (chapters → playbook), author's notes, reading paths, markdown pipeline, self-updating chapters |
+
+The category list above is illustrative — see `features/roadmap.md` for the full feature inventory and `features/stats/snapshot.json` for the canonical counts.
 
 ### Planned
 

@@ -1,21 +1,11 @@
 {
-  "generated": "2026-04-18T17:25:00Z",
-  "note": "Gap-fill pass complete. Previous run missed 41 captures; this run added 45 more (8 detail views, 11 settings subsections, 2 docs/inbox, 9 chat tabs/popovers, 6 forms, 8 task page captures, 1 workflow confirm). Current total: 67 screenshots covering all 17 routes plus detail views, forms, overlays, chat tabs, and settings subsections.",
-  "missingCaptures": [
-    { "file": "settings-ollama-connected.png", "reason": "Requires live Ollama connection to capture connected state; public/readme orphan from prior run fills this reference" },
-    { "file": "trust-tier-popover.png", "reason": "Prior-run orphan in public/readme satisfies reference; re-capture requires sidebar expansion on Home" }
-  ],
-  "namingConventionDrift": {
-    "totalBareAinativeHits": 91,
-    "criticalFixed": "npx ainative -> npx ainative-business across docs/why-ainative.md, docs/getting-started.md, docs/use-cases/*.md, README.md",
-    "remainingHits": "Headings and frontmatter (kept bare per convention); other body prose drift can be addressed in future /doc-generator run"
-  },
+  "generated": "2026-05-05T18:16:15.541Z",
+  "gaps": [],
+  "unusedScreenshots": [],
   "summary": {
-    "totalReferencedImages": 62,
-    "inScreengrabs": 61,
-    "missingFromScreengrabs": 1,
-    "fulfilledByPublicReadmeOrphan": 1,
-    "brokenAtUserGuideUI": 0,
-    "status": "IN_SYNC"
+    "totalFeatures": 51,
+    "coveredFeatures": 51,
+    "gapCount": 0,
+    "unusedScreenshotCount": 0
   }
 }

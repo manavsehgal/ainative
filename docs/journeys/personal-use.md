@@ -21,18 +21,31 @@ Meet Alex, a solo founder who just discovered `ainative-business`. Alex has a si
 
 ## Journey Steps
 
-### Step 1: Explore the Home Page
+### Step 1: First Launch and the Home Page
 
-Alex opens `ainative-business` for the first time. The home page greets with a sidebar on the left showing every section of the workspace -- Home, Compose, Observe, Learn, and Configure groups -- and the main content area displays an activity overview with stat cards and a needs attention section.
+Alex opens `ainative-business` for the first time. Before the home page renders, a one-time modal appears asking how Alex wants to balance quality, speed, cost, and privacy when running agents.
+
+![First-launch runtime preference modal with four radio options](../screengrabs/onboarding-runtime-modal.png)
+
+1. Read the four options:
+   - **Best quality** — Claude Opus (highest accuracy, highest cost)
+   - **Balanced** — Claude Sonnet (default; good price/quality)
+   - **Lowest cost** — Claude Haiku (smallest, cheapest)
+   - **Best privacy** — local Ollama model (runs entirely on your machine; requires Ollama installed)
+2. Pick **Balanced** — Sonnet is a great default and you can change it later from Settings → Chat. The modal closes and your choice is saved.
+
+![Settings → Chat showing the model preference subsection where the choice can be revisited](../screengrabs/settings-chat-model-preference.png)
+
+The home page now greets Alex with a sidebar on the left showing every section of the workspace -- Home, Compose, Observe, Learn, and Configure groups -- and the main content area displays an activity overview with stat cards and a needs attention section.
 
 ![Home page with sidebar expanded showing navigation and activity overview](../screengrabs/home-list.png)
 
-1. Open `ainative-business` at `http://localhost:3000` to land on the home page
-2. Scan the **sidebar** on the left -- notice the five groups: Home (Dashboard, Tasks, Inbox, Chat), Compose (Projects, Workflows, Profiles, Schedules, Documents, Tables), Observe (Monitor, Cost & Usage, Analytics), Learn (AI Native Business, User Guide), and Configure (Environment, Settings)
-3. Review the **stat cards** showing active tasks, completed today, awaiting review, active projects, and active workflows
-4. Note the **needs attention** section that will surface items requiring your input as agents run
+3. Open `ainative-business` at `http://localhost:3000` to land on the home page
+4. Scan the **sidebar** on the left -- notice the five groups: Home (Dashboard, Tasks, Inbox, Chat), Compose (Projects, Workflows, Profiles, Schedules, Documents, Tables), Observe (Monitor, Cost & Usage, Analytics), Learn (AI Native Business, User Guide), and Configure (Environment, Settings)
+5. Review the **stat cards** showing active tasks, completed today, awaiting review, active projects, and active workflows
+6. Note the **needs attention** section that will surface items requiring your input as agents run
 
-> **Tip:** The sidebar stays visible across every page. It is your primary way to move between sections. You can collapse it for more screen space by clicking the toggle at the top.
+> **Tip:** The sidebar stays visible across every page. It is your primary way to move between sections. You can collapse it for more screen space by clicking the toggle at the top. The runtime preference can be changed any time from Settings → Chat; the model selector in chat itself also lets you override the default per-conversation.
 
 ### Step 2: Discover Below-the-Fold Content
 
@@ -77,6 +90,25 @@ Before setting up a formal project, Alex tries the Chat feature to brainstorm id
 
 > **Tip:** Chat is perfect for quick brainstorming sessions. You do not need to create a project first -- just ask a question. The conversation history stays in the sidebar so you can return to it later. Pin useful filter + search combinations as **saved searches** (available from the `⌘K` palette under the **Saved** group) so you can jump back to them later.
 
+### Step 4b: Rewind a Turn or Branch the Conversation
+
+Alex types a follow-up question and the AI heads in a direction that is not quite what Alex wanted. Instead of starting a new chat, Alex rewinds the last turn and tries a different phrasing.
+
+![Branch action button hovering on a completed assistant message](../screengrabs/chat-branch-action-button.png)
+
+1. Press **`⌘Z`** while focused on the chat composer to **rewind** the last user-assistant pair — the assistant turn collapses to a gray italic placeholder ("Rewound · assistant turn hidden from context") and the original user message reappears in the composer for editing
+2. Edit the prompt to clarify what you actually want, then press **Enter** to send the new turn — the agent re-replies without the rewound exchange polluting context
+3. Press **`⌘⇧Z`** to **redo** if you want the rewound pair back
+
+![Rewound user-assistant pair shown as collapsed placeholders](../screengrabs/chat-message-rewound.png)
+
+4. To **branch** instead of rewind (keep both versions), hover any completed assistant message and click the **Branch** action that appears
+5. In the dialog, give the new conversation a name — the parent is preserved and a child conversation begins from this exact point with the same context up to here
+
+![Branch creation dialog with default branch title](../screengrabs/chat-branch-create-dialog.png)
+
+> **Tip:** Branching is great when you want to try a different direction without losing the original thread — for example, "what if I described this portfolio with a more formal tone?" The parent and child conversations both stay in the sidebar, and you can switch between them like any other conversation. Note: branching is gated on `AINATIVE_CHAT_BRANCHING=true` in `.env.local`; if the Branch action is not visible, the flag is off.
+
 ### Step 5: Create a New Project
 
 Inspired by the chat brainstorm, Alex decides to formalize the portfolio idea into a project.
@@ -85,11 +117,20 @@ Inspired by the chat brainstorm, Alex decides to formalize the portfolio idea in
 
 1. Click **Projects** in the sidebar under the **Compose** group
 2. Click the **Create Project** button in the top-right corner
+
+![Create project dialog with empty form fields](../screengrabs/projects-create-form-empty.png)
+
 3. Enter a **Project Name** such as "Portfolio Website"
 4. Add a **Description**: "Personal developer portfolio with project showcase, blog, and contact form"
-5. Click **Create** to save the project
+5. Optionally set a **Working Directory** (so agent tasks resolve their cwd here) and pick a **Status**
 
-> **Tip:** Give your project a clear, descriptive name -- it will appear throughout the workspace whenever you filter tasks or assign work.
+![Create project dialog with all fields filled](../screengrabs/projects-create-form-filled.png)
+
+6. Click **Create** to save the project — it appears in the projects grid and a fresh project view opens
+
+![Project detail view with tasks grouped under the project](../screengrabs/journey-project-tasks.png)
+
+> **Tip:** Give your project a clear, descriptive name -- it will appear throughout the workspace whenever you filter tasks or assign work. The Working Directory field is optional but useful: if you set it, agent tasks for this project run with that path as their `cwd`.
 
 ### Step 6: Open the Dashboard Kanban Board
 
@@ -119,15 +160,20 @@ Alex discovers that the Dashboard supports multiple view modes.
 
 Alex creates the first task for the portfolio project.
 
-![Tasks kanban board for creating a new task](../screengrabs/tasks-list.png)
+![Create task dialog with empty form fields](../screengrabs/tasks-create-form-empty.png)
 
 1. Click the **Create Task** button in the Dashboard header
 2. Enter a **Title**: "Design hero section with intro and call-to-action"
 3. Write a **Description** with detail about requirements
 4. Assign the task to the **Portfolio Website** project
 5. Set **Priority** to High and leave **Status** as Planned
+
+![Create task dialog with all fields filled](../screengrabs/tasks-create-form-filled.png)
+
 6. Open the **/** popover in the composer to browse available tools (create_task, execute_task, read_file) and entities -- these are the same capabilities the AI uses when running tasks
 7. Click **Create** to add the task to the board
+
+![Newly created task highlighted on the kanban board](../screengrabs/journey-task-created.png)
 
 ![/ popover Tools tab showing available runtime tools](../screengrabs/chat-tools-tab.png)
 
@@ -148,12 +194,16 @@ Alex uses the quick-edit dialog for a fast priority change.
 
 Alex clicks on a task card to open the full detail sheet.
 
-![Task edit dialog opened from a kanban card](../screengrabs/tasks-card-edit.png)
+![Task detail sheet sliding in from the right with description, status, and timestamps](../screengrabs/tasks-detail.png)
 
 1. Click on any **task card** in the kanban board (not the edit icon -- the card itself)
 2. The **detail sheet** slides in from the right side of the screen
 3. Review the full **Description**, **Priority**, **Status**, **Project** assignment, and timestamps
-4. Press **Escape** or click outside the sheet to close it
+
+![Task detail view showing turn-by-turn agent execution observability](../screengrabs/journey-task-detail.png)
+
+4. Scan the **execution observability** panel to see turn-by-turn agent activity (tools used, time per turn, last update)
+5. Press **Escape** or click outside the sheet to close it
 
 ### Step 11: Track Content in a Table
 

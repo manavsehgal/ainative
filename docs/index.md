@@ -1,7 +1,7 @@
 ---
 title: "ainative-business Documentation"
 category: "index"
-lastUpdated: "2026-04-18"
+lastUpdated: "2026-05-05"
 ---
 
 # `ainative-business` Documentation
@@ -27,6 +27,7 @@ lastUpdated: "2026-04-18"
 | [Work Use](./journeys/work-use.md) | Intermediate | ~30 min | Run team operations with multi-channel delivery and agent handoffs |
 | [Power User](./journeys/power-user.md) | Advanced | ~30 min | Automate with Ollama, episodic memory, and NLP scheduling |
 | [Developer](./journeys/developer.md) | Advanced | ~30 min | Configure runtimes, channels, memory API, and async handoffs |
+| [App Builder](./journeys/app-builder.md) | Beginner | ~20 min | Compose a personal-use app from a starter — pick a kit, seed primitives in chat, use the kit-aware view |
 
 ## Feature Reference
 
@@ -35,7 +36,8 @@ lastUpdated: "2026-04-18"
 | [Home & Workspace](./features/home-workspace.md) | `/` | Stat cards, activity feed, navigation |
 | [Tasks](./features/tasks.md) | `/tasks` | Task kanban + table, AI Assist, bulk operations, heartbeat badges |
 | [Inbox & Notifications](./features/inbox-notifications.md) | `/inbox` | Approvals, handoff requests, budget alerts |
-| [Chat](./features/chat.md) | `/chat` | Conversations, model selection, @ mentions, channel chat |
+| [Chat](./features/chat.md) | `/chat` | Conversations, model selection, @ mentions, channel chat, branching, rewind |
+| [Apps](./features/apps.md) | `/apps` | Composed apps from starters, 6 kits, manifest authoring, kit-aware detail views |
 | [Projects](./features/projects.md) | `/projects` | Workspaces, task grouping, file context |
 | [Workflows](./features/workflows.md) | `/workflows` | 6 patterns, blueprints, business-function templates |
 | [Documents](./features/documents.md) | `/documents` | Upload, preprocessing, agent context |

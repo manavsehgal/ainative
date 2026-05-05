@@ -72,7 +72,7 @@ Sam wants to run privacy-sensitive tasks on local models with zero API cost.
 
 > **Tip:** Ollama executions are tracked at $0 in the cost dashboard. Sam uses Ollama for routine tasks (code formatting, simple summaries) and reserves Claude or GPT for complex reasoning. This habit cuts monthly spend significantly.
 
-### Step 5: Optimize Chat with Model Selection
+### Step 5: Optimize Chat with Model Selection and Branch Trees
 
 ![Chat interface showing model selection and conversation controls](../screengrabs/chat-list.png)
 
@@ -82,11 +82,21 @@ Sam wants to run privacy-sensitive tasks on local models with zero API cost.
 4. Switch to **Opus ($$$)** for complex reasoning
 5. If Ollama is connected, local models appear at $0
 
-> **Tip:** Sam's rule of thumb: factual recall = Haiku, thinking = Opus, privacy-sensitive = Ollama. This habit reduces monthly chat spend by 80%.
+When experimenting with prompt-engineering variations, Sam also leans heavily on **conversation branching** to explore multiple directions from a single prompt. The branches tree dialog (opened from any conversation row dropdown → **View branches**) shows the full parent + sibling + child topology in an indented tree.
+
+![Branches tree dialog showing parent + children + current node in a hierarchical tree](../screengrabs/chat-branches-tree-dialog.png)
+
+6. Click the **row dropdown** on any branched conversation in the sidebar
+7. Choose **View branches** — the dialog renders the full conversation family with the current node highlighted
+8. Click any node to switch to it; the conversation context for the agent always reconstructs the prefix from root → that node
+
+> **Tip:** Sam's rule of thumb: factual recall = Haiku, thinking = Opus, privacy-sensitive = Ollama. This habit reduces monthly chat spend by 80%. Use branching when comparing prompt variations — both directions stay queryable, no context is destroyed, and the tree dialog makes it easy to navigate even after dozens of branches.
 
 ### Step 6: Use NLP Scheduling
 
 Sam creates schedules by describing them in plain English instead of writing cron expressions.
+
+![Empty schedule form ready to fill in](../screengrabs/schedules-create-form-empty.png)
 
 ![New schedule form filled — Daily Standup Summary with weekday 9am cron](../screengrabs/schedules-create-form-filled.png)
 
@@ -104,6 +114,8 @@ Sam creates schedules by describing them in plain English instead of writing cro
 ### Step 7: Build a Multi-Step Workflow
 
 Sam customizes a workflow for a "Deploy & Verify" pipeline with specialized profiles at each step.
+
+![Empty workflow form ready to add steps](../screengrabs/workflows-create-form-empty.png)
 
 ![New workflow form with delay step — ML Pipeline Orchestrator with 3-step sequence](../screengrabs/workflows-create-form-delay.png)
 
@@ -128,6 +140,8 @@ Sam tracks deployment metrics in a table and wants computed columns and visual d
 
 ![Tables detail view with charts tab showing data visualizations](../screengrabs/tables-detail-charts.png)
 
+![Tables detail Details tab showing schema, ownership, and audit metadata](../screengrabs/tables-detail-details.png)
+
 1. Open a table from the **Tables** page
 2. Click **Add Column** and select **Formula** as the column type
 3. Write a formula referencing other columns (e.g., `duration_hours / deploy_count` for average deploy time)
@@ -139,6 +153,8 @@ Sam tracks deployment metrics in a table and wants computed columns and visual d
 ### Step 10: Attach Workflow Triggers to Table Events
 
 Sam connects a table to the workflow engine so that row changes automatically kick off automation.
+
+![Table detail Triggers tab showing row-event-to-workflow bindings](../screengrabs/tables-detail-triggers.png)
 
 1. Open a table and navigate to the **Triggers** tab
 2. Click **Add Trigger** and select the event type: row created, row updated, or column value changed
@@ -163,6 +179,8 @@ Sam uses AI Assist to turn a rough task idea into a fully specified, workflow-re
 
 5. Click **Apply** to replace the original description with the AI-improved version, or **Convert to Workflow** to generate a full workflow from the breakdown
 6. The resulting workflow lands on the confirmation page, ready for review and customization
+
+![Workflow conversion confirmation showing the full multi-step plan ready for review](../screengrabs/tasks-workflow-confirm.png)
 
 ![Task form after clicking Apply — improved description replaces original](../screengrabs/tasks-create-form-ai-applied.png)
 
