@@ -60,9 +60,17 @@ export const CHAPTER_MAPPING: Record<string, ChapterMapping> = {
     caseStudies: ["stripe-minions", "ramp-background-agent", "harvey-legal-is-next"],
   },
   "ch-5": {
-    docs: ["workflows", "agent-intelligence"],
+    docs: ["workflows", "agent-intelligence", "apps"],
     journey: "power-user",
-    sourceFiles: ["src/lib/workflows/engine.ts", "src/lib/workflows/types.ts"],
+    sourceFiles: [
+      "src/lib/workflows/engine.ts",
+      "src/lib/workflows/types.ts",
+      "src/lib/apps/registry.ts",
+      "src/lib/apps/starters.ts",
+      "src/lib/apps/compose-integration.ts",
+      "src/lib/apps/manifest-trigger-dispatch.ts",
+      "src/lib/apps/view-kits/index.ts",
+    ],
     caseStudies: ["stripe-minions", "karpathy-one-gpu-research-lab", "making-machine-that-builds-machines"],
   },
   "ch-6": {
@@ -71,9 +79,15 @@ export const CHAPTER_MAPPING: Record<string, ChapterMapping> = {
     caseStudies: ["karpathy-one-gpu-research-lab"],
   },
   "ch-7": {
-    docs: ["agent-intelligence", "profiles"],
+    docs: ["agent-intelligence", "profiles", "chat"],
     journey: "developer",
-    sourceFiles: ["src/lib/db/schema.ts", "src/lib/agents/profiles/"],
+    sourceFiles: [
+      "src/lib/db/schema.ts",
+      "src/lib/agents/profiles/",
+      "src/lib/chat/branching/flag.ts",
+      "src/components/chat/branches-tree-dialog.tsx",
+      "src/components/chat/branch-action-button.tsx",
+    ],
     caseStudies: ["making-machine-that-builds-machines", "karpathy-one-gpu-research-lab"],
   },
   "ch-8": {
@@ -92,8 +106,15 @@ export const CHAPTER_MAPPING: Record<string, ChapterMapping> = {
     caseStudies: ["sequoa-hierarchy-to-intelligence", "harvey-legal-is-next"],
   },
   "ch-11": {
-    docs: [],
-    sourceFiles: ["src/lib/book/chapter-generator.ts", "src/lib/book/update-detector.ts", "src/lib/book/content.ts"],
+    docs: ["apps"],
+    sourceFiles: [
+      "src/lib/book/chapter-generator.ts",
+      "src/lib/book/update-detector.ts",
+      "src/lib/book/content.ts",
+      "src/lib/apps/composition-detector.ts",
+      "src/lib/apps/compose-integration.ts",
+      "src/lib/agents/profiles/app-manifest-source.ts",
+    ],
     caseStudies: ["making-machine-that-builds-machines", "karpathy-one-gpu-research-lab"],
   },
   "ch-12": {

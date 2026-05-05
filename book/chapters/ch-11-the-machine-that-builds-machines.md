@@ -3,8 +3,8 @@ title: "The Machine That Builds Machines"
 subtitle: "ainative-business Building Itself Using Itself"
 chapter: 11
 part: 4
-readingTime: 14
-lastGeneratedBy: "2026-04-18T17:10:00.000Z"
+readingTime: 15
+lastGeneratedBy: "2026-05-05T18:43:15.000Z"
 relatedDocs: ["workflows", "profiles", "schedules"]
 ---
 
@@ -153,6 +153,10 @@ Let us inventory the concrete pieces of the self-building system as they exist t
 **Workflow definitions** live in the database -- multi-step orchestration patterns that encode repeatable processes. The workflow engine in `src/lib/workflows/engine.ts` manages the full lifecycle.
 
 **Scheduled agents** live in the database -- time-based triggers that fire agents on intervals. The scheduler engine in `src/lib/schedules/scheduler.ts` manages execution.
+
+**Plugin platform (M3)** lives in `src/lib/plugins/` and registers through the same MCP server hook that backs `ainative-business`'s first-party chat tools. A plugin ships an `.mcp.json` manifest; the runtime mounts it via `withAinativeMcpServer()` in `src/lib/agents/claude-agent.ts`. The extension surface for third-party capability and self-emitted capability is one surface, gated by trust tier.
+
+**Natural-language composition (M4.5)** lives in `src/lib/apps/composition-detector.ts` and `src/lib/agents/profiles/app-manifest-source.ts`. A user describes the app they want in plain language; the detector recognizes a composition intent inside the conversation; an agent profile authors the manifest atomically and writes it to disk. The chat surface that builds new apps is itself an app composed from the same primitives — the recursion is not aspirational, it is shipped.
 
 These are not separate systems. They are the same system used for different purposes. The workflow engine that orchestrates a book regeneration pipeline is the same engine that orchestrates a customer onboarding sequence. The agent profile that writes a chapter is the same profile that writes a project report. The skill that captures a blog post for book research is the same skill that captures API documentation for engineering reference.
 

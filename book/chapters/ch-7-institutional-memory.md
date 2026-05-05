@@ -3,10 +3,10 @@ title: "Institutional Memory"
 subtitle: "The Knowledge Graph"
 chapter: 7
 part: 3
-readingTime: 14
+readingTime: 15
 relatedDocs: [agent-intelligence, profiles]
 relatedJourney: developer
-lastGeneratedBy: "2026-04-18T17:10:00.000Z"
+lastGeneratedBy: "2026-05-05T18:43:15.000Z"
 ---
 
 # Institutional Memory — The Knowledge Graph
@@ -130,6 +130,8 @@ const context = await fetch(
 The confidence decay system uses a simple but effective model. Each pattern has a `decayRate` measured in confidence points per day. A pattern with confidence 0.92 and decay rate 0.01 will drop to 0.82 after ten days without reinforcement. If the pattern is validated during that window -- the agent uses it and the task succeeds -- the confidence resets to its peak or climbs higher. This creates a natural selection pressure: patterns that are both true and useful survive. Patterns that were circumstantially helpful but do not generalize fade away.
 
 The human approval workflow ensures that no pattern enters the active knowledge base without review. Every pattern starts as a `proposal` and requires explicit approval before it is injected into future agent prompts. This is governance at the knowledge layer -- a theme we will explore in depth in Chapter 9.
+
+**Conversation Branching as Memory Navigation**: Conversations are episodic memory traces — every message, tool call, and approval decision is a trace event. A flat append-only log is too restrictive; real recall is non-linear. The branching system in `src/lib/chat/branching/` turns the conversation into a navigable tree: rewind to any prior message, fork an alternate path, and toggle between branches via `⌘Z` and `⌘⇧Z` without losing the original thread. The tree dialog at `src/components/chat/branches-tree-dialog.tsx` renders the topology — every fork, every leaf, every reconvergence visible at a glance. When a single tool refusal or misread instruction would otherwise orphan a long workflow, the operator rewinds, re-prompts, and continues from the corrected past. Memory is no longer a one-way recording; it is editable history.
 
 ## Roadmap Vision
 

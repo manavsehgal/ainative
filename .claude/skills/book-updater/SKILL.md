@@ -13,10 +13,10 @@ Update AI Native Business book chapters when their upstream dependencies change,
 |--------|-------|
 | Chapters | 14 |
 | Parts | 4 |
-| Total Words | 41,803 |
-| Avg Words/Chapter | 2,986 |
-| Total Reading Time | 188 min (3.13 hrs) |
-| Est. Paperback Pages | ~168 (at 250 words/page) |
+| Total Words | 42,920 |
+| Avg Words/Chapter | 3,065 |
+| Total Reading Time | 202 min (3.37 hrs) |
+| Est. Paperback Pages | ~172 (at 250 words/page) |
 | Case Studies | 47 across 12+ entities |
 | Code Examples | 21 TypeScript blocks |
 | Callout Types | case-study (primary) |
@@ -26,20 +26,20 @@ Update AI Native Business book chapters when their upstream dependencies change,
 
 | Ch | Title | Part | Words | Reading Time |
 |----|-------|------|-------|-------------|
-| 1 | From Hierarchy to Intelligence | 1 | 3,866 | 14 min |
+| 1 | From Hierarchy to Intelligence | 1 | 3,866 | 15 min |
 | 2 | The AI-Native Blueprint | 1 | 3,050 | 12 min |
 | 3 | The Refinery | 2 | 2,379 | 15 min |
-| 4 | The Forge | 2 | 2,825 | 16 min |
-| 5 | Blueprints | 2 | 2,342 | 14 min |
-| 6 | The Arena | 3 | 2,601 | 12 min |
-| 7 | Institutional Memory | 3 | 2,397 | 14 min |
-| 8 | The Swarm | 3 | 2,587 | 16 min |
-| 9 | The Governance Layer | 3 | 3,184 | 13 min |
+| 4 | The Forge | 2 | 2,907 | 16 min |
+| 5 | Blueprints | 2 | 2,560 | 15 min |
+| 6 | The Arena | 3 | 2,710 | 12 min |
+| 7 | Institutional Memory | 3 | 2,518 | 15 min |
+| 8 | The Swarm | 3 | 2,700 | 16 min |
+| 9 | The Governance Layer | 3 | 3,392 | 14 min |
 | 10 | The World Model | 4 | 2,699 | 15 min |
-| 11 | The Machine That Builds Machines | 4 | 3,281 | 14 min |
+| 11 | The Machine That Builds Machines | 4 | 3,395 | 15 min |
 | 12 | The Road Ahead | 4 | 2,416 | 10 min |
 | 13 | The Wealth Manager | 4 | 3,976 | 16 min |
-| 14 | The Meta-Program | 4 | 4,200 | 16 min |
+| 14 | The Meta-Program | 4 | 4,352 | 16 min |
 
 **After any update, recount words and update this table and the stats above.** Use `wc -w book/chapters/*.md` for totals and per-chapter counts. Paperback pages = total words / 250 (rounded up).
 

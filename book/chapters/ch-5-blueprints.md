@@ -3,8 +3,8 @@ title: "Blueprints"
 subtitle: "Workflow Orchestration"
 chapter: 5
 part: 2
-readingTime: 14
-lastGeneratedBy: "2026-04-18T17:10:00.000Z"
+readingTime: 15
+lastGeneratedBy: "2026-05-05T18:43:15.000Z"
 relatedDocs: ["workflows", "agent-intelligence"]
 relatedJourney: "power-user"
 ---
@@ -121,6 +121,8 @@ The workflow engine is live and handling real workloads. Here is the current sta
 **Profile Integration**: Each workflow step specifies an `agentProfile` that governs the agent's behavior during that step. Different steps in the same workflow can use different profiles — a `general` profile for planning, a `code-reviewer` for implementation, a `document-writer` for documentation.
 
 **Conversation Templates from Blueprints**: Blueprints now serve as conversation starters, not just workflow definitions. An optional `chatPrompt` field on any blueprint provides a template that initializes a new conversation with pre-filled context and instructions. Three entry points surface this capability: an empty-state button when no conversation is active, a `/new-from-template` slash command, and the `⌘K` command palette. The `renderBlueprintPrompt()` function resolves template variables — project name, date, profile — before injecting the prompt. This extends the blueprint concept from "how work is orchestrated" to "how work begins," making it easier for users to start complex workflows from a single conversational entry point.
+
+**Composed Apps as Packaged Blueprints**: A blueprint orchestrates one stretch of work. A composed app packages an entire product surface — profile, schedule, table, view kit, and blueprint trigger — into a single YAML manifest registered in `src/lib/apps/registry.ts`. The manifest schema nests the same workflow types covered above; the blueprint becomes one slot among many. Six starter kits ship today: Tracker, Coach, Ledger, Inbox, Research, and Workflow Hub. Each demonstrates a different composition shape — the Tracker fronts a goals table with KPI evaluation, while the Inbox routes incoming rows through `src/lib/apps/manifest-trigger-dispatch.ts`. Shipping a new app no longer requires writing TypeScript components or a database migration. It requires writing a manifest, and `ainative-business` composes the rest.
 
 ## Roadmap Vision
 
