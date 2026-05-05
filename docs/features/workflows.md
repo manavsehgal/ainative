@@ -5,8 +5,8 @@ section: "workflows"
 route: "/workflows"
 tags: [workflows, patterns, sequence, parallel, swarm, autonomous, templates, multi-step, blueprints, delays, drip]
 features: ["workflow-engine", "workflow-blueprints", "ai-assist-workflow-creation", "workflow-context-batching", "business-function-profiles", "workflow-step-delays", "chat-conversation-templates", "workflow-run-history"]
-screengrabCount: 4
-lastUpdated: "2026-04-15"
+screengrabCount: 5
+lastUpdated: "2026-05-05"
 ---
 
 # Workflows
@@ -22,7 +22,10 @@ Workflows let you orchestrate multi-step agent operations using six built-in pat
 *Workflow detail page with step-by-step breakdown and execution status*
 
 ![Workflow blueprints gallery](../screengrabs/workflows-blueprints.png)
-*Workflow blueprints gallery with pre-built workflow templates*
+*Workflow blueprints gallery with pre-built workflow templates.*
+
+![Empty workflow create form](../screengrabs/workflows-create-form-empty.png)
+*New workflow creation form ready for input — name, pattern selector, and the step-builder section before any steps are added.*
 
 ![Workflow create form with a delay step inserted between sequence steps](../screengrabs/workflows-create-form-delay.png)
 *The workflow create form exposes an "Add Delay" button alongside "Add Step". Delay steps pause execution for a schedule-based duration (30m, 2h, 3d, 1w) before the next step runs — ideal for drip sequences and cooldown windows.*

@@ -6,7 +6,7 @@ route: "/tables"
 tags: [tables, structured-data, spreadsheet, charts, triggers, templates, import, export, formulas]
 features: ["tables-data-layer", "tables-list-page", "tables-spreadsheet-editor", "tables-document-import", "tables-template-gallery", "tables-agent-integration", "tables-chat-queries", "tables-computed-columns", "tables-cross-joins", "tables-agent-charts", "tables-workflow-triggers", "tables-nl-creation", "tables-export", "tables-versioning", "bulk-row-enrichment"]
 screengrabCount: 8
-lastUpdated: "2026-04-15"
+lastUpdated: "2026-05-05"
 ---
 
 # Tables
@@ -41,7 +41,14 @@ Browse all your tables from the `/tables` list page. Toggle between a compact ta
 The filter bar uses the shared **FilterInput** component and the `#namespace:value` syntax (double-quote values that contain spaces, e.g. `#type:"customer list"`). Saved filter + query combinations can be pinned as **saved searches** and recalled from the `⌘K` palette under the **Saved** group — useful for recurring table views like "open orders" or "stale leads." See the [Documents](./documents.md) page for a cross-surface reference implementation.
 
 ### Create Tables
-Open the create dialog to define a new table with a name, description, and columns. The inline column builder lets you set each column's name, type, and whether it is required -- all before the table is saved. Supported column types include text, number, date, boolean, select (dropdown), URL, email, and computed.
+
+![Empty create-table form](../screengrabs/tables-create-form-empty.png)
+*New table dialog with empty name, description, and column builder — set up a fresh table from scratch.*
+
+![Filled create-table form with multiple columns](../screengrabs/tables-create-form-filled.png)
+*Form filled with a table name, description, and several columns of different types ready to be saved.*
+
+Open the create dialog to define a new table with a name, description, and columns. The inline column builder lets you set each column's name, type, and whether it is required — all before the table is saved. Supported column types include text, number, date, boolean, select (dropdown), URL, email, and computed.
 
 ### Spreadsheet Editor
 The table detail page at `/tables/[id]` is a full spreadsheet editor. Click any cell to edit it inline. Navigation follows familiar keyboard conventions -- arrow keys move between cells, Enter commits an edit, Escape cancels. Each column renders with a type-aware editor: date pickers for dates, checkboxes for booleans, dropdowns for select columns, and validated inputs for URLs and emails. Changes save optimistically so the interface stays fast.

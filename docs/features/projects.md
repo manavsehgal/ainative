@@ -5,8 +5,8 @@ section: "projects"
 route: "/projects"
 tags: [projects, workspaces, tasks, working-directory, organization]
 features: ["project-management", "detail-view-redesign"]
-screengrabCount: 2
-lastUpdated: "2026-03-31"
+screengrabCount: 4
+lastUpdated: "2026-05-05"
 ---
 
 # Projects
@@ -36,7 +36,14 @@ The detail page shows everything associated with a project: its tasks (with stat
 Each project can specify a local file-system path as its working directory. When agents execute tasks for this project, they resolve file operations relative to this directory. This enables safe, scoped file access without giving agents free rein over your machine.
 
 ### Create Project Dialog
-The creation dialog collects a project name, description, and optional working directory. Projects can be created empty and populated with tasks and documents later.
+
+![Empty new-project form](../screengrabs/projects-create-form-empty.png)
+*New Project dialog ready for input — name, description, and optional working directory.*
+
+![Filled new-project form](../screengrabs/projects-create-form-filled.png)
+*Form populated with name, description, and an absolute working-directory path before submission.*
+
+The creation dialog collects a project name, description, and optional working directory. Projects can be created empty and populated with tasks and documents later. The working directory must be an absolute path on the host machine — agents executing tasks for this project resolve file operations relative to it.
 
 ## How To
 

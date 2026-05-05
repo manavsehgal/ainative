@@ -5,8 +5,8 @@ section: "provider-runtimes"
 route: "cross-cutting"
 tags: [claude, codex, runtime, oauth, websocket, mcp, providers, ollama, anthropic-direct, openai-direct, smart-router]
 features: ["provider-runtime-abstraction", "openai-codex-app-server", "cross-provider-profile-compatibility", "ollama-runtime-provider", "anthropic-direct-runtime", "openai-direct-runtime", "smart-runtime-router", "runtime-validation-hardening", "runtime-capability-matrix"]
-screengrabCount: 2
-lastUpdated: "2026-04-15"
+screengrabCount: 3
+lastUpdated: "2026-05-05"
 ---
 
 # Provider Runtimes
@@ -15,11 +15,14 @@ lastUpdated: "2026-04-15"
 
 ## Screenshots
 
-![Settings Ollama section](../screengrabs/settings-ollama.png)
-*Ollama local runtime configuration in Settings.*
+![Authentication card with all runtimes](../screengrabs/settings-auth.png)
+*Settings Authentication card showing Anthropic OAuth/API Key, OpenAI Codex (ChatGPT or API Key), and OpenAI Direct configuration with per-runtime connection tests.*
 
-![Ollama connected with models](../screengrabs/settings-ollama-connected.png)
-*Ollama connected showing 4 local models available for task execution.*
+![Runtime card with Ollama and browser tools](../screengrabs/settings-runtime.png)
+*Settings Runtime card with Ollama local-model connection, browser automation toggles, SDK timeout, and max-turns controls grouped together.*
+
+![Default chat-model picker](../screengrabs/settings-chat-model-preference.png)
+*Default chat-model selector spanning Claude, Codex, and Ollama models with cost tiers — the same picker that appears in the chat composer.*
 
 ## Key Features
 

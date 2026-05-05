@@ -5,8 +5,8 @@ section: "profiles"
 route: "/profiles"
 tags: [profiles, agents, routing, multi-agent, catalog, cross-provider, business-profiles]
 features: ["agent-profile-catalog", "multi-agent-routing", "cross-provider-profile-compatibility", "business-function-profiles"]
-screengrabCount: 2
-lastUpdated: "2026-03-31"
+screengrabCount: 4
+lastUpdated: "2026-05-05"
 ---
 
 # Profiles
@@ -45,6 +45,13 @@ Profiles are provider-agnostic and work with all five runtime adapters: Claude C
 Each profile card displays runtime compatibility badges showing which providers it supports. Profiles that work across all runtimes show all provider icons, while some may be optimized for specific providers.
 
 ### Custom Profiles
+
+![Empty new-profile form](../screengrabs/profiles-create-form-empty.png)
+*New Profile dialog with empty fields — name, description, system prompt, allowed tools, and runtime preferences.*
+
+![Filled new-profile form](../screengrabs/profiles-create-form-filled.png)
+*Form populated with a custom profile definition ready to save — including a tailored system prompt and tool allowlist.*
+
 Beyond the built-in catalog, you can create custom profiles tailored to your specific business processes. Custom profiles appear alongside built-in ones and support the same routing, tools, and provider compatibility features. Imported profiles from GitHub repositories show provenance badges (Built-in, Custom, or Imported).
 
 ## How To

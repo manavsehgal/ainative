@@ -5,21 +5,27 @@ section: "inbox-notifications"
 route: "/inbox"
 tags: [inbox, notifications, permissions, approval, human-in-the-loop, toast, handoffs, agent-messages]
 features: ["inbox-notifications", "ambient-approval-toast", "content-handling", "agent-async-handoffs", "upgrade-detection", "upgrade-session"]
-screengrabCount: 2
-lastUpdated: "2026-04-15"
+screengrabCount: 4
+lastUpdated: "2026-05-05"
 ---
 
 # Inbox & Notifications
 
-The Inbox is your notification center for all agent activity that needs awareness or action. Notifications range from informational (task completed, agent message) to actionable (permission required, handoff approval). Rich content rendering and progressive disclosure keep the inbox scannable without hiding important details.
+The Inbox is your notification center for all agent activity that needs awareness or action. Notifications range from informational (task completed, agent message) to actionable (permission required, handoff approval). Rich content rendering and progressive disclosure keep the inbox scannable without hiding important details. A dedicated **Permissions** tab surfaces every persisted tool-permission grant so you can review and revoke at a glance.
 
 ## Screenshots
 
 ![Inbox list view](../screengrabs/inbox-list.png)
-*Inbox showing notification queue with permission requests, agent messages, budget alerts, and context proposals*
+*Inbox showing notification queue with permission requests, agent messages, budget alerts, and context proposals.*
 
 ![Inbox expanded notification](../screengrabs/inbox-expanded.png)
-*Expanded notification showing full body content and action buttons*
+*Expanded notification showing full body content and action buttons.*
+
+![Inbox fully expanded with rich body](../screengrabs/inbox-fully-expanded.png)
+*Fully expanded notification with multi-paragraph markdown content, code blocks, and action affordances rendered inline.*
+
+![Permissions tab](../screengrabs/inbox-permissions.png)
+*Permissions tab listing every persisted tool-permission grant with the granting preset (if any) and a per-row Revoke button — same data as Settings → Tool Permissions, surfaced where you triage notifications.*
 
 ## Key Features
 

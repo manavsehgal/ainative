@@ -5,8 +5,8 @@ section: "documents"
 route: "/documents"
 tags: [documents, upload, preprocessing, pdf, office, text-extraction, agent-context]
 features: ["document-manager", "file-attachment-data-layer", "document-preprocessing", "agent-document-context", "document-output-generation", "chat-filter-namespace", "chat-pinned-saved-searches"]
-screengrabCount: 2
-lastUpdated: "2026-04-15"
+screengrabCount: 4
+lastUpdated: "2026-05-05"
 ---
 
 # Documents
@@ -16,10 +16,16 @@ The Document Library is where you upload, manage, and organize files that agents
 ## Screenshots
 
 ![Documents table view](../screengrabs/documents-list.png)
-*Document library in table view showing file name, type, size, and processing status*
+*Document library in table view showing file name, type, size, and processing status.*
 
 ![Documents grid view](../screengrabs/documents-grid.png)
-*Grid view displaying document thumbnails and metadata cards*
+*Grid view displaying document thumbnails and metadata cards.*
+
+![Document detail pane](../screengrabs/documents-detail.png)
+*Detail pane for a selected document — extracted text, file metadata, processing status, and Open/Delete/Reprocess actions.*
+
+![Upload dialog](../screengrabs/documents-upload-form.png)
+*Upload dialog with drag-and-drop zone, supported file-type list, and per-file progress indicators.*
 
 ## Key Features
 

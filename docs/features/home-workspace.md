@@ -3,23 +3,26 @@ title: "Home Workspace"
 category: "feature-reference"
 section: "home-workspace"
 route: "/"
-tags: [dashboard, home, workspace, navigation, sidebar, trust-tier, product-messaging-refresh]
-features: ["homepage-dashboard", "app-shell", "product-messaging-refresh"]
-screengrabCount: 2
-lastUpdated: "2026-03-31"
+tags: [dashboard, home, workspace, navigation, sidebar, trust-tier, product-messaging-refresh, onboarding]
+features: ["homepage-dashboard", "app-shell", "product-messaging-refresh", "onboarding-runtime-provider-choice"]
+screengrabCount: 3
+lastUpdated: "2026-05-05"
 ---
 
 # Home Workspace
 
-The Home Workspace is your command center when you open `ainative-business`. It provides a real-time overview of agent activity, business tasks, and items that need your attention -- so you can triage your AI-powered operations at a glance. The persistent sidebar organizes all areas into five logical groups for quick navigation.
+The Home Workspace is your command center when you open `ainative-business`. It provides a real-time overview of agent activity, business tasks, and items that need your attention — so you can triage your AI-powered operations at a glance. The persistent sidebar organizes all areas into five logical groups for quick navigation. On first launch, an onboarding modal helps you choose your provider runtime so you can start working immediately.
 
 ## Screenshots
 
 ![Home workspace list view](../screengrabs/home-list.png)
-*Home workspace showing greeting, stat cards, needs attention section, and recent activity*
+*Home workspace showing greeting, stat cards, needs attention section, and recent activity.*
 
 ![Home workspace below the fold](../screengrabs/home-below-fold.png)
-*Scrolled view showing recent projects and chart visualizations*
+*Scrolled view showing recent projects and chart visualizations.*
+
+![First-launch onboarding modal](../screengrabs/onboarding-runtime-modal.png)
+*First-launch onboarding modal asking the user to pick a default runtime provider — Anthropic (OAuth or API), OpenAI Codex (ChatGPT or API), or Ollama for fully local inference. The choice writes to Settings → Authentication and unblocks immediate task execution.*
 
 ## Key Features
 
