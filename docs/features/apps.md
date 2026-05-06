@@ -20,6 +20,12 @@ The Apps page lives under the **Home** group in the sidebar and serves as the la
 ![Apps page with materialized apps grid plus starters showcase](../screengrabs/apps-list.png)
 *The Apps launchpad — materialized apps at the top, starters showcase below. Each starter card lists the kit it uses so users can pick by visual layout intent.*
 
+![Starters showcase grid — one starter per kit](../screengrabs/apps-starters-grid.png)
+*Zoomed view of the starters showcase — one card per kit, each labelled with the kit name and a one-line description so users can pick by intent rather than data shape.*
+
+![Starter handoff — clicking a starter opens chat with a pre-seeded composition prompt](../screengrabs/apps-starter-to-chat.png)
+*Clicking a starter does not install the app; it opens a chat conversation pre-seeded with a manifest-authoring prompt the user can edit before any primitives are written to disk.*
+
 ![Tracker kit -- table hero with daily cadence and KPIs](../screengrabs/apps-detail-tracker.png)
 *The Tracker kit leads with a data table and supports daily-cadence schedules. Best for habit logs, daily check-ins, and any app where the table is the main artifact.*
 

@@ -1,7 +1,7 @@
-# Handoff: Orphan cleanup + 6 date-stale doc bumps + manifest sync — sibling-repo book sync still parked
+# Handoff: All in-repo doc maintenance items closed — only sibling-repo book sync remains
 
-**Created:** 2026-05-05 (after orphan + date-bump maintenance pass; commit pending review)
-**Status:** This repo is clean and the working tree carries small doc/maintenance edits ready for one squash commit. The sibling website repo at `~/Developer/ainative-business.github.io/` is unchanged from the prior handoff — `book-sync-ch-5-7-11-backup` (commit `0c4f5a6`) still parked, awaiting `/apply-book-update` from inside that repo.
+**Created:** 2026-05-05 (after orphan cleanup + date bumps + manifest sync + apps.md content drift fix)
+**Status:** This repo has zero metadata-vs-content drift across all 22 doc sections. The sibling website repo at `~/Developer/ainative-business.github.io/` is unchanged — `book-sync-ch-5-7-11-backup` (commit `0c4f5a6`) still parked, awaiting `/apply-book-update` from inside that repo.
 
 Prior handoffs archived at:
 - `.archive/handoff/2026-05-05-doc-generator-round-1-2-shipped.md` (just-archived; covered the doc-refresh work shipped in `80acaf7e`)
@@ -11,19 +11,14 @@ Prior handoffs archived at:
 
 ## TL;DR for the next agent
 
-1. **Resolve the sibling-repo book sync** (5–10 min, biggest remaining user-visible payoff).
+1. **Resolve the sibling-repo book sync** (5–10 min, the only remaining payoff).
    - State: `~/Developer/ainative-business.github.io/main` matches `origin/main` (clean), but local branch `book-sync-ch-5-7-11-backup` (commit `0c4f5a6`) holds the staged book-prose work + metadata for ch-5/7/11.
    - Recommended: `cd ~/Developer/ainative-business.github.io && /apply-book-update` — that skill has the right repo permissions (the harness blocks direct main pushes from this repo) and handles commit + build + push correctly.
    - If keeping the parked branch is no longer wanted: `cd ~/Developer/ainative-business.github.io && git branch -D book-sync-ch-5-7-11-backup` once the sync is properly applied via the skill.
 
-2. **Investigate `apps.md` content drift** (5–10 min). Frontmatter and manifest agree on `screengrabCount: 9` but only 7 captures are actually embedded in the doc. This is content drift (metadata claims captures that aren't present), not metadata-vs-metadata drift. Two possible resolutions:
-   - Add the 2 missing captures (preferred if they exist in `screengrabs/`)
-   - Down-count both frontmatter and manifest to 7
-   - Worth grepping `screengrabs/apps-*.png` and comparing against the 7 currently embedded.
+2. **(Optional) Run `/refresh-content-pipeline` end-to-end** as a single confirmation pass. The 3-way `screengrabCount` audit (actual vs frontmatter vs manifest) currently returns zero drift across all 22 sections, so this should be a fast no-op.
 
-3. **(Optional) Run `/refresh-content-pipeline` end-to-end** as a single confirmation pass. With this session's manifest fixes in, the only expected drift is the `apps.md` discrepancy from #2.
-
-If you only do one thing, do **#1** — the sibling website's book chapters still render the older versions of ch-5/7/11.
+Per standing rule (memory: `feedback-no-sibling-repo-edits.md`), item #1 is off-limits to any session not explicitly opened in / scoped to that repo.
 
 ## What this session accomplished
 
@@ -48,15 +43,17 @@ All 6 docs bumped to `2026-05-05` after confirming actual embedded counts match 
 | `docs/features/delivery-channels.md` | 2026-04-01 | 2026-05-05 |
 | `docs/features/schedules.md` | 2026-04-08 | 2026-05-05 |
 
-### Manifest `screengrabCount` audit + 2 fixes (bonus, found while bumping dates)
+### Manifest `screengrabCount` audit + 3 fixes
 
-Ran a 3-way audit (actual embedded captures vs. frontmatter declaration vs. manifest declaration) over all 22 doc sections. Found 3 mismatches:
+Ran a 3-way audit (actual embedded captures vs. frontmatter declaration vs. manifest declaration) over all 22 doc sections. Found 3 mismatches, all resolved:
 
-| Doc | Actual | Frontmatter | Manifest | Action |
+| Doc | Pre-fix actual | Pre-fix frontmatter | Pre-fix manifest | Action |
 |---|---|---|---|---|
 | `schedules` | 4 | 4 | 2 | **Manifest fixed → 4** |
 | `delivery-channels` | 0 | 0 (`manual: true`) | 4 | **Manifest fixed → 0** |
-| `apps` | 7 | 9 | 9 | **Flagged for next session** (content drift, see TL;DR #2) |
+| `apps` | 7 | 9 | 9 | **2 captures inlined → 9 actual** |
+
+For `apps`, the 2 missing captures (`apps-starters-grid.png`, `apps-starter-to-chat.png`) already existed in `screengrabs/` (and were already mirrored to `public/readme/`); they just hadn't been embedded in the doc. Added under the `## Screenshots` section in narrative order: overview → starters drill-in → starter handoff → 6 kit details. Re-run of the 3-way audit returns **zero remaining mismatches** across all 22 doc sections.
 
 Manifest JSON validity verified via `python3 -c "import json; json.load(open('docs/manifest.json'))"`. Did NOT bump `docs/manifest.json` `generated` timestamp because the generator did not run — only consistency edits.
 
@@ -94,5 +91,4 @@ D public/readme/settings-ollama.png
 ## Recommended next-session sequence
 
 1. From inside `~/Developer/ainative-business.github.io/`, run `/apply-book-update` to land the parked `book-sync-ch-5-7-11-backup` branch (TL;DR #1). After confirmed in `origin/main`, optionally `git branch -D book-sync-ch-5-7-11-backup` to clean up.
-2. Resolve `apps.md` content drift (TL;DR #2) — grep `screengrabs/apps-*.png`, compare against the 7 currently embedded, decide add-vs-down-count, and update both frontmatter + manifest to match.
-3. Optionally run `/refresh-content-pipeline` end-to-end as a final confirmation pass — should detect zero drift after #2 and exit fast.
+2. Optionally run `/refresh-content-pipeline` end-to-end as a final confirmation pass — should detect zero drift and exit fast.
