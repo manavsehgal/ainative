@@ -1,7 +1,7 @@
-# Handoff: 0.14.0 release prep landed (commit + tag local) — npm publish gate is the only thing left
+# Handoff: 0.14.0 shipped to npm — only sibling-repo book sync remains parked
 
-**Created:** 2026-05-05 (after 0.14.0 version bump, CHANGELOG consolidation, CLI build, tarball pack, commit `793bde1b`, tag `v0.14.0`)
-**Status:** Release prep is complete and committed. The tarball `ainative-business-0.14.0.tgz` (2.2 MB, 1396 files, 8.7 MB unpacked) sits in the repo root, gitignored. **Not yet pushed at the time of this writing — push happens in the next commit alongside this handoff rotation.** Not yet published to npm.
+**Created:** 2026-05-05 (after 0.14.0 release prep + commit `793bde1b` + tag `v0.14.0`); **updated:** 2026-05-06 (after user-driven `npm publish` from a separate terminal, registry timestamp `2026-05-06T00:58:17Z`)
+**Status:** `ainative-business@0.14.0` is live on npm. `npm view ainative-business version` returns `0.14.0`. The local tarball `ainative-business-0.14.0.tgz` (2.2 MB, 1396 files, 8.7 MB unpacked) is no longer load-bearing — it was the verification artifact, not the published one (`npm publish` produces its own tarball internally).
 
 Prior handoffs archived at:
 - `.archive/handoff/2026-05-05-doc-cleanup-and-apps-drift-closed.md` (just-archived; covered orphan cleanup + 6 date bumps + manifest sync + apps.md drift fix shipped in `da339ff1` + `09f82dcc`)
@@ -12,30 +12,28 @@ Prior handoffs archived at:
 
 ## TL;DR for the next agent
 
-1. **`npm publish` to ship 0.14.0** (the only path-of-the-batched-release step remaining).
-   - Pre-flight is done: `dist/cli.js` rebuilt, `npm pack --dry-run` clean, tarball spot-checks pass (`dist/cli.js`, `book/chapters/*` 22 files, `ai-native-notes/*.md` 8 files all bundled).
-   - `prepublishOnly` will re-run `npm run build:cli` automatically — harmless duplication.
-   - Run from this repo root: `npm publish` (no flags needed; `manavsehgal` is the maintainer).
-   - **Don't run this without explicit user authorization** — npm publishes are effectively irreversible for at least 72 hours.
-
-2. **Sibling-repo book sync** (still parked from earlier sessions, off-limits per `feedback-no-sibling-repo-edits.md`).
+1. **Sibling-repo book sync** (still parked from earlier sessions, off-limits per `feedback-no-sibling-repo-edits.md`).
    - `~/Developer/ainative-business.github.io/main` is clean against its `origin/main`; local branch `book-sync-ch-5-7-11-backup` (commit `0c4f5a6`) holds the unmerged ch-5/7/11 prose work.
    - Recommended path: `cd ~/Developer/ainative-business.github.io && /apply-book-update` from inside that repo only.
 
+2. **(Optional) Post-publish smoke verification of `ainative-business@0.14.0`** — `npx ainative-business@latest` in a scratch dir to confirm the published bundle boots and the new Apps / Branches / Plugins surfaces render. Should take 1–2 minutes; valuable confidence check on the M5 install-parity-audit work.
+
 3. **(Optional) `/refresh-content-pipeline` smoke pass** — should detect zero drift and exit fast (3-way `screengrabCount` audit currently returns zero mismatches across all 22 doc sections).
 
-If you only do one thing, do **#1**, but only with explicit user authorization in the same conversation.
+If you only do one thing, do **#1**, but only from inside the sibling repo.
 
 ## What this session accomplished
 
-Three commits landed this session, pushed to `origin/main` plus one annotated tag (push of the tag happens alongside this handoff rotation):
+Three commits + one annotated tag landed this session, all pushed to `origin/main`. `0.14.0` then went live on npm via a user-driven `npm publish` from a separate terminal at `2026-05-06T00:58:17Z`:
 
 | Commit | Subject | Pushed |
 |---|---|---|
 | `da339ff1` | `docs(maintenance): orphan cleanup, 6 lastUpdated bumps, manifest screengrabCount sync` | ✓ |
 | `09f82dcc` | `docs(apps): inline 2 missing apps starters captures, close last in-repo drift` | ✓ |
-| `793bde1b` | `chore(release): 0.14.0 — Self-Extending Machine M1-M5 + Apps + Branches + Plugins` | (this rotation pushes it) |
-| Tag `v0.14.0` | annotated, pointing at `793bde1b` | (this rotation pushes it) |
+| `793bde1b` | `chore(release): 0.14.0 — Self-Extending Machine M1-M5 + Apps + Branches + Plugins` | ✓ |
+| `005c3a8d` | `docs(handoff): rotate after 0.14.0 release prep — npm publish is the only step left` | ✓ |
+| Tag `v0.14.0` | annotated, pointing at `793bde1b` | ✓ |
+| `npm publish` | shipped `ainative-business@0.14.0` to npm registry (user-driven, separate terminal) | ✓ |
 
 ### 0.14.0 release prep (item this session added on top of the prior handoff)
 
@@ -72,6 +70,6 @@ M HANDOFF.md
 
 ## Recommended next-session sequence
 
-1. **Authorize `npm publish` from inside this repo** — this is the natural completion of the 0.14.0 batched release. Confirm the version mismatch is resolved (`npm view ainative-business version` should return `0.13.2` before publish; `0.14.0` after). Verify the published tarball with `npx ainative-business@0.14.0` in a scratch dir afterward.
-2. From inside `~/Developer/ainative-business.github.io/`, run `/apply-book-update` to land the parked `book-sync-ch-5-7-11-backup` branch. After confirmed in `origin/main`, optionally `git branch -D book-sync-ch-5-7-11-backup` to clean up.
+1. From inside `~/Developer/ainative-business.github.io/`, run `/apply-book-update` to land the parked `book-sync-ch-5-7-11-backup` branch. After confirmed in `origin/main`, optionally `git branch -D book-sync-ch-5-7-11-backup` to clean up.
+2. Optionally smoke-verify the published `ainative-business@0.14.0` bundle in a scratch dir: `cd $(mktemp -d) && npx ainative-business@latest` — should boot the dev server, present the onboarding runtime modal, and let you reach `/apps`, `/chat` (with branching), and Settings → Plugins without errors. This validates the M5 install-parity-audit work end-to-end against the published artifact.
 3. Optionally run `/refresh-content-pipeline` end-to-end as a final confirmation pass — should detect zero drift and exit fast.
