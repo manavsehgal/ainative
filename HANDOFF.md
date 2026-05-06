@@ -1,94 +1,77 @@
-# Handoff: All in-repo doc maintenance items closed — only sibling-repo book sync remains
+# Handoff: 0.14.0 release prep landed (commit + tag local) — npm publish gate is the only thing left
 
-**Created:** 2026-05-05 (after orphan cleanup + date bumps + manifest sync + apps.md content drift fix)
-**Status:** This repo has zero metadata-vs-content drift across all 22 doc sections. The sibling website repo at `~/Developer/ainative-business.github.io/` is unchanged — `book-sync-ch-5-7-11-backup` (commit `0c4f5a6`) still parked, awaiting `/apply-book-update` from inside that repo.
+**Created:** 2026-05-05 (after 0.14.0 version bump, CHANGELOG consolidation, CLI build, tarball pack, commit `793bde1b`, tag `v0.14.0`)
+**Status:** Release prep is complete and committed. The tarball `ainative-business-0.14.0.tgz` (2.2 MB, 1396 files, 8.7 MB unpacked) sits in the repo root, gitignored. **Not yet pushed at the time of this writing — push happens in the next commit alongside this handoff rotation.** Not yet published to npm.
 
 Prior handoffs archived at:
-- `.archive/handoff/2026-05-05-doc-generator-round-1-2-shipped.md` (just-archived; covered the doc-refresh work shipped in `80acaf7e`)
-- `.archive/handoff/2026-05-05-book-updater-website-partial-sync.md` (one layer back; covered the sibling-repo parking decision)
+- `.archive/handoff/2026-05-05-doc-cleanup-and-apps-drift-closed.md` (just-archived; covered orphan cleanup + 6 date bumps + manifest sync + apps.md drift fix shipped in `da339ff1` + `09f82dcc`)
+- `.archive/handoff/2026-05-05-doc-generator-round-1-2-shipped.md` (one layer back)
+- `.archive/handoff/2026-05-05-book-updater-website-partial-sync.md` (two layers back)
 
 ---
 
 ## TL;DR for the next agent
 
-1. **Resolve the sibling-repo book sync** (5–10 min, the only remaining payoff).
-   - State: `~/Developer/ainative-business.github.io/main` matches `origin/main` (clean), but local branch `book-sync-ch-5-7-11-backup` (commit `0c4f5a6`) holds the staged book-prose work + metadata for ch-5/7/11.
-   - Recommended: `cd ~/Developer/ainative-business.github.io && /apply-book-update` — that skill has the right repo permissions (the harness blocks direct main pushes from this repo) and handles commit + build + push correctly.
-   - If keeping the parked branch is no longer wanted: `cd ~/Developer/ainative-business.github.io && git branch -D book-sync-ch-5-7-11-backup` once the sync is properly applied via the skill.
+1. **`npm publish` to ship 0.14.0** (the only path-of-the-batched-release step remaining).
+   - Pre-flight is done: `dist/cli.js` rebuilt, `npm pack --dry-run` clean, tarball spot-checks pass (`dist/cli.js`, `book/chapters/*` 22 files, `ai-native-notes/*.md` 8 files all bundled).
+   - `prepublishOnly` will re-run `npm run build:cli` automatically — harmless duplication.
+   - Run from this repo root: `npm publish` (no flags needed; `manavsehgal` is the maintainer).
+   - **Don't run this without explicit user authorization** — npm publishes are effectively irreversible for at least 72 hours.
 
-2. **(Optional) Run `/refresh-content-pipeline` end-to-end** as a single confirmation pass. The 3-way `screengrabCount` audit (actual vs frontmatter vs manifest) currently returns zero drift across all 22 sections, so this should be a fast no-op.
+2. **Sibling-repo book sync** (still parked from earlier sessions, off-limits per `feedback-no-sibling-repo-edits.md`).
+   - `~/Developer/ainative-business.github.io/main` is clean against its `origin/main`; local branch `book-sync-ch-5-7-11-backup` (commit `0c4f5a6`) holds the unmerged ch-5/7/11 prose work.
+   - Recommended path: `cd ~/Developer/ainative-business.github.io && /apply-book-update` from inside that repo only.
 
-Per standing rule (memory: `feedback-no-sibling-repo-edits.md`), item #1 is off-limits to any session not explicitly opened in / scoped to that repo.
+3. **(Optional) `/refresh-content-pipeline` smoke pass** — should detect zero drift and exit fast (3-way `screengrabCount` audit currently returns zero mismatches across all 22 doc sections).
+
+If you only do one thing, do **#1**, but only with explicit user authorization in the same conversation.
 
 ## What this session accomplished
 
-### Orphan cleanup in `public/readme/` (item #2 from prior handoff)
+Three commits landed this session, pushed to `origin/main` plus one annotated tag (push of the tag happens alongside this handoff rotation):
 
-- Computed orphans via `comm -23 <(ls public/readme | grep -v .last-synced | sort) <(ls screengrabs | sort)` — found **12** files in mirror but not in source (handoff guessed 10).
-- Cross-referenced each against the live codebase via `rg -l` (excluding `node_modules`, `dist`, `.next`, `public/readme` itself):
-  - **5 must-keep** (still referenced in live README.md or specs): `architecture-dark.svg`, `architecture-light.svg`, `chat-conversation.png`, `settings-browser-tools.png`, `tasks-below-fold.png`. These are hand-curated README assets, not screengrab pipeline output — they live in `public/readme/` only.
-  - **7 deleted** (no live refs; only frozen archive handoffs reference some): `chat-actions-tab.png`, `chat-entities-tab.png`, `chat-model-picker.png`, `chat-search-filter.png`, `settings-channels-add-form.png`, `settings-ollama-connected.png`, `settings-ollama.png`.
-- `public/readme/` count: 108 → 101.
-
-### Date-stale `lastUpdated` bumps (item #3 from prior handoff)
-
-All 6 docs bumped to `2026-05-05` after confirming actual embedded counts match frontmatter declarations (no concrete content drift):
-
-| Doc | Old `lastUpdated` | New |
+| Commit | Subject | Pushed |
 |---|---|---|
-| `docs/features/user-guide.md` | 2026-03-31 | 2026-05-05 |
-| `docs/features/tool-permissions.md` | 2026-04-15 | 2026-05-05 |
-| `docs/features/monitoring.md` | 2026-03-31 | 2026-05-05 |
-| `docs/features/cost-usage.md` | 2026-03-31 | 2026-05-05 |
-| `docs/features/delivery-channels.md` | 2026-04-01 | 2026-05-05 |
-| `docs/features/schedules.md` | 2026-04-08 | 2026-05-05 |
+| `da339ff1` | `docs(maintenance): orphan cleanup, 6 lastUpdated bumps, manifest screengrabCount sync` | ✓ |
+| `09f82dcc` | `docs(apps): inline 2 missing apps starters captures, close last in-repo drift` | ✓ |
+| `793bde1b` | `chore(release): 0.14.0 — Self-Extending Machine M1-M5 + Apps + Branches + Plugins` | (this rotation pushes it) |
+| Tag `v0.14.0` | annotated, pointing at `793bde1b` | (this rotation pushes it) |
 
-### Manifest `screengrabCount` audit + 3 fixes
+### 0.14.0 release prep (item this session added on top of the prior handoff)
 
-Ran a 3-way audit (actual embedded captures vs. frontmatter declaration vs. manifest declaration) over all 22 doc sections. Found 3 mismatches, all resolved:
+- **Version analysis** before bumping: 247 commits + 731 files + 106 feat / 21 fix / 81 docs since last npm publish (0.13.2, 2026-04-19). Three net-new product surfaces (Apps, Branches, Plugins) plus the M1–M5 Self-Extending Machine arc. No breaking changes, one additive schema migration (`0027_add_tasks_context_row_id.sql`).
+- **Recommendation chosen: minor bump (0.14.0)** — patch was the pre-bumped value (0.13.3 in `package.json`) but it underrepresented the change set by an order of magnitude. Pre-1.0 semver convention says minor for new features, patch for fixes; 106 feat commits ≠ a patch.
+- **CHANGELOG consolidated** — the unpublished `[0.13.3]` entry (instance-section accurate notice fix) was folded into a single `[0.14.0] — 2026-05-05` entry. End users will move from `0.13.2` → `0.14.0` on npm with no `0.13.3` gap.
+- **Build + pack verification:**
+  - `npm run build:cli` → `dist/cli.js` 70.59 KB ESM, node20 target, clean tsup build
+  - `npm pack --dry-run` → 1396 files, 2.3 MB compressed, 8.7 MB unpacked
+  - Spot checks: `book/chapters/*` (22 files) and `ai-native-notes/*.md` (8 files) bundled per M5 install-parity-audit
+  - Real `npm pack` produced `ainative-business-0.14.0.tgz` at 2.2 MB
+- **Local tag:** `v0.14.0` annotated, message `Release 0.14.0 — M1-M5 + Apps + Branches + Plugins (batched)`. Tag history skips `v0.13.x` (those versions were published to npm but never git-tagged).
 
-| Doc | Pre-fix actual | Pre-fix frontmatter | Pre-fix manifest | Action |
-|---|---|---|---|---|
-| `schedules` | 4 | 4 | 2 | **Manifest fixed → 4** |
-| `delivery-channels` | 0 | 0 (`manual: true`) | 4 | **Manifest fixed → 0** |
-| `apps` | 7 | 9 | 9 | **2 captures inlined → 9 actual** |
+### Doc maintenance (item from prior handoff, completed earlier in same session)
 
-For `apps`, the 2 missing captures (`apps-starters-grid.png`, `apps-starter-to-chat.png`) already existed in `screengrabs/` (and were already mirrored to `public/readme/`); they just hadn't been embedded in the doc. Added under the `## Screenshots` section in narrative order: overview → starters drill-in → starter handoff → 6 kit details. Re-run of the 3-way audit returns **zero remaining mismatches** across all 22 doc sections.
+Already shipped in `da339ff1` + `09f82dcc` — see archived handoff for details. Net result: 7 orphans deleted from `public/readme/`, 6 stale `lastUpdated` fields bumped, manifest `screengrabCount` aligned with reality across all 22 sections (zero remaining drift).
 
-Manifest JSON validity verified via `python3 -c "import json; json.load(open('docs/manifest.json'))"`. Did NOT bump `docs/manifest.json` `generated` timestamp because the generator did not run — only consistency edits.
-
-## Working tree state (pre-commit)
+## Working tree state (immediately before final handoff commit)
 
 ```
 M HANDOFF.md
-M docs/features/cost-usage.md
-M docs/features/delivery-channels.md
-M docs/features/monitoring.md
-M docs/features/schedules.md
-M docs/features/tool-permissions.md
-M docs/features/user-guide.md
-M docs/manifest.json
-D public/readme/chat-actions-tab.png
-D public/readme/chat-entities-tab.png
-D public/readme/chat-model-picker.png
-D public/readme/chat-search-filter.png
-D public/readme/settings-channels-add-form.png
-D public/readme/settings-ollama-connected.png
-D public/readme/settings-ollama.png
-?? .archive/handoff/2026-05-05-book-updater-website-partial-sync.md
-?? .archive/handoff/2026-05-05-doc-generator-round-1-2-shipped.md
+?? .archive/handoff/2026-05-05-doc-cleanup-and-apps-drift-closed.md
 ```
 
-**No code edits, no DB changes, no schema changes, no `.env.local` changes, no dev-server restarts.**
+`ainative-business-0.14.0.tgz` exists in the repo root but is gitignored (matches `ainative-*.tgz` in `.gitignore`). Earlier 0.13.x tarballs from prior release prep are also present locally, also gitignored.
 
 ## Process notes for next agent
 
-- **The 3-way `screengrabCount` audit is reusable.** A small Python snippet that walks `docs/manifest.json`, reads each doc's frontmatter, and counts `![...](../screengrabs/...)` matches surfaces drift instantly. Worth keeping handy or codifying as a `/doc-generator` health check. Snippet is in this session's transcript.
-- **Orphan checks need the consumer-side step.** "File in `public/readme/` but not in `screengrabs/`" is necessary but NOT sufficient — the file may still be a live README/spec asset. Always grep for refs (excluding `.archive/`) before deleting. This session's 12-orphan list reduced to 7 safe deletions after the consumer-side filter.
-- **The IDE TS diagnostic panel was loud during markdown-only edits this session** — phantom `Cannot find module` warnings appeared after every Edit call. Per CLAUDE.md memory: trust `npx tsc --noEmit | grep <file>` over the inline panel. No TS files were touched, so no compiler run was needed.
-- **Sibling-repo trust boundaries continue to be enforced.** Reaffirmed by skipping all sibling-repo work per user's session-opening instruction. The `/apply-book-update` path remains the correct way to land item #1 from inside the website repo.
+- **Pre-bumped `package.json` versions are a smell when batched releases happen.** This session caught a `0.13.3` pre-bump that came from a `fix(publish):` commit during the M5 audit. The bump was scoped at the time to a small files-array edit, but feature work continued for weeks afterward — the version label decayed without anyone noticing. **Heuristic for next time:** before any release, run the change-volume audit (`git rev-list --count`, commit-prefix tally, file-count) against the *last published* version on npm, not against the local `package.json` version. The two can diverge.
+- **`npm pack --dry-run` is the cheap safety check.** It runs in <2 seconds, shows exactly what gets shipped, and surfaces missing-file regressions (like the M5 publish-parity issue) before they hit consumers. Worth making it the default first step for any release prep, before the bump or the changelog write.
+- **`prepublishOnly` saves you from publishing a stale build.** Even if you forget to `npm run build:cli` manually, npm runs it for you on `npm publish`. But `npm pack` does *not* run `prepublishOnly` — only `prepack`. The current `package.json` has only `prepublishOnly`, which means a manual `npm pack` against a stale `dist/` would publish stale code if not for the `npm publish` hook. Worth duplicating to `prepack` in a future tightening pass, or always running `npm run build:cli` before `npm pack`.
+- **The IDE TS diagnostic panel was extra loud across this entire session** — markdown/JSON edits triggered phantom "Cannot find module" warnings repeatedly. Per CLAUDE.md memory: trust `npx tsc --noEmit | grep <file>` over the inline panel. None of this session's edits touched TS, so no compiler run was warranted.
+- **Sibling-repo trust boundaries continue to be respected.** The user explicitly opened this session with "ignore any action on sibling repo, continue completing tasks in this repo", and a memory was saved to enforce that durably (`feedback-no-sibling-repo-edits.md`). Sibling-repo writes remain off-limits to any session not explicitly opened in / scoped to that repo.
 
 ## Recommended next-session sequence
 
-1. From inside `~/Developer/ainative-business.github.io/`, run `/apply-book-update` to land the parked `book-sync-ch-5-7-11-backup` branch (TL;DR #1). After confirmed in `origin/main`, optionally `git branch -D book-sync-ch-5-7-11-backup` to clean up.
-2. Optionally run `/refresh-content-pipeline` end-to-end as a final confirmation pass — should detect zero drift and exit fast.
+1. **Authorize `npm publish` from inside this repo** — this is the natural completion of the 0.14.0 batched release. Confirm the version mismatch is resolved (`npm view ainative-business version` should return `0.13.2` before publish; `0.14.0` after). Verify the published tarball with `npx ainative-business@0.14.0` in a scratch dir afterward.
+2. From inside `~/Developer/ainative-business.github.io/`, run `/apply-book-update` to land the parked `book-sync-ch-5-7-11-backup` branch. After confirmed in `origin/main`, optionally `git branch -D book-sync-ch-5-7-11-backup` to clean up.
+3. Optionally run `/refresh-content-pipeline` end-to-end as a final confirmation pass — should detect zero drift and exit fast.
