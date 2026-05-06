@@ -279,7 +279,7 @@ Airtable-like structured data system at `/tables` with 14 features. Create table
 #### Playbook
 Built-in documentation system at `/playbook` with usage-stage awareness that adapts content to your experience level (new, early, active, power user). Browse feature reference docs and guided learning journeys organized by persona (Personal, Work, Power User, Developer). Adoption heatmap tracks which features you've explored, while journey cards show progress through multi-step learning paths. Markdown rendering with automatic internal link resolution, table of contents, related docs, and screengrab embedding.
 
-<img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/playbook-list.png" alt="ainative-business playbook documentation" width="1200" />
+<img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/user-guide-list.png" alt="ainative-business playbook documentation" width="1200" />
 
 #### Living Book
 AI-native book reader at `/book` with 9 chapters across 3 parts (Foundation, Intelligence, Autonomy). Each chapter is generated from `ainative-business`'s own source code and feature docs by the document-writer agent — making this a book that writes itself.
@@ -338,7 +338,7 @@ Pure SVG chart primitives (Sparkline, MiniBar, DonutRing) with zero charting dep
 #### Cost & Usage
 Provider-normalized metering tracks token and spend activity across tasks, resumes, workflow child tasks, schedules, task assist, and profile tests. The dedicated `Cost & Usage` surface adds summary cards, trend views, provider/model breakdowns, and budget-aware audit visibility on top of the usage ledger.
 
-<img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/cost-usage-list.png" alt="ainative-business cost and usage dashboard" width="1200" />
+<img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/costs-list.png" alt="ainative-business cost and usage dashboard" width="1200" />
 
 ### UI & DevEx
 
@@ -356,9 +356,9 @@ Conversational control plane for all workspace primitives — projects, tasks, w
 
 <img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/chat-conversation.png" alt="ainative-business chat conversation with @ document context" width="1200" />
 
-| Tool Catalog | Model Selector | Create Tab |
+| Tool Catalog | Skill Composition | @ Mentions |
 |:-:|:-:|:-:|
-| <img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/chat-list.png" alt="Chat tool catalog with category tabs" width="380" /> | <img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/chat-model-selector.png" alt="Chat model selector with cost tiers" width="380" /> | <img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/chat-create-tab.png" alt="Chat Create category prompts" width="380" /> |
+| <img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/chat-list.png" alt="Chat tool catalog with category tabs" width="380" /> | <img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/chat-skills-tab.png" alt="Chat Skills tab — activate up to 3 skills with conflict detection" width="380" /> | <img src="https://raw.githubusercontent.com/manavsehgal/ainative/main/public/readme/chat-mentions-popover.png" alt="Chat @ mentions popover for documents and entities" width="380" /> |
 
 #### Skill Composition
 Activate up to three skills in a single conversation with conflict detection and runtime-aware capability gates. The Skills tab in the chat popover surfaces `+ Add` buttons on inactive skills, active badges with deactivate actions, and an "N of M active" indicator. When two skills issue polarity-divergent directives on shared keywords, a conflict dialog previews the excerpts and lets you confirm with `force:true` or back out. Composition honors the runtime capability matrix — Claude Code and Codex App Server support up to 3 active skills, while Ollama stays at 1. Conversations persist active skills through an additive `active_skill_ids` column that preserves legacy single-skill reads.
