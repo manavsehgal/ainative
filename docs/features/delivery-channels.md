@@ -7,7 +7,7 @@ tags: ["delivery-channels", "slack", "telegram", "webhook", "notifications", "in
 features: ["delivery-channels", "bidirectional-channel-chat"]
 manual: true
 screengrabCount: 0
-lastUpdated: "2026-04-01"
+lastUpdated: "2026-05-05"
 ---
 
 # Delivery Channels

@@ -6,7 +6,7 @@ route: "/costs"
 tags: [costs, usage, budget, metering, tokens, spend, guardrails, ollama]
 features: ["cost-and-usage-dashboard", "usage-metering-ledger", "spend-budget-guardrails"]
 screengrabCount: 2
-lastUpdated: "2026-03-31"
+lastUpdated: "2026-05-05"
 ---
 
 # Cost & Usage

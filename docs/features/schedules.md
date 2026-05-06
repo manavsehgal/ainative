@@ -6,7 +6,7 @@ route: "/schedules"
 tags: ["schedules", "automation", "recurring", "prompts", "heartbeat", "natural-language", "proactive", "orchestration", "concurrency"]
 features: ["scheduled-prompt-loops", "heartbeat-scheduler", "natural-language-scheduling", "schedule-orchestration-v2"]
 screengrabCount: 4
-lastUpdated: "2026-04-08"
+lastUpdated: "2026-05-05"
 ---
 
 # Schedules

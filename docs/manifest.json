@@ -120,7 +120,7 @@
       "route": "/schedules",
       "tags": ["schedules", "cron", "recurring", "heartbeat", "nlp", "proactive"],
       "features": ["scheduled-prompt-loops", "heartbeat-scheduler", "natural-language-scheduling"],
-      "screengrabCount": 2
+      "screengrabCount": 4
     },
     {
       "slug": "cost-usage",
@@ -150,7 +150,7 @@
       "route": "/settings",
       "tags": ["delivery-channels", "slack", "telegram", "webhook", "notifications", "integrations", "bidirectional", "chat"],
       "features": ["multi-channel-delivery", "bidirectional-channel-chat"],
-      "screengrabCount": 4
+      "screengrabCount": 0
     },
     {
       "slug": "playbook",

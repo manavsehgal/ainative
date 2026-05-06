@@ -6,7 +6,7 @@ route: "/user-guide"
 tags: [user-guide, documentation, guides, reference, articles, adoption-tracking]
 features: ["playbook-documentation", "documentation-adoption-tracking"]
 screengrabCount: 1
-lastUpdated: "2026-03-31"
+lastUpdated: "2026-05-05"
 ---
 
 # User Guide

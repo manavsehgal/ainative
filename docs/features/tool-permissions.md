@@ -6,7 +6,7 @@ route: "cross-cutting"
 tags: [permissions, trust, safety, approval, human-in-the-loop, presets]
 features: ["tool-permission-persistence", "tool-permission-presets", "ambient-approval-toast", "upgrade-session"]
 screengrabCount: 1
-lastUpdated: "2026-04-15"
+lastUpdated: "2026-05-05"
 ---
 
 # Tool Permissions

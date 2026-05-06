@@ -1,94 +1,98 @@
-# Handoff: Book-updater session D shipped — website partial-sync pending
+# Handoff: Orphan cleanup + 6 date-stale doc bumps + manifest sync — sibling-repo book sync still parked
 
-**Created:** 2026-05-05 (after session D book-updater run, commit `b081cab4`)
-**Status:** Pipeline stage 5 (`/book-updater`) is complete in this repo. The sibling website repo at `~/Developer/ainative-business.github.io/` is in a partial-sync state from this session; resolve via `/apply-book-update` from inside that repo, or revert.
+**Created:** 2026-05-05 (after orphan + date-bump maintenance pass; commit pending review)
+**Status:** This repo is clean and the working tree carries small doc/maintenance edits ready for one squash commit. The sibling website repo at `~/Developer/ainative-business.github.io/` is unchanged from the prior handoff — `book-sync-ch-5-7-11-backup` (commit `0c4f5a6`) still parked, awaiting `/apply-book-update` from inside that repo.
 
-Prior handoff archived at `.archive/handoff/2026-05-05-doc-generator-user-guide-sync-app-builder.md`.
+Prior handoffs archived at:
+- `.archive/handoff/2026-05-05-doc-generator-round-1-2-shipped.md` (just-archived; covered the doc-refresh work shipped in `80acaf7e`)
+- `.archive/handoff/2026-05-05-book-updater-website-partial-sync.md` (one layer back; covered the sibling-repo parking decision)
 
 ---
 
 ## TL;DR for the next agent
 
-Pick one (in order of biggest payoff):
+1. **Resolve the sibling-repo book sync** (5–10 min, biggest remaining user-visible payoff).
+   - State: `~/Developer/ainative-business.github.io/main` matches `origin/main` (clean), but local branch `book-sync-ch-5-7-11-backup` (commit `0c4f5a6`) holds the staged book-prose work + metadata for ch-5/7/11.
+   - Recommended: `cd ~/Developer/ainative-business.github.io && /apply-book-update` — that skill has the right repo permissions (the harness blocks direct main pushes from this repo) and handles commit + build + push correctly.
+   - If keeping the parked branch is no longer wanted: `cd ~/Developer/ainative-business.github.io && git branch -D book-sync-ch-5-7-11-backup` once the sync is properly applied via the skill.
 
-1. **Resolve the website partial sync** (5–10 min). The sandbox correctly stopped me at the sibling-repo boundary mid-sync, leaving 4 staged files in `~/Developer/ainative-business.github.io/`:
-   - `src/data/book/chapters/ch-5-blueprints.md` — copied (new prose)
-   - `src/data/book/chapters/ch-7-institutional-memory.md` — copied (new prose)
-   - `src/data/book/chapters/ch-11-the-machine-that-builds-machines.md` — copied (new prose)
-   - `src/lib/book/content.ts` — only ch-11 entry updated; ch-5 and ch-7 wordCount/readingTime are stale (still 2,444 / 2,397 / 14)
+2. **Investigate `apps.md` content drift** (5–10 min). Frontmatter and manifest agree on `screengrabCount: 9` but only 7 captures are actually embedded in the doc. This is content drift (metadata claims captures that aren't present), not metadata-vs-metadata drift. Two possible resolutions:
+   - Add the 2 missing captures (preferred if they exist in `screengrabs/`)
+   - Down-count both frontmatter and manifest to 7
+   - Worth grepping `screengrabs/apps-*.png` and comparing against the 7 currently embedded.
 
-   Recommended: `cd ~/Developer/ainative-business.github.io && /apply-book-update` — that skill has the right repo permissions and handles the full sync workflow, including the missing 2 wordCount/readingTime updates and a build verification.
+3. **(Optional) Run `/refresh-content-pipeline` end-to-end** as a single confirmation pass. With this session's manifest fixes in, the only expected drift is the `apps.md` discrepancy from #2.
 
-   Alternative (revert): `cd ~/Developer/ainative-business.github.io && git checkout -- src/data/book/chapters/ch-5-blueprints.md src/data/book/chapters/ch-7-institutional-memory.md src/data/book/chapters/ch-11-the-machine-that-builds-machines.md src/lib/book/content.ts`
-
-2. **Refresh deferred feature reference docs** (~19 docs in `docs/features/`) — still outstanding from session B per the prior handoff. Highest-impact targets: `chat.md` (branching UI), `settings.md` (9 subsection captures), `tasks.md` (AI Assist flow), `keyboard-navigation.md` (command-palette-search), `tables.md` (4 tabs + templates).
-
-3. **Optional cleanup**: 10 stale files in `public/readme/` from pre-2026-04 captures (chat-conversation.png, settings-ollama.png, etc.) are orphans.
-
-If you only do one thing, do **#1** — the website is currently in an inconsistent state where the markdown files contain new prose but the hero stats / chapter pages would render the wrong word counts and reading times.
+If you only do one thing, do **#1** — the sibling website's book chapters still render the older versions of ch-5/7/11.
 
 ## What this session accomplished
 
-### Session D — `/book-updater` (this repo only)
+### Orphan cleanup in `public/readme/` (item #2 from prior handoff)
 
-| Artifact | Status |
-|---|---|
-| `book/chapters/ch-5-blueprints.md` | UPDATED — added "Composed Apps as Packaged Blueprints" paragraph in "ainative Today" (+116 words). readingTime 14→15, lastGeneratedBy bumped. |
-| `book/chapters/ch-7-institutional-memory.md` | UPDATED — added "Conversation Branching as Memory Navigation" paragraph (+121 words). readingTime 14→15, lastGeneratedBy bumped. |
-| `book/chapters/ch-11-the-machine-that-builds-machines.md` | UPDATED — added "Plugin platform (M3)" and "Natural-language composition (M4.5)" inventory entries (+114 words). readingTime 14→15, lastGeneratedBy bumped. |
-| `src/lib/book/chapter-mapping.ts` | UPDATED — Ch 5/11 gain `src/lib/apps/*` sourceFiles, Ch 7 gains `src/lib/chat/branching/` + branch UI components, Ch 11 gains `src/lib/agents/profiles/app-manifest-source.ts`. Now drift-detection-aware for the M3/M4.5/branching/composed-apps surfaces. |
-| `.claude/skills/book-updater/SKILL.md` | UPDATED — stats table reconciled to 42,920 words / 202 min / ~172 pages. Per-chapter inventory updated; chapters 4/6/8/9/14 had independently drifted from prior session table values. |
-| Prior `HANDOFF.md` | ARCHIVED to `.archive/handoff/2026-05-05-doc-generator-user-guide-sync-app-builder.md` |
+- Computed orphans via `comm -23 <(ls public/readme | grep -v .last-synced | sort) <(ls screengrabs | sort)` — found **12** files in mirror but not in source (handoff guessed 10).
+- Cross-referenced each against the live codebase via `rg -l` (excluding `node_modules`, `dist`, `.next`, `public/readme` itself):
+  - **5 must-keep** (still referenced in live README.md or specs): `architecture-dark.svg`, `architecture-light.svg`, `chat-conversation.png`, `settings-browser-tools.png`, `tasks-below-fold.png`. These are hand-curated README assets, not screengrab pipeline output — they live in `public/readme/` only.
+  - **7 deleted** (no live refs; only frozen archive handoffs reference some): `chat-actions-tab.png`, `chat-entities-tab.png`, `chat-model-picker.png`, `chat-search-filter.png`, `settings-channels-add-form.png`, `settings-ollama-connected.png`, `settings-ollama.png`.
+- `public/readme/` count: 108 → 101.
 
-**Commit:** `b081cab4 docs(book): refresh ch-5/7/11 — composed apps, branching, M3+M4.5 (session D)` — pushed to `origin/main`.
+### Date-stale `lastUpdated` bumps (item #3 from prior handoff)
 
-**Phase 6 verifications (all clean):**
+All 6 docs bumped to `2026-05-05` after confirming actual embedded counts match frontmatter declarations (no concrete content drift):
 
-- Tone check: 1 pre-existing meta-commentary line in Ch 12 ("does not address the broader questions… geopolitical competition…") — acceptable per skill rules; this disclaims engagement with the forbidden frame rather than using it.
-- Naming convention regex (`\bainative\b(?!(\.\w|-))`) on edited chapters: 7 hits, all correct keeps — 3 are `## ainative Today` headings (backticks would break TOC anchors), 3 are inside ```typescript code blocks (mono font already provides visual cue), 1 is brand identity reference.
-- Required sections preserved: 1 `## ainative Today` + 1 `## Roadmap Vision` per edited chapter.
-- Case-study callouts: 4 each in ch-5/7/11, unchanged from baseline (no callouts accidentally broken).
-- TypeScript: `tsc --noEmit | grep src/lib/book/` returned clean.
-
-### Website propagation — partial state, decision pending
-
-The `~/Developer/ainative-business.github.io/` sibling repo:
-
-| File | State | Notes |
+| Doc | Old `lastUpdated` | New |
 |---|---|---|
-| `src/data/book/chapters/ch-5-blueprints.md` | ⚠️ markdown synced | But content.ts still has stale wordCount=2444, readingTime=14 |
-| `src/data/book/chapters/ch-7-institutional-memory.md` | ⚠️ markdown synced | But content.ts still has stale wordCount=2397, readingTime=14 |
-| `src/data/book/chapters/ch-11-the-machine-that-builds-machines.md` | ✅ markdown + content.ts both updated | wordCount=3395, readingTime=15 |
-| `src/lib/book/content.ts` | partial | ch-11 entry updated; ch-5/ch-7 entries still pre-edit |
+| `docs/features/user-guide.md` | 2026-03-31 | 2026-05-05 |
+| `docs/features/tool-permissions.md` | 2026-04-15 | 2026-05-05 |
+| `docs/features/monitoring.md` | 2026-03-31 | 2026-05-05 |
+| `docs/features/cost-usage.md` | 2026-03-31 | 2026-05-05 |
+| `docs/features/delivery-channels.md` | 2026-04-01 | 2026-05-05 |
+| `docs/features/schedules.md` | 2026-04-08 | 2026-05-05 |
 
-The Bash `cp` calls and the first `Edit` slipped through before the sandbox's per-file Edit policy fully applied to the sibling repo. The remaining 2 `Edit` calls were correctly denied. Auto mode + Phase 7 documentation seemed to me at the time to authorize the sync, but the sandbox treats sibling repos as separate trust boundaries — that's the intended behavior.
+### Manifest `screengrabCount` audit + 2 fixes (bonus, found while bumping dates)
 
-**Lesson for next time:** When crossing into a sibling repo, batch into a single user-confirmation prompt rather than walking through it via incremental tool calls.
+Ran a 3-way audit (actual embedded captures vs. frontmatter declaration vs. manifest declaration) over all 22 doc sections. Found 3 mismatches:
 
-## What's still deferred (carryover from prior handoff)
+| Doc | Actual | Frontmatter | Manifest | Action |
+|---|---|---|---|---|
+| `schedules` | 4 | 4 | 2 | **Manifest fixed → 4** |
+| `delivery-channels` | 0 | 0 (`manual: true`) | 4 | **Manifest fixed → 0** |
+| `apps` | 7 | 9 | 9 | **Flagged for next session** (content drift, see TL;DR #2) |
 
-- ~19 existing feature docs in `docs/features/` still reference the pre-2026-05-05 screenshot inventory. Highest-impact: chat.md (branching UI), settings.md (9 subsections), tasks.md (AI Assist), keyboard-navigation.md (command palette), tables.md (4 tabs + templates).
-- 10 pre-existing orphans in `public/readme/` from pre-2026-04 captures — manual cleanup, not auto-deletable per skill rules.
+Manifest JSON validity verified via `python3 -c "import json; json.load(open('docs/manifest.json'))"`. Did NOT bump `docs/manifest.json` `generated` timestamp because the generator did not run — only consistency edits.
 
-## State changes during this session
+## Working tree state (pre-commit)
 
-- **5 files modified, 1 commit pushed**: see `b081cab4`
-- **No new files**
-- **No code edits** (only book content + skill stats + chapter-mapping)
-- **No DB changes, no .env.local changes**
-- **Dev server**: not touched
-- **Sibling repo `ainative-business.github.io`**: 4 files dirty (see "decision pending" above)
+```
+M HANDOFF.md
+M docs/features/cost-usage.md
+M docs/features/delivery-channels.md
+M docs/features/monitoring.md
+M docs/features/schedules.md
+M docs/features/tool-permissions.md
+M docs/features/user-guide.md
+M docs/manifest.json
+D public/readme/chat-actions-tab.png
+D public/readme/chat-entities-tab.png
+D public/readme/chat-model-picker.png
+D public/readme/chat-search-filter.png
+D public/readme/settings-channels-add-form.png
+D public/readme/settings-ollama-connected.png
+D public/readme/settings-ollama.png
+?? .archive/handoff/2026-05-05-book-updater-website-partial-sync.md
+?? .archive/handoff/2026-05-05-doc-generator-round-1-2-shipped.md
+```
+
+**No code edits, no DB changes, no schema changes, no `.env.local` changes, no dev-server restarts.**
 
 ## Process notes for next agent
 
-- **TS diagnostic panel was extra noisy this session** (same as prior session). Phantom "Cannot find module" warnings appeared after almost every edit. Per `CLAUDE.md` memory: trust `npx tsc --noEmit | grep <file>` over the inline panel.
-- **Reading time drift in the skill table is real.** Several chapters had drifted independently of session work — Ch 4 (2825→2907), Ch 6 (2601→2710), Ch 8 (2587→2700), Ch 9 (3184→3392), Ch 14 (4200→4352). I reconciled all of them in this session's SKILL.md update so the table now matches `wc -w` reality. Worth a quick sanity check at the start of every book session: `for f in book/chapters/ch-*.md; do echo "$(basename $f .md): $(wc -w < $f)"; done`.
-- **The frontmatter `readingTime` is intentionally inflated above raw `words/250` math** for most chapters (likely accounts for code blocks and case-study callouts). Ch 1 is the only exact match. For surgical edits with 3-5% word-count delta, bumping by 1 minute is a reasonable judgment call; for larger deltas, the inflation factor matters.
-- **Naming convention regex has known false positives.** All 7 hits in edited chapters are correct keeps (headings, code-block comments, brand identity). Don't auto-fix — review each hit manually against the rule in Phase 3 of the SKILL.
+- **The 3-way `screengrabCount` audit is reusable.** A small Python snippet that walks `docs/manifest.json`, reads each doc's frontmatter, and counts `![...](../screengrabs/...)` matches surfaces drift instantly. Worth keeping handy or codifying as a `/doc-generator` health check. Snippet is in this session's transcript.
+- **Orphan checks need the consumer-side step.** "File in `public/readme/` but not in `screengrabs/`" is necessary but NOT sufficient — the file may still be a live README/spec asset. Always grep for refs (excluding `.archive/`) before deleting. This session's 12-orphan list reduced to 7 safe deletions after the consumer-side filter.
+- **The IDE TS diagnostic panel was loud during markdown-only edits this session** — phantom `Cannot find module` warnings appeared after every Edit call. Per CLAUDE.md memory: trust `npx tsc --noEmit | grep <file>` over the inline panel. No TS files were touched, so no compiler run was needed.
+- **Sibling-repo trust boundaries continue to be enforced.** Reaffirmed by skipping all sibling-repo work per user's session-opening instruction. The `/apply-book-update` path remains the correct way to land item #1 from inside the website repo.
 
 ## Recommended next-session sequence
 
-1. Resolve the website partial sync (option A revert OR option C `/apply-book-update`) — see TL;DR #1.
-2. Optionally run `/doc-generator` once more in incremental mode against the 19 deferred feature docs — see TL;DR #2.
-3. Optionally clean up 10 pre-existing public/readme orphans — see TL;DR #3.
-4. After all stages land, consider running `/refresh-content-pipeline` end-to-end as a single confirmation pass — by then it should detect zero drift and exit fast.
+1. From inside `~/Developer/ainative-business.github.io/`, run `/apply-book-update` to land the parked `book-sync-ch-5-7-11-backup` branch (TL;DR #1). After confirmed in `origin/main`, optionally `git branch -D book-sync-ch-5-7-11-backup` to clean up.
+2. Resolve `apps.md` content drift (TL;DR #2) — grep `screengrabs/apps-*.png`, compare against the 7 currently embedded, decide add-vs-down-count, and update both frontmatter + manifest to match.
+3. Optionally run `/refresh-content-pipeline` end-to-end as a final confirmation pass — should detect zero drift after #2 and exit fast.
